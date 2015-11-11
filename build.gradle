@@ -23,6 +23,8 @@ buildscript {
             'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
             'com.github.jengelman.gradle.plugins:shadow:1.2.0',
             'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.8'
+    classpath 'net.sf.docbook:docbook-xsl:1.78.1:resources@zip'
+    classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
   }
 }
 
