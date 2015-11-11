@@ -1,5 +1,5 @@
 = Reactor Guide
-Stephane Maldini; Jon Brisbin;
+Stephane Maldini
 :appversion: 2.1.0.BUILD-SNAPSHOT (wiki)
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
