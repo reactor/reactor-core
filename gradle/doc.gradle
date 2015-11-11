@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 configure(rootProject) {
+	apply plugin: "java"
+	apply plugin: 'org.asciidoctor.convert'
+
 	task api(type: Javadoc) {
 		group = "Reactor Core Javadoc"
-		apply plugin: "java"
 
 		description = "Generates aggregated Javadoc API documentation."
 		title = "${rootProject.description} ${version} API"
@@ -56,7 +58,7 @@ configure(rootProject) {
 		sources {
 			include "index.asciidoc"
 		}
-		outputDir file("$buildDir/asciidoc")
+		outputDir file("$buildDir/asciidoc/$version")
 		backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
@@ -71,7 +73,7 @@ configure(rootProject) {
 				'source-highlighter': 'coderay'
 
 		doLast {
-			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide.pdf")
+			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${version}.pdf")
 		}
 	}
 }
