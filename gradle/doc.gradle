@@ -58,7 +58,7 @@ configure(rootProject) {
 		sources {
 			include "index.asciidoc"
 		}
-		outputDir file("$buildDir/asciidoc/$version")
+		outputDir file("$buildDir/asciidoc")
 		backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
@@ -74,6 +74,7 @@ configure(rootProject) {
 
 		doLast {
 			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${version}.pdf")
+			file("$outputDir/html5/*").moveTo("$outputDir/html5/$version")
 		}
 	}
 }
