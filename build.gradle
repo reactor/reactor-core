@@ -23,8 +23,6 @@ buildscript {
             'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
             'com.github.jengelman.gradle.plugins:shadow:1.2.0',
             'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.8'
-    classpath 'net.sf.docbook:docbook-xsl:1.78.1:resources@zip'
-    classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
   }
 }
 
@@ -68,7 +66,7 @@ apply from: "$gradleScriptDir/doc.gradle"
 apply plugin: 'propdeps'
 apply plugin: 'java'
 apply plugin: 'groovy'
-apply plugin: 'osgi'
+//apply plugin: 'osgi'
 apply from: "${gradleScriptDir}/ide.gradle"
 
 if (project.hasProperty('platformVersion')) {
@@ -186,7 +184,7 @@ configure(rootProject) {
 
   jar {
     manifest {
-      instruction 'Import-Package', bundleImportPackages.join(',')
+      //instruction 'Import-Package', bundleImportPackages.join(',')
     }
   }
 }
