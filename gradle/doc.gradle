@@ -56,8 +56,8 @@ configure(rootProject) {
 		sources {
 			include "index.asciidoc"
 		}
-		outputDir file("$buildDir/html")
-		backends = ['html5', 'docbook']
+		outputDir file("$buildDir/asciidoc")
+		backends = ['html5', 'docbook', 'pdf']
 		logDocuments = true
 		options = [
 				doctype: 'book'
