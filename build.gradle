@@ -52,8 +52,7 @@ buildscript {
   }
   dependencies {
 	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
-			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
-			'com.github.jengelman.gradle.plugins:shadow:1.2.0'
+			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE'
   }
 }
 
