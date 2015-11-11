@@ -1,0 +1,105 @@
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+	repositories {
+		maven { url "http://repo.spring.io/plugins-snapshot" }
+		jcenter()
+	}
+	dependencies {
+		classpath 'net.sf.docbook:docbook-xsl:1.78.1:resources@zip'
+		classpath 'io.spring.gradle:docbook-reference-plugin:0.3.0'
+		classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.2'
+		//classpath 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.6' // asciidoctor pdf still has issues with callouts, etc. Still relying on docbook+pdf for now
+	}
+}
+
+
+configure(rootProject) {
+	task api(type: Javadoc) {
+		group = "Reactor Core Javadoc"
+		apply plugin: "java"
+
+		description = "Generates aggregated Javadoc API documentation."
+		title = "${rootProject.description} ${version} API"
+
+		if (JavaVersion.current().isJava8Compatible()) {
+			compileTestJava.options.compilerArgs += "-parameters"
+			tasks.withType(Javadoc) {
+				options.addStringOption('Xdoclint:none', '-quiet')
+			}
+		}
+
+		dependsOn {
+			subprojects.collect {
+				it.tasks.getByName("jar")
+			}
+		}
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = rootProject.description
+		options.overview = "src/api/overview.html"
+		options.stylesheetFile = file("src/api/stylesheet.css")
+		options.links(project.ext.javadocLinks)
+
+		source subprojects.collect { project ->
+			project.sourceSets.main.allJava
+		}
+
+		maxMemory = "1024m"
+		destinationDir = new File(buildDir, "api")
+
+		doFirst {
+			classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+		}
+	}
+
+	apply plugin: org.asciidoctor.gradle.AsciidoctorPlugin
+
+	asciidoctor {
+		sources {
+			include "index.asciidoc"
+		}
+		outputDir file("$buildDir/html")
+		backends = ['html5', 'docbook']
+		logDocuments = true
+		options = [
+				doctype: 'book'
+		]
+		attributes docinfo: '',
+				toc2: '',
+				'compat-mode': '',
+				imagesdir: '',
+				stylesdir: "stylesheets/",
+				stylesheet: 'golo.css',
+				appversion: "$version",
+				'source-highlighter': 'coderay'
+
+	}
+
+	apply plugin: DocbookReferencePlugin
+
+	reference {
+		sourceFileName = 'index.xml'
+		sourceDir = file("$buildDir/html/docbook")
+		pdfFilename = 'reactor-core-reference.pdf'
+		expandPlaceholders = ''
+	}
+
+	reference.dependsOn asciidoctor
+
+}
+

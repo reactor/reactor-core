@@ -1,0 +1,16 @@
+.DS_Store
+bin
+build
+.classpath
+.eclipse
+.gradle
+.project
+.settings
+out
+*.log
+*.i*
+*.java.hsp
+*.index
+*.data
+classes
+exportToHtml

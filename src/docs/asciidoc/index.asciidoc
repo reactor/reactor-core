@@ -1,0 +1,30 @@
+= Reactor Guide
+Stephane Maldini; Jon Brisbin;
+:appversion: 2.1.0.BUILD-SNAPSHOT (wiki)
+ifndef::host-github[:ext-relative: {outfilesuffix}]
+{appversion}
+:doctype: book
+:icons: font
+
+ifdef::backend-html5[]
+++++
+include::nav.html[]
+++++
+endif::[]
+
+include::gettingstarted.adoc[]
+
+include::20to21.adoc[]
+
+[[reactor-core]]
+= *reactor-core*
+include::core.adoc[]
+include::core-publisher.adoc[]
+include::core-subscriber.adoc[]
+include::core-processor.adoc[]
+include::core-timer.adoc[]
+include::core-buffer.adoc[]
+
+[[reactor-samples]]
+== Cookbook
+include::recipes.adoc[]

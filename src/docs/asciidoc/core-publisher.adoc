@@ -1,0 +1,4 @@
+[[core-publisher]]
+ifndef::env-github[]
+== Core Publisher
+endif::[]

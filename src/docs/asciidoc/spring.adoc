@@ -1,0 +1,24 @@
+=== Spring Ecosystem Support
+Writing Reactor applications that are deployed inside a Spring `ApplicationContext`.
+
+
+[[spring-basics]]
+=== Spring Core Basics
+Writing Reactor applications that are deployed inside a Spring `ApplicationContext`.
+TODO:
+
+[[spring-boot]]
+=== Reactor with Spring Boot
+
+[[spring-integration]]
+=== Reactor with Spring Messaging
+Reactor is abstracted under the Spring Messaging http://docs.spring.io/spring/docs/current/spring-framework-reference/html/websocket.html[TCP support].
+Just make sure both Reactor Net *io.projectreactor:reactor-net::{appversion}* is in the Spring application classpath.
+
+[[spring-integration-messaging]]
+=== Reactor with Spring Integration
+
+=== Spring Integration Java DSL
+
+[[spring-xd]]
+== Reactor with Spring XD

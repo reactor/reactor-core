@@ -1,0 +1,4 @@
+[[core-bytebuffer]]
+ifndef::env-github[]
+== Byte Buffer
+endif::[]

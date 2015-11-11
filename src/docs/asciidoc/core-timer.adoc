@@ -1,0 +1,4 @@
+[[core-timer]]
+ifndef::env-github[]
+== Timers
+endif::[]
