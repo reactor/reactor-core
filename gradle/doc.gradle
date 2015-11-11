@@ -60,7 +60,8 @@ configure(rootProject) {
 				'source-highlighter': 'coderay'
 
 		doLast {
-			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${version}.pdf")
+			def formattedVersion = version.replaceAll('\\.','-')
+			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${formattedVersion}.pdf")
 		}
 	}
 }
