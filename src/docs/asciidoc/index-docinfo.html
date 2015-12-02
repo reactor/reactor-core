@@ -1,16 +1,39 @@
-<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.6.2/semantic.min.css"/>
-<link rel="stylesheet" href="http://projectreactor.io/assets/css/docs.css"/>
 <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.6.2/semantic.min.js"></script>
-<script>$(function () {
-    var el = document.createElement("script");
-    el.setAttribute("src", "http://projectreactor.io/assets/js/docs.js");
-    document.body.appendChild(el);
-    $('.ui.dropdown').dropdown();
-})</script>
-<style>
-    body #toc.toc2 {
-        padding-top: 42px;
-        z-index: 100;
-    }
-</style>
+<script>
+    $(function () {
+        var y = '<header id="reactor-header">' +
+                '<div class="heading">' +
+                '<h1 id="logo"><a href="/"><strong>Project Reactor</strong></a></h1>' +
+                '<nav id="nav">' +
+                '<ul>' +
+                '<li><a href="docs">Documentation</a></li>' +
+                '<li><a href="https://github.com/reactor">Github Organization</a></li>' +
+                '<li><a href="https://gitter.im/reactor/reactor">Community Chat</a></li>' +
+                '</ul>' +
+                '</nav>' +
+                '</div>' +
+                '</header>'
+
+        var z = $(y);
+        var b = $('body');
+        var toc = $("#toc");
+
+        b.prepend(z);
+        var x = 120;
+        function t() {
+            var u = $(window).scrollTop();
+            if (u > x && b.hasClass('head-show')) {
+                b.removeClass('head-show');
+            }
+            if (u < x && !b.hasClass('head-show')) {
+                b.addClass('head-show');
+            }
+        }
+        $(window).scroll(function(e){
+            t();
+        });
+        t();
+
+    })
+</script>
