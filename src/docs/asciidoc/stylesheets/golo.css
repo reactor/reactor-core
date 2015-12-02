@@ -1027,12 +1027,14 @@ p a > code:hover {
 
 #footer {
     max-width: 100%;
-    background-color: #23160c;
+    background-color: white;
     padding: 1.25em;
+    color: #CCC;
+    border-top: 3px solid #F1F1F1;
 }
 
 #footer-text {
-    color: #deecf9;
+    color: #444;
     line-height: 1.44;
 }
 
