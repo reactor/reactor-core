@@ -430,7 +430,7 @@ Please voice your opinion or propose any contribution here!
 .A simple timer creation as seen in one of our https://github.com/reactor/reactor/blob/master/reactor-core/src/test/groovy/reactor/fn/timer/HashWheelTimerYieldingStrategy.groovy[Groovy Spock test]:
 [source,groovy]
 ----
-import reactor.fn.timer.Timer
+import Timer
 
 //...
 
