@@ -117,6 +117,10 @@ if (JavaVersion.current().isJava8Compatible()) {
 	options.addStringOption('Xdoclint:none', '-quiet')
   }
 }
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+
 project.tasks.withType(Test).all {
   systemProperty("java.awt.headless", "true")
   systemProperty("reactor.trace.cancel", "true")
