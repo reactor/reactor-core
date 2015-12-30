@@ -1,5 +1,5 @@
 [[20to21]]
 ifndef::env-github[]
-= Migrating from 2.0 to 2.1
+= Migrating from 2.0 to 2.5
 endif::[]
 
