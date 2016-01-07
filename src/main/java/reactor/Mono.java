@@ -31,6 +31,7 @@ import reactor.core.error.Exceptions;
 import reactor.core.error.ReactorFatalException;
 import reactor.core.processor.ProcessorGroup;
 import reactor.core.publisher.FluxAmb;
+import reactor.core.publisher.FluxDefaultIfEmpty;
 import reactor.core.publisher.FluxFlatMap;
 import reactor.core.publisher.FluxLift;
 import reactor.core.publisher.FluxLog;
@@ -391,6 +392,20 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 */
 	public final ReactiveStateUtils.Graph debug() {
 		return ReactiveStateUtils.scan(this);
+	}
+
+
+	/**
+	 * Provide a default unique value if this mono is completed without any data
+	 *
+	 * @param defaultV the alternate value if this sequence is empty
+	 *
+	 * @return a new {@link Mono}
+	 *
+	 * @see Flux#defaultIfEmpty(Object)
+	 */
+	public final Mono<T> defaultIfEmpty(T defaultV) {
+		return new MonoBarrier<>(new FluxDefaultIfEmpty<>(this, defaultV));
 	}
 
 	/**
