@@ -581,7 +581,7 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 					lastId = inner[j].id;
 				}
 
-				if (replenishMain != 0L && !d) {
+				if (replenishMain != 0L && !isTerminated()) {
 					subscription.request(maxConcurrency == 1 ? 1 : replenishMain);
 				}
 				if (innerCompleted) {
