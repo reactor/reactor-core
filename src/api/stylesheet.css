@@ -116,7 +116,6 @@ Document title and Copyright styles
 
 .tab {
     background-color: #0066FF;
-    background-image: url(resources/titlebar.gif);
     background-position: left top;
     background-repeat: no-repeat;
     color: #ffffff;
@@ -129,7 +128,6 @@ Document title and Copyright styles
 Navigation bar styles
 */
 .bar {
-    background-image: url(resources/background.gif);
     background-repeat: repeat-x;
     color: #FFFFFF;
     padding: .8em .5em .4em .8em;
@@ -139,9 +137,6 @@ Navigation bar styles
 }
 
 .topNav {
-    background-image: url(resources/background.gif);
-    background-repeat: repeat-x;
-    color: #FFFFFF;
     float: left;
     padding: 0;
     width: 100%;
@@ -153,9 +148,6 @@ Navigation bar styles
 
 .bottomNav {
     margin-top: 10px;
-    background-image: url(resources/background.gif);
-    background-repeat: repeat-x;
-    color: #FFFFFF;
     float: left;
     padding: 0;
     width: 100%;
@@ -208,7 +200,6 @@ ul.subNavList li {
 }
 
 .navBarCell1Rev {
-    background-image: url(resources/tab.gif);
     background-color: #a88834;
     color: #FFFFFF;
     margin: auto 5px;
@@ -453,7 +444,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
     padding-left: 8px;
     display: block;
     float: left;
-    background-image: url(resources/titlebar.gif);
     height: 18px;
 }
 
@@ -463,7 +453,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
     padding-left: 8px;
     display: block;
     float: left;
-    background-image: url(resources/activetitlebar.gif);
     height: 18px;
 }
 
@@ -473,7 +462,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
     padding-left: 8px;
     display: block;
     float: left;
-    background-image: url(resources/titlebar.gif);
     height: 18px;
 }
 
@@ -487,7 +475,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
 
 .overviewSummary .tabEnd, .packageSummary .tabEnd, .contentContainer ul.blockList li.blockList .tabEnd, .summary .tabEnd, .classUseContainer .tabEnd, .constantValuesContainer .tabEnd {
     width: 10px;
-    background-image: url(resources/titlebar_end.gif);
     background-repeat: no-repeat;
     background-position: top right;
     position: relative;
@@ -497,7 +484,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
 .contentContainer ul.blockList li.blockList .activeTableTab .tabEnd {
     width: 10px;
     margin-right: 5px;
-    background-image: url(resources/activetitlebar_end.gif);
     background-repeat: no-repeat;
     background-position: top right;
     position: relative;
@@ -507,7 +493,6 @@ caption a:link, caption a:hover, caption a:active, caption a:visited {
 .contentContainer ul.blockList li.blockList .tableTab .tabEnd {
     width: 10px;
     margin-right: 5px;
-    background-image: url(resources/titlebar_end.gif);
     background-repeat: no-repeat;
     background-position: top right;
     position: relative;
