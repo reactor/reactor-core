@@ -721,6 +721,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 *
+	 * {@code flux.to(Mono::from).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param transfomer
+	 * @param <P>
+	 *
+	 * @return
+	 */
+	public final <V, P extends Publisher<V>> P as(Function<? super Flux<T>, P> transfomer) {
+		return transfomer.apply(this);
+	}
+
+	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
 	 *
 	 * @return

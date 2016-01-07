@@ -356,6 +356,19 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
+	 *
+	 * {@code mono.to(Flux::from).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param transfomer
+	 * @param <P>
+	 *
+	 * @return
+	 */
+	public final <V, P extends Publisher<V>> P to(Function<? super Mono<T>, P> transfomer) {
+		return transfomer.apply(this);
+	}
+
+	/**
 	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
 	 * @param other
