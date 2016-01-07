@@ -69,7 +69,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 		};
 		r.accept("Hello World!", c);
 
-		boolean success = serviceRB.awaitAndShutdown(1, TimeUnit.SECONDS);
+		boolean success = serviceRB.awaitAndShutdown(3, TimeUnit.SECONDS);
 		long end = System.currentTimeMillis();
 
 		Assert.isTrue(latch.getCount() == 0, "Event missed");
