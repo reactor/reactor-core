@@ -364,7 +364,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 *
 	 * @return
 	 */
-	public final <V, P extends Publisher<V>> P to(Function<? super Mono<T>, P> transfomer) {
+	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transfomer) {
 		return transfomer.apply(this);
 	}
 
