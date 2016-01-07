@@ -45,10 +45,10 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	//@Test
 	public void simpleTestC() throws Exception {
-		for(int i = 0; i < 1000; i++){
-			System.out.println("new test "+i);
+		//for(int i = 0; i < 1000; i++){
+//			System.out.println("new test "+i);
 			simpleTest();
-		}
+		//}
 	}
 	@Override
 	public void simpleTest() throws Exception {
