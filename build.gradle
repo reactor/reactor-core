@@ -175,9 +175,9 @@ configure(rootProject) {
             "org.testng:testng:6.8.5"
   }
 
-/*task testNG(type: Test) {
+task testNG(type: Test) {
   useTestNG()
-}*/
+}
 
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
