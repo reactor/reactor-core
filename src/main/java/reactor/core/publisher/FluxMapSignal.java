@@ -152,6 +152,7 @@ public final class FluxMapSignal<T, R> extends reactor.Flux.FluxBarrier<T, R> {
 	        }
 
 	        actual.onNext(v);
+	        actual.onComplete();
         }
 
         @Override
@@ -183,6 +184,7 @@ public final class FluxMapSignal<T, R> extends reactor.Flux.FluxBarrier<T, R> {
 	        }
 
 	        actual.onNext(v);
+	        actual.onComplete();
         }
 
         @Override
