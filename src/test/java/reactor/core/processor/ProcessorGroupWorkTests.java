@@ -52,7 +52,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 	}
 	@Override
 	public void simpleTest() throws Exception {
-		ProcessorGroup<String> serviceRB = Processors.asyncGroup("rbWork", 32);
+		ProcessorGroup<String> serviceRB = Processors.asyncGroup("rbWork", 32, 1);
 		BiConsumer<String, Consumer<? super String>>  r = serviceRB.dataDispatcher();
 
 		long start = System.currentTimeMillis();
