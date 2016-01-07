@@ -272,7 +272,7 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
-					if (maxConcurrency != Integer.MAX_VALUE && !isCancelled() && ++lastRequest == limit) {
+					if (maxConcurrency != Integer.MAX_VALUE && !isTerminated() && ++lastRequest == limit) {
 						lastRequest = 0;
 						subscription.request(limit);
 					}
