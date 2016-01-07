@@ -66,7 +66,7 @@ apply from: "$gradleScriptDir/doc.gradle"
 apply plugin: 'propdeps'
 apply plugin: 'java'
 apply plugin: 'groovy'
-//apply plugin: 'osgi'
+apply plugin: 'osgi'
 apply from: "${gradleScriptDir}/ide.gradle"
 
 if (project.hasProperty('platformVersion')) {
@@ -188,7 +188,7 @@ task testNG(type: Test) {
 
   jar {
     manifest {
-      //instruction 'Import-Package', bundleImportPackages.join(',')
+      instruction 'Import-Package', bundleImportPackages.join(',')
     }
   }
 }

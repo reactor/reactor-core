@@ -18,6 +18,7 @@ configure(rootProject) {
 	apply plugin: 'org.asciidoctor.convert'
 
 	task api(type: Javadoc) {
+	  dependsOn jar
 		group = "Reactor Core Javadoc"
 
 		description = "Generates aggregated Javadoc API documentation."
@@ -39,6 +40,10 @@ configure(rootProject) {
 
 		maxMemory = "1024m"
 		destinationDir = new File(buildDir, "api")
+	  source rootProject.sourceSets.main.allJava
+	  doFirst {
+		classpath = files(rootProject.sourceSets.main.compileClasspath)
+	  }
 	}
 
 	asciidoctor {
