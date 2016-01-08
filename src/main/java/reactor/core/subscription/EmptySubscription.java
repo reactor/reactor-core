@@ -17,11 +17,12 @@ package reactor.core.subscription;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.support.ReactiveState;
 
 /**
  * A singleton enumeration that represents a no-op Subscription instance that can be freely given out to clients.
  */
-public enum EmptySubscription implements Subscription {
+public enum EmptySubscription implements Subscription, ReactiveState.Trace {
 	INSTANCE;
 
 	@Override
