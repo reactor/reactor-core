@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.error.AlertException;
@@ -685,10 +684,6 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 
 	RingBuffer<MutableSignal<E>> ringBuffer() {
 		return ringBuffer;
-	}
-
-	public Publisher<Void> writeWith(final Publisher<? extends E> source) {
-		return RingBufferSubscriberUtils.writeWith(source, ringBuffer);
 	}
 
 	@Override

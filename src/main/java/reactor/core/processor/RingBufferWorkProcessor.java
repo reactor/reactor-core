@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.error.AlertException;
@@ -619,10 +618,6 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 			//ignore
 		}
 		readWait.signalAllWhenBlocking();
-	}
-
-	public Publisher<Void> writeWith(final Publisher<? extends E> source) {
-		return RingBufferSubscriberUtils.writeWith(source, ringBuffer);
 	}
 
 	@Override
