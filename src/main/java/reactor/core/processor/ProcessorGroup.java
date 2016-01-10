@@ -758,9 +758,11 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		@Override
 		@SuppressWarnings("unchecked")
 		public void request(final long n) {
-			BackpressureUtils.getAndAdd(REQUESTED, this, n);
-			if (RUNNING.getAndIncrement(this) == 0) {
-				service.processor.onNext(this);
+			if(BackpressureUtils.checkRequest(n, subscriber)) {
+				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+				if (RUNNING.getAndIncrement(this) == 0) {
+					service.processor.onNext(this);
+				}
 			}
 		}
 
@@ -790,21 +792,20 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 
 		@Override
 		public final void cancel() {
-			if (TERMINATED.compareAndSet(this, 0, 1)) {
-				cancelled = true;
-				if (service != null) {
-					service.decrementReference();
-				}
-				doCancel();
+			if(cancelled){
+				return;
 			}
-		}
-
-		protected void doCancel() {
+			cancelled = true;
 			Subscription subscription = this.upstreamSubscription;
 			if (subscription != null) {
 				this.upstreamSubscription = null;
-				this.subscriber = null;
 				subscription.cancel();
+			}
+			this.subscriber = null;
+			if (TERMINATED.compareAndSet(this, 0, 1)) {
+				if (service != null) {
+					service.decrementReference();
+				}
 			}
 		}
 
@@ -1047,13 +1048,15 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		@Override
 		@SuppressWarnings("unchecked")
 		public void request(final long n) {
-			BackpressureUtils.getAndAdd(REQUESTED, this, n);
-			if (RUNNING.getAndIncrement(this) == 0) {
-				if (service.executorProcessor != null && !service.executorProcessor.isInContext()) {
-					service.processor.onNext(this);
-				}
-				else {
-					run();
+			if(BackpressureUtils.checkRequest(n, subscriber)) {
+				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+				if (RUNNING.getAndIncrement(this) == 0) {
+					if (service.executorProcessor != null && !service.executorProcessor.isInContext()) {
+						service.processor.onNext(this);
+					}
+					else {
+						run();
+					}
 				}
 			}
 		}
@@ -1111,9 +1114,11 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 
 		@Override
 		public void request(long n) {
-			Subscription subscription = upstreamSubscription;
-			if (subscription != null) {
-				subscription.request(n);
+			if(BackpressureUtils.checkRequest(n, subscriber)) {
+				Subscription subscription = upstreamSubscription;
+				if (subscription != null) {
+					subscription.request(n);
+				}
 			}
 		}
 	}

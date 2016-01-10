@@ -18,7 +18,6 @@ package reactor.core.processor;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.Processors;
@@ -50,6 +49,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 			simpleTest();
 		//}
 	}
+
 	@Override
 	public void simpleTest() throws Exception {
 		ProcessorGroup<String> serviceRB = Processors.asyncGroup("rbWork", 32, 1);

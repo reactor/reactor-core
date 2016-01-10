@@ -170,11 +170,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 
-			int j = 0;
-
 			for (int i = 0; i < n; i++) {
 
-				EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[j];
+				EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[i];
 
 				if (is.done) {
 					removeInner(is, autoCancel ? CANCELLED : EMPTY);
@@ -184,10 +182,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 							cancel();
 						}
 						return;
-					}
-					j++;
-					if (j == n) {
-						j = 0;
 					}
 					continue;
 				}
@@ -212,17 +206,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						if (seq == -1L) {
 							seq = buffer(t);
 							if (i > 0) {
-								startAllTrackers(inner, seq, j, i - 1, n);
+								startAllTrackers(inner, seq, i, i - 1, n);
 							}
 
 						}
 						is.startTracking(seq);
 					}
-				}
-
-				j++;
-				if (j == n) {
-					j = 0;
 				}
 			}
 
@@ -383,7 +372,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 							}
 						}
 
-						if (r > _r) {
+						if (!unbounded && r > _r) {
 							EmitterSubscriber.REQUESTED.addAndGet(is, _r - r);
 						}
 
@@ -573,7 +562,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			implements Subscription, Inner, ActiveUpstream, ActiveDownstream, Buffering, Bounded, Upstream,
 			           DownstreamDemand, Downstream {
 
-		final EmitterProcessor<T>   parent;
+		public static final long MASK_NOT_SUBSCRIBED = -1L;
+		final EmitterProcessor<T> parent;
 		final Subscriber<? super T> actual;
 
 		volatile boolean done;
@@ -630,7 +620,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		void start() {
-			if (REQUESTED.compareAndSet(this, -1L, 0)) {
+			if (REQUESTED.compareAndSet(this, MASK_NOT_SUBSCRIBED, 0)) {
 				RingBuffer<RingBuffer.Slot<T>> ringBuffer = parent.emitBuffer;
 				if (ringBuffer != null) {
 					if (parent.replay > 0) {

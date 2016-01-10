@@ -17,6 +17,7 @@ package reactor.core.processor;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
+import reactor.Processors;
 
 /**
  * @author Stephane Maldini
@@ -26,7 +27,8 @@ public class ProcessorGroupSyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.<Long>sync().get();
+		FluxProcessor<Long, Long> p = ProcessorGroup.<Long>sync().get();
+		return Processors.blackbox(p.startSession(), s -> p);
 	}
 
 	@Override
@@ -34,6 +36,10 @@ public class ProcessorGroupSyncTests extends AbstractProcessorVerification {
 		return 1L;
 	}
 
+	@Override
+	public void required_spec109_mustIssueOnSubscribeForNonNullSubscriber() throws Throwable {
+		super.required_spec109_mustIssueOnSubscribeForNonNullSubscriber();
+	}
 
 	@Override
 	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError() throws

@@ -15,13 +15,9 @@
  */
 package reactor.core.processor;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import reactor.Processors;
-import reactor.core.subscriber.test.TestSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -42,9 +38,9 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 		}
 	}
 
-	@Test
+	/*@Test
 	@Ignore
-	public void required_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
+	public void extra_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
 			throws InterruptedException {
 		RingBufferProcessor<String> processor = RingBufferProcessor.create();
 		Publisher<String> publisher = Subscriber::onComplete;
@@ -57,6 +53,6 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 		processor.subscribe(subscriber);
 
 		subscriber.assertCompleteReceived();
-	}
+	}*/
 
 }

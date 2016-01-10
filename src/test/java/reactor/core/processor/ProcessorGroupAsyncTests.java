@@ -1,5 +1,9 @@
 package reactor.core.processor;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
@@ -7,10 +11,6 @@ import reactor.Processors;
 import reactor.core.support.Assert;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -26,7 +26,9 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return Processors.<Long>singleGroup("shared-async", bufferSize, Throwable::printStackTrace).get();
+		return Processors.<Long>singleGroup("shared-async", bufferSize,
+				Throwable::printStackTrace).get();
+
 	}
 
 	@Override
@@ -39,6 +41,11 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo() throws Throwable {
 		throw new SkipException("Optional multi subscribe requirement");
 	}*/
+
+	@Override
+	public void required_spec109_mustIssueOnSubscribeForNonNullSubscriber() throws Throwable {
+		throw new SkipException("ProcessorGroup only supports subscribe if eventually onSubscribed");
+	}
 
 	@Override
 	public long maxSupportedSubscribers() {
@@ -57,6 +64,8 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 		  runTest(service.dataDispatcher())
 		);
 	}
+
+
 
 	private BiConsumer<String, Consumer<? super String>> runTest(final BiConsumer<String, Consumer<? super String>>
 	                                                               dispatcher) throws InterruptedException {

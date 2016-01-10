@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.TestEnvironment;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.Flux;
@@ -41,6 +42,12 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 	@Test
 	public void simpleTest() throws Exception{
 
+	}
+
+	@Override
+	public void required_spec208_mustBePreparedToReceiveOnNextSignalsAfterHavingCalledSubscriptionCancel()
+			throws Throwable {
+		throw new SkipException("Delivery guarantee with CancelException");
 	}
 
 	@Override
