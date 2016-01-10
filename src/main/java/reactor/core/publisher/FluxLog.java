@@ -186,6 +186,11 @@ public final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 			                         .equalsIgnoreCase(FluxLog.class.getName()) ? "default" :
 					log.getName()) + "/" + uniqueId;
 		}
+
+		@Override
+		public String toString() {
+			return getName();
+		}
 	}
 
 }

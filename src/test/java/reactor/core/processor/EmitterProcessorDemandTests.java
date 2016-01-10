@@ -295,15 +295,6 @@ public class EmitterProcessorDemandTests {
 
 	@Test
 	@Ignore
-	public void testRacing100() throws Exception {
-		for(int i = 0; i < 100; i++){
-			System.out.println("test "+i);
-			testRacing();
-		}
-	}
-
-	@Test
-	@Ignore
 	public void testRacing() throws Exception {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;

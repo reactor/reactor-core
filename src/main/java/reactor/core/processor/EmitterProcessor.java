@@ -206,7 +206,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						if (seq == -1L) {
 							seq = buffer(t);
 							if (i > 0) {
-								startAllTrackers(inner, seq, i, i - 1, n);
+								startAllTrackers(inner, seq, 0, i - 1, n);
 							}
 
 						}
@@ -325,12 +325,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			int n = inner.length;
 
 			if (n != 0) {
-				int j = 0;
 				Sequence innerSequence;
 				long _r;
 
 				for (int i = 0; i < n; i++) {
-					@SuppressWarnings("unchecked") EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[j];
+					@SuppressWarnings("unchecked") EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[i];
 
 					long r = is.requested;
 
@@ -347,7 +346,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						q = emitBuffer;
 					}
 					innerSequence = is.pollCursor;
-
 					if (innerSequence != null && r > 0) {
 						_r = r;
 
@@ -383,11 +381,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 					if (d) {
 						checkTerminal(is, innerSequence, _r);
-					}
-
-					j++;
-					if (j == n) {
-						j = 0;
 					}
 				}
 
@@ -562,7 +555,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			implements Subscription, Inner, ActiveUpstream, ActiveDownstream, Buffering, Bounded, Upstream,
 			           DownstreamDemand, Downstream {
 
-		public static final long MASK_NOT_SUBSCRIBED = -1L;
+		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final EmitterProcessor<T> parent;
 		final Subscriber<? super T> actual;
 
@@ -571,7 +564,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		boolean unbounded = false;
 
 		@SuppressWarnings("unused")
-		private volatile long requested = -1L;
+		private volatile long requested = MASK_NOT_SUBSCRIBED;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<EmitterSubscriber> REQUESTED =
