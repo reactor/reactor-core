@@ -19,10 +19,12 @@ package reactor.core.processor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -45,7 +47,7 @@ public class EmitterProcessorDemandTests {
 	static final int          MAX_SIZE = 100;
 
 	static {
-		for (int i = 1; i < MAX_SIZE; i++) {
+		for (int i = 1; i <= MAX_SIZE; i++) {
 			DATA.add("" + i);
 		}
 	}
@@ -229,6 +231,105 @@ public class EmitterProcessorDemandTests {
 
 		second.request(3);
 		second.assertNextSignals("2", "3", "4");
+	}
+
+	static class MyThread extends Thread {
+
+		private final FluxProcessor<String, String> processor;
+
+		private final CyclicBarrier barrier;
+
+		private final int n;
+
+		private volatile Throwable lastException;
+
+		class MyUncaughtedExceptionHandler implements UncaughtExceptionHandler {
+
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				lastException = e;
+			}
+
+		}
+
+		public MyThread(FluxProcessor<String, String> processor, CyclicBarrier barrier, int n) {
+			this.processor = processor;
+			this.barrier = barrier;
+			this.n = n;
+			setUncaughtExceptionHandler(new MyUncaughtedExceptionHandler());
+		}
+
+		@Override
+		public void run() {
+			try {
+				doRun();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		public void doRun() throws Exception {
+			TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(5);
+			processor.subscribe(subscriber);
+			barrier.await();
+
+			int requested = 3;
+			subscriber.request(requested);
+
+			int DELTA = 4;
+			while (requested + DELTA < n) {
+				subscriber.request(DELTA);
+				requested += DELTA;
+				subscriber.assertNumNextSignalsReceived(requested);
+			}
+
+			int toRequest = n - requested;
+			if (toRequest > 0) {
+				subscriber.request(toRequest);
+				subscriber.assertNumNextSignalsReceived(n);
+			}
+
+			subscriber.assertCompleteReceived();
+		}
+
+		public Throwable getLastException() {
+			return lastException;
+		}
+
+	}
+
+	@Test
+	@Ignore
+	public void testRacing() throws Exception {
+		int N_THREADS = 3;
+		int N_ITEMS = 8;
+
+		FluxProcessor<String, String> processor = Processors.emitter(4);
+		List<String> data = new ArrayList<>();
+		for (int i = 1; i <= N_ITEMS; i++) {
+			data.add(String.valueOf(i));
+		}
+
+		Flux.fromIterable(data)
+				.log()
+				.subscribe(processor);
+
+		CyclicBarrier barrier = new CyclicBarrier(N_THREADS);
+
+		MyThread threads[] = new MyThread[N_THREADS];
+		for (int i = 0; i < N_THREADS; i++) {
+			threads[i] = new MyThread(processor, barrier, N_ITEMS);
+			threads[i].start();
+		}
+
+		for (int j = 0; j < N_THREADS; j++) {
+			threads[j].join();
+			Throwable lastException = threads[j].getLastException();
+			if (lastException != null) {
+				lastException.printStackTrace();
+				Assert.fail();
+			}
+		}
 	}
 
 }
