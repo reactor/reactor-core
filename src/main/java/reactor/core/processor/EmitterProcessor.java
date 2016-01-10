@@ -215,12 +215,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 
-			if (RUNNING.getAndIncrement(this) != 0) {
-				return;
-			}
-
-			drainLoop();
-
+			drain();
 		}
 		else {
 			buffer(t);
@@ -282,7 +277,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return outstanding;
 	}
 
-	RingBuffer<RingBuffer.Slot<T>> getMainQueue() {
+	private RingBuffer<RingBuffer.Slot<T>> getMainQueue() {
 		RingBuffer<RingBuffer.Slot<T>> q = emitBuffer;
 		if (q == null) {
 			q = RingBuffer.createSingleProducer(bufferSize);
@@ -291,7 +286,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return q;
 	}
 
-	final long buffer(T value) {
+	private long buffer(T value) {
 		RingBuffer<RingBuffer.Slot<T>> q = getMainQueue();
 
 		long seq = q.next();
@@ -301,16 +296,15 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return seq;
 	}
 
-	final void drain() {
+	private void drain() {
 		if (RUNNING.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
 	}
 
-	final void drainLoop() {
-		int missed = 1;
+	private void drainLoop() {
 		RingBuffer<RingBuffer.Slot<T>> q = null;
-		for (; ; ) {
+		do {
 			EmitterSubscriber<?>[] inner = subscribers;
 			if (inner == CANCELLED) {
 				cancel();
@@ -325,12 +319,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			int n = inner.length;
 
 			if (n != 0) {
-				int j = 0;
 				Sequence innerSequence;
 				long _r;
 
 				for (int i = 0; i < n; i++) {
-					@SuppressWarnings("unchecked") EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[j];
+					@SuppressWarnings("unchecked") EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[i];
 
 					long r = is.requested;
 
@@ -384,11 +377,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					if (d) {
 						checkTerminal(is, innerSequence, _r);
 					}
-
-					j++;
-					if (j == n) {
-						j = 0;
-					}
 				}
 
 				if (!done && firstDrain) {
@@ -408,11 +396,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 
-			missed = RUNNING.addAndGet(this, -missed);
-			if (missed == 0) {
-				break;
-			}
-		}
+		} while (RUNNING.addAndGet(this, -1) > 0);
 	}
 
 	final void checkTerminal(EmitterSubscriber<T> is, Sequence innerSequence, long r) {
@@ -591,9 +575,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, actual)) {
 				BackpressureUtils.getAndAdd(REQUESTED, this, n);
-				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
-					parent.drainLoop();
-				}
+				parent.drain();
 			}
 		}
 
