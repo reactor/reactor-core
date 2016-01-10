@@ -205,12 +205,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					else {
 						if (seq == -1L) {
 							seq = buffer(t);
-							if (i > 0) {
-								startAllTrackers(inner, seq, 0, i - 1, n);
-							}
-
+							startAllTrackers(inner, seq, i + 1);
 						}
-						is.startTracking(seq);
+						else if(poll == null){
+							is.startTracking(seq);
+						}
 					}
 				}
 			}
@@ -423,24 +422,15 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	final void startAllTrackers(EmitterSubscriber<?>[] inner, long seq, int startIndex, int times, int size) {
-		int k = startIndex;
+	final void startAllTrackers(EmitterSubscriber<?>[] inner, long seq, int size) {
 		Sequence poll;
-		for (int l = times; l > 0; l--) {
-			k--;
-			if (k == -1) {
-				k = size - 1;
-			}
-
-			if (k == startIndex) {
-				continue;
-			}
-
-			poll = inner[k].pollCursor;
+		for (int i = 0; i < size - 1; i++) {
+			poll = inner[i].pollCursor;
 			if (poll == null) {
-				inner[k].startTracking(seq);
+				inner[i].startTracking(seq + 1);
 			}
 		}
+		inner[size - 1].startTracking(seq);
 	}
 
 	final void reportError(Throwable t) {
