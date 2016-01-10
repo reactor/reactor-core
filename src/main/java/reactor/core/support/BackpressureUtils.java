@@ -63,6 +63,20 @@ public enum BackpressureUtils {
 	}
 
 	/**
+	 *
+	 * @param n
+	 * @return
+	 */
+	public static boolean validate(long n) {
+		if (n < 0) {
+			reportBadRequest(n);
+			return false;
+		}
+		return true;
+	}
+
+
+	/**
 	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
 	 *
 	 * @param n demand to check
@@ -73,7 +87,6 @@ public enum BackpressureUtils {
 			throw Exceptions.spec_3_09_exception(n);
 		}
 	}
-
 
 	/**
 	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
@@ -129,6 +142,7 @@ public enum BackpressureUtils {
 		return res;
 	}
 
+
 	/**
 	 * Cap a substraction to 0
 	 *
@@ -159,7 +173,6 @@ public enum BackpressureUtils {
 		}
 		return res;
 	}
-
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
@@ -224,7 +237,6 @@ public enum BackpressureUtils {
 
 		return r;
 	}
-
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
 	 * Any concurrent write will "happen" before this operation.
@@ -244,6 +256,7 @@ public enum BackpressureUtils {
 		} while (!sequence.compareAndSet(r, u));
 		return r;
 	}
+
 	/**
 	 * Concurrent substraction bound to 0.
 	 * Any concurrent write will "happen" before this operation.
@@ -386,18 +399,5 @@ public enum BackpressureUtils {
 	 */
 	public static void reportMoreProduced() {
 		throw InsufficientCapacityException.get();
-	}
-
-	/**
-	 *
-	 * @param n
-	 * @return
-	 */
-	public static boolean validate(long n) {
-		if (n < 0) {
-			reportBadRequest(n);
-			return false;
-		}
-		return true;
 	}
 }

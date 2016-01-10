@@ -87,9 +87,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> OUTSTANDING =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
 
-	long uniqueId;
-	long lastId;
-	int  lastIndex;
 	boolean firstDrain = true;
 
 	public EmitterProcessor(){
@@ -112,7 +109,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		super.subscribe(s);
-		EmitterSubscriber<T> inner = new EmitterSubscriber<T>(this, s, uniqueId++);
+		EmitterSubscriber<T> inner = new EmitterSubscriber<T>(this, s);
 		try {
 			addInner(inner);
 			if (upstreamSubscription != null) {
@@ -173,7 +170,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 
-			int j = n == 1 ? 0 : getLastIndex(n, inner);
+			int j = 0;
 
 			for (int i = 0; i < n; i++) {
 
@@ -228,8 +225,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					j = 0;
 				}
 			}
-			lastIndex = j;
-			lastId = inner[j].id;
 
 			if (RUNNING.getAndIncrement(this) != 0) {
 				return;
@@ -341,7 +336,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			int n = inner.length;
 
 			if (n != 0) {
-				int j = getLastIndex(n, inner);
+				int j = 0;
 				Sequence innerSequence;
 				long _r;
 
@@ -406,8 +401,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						j = 0;
 					}
 				}
-				lastIndex = j;
-				lastId = inner[j].id;
 
 				if (!done && firstDrain) {
 					Subscription s = upstreamSubscription;
@@ -489,30 +482,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				return;
 			}
 		}
-	}
-
-	final int getLastIndex(int n, EmitterSubscriber<?>[] inner) {
-		int index = lastIndex;
-		long startId = lastId;
-		if (n <= index || inner[index].id != startId) {
-			if (n <= index) {
-				index = 0;
-			}
-			int j = index;
-			for (int i = 0; i < n; i++) {
-				if (inner[j].id == startId) {
-					break;
-				}
-				j++;
-				if (j == n) {
-					j = 0;
-				}
-			}
-			index = j;
-			lastIndex = j;
-			lastId = inner[j].id;
-		}
-		return index;
 	}
 
 	final void removeInner(EmitterSubscriber<?> inner, EmitterSubscriber<?>[] lastRemoved) {
@@ -604,7 +573,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			implements Subscription, Inner, ActiveUpstream, ActiveDownstream, Buffering, Bounded, Upstream,
 			           DownstreamDemand, Downstream {
 
-		final long                  id;
 		final EmitterProcessor<T>   parent;
 		final Subscriber<? super T> actual;
 
@@ -624,8 +592,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
 				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
 
-		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual, long id) {
-			this.id = id;
+		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
 			this.parent = parent;
 		}

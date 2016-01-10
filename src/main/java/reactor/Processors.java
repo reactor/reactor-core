@@ -22,6 +22,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.error.Exceptions;
 import reactor.core.processor.EmitterProcessor;
 import reactor.core.processor.ExecutorProcessor;
 import reactor.core.processor.FluxProcessor;
@@ -721,6 +722,8 @@ public final class Processors {
 
 		@Override
 		public void subscribe(Subscriber<? super OUT> s) {
+			if(s == null)
+				throw Exceptions.spec_2_13_exception();
 			downstream.subscribe(s);
 		}
 	}

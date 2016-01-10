@@ -42,6 +42,11 @@ public class EmitterProcessorTests extends AbstractProcessorVerification {
 		return Processors.blackbox(p, x -> x.log("emitter"));
 	}
 
+	@Override
+	public void required_spec109_subscribeThrowNPEOnNullSubscriber() throws Throwable {
+		super.required_spec109_subscribeThrowNPEOnNullSubscriber();
+	}
+
 	@AfterClass
 	@Override
 	public void tearDown() throws InterruptedException{

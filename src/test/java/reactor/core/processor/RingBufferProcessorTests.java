@@ -15,9 +15,13 @@
  */
 package reactor.core.processor;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import reactor.Processors;
+import reactor.core.subscriber.test.TestSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -36,6 +40,23 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 			ExecutorProcessor dispatcher = Processors.topic("rb-test-shutdown", 16);
 			dispatcher.awaitAndShutdown();
 		}
+	}
+
+	@Test
+	@Ignore
+	public void required_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
+			throws InterruptedException {
+		RingBufferProcessor<String> processor = RingBufferProcessor.create();
+		Publisher<String> publisher = Subscriber::onComplete;
+		publisher.subscribe(processor);
+
+		// Waiting till publisher sends Complete into the processor
+		Thread.sleep(1000);
+
+		TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(1);
+		processor.subscribe(subscriber);
+
+		subscriber.assertCompleteReceived();
 	}
 
 }
