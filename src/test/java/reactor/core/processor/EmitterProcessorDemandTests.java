@@ -273,23 +273,13 @@ public class EmitterProcessorDemandTests {
 			processor.subscribe(subscriber);
 			barrier.await();
 
-			int requested = 3;
-			subscriber.request(requested);
+			subscriber.request(3);
+			subscriber.request(4);
+			subscriber.request(1);
 
-			int DELTA = 4;
-			while (requested + DELTA < n) {
-				subscriber.request(DELTA);
-				requested += DELTA;
-				subscriber.assertNumNextSignalsReceived(requested);
-			}
-
-			int toRequest = n - requested;
-			if (toRequest > 0) {
-				subscriber.request(toRequest);
-				subscriber.assertNumNextSignalsReceived(n);
-			}
-
-			subscriber.assertCompleteReceived();
+			subscriber
+					.assertNumNextSignalsReceived(n)
+					.assertCompleteReceived();
 		}
 
 		public Throwable getLastException() {
@@ -299,7 +289,7 @@ public class EmitterProcessorDemandTests {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore
 	public void testRacing100() throws Exception {
 		for(int i = 0; i < 100; i++){
 			System.out.println("test "+i);
