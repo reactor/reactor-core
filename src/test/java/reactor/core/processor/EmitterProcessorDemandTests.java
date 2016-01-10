@@ -235,7 +235,7 @@ public class EmitterProcessorDemandTests {
 
 	static class MyThread extends Thread {
 
-		private final FluxProcessor<String, String> processor;
+		private final Flux<String> processor;
 
 		private final CyclicBarrier barrier;
 
@@ -243,7 +243,7 @@ public class EmitterProcessorDemandTests {
 
 		private volatile Throwable lastException;
 
-		class MyUncaughtedExceptionHandler implements UncaughtExceptionHandler {
+		class MyUncaughtExceptionHandler implements UncaughtExceptionHandler {
 
 			@Override
 			public void uncaughtException(Thread t, Throwable e) {
@@ -253,10 +253,10 @@ public class EmitterProcessorDemandTests {
 		}
 
 		public MyThread(FluxProcessor<String, String> processor, CyclicBarrier barrier, int n) {
-			this.processor = processor;
+			this.processor = processor.log("consuming");
 			this.barrier = barrier;
 			this.n = n;
-			setUncaughtExceptionHandler(new MyUncaughtedExceptionHandler());
+			setUncaughtExceptionHandler(new MyUncaughtExceptionHandler());
 		}
 
 		@Override
@@ -311,7 +311,7 @@ public class EmitterProcessorDemandTests {
 		}
 
 		Flux.fromIterable(data)
-				.log()
+				.log("publishing")
 				.subscribe(processor);
 
 		CyclicBarrier barrier = new CyclicBarrier(N_THREADS);
