@@ -29,7 +29,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.error.AlertException;
 import reactor.core.error.CancelException;
-import reactor.core.publisher.FluxFactory;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.NamedDaemonThreadFactory;
@@ -37,7 +36,6 @@ import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.core.support.rb.RequestTask;
-import reactor.core.support.rb.RingBufferSequencer;
 import reactor.core.support.rb.RingBufferSubscriberUtils;
 import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.core.support.rb.disruptor.Sequence;
@@ -552,8 +550,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 		super.subscribe(subscriber);
 
 		if (!alive()) {
-			RingBufferSequencer<E> sequencer = new RingBufferSequencer<>(ringBuffer, error, workSequence.get());
-			FluxFactory.create(sequencer, sequencer).subscribe(subscriber);
+			RingBufferProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);
 			return;
 		}
 
@@ -575,11 +572,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 			decrementSubscribers();
 			ringBuffer.removeGatingSequence(signalProcessor.sequence);
 			if(RejectedExecutionException.class.isAssignableFrom(t.getClass())){
-				if(error != null){
-					t.addSuppressed(error);
-				}
-				RingBufferSequencer<E> sequencer = new RingBufferSequencer<>(ringBuffer, t, workSequence.get());
-				FluxFactory.create(sequencer, sequencer).subscribe(subscriber);
+				RingBufferProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
 			}
 			else {
 				EmptySubscription.error(subscriber, t);
@@ -810,6 +803,12 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 							processedSequence = false;
 							do {
 								nextSequence = processor.workSequence.get() + 1L;
+								while ((!unbounded && pendingRequest.get() == 0L)) {
+									if (!isRunning()) {
+										throw AlertException.INSTANCE;
+									}
+									LockSupport.parkNanos(1L);
+								}
 								sequence.set(nextSequence - 1L);
 							}
 							while (!processor.workSequence.compareAndSet(nextSequence - 1L, nextSequence));
@@ -975,12 +974,12 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 		private void readNextEvent(final boolean unbounded)
 				throws AlertException {
 				//pause until request
-				while ((!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1L) == 0L)) {
-					if (!isRunning()) {
-						throw AlertException.INSTANCE;
-					}
-					//Todo Use WaitStrategy?
-					LockSupport.parkNanos(1L);
+			while ((!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1L) == 0L)) {
+				if (!isRunning()) {
+					throw AlertException.INSTANCE;
+				}
+				//Todo Use WaitStrategy?
+				LockSupport.parkNanos(1L);
 			}
 		}
 

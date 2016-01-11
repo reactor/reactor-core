@@ -24,19 +24,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.Flux;
 import reactor.core.error.AlertException;
 import reactor.core.error.CancelException;
 import reactor.core.error.Exceptions;
-import reactor.core.publisher.FluxFactory;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.NamedDaemonThreadFactory;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.rb.RequestTask;
-import reactor.core.support.rb.RingBufferSequencer;
 import reactor.core.support.rb.RingBufferSubscriberUtils;
 import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.core.support.rb.disruptor.Sequence;
@@ -597,8 +597,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 		super.subscribe(subscriber);
 
 		if (!alive()) {
-			RingBufferSequencer<E> sequencer = coldSource(null);
-			FluxFactory.create(sequencer, sequencer).subscribe(subscriber);
+			coldSource(ringBuffer, null, error, minimum).subscribe(subscriber);
 			return;
 		}
 
@@ -634,8 +633,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 			ringBuffer.removeGatingSequence(signalProcessor.getSequence());
 			decrementSubscribers();
 			if (!alive() && RejectedExecutionException.class.isAssignableFrom(t.getClass())){
-				RingBufferSequencer<E> sequencer = coldSource(t);
-				FluxFactory.create(sequencer, sequencer).subscribe(subscriber);
+				coldSource(ringBuffer, t, error, minimum).subscribe(subscriber);
 			}
 			else{
 				EmptySubscription.error(subscriber, t);
@@ -661,14 +659,14 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 		barrier.signal();
 	}
 
-	protected RingBufferSequencer<E> coldSource(Throwable t){
+	final static <E> Publisher<E> coldSource(RingBuffer<RingBuffer.Slot<E>> ringBuffer, Throwable t, Throwable error,
+			Sequence start){
+		Publisher<E> bufferIterable = Flux.fromIterable(RingBuffer.newSequencedQueue(ringBuffer, start.get()));
 		if(error != null && t != null){
 				t.addSuppressed(error);
-				return new RingBufferSequencer<E>(
-						ringBuffer, t, minimum.get()
-				);
+				return Flux.concat(bufferIterable, Flux.<E>error(error));
 		}
-		return new RingBufferSequencer<>(ringBuffer, error, minimum.get());
+		return bufferIterable;
 	}
 
 	@Override
