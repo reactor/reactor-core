@@ -17,6 +17,7 @@
 package reactor;
 
 import java.util.Iterator;
+import java.util.Queue;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
@@ -42,8 +43,10 @@ import reactor.core.publisher.ForEachSequencer;
 import reactor.core.publisher.MonoIgnoreElements;
 import reactor.core.publisher.MonoNext;
 import reactor.core.publisher.convert.DependencyUtils;
+import reactor.core.subscriber.BlockingIterable;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscription.ReactiveSession;
+import reactor.core.support.QueueSupplier;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
 import reactor.fn.BiConsumer;
@@ -145,7 +148,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return empty();
 		}
 		if (sources.length == 1) {
-			return from((Publisher<I>) sources[0]);
+			return from(sources[0]);
 		}
 		return concat(fromArray(sources));
 	}
@@ -724,13 +727,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * {@code flux.to(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transfomer
+	 * @param transformer
 	 * @param <P>
 	 *
 	 * @return
 	 */
-	public final <V, P extends Publisher<V>> P as(Function<? super Flux<T>, P> transfomer) {
-		return transfomer.apply(this);
+	public final <V, P extends Publisher<V>> P as(Function<? super Flux<T>, P> transformer) {
+		return transformer.apply(this);
 	}
 
 	/**
@@ -1050,6 +1053,52 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 *
+	 *
+	 * @return
+	 */
+	public final Iterable<T> toIterable() {
+		return toIterable(
+				this instanceof ReactiveState.Bounded ?
+				((ReactiveState.Bounded)this).getCapacity() : Long.MAX_VALUE
+		);
+	}
+
+	/**
+	 *
+	 *
+	 * @return
+	 */
+	public final Iterable<T> toIterable(long batchSize) {
+		return toIterable(batchSize, null);
+	}
+
+	/**
+	 *
+	 *
+	 * @return
+	 */
+	public final Iterable<T> toIterable(final long batchSize, Supplier<Queue<T>> queueProvider) {
+		final Supplier<Queue<T>> provider;
+		if(queueProvider == null){
+			provider = QueueSupplier.get(batchSize);
+		}
+		else{
+			provider = queueProvider;
+		}
+		return new BlockingIterable<>(this, batchSize, provider);
+	}
+
+	/**
+	 *
+	 *
+	 * @return
+	 */
+	public final Iterator<T> toIterator() {
+		return toIterable(1L).iterator();
+	}
+
+	/**
 	 * <p>
 	 * {@code flux.publishOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
@@ -1081,6 +1130,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final void subscribe() {
 		subscribe(Subscribers.unbounded());
+	}
+
+	/**
+	 * Combine the emissions of multiple Publishers together and emit single {@link Tuple2} for each
+	 * combination.
+	 *
+	 * @param source2
+	 * @param <R>
+	 *
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
+		return new FluxZip<>(new Publisher[]{this, source2}, IDENTITY_FUNCTION, ReactiveState.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -1251,4 +1314,5 @@ public abstract class Flux<T> implements Publisher<T> {
 			return o;
 		}
 	}
+
 }

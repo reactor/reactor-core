@@ -54,6 +54,7 @@ import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
 import reactor.core.support.SignalType;
 import reactor.core.support.internal.PlatformDependent;
+import reactor.core.timer.Timer;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
@@ -132,6 +133,39 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		else {
 			return (Mono<IN>) Mono.from(DependencyUtils.convertToPublisher(source));
 		}
+	}
+
+	/**
+	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 *
+	 * @param duration in seconds
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public static Mono<Integer> delay(long duration) {
+		return delay(duration, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 *
+	 * @param duration in seconds
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public static Mono<Integer> delay(long duration, TimeUnit unit) {
+		return delay(duration, unit, Timers.global());
+	}
+
+	/**
+	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 *
+	 * @param duration in seconds
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public static Mono<Integer> delay(long duration, TimeUnit unit, Timer timer) {
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -359,13 +393,13 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 *
 	 * {@code mono.to(Flux::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transfomer
+	 * @param transformer
 	 * @param <P>
 	 *
 	 * @return
 	 */
-	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transfomer) {
-		return transfomer.apply(this);
+	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
+		return transformer.apply(this);
 	}
 
 	/**
