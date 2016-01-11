@@ -58,7 +58,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 * @param <T>
 	 * @return
 	 */
-	public static  <T> Queue<T> newWriteQueue(RingBuffer<Slot<T>> buffer){
+	public static  <T> Queue<T> newWriteOnlyQueue(RingBuffer<Slot<T>> buffer){
 		return new WriteQueue<>(buffer);
 	}
 

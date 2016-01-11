@@ -64,6 +64,6 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		else if(batchSize == 1){
 			return new ArrayBlockingQueue<>(1);
 		}
-		return RingBuffer.newWriteQueue(RingBuffer.<T>createSingleProducer((int) batchSize));
+		return RingBuffer.newSequencedQueue(RingBuffer.<T>createSingleProducer((int) batchSize));
 	}
 }
