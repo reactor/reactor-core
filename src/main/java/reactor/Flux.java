@@ -262,7 +262,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Flux<T> from(Publisher<T> source) {
+	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		if (Flux.class.isAssignableFrom(source.getClass())) {
 			return (Flux<T>) source;
 		}
@@ -400,7 +400,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return empty();
 		}
 		if (sources.length == 1) {
-			return (Flux<I>) from(sources[0]);
+			return from(sources[0]);
 		}
 		return merge(fromArray(sources));
 	}
