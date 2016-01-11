@@ -17,7 +17,6 @@
 package reactor;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -46,8 +45,8 @@ import reactor.core.publisher.MonoError;
 import reactor.core.publisher.MonoIgnoreElements;
 import reactor.core.publisher.MonoJust;
 import reactor.core.publisher.MonoNext;
+import reactor.core.publisher.MonoSuccess;
 import reactor.core.publisher.convert.DependencyUtils;
-import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.Logger;
@@ -828,142 +827,6 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		@Override
 		public Object delegateOutput() {
 			return processor;
-		}
-	}
-
-	static final class MonoSuccess<I> extends MonoBarrier<I, I> implements FeedbackLoop{
-
-		private final Consumer<? super I>   onSuccess;
-		private final BiConsumer<? super I, Throwable> onSuccessOrFailure;
-		private final BiConsumer<? super I, Throwable> afterSuccessOrFailure;
-
-		MonoSuccess(Publisher<? extends I> source,
-				Consumer<? super I> onSuccess,
-				BiConsumer<? super I, Throwable> onSuccessOrFailure,
-				BiConsumer<? super I, Throwable> afterSuccessOrFailure) {
-			super(source);
-			this.onSuccess = onSuccess;
-			this.afterSuccessOrFailure = afterSuccessOrFailure;
-			this.onSuccessOrFailure = Objects.requireNonNull(onSuccessOrFailure);
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super I> s) {
-			if(onSuccessOrFailure != null) {
-				source.subscribe(new MonoSuccessBarrier<>(s, null, onSuccessOrFailure, null));
-			}
-			else if(afterSuccessOrFailure != null){
-				source.subscribe(new MonoSuccessBarrier<>(s, null, null, afterSuccessOrFailure));
-			}
-			else{
-				source.subscribe(new MonoSuccessBarrier<>(s, onSuccess, null, null));
-			}
-		}
-
-		@Override
-		public Object delegateInput() {
-			return onSuccess;
-		}
-
-		@Override
-		public Object delegateOutput() {
-			return null;
-		}
-
-		private static final class MonoSuccessBarrier<I> extends SubscriberBarrier<I, I> {
-			private final Consumer<? super I> onSuccess;
-			private final BiConsumer<? super I, Throwable> onSuccessOrFailure;
-			private final BiConsumer<? super I, Throwable> afterSuccessOrFailure;
-
-			public MonoSuccessBarrier(Subscriber<? super I> s,
-					Consumer<? super I> onSuccess,
-					BiConsumer<? super I,
-					Throwable> onSuccessOrFailure,
-					BiConsumer<? super I, Throwable> afterSuccessOrFailure) {
-				super(s);
-				this.onSuccess = onSuccess;
-				this.onSuccessOrFailure = onSuccessOrFailure;
-				this.afterSuccessOrFailure = afterSuccessOrFailure;
-			}
-
-			@Override
-			protected void doComplete() {
-				if(upstream() == null){
-					return;
-				}
-				if(onSuccess != null){
-					onSuccess.accept(null);
-					subscriber.onComplete();
-					return;
-				}
-
-				if(onSuccessOrFailure != null){
-					onSuccessOrFailure.accept(null, null);
-					subscriber.onComplete();
-					return;
-				}
-
-				try {
-					subscriber.onComplete();
-				}
-				catch (Throwable t){
-					Exceptions.throwIfFatal(t);
-					afterSuccessOrFailure.accept(null, t);
-				}
-			}
-
-			@Override
-			protected void doNext(I t) {
-				if(upstream() == null){
-					Exceptions.onNextDropped(t);
-					return;
-				}
-				cancel();
-				if(onSuccess != null) {
-					onSuccess.accept(t);
-					subscriber.onNext(t);
-					subscriber.onComplete();
-					return;
-				}
-
-				if(onSuccessOrFailure != null){
-					onSuccessOrFailure.accept(t, null);
-					subscriber.onNext(t);
-					subscriber.onComplete();
-					return;
-				}
-
-				try {
-					subscriber.onNext(t);
-					subscriber.onComplete();
-				}
-				catch (Throwable x){
-					Exceptions.throwIfFatal(x);
-					afterSuccessOrFailure.accept(t, x);
-				}
-			}
-
-			@Override
-			protected void doError(Throwable throwable) {
-				if(onSuccessOrFailure != null) {
-					onSuccessOrFailure.accept(null, throwable);
-					return;
-				}
-
-				if(afterSuccessOrFailure == null){
-					subscriber.onError(throwable);
-					return;
-				}
-
-				try {
-					subscriber.onError(throwable);
-				}
-				catch (Throwable t){
-					Exceptions.throwIfFatal(t);
-					t.addSuppressed(throwable);
-					afterSuccessOrFailure.accept(null, t);
-				}
-			}
 		}
 	}
 
