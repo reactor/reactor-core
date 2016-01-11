@@ -812,12 +812,6 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 							processedSequence = false;
 							do {
 								nextSequence = processor.workSequence.get() + 1L;
-
-								if (!unbounded) {
-									readNextEvent(processor.ringBuffer.get(nextSequence), false);
-									pendingRequest.incrementAndGet();
-								}
-
 								sequence.set(nextSequence - 1L);
 							}
 							while (!processor.workSequence.compareAndSet(nextSequence - 1L, nextSequence));
@@ -976,12 +970,8 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 				throws AlertException {
 			//if event is Next Signal we need to handle backpressure (pendingRequests)
 			if (event.type == SignalType.NEXT) {
-				if (event.value == null || event.value == RingBufferSubscriberUtils.CLEANED) {
-					return;
-				}
-
 				//pause until request
-				while (!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1) == 0L) {
+				while ((!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1L) == 0L)) {
 					if (!isRunning()) {
 						throw AlertException.INSTANCE;
 					}
