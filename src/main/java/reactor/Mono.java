@@ -68,8 +68,11 @@ import reactor.fn.tuple.Tuple6;
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
  * with an error.
+ * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
+ * property of the resulting {@link Mono}. For instance {@link Mono#flatMap} returns a {@link Flux} with possibly
+ * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then}.
  *
- * <p>{@code Mono<Void>} should be used for {Publisher} that just completes without any value.
+ * <p>{@code Mono<Void>} should be used for {@link Publisher} that just completes without any value.
  *
  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
  * Publisher} as much as possible.
