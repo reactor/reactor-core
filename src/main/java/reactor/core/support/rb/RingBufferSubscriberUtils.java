@@ -125,8 +125,6 @@ public enum RingBufferSubscriberUtils {
 
 	}
 
-	public static final Object CLEANED = new Object();
-
 	public static <T> boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
 			RingBuffer<MutableSignal<T>> ringBuffer, SequenceBarrier barrier,
 			Subscriber<? super T> subscriber, AtomicBoolean isRunning,

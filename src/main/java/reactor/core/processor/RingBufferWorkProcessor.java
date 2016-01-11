@@ -488,25 +488,25 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 	 * Instance
 	 */
 
-	private final Sequence workSequence =
+	final Sequence workSequence =
 			Sequencer.newSequence(Sequencer.INITIAL_CURSOR_VALUE);
 
-	private final Sequence retrySequence =
+	final Sequence retrySequence =
 			Sequencer.newSequence(Sequencer.INITIAL_CURSOR_VALUE);
 
-	private final RingBuffer<MutableSignal<E>> ringBuffer;
+	final RingBuffer<MutableSignal<E>> ringBuffer;
 
-	private volatile RingBuffer<MutableSignal<E>> retryBuffer;
+	volatile RingBuffer<MutableSignal<E>> retryBuffer;
 
-	private final static AtomicReferenceFieldUpdater<RingBufferWorkProcessor, RingBuffer>
+	final static AtomicReferenceFieldUpdater<RingBufferWorkProcessor, RingBuffer>
 			RETRY_REF = PlatformDependent
 			.newAtomicReferenceFieldUpdater(RingBufferWorkProcessor.class, "retryBuffer");
 
-	private final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
+	final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
 
-	private volatile int replaying = 0;
+	volatile int replaying = 0;
 
-	private static final AtomicIntegerFieldUpdater<RingBufferWorkProcessor> REPLAYING =
+	static final AtomicIntegerFieldUpdater<RingBufferWorkProcessor> REPLAYING =
 			AtomicIntegerFieldUpdater
 					.newUpdater(RingBufferWorkProcessor.class, "replaying");
 
@@ -515,6 +515,10 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 	                                WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
 		super(name, executor, autoCancel);
+
+		if (!Sequencer.isPowerOfTwo(bufferSize) ){
+			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
+		}
 
 		Supplier<MutableSignal<E>> factory = (Supplier<MutableSignal<E>>) FACTORY;
 
@@ -954,8 +958,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 		private void reschedule(MutableSignal<T> event) {
 			if (event != null &&
 					event.type == SignalType.NEXT &&
-					event.value != null &&
-					event.value != RingBufferSubscriberUtils.CLEANED) {
+					event.value != null) {
 
 				RingBuffer<MutableSignal<T>> retry = processor.retryBuffer();
 				long seq = retry.next();

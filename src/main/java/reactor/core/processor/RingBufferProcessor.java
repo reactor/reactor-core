@@ -542,18 +542,22 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 				autoCancel, null);
 	}
 
-	private final SequenceBarrier barrier;
+	final SequenceBarrier barrier;
 
-	private final RingBuffer<MutableSignal<E>> ringBuffer;
+	final RingBuffer<MutableSignal<E>> ringBuffer;
 
-	private final Sequence minimum;
+	final Sequence minimum;
 
-	private final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
+	final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
 
 	private RingBufferProcessor(String name, ExecutorService executor, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
 	                            boolean autoCancel, final Supplier<E> signalSupplier) {
 		super(name, executor, autoCancel);
+
+		if (!Sequencer.isPowerOfTwo(bufferSize) ){
+			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
+		}
 
 		Supplier<MutableSignal<E>> factory = new Supplier<MutableSignal<E>>() {
 			@Override
