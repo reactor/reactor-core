@@ -338,6 +338,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Create a {@link Flux} that will share the passed {@link Iterator} reference and will abid to any side effects
+	 * if not carefully used.
+	 *
 	 * @param defaultValues
 	 * @param <T>
 	 *
@@ -376,10 +379,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits the specified item.
+	 * Create a new {@link Flux} that emits the specified items and then complete.
 	 *
-	 * @param data
-	 * @param <T>
+	 * @param data the consecutive data objects to emit
+	 * @param <T> the emitted data type
 	 *
 	 * @return
 	 */
@@ -390,10 +393,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * @param data
-	 * @param <T>
+	 * Create a new {@link Flux} that will only emit the passed data then onComplete.
 	 *
-	 * @return
+	 * @param data the unique data to emit
+	 * @param <T> the emitted data type
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> just(T data) {
 		return new FluxJust<>(data);
@@ -746,13 +751,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Immediately apply the given transformation to this Flux in order to generate a target {@link Publisher} type.
 	 *
-	 * {@code flux.to(Mono::from).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.as(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param transformer
 	 * @param <P>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Flux<T>, P> transformer) {
 		return transformer.apply(this);
@@ -760,8 +766,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
+	 * This will actively ignore the sequence and only replay completion or error signals.
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Mono<Void> after() {
 		return new MonoIgnoreElements<>(this);
@@ -777,9 +784,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * @param capacity
+	 * Hint {@link Subscriber} to this {@link Flux} a preferred available capacity should be used.
+	 * {@link #toIterable()} can for instance use introspect this value to supply an appropriate queueing strategy.
 	 *
-	 * @return
+	 * @param capacity the maximum capacity (in flight onNext) the return {@link Publisher} should expose
+	 *
+	 * @return a bounded {@link Flux}
 	 */
 	public final Flux<T> capacity(long capacity) {
 		return new FluxBounded<>(this, capacity);
@@ -791,7 +801,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return new FluxFlatMap<>(this, mapper, 1, 32);
@@ -802,22 +812,37 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param source
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> concatWith(Publisher<? extends T> source) {
 		return concat(this, source);
 	}
 
 	/**
-	 * @param to
-	 * @param <TO>
+	 * Try to convert this {@link Flux} using available support from reactor-core given the following ordering  :
+	 * <ul>
+	 *     <li>Flux to Publisher</li>
+	 *     <li>Flux to Iterable</li>
+	 *     <li>Flux to Iterator</li>
+	 *     <li>Flux to RxJava 1 Observable</li>
+	 *     <li>Flux to JDK 9 Flow.Publisher</li>
+	 * </ul>
 	 *
-	 * @return
+	 * @param to a class of object emitter to convert from this Flux
+	 * @param <TO> a parameter candidate generic for the returned Flux
+	 *
+	 * @return a new converted Flux to candidate implementation
 	 */
 	@SuppressWarnings("unchecked")
 	public <TO> TO convert(Class<TO> to) {
 		if (Publisher.class.isAssignableFrom(to.getClass())) {
 			return (TO) this;
+		}
+		else if (Iterable.class.isAssignableFrom(to.getClass())) {
+			return (TO) toIterable();
+		}
+		else if (Iterator.class.isAssignableFrom(to.getClass())) {
+			return (TO) toIterator();
 		}
 		else {
 			return DependencyUtils.convertFromPublisher(this, to);
@@ -845,11 +870,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Run onSubscribe, request, cancel, onNext, onComplete and onError on a supplied
+	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link Processors#singleGroup} and {@link Processors#asyncGroup} which implement
+	 * fast async event loops.
+	 *
 	 * {@code flux.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group
+	 * @param group a {@link ProcessorGroup} pool
 	 *
-	 * @return
+	 * @return a {@link Flux} consuming asynchronously
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> dispatchOn(ProcessorGroup group) {
@@ -862,7 +895,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param afterTerminate
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		return new FluxPeek<>(this, null, null, null, afterTerminate, null, null, null);
@@ -873,7 +906,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param onCancel
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		return new FluxPeek<>(this, null, null, null, null, null, null, onCancel);
@@ -884,7 +917,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param onComplete
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		return new FluxPeek<>(this, null, null, null, onComplete, null, null, null);
@@ -906,7 +939,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param onNext
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		return new FluxPeek<>(this, null, onNext, null, null, null, null, null);
@@ -917,7 +950,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param onSubscribe
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		return new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null);
@@ -928,7 +961,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param onTerminate
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		return new FluxPeek<>(this, null, null, null, null, onTerminate, null, null);
@@ -941,7 +974,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return new FluxFlatMap<>(this, mapper, ReactiveState.SMALL_BUFFER_SIZE, 32);
@@ -956,7 +989,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapperOnComplete
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
@@ -975,44 +1008,64 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param operator
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> lift(Function<Subscriber<? super R>, Subscriber<? super T>> operator) {
 		return new FluxLift<>(this, operator);
 	}
 
 	/**
-	 * @return
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
+	 *
+	 * The default log category will be "reactor.core.publisher.FluxLog".
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> log() {
 		return log(null, Level.INFO, Logger.ALL);
 	}
 
 	/**
-	 * @param category
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> log(String category) {
 		return log(category, Level.INFO, Logger.ALL);
 	}
 
 	/**
-	 * @param category
-	 * @param level
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level) {
 		return log(category, level, Logger.ALL);
 	}
 
 	/**
-	 * @param category
-	 * @param level
-	 * @param options
+	 * Observe Reactive Streams signals matching the passed flags {@code options} and use {@link Logger} support to
+	 * handle trace
+	 * implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     flux.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level, int options) {
 		return new FluxLog<>(this, category, level, options);
@@ -1024,7 +1077,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> map(Function<? super T, ? extends R> mapper) {
 		return new FluxMap<>(this, mapper);
@@ -1035,7 +1088,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param source
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> mergeWith(Publisher<? extends T> source) {
 		return merge(just(this, source));
@@ -1046,7 +1099,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * If the sequence emits more than 1 data, emit {@link ArrayIndexOutOfBoundsException}.
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Mono<T> next() {
 		return new MonoNext<>(this);
@@ -1057,16 +1110,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param fallback
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorResumeWith(Function<Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(this, fallback);
 	}
 
 	/**
-	 * @param fallbackValue
+	 * Fallback to the given value if an error is observed on this {@link Flux}
 	 *
-	 * @return
+	 * @param fallbackValue alternate value on fallback
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorReturn(final T fallbackValue) {
 		return switchOnError(just(fallbackValue));
@@ -1074,12 +1129,15 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 *
+	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
+	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
+	 *
 	 * {@code flux.to(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param subscriber
 	 * @param <E>
 	 *
-	 * @return
+	 * @return the passed {@link Subscriber}
 	 */
 	public final <E extends Subscriber<? super T>> E to(E subscriber) {
 		subscribe(subscriber);
@@ -1087,9 +1145,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
 	 *
-	 *
-	 * @return
+	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
 		return toIterable(
@@ -1099,18 +1157,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
 	 *
-	 *
-	 * @return
+	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable(long batchSize) {
 		return toIterable(batchSize, null);
 	}
 
 	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
 	 *
-	 *
-	 * @return
+	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable(final long batchSize, Supplier<Queue<T>> queueProvider) {
 		final Supplier<Queue<T>> provider;
@@ -1124,21 +1182,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform this {@link Flux} into an eager {@link Iterator} blocking on next calls.
 	 *
-	 *
-	 * @return
+	 * @return a blocking {@link Iterator}
 	 */
 	public final Iterator<T> toIterator() {
 		return toIterable(1L).iterator();
 	}
 
 	/**
+	 * Run subscribe, onSubscribe and request on a supplied
+	 * {@link ProcessorGroup#publishOn} reference {@link org.reactivestreams.Processor}.
+	 *
+	 * <p>
+	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
+	 * It naturally combines with {@link Processors#ioGroup} which implements work-queue thread dispatching.
+	 *
 	 * <p>
 	 * {@code flux.publishOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group
+	 * @param group a {@link ProcessorGroup} pool
 	 *
-	 * @return
+	 * @return a {@link Flux} publishing asynchronously
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> publishOn(ProcessorGroup group) {
@@ -1146,9 +1211,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * @param fallback
+	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
 	 *
-	 * @return
+	 * @param fallback the alternate {@link Publisher}
+	 *
+	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
 		return onErrorResumeWith(new Function<Throwable, Publisher<? extends T>>() {
@@ -1173,7 +1240,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param source2
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
@@ -1189,7 +1256,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <R>
 	 * @param <V>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public final <R, V> Flux<V> zipWith(Publisher<? extends R> source2,
 			final BiFunction<? super T, ? super R, ? extends V> zipper) {

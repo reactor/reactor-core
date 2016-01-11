@@ -444,11 +444,19 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
+	 * Run onSubscribe, request, cancel, onNext, onComplete and onError on a supplied
+	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link Processors#singleGroup} and {@link Processors#asyncGroup} which implement
+	 * fast async event loops.
+	 *
 	 * {@code mono.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group
+	 * @param group a {@link ProcessorGroup} pool
 	 *
-	 * @return
+	 * @return an asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> dispatchOn(ProcessorGroup group) {
