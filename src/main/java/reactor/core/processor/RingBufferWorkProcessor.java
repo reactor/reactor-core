@@ -939,9 +939,11 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 							processor.readWait.signalAllWhenBlocking();
 							return !processor.alive();
 						}
-						readNextEvent(unbounded);
-						subscriber.onNext(signal.value);
-						processor.retrySequence.set(cursor);
+						if(signal.value != null) {
+							readNextEvent(unbounded);
+							subscriber.onNext(signal.value);
+							processor.retrySequence.set(cursor);
+						}
 					}
 
 				}
