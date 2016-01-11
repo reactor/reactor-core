@@ -30,7 +30,16 @@ import reactor.core.support.internal.PlatformDependent;
  */
 public abstract class Logger {
 
-	private final static LoggerFactory   defaultFactory  = newDefaultFactory(LoggerFactory.class.getName());
+	public static final int SUBSCRIBE    = 0b010000000;
+	public static final  int           ON_SUBSCRIBE   = 0b001000000;
+	public static final  int           ON_NEXT        = 0b000100000;
+	public static final  int           ON_ERROR       = 0b000010000;
+	public static final  int           ON_COMPLETE    = 0b000001000;
+	public static final  int           REQUEST        = 0b000000100;
+	public static final  int           CANCEL         = 0b000000010;
+	public static final  int           TERMINAL       = CANCEL | ON_COMPLETE | ON_ERROR;
+	public static final  int           ALL            = TERMINAL | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
+	private final static LoggerFactory defaultFactory = newDefaultFactory(LoggerFactory.class.getName());
 
 	private static final AtomicReferenceFieldUpdater<GlobalExtension, Extension> EXTENSION =
 			PlatformDependent.newAtomicReferenceFieldUpdater(GlobalExtension.class, "extension");
@@ -106,6 +115,8 @@ public abstract class Logger {
 		}
 		return null;
 	}
+
+	public enum SignalKind {request, onSubscribe, onNext, onError, onComplete, cancel, graph}
 
 	/**
 	 *

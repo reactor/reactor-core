@@ -46,6 +46,7 @@ import reactor.core.publisher.convert.DependencyUtils;
 import reactor.core.subscriber.BlockingIterable;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscription.ReactiveSession;
+import reactor.core.support.Logger;
 import reactor.core.support.QueueSupplier;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
@@ -78,24 +79,21 @@ import reactor.fn.tuple.Tuple6;
  */
 public abstract class Flux<T> implements Publisher<T> {
 
-	/**
-	 * ==============================================================================================================
-	 * ==============================================================================================================
-	 * <p>
-	 * Static Generators
-	 * <p>
-	 * ==============================================================================================================
-	 * ==============================================================================================================
-	 */
+//	 ==============================================================================================================
+//	 Static Generators
+//	 ==============================================================================================================
 
 	static final IdentityFunction IDENTITY_FUNCTION = new IdentityFunction();
 	static final Flux<?>          EMPTY             = Mono.empty()
 	                                                      .flux();
 
 	/**
+	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+	 *
+	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a new Flux eventually subscribed to one of the sources or empty
 	 */
 	@SuppressWarnings({"unchecked", "varargs"})
 	@SafeVarargs
@@ -104,10 +102,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * @param sources
-	 * @param <I>
+	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
 	 *
-	 * @return
+	 * @param sources The competing source publishers
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a new Flux eventually subscribed to one of the sources or empty
 	 */
 	@SuppressWarnings("unchecked")
 	public static <I> Flux<I> amb(Iterable<? extends Publisher<? extends I>> sources) {
@@ -119,27 +119,38 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}
+	 *
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a new Flux concatenating all inner sources sequences until complete or error
 	 */
-	public static <I> Flux<I> concat(Publisher<? extends Publisher<? extends I>> source) {
-		return new FluxFlatMap<>(source, 1, 32);
+	public static <I> Flux<I> concat(Publisher<? extends Publisher<? extends I>> sources) {
+		return new FluxFlatMap<>(sources, 1, 32);
 	}
 
 	/**
+	 * Concat all sources pulled from the supplied
+	 * {@link Iterator} on {@link Publisher#subscribe} from the passed {@link Iterable} until {@link Iterator#hasNext}
+	 * returns false.
+	 *
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a new Flux concatenating all source sequences
 	 */
-	public static <I> Flux<I> concat(Iterable<? extends Publisher<? extends I>> source) {
-		return concat(fromIterable(source));
+	public static <I> Flux<I> concat(Iterable<? extends Publisher<? extends I>> sources) {
+		return concat(fromIterable(sources));
 	}
 
 	/**
+	 * Concat all sources pulled from the given {@link Publisher[]}
+	 *
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a new Flux concatenating all source sequences
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked", "varargs"})
@@ -951,7 +962,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	public final Flux<T> log() {
-		return log(null, Level.INFO, FluxLog.ALL);
+		return log(null, Level.INFO, Logger.ALL);
 	}
 
 	/**
@@ -960,7 +971,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	public final Flux<T> log(String category) {
-		return log(category, Level.INFO, FluxLog.ALL);
+		return log(category, Level.INFO, Logger.ALL);
 	}
 
 	/**
@@ -970,7 +981,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	public final Flux<T> log(String category, Level level) {
-		return log(category, level, FluxLog.ALL);
+		return log(category, level, Logger.ALL);
 	}
 
 	/**

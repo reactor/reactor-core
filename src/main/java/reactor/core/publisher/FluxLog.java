@@ -33,19 +33,6 @@ import reactor.core.support.Logger;
  */
 public final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 
-	public static final int SUBSCRIBE    = 0b010000000;
-	public static final int ON_SUBSCRIBE = 0b001000000;
-	public static final int ON_NEXT      = 0b000100000;
-	public static final int ON_ERROR     = 0b000010000;
-	public static final int ON_COMPLETE  = 0b000001000;
-	public static final int REQUEST      = 0b000000100;
-	public static final int CANCEL       = 0b000000010;
-	public static final int TERMINAL     = CANCEL | ON_COMPLETE | ON_ERROR;
-
-	public static final int ALL = TERMINAL | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
-
-	public enum SignalKind {request, onSubscribe, onNext, onError, onComplete, cancel, graph}
-
 	private final Logger log;
 	private final Level  level;
 
@@ -70,7 +57,7 @@ public final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 	@Override
 	public void subscribe(Subscriber<? super IN> subscriber) {
 		long newId = uniqueId++;
-		if ((options & SUBSCRIBE) == SUBSCRIBE) {
+		if ((options & Logger.SUBSCRIBE) == Logger.SUBSCRIBE) {
 			if (log.isTraceEnabled()) {
 				log.trace("subscribe: [" + newId + "] " + subscriber.getClass()
 				                                                    .getSimpleName(), this);
@@ -128,24 +115,24 @@ public final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 
 		@Override
 		protected void doOnSubscribe(Subscription subscription) {
-			if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onSubscribe, this.subscription, this);
+			if ((options & Logger.ON_SUBSCRIBE) == Logger.ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
+				log(Logger.SignalKind.onSubscribe, this.subscription, this);
 			}
 			subscriber.onSubscribe(this);
 		}
 
 		@Override
 		protected void doNext(IN in) {
-			if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onNext, in, this);
+			if ((options & Logger.ON_NEXT) == Logger.ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
+				log(Logger.SignalKind.onNext, in, this);
 			}
 			subscriber.onNext(in);
 		}
 
 		@Override
 		protected void doError(Throwable throwable) {
-			if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
-				log.error(concatId() + " " + LOG_TEMPLATE, SignalKind.onError, throwable, this);
+			if ((options & Logger.ON_ERROR) == Logger.ON_ERROR && log.isErrorEnabled()) {
+				log.error(concatId() + " " + LOG_TEMPLATE, Logger.SignalKind.onError, throwable, this);
 				log.error(concatId(), throwable);
 			}
 			subscriber.onError(throwable);
@@ -158,24 +145,24 @@ public final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 
 		@Override
 		protected void doComplete() {
-			if ((options & ON_COMPLETE) == ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onComplete, "", this);
+			if ((options & Logger.ON_COMPLETE) == Logger.ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
+				log(Logger.SignalKind.onComplete, "", this);
 			}
 			subscriber.onComplete();
 		}
 
 		@Override
 		protected void doRequest(long n) {
-			if ((options & REQUEST) == REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
+			if ((options & Logger.REQUEST) == Logger.REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
+				log(Logger.SignalKind.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
 			}
 			super.doRequest(n);
 		}
 
 		@Override
 		protected void doCancel() {
-			if ((options & CANCEL) == CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.cancel, "", this);
+			if ((options & Logger.CANCEL) == Logger.CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
+				log(Logger.SignalKind.cancel, "", this);
 			}
 			super.doCancel();
 		}

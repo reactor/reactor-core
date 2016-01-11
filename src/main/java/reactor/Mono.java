@@ -50,6 +50,7 @@ import reactor.core.publisher.convert.DependencyUtils;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
 import reactor.core.support.SignalType;
@@ -617,7 +618,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @see Flux#log()
 	 */
 	public final Mono<T> log() {
-		return log(null, Level.INFO, FluxLog.ALL);
+		return log(null, Level.INFO, Logger.ALL);
 	}
 
 	/**
@@ -626,7 +627,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return
 	 */
 	public final Mono<T> log(String category) {
-		return log(category, Level.INFO, FluxLog.ALL);
+		return log(category, Level.INFO, Logger.ALL);
 	}
 
 	/**
@@ -636,7 +637,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return
 	 */
 	public final Mono<T> log(String category, Level level) {
-		return log(category, level, FluxLog.ALL);
+		return log(category, level, Logger.ALL);
 	}
 
 	/**
