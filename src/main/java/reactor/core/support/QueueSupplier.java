@@ -62,8 +62,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return new ConcurrentLinkedQueue<>();
 		}
 		else if(batchSize == 1){
-			return new ArrayBlockingQueue<T>(1);
+			return new ArrayBlockingQueue<>(1);
 		}
-		return RingBuffer.newWriteQueue(RingBuffer.createSingleProducer((int) batchSize));
+		return RingBuffer.newWriteQueue(RingBuffer.<T>createSingleProducer((int) batchSize));
 	}
 }
