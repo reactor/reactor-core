@@ -457,6 +457,17 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
+	 * Triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
+	 *
+	 * @param afterTerminate
+	 *
+	 * @return
+	 */
+	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
+		return new MonoSuccess<>(this, null, null, afterTerminate);
+	}
+
+	/**
 	 * Triggered when the {@link Mono} is cancelled.
 	 *
 	 * @param onCancel
@@ -475,7 +486,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
-		return new MonoSuccess<>(this, onSuccess);
+		return new MonoSuccess<>(this, onSuccess, null, null);
 	}
 
 	/**
@@ -508,7 +519,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
-		return new MonoSuccess<>(this, onTerminate);
+		return new MonoSuccess<>(this, null, onTerminate, null);
 	}
 
 	/**
@@ -824,26 +835,28 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 
 		private final Consumer<? super I>   onSuccess;
 		private final BiConsumer<? super I, Throwable> onSuccessOrFailure;
+		private final BiConsumer<? super I, Throwable> afterSuccessOrFailure;
 
-		MonoSuccess(Publisher<? extends I> source, Consumer<? super I> onSuccess) {
+		MonoSuccess(Publisher<? extends I> source,
+				Consumer<? super I> onSuccess,
+				BiConsumer<? super I, Throwable> onSuccessOrFailure,
+				BiConsumer<? super I, Throwable> afterSuccessOrFailure) {
 			super(source);
-			this.onSuccess = Objects.requireNonNull(onSuccess);
-			this.onSuccessOrFailure = null;
-		}
-
-		MonoSuccess(Publisher<? extends I> source, BiConsumer<? super I, Throwable> onSuccessOrFailure) {
-			super(source);
-			this.onSuccess = null;
+			this.onSuccess = onSuccess;
+			this.afterSuccessOrFailure = afterSuccessOrFailure;
 			this.onSuccessOrFailure = Objects.requireNonNull(onSuccessOrFailure);
 		}
 
 		@Override
 		public void subscribe(Subscriber<? super I> s) {
 			if(onSuccessOrFailure != null) {
-				source.subscribe(new MonoSuccessBarrier<>(s, onSuccessOrFailure));
+				source.subscribe(new MonoSuccessBarrier<>(s, null, onSuccessOrFailure, null));
+			}
+			else if(afterSuccessOrFailure != null){
+				source.subscribe(new MonoSuccessBarrier<>(s, null, null, afterSuccessOrFailure));
 			}
 			else{
-				source.subscribe(new MonoSuccessBarrier<>(s, onSuccess));
+				source.subscribe(new MonoSuccessBarrier<>(s, onSuccess, null, null));
 			}
 		}
 
@@ -860,17 +873,17 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		private static final class MonoSuccessBarrier<I> extends SubscriberBarrier<I, I> {
 			private final Consumer<? super I> onSuccess;
 			private final BiConsumer<? super I, Throwable> onSuccessOrFailure;
+			private final BiConsumer<? super I, Throwable> afterSuccessOrFailure;
 
-			public MonoSuccessBarrier(Subscriber<? super I> s, BiConsumer<? super I, Throwable> onSuccessOrFailure) {
-				super(s);
-				this.onSuccess = null;
-				this.onSuccessOrFailure = onSuccessOrFailure;
-			}
-
-			public MonoSuccessBarrier(Subscriber<? super I> s, Consumer<? super I> onSuccess) {
+			public MonoSuccessBarrier(Subscriber<? super I> s,
+					Consumer<? super I> onSuccess,
+					BiConsumer<? super I,
+					Throwable> onSuccessOrFailure,
+					BiConsumer<? super I, Throwable> afterSuccessOrFailure) {
 				super(s);
 				this.onSuccess = onSuccess;
-				this.onSuccessOrFailure = null;
+				this.onSuccessOrFailure = onSuccessOrFailure;
+				this.afterSuccessOrFailure = afterSuccessOrFailure;
 			}
 
 			@Override
@@ -880,11 +893,23 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 				}
 				if(onSuccess != null){
 					onSuccess.accept(null);
+					subscriber.onComplete();
+					return;
 				}
-				else{
+
+				if(onSuccessOrFailure != null){
 					onSuccessOrFailure.accept(null, null);
+					subscriber.onComplete();
+					return;
 				}
-				subscriber.onComplete();
+
+				try {
+					subscriber.onComplete();
+				}
+				catch (Throwable t){
+					Exceptions.throwIfFatal(t);
+					afterSuccessOrFailure.accept(null, t);
+				}
 			}
 
 			@Override
@@ -896,20 +921,48 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 				cancel();
 				if(onSuccess != null) {
 					onSuccess.accept(t);
+					subscriber.onNext(t);
+					subscriber.onComplete();
+					return;
 				}
-				else{
+
+				if(onSuccessOrFailure != null){
 					onSuccessOrFailure.accept(t, null);
+					subscriber.onNext(t);
+					subscriber.onComplete();
+					return;
 				}
-				subscriber.onNext(t);
-				subscriber.onComplete();
+
+				try {
+					subscriber.onNext(t);
+					subscriber.onComplete();
+				}
+				catch (Throwable x){
+					Exceptions.throwIfFatal(x);
+					afterSuccessOrFailure.accept(t, x);
+				}
 			}
 
 			@Override
 			protected void doError(Throwable throwable) {
 				if(onSuccessOrFailure != null) {
 					onSuccessOrFailure.accept(null, throwable);
+					return;
 				}
-				subscriber.onError(throwable);
+
+				if(afterSuccessOrFailure == null){
+					subscriber.onError(throwable);
+					return;
+				}
+
+				try {
+					subscriber.onError(throwable);
+				}
+				catch (Throwable t){
+					Exceptions.throwIfFatal(t);
+					t.addSuppressed(throwable);
+					afterSuccessOrFailure.accept(null, t);
+				}
 			}
 		}
 	}

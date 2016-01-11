@@ -119,7 +119,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
@@ -133,7 +135,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Concat all sources pulled from the supplied
 	 * {@link Iterator} on {@link Publisher#subscribe} from the passed {@link Iterable} until {@link Iterator#hasNext}
-	 * returns false.
+	 * returns false. A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned Publisher.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
@@ -145,7 +148,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Concat all sources pulled from the given {@link Publisher[]}
+	 * Concat all sources pulled from the given {@link Publisher[]}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned Publisher.
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
@@ -165,10 +170,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * @param source
-	 * @param <IN>
+	 * Try to convert an object using available support from reactor-core given the following ordering  :
+	 * <ul>
+	 *     <li>Publisher to Flux</li>
+	 *     <li>Iterable to Flux</li>
+	 *     <li>Iterator to Flux</li>
+	 *     <li>RxJava 1 Single to Flux</li>
+	 *     <li>RxJava 1 Observable to Flux</li>
+	 *     <li>JDK 8 CompletableFuture to Flux</li>
+	 *     <li>JDK 9 Flow.Publisher to Flux</li>
+	 * </ul>
 	 *
-	 * @return
+	 * @param source an object emitter to convert to a Publisher
+	 * @param <IN> a parameter candidate generic for the returned Flux
+	 *
+	 * @return a new parameterized (unchecked) converted Flux
 	 */
 	@SuppressWarnings("unchecked")
 	public static <IN> Flux<IN> convert(Object source) {
@@ -838,6 +854,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	public final Flux<T> dispatchOn(ProcessorGroup group) {
 		return new FluxProcessorGroup<>(this, false, ((ProcessorGroup<T>) group));
+	}
+
+
+	/**
+	 * Triggered after the {@link Flux} terminates, either by completing downstream successfully or with an error.
+	 *
+	 * @param afterTerminate
+	 *
+	 * @return
+	 */
+	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
+		return new FluxPeek<>(this, null, null, null, afterTerminate, null, null, null);
 	}
 
 	/**
