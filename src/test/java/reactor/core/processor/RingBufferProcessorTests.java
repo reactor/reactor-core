@@ -17,6 +17,7 @@ package reactor.core.processor;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
+import reactor.Flux;
 import reactor.Processors;
 
 /**
@@ -27,7 +28,18 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return Processors.<Long>topic("rb-async", bufferSize);
+		return Processors.blackbox(Processors.<Long>topic("rb-async", bufferSize), Flux::log);
+	}
+
+	@Override
+	public void required_exerciseWhiteboxHappyPath() throws Throwable {
+		super.required_exerciseWhiteboxHappyPath();
+	}
+
+	@Override
+	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
+			throws Throwable {
+		super.required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError();
 	}
 
 	@Test
@@ -36,6 +48,11 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 			ExecutorProcessor dispatcher = Processors.topic("rb-test-shutdown", 16);
 			dispatcher.awaitAndShutdown();
 		}
+	}
+
+	@Override
+	public void required_spec317_mustSupportAPendingElementCountUpToLongMaxValue() throws Throwable {
+		super.required_spec317_mustSupportAPendingElementCountUpToLongMaxValue();
 	}
 
 	/*@Test

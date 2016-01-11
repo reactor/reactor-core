@@ -19,11 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.error.AlertException;
 import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
-import reactor.core.support.SignalType;
 import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.core.support.rb.disruptor.SequenceBarrier;
 import reactor.fn.LongSupplier;
@@ -36,135 +33,38 @@ import reactor.fn.LongSupplier;
 public enum RingBufferSubscriberUtils {
 	;
 
-	public static <E> void onNext(E value, RingBuffer<MutableSignal<E>> ringBuffer) {
+	public static <E> void onNext(E value, RingBuffer<RingBuffer.Slot<E>> ringBuffer) {
 		final long seqId = ringBuffer.next();
-		final MutableSignal<E> signal = ringBuffer.get(seqId);
-		signal.type = SignalType.NEXT;
+		final RingBuffer.Slot<E> signal = ringBuffer.get(seqId);
 		signal.value = value;
 		ringBuffer.publish(seqId);
 	}
 
-	public static <E> void onNext(E value, RingBuffer<MutableSignal<E>> ringBuffer,
-			Subscription subscription) {
-		final long seqId = ringBuffer.next();
-
-		final MutableSignal<E> signal = ringBuffer.get(seqId);
-		signal.type = SignalType.NEXT;
-		signal.value = value;
-
-		if (subscription != null) {
-			long remaining = ringBuffer.cachedRemainingCapacity();
-			if (remaining > 0) {
-				subscription.request(remaining);
-			}
-		}
-		ringBuffer.publish(seqId);
-	}
-
-	public static <E> MutableSignal<E> next(RingBuffer<MutableSignal<E>> ringBuffer) {
-		long seqId = ringBuffer.next();
-		MutableSignal<E> signal = ringBuffer.get(seqId);
-		signal.type = SignalType.NEXT;
-		signal.seqId = seqId;
-		return signal;
-	}
-
-	public static <E> void publish(RingBuffer<MutableSignal<E>> ringBuffer,
-			MutableSignal<E> signal) {
-		ringBuffer.publish(signal.seqId);
-	}
-
-	public static <E> void onError(Throwable error,
-			RingBuffer<MutableSignal<E>> ringBuffer) {
-		final long seqId = ringBuffer.next();
-		final MutableSignal<E> signal = ringBuffer.get(seqId);
-
-		signal.type = SignalType.ERROR;
-		signal.value = null;
-		signal.error = error;
-
-		ringBuffer.publish(seqId);
-	}
-
-	public static <E> void onComplete(RingBuffer<MutableSignal<E>> ringBuffer) {
-		final long seqId = ringBuffer.next();
-		final MutableSignal<E> signal = ringBuffer.get(seqId);
-
-		signal.type = SignalType.COMPLETE;
-		signal.value = null;
-		signal.error = null;
-
-		ringBuffer.publish(seqId);
-	}
-
-	public static <E> void tryOnComplete(RingBuffer<MutableSignal<E>> ringBuffer) {
-		final long seqId = ringBuffer.tryNext();
-		final MutableSignal<E> signal = ringBuffer.get(seqId);
-
-		signal.type = SignalType.COMPLETE;
-		signal.value = null;
-		signal.error = null;
-
-		ringBuffer.publish(seqId);
-	}
-
-	public static <E> void route(MutableSignal<E> task,
-			Subscriber<? super E> subscriber) {
-		if (task.type == SignalType.NEXT && null != task.value) {
-			// most likely case first
-			subscriber.onNext(task.value);
-		}
-		else if (task.type == SignalType.COMPLETE) {
-			// second most likely case next
-			subscriber.onComplete();
-		}
-		else if (task.type == SignalType.ERROR) {
-			// errors should be relatively infrequent compared to other signals
-			subscriber.onError(task.error);
-		}
-
-	}
-
-	public static <T> boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
-			RingBuffer<MutableSignal<T>> ringBuffer, SequenceBarrier barrier,
-			Subscriber<? super T> subscriber, AtomicBoolean isRunning,
-			LongSupplier nextSequence, Runnable waiter) {
+	public static  boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
+			SequenceBarrier barrier,
+			AtomicBoolean isRunning,
+			LongSupplier nextSequence,
+			Runnable waiter) {
 		try {
 			long waitedSequence;
-			MutableSignal<T> event;
-			while (pendingRequest.get() <= 0l) {
+			while (pendingRequest.get() <= 0L) {
 				//pause until first request
 				waitedSequence = nextSequence.get() + 1;
 				if (waiter != null) {
+					waiter.run();
 					barrier.waitFor(waitedSequence, waiter);
 				}
 				else {
 					barrier.waitFor(waitedSequence);
 				}
-				event = ringBuffer.get(waitedSequence);
-
-				if (event.type == SignalType.COMPLETE) {
-					try {
-						subscriber.onComplete();
-						return false;
-					}
-					catch (Throwable t) {
-						Exceptions.throwIfFatal(t);
-						subscriber.onError(t);
-						return false;
-					}
+				if(!isRunning.get()){
+					throw CancelException.INSTANCE;
 				}
-				else if (event.type == SignalType.ERROR) {
-					subscriber.onError(event.error);
-					return false;
-				}
-				LockSupport.parkNanos(1l);
+				LockSupport.parkNanos(1L);
 			}
 		}
 		catch (CancelException | AlertException ae) {
-			if (!isRunning.get()) {
-				return false;
-			}
+			return false;
 		}
 		catch (InterruptedException ie) {
 			Thread.currentThread()

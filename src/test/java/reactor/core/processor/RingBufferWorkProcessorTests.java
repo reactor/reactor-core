@@ -24,7 +24,6 @@ import org.reactivestreams.Processor;
 import reactor.Flux;
 import reactor.Processors;
 import reactor.Subscribers;
-import reactor.core.publisher.FluxLift;
 import reactor.core.support.Assert;
 
 /**
@@ -43,6 +42,12 @@ public class RingBufferWorkProcessorTests extends AbstractProcessorVerification 
 	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo()
 			throws Throwable {
 		//IGNORE since subscribers see distinct data
+	}
+
+	@Override
+	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
+			throws Throwable {
+		super.required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError();
 	}
 
 	@Override
@@ -86,8 +91,11 @@ public class RingBufferWorkProcessorTests extends AbstractProcessorVerification 
 		System.out.println("count " + count+" errors: "+errorCount);
 		sink.onComplete();
  		Assert.isTrue(latch.getCount() <= 1, "Latch is " + latch.getCount());
+	}
 
-
+	@Override
+	public void mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream() throws Exception {
+		super.mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream();
 	}
 
 	/*public static void main() {

@@ -32,19 +32,21 @@ import reactor.core.support.SingleUseExecutor;
  * @author Stephane Maldini
  */
 public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements ReactiveState.ActiveUpstream, ReactiveState.ActiveDownstream, ReactiveState.Named, ReactiveState.Identified{
+		implements ReactiveState.ActiveUpstream, ReactiveState.ActiveDownstream, ReactiveState.Named, ReactiveState
+		.Identified, ReactiveState.FailState{
 
 	protected final ExecutorService executor;
 
-	protected volatile boolean cancelled;
-	protected volatile int     terminated;
+	volatile boolean cancelled;
+	volatile int     terminated;
+	volatile Throwable error;
 
 	protected final ClassLoader contextClassLoader;
 	protected final String name;
 	protected final boolean autoCancel;
 
 	@SuppressWarnings("unused")
-	private volatile       int                                      subscriberCount  = 0;
+	volatile       int                                      subscriberCount  = 0;
 	protected static final AtomicIntegerFieldUpdater<ExecutorProcessor> SUBSCRIBER_COUNT =
 			AtomicIntegerFieldUpdater
 					.newUpdater(ExecutorProcessor.class, "subscriberCount");
@@ -122,6 +124,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	public final void onError(Throwable t) {
 		super.onError(t);
 		if (TERMINATED.compareAndSet(this, 0, 1)) {
+			error = t;
 			upstreamSubscription = null;
 			if (executor.getClass() == SingleUseExecutor.class) {
 				executor.shutdown();
@@ -247,4 +250,8 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		return subs;
 	}
 
+	@Override
+	public final Throwable getError() {
+		return error;
+	}
 }

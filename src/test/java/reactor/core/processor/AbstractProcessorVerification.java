@@ -56,7 +56,7 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 	}
 
 	public AbstractProcessorVerification() {
-		super(new TestEnvironment(500));
+		super(new TestEnvironment(500, true));
 	}
 
 	@BeforeClass

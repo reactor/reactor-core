@@ -111,6 +111,14 @@ public final class SequenceBarrier implements Runnable, LongSupplier
     }
 
     /**
+         * Signal the ringbuffer consumers.
+         */
+    public void signal()
+    {
+        waitStrategy.signalAllWhenBlocking();
+    }
+
+    /**
          * Clear the current alert status.
          */
     public void clearAlert()

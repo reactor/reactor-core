@@ -31,12 +31,15 @@ public final class RingBufferSequencer<T>
 		implements Consumer<SubscriberWithContext<T, Sequence>>,
 		           Function<Subscriber<? super T>, Sequence> {
 
-	private final RingBuffer<MutableSignal<T>> ringBuffer;
+	private final RingBuffer<RingBuffer.Slot<T>> ringBuffer;
 	private final long                         startSequence;
 
-	public RingBufferSequencer(RingBuffer<MutableSignal<T>> ringBuffer, long startSequence) {
+	private final Throwable error;
+
+	public RingBufferSequencer(RingBuffer<RingBuffer.Slot<T>> ringBuffer, Throwable error, long startSequence) {
 		this.ringBuffer = ringBuffer;
 		this.startSequence = startSequence;
+		this.error = error;
 	}
 
 	@Override
@@ -44,11 +47,16 @@ public final class RingBufferSequencer<T>
 		final long cursor = subscriber.context().get() + 1L;
 
 		if (cursor > ringBuffer.getCursor()) {
-			subscriber.onComplete();
+			if(error != null){
+				subscriber.onError(error);
+			}
+			else {
+				subscriber.onComplete();
+			}
 		}
 		else {
-			MutableSignal<T> signal = ringBuffer.get(cursor);
-			RingBufferSubscriberUtils.route(signal, subscriber);
+			subscriber.onNext(ringBuffer.get(cursor).value);
+
 		}
 		subscriber.context().set(cursor);
 	}
