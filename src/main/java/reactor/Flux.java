@@ -768,7 +768,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
 	 * This will actively ignore the sequence and only replay completion or error signals.
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<Void> after() {
 		return new MonoIgnoreElements<>(this);
@@ -1099,7 +1099,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * If the sequence emits more than 1 data, emit {@link ArrayIndexOutOfBoundsException}.
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> next() {
 		return new MonoNext<>(this);
