@@ -842,7 +842,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return (TO) toIterable();
 		}
 		else if (Iterator.class.isAssignableFrom(to.getClass())) {
-			return (TO) toIterator();
+			return (TO) toIterable().iterator();
 		}
 		else {
 			return DependencyUtils.convertFromPublisher(this, to);
@@ -1179,15 +1179,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			provider = queueProvider;
 		}
 		return new BlockingIterable<>(this, batchSize, provider);
-	}
-
-	/**
-	 * Transform this {@link Flux} into an eager {@link Iterator} blocking on next calls.
-	 *
-	 * @return a blocking {@link Iterator}
-	 */
-	public final Iterator<T> toIterator() {
-		return toIterable(1L).iterator();
 	}
 
 	/**
