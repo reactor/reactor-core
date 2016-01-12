@@ -196,7 +196,14 @@ public abstract class Flux<T> implements Publisher<T> {
 			return fromIterable((Iterable<IN>) source);
 		}
 		else if (Iterator.class.isAssignableFrom(source.getClass())) {
-			return fromIterator((Iterator<IN>) source);
+			Iterator<IN> defaultValues = (Iterator<IN>)source;
+			if (defaultValues == null || !defaultValues.hasNext()) {
+				return empty();
+			}
+			ForEachSequencer.IteratorSequencer<IN> iteratorPublisher =
+					new ForEachSequencer.IteratorSequencer<>(defaultValues);
+
+			return create(iteratorPublisher, iteratorPublisher);
 		}
 		else {
 			return (Flux<IN>) from(DependencyUtils.convertToPublisher(source));
@@ -335,24 +342,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
 		ForEachSequencer.IterableSequencer<T> iterablePublisher = new ForEachSequencer.IterableSequencer<>(it);
 		return create(iterablePublisher, iterablePublisher);
-	}
-
-	/**
-	 * Create a {@link Flux} that will share the passed {@link Iterator} reference and will abid to any side effects
-	 * if not carefully used.
-	 *
-	 * @param defaultValues
-	 * @param <T>
-	 *
-	 * @return
-	 */
-	public static <T> Flux<T> fromIterator(final Iterator<? extends T> defaultValues) {
-		if (defaultValues == null || !defaultValues.hasNext()) {
-			return empty();
-		}
-		ForEachSequencer.IteratorSequencer<T> iteratorPublisher =
-				new ForEachSequencer.IteratorSequencer<>(defaultValues);
-		return create(iteratorPublisher, iteratorPublisher);
 	}
 
 	/**
