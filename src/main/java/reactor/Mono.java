@@ -791,7 +791,15 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		@Override
 		@SuppressWarnings("unchecked")
 		public void subscribe(Subscriber<? super O> s) {
-			source.subscribe((Subscriber<? super I>) s);
+			try {
+				source.subscribe((Subscriber<? super I>) s);
+			}
+			catch(ReactorFatalException rfe){
+				if(rfe.getCause() instanceof RuntimeException){
+					throw (RuntimeException)rfe.getCause();
+				}
+				throw rfe;
+			}
 		}
 
 		@Override
