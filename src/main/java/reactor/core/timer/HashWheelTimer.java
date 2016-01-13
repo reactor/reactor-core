@@ -58,7 +58,7 @@ public class HashWheelTimer extends Timer {
 	static final int    STATUS_PAUSED      = 1;
 	static final int    STATUS_CANCELLED   = -1;
 	static final int    STATUS_READY       = 0;
-	static final Long   TIMER_INT          = 0L;
+	static final Long   TIMER_LONG         = 0L;
 
 	private final RingBuffer<Set<HashWheelSubscription>> wheel;
 	private final Thread                                 loop;
@@ -66,6 +66,11 @@ public class HashWheelTimer extends Timer {
 	private final WaitStrategy                           waitStrategy;
 	private final LongSupplier                           timeMillisResolver;
 	private final AtomicBoolean started = new AtomicBoolean();
+
+	volatile long  subscriptions;
+
+	static final AtomicLongFieldUpdater<HashWheelTimer>    SUBSCRIPTIONS =
+			AtomicLongFieldUpdater.newUpdater(HashWheelTimer.class, "subscriptions");
 
 	/**
 	 * Create a new {@code HashWheelTimer} using the given timer resolution. All times will rounded up to the closest
@@ -162,6 +167,9 @@ public class HashWheelTimer extends Timer {
 					for (HashWheelSubscription r : registrations) {
 						if (r.isCancelled()) {
 							registrations.remove(r);
+							if(SUBSCRIPTIONS.decrementAndGet(HashWheelTimer.this) == 0){
+								cancel();
+							}
 						}
 						else if (r.ready()) {
 							try {
@@ -257,6 +265,9 @@ public class HashWheelTimer extends Timer {
 
 		wheel.get(wheel.getCursor() + firstFireOffset + (recurringTimeout != 0 ? 1 : 0))
 		     .add(r);
+
+		SUBSCRIPTIONS.incrementAndGet(this);
+
 		return r;
 	}
 
@@ -496,7 +507,7 @@ public class HashWheelTimer extends Timer {
 		@Override
 		public void run() {
 			if (STATUS.compareAndSet(this, STATUS_REQUESTED, STATUS_EMITTED)) {
-				delegate.onNext(TIMER_INT);
+				delegate.onNext(TIMER_LONG);
 				if(STATUS.compareAndSet(this, STATUS_EMITTED, STATUS_CANCELLED)) {
 					delegate.onComplete();
 				}
