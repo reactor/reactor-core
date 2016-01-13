@@ -16,6 +16,7 @@
 
 package reactor.core.timer;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executor;
@@ -24,17 +25,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Processor;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.error.AlertException;
 import reactor.core.error.CancelException;
-import reactor.core.support.Assert;
+import reactor.core.error.Exceptions;
+import reactor.core.support.BackpressureUtils;
 import reactor.core.support.NamedDaemonThreadFactory;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.rb.disruptor.RingBuffer;
-import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 
@@ -50,13 +53,18 @@ import reactor.fn.Supplier;
 public class HashWheelTimer extends Timer {
 
 	public static final  int    DEFAULT_WHEEL_SIZE = 512;
-	private static final String DEFAULT_TIMER_NAME = "hash-wheel-timer";
 
-	private final RingBuffer<Set<TimedSubscription>> wheel;
-	private final Thread                             loop;
-	private final Executor                           executor;
-	private final WaitStrategy                       waitStrategy;
-	private final LongSupplier                       timeMillisResolver;
+	static final String DEFAULT_TIMER_NAME = "hash-wheel-timer";
+	static final int    STATUS_PAUSED      = 1;
+	static final int    STATUS_CANCELLED   = -1;
+	static final int    STATUS_READY       = 0;
+	static final Long   TIMER_INT          = 0L;
+
+	private final RingBuffer<Set<HashWheelSubscription>> wheel;
+	private final Thread                                 loop;
+	private final Executor                               executor;
+	private final WaitStrategy                           waitStrategy;
+	private final LongSupplier                           timeMillisResolver;
 	private final AtomicBoolean started = new AtomicBoolean();
 
 	/**
@@ -117,9 +125,9 @@ public class HashWheelTimer extends Timer {
 		this.timeMillisResolver = timeResolver;
 		this.waitStrategy = strategy;
 
-		this.wheel = RingBuffer.createSingleProducer(new Supplier<Set<TimedSubscription>>() {
+		this.wheel = RingBuffer.createSingleProducer(new Supplier<Set<HashWheelSubscription>>() {
 			@Override
-			public Set<TimedSubscription> get() {
+			public Set<HashWheelSubscription> get() {
 				return new ConcurrentSkipListSet<>();
 			}
 		}, wheelSize);
@@ -149,9 +157,9 @@ public class HashWheelTimer extends Timer {
 				};
 
 				while (true) {
-					Set<TimedSubscription> registrations = wheel.get(wheel.getCursor());
+					Set<HashWheelSubscription> registrations = wheel.get(wheel.getCursor());
 
-					for (TimedSubscription r : registrations) {
+					for (HashWheelSubscription r : registrations) {
 						if (r.isCancelled()) {
 							registrations.remove(r);
 						}
@@ -167,12 +175,12 @@ public class HashWheelTimer extends Timer {
 							}
 							registrations.remove(r);
 
-							if (!r.isCancelAfterUse()) {
-								reschedule(r);
+							if (r.asInterval() != null) {
+								reschedule(r.asInterval(), r.asInterval().rescheduleRounds);
 							}
 						}
 						else if (r.isPaused()) {
-							reschedule(r);
+							reschedule(r, resolution);
 						}
 						else {
 							r.decrement();
@@ -206,20 +214,22 @@ public class HashWheelTimer extends Timer {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public Pausable submit(Consumer<Long> consumer, long period, TimeUnit timeUnit) {
-		long ms = TimeUnit.MILLISECONDS.convert(period, timeUnit);
-		return schedule(0, ms, consumer);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public Pausable schedule(Consumer<Long> consumer, long period, TimeUnit timeUnit, long delayInMilliseconds) {
+	public HashWheelSubscription interval(Subscriber<? super Long> consumer,
+			long period,
+			TimeUnit timeUnit,
+			long delayInMilliseconds) {
 		return schedule(TimeUnit.MILLISECONDS.convert(period, timeUnit), delayInMilliseconds, consumer);
 	}
 
+	@Override
+	public HashWheelSubscription single(Subscriber<? super Long> subscriber, long delay, TimeUnit timeUnit) {
+		return schedule(0, TimeUnit.MILLISECONDS.convert(delay, timeUnit), subscriber);
+	}
+
 	@SuppressWarnings("unchecked")
-	private TimedSubscription schedule(long recurringTimeout, long firstDelay, Consumer<Long> consumer) {
+	private HashWheelSubscription schedule(long recurringTimeout,
+			long firstDelay,
+			Subscriber<? super Long> subscriber) {
 		if (loop.isInterrupted() || !loop.isAlive()) {
 			throw CancelException.get();
 		}
@@ -233,12 +243,16 @@ public class HashWheelTimer extends Timer {
 		long firstFireOffset = firstDelay / resolution;
 		long firstFireRounds = firstFireOffset / wheel.getBufferSize();
 
-		TimedSubscription r;
+		HashWheelSubscription r;
 		if (recurringTimeout != 0) {
-			r = new TimedSubscription(firstFireRounds, offset, consumer, rounds, timeMillisResolver);
+			r = new IntervalSubscription(resolution * wheel.getBufferSize(),
+					firstFireRounds,
+					offset,
+					subscriber,
+					rounds);
 		}
 		else{
-			r = new SingleTimedSubscription<>(firstFireRounds, offset, consumer, rounds, timeMillisResolver);
+			r = new TimerSubscription(resolution * wheel.getBufferSize(), firstFireRounds, offset, subscriber);
 		}
 
 		wheel.get(wheel.getCursor() + firstFireOffset + (recurringTimeout != 0 ? 1 : 0))
@@ -252,11 +266,11 @@ public class HashWheelTimer extends Timer {
 	}
 
 	/**
-	 * Reschedule a {@link TimedSubscription}  for the next fire
+	 * Reschedule a {@link IntervalSubscription}  for the next fire
 	 */
-	private void reschedule(TimedSubscription registration) {
-		registration.rounds.set(registration.rescheduleRounds);
-		wheel.get(wheel.getCursor() + registration.getOffset())
+	void reschedule(HashWheelSubscription registration, long rounds) {
+		HashWheelSubscription.ROUNDS.set(registration, rounds);
+		wheel.get(wheel.getCursor() + registration.scheduleOffset)
 		     .add(registration);
 	}
 
@@ -286,180 +300,232 @@ public class HashWheelTimer extends Timer {
 		return String.format("HashWheelTimer { Buffer Size: %d, Resolution: %d }", wheel.getBufferSize(), resolution);
 	}
 
-	/**
-	 * Timer Registration
-	 * @param <T> type of the Timer Registration Consumer
-	 */
-	public static class TimedSubscription<T extends Consumer<Long>> implements Runnable, Comparable, Pausable {
+	static abstract class HashWheelSubscription
+			implements Runnable, Comparable, Pausable, Subscription, ActiveDownstream, Downstream, Timed {
 
-		public static final int STATUS_PAUSED    = 1;
-		public static final int STATUS_CANCELLED = -1;
-		public static final int STATUS_READY     = 0;
+		volatile long rounds;
+		volatile int  status;
 
-		private final T             delegate;
-		private final long          rescheduleRounds;
-		private final long          scheduleOffset;
-		private final AtomicLong    rounds;
-		private final AtomicInteger status;
-		private final boolean       lifecycle;
-		private final LongSupplier  now;
+		static final AtomicLongFieldUpdater<HashWheelSubscription>    ROUNDS =
+				AtomicLongFieldUpdater.newUpdater(HashWheelSubscription.class, "rounds");
+		static final AtomicIntegerFieldUpdater<HashWheelSubscription> STATUS =
+				AtomicIntegerFieldUpdater.newUpdater(HashWheelSubscription.class, "status");
 
-		/**
-		 * Creates a new Timer Registration with given {@code rounds}, {@code offset} and {@code delegate}.
-		 * @param rounds amount of rounds the Registration should go through until it's elapsed
-		 * @param offset offset of in the Ring Buffer for rescheduling
-		 * @param delegate delegate that will be ran whenever the timer is elapsed
-		 */
-		public TimedSubscription(long rounds, long offset, T delegate, long rescheduleRounds, LongSupplier timeResolver) {
-			Assert.notNull(delegate, "Delegate cannot be null");
-			this.now = timeResolver;
-			this.rescheduleRounds = rescheduleRounds;
-			this.scheduleOffset = offset;
-			this.delegate = delegate;
-			this.rounds = new AtomicLong(rounds);
-			this.status = new AtomicInteger(STATUS_READY);
-			this.lifecycle = Pausable.class.isAssignableFrom(delegate.getClass());
+		final Subscriber<? super Long> delegate;
+		final long                     scheduleOffset;
+		final long                     wheelResolution;
+
+		HashWheelSubscription(long wheelResolution,
+				Subscriber<? super Long> delegate,
+				long rounds,
+				long scheduleOffset) {
+			this.wheelResolution = wheelResolution;
+			this.delegate = Objects.requireNonNull(delegate, "Must provide a subscriber");
+			this.scheduleOffset = scheduleOffset;
+			ROUNDS.lazySet(this, rounds);
+			STATUS.lazySet(this, STATUS_READY);
 		}
 
 		/**
 		 * Decrement an amount of runs Registration has to run until it's elapsed
 		 */
-		public void decrement() {
-			rounds.decrementAndGet();
+		final void decrement() {
+			ROUNDS.decrementAndGet(this);
 		}
 
 		/**
 		 * Check whether the current Registration is ready for execution
+		 *
 		 * @return whether or not the current Registration is ready for execution
 		 */
-		public boolean ready() {
-			return status.get() == STATUS_READY && rounds.get() == 0;
-		}
-
-		/**
-		 * Run the delegate of the current Registration
-		 */
-		@Override
-		public void run() {
-			try {
-				delegate.accept(now.get());
-			}
-			catch (CancelException e) {
-				cancel();
-			}
-		}
-
-		/**
-		 * Reset the Registration
-		 */
-		public void reset() {
-			this.status.set(STATUS_READY);
-			this.rounds.set(rescheduleRounds);
+		boolean ready() {
+			return status == STATUS_READY && rounds == 0;
 		}
 
 		/**
 		 * Cancel the registration
-		 * @return current Registration
 		 */
 		@Override
-		public TimedSubscription cancel() {
-			if (!isCancelled()) {
-				if (lifecycle) {
-					((Pausable) delegate).cancel();
-				}
-				this.status.set(STATUS_CANCELLED);
-			}
-			return this;
+		public final void cancel() {
+			STATUS.set(this, STATUS_CANCELLED);
 		}
 
 		/**
 		 * Check whether the current Registration is cancelled
+		 *
 		 * @return whether or not the current Registration is cancelled
 		 */
-		public boolean isCancelled() {
-			return status.get() == STATUS_CANCELLED;
+		@Override
+		public final boolean isCancelled() {
+			return status == STATUS_CANCELLED;
 		}
 
 		/**
 		 * Pause the current Regisration
-		 * @return current Registration
 		 */
 		@Override
-		public TimedSubscription pause() {
-			if (!isPaused()) {
-				if (lifecycle) {
-					((Pausable) delegate).pause();
-				}
-				this.status.set(STATUS_PAUSED);
-			}
-			return this;
+		public final void pause() {
+			STATUS.compareAndSet(this, STATUS_READY, STATUS_PAUSED);
 		}
 
 		/**
 		 * Check whether the current Registration is paused
+		 *
 		 * @return whether or not the current Registration is paused
 		 */
-		public final boolean isPaused() {
-			return this.status.get() == STATUS_PAUSED;
+		boolean isPaused() {
+			return this.status == STATUS_PAUSED;
 		}
 
 		/**
 		 * Resume current Registration
-		 * @return current Registration
 		 */
 		@Override
-		public final TimedSubscription resume() {
-			if (isPaused()) {
-				if (lifecycle) {
-					((Pausable) delegate).resume();
-				}
-				reset();
+		public final void resume() {
+			if (STATUS.compareAndSet(this, STATUS_PAUSED, STATUS_READY)) {
+				ROUNDS.set(this, scheduleOffset);
 			}
-			return this;
 		}
 
-		public boolean isCancelAfterUse() {
-			return false;
+		abstract IntervalSubscription asInterval();
+
+		@Override
+		public final String toString() {
+			return String.format("HashWheelTimer { Rounds left: %d, Status: %d }", rounds, status);
 		}
 
 		@Override
-		public int compareTo(Object o) {
-			TimedSubscription other = (TimedSubscription) o;
-			if (rounds.get() == other.rounds.get()) {
+		public final int compareTo(Object o) {
+			HashWheelSubscription other = (HashWheelSubscription) o;
+			if (rounds == other.rounds) {
 				return other == this ? 0 : -1;
 			}
 			else {
-				return Long.compare(rounds.get(), other.rounds.get());
+				return Long.compare(rounds, other.rounds);
 			}
 		}
 
 		@Override
-		public String toString() {
-			return String.format("HashWheelTimer { Rounds left: %d, Status: %d }", rounds.get(), status.get());
+		public final Object downstream() {
+			return delegate;
 		}
 
-		public long getOffset() {
-			return scheduleOffset;
+		@Override
+		public final long period() {
+			return rounds * wheelResolution;
+		}
+	}
+
+	static final class IntervalSubscription extends HashWheelSubscription implements DownstreamDemand {
+
+		final long rescheduleRounds;
+
+		long increment;
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<IntervalSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(IntervalSubscription.class, "requested");
+
+		/**
+		 * Creates a new Timer Registration with given {@code rounds}, {@code offset} and {@code delegate}.
+		 *
+		 * @param rounds amount of rounds the Registration should go through until it's elapsed
+		 * @param offset offset of in the Ring Buffer for rescheduling
+		 * @param delegate delegate that will be ran whenever the timer is elapsed
+		 */
+		public IntervalSubscription(long resolution,
+				long rounds,
+				long offset,
+				Subscriber<? super Long> delegate,
+				long rescheduleRounds) {
+			super(resolution, delegate, rounds, offset);
+			this.rescheduleRounds = rescheduleRounds;
+		}
+
+		@Override
+		IntervalSubscription asInterval() {
+			return this;
+		}
+
+		@Override
+		public void run() {
+			if (isCancelled() || isPaused()){
+				return;
+			}
+			if (BackpressureUtils.getAndSub(REQUESTED, this, 1L) != 0L) {
+				delegate.onNext(increment++);
+			}
+			else {
+				cancel();
+				delegate.onError(Exceptions.TimerOverflow.get());
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (BackpressureUtils.checkRequest(n, delegate)) {
+				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+			}
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
 		}
 	}
 
 	/**
 	 *
-	 * @param <T>
 	 */
-	public static class SingleTimedSubscription<T extends Consumer<Long>> extends TimedSubscription<T>{
+	final static class TimerSubscription extends HashWheelSubscription {
 
-		public SingleTimedSubscription(long rounds,
-				long offset,
-				T delegate,
-				long rescheduleRounds,
-				LongSupplier timeResolver) {
-			super(rounds, offset, delegate, rescheduleRounds, timeResolver);
+		final static int STATUS_REQUESTED = 2;
+		final static int STATUS_PAUSED_REQUESTED = 3;
+		final static int STATUS_EMITTED = 4;
+
+		public TimerSubscription(long resolution, long rounds, long offset, Subscriber<? super Long> delegate) {
+			super(resolution, delegate, rounds, offset);
 		}
 
 		@Override
-		public boolean isCancelAfterUse() {
-			return true;
+		public IntervalSubscription asInterval() {
+			return null;
+		}
+
+		@Override
+		public void run() {
+			if (STATUS.compareAndSet(this, STATUS_REQUESTED, STATUS_EMITTED)) {
+				delegate.onNext(TIMER_INT);
+				if(STATUS.compareAndSet(this, STATUS_EMITTED, STATUS_CANCELLED)) {
+					delegate.onComplete();
+				}
+			}
+			else if (STATUS.get(this) == STATUS_READY) {
+				delegate.onError(Exceptions.TimerOverflow.get());
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (BackpressureUtils.checkRequest(n, delegate)) {
+				for(;;) {
+					if (STATUS.compareAndSet(this, STATUS_READY, STATUS_REQUESTED) ||
+							STATUS.compareAndSet(this, STATUS_PAUSED, STATUS_PAUSED_REQUESTED)){
+						break;
+					}
+				}
+			}
+		}
+
+		@Override
+		boolean ready() {
+			return rounds == 0L && (status == STATUS_REQUESTED || status == STATUS_READY);
+		}
+
+		@Override
+		boolean isPaused() {
+			return super.isPaused() || status == STATUS_PAUSED_REQUESTED;
 		}
 	}
 }

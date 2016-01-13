@@ -134,35 +134,41 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
 	 * @param duration in seconds
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Integer> delay(long duration) {
+	public static Mono<Long> delay(long duration) {
 		return delay(duration, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 * Create a Mono which delays an onNext signal of {@code duration} of given unit and complete on the global timer.
+	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
-	 * @param duration in seconds
+	 * @param duration in unit of time
+	 * @param unit the time unit
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Integer> delay(long duration, TimeUnit unit) {
+	public static Mono<Long> delay(long duration, TimeUnit unit) {
 		return delay(duration, unit, Timers.global());
 	}
 
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
-	 * @param duration in seconds
+	 * @param duration in unit of time
+	 * @param unit the time unit
+	 * @param timer the timer
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Integer> delay(long duration, TimeUnit unit, Timer timer) {
-		throw new UnsupportedOperationException();
+	public static Mono<Long> delay(long duration, TimeUnit unit, Timer timer) {
+		return timer.singlePublisher(duration, unit);
 	}
 
 	/**
@@ -706,6 +712,23 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
 		return new MonoBarrier<>(new FluxResume<>(this, fallback));
+	}
+
+	/**
+	 * Subscribe to a returned fallback value when any error occurs.
+	 *
+	 * @param fallback
+	 *
+	 * @return
+	 * @see Flux#onErrorReturn
+	 */
+	public final Mono<T> otherwiseJust(final T fallback) {
+		return otherwise(new Function<Throwable, Mono<? extends T>>() {
+			@Override
+			public Mono<? extends T> apply(Throwable throwable) {
+				return just(fallback);
+			}
+		});
 	}
 
 	/**

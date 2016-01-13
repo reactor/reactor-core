@@ -18,6 +18,7 @@ package reactor;
 
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
@@ -50,6 +51,7 @@ import reactor.core.support.Logger;
 import reactor.core.support.QueueSupplier;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
+import reactor.core.timer.Timer;
 import reactor.fn.BiConsumer;
 import reactor.fn.BiFunction;
 import reactor.fn.Consumer;
@@ -366,6 +368,48 @@ public abstract class Flux<T> implements Publisher<T> {
 
 		return FluxFactory.generate(requestConsumer, contextFactory, shutdownConsumer);
 	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N seconds on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * @param seconds The number of seconds to wait before the next increment
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(long seconds) {
+		return interval(seconds, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * the global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * @param period The the time relative to given unit to wait before the next increment
+	 * @param unit The unit of time
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(long period, TimeUnit unit) {
+		return interval(period, unit, Timers.global());
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * @param period The the time relative to given unit to wait before the next increment
+	 * @param unit The unit of time
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(long period, TimeUnit unit, Timer timer) {
+		return timer.intervalPublisher(period, unit, TimeUnit.MILLISECONDS.convert(period, unit));
+	}
+
 
 	/**
 	 * Create a new {@link Flux} that emits the specified items and then complete.

@@ -52,7 +52,7 @@ public final class Subscribers{
 	 * @param <T>                 The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> create(final Consumer<Subscription> subscriptionHandler) {
+	public static <T> Subscriber<T> create(final Consumer<? super Subscription> subscriptionHandler) {
 		return create(new Function<Subscription, Void>() {
 			@Override
 			public Void apply(Subscription subscription) {
@@ -77,7 +77,7 @@ public final class Subscribers{
 	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<Subscription, C> subscriptionHandler,
+	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
 			BiConsumer<T, SubscriptionWithContext<C>> dataConsumer) {
 		return create(subscriptionHandler, dataConsumer, null, null);
 	}
@@ -99,7 +99,7 @@ public final class Subscribers{
 	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<Subscription, C> subscriptionHandler,
+	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
 			BiConsumer<T, SubscriptionWithContext<C>> dataConsumer,
 			BiConsumer<Throwable, C> errorConsumer) {
 		return create(subscriptionHandler, dataConsumer, errorConsumer, null);
@@ -127,7 +127,7 @@ public final class Subscribers{
 	 * @param <T>          The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<T, SubscriptionWithContext<Void>> dataConsumer) {
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer) {
 		return unbounded(dataConsumer, null, null);
 	}
 
@@ -142,7 +142,7 @@ public final class Subscribers{
 	 * @param <T>           The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<T, SubscriptionWithContext<Void>> dataConsumer,
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
 			Consumer<Throwable> errorConsumer) {
 		return unbounded(dataConsumer, errorConsumer, null);
 	}
@@ -163,7 +163,7 @@ public final class Subscribers{
 	 * @param <T>              The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<T, SubscriptionWithContext<Void>> dataConsumer,
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
 			final Consumer<Throwable> errorConsumer,
 			Consumer<Void> completeConsumer) {
 		return create(
@@ -187,7 +187,7 @@ public final class Subscribers{
 	 * @param <T>          The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> consumer(Consumer<T> dataConsumer) {
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer) {
 		return consumer(dataConsumer, null, null);
 	}
 
@@ -201,7 +201,7 @@ public final class Subscribers{
 	 * @param <T>           The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> consumer(Consumer<T> dataConsumer,
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
 			Consumer<Throwable> errorConsumer) {
 		return consumer(dataConsumer, errorConsumer, null);
 	}
@@ -221,7 +221,7 @@ public final class Subscribers{
 	 * @param <T>              The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> consumer(Consumer<T> dataConsumer,
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
 			final Consumer<Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		return new ConsumerSubscriber<>(
@@ -252,8 +252,8 @@ public final class Subscribers{
 	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<Subscription, C> subscriptionHandler,
-			BiConsumer<T, SubscriptionWithContext<C>> dataConsumer,
+	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
+			BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
 			BiConsumer<Throwable, C> errorConsumer,
 			Consumer<C> completeConsumer) {
 

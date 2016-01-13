@@ -35,8 +35,8 @@ import reactor.fn.Function;
 public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T>
 		implements ReactiveState.Bounded, ReactiveState.Upstream {
 
-	protected final Function<Subscription, C>                 subscriptionHandler;
-	protected final BiConsumer<T, SubscriptionWithContext<C>> dataConsumer;
+	protected final Function<? super Subscription, C>                 subscriptionHandler;
+	protected final BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer;
 	protected final BiConsumer<Throwable, C>                  errorConsumer;
 	protected final Consumer<C>                               completeConsumer;
 
@@ -49,8 +49,8 @@ public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscribe
 	 * @param errorConsumer
 	 * @param completeConsumer
 	 */
-	public SubscriberWithSubscriptionContext(BiConsumer<T, SubscriptionWithContext<C>> dataConsumer,
-			Function<Subscription, C> subscriptionHandler,
+	public SubscriberWithSubscriptionContext(BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
+			Function<? super Subscription, C> subscriptionHandler,
 			BiConsumer<Throwable, C> errorConsumer,
 			Consumer<C> completeConsumer) {
 		Assert.notNull(subscriptionHandler, "A subscription handler must be provided");

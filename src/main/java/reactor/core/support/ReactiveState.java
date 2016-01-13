@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 /**
  * A component that supports extra state peeking and access for reactive components: buffers, capacity, names,
@@ -303,30 +304,20 @@ public interface ReactiveState {
 	/**
 	 *
 	 */
-	interface Pausable extends ReactiveState {
-
-		/**
-		 * Cancel this {@literal Pausable}. The implementing component should never react to any stimulus,
-		 * closing resources if necessary.
-		 *
-		 * @return {@literal this}
-		 */
-		Pausable cancel();
+	interface Pausable extends ReactiveState, Subscription {
 
 		/**
 		 * Pause this {@literal Pausable}. The implementing component should stop reacting, pausing resources if necessary.
 		 *
-		 * @return {@literal this}
 		 */
-		Pausable pause();
+		void pause();
 
 		/**
 		 * Unpause this {@literal Pausable}. The implementing component should resume back from a previous pause,
 		 * re-activating resources if necessary.
 		 *
-		 * @return {@literal this}
 		 */
-		Pausable resume();
+		void resume();
 
 	}
 	/**
@@ -350,6 +341,11 @@ public interface ReactiveState {
 	 *
 	 */
 	boolean TRACE_CANCEL = Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
+
+	/**
+	 *
+	 */
+	boolean TRACE_TIMEROVERLOW = Boolean.parseBoolean(System.getProperty("reactor.trace.timeroverflow", "false"));
 
 	/**
 	 *

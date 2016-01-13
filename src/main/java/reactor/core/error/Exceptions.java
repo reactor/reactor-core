@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.support.ReactiveState;
+
 /**
  * Static Helpers to decorate an error with an associated data
  * <p>
@@ -237,6 +239,28 @@ public enum Exceptions {
 		}
 
 	}
+
+	/**
+	 * Signal a desynchronization of demand and timer
+	 */
+	public static final class TimerOverflow extends java.util.concurrent.TimeoutException {
+		public static final TimerOverflow INSTANCE = new TimerOverflow();
+
+		private TimerOverflow() {
+			super("The subscriber has not requested for the timer signals, consider Stream#onBackpressureDrop or any " +
+					"unbounded subscriber");
+		}
+
+		public static TimerOverflow get() {
+			return ReactiveState.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
+		}
+	}
+
 	public static final class Spec309_NullOrNegativeRequest extends IllegalArgumentException {
 
 		public Spec309_NullOrNegativeRequest(long elements) {
@@ -244,12 +268,14 @@ public enum Exceptions {
 			  elements);
 		}
 	}
+
 	public static final class Spec213_ArgumentIsNull extends NullPointerException {
 
 		public Spec213_ArgumentIsNull() {
 			super("Spec 2.13: Signal/argument cannot be null");
 		}
 	}
+
 	public static final class Spec212_DuplicateOnSubscribe extends IllegalStateException {
 
 		public Spec212_DuplicateOnSubscribe() {

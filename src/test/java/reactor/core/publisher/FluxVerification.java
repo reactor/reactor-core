@@ -41,16 +41,22 @@ public class FluxVerification extends PublisherVerification<Long> {
 
 	@Override
 	public Publisher<Long> createPublisher(long elements) {
-		return FluxFactory.<Long, AtomicLong>create((s) -> {
+		return Flux.<Long, AtomicLong>generate((demand, s) -> {
 			long cursor = s.context()
 			               .getAndIncrement();
-			if (cursor < elements) {
+			for (long i = 0; i < elements; i++) {
 				s.onNext(cursor);
 			}
-			else {
-				s.onComplete();
-			}
-		}, s -> new AtomicLong(0L)).lift(FluxLift.<Long, Long>lifter((data, sub) -> sub.onNext(data * 10)))
+
+		}, s -> new AtomicLong(0L), null)
+
+
+
+
+
+
+
+				.lift(FluxLift.<Long, Long>lifter((data, sub) -> sub.onNext(data * 10)))
 		                           .log("log-test");
 	}
 

@@ -15,16 +15,20 @@
  */
 package reactor.core.timer;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.Timers;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.fn.Consumer;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author @masterav10
@@ -55,7 +59,7 @@ public class TimerTests {
 		pausable.pause();
 		long time = System.nanoTime() - sysTime.get();
 		Thread.sleep(1000);
-		HashWheelTimer.TimedSubscription<?> registration = (HashWheelTimer.TimedSubscription<?>) pausable;
+		HashWheelTimer.IntervalSubscription registration = (HashWheelTimer.IntervalSubscription) pausable;
 		Assert.assertTrue(registration.isPaused());
 		Assert.assertTrue(time < TimeUnit.MILLISECONDS.toNanos(100));
 		Assert.assertEquals(tasks, count.get());

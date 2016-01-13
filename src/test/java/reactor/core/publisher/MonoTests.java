@@ -55,7 +55,7 @@ public class MonoTests {
 	}
 
 	@Test
-	public void promiseOnAfterHandlesExceptions() throws Exception {
+	public void promiseOnAfter() throws Exception {
 		String h = Mono.fromCallable(() -> {
 			Thread.sleep(400);
 			return "hello";
@@ -64,5 +64,16 @@ public class MonoTests {
 		               .after(() -> Mono.just("world"))
 		               .get();
 		assertThat("Alternate mono not seen", h, is("world"));
+	}
+
+	@Test
+	public void promiseDelays() throws Exception {
+		String h = Mono.delay(3)
+		               .log("time1")
+		               .map(d -> "Spring wins")
+		               .or(Mono.delay(2).log("time2").map(d -> "Spring Reactive"))
+		               .then(t -> Mono.just(t+ " world"))
+		               .get();
+		assertThat("Alternate mono not seen", h, is("Spring Reactive world"));
 	}
 }
