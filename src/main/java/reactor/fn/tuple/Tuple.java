@@ -33,9 +33,9 @@ import javax.annotation.Nullable;
 @SuppressWarnings({"rawtypes"})
 public class Tuple implements Iterable, Serializable {
 
-	private static final long     serialVersionUID = 8777121214502020843L;
-	private static final Object[] emptyArray       = new Object[0];
-	private static final Tuple    empty            = new Tuple(0);
+	static final long     serialVersionUID = 8777121214502020843L;
+	static final Object[] emptyArray       = new Object[0];
+	static final Tuple    empty            = new Tuple(0);
 
 
 	protected final int size;

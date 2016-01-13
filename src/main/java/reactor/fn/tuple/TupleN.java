@@ -31,79 +31,58 @@ public class TupleN extends Tuple8 {
 
 	private static final long serialVersionUID = 666954435584703227L;
 
-	public final Object[] entries;
+	private final Object[] entries;
 
 	@SuppressWarnings("unchecked")
 	TupleN(Object... values) {
-		super(values.length, null, null, null, null, null, null, null, null);
-		this.entries = Arrays.copyOf(values, values.length);
+		super(values.length, toT(0, values), toT(1, values), toT(2, values), toT(3, values), toT(4, values), toT(5,
+				values), toT(6, values), toT(7, values));
+		if(values.length > 8) {
+			this.entries = new Object[values.length - 8];
+			System.arraycopy(values, 8, entries, 0, entries.length);
+		}
+		else{
+			this.entries = emptyArray;
+		}
+	}
+
+	static Object toT(int index, Object[] array){
+		return array.length > index ? array[index] : null;
 	}
 
 	@Nullable
 	@Override
 	public Object get(int index) {
-		return (size > 0 && size > index ? entries[index] : null);
+		return (index > 8 && size > 8 ? entries[index - 8] : super.get(index));
 	}
 
 	@Override
 	public Object[] toArray() {
-		return entries;
-	}
-
-	@Override
-	public Object getT8() {
-		return get(7);
-	}
-
-	@Override
-	public Object getT7() {
-		return get(6);
-	}
-
-	@Override
-	public Object getT6() {
-		return get(5);
-	}
-
-	@Override
-	public Object getT5() {
-		return get(4);
-	}
-
-	@Override
-	public Object getT4() {
-		return get(3);
-	}
-
-	@Override
-	public Object getT3() {
-		return get(2);
-	}
-
-	@Override
-	public Object getT2() {
-		return get(1);
-	}
-
-	@Override
-	public Object getT1() {
-		return get(0);
+		Object[] result = new Object[8+entries.length];
+		System.arraycopy(entries, 0, result, 8, entries.length);
+		result[0] = t1;
+		result[1] = t2;
+		result[2] = t3;
+		result[3] = t4;
+		result[4] = t5;
+		result[5] = t6;
+		result[6] = t7;
+		result[7] = t8;
+		return result;
 	}
 
 	@Nonnull
 	@Override
 	public Iterator<?> iterator() {
-		return Arrays.asList(entries).iterator();
+		return Arrays.asList(toArray()).iterator();
 	}
 
 	@Override
 	public int hashCode() {
-		if (this.size == 0) {
-			return 0;
-		} else if (this.size == 1) {
-			return this.entries[0] == null ? 0 : this.entries[0].hashCode();
+		if (this.size < 9) {
+			return super.hashCode();
 		} else {
-			int hashCode = 1;
+			int hashCode = super.hashCode();
 			for (Object entry : this.entries) {
 				hashCode = hashCode ^ (entry == null ? 0 : entry.hashCode());
 			}
@@ -113,15 +92,19 @@ public class TupleN extends Tuple8 {
 
 	@Override
 	public boolean equals(Object o) {
+		if(size < 9){
+			return super.equals(o);
+		}
+
 		if (o == null) return false;
 
 		if (!(o instanceof TupleN)) return false;
 
 		TupleN cast = (TupleN) o;
 
-		if (this.size != cast.size) return false;
+		if (this.entries.length != cast.entries.length) return false;
 
-		for (int i = 0; i < this.size; i++) {
+		for (int i = 0; i < entries.length; i++) {
 			if (null != this.entries[i] && !this.entries[i].equals(cast.entries[i])) {
 				return false;
 			}
@@ -132,8 +115,8 @@ public class TupleN extends Tuple8 {
 
 	@Override
 	public String toString() {
-		String formatted = "";
-		for (int i = 0; i < size; i++) {
+		String formatted = super.toString();
+		for (int i = 0; i < entries.length; i++) {
 			formatted += entries[i] + ",";
 		}
 
