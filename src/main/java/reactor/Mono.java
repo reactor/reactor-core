@@ -273,7 +273,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<T1> p1, Mono<T2> p2) {
+	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
@@ -291,7 +291,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<T1> p1, Mono<T2> p2, Mono<T3> p3) {
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2, p3}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
@@ -311,10 +311,10 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<T1> p1,
-			Mono<T2> p2,
-			Mono<T3> p3,
-			Mono<T4> p4) {
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4) {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2, p3, p4}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
@@ -336,11 +336,11 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<T1> p1,
-			Mono<T2> p2,
-			Mono<T3> p3,
-			Mono<T4> p4,
-			Mono<T5> p5) {
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2, p3, p4, p5}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
@@ -364,12 +364,12 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<T1> p1,
-			Mono<T2> p2,
-			Mono<T3> p3,
-			Mono<T4> p4,
-			Mono<T5> p5,
-			Mono<T6> p6) {
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2, p3, p4, p5, p6}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
@@ -401,7 +401,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a new combined Mono
 	 * @see #when
 	 */
-	public final <T2> Mono<Tuple2<T, T2>> and(Mono<T2> other) {
+	public final <T2> Mono<Tuple2<T, T2>> and(Mono<? extends T2> other) {
 		return when(this, other);
 	}
 
@@ -736,10 +736,154 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @param transformer
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Mono} containing the merged values
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
 		return new MonoBarrier<>(flatMap(transformer));
+	}
+
+	/**
+	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
+	 * the result as a combined {@code Tuple}.
+	 *
+	 * @param fn1 the transformation function
+	 * @param fn2 the transformation function
+	 * @param <T1> the type of the return value of the transformation function
+	 * @param <T2> the type of the return value of the transformation function
+	 *
+	 * @return a new {@link Mono} containing the combined values
+	 */
+	public final <T1, T2> Mono<Tuple2<T1, T2>> then(
+			final Function<? super T, ? extends Mono<? extends T1>> fn1,
+			final Function<? super T, ? extends Mono<? extends T2>> fn2) {
+		return then(new Function<T, Mono<? extends Tuple2<T1, T2>>>() {
+			@Override
+			public Mono<? extends Tuple2<T1, T2>> apply(T o) {
+				return when(fn1.apply(o), fn2.apply(o));
+			}
+		});
+	}
+
+	/**
+	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
+	 * the result as a combined {@code Tuple}.
+	 *
+	 * @param fn1 the transformation function
+	 * @param fn2 the transformation function
+	 * @param fn3 the transformation function
+	 * @param <T1> the type of the return value of the transformation function
+	 * @param <T2> the type of the return value of the transformation function
+	 * @param <T3> the type of the return value of the transformation function
+	 *
+	 * @return a new {@link Mono} containing the combined values
+	 */
+	public final <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> then(
+			final Function<? super T, ? extends Mono<? extends T1>> fn1,
+			final Function<? super T, ? extends Mono<? extends T2>> fn2,
+			final Function<? super T, ? extends Mono<? extends T3>> fn3) {
+		return then(new Function<T, Mono<? extends Tuple3<T1, T2, T3>>>() {
+			@Override
+			public Mono<? extends Tuple3<T1, T2, T3>> apply(T o) {
+				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o));
+			}
+		});
+	}
+
+	/**
+	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
+	 * the result as a combined {@code Tuple}.
+	 *
+	 * @param fn1 the transformation function
+	 * @param fn2 the transformation function
+	 * @param fn3 the transformation function
+	 * @param fn4 the transformation function
+	 * @param <T1> the type of the return value of the transformation function
+	 * @param <T2> the type of the return value of the transformation function
+	 * @param <T3> the type of the return value of the transformation function
+	 * @param <T4> the type of the return value of the transformation function
+	 *
+	 * @return a new {@link Mono} containing the combined values
+	 *
+	 * @since 2.5
+	 */
+	public final <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> then(
+			final Function<? super T, ? extends Mono<? extends T1>> fn1,
+			final Function<? super T, ? extends Mono<? extends T2>> fn2,
+			final Function<? super T, ? extends Mono<? extends T3>> fn3,
+			final Function<? super T, ? extends Mono<? extends T4>> fn4) {
+		return then(new Function<T, Mono<? extends Tuple4<T1, T2, T3, T4>>>() {
+			@Override
+			public Mono<? extends Tuple4<T1, T2, T3, T4>> apply(T o) {
+				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o));
+			}
+		});
+	}
+
+	/**
+	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
+	 * the result as a combined {@code Tuple}.
+	 *
+	 * @param fn1 the transformation function
+	 * @param fn2 the transformation function
+	 * @param fn3 the transformation function
+	 * @param fn4 the transformation function
+	 * @param fn5 the transformation function
+	 * @param <T1> the type of the return value of the transformation function
+	 * @param <T2> the type of the return value of the transformation function
+	 * @param <T3> the type of the return value of the transformation function
+	 * @param <T4> the type of the return value of the transformation function
+	 * @param <T5> the type of the return value of the transformation function
+	 *
+	 * @return a new {@link Mono} containing the combined values
+	 *
+	 */
+	public final <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> then(
+			final Function<? super T, ? extends Mono<? extends T1>> fn1,
+			final Function<? super T, ? extends Mono<? extends T2>> fn2,
+			final Function<? super T, ? extends Mono<? extends T3>> fn3,
+			final Function<? super T, ? extends Mono<? extends T4>> fn4,
+			final Function<? super T, ? extends Mono<? extends T5>> fn5) {
+		return then(new Function<T, Mono<? extends Tuple5<T1, T2, T3, T4, T5>>>() {
+			@Override
+			public Mono<? extends Tuple5<T1, T2, T3, T4, T5>> apply(T o) {
+				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o));
+			}
+		});
+	}
+
+	/**
+	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
+	 * the result as a combined {@code Tuple}.
+	 *
+	 * @param fn1 the transformation function
+	 * @param fn2 the transformation function
+	 * @param fn3 the transformation function
+	 * @param fn4 the transformation function
+	 * @param fn5 the transformation function
+	 * @param fn6 the transformation function
+	 * @param <T1> the type of the return value of the transformation function
+	 * @param <T2> the type of the return value of the transformation function
+	 * @param <T3> the type of the return value of the transformation function
+	 * @param <T4> the type of the return value of the transformation function
+	 * @param <T5> the type of the return value of the transformation function
+	 * @param <T6> the type of the return value of the transformation function
+	 *
+	 * @return a new {@link Mono} containing the combined values
+	 *
+	 */
+	public final <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> then(
+			final Function<? super T, ? extends Mono<? extends T1>> fn1,
+			final Function<? super T, ? extends Mono<? extends T2>> fn2,
+			final Function<? super T, ? extends Mono<? extends T3>> fn3,
+			final Function<? super T, ? extends Mono<? extends T4>> fn4,
+			final Function<? super T, ? extends Mono<? extends T5>> fn5,
+			final Function<? super T, ? extends Mono<? extends T6>> fn6) {
+		return then(new Function<T, Mono<? extends Tuple6<T1, T2, T3, T4, T5, T6>>>() {
+			@Override
+			public Mono<? extends Tuple6<T1, T2, T3, T4, T5, T6>> apply(T o) {
+				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o), fn6.apply(o));
+			}
+		});
 	}
 
 	/**
