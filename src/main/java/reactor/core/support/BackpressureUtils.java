@@ -379,6 +379,43 @@ public enum BackpressureUtils {
 		return false;
 	}
 
+	public static <F> boolean set(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
+		for (;;) {
+			Subscription a = field.get(instance);
+			if (a == CancelledSubscription.INSTANCE) {
+				s.cancel();
+				return false;
+			}
+			if (field.compareAndSet(instance, a, s)) {
+				if (a != null) {
+					a.cancel();
+				}
+				return true;
+			}
+		}
+	}
+
+	/**
+	 *
+	 * @param field
+	 * @param instance
+	 * @param s
+	 * @param <F>
+	 * @return
+	 */
+	public static <F> boolean replace(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
+		for (;;) {
+			Subscription a = field.get(instance);
+			if (a == CancelledSubscription.INSTANCE) {
+				s.cancel();
+				return false;
+			}
+			if (field.compareAndSet(instance, a, s)) {
+				return true;
+			}
+		}
+	}
+
 	/**
 	 *
 	 */

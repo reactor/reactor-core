@@ -67,8 +67,8 @@ public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscribe
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		try {
-			if (BackpressureUtils.validate(subscriptionWithContext, s)) {
+		if (BackpressureUtils.validate(subscriptionWithContext, s)) {
+			try {
 				final AtomicLong proxyRequest = new AtomicLong();
 				final C context = subscriptionHandler.apply(new Subscription() {
 					@Override
@@ -100,10 +100,10 @@ public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscribe
 					subscriptionWithContext.request(proxyRequest.get());
 				}
 			}
-		}
-		catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
-			onError(throwable);
+			catch (Throwable throwable) {
+				Exceptions.throwIfFatal(throwable);
+				onError(throwable);
+			}
 		}
 
 	}

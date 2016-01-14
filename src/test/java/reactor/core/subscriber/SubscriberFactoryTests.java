@@ -37,6 +37,11 @@ public class SubscriberFactoryTests extends SubscriberWhiteboxVerification<Long>
 	}
 
 	@Override
+	public void required_spec213_onSubscribe_mustThrowNullPointerExceptionWhenParametersAreNull() throws Throwable {
+		super.required_spec213_onSubscribe_mustThrowNullPointerExceptionWhenParametersAreNull();
+	}
+
+	@Override
 	public Subscriber<Long> createSubscriber(final WhiteboxSubscriberProbe<Long> probe) {
 		return Subscribers.create(
 		  subscription -> {
