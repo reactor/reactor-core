@@ -321,6 +321,8 @@ public final class ReactiveStateUtils implements ReactiveState {
 				o.toString() : o.getClass()
 				                .getSimpleName());
 
+		name = name.replaceAll("Mono|Flux|Stream|Subscriber","");
+
 		return name.isEmpty() ? "anonymous" : name;
 	}
 

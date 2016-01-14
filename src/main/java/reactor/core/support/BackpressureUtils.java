@@ -314,7 +314,7 @@ public enum BackpressureUtils {
 		do {
 			r = sequence.get();
 			if (r == 0 || r == Long.MAX_VALUE) {
-				return 0;
+				return r;
 			}
 			u = subOrZero(r, toSub);
 		} while (!sequence.compareAndSet(r, u));
