@@ -27,7 +27,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.processor.ProcessorGroup;
 import reactor.core.publisher.FluxAmb;
 import reactor.core.publisher.FluxArray;
-import reactor.core.publisher.FluxDefaultIfEmpty;
 import reactor.core.publisher.FluxFactory;
 import reactor.core.publisher.FluxFlatMap;
 import reactor.core.publisher.FluxJust;
@@ -39,6 +38,7 @@ import reactor.core.publisher.FluxNever;
 import reactor.core.publisher.FluxPeek;
 import reactor.core.publisher.FluxResume;
 import reactor.core.publisher.FluxSession;
+import reactor.core.publisher.FluxSwitchIfEmpty;
 import reactor.core.publisher.FluxZip;
 import reactor.core.publisher.ForEachSequencer;
 import reactor.core.publisher.MonoIgnoreElements;
@@ -899,7 +899,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> defaultIfEmpty(T defaultV) {
-		return new FluxDefaultIfEmpty<>(this, defaultV);
+		return new FluxSwitchIfEmpty<>(this, just(defaultV));
 	}
 
 	/**
@@ -1248,6 +1248,17 @@ public abstract class Flux<T> implements Publisher<T> {
 				return fallback;
 			}
 		});
+	}
+
+	/**
+	 * Provide an alternative {@link Publisher} if this sequence is completed without any data
+	 *
+	 * @param alternate the alternate publisher if this sequence is empty
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
+		return new FluxSwitchIfEmpty<>(this, alternate);
 	}
 
 	/**

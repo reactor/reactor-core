@@ -133,7 +133,7 @@ public class SubscriberDeferredScalar<I, O>
 		this.value = value;
 	}
 
-	public final void set(O value) {
+	public final void complete(O value) {
 		Objects.requireNonNull(value);
 		for (; ; ) {
 			int s = getState();

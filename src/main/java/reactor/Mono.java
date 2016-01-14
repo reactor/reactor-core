@@ -30,7 +30,6 @@ import reactor.core.error.Exceptions;
 import reactor.core.error.ReactorFatalException;
 import reactor.core.processor.ProcessorGroup;
 import reactor.core.publisher.FluxAmb;
-import reactor.core.publisher.FluxDefaultIfEmpty;
 import reactor.core.publisher.FluxFlatMap;
 import reactor.core.publisher.FluxLift;
 import reactor.core.publisher.FluxLog;
@@ -38,6 +37,7 @@ import reactor.core.publisher.FluxMap;
 import reactor.core.publisher.FluxMapSignal;
 import reactor.core.publisher.FluxPeek;
 import reactor.core.publisher.FluxResume;
+import reactor.core.publisher.FluxSwitchIfEmpty;
 import reactor.core.publisher.FluxZip;
 import reactor.core.publisher.MonoCallable;
 import reactor.core.publisher.MonoEmpty;
@@ -449,7 +449,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-		return new MonoBarrier<>(new FluxDefaultIfEmpty<>(this, defaultV));
+		return new MonoBarrier<>(new FluxSwitchIfEmpty<>(this, just(defaultV)));
 	}
 
 	/**
@@ -712,6 +712,18 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
 		return new MonoBarrier<>(new FluxResume<>(this, fallback));
+	}
+
+	/**
+	 * Provide an alternative {@link Mono} if this mono is completed without data
+	 *
+	 * @param alternate the alternate mono if this mono is empty
+	 *
+	 * @return a new {@link Mono}
+	 * @see Flux#switchIfEmpty
+	 */
+	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
+		return new MonoBarrier<>(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**

@@ -72,6 +72,6 @@ public final class MonoCallable<T> extends reactor.Mono<T> implements ReactiveSt
             return;
         }
 
-        sds.set(t);
+        sds.complete(t);
     }
 }
