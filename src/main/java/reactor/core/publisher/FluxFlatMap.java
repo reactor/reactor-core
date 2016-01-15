@@ -108,10 +108,10 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				return;
 			}
 		}
-		source.subscribe(new MergeBarrier<>(s, mapper, maxConcurrency, bufferSize));
+		source.subscribe(new FluxFlatMapSubscriber<>(s, mapper, maxConcurrency, bufferSize));
 	}
 
-	static final class MergeBarrier<T, V> extends SubscriberWithDemand<T, V>
+	static final class FluxFlatMapSubscriber<T, V> extends SubscriberWithDemand<T, V>
 			implements ReactiveState.LinkedUpstreams, ReactiveState.ActiveDownstream, ReactiveState.Buffering,
 			           ReactiveState.FailState {
 
@@ -126,19 +126,19 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		private volatile Throwable error;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeBarrier, Throwable> ERROR =
-				PlatformDependent.newAtomicReferenceFieldUpdater(MergeBarrier.class, "error");
+		static final AtomicReferenceFieldUpdater<FluxFlatMapSubscriber, Throwable> ERROR =
+				PlatformDependent.newAtomicReferenceFieldUpdater(FluxFlatMapSubscriber.class, "error");
 
 		volatile BufferSubscriber<?, ?>[] subscribers;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeBarrier, BufferSubscriber[]> SUBSCRIBERS =
-				PlatformDependent.newAtomicReferenceFieldUpdater(MergeBarrier.class, "subscribers");
+		static final AtomicReferenceFieldUpdater<FluxFlatMapSubscriber, BufferSubscriber[]> SUBSCRIBERS =
+				PlatformDependent.newAtomicReferenceFieldUpdater(FluxFlatMapSubscriber.class, "subscribers");
 
 		@SuppressWarnings("unused")
 		private volatile int running;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MergeBarrier> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(MergeBarrier.class, "running");
+		static final AtomicIntegerFieldUpdater<FluxFlatMapSubscriber> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(FluxFlatMapSubscriber.class, "running");
 
 		static final BufferSubscriber<?, ?>[] EMPTY = new BufferSubscriber<?, ?>[0];
 
@@ -149,7 +149,7 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		long lastId;
 		int  lastIndex;
 
-		public MergeBarrier(Subscriber<? super V> actual,
+		public FluxFlatMapSubscriber(Subscriber<? super V> actual,
 				Function<? super T, ? extends Publisher<? extends V>> mapper,
 				int maxConcurrency,
 				int bufferSize) {
@@ -632,10 +632,10 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 			           ReactiveState.ActiveDownstream, ReactiveState.ActiveUpstream, ReactiveState.UpstreamDemand,
 			           ReactiveState.UpstreamPrefetch, ReactiveState.Inner {
 
-		final long               id;
-		final MergeBarrier<T, V> parent;
-		final int                limit;
-		final int                bufferSize;
+		final long                        id;
+		final FluxFlatMapSubscriber<T, V> parent;
+		final int                         limit;
+		final int                         bufferSize;
 
 		@SuppressWarnings("unused")
 		volatile Subscription subscription;
@@ -648,7 +648,7 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		volatile RingBuffer<RingBuffer.Slot<V>> queue;
 		int outstanding;
 
-		public BufferSubscriber(MergeBarrier<T, V> parent, long id) {
+		public BufferSubscriber(FluxFlatMapSubscriber<T, V> parent, long id) {
 			this.id = id;
 			this.parent = parent;
 			this.bufferSize = parent.bufferSize;

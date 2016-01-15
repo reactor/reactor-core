@@ -110,7 +110,7 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 		try {
 
-			final ZipBarrier<TUPLE, V> barrier;
+			final FluxZipSubscriber<TUPLE, V> barrier;
 			if (iterableSources != null) {
 				Iterator<? extends Publisher<?>> it = iterableSources.iterator();
 				if (!it.hasNext()) {
@@ -141,7 +141,7 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 				}
 				while (it.hasNext());
 
-				barrier = new ZipBarrier<>(s, list.toArray(new Publisher[list.size()]), this);
+				barrier = new FluxZipSubscriber<>(s, list.toArray(new Publisher[list.size()]), this);
 			}
 			else if (sources == null || sources.length == 0) {
 				s.onSubscribe(EmptySubscription.INSTANCE);
@@ -149,7 +149,7 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 				return;
 			}
 			else {
-				barrier = new ZipBarrier<>(s, sources, this);
+				barrier = new FluxZipSubscriber<>(s, sources, this);
 			}
 
 			barrier.start();
@@ -172,7 +172,7 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		return iterableSources != null ? -1L : (sources != null ? sources.length : 0);
 	}
 
-	static final class ZipBarrier<TUPLE extends Tuple, V>
+	static final class FluxZipSubscriber<TUPLE extends Tuple, V>
 			implements Subscription, LinkedUpstreams, ActiveDownstream,
 			           Buffering, ActiveUpstream, DownstreamDemand,
 			           FailState {
@@ -189,26 +189,26 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		private volatile boolean cancelled;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipBarrier, Throwable> ERROR =
-				PlatformDependent.newAtomicReferenceFieldUpdater(ZipBarrier.class, "error");
+		static final AtomicReferenceFieldUpdater<FluxZipSubscriber, Throwable> ERROR =
+				PlatformDependent.newAtomicReferenceFieldUpdater(FluxZipSubscriber.class, "error");
 
 		@SuppressWarnings("unused")
-		private volatile       long                               requested = 0L;
+		private volatile       long                                      requested = 0L;
 		@SuppressWarnings("rawtypes")
-		protected static final AtomicLongFieldUpdater<ZipBarrier> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ZipBarrier.class, "requested");
+		protected static final AtomicLongFieldUpdater<FluxZipSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FluxZipSubscriber.class, "requested");
 
 		@SuppressWarnings("unused")
 		private volatile int running;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ZipBarrier> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(ZipBarrier.class, "running");
+		static final AtomicIntegerFieldUpdater<FluxZipSubscriber> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(FluxZipSubscriber.class, "running");
 
 		Object[] valueCache;
 
 		final static Object[] TERMINATED_CACHE = new Object[0];
 
-		public ZipBarrier(Subscriber<? super V> actual, Publisher[] sources, FluxZip<TUPLE, V> parent) {
+		public FluxZipSubscriber(Subscriber<? super V> actual, Publisher[] sources, FluxZip<TUPLE, V> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.sources = sources;
@@ -538,10 +538,10 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 			           ActiveUpstream, UpstreamPrefetch, UpstreamDemand,
 			           Downstream {
 
-		final ZipBarrier<?, V> parent;
-		final Queue<Object>    queue;
-		final int              limit;
-		final int              bufferSize;
+		final FluxZipSubscriber<?, V> parent;
+		final Queue<Object>           queue;
+		final int                     limit;
+		final int                     bufferSize;
 
 		@SuppressWarnings("unused")
 		volatile Subscription subscription;
@@ -551,7 +551,7 @@ public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		volatile boolean done;
 		int outstanding;
 
-		public BufferSubscriber(ZipBarrier<?, V> parent) {
+		public BufferSubscriber(FluxZipSubscriber<?, V> parent) {
 			this.parent = parent;
 			this.bufferSize = parent.parent.bufferSize;
 			this.limit = bufferSize >> 2;

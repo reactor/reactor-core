@@ -58,6 +58,7 @@ import reactor.core.timer.Timer;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
+import reactor.fn.Predicate;
 import reactor.fn.Supplier;
 import reactor.fn.tuple.Tuple2;
 import reactor.fn.tuple.Tuple3;
@@ -924,14 +925,26 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	/**
 	 * Subscribe the {@link Mono} with the givne {@link Subscriber} and return it.
 	 *
-	 * @param subscriber
-	 * @param <E>
+	 * @param subscriber the {@link Subscriber} to subscribe
+	 * @param <E> the reified type of the {@link Subscriber} for chaining
 	 *
-	 * @return
+	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
 	 */
 	public final <E extends Subscriber<? super T>> E to(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
+	}
+
+	/**
+	 * Test the result if any of this {@link Mono} and replay it if predicate returns true.
+	 * Otherwise complete without value.
+	 *
+	 * @param tester the predicate to evaluate
+	 *
+	 * @return a filtered {@link Mono}
+	 */
+	public final Mono<T> where(final Predicate<? super T> tester) {
+		return then(new WhereFunction<>(tester));
 	}
 
 	@Override
@@ -1119,6 +1132,25 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 				return;
 			}
 			endState = SignalType.COMPLETE;
+		}
+	}
+
+	static final class WhereFunction<T> implements Function<T, Mono<T>> {
+
+		private final Predicate<? super T> test;
+
+		public WhereFunction(Predicate<? super T> test) {
+			this.test = test;
+		}
+
+		@Override
+		public Mono<T> apply(T t) {
+			if(test.test(t)) {
+				return just(t);
+			}
+			else{
+				return empty();
+			}
 		}
 	}
 }

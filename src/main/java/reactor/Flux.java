@@ -219,7 +219,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param <T> The type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T> Flux<T> create(Consumer<SubscriberWithContext<T, Void>> requestConsumer) {
 		return create(requestConsumer, null, null);
@@ -237,7 +237,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory) {
@@ -259,7 +259,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T, C> Flux<T> create(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
@@ -270,9 +270,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that completes without emitting any item.
 	 *
-	 * @param <T>
+	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
-	 * @return
+	 * @return an empty {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> empty() {
@@ -282,10 +282,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that completes with the specified error.
 	 *
-	 * @param error
-	 * @param <T>
+	 * @param error the error to signal to each {@link Subscriber}
+	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
-	 * @return
+	 * @return a new failed {@link Flux}
 	 */
 	public static <T> Flux<T> error(Throwable error) {
 		return Mono.<T>error(error).flux();
@@ -298,7 +298,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param source
 	 * @param <T>
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
@@ -318,10 +318,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 *
-	 * @param array
-	 * @param <T>
+	 * @param array the {@link T[]} array to read data from
+	 * @param <T> the {@link Publisher} type to stream
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromArray(T[] array) {
 		if (array == null || array.length == 0) {
@@ -335,16 +335,31 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
+	 * A new iterator will be created for each subscriber.
 	 *
-	 * @param it
-	 * @param <T>
+	 * @param it the {@link Iterable} to read data from
+	 * @param <T> the {@link Iterable} type to stream
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
 		ForEachSequencer.IterableSequencer<T> iterablePublisher = new ForEachSequencer.IterableSequencer<>(it);
 		return create(iterablePublisher, iterablePublisher);
 	}
+
+
+	/**
+	 * Create a {@link Flux} that emits the items contained in the provided {@link Tuple}.
+	 *
+	 * @param tuple the {@link Tuple} to read data from
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public static Flux<Object> fromTuple(Tuple tuple) {
+		return fromArray(tuple.toArray());
+	}
+
+
 
 	/**
 	 * Create a {@link Publisher} reacting on requests with the passed {@link BiConsumer}. The argument {@code
@@ -360,7 +375,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T, C> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
@@ -417,7 +432,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param data the consecutive data objects to emit
 	 * @param <T> the emitted data type
 	 *
-	 * @return
+	 * @return a new {@link Flux}
 	 */
 	@SafeVarargs
 	@SuppressWarnings("varargs")
@@ -450,7 +465,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
 		return merge(fromIterable(sources));
@@ -459,7 +474,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked", "varargs"})
@@ -493,13 +508,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
 	 * @param <T> The type of the data sequence
 	 *
-	 * @return a fresh Reactive Fluxs publisher ready to be subscribed
+	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T> Flux<T> yield(Consumer<? super ReactiveSession<T>> sessionConsumer) {
 		return new FluxSession<>(sessionConsumer);
 	}
 
 	/**
+	 *
+	 *
 	 * @param source1
 	 * @param source2
 	 * @param <T1>
@@ -1251,7 +1268,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Provide an alternative {@link Publisher} if this sequence is completed without any data
+	 * Provide an alternative if this sequence is completed without any data
 	 *
 	 * @param alternate the alternate publisher if this sequence is empty
 	 *
