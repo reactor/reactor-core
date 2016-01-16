@@ -17,6 +17,7 @@
 package reactor;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -117,15 +118,25 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 
 
 	/**
-	 * @param source
-	 * @param <IN>
+	 * Try to convert an object to a {@link Mono} with at most one emission using available support from reactor-core
+	 * given the following
+	 * ordering  :
+	 * <ul>
+	 *     <li>Publisher to Mono</li>
+	 *     <li>RxJava 1 Single to Mono</li>
+	 *     <li>RxJava 1 Observable to Mono</li>
+	 *     <li>JDK 8 CompletableFuture to Mono</li>
+	 *     <li>JDK 9 Flow.Publisher to Mono</li>
+	 * </ul>
 	 *
-	 * @return
+	 * @param source an object emitter to convert to a {@link Publisher}
+	 * @param <IN> a parameter candidate generic for the returned {@link Mono}
+	 *
+	 * @return a new parameterized (unchecked) converted {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <IN> Mono<IN> convert(Object source) {
-
-		if (Publisher.class.isAssignableFrom(source.getClass())) {
+		if (source instanceof Publisher) {
 			return from((Publisher<IN>) source);
 		}
 		else {
@@ -175,9 +186,9 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	/**
 	 * Create a {@link Mono} that completes without emitting any item.
 	 *
-	 * @param <T>
+	 * @param <T> the reified {@link Subscriber} type
 	 *
-	 * @return
+	 * @return a completed {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> empty() {
@@ -185,12 +196,12 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
-	 * Create a {@link Mono} that completes with the specified error.
+	 * Create a {@link Mono} that completes with the specified error immediately after onSubscribe.
 	 *
-	 * @param error
-	 * @param <T>
+	 * @param error the onError signal
+	 * @param <T> the reified {@link Subscriber} type
 	 *
-	 * @return
+	 * @return a failed {@link Mono}
 	 */
 	public static <T> Mono<T> error(Throwable error) {
 		return new MonoError<T>(error);
@@ -209,7 +220,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		if (source == null) {
 			return empty();
 		}
-		if (Mono.class.isAssignableFrom(source.getClass())) {
+		if (source instanceof Mono) {
 			return (Mono<T>) source;
 		}
 		return new MonoNext<>(source);
@@ -228,12 +239,24 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
+	 * Create a {@link Mono} only producing a completion signal after using the given
+	 * runnable.
+	 *
+	 * @param runnable {@link Runnable} that will callback the completion signal
+	 *
+	 * @return A {@link Mono}.
+	 */
+	public static Mono<Void> fromRunnable(Runnable runnable) {
+		return new MonoBarrier<>(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
+	}
+
+	/**
 	 * Create a new {@link Mono} that emits the specified item.
 	 *
-	 * @param data
-	 * @param <T>
+	 * @param data the only item to onNext
+	 * @param <T> the type of the produced item
 	 *
-	 * @return
+	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> just(T data) {
 		return new MonoJust<>(data);
@@ -388,13 +411,14 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	}
 
 	/**
+	 * Transform this {@link Mono} into a target {@link Publisher}
 	 *
-	 * {@code mono.to(Flux::from).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.as(Flux::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transformer
-	 * @param <P>
+	 * @param transformer the {@link Function} applying this {@link Mono}
+	 * @param <P> the returned {@link Publisher} output
 	 *
-	 * @return
+	 * @return the transformed {@link Mono}
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
@@ -1140,7 +1164,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		private final Predicate<? super T> test;
 
 		public WhereFunction(Predicate<? super T> test) {
-			this.test = test;
+			this.test = Objects.requireNonNull(test, "Where predicate is null");
 		}
 
 		@Override

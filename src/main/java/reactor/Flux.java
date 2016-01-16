@@ -172,8 +172,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Try to convert an object using available support from reactor-core given the following ordering  :
+	 * Try to convert an object to a {@link Flux} using available support from reactor-core given the following
+	 * ordering  :
 	 * <ul>
+	 *     <li>null to {@link #empty()}</li>
 	 *     <li>Publisher to Flux</li>
 	 *     <li>Iterable to Flux</li>
 	 *     <li>Iterator to Flux</li>
@@ -183,23 +185,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *     <li>JDK 9 Flow.Publisher to Flux</li>
 	 * </ul>
 	 *
-	 * @param source an object emitter to convert to a Publisher
-	 * @param <IN> a parameter candidate generic for the returned Flux
+	 * @param source an object emitter to convert to a {@link Publisher}
+	 * @param <IN> a parameter candidate generic for the returned {@link Flux}
 	 *
-	 * @return a new parameterized (unchecked) converted Flux
+	 * @return a new parameterized (unchecked) converted {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <IN> Flux<IN> convert(Object source) {
-
-		if (Publisher.class.isAssignableFrom(source.getClass())) {
+		if (source == null){
+			return empty();
+		}
+		if (source instanceof Publisher) {
 			return from((Publisher<IN>) source);
 		}
-		else if (Iterable.class.isAssignableFrom(source.getClass())) {
+		else if (source instanceof Iterable) {
 			return fromIterable((Iterable<IN>) source);
 		}
-		else if (Iterator.class.isAssignableFrom(source.getClass())) {
+		else if (source instanceof Iterator) {
 			Iterator<IN> defaultValues = (Iterator<IN>)source;
-			if (defaultValues == null || !defaultValues.hasNext()) {
+			if (!defaultValues.hasNext()) {
 				return empty();
 			}
 			ForEachSequencer.IteratorSequencer<IN> iteratorPublisher =
@@ -302,11 +306,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
-		if (Flux.class.isAssignableFrom(source.getClass())) {
+		if (source instanceof Flux) {
 			return (Flux<T>) source;
 		}
 
-		if (Supplier.class.isAssignableFrom(source.getClass())) {
+		if (source instanceof Supplier) {
 			T t = ((Supplier<T>) source).get();
 			if (t != null) {
 				return just(t);
