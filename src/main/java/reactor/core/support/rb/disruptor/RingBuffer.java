@@ -551,6 +551,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			super(buffer);
 			this.pollCursor = Sequencer.newSequence(startingSequence);
 			buffer.addGatingSequence(pollCursor);
+			this.pollCursor.set(startingSequence);
 		}
 
 		@Override

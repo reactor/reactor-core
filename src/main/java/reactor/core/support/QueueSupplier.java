@@ -58,7 +58,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@Override
 	public Queue<T> get() {
 
-		if(batchSize > Integer.MAX_VALUE){
+		if(batchSize > 10_000_000){
 			return new ConcurrentLinkedQueue<>();
 		}
 		else if(batchSize == 1){
