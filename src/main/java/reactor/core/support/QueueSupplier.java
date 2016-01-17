@@ -42,7 +42,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(long batchSize){
-		if(batchSize > Integer.MAX_VALUE){
+		if(batchSize > 10_000_000){
 			return (Supplier<Queue<T>>)CLQ_SUPPLIER;
 		}
 		if(batchSize == 1){
