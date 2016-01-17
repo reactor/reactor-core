@@ -226,7 +226,8 @@ public class HashWheelTimer extends Timer {
 			long period,
 			TimeUnit timeUnit,
 			long delayInMilliseconds) {
-		return schedule(TimeUnit.MILLISECONDS.convert(period, timeUnit), delayInMilliseconds, consumer);
+		long ms = TimeUnit.MILLISECONDS.convert(period, timeUnit);
+		return schedule(ms, delayInMilliseconds == -1 ? ms : delayInMilliseconds, consumer);
 	}
 
 	@Override
