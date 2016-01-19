@@ -22,7 +22,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxJust;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Exceptions;
@@ -68,7 +67,7 @@ public class RxJava1Converter extends PublisherConverter<Observable> {
 	public Flux toPublisher(Object o) {
 		final Observable<Object> obs = (Observable<Object>) o;
 		if (ScalarSynchronousObservable.class.isAssignableFrom(obs.getClass())) {
-			return new FluxJust<>(((ScalarSynchronousObservable) obs).get());
+			return Flux.just(((ScalarSynchronousObservable) obs).get());
 		}
 		return new Flux<Object>() {
 			@Override
