@@ -63,7 +63,7 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
  *
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-public final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
+final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 {
     /**
      * Construct a RingBuffer with the full option set.

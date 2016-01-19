@@ -48,7 +48,7 @@ import reactor.fn.Supplier;
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class HashWheelTimer extends Timer {
+class HashWheelTimer extends Timer {
 
 	public static final  int    DEFAULT_WHEEL_SIZE = 512;
 
@@ -88,7 +88,7 @@ public class HashWheelTimer extends Timer {
 	 * @param waitStrategy       strategy for waiting for the next tick
 	 */
 	public HashWheelTimer(int res, int wheelSize, WaitStrategy waitStrategy) {
-		this(DEFAULT_TIMER_NAME, res, wheelSize, waitStrategy, null, TimeUtils.currentTimeMillisResolver());
+		this(DEFAULT_TIMER_NAME, res, wheelSize, waitStrategy, null, Timers.currentTimeMillisResolver());
 	}
 
 	/**
@@ -102,7 +102,7 @@ public class HashWheelTimer extends Timer {
 	 * @param exec               {@code Executor} instance to submit tasks to
 	 */
 	public HashWheelTimer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec) {
-		this(name, res,wheelSize, strategy, exec, TimeUtils.currentTimeMillisResolver());
+		this(name, res,wheelSize, strategy, exec, Timers.currentTimeMillisResolver());
 	}
 
 	/**

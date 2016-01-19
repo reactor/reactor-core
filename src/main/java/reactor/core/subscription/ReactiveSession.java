@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
-import reactor.core.timer.TimeUtils;
+import reactor.core.timer.Timers;
 import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 import reactor.fn.Predicate;
@@ -63,7 +63,7 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 		}
 	}
 
-	private static final LongSupplier NOW = TimeUtils.currentTimeMillisResolver();
+	private static final LongSupplier NOW = Timers.currentTimeMillisResolver();
 
 	private static final Predicate NEVER = new Predicate(){
 		@Override

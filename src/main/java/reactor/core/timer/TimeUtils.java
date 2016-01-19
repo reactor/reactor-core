@@ -28,28 +28,21 @@ import reactor.core.support.rb.disruptor.Sequencer;
 import reactor.fn.LongSupplier;
 
 /**
- * @author Jon Brisbin
  * @author Stephane Maldini
+ * @since 2.5
  */
-public final class TimeUtils {
-
-	final static private LongSupplier SYSTEM_NOW = new LongSupplier() {
-		@Override
-		public long get() {
-			return System.currentTimeMillis();
-		}
-	};
+final class TimeUtils {
 
 	final static private Timer NOOP = new Timer();
 
-	private static final int      DEFAULT_RESOLUTION = 100;
-	private static final Sequence now                = Sequencer.newSequence(-1);
+	static final int      DEFAULT_RESOLUTION = 100;
+	static final Sequence now                = Sequencer.newSequence(-1);
 
-	private static final TimeUtils INSTANCE = new TimeUtils();
+	static final TimeUtils INSTANCE = new TimeUtils();
 
-	private volatile Timer timer = NOOP;
+	volatile Timer timer = NOOP;
 
-	private static final AtomicReferenceFieldUpdater<TimeUtils, Timer> REF =
+	static final AtomicReferenceFieldUpdater<TimeUtils, Timer> REF =
 			PlatformDependent.newAtomicReferenceFieldUpdater(TimeUtils.class, "timer");
 
 	protected TimeUtils() {
@@ -70,15 +63,6 @@ public final class TimeUtils {
 
 	public static void disable(){
 		INSTANCE.cancelTimer();
-	}
-
-	public static LongSupplier currentTimeMillisResolver(){
-		if (isEnabled()){
-			return now;
-		}
-		else{
-			return SYSTEM_NOW;
-		}
 	}
 
 	void cancelTimer(){

@@ -28,7 +28,7 @@ import reactor.fn.LongSupplier;
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
  */
-public class AtomicSequence extends RhsPadding implements LongSupplier, Sequence, ReactiveState.Trace
+final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence, ReactiveState.Trace
 {
 
     private static final AtomicLongFieldUpdater<Value> UPDATER =

@@ -27,7 +27,7 @@ import reactor.core.support.internal.PlatformDependent;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class GlobalTimer extends HashWheelTimer implements ReactiveState.Trace {
+class GlobalTimer extends HashWheelTimer implements ReactiveState.Trace {
 
 	private static final class GlobalContext{
 		volatile GlobalTimer timer;

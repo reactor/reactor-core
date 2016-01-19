@@ -31,7 +31,7 @@ import sun.misc.Unsafe;
  * to {@link Sequencer#next()}, to determine the highest available sequence that can be read, then
  * {@link Sequencer#getHighestPublishedSequence(long, long)} should be used.
  */
-public final class MultiProducerSequencer extends Sequencer
+final class MultiProducerSequencer extends Sequencer
 {
     private static final Unsafe UNSAFE = PlatformDependent0.getUnsafe();
     private static final long   BASE   = UNSAFE.arrayBaseOffset(int[].class);
@@ -51,7 +51,7 @@ public final class MultiProducerSequencer extends Sequencer
      * @param bufferSize the size of the buffer that this will sequence over.
      * @param waitStrategy for those waiting on sequences.
      */
-    public MultiProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+    MultiProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
         super(bufferSize, waitStrategy, spinObserver);
 
         if (!Sequencer.isPowerOfTwo(bufferSize)) {

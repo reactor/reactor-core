@@ -16,12 +16,26 @@
 package reactor.core.timer;
 
 import reactor.core.support.WaitStrategy;
+import reactor.fn.LongSupplier;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
 public final class Timers {
+
+	/**
+	 *
+	 * @return
+	 */
+	public static LongSupplier currentTimeMillisResolver(){
+		if (TimeUtils.isEnabled()){
+			return TimeUtils.now;
+		}
+		else{
+			return SYSTEM_NOW;
+		}
+	}
 
 	private Timers() {
 	}
@@ -160,6 +174,13 @@ public final class Timers {
 	public static void unregisterGlobal() {
 		GlobalTimer.unregister();
 	}
+
+	final static private LongSupplier SYSTEM_NOW = new LongSupplier() {
+		@Override
+		public long get() {
+			return System.currentTimeMillis();
+		}
+	};
 
 
 }

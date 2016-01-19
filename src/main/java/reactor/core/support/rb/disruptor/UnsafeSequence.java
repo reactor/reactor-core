@@ -44,7 +44,7 @@ class RhsPadding extends Value
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
  */
-public class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier, ReactiveState.Trace
+final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier, ReactiveState.Trace
 {
     private static final Unsafe UNSAFE;
     private static final long VALUE_OFFSET;

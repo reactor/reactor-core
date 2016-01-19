@@ -35,7 +35,6 @@ import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.core.support.rb.disruptor.RingBuffer;
-import reactor.fn.BiFunction;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 import reactor.fn.tuple.Tuple;
@@ -46,28 +45,8 @@ import reactor.fn.tuple.Tuple;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
+final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		implements ReactiveState.Factory, ReactiveState.LinkedUpstreams {
-
-	/**
-	 *
-	 */
-	public static final Function JOIN_FUNCTION = new Function<Tuple, List>() {
-		@Override
-		public List<?> apply(Tuple ts) {
-			return Arrays.asList(ts.toArray());
-		}
-	};
-
-	/**
-	 *
-	 */
-	public static final BiFunction JOIN_BIFUNCTION = new BiFunction<Object, Object, List>() {
-		@Override
-		public List<?> apply(Object t1, Object t2) {
-			return Arrays.asList(t1, t2);
-		}
-	};
 
 	/**
 	 *

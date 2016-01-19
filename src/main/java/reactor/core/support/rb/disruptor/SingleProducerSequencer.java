@@ -49,7 +49,7 @@ abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
  * to {@link Sequencer#publish(long)} is made.
  */
 
-public final class SingleProducerSequencer extends SingleProducerSequencerFields
+final class SingleProducerSequencer extends SingleProducerSequencerFields
 {
     protected long p1, p2, p3, p4, p5, p6, p7;
 

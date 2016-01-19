@@ -711,7 +711,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
-			final Function<Tuple, O> combinator) {
+			final Function<? super Tuple, ? extends O> combinator) {
 
 		if (sources == null) {
 			return empty();
@@ -730,7 +730,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <I, O> Flux<O> zip(
-			final Function<Tuple, O> combinator, Publisher<? extends I>... sources) {
+			final Function<? super Tuple, ? extends O> combinator, Publisher<? extends I>... sources) {
 
 		if (sources == null) {
 			return empty();
