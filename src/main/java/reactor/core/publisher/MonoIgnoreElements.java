@@ -13,64 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import reactor.Mono;
+import reactor.core.subscriber.SubscriberBarrier;
+import reactor.core.support.ReactiveState;
 
 /**
- * Ignores normal values and passes only the terminal signals along.
+ * Ignore onNext signals and therefore only pass request, cancel upstream and complete, error downstream
  *
- * @param <T> the value type
- */
-
-/**
- * {@see https://github.com/reactor/reactive-streams-commons}
+ * @author Stephane Maldini
  * @since 2.5
  */
-public final class MonoIgnoreElements<T> extends reactor.Mono.MonoBarrier<T, T> {
+public final class MonoIgnoreElements<IN> extends Mono<Void> implements ReactiveState.Upstream {
 
-	public MonoIgnoreElements(Publisher<? extends T> source) {
-		super(source);
+	private final Publisher<IN> source;
+
+	public MonoIgnoreElements(Publisher<IN> source) {
+		this.source = source;
 	}
-	
+
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new MonoIgnoreElementsSubscriber<>(s));
+	public Object upstream() {
+		return source;
 	}
-	
-	static final class MonoIgnoreElementsSubscriber<T> implements Subscriber<T>, Downstream {
-		final Subscriber<? super T> actual;
-		
-		public MonoIgnoreElementsSubscriber(Subscriber<? super T> actual) {
-			this.actual = actual;
+
+	@Override
+	public void subscribe(Subscriber<? super Void> subscriber) {
+		source.subscribe(new CompletableBarrier<>(subscriber));
+	}
+
+	private static class CompletableBarrier<IN> extends SubscriberBarrier<IN, Void> {
+
+		public CompletableBarrier(Subscriber<? super Void> subscriber) {
+			super(subscriber);
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			actual.onSubscribe(s);
-			s.request(Long.MAX_VALUE);
-		}
-		
-		@Override
-		public void onNext(T t) {
-			// deliberately ignored
-		}
-		
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-		}
-		
-		@Override
-		public void onComplete() {
-			actual.onComplete();
+		protected void doNext(IN in) {
 		}
 
-		@Override
-		public Object downstream() {
-			return actual;
-		}
 	}
+
 }

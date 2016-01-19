@@ -524,7 +524,9 @@ public class HashWheelTimer extends Timer {
 			if (BackpressureUtils.checkRequest(n, delegate)) {
 				for(;;) {
 					if (STATUS.compareAndSet(this, STATUS_READY, STATUS_REQUESTED) ||
-							STATUS.compareAndSet(this, STATUS_PAUSED, STATUS_PAUSED_REQUESTED)){
+							STATUS.compareAndSet(this, STATUS_PAUSED, STATUS_PAUSED_REQUESTED) ||
+							status > STATUS_PAUSED ||
+							isCancelled()){
 						break;
 					}
 				}
