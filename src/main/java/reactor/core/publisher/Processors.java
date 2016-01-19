@@ -205,7 +205,7 @@ public final class Processors {
 			int i = 1;
 			@Override
 			public Processor<Runnable, Runnable> get() {
-				return TopicProcessor.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+				return ProcessorTopic.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
 						.get(), false);
 			}
 		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
@@ -295,7 +295,7 @@ public final class Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> emitter(int bufferSize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize, -1);
+		return new ProcessorEmitter<>(autoCancel, concurrency, bufferSize, -1);
 	}
 
 	/**
@@ -417,7 +417,7 @@ public final class Processors {
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-		return ProcessorGroup.create(WorkQueueProcessor.<Runnable>share(name, bufferSize,
+		return ProcessorGroup.create(ProcessorWorkQueue.<Runnable>share(name, bufferSize,
 				waitStrategy, false),
 				concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
@@ -429,7 +429,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> queue() {
+	public static <E> ProcessorWorkQueue<E> queue() {
 		return queue("worker", ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -440,7 +440,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> queue(String name) {
+	public static <E> ProcessorWorkQueue<E> queue(String name) {
 		return queue(name, ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -453,7 +453,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> queue(boolean autoCancel) {
+	public static <E> ProcessorWorkQueue<E> queue(boolean autoCancel) {
 		return queue(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
@@ -467,7 +467,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> queue(String name, int bufferSize) {
+	public static <E> ProcessorWorkQueue<E> queue(String name, int bufferSize) {
 		return queue(name, bufferSize, true);
 	}
 
@@ -480,8 +480,8 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> queue(String name, int bufferSize, boolean autoCancel) {
-		return WorkQueueProcessor.create(name, bufferSize, autoCancel);
+	public static <E> ProcessorWorkQueue<E> queue(String name, int bufferSize, boolean autoCancel) {
+		return ProcessorWorkQueue.create(name, bufferSize, autoCancel);
 	}
 
 	/**
@@ -521,7 +521,7 @@ public final class Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
+		return new ProcessorEmitter<>(autoCancel, concurrency, historySize, historySize);
 	}
 
 	/**
@@ -589,7 +589,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> topic() {
+	public static <E> ProcessorTopic<E> topic() {
 		return topic("async", ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -599,7 +599,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> topic(String name) {
+	public static <E> ProcessorTopic<E> topic(String name) {
 		return topic(name, ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -612,7 +612,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> topic(boolean autoCancel) {
+	public static <E> ProcessorTopic<E> topic(boolean autoCancel) {
 		return topic(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
@@ -626,7 +626,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> topic(String name, int bufferSize) {
+	public static <E> ProcessorTopic<E> topic(String name, int bufferSize) {
 		return topic(name, bufferSize, true);
 	}
 
@@ -641,8 +641,8 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> topic(String name, int bufferSize, boolean autoCancel) {
-		return TopicProcessor.create(name, bufferSize, autoCancel);
+	public static <E> ProcessorTopic<E> topic(String name, int bufferSize, boolean autoCancel) {
+		return ProcessorTopic.create(name, bufferSize, autoCancel);
 	}
 
 	private Processors() {

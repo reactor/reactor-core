@@ -22,7 +22,7 @@ import org.reactivestreams.Processor;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class TopicProcessorTests extends AbstractProcessorVerification {
+public class ProcessorTopicTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
@@ -57,7 +57,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 	@Ignore
 	public void extra_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
 			throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create();
+		ProcessorTopic<String> processor = ProcessorTopic.create();
 		Publisher<String> publisher = Subscriber::onComplete;
 		publisher.subscribe(processor);
 

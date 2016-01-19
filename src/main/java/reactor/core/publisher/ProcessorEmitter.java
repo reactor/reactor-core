@@ -37,7 +37,7 @@ import reactor.core.support.rb.disruptor.Sequencer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class EmitterProcessor<T> extends FluxProcessor<T, T>
+public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		implements ReactiveState.LinkedDownstreams,
 		           ReactiveState.ActiveUpstream,
 		           ReactiveState.ActiveDownstream,
@@ -64,33 +64,33 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	private volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "error");
+	static final AtomicReferenceFieldUpdater<ProcessorEmitter, Throwable> ERROR =
+			PlatformDependent.newAtomicReferenceFieldUpdater(ProcessorEmitter.class, "error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "subscribers");
+	static final AtomicReferenceFieldUpdater<ProcessorEmitter, EmitterSubscriber[]> SUBSCRIBERS =
+			PlatformDependent.newAtomicReferenceFieldUpdater(ProcessorEmitter.class, "subscribers");
 
 	@SuppressWarnings("unused")
 	private volatile int running;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> RUNNING =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "running");
+	static final AtomicIntegerFieldUpdater<ProcessorEmitter> RUNNING =
+			AtomicIntegerFieldUpdater.newUpdater(ProcessorEmitter.class, "running");
 
 	@SuppressWarnings("unused")
 	private volatile int outstanding;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> OUTSTANDING =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
+	static final AtomicIntegerFieldUpdater<ProcessorEmitter> OUTSTANDING =
+			AtomicIntegerFieldUpdater.newUpdater(ProcessorEmitter.class, "outstanding");
 
 	boolean firstDrain = true;
 
-	public EmitterProcessor(){
+	public ProcessorEmitter(){
 		this(true, Integer.MAX_VALUE, SMALL_BUFFER_SIZE, -1);
 	}
 
-	public EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
+	public ProcessorEmitter(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
 		this.autoCancel = autoCancel;
 		this.maxConcurrency = maxConcurrency;
 		this.bufferSize = bufferSize;
@@ -543,7 +543,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			           DownstreamDemand, Downstream {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
-		final EmitterProcessor<T> parent;
+		final ProcessorEmitter<T>   parent;
 		final Subscriber<? super T> actual;
 
 		volatile boolean done;
@@ -562,7 +562,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
 				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
 
-		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
+		public EmitterSubscriber(ProcessorEmitter<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -571,7 +571,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, actual)) {
 				BackpressureUtils.getAndAdd(REQUESTED, this, n);
-				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
+				if (ProcessorEmitter.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}
 			}

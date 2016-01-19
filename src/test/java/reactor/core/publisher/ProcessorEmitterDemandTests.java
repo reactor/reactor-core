@@ -39,7 +39,7 @@ import reactor.core.subscription.BackpressureUtils;
  *
  * @author Anatoly Kadyshev
  */
-public class EmitterProcessorDemandTests {
+public class ProcessorEmitterDemandTests {
 
 	static final List<String> DATA     = new ArrayList<>();
 	static final int          MAX_SIZE = 100;

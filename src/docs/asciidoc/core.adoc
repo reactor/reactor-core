@@ -30,7 +30,7 @@ Environment.terminate()
 [source,groovy]
 ----
 //standalone async processor
-def processor = TopicProcessor.<Integer>create()
+def processor = ProcessorTopic.<Integer>create()
 
 //send data, will be kept safe until a subscriber attaches to the processor
 processor.onNext(1234)
