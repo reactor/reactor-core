@@ -18,8 +18,8 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.Exceptions;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.fn.Consumer;
 

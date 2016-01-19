@@ -25,11 +25,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Flux;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
-import reactor.core.error.InsufficientCapacityException;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.core.support.rb.disruptor.RingBuffer;
@@ -116,7 +114,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				inner.start();
 			}
 		}
-		catch (CancelException c) {
+		catch (Exceptions.CancelException c) {
 			//IGNORE
 		}
 		catch (Throwable t) {
@@ -445,7 +443,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			}
 			int n = a.length;
 			if (n + 1 > maxConcurrency) {
-				throw InsufficientCapacityException.get();
+				Exceptions.failWithOverflow();
 			}
 			EmitterSubscriber<?>[] b = new EmitterSubscriber[n + 1];
 			System.arraycopy(a, 0, b, 0, n);

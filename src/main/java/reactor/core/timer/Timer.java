@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Subscribers;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.fn.Consumer;
 
@@ -67,7 +68,7 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 	/**
 	 * Schedule a recurring task. The given {@link Subscriber} will receive an ever incrementing integer from 0 once
 	 * every N time units after the given delay. If the {@link Subscription} has not been requested before the timed
-	 * signal, a {@link reactor.core.error.Exceptions.TimerOverflow} will be signalled instead.
+	 * signal, a {@link Exceptions.TimerOverflow} will be signalled instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke each period
 	 * @param period the amount of time that should elapse between invocations of the given {@code Subscriber}
@@ -132,7 +133,7 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 
 	/**
 	 * Submit a task for arbitrary execution after the given time delay. If the {@link Subscription} has not been
-	 * requested before the timed signal, a {@link reactor.core.error.Exceptions.TimerOverflow} will be signalled
+	 * requested before the timed signal, a {@link Exceptions.TimerOverflow} will be signalled
 	 * instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke

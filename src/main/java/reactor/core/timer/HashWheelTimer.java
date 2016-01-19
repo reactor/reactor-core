@@ -31,10 +31,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.AlertException;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.NamedDaemonThreadFactory;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.rb.disruptor.RingBuffer;
@@ -156,7 +154,7 @@ public class HashWheelTimer extends Timer {
 					@Override
 					public void run() {
 						if (loop.isInterrupted()) {
-							throw AlertException.INSTANCE;
+							throw Exceptions.AlertException.INSTANCE;
 						}
 					}
 				};
@@ -201,7 +199,7 @@ public class HashWheelTimer extends Timer {
 					try {
 						waitStrategy.waitFor(deadline, timeMillisResolver, noop);
 					}
-					catch (AlertException | InterruptedException e) {
+					catch (Exceptions.AlertException | InterruptedException e) {
 						break;
 					}
 
@@ -241,7 +239,7 @@ public class HashWheelTimer extends Timer {
 			long firstDelay,
 			Subscriber<? super Long> subscriber) {
 		if (loop.isInterrupted() || !loop.isAlive()) {
-			throw CancelException.get();
+			Exceptions.failWithCancel();
 		}
 		if (recurringTimeout != 0) {
 			TimeUtils.checkResolution(recurringTimeout, resolution);

@@ -28,11 +28,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Flux;
-import reactor.core.error.AlertException;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.NamedDaemonThreadFactory;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
@@ -571,7 +569,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 			@Override
 			public void run() {
 				if (!alive() && SUBSCRIBER_COUNT.get(RingBufferProcessor.this) == 0) {
-					throw AlertException.INSTANCE;
+					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
 		};
@@ -693,10 +691,10 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 					public void run() {
 						if (!alive()) {
 							if(cancelled){
-								throw CancelException.INSTANCE;
+								throw Exceptions.CancelException.INSTANCE;
 							}
 							else {
-								throw AlertException.INSTANCE;
+								throw Exceptions.AlertException.INSTANCE;
 							}
 						}
 					}
@@ -788,7 +786,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 			@Override
 			public void run() {
 				if (!running.get() || processor.isTerminated()) {
-					throw AlertException.INSTANCE;
+					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
 		};
@@ -861,7 +859,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 												0) {
 									//Todo Use WaitStrategy?
 									if(!running.get() || processor.isTerminated()){
-										throw AlertException.INSTANCE;
+										throw Exceptions.AlertException.INSTANCE;
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -878,7 +876,7 @@ public final class RingBufferProcessor<E> extends ExecutorProcessor<E, E>
 							processor.readWait.signalAllWhenBlocking();
 						}
 					}
-					catch (final AlertException | CancelException ex) {
+					catch (final Exceptions.AlertException | Exceptions.CancelException ex) {
 						if (!running.get()) {
 							break;
 						}

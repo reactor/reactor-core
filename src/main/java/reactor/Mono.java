@@ -26,8 +26,6 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.processor.ProcessorGroup;
 import reactor.core.publisher.FluxAmb;
 import reactor.core.publisher.FluxFlatMap;
@@ -50,6 +48,7 @@ import reactor.core.publisher.MonoTimer;
 import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.Assert;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
@@ -1071,7 +1070,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 						}
 					}
 					if(delay < System.currentTimeMillis()){
-						throw CancelException.get();
+						Exceptions.failWithCancel();
 					}
 					Thread.sleep(1);
 				}

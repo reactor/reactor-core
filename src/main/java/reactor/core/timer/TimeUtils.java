@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.error.Exceptions;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.core.support.rb.disruptor.Sequence;

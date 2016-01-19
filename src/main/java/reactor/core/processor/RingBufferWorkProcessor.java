@@ -27,10 +27,9 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.AlertException;
-import reactor.core.error.CancelException;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.NamedDaemonThreadFactory;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
@@ -522,7 +521,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 			@Override
 			public void run() {
 				if (!alive()) {
-					throw AlertException.INSTANCE;
+					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
 		};
@@ -605,10 +604,10 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 			public void run() {
 				if (!alive()) {
 					if (cancelled) {
-						throw CancelException.INSTANCE;
+						throw Exceptions.CancelException.INSTANCE;
 					}
 					else {
-						throw AlertException.INSTANCE;
+						throw Exceptions.AlertException.INSTANCE;
 					}
 				}
 			}
@@ -715,7 +714,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
 						replay(pendingRequest.get() == Long.MAX_VALUE)) {
-					throw AlertException.INSTANCE;
+					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
 		};
@@ -805,7 +804,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 								nextSequence = processor.workSequence.get() + 1L;
 								while ((!unbounded && pendingRequest.get() == 0L)) {
 									if (!isRunning()) {
-										throw AlertException.INSTANCE;
+										throw Exceptions.AlertException.INSTANCE;
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -820,9 +819,9 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 							try {
 								readNextEvent(unbounded);
 							}
-							catch (AlertException ce) {
+							catch (Exceptions.AlertException ce) {
 								barrier.clearAlert();
-								throw CancelException.INSTANCE;
+								throw Exceptions.CancelException.INSTANCE;
 							}
 
 							subscriber.onNext(event.value);
@@ -836,7 +835,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 								cachedAvailableSequence =
 										barrier.waitFor(nextSequence, waiter);
 							}
-							catch (AlertException ce) {
+							catch (Exceptions.AlertException ce) {
 								barrier.clearAlert();
 								if (!running.get()) {
 									processor.decrementSubscribers();
@@ -852,7 +851,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 											event = processor.ringBuffer.get(nextSequence);
 											break;
 										}
-										catch (AlertException cee) {
+										catch (Exceptions.AlertException cee) {
 											barrier.clearAlert();
 										}
 									}
@@ -867,11 +866,11 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 						}
 
 					}
-					catch (CancelException ce) {
+					catch (Exceptions.CancelException ce) {
 						reschedule(event);
 						break;
 					}
-					catch (AlertException ex) {
+					catch (Exceptions.AlertException ex) {
 						barrier.clearAlert();
 						if (!running.get()) {
 							break;
@@ -947,7 +946,7 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 					}
 
 				}
-				catch (CancelException ce) {
+				catch (Exceptions.CancelException ce) {
 					running.set(false);
 					return true;
 				}
@@ -974,11 +973,11 @@ public final class RingBufferWorkProcessor<E> extends ExecutorProcessor<E, E>
 		}
 
 		private void readNextEvent(final boolean unbounded)
-				throws AlertException {
+				throws Exceptions.AlertException {
 				//pause until request
 			while ((!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {
-					throw AlertException.INSTANCE;
+					throw Exceptions.AlertException.INSTANCE;
 				}
 				//Todo Use WaitStrategy?
 				LockSupport.parkNanos(1L);

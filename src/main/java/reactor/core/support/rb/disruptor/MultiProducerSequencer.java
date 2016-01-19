@@ -17,7 +17,7 @@ package reactor.core.support.rb.disruptor;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent0;
 import sun.misc.Unsafe;
@@ -157,7 +157,7 @@ public final class MultiProducerSequencer extends Sequencer
      * @see Sequencer#tryNext()
      */
     @Override
-    public long tryNext() throws InsufficientCapacityException
+    public long tryNext() throws Exceptions.InsufficientCapacityException
     {
         return tryNext(1);
     }
@@ -166,7 +166,7 @@ public final class MultiProducerSequencer extends Sequencer
      * @see Sequencer#tryNext(int)
      */
     @Override
-    public long tryNext(int n) throws InsufficientCapacityException
+    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
     {
         if (n < 1)
         {
@@ -183,7 +183,7 @@ public final class MultiProducerSequencer extends Sequencer
 
             if (!hasAvailableCapacity(gatingSequences, n, current))
             {
-                throw InsufficientCapacityException.get();
+                Exceptions.failWithOverflow();
             }
         }
         while (!cursor.compareAndSet(current, next));

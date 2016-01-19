@@ -17,7 +17,7 @@ package reactor.core.support.rb.disruptor;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
@@ -344,9 +344,9 @@ public abstract class Sequencer
      * number of the slot if there is at least <code>requiredCapacity</code> slots
      * available.
      * @return the claimed sequence value
-     * @throws InsufficientCapacityException
+     * @throws Exceptions.InsufficientCapacityException
      */
-    public abstract long tryNext() throws InsufficientCapacityException;
+    public abstract long tryNext() throws Exceptions.InsufficientCapacityException;
 
     /**
      * Attempt to claim the next n events in sequence for publishing.  Will return the
@@ -356,9 +356,9 @@ public abstract class Sequencer
      *
      * @param n the number of sequences to claim
      * @return the claimed sequence value
-     * @throws InsufficientCapacityException
+     * @throws Exceptions.InsufficientCapacityException
      */
-    public abstract long tryNext(int n) throws InsufficientCapacityException;
+    public abstract long tryNext(int n) throws Exceptions.InsufficientCapacityException;
 
     /**
      * Publishes a sequence. Call when the event has been filled.

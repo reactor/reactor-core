@@ -18,9 +18,7 @@ package reactor.core.support.rb;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.AlertException;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.fn.Consumer;
@@ -76,10 +74,10 @@ public final class RequestTask implements Runnable {
 				upstream.request(limit);
 			}
 		}
-		catch (AlertException e) {
+		catch (Exceptions.AlertException e) {
 			//completed
 		}
-		catch (CancelException ce) {
+		catch (Exceptions.CancelException ce) {
 			upstream.cancel();
 		}
 		catch (InterruptedException e) {

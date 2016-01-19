@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.error;
+package reactor.core.support;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import reactor.core.support.ReactiveState;
 
 /**
  * Static Helpers to decorate an error with an associated data
@@ -39,88 +37,6 @@ public enum Exceptions {
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
-
-	/**
-	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
-	 *
-	 * @param t
-	 */
-	public static Throwable unwrap(Throwable t) {
-		if (t instanceof ReactiveException) {
-			return t.getCause();
-		}
-		return t;
-	}
-
-	/**
-	 * Throw an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
-	public static void failUpstream(Throwable t) {
-		throwIfFatal(t);
-		throw wrapUpstream(t);
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
-	public static RuntimeException wrapUpstream(Throwable t) {
-		if(t instanceof UpstreamException){
-			return (UpstreamException) t;
-		}
-		return new UpstreamException(t);
-	}
-
-	/**
-	 * Throw an unchecked
-	 * {@link RuntimeException} that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
-	 *
-	 * @param t the root cause
-	 */
-	public static void fail(Throwable t) {
-		throwIfFatal(t);
-		throw wrapDownstream(t);
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
-	public static RuntimeException wrapDownstream(Throwable t) {
-		if(t instanceof DownstreamException){
-			return (DownstreamException)t;
-		}
-		return new DownstreamException(t);
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public static IllegalStateException spec_2_12_exception() {
-		return new Spec212_DuplicateOnSubscribe();
-	}
-
-	/**
-	 *
-	 * @return
-	 */
-	public static NullPointerException spec_2_13_exception() {
-		return new Spec213_ArgumentIsNull();
-	}
-
-	/**
-	 *
-	 * @param elements
-	 * @return
-	 */
-	public static IllegalArgumentException spec_3_09_exception(long elements) {
-		return new Spec309_NullOrNegativeRequest(elements);
-	}
 
 	/**
 	 * Adds a {@code Throwable} to a causality-chain of Throwables, as an additional cause (if it does not
@@ -153,6 +69,92 @@ public enum Exceptions {
 			// the javadocs say that some Throwables (depending on how they're made) will never
 			// let me call initCause without blowing up even if it returns null
 		}
+	}
+	/**
+	 * Signal a desynchronization of demand and timer
+	 */
+	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, Throwable> field,
+			T instance,
+			Throwable exception) {
+		for (; ; ) {
+			Throwable current = field.get(instance);
+
+			if (current == TERMINATED) {
+				return false;
+			}
+
+			Throwable update;
+			if (current == null) {
+				update = exception;
+			}
+			else {
+				update = new Throwable("Multiple exceptions");
+				update.addSuppressed(current);
+				update.addSuppressed(exception);
+			}
+
+			if (field.compareAndSet(instance, current, update)) {
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * Adds the given item as the final cause of the given {@code Throwable}, wrapped in {@code OnNextValue}
+	 * (which extends {@code RuntimeException}).
+	 *
+	 * @param e     the {@link Throwable} to which you want to add a cause
+	 * @param value the item you want to add to {@code e} as the cause of the {@code Throwable}
+	 * @return the same {@code Throwable} ({@code e}) that was passed in, with {@code value} added to it as a
+	 * cause
+	 */
+	public static Throwable addValueAsLastCause(Throwable e, Object value) {
+		Throwable lastCause = Exceptions.getFinalCause(e);
+		if (lastCause != null && lastCause instanceof ValueCause) {
+			// purposefully using == for object reference check
+			if (((ValueCause) lastCause).getValue() == value) {
+				// don't add another
+				return e;
+			}
+		}
+		Exceptions.addCause(e, new ValueCause(value));
+		return e;
+	}
+
+	/**
+	 * Throw an unchecked
+	 * {@link RuntimeException} that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 *
+	 * @param t the root cause
+	 */
+	public static void fail(Throwable t) {
+		throwIfFatal(t);
+		throw wrapDownstream(t);
+	}
+
+	/**
+	 * Throw an unchecked {@link RuntimeException} that will be propagated upstream
+	 *
+	 * @param t the root cause
+	 */
+	public static void failUpstream(Throwable t) {
+		throwIfFatal(t);
+		throw wrapUpstream(t);
+	}
+
+	/**
+	 * Throw a {@link CancelException}
+	 */
+	public static void failWithCancel() {
+		throw ReactiveState.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+	}
+
+	/**
+	 * Throw a {@link InsufficientCapacityException}
+	 */
+	public static void failWithOverflow() {
+		throw ReactiveState.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+				InsufficientCapacityException.INSTANCE;
 	}
 
 	/**
@@ -193,25 +195,58 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Adds the given item as the final cause of the given {@code Throwable}, wrapped in {@code OnNextValue}
-	 * (which extends {@code RuntimeException}).
+	 * Take an unsignalled exception that is masking anowher one due to callback failure.
 	 *
-	 * @param e     the {@link Throwable} to which you want to add a cause
-	 * @param value the item you want to add to {@code e} as the cause of the {@code Throwable}
-	 * @return the same {@code Throwable} ({@code e}) that was passed in, with {@code value} added to it as a
-	 * cause
+	 * @param e the exception to handle
 	 */
-	public static Throwable addValueAsLastCause(Throwable e, Object value) {
-		Throwable lastCause = Exceptions.getFinalCause(e);
-		if (lastCause != null && lastCause instanceof ValueCause) {
-			// purposefully using == for object reference check
-			if (((ValueCause) lastCause).getValue() == value) {
-				// don't add another
-				return e;
-			}
+	public static void onErrorDropped(Throwable e, Throwable root) {
+		if(root != null) {
+			e.addSuppressed(root);
 		}
-		Exceptions.addCause(e, new ValueCause(value));
-		return e;
+		onErrorDropped(e);
+	}
+
+	/**
+	 * Take an unsignalled exception that is masking anowher one due to callback failure.
+	 *
+	 * @param e the exception to handle
+	 */
+	public static void onErrorDropped(Throwable e) {
+		failUpstream(e);
+	}
+
+	/**
+	 * An unexpected event is about to be dropped
+	 *
+	 * @param t
+	 */
+	public static <T> void onNextDropped(T t) {
+		failWithCancel();
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public static IllegalStateException spec_2_12_exception() {
+		return new Spec212_DuplicateOnSubscribe();
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public static NullPointerException spec_2_13_exception() {
+		return new Spec213_ArgumentIsNull();
+	}
+
+	/**
+	 *
+	 * @param elements
+	 * @return
+	 */
+	public static IllegalArgumentException spec_3_09_exception(long elements) {
+		return new Spec309_NullOrNegativeRequest(elements);
 	}
 
 	/**
@@ -242,62 +277,41 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e, Throwable root) {
-		if(root != null) {
-			e.addSuppressed(root);
-		}
-		onErrorDropped(e);
-	}
-
-	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e) {
-		failUpstream(e);
-	}
-
-	/**
-	 * An unexpected event is about to be dropped
+	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
 	 *
 	 * @param t
 	 */
-	public static <T> void onNextDropped(T t) {
-		throw CancelException.get();
-	}
-	/**
-	 * Signal a desynchronization of demand and timer
-	 */
-	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, Throwable> field,
-			T instance,
-			Throwable exception) {
-		for (; ; ) {
-			Throwable current = field.get(instance);
-
-			if (current == TERMINATED) {
-				return false;
-			}
-
-			Throwable update;
-			if (current == null) {
-				update = exception;
-			}
-			else {
-				update = new Throwable("Multiple exceptions");
-				update.addSuppressed(current);
-				update.addSuppressed(exception);
-			}
-
-			if (field.compareAndSet(instance, current, update)) {
-				return true;
-			}
+	public static Throwable unwrap(Throwable t) {
+		if (t instanceof ReactiveException) {
+			return t.getCause();
 		}
+		return t;
 	}
+
+	/**
+	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
+	 *
+	 * @param t the root cause
+	 */
+	public static RuntimeException wrapUpstream(Throwable t) {
+		if(t instanceof UpstreamException){
+			return (UpstreamException) t;
+		}
+		return new UpstreamException(t);
+	}
+
+	/**
+	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
+	 *
+	 * @param t the root cause
+	 */
+	public static RuntimeException wrapDownstream(Throwable t) {
+		if(t instanceof DownstreamException){
+			return (DownstreamException)t;
+		}
+		return new DownstreamException(t);
+	}
+
 	/**
 	 * Represents an error that was encountered while trying to emit an item from an Observable, and
 	 * tries to preserve that item for future use and/or reporting.
@@ -372,6 +386,9 @@ public enum Exceptions {
 
 	}
 
+	/**
+	 *
+	 */
 	public static final class Spec309_NullOrNegativeRequest extends IllegalArgumentException {
 		public Spec309_NullOrNegativeRequest(long elements) {
 			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
@@ -380,6 +397,9 @@ public enum Exceptions {
 
 	}
 
+	/**
+	 *
+	 */
 	public static final class Spec213_ArgumentIsNull extends NullPointerException {
 		public Spec213_ArgumentIsNull() {
 			super("Spec 2.13: Signal/argument cannot be null");
@@ -387,6 +407,9 @@ public enum Exceptions {
 
 	}
 
+	/**
+	 *
+	 */
 	public static final class Spec212_DuplicateOnSubscribe extends IllegalStateException {
 		public Spec212_DuplicateOnSubscribe() {
 			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
@@ -449,6 +472,73 @@ public enum Exceptions {
 	public static class DownstreamException extends ReactiveException {
 		public DownstreamException(Throwable cause) {
 			super(cause);
+		}
+	}
+
+	/**
+	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
+	 * <p>
+	 * It does not fill in a stack trace for performance reasons.
+	 */
+	@SuppressWarnings("serial")
+	public static final class AlertException extends RuntimeException {
+
+		/** Pre-allocated exception to avoid garbage generation */
+		public static final AlertException INSTANCE = new AlertException();
+
+		/**
+		 * Private constructor so only a single instance exists.
+		 */
+		private AlertException() {
+		}
+
+		/**
+		 * Overridden so the stack trace is not filled in for this exception for performance reasons.
+		 *
+		 * @return this instance.
+		 */
+		@Override
+		public Throwable fillInStackTrace() {
+			return this;
+		}
+	}
+
+	/**
+	 * An error signal from downstream subscribers consuming data when their state is denying any additional event.
+	 *
+	 * @author Stephane Maldini
+	 */
+	public static final class CancelException extends UpstreamException {
+
+		public static final CancelException INSTANCE = new CancelException();
+
+		private CancelException() {
+			super("The subscriber has denied dispatching");
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_CANCEL ? super.fillInStackTrace() : this;
+		}
+	}
+
+	/**
+	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
+	 *
+	 * @author Stephane Maldini
+	 */
+	@SuppressWarnings("serial")
+	public static final class InsufficientCapacityException extends RuntimeException {
+
+		private static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
+
+		private InsufficientCapacityException() {
+			super("The subscriber is overrun by more signals than expected (bounded queue...)");
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
 		}
 	}
 }

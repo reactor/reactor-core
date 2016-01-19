@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.Exceptions;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 
 /**
  * Emits a single item at most from the source.

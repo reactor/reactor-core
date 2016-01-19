@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
@@ -266,22 +266,22 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 * }
 	 * </pre>
 	 * <p>This method will not block if there is not space available in the ring buffer, instead it will throw an {@link
-	 * InsufficientCapacityException}.
+	 * Exceptions.InsufficientCapacityException}.
 	 * @return The next sequence to publish to.
-	 * @throws InsufficientCapacityException if the necessary space in the ring buffer is not available
+	 * @throws Exceptions.InsufficientCapacityException if the necessary space in the ring buffer is not available
 	 * @see RingBuffer#publish(long)
 	 * @see RingBuffer#get(long)
 	 */
-	abstract public long tryNext() throws InsufficientCapacityException;
+	abstract public long tryNext() throws Exceptions.InsufficientCapacityException;
 
 	/**
 	 * The same functionality as {@link RingBuffer#tryNext()}, but allows the caller to attempt to claim the next n
 	 * sequences.
 	 * @param n number of slots to claim
 	 * @return sequence number of the highest slot claimed
-	 * @throws InsufficientCapacityException if the necessary space in the ring buffer is not available
+	 * @throws Exceptions.InsufficientCapacityException if the necessary space in the ring buffer is not available
 	 */
-	abstract public long tryNext(int n) throws InsufficientCapacityException;
+	abstract public long tryNext(int n) throws Exceptions.InsufficientCapacityException;
 
 	/**
 	 * Resets the cursor to a specific value.  This can be applied at any time, but it is worth noting that it can cause
@@ -441,7 +441,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 				buffer.publish(seq);
 				return true;
 			}
-			catch (InsufficientCapacityException ice){
+			catch (Exceptions.InsufficientCapacityException ice){
 				return false;
 			}
 		}

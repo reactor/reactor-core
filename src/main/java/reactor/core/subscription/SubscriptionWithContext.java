@@ -18,7 +18,7 @@ package reactor.core.subscription;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.error.CancelException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 
 /**
@@ -75,7 +75,7 @@ public class SubscriptionWithContext<C> implements Subscription, ReactiveState.U
 	 * Throw a CancelException
 	 */
 	public void abort(){
-		throw CancelException.get();
+		Exceptions.failWithCancel();
 	}
 
 	@Override

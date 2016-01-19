@@ -23,12 +23,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Flux;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Assert;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
 import reactor.fn.BiConsumer;
@@ -241,7 +240,7 @@ public abstract class FluxFactory implements ReactiveState {
 		public void onError(Throwable t) {
 			if (TERMINAL_UPDATER.compareAndSet(this, 0, 1)) {
 				doShutdown();
-				if (CancelException.class != t.getClass()) {
+				if (Exceptions.CancelException.class != t.getClass()) {
 					subscriber.onError(t);
 				}
 			}

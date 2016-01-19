@@ -22,7 +22,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import reactor.core.error.AlertException;
 import reactor.core.support.rb.disruptor.Sequence;
 import reactor.fn.LongSupplier;
 
@@ -42,11 +41,11 @@ public interface WaitStrategy
      *    need this as is notified upon update.
      * @param spinObserver Spin observer
      * @return the sequence that is available which may be greater than the requested sequence.
-     * @throws AlertException if the status of the Disruptor has changed.
+     * @throws Exceptions.AlertException if the status of the Disruptor has changed.
      * @throws InterruptedException if the thread is interrupted.
      */
     long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
-        throws AlertException, InterruptedException;
+            throws Exceptions.AlertException, InterruptedException;
 
     /**
      * Implementations should signal the waiting ringbuffer consumers that the cursor has advanced.
@@ -65,7 +64,7 @@ public interface WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
             if ((availableSequence = cursorSequence.get()) < sequence)
@@ -118,7 +117,7 @@ public interface WaitStrategy
     {
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
 
@@ -150,7 +149,7 @@ public interface WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
             if ((availableSequence = cursorSequence.get()) < sequence)
@@ -263,7 +262,7 @@ public interface WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursor, Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
             long startTime = 0;
@@ -335,7 +334,7 @@ public interface WaitStrategy
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
             int counter = retries;
@@ -354,7 +353,7 @@ public interface WaitStrategy
         }
 
         private int applyWaitMethod(final Runnable barrier, int counter)
-            throws AlertException
+                throws Exceptions.AlertException
         {
             barrier.run();
 
@@ -388,7 +387,7 @@ public interface WaitStrategy
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-            throws AlertException, InterruptedException
+                throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
             int counter = SPIN_TRIES;
@@ -407,7 +406,7 @@ public interface WaitStrategy
         }
 
         private int applyWaitMethod(final Runnable barrier, int counter)
-            throws AlertException
+                throws Exceptions.AlertException
         {
             barrier.run();
 

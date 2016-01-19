@@ -24,10 +24,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
-import reactor.core.error.InsufficientCapacityException;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.timer.TimeUtils;
 import reactor.fn.Consumer;
@@ -148,10 +146,10 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 			actual.onNext(data);
 			return Emission.OK;
 		}
-		catch (CancelException ce) {
+		catch (Exceptions.CancelException ce) {
 			return Emission.CANCELLED;
 		}
-		catch (InsufficientCapacityException ice) {
+		catch (Exceptions.InsufficientCapacityException ice) {
 			return Emission.BACKPRESSURED;
 		}
 		catch (Throwable t) {
@@ -205,10 +203,10 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 			actual.onComplete();
 			return Emission.OK;
 		}
-		catch (CancelException ce) {
+		catch (Exceptions.CancelException ce) {
 			return Emission.CANCELLED;
 		}
-		catch (InsufficientCapacityException ice) {
+		catch (Exceptions.InsufficientCapacityException ice) {
 			return Emission.BACKPRESSURED;
 		}
 		catch (Throwable t) {
@@ -380,7 +378,7 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 			return;
 		}
 		if(emission.isBackpressured()){
-			throw InsufficientCapacityException.get();
+			Exceptions.failWithOverflow();
 		}
 		if(emission.isFailed()){
 			if(uncaughtException != null) {

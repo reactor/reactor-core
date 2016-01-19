@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.Exceptions;
-import reactor.core.error.InsufficientCapacityException;
 import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.rb.disruptor.Sequence;
 
@@ -435,6 +433,6 @@ public enum BackpressureUtils {
 	 *
 	 */
 	public static void reportMoreProduced() {
-		throw InsufficientCapacityException.get();
+		Exceptions.failWithOverflow();
 	}
 }

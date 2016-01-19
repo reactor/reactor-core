@@ -17,7 +17,7 @@ package reactor.core.support.rb.disruptor;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 
 abstract class SingleProducerSequencerPad extends Sequencer
@@ -138,7 +138,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
      * @see Sequencer#tryNext()
      */
     @Override
-    public long tryNext() throws InsufficientCapacityException
+    public long tryNext() throws Exceptions.InsufficientCapacityException
     {
         return tryNext(1);
     }
@@ -147,7 +147,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
      * @see Sequencer#tryNext(int)
      */
     @Override
-    public long tryNext(int n) throws InsufficientCapacityException
+    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
     {
         if (n < 1)
         {
@@ -156,7 +156,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
 
         if (!hasAvailableCapacity(n))
         {
-            throw InsufficientCapacityException.get();
+            Exceptions.failWithOverflow();
         }
 
         long nextSequence = this.nextValue += n;

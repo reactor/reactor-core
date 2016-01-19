@@ -28,11 +28,10 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Assert;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.SignalType;
@@ -941,7 +940,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 					subscriber.onError((Throwable) payload);
 				}
 			}
-			catch (CancelException c) {
+			catch (Exceptions.CancelException c) {
 				service.decrementReference();
 				throw c;
 			}
@@ -1165,7 +1164,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 				}
 
 			}
-			catch (CancelException ce) {
+			catch (Exceptions.CancelException ce) {
 				//IGNORE
 			}
 			catch (Throwable t){

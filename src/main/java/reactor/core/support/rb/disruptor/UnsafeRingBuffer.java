@@ -15,7 +15,7 @@
  */
 package reactor.core.support.rb.disruptor;
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.internal.PlatformDependent0;
 import reactor.fn.Supplier;
 import sun.misc.Unsafe;
@@ -126,13 +126,13 @@ public final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public long tryNext() throws InsufficientCapacityException
+    public long tryNext() throws Exceptions.InsufficientCapacityException
     {
         return sequencer.tryNext();
     }
 
     @Override
-    public long tryNext(int n) throws InsufficientCapacityException
+    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
     {
         return sequencer.tryNext(n);
     }

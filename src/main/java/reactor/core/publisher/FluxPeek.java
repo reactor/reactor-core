@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.Exceptions;
 import reactor.core.subscription.EmptySubscription;
+import reactor.core.support.Exceptions;
 import reactor.fn.Consumer;
 import reactor.fn.LongConsumer;
 

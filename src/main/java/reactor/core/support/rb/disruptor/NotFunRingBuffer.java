@@ -16,7 +16,7 @@
 package reactor.core.support.rb.disruptor;
 
 
-import reactor.core.error.InsufficientCapacityException;
+import reactor.core.support.Exceptions;
 import reactor.fn.Supplier;
 
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
@@ -97,13 +97,13 @@ public final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public long tryNext() throws InsufficientCapacityException
+    public long tryNext() throws Exceptions.InsufficientCapacityException
     {
         return sequencer.tryNext();
     }
 
     @Override
-    public long tryNext(int n) throws InsufficientCapacityException
+    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
     {
         return sequencer.tryNext(n);
     }

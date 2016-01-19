@@ -15,7 +15,7 @@
  */
 package reactor.core.support.rb.disruptor;
 
-import reactor.core.error.AlertException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.fn.LongSupplier;
 
@@ -43,11 +43,11 @@ public final class SequenceBarrier implements Runnable, LongSupplier
      *
      * @param sequence to wait for
      * @return the sequence up to which is available
-     * @throws AlertException if a status change has occurred for the Disruptor
+     * @throws Exceptions.AlertException if a status change has occurred for the Disruptor
      * @throws InterruptedException if the thread needs awaking on a condition variable.
      */
     public long waitFor(final long sequence)
-      throws AlertException, InterruptedException {
+            throws Exceptions.AlertException, InterruptedException {
         checkAlert();
 
         long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, this);
@@ -65,11 +65,11 @@ public final class SequenceBarrier implements Runnable, LongSupplier
      * @param consumer
      * @param sequence to wait for
      * @return the sequence up to which is available
-     * @throws AlertException if a status change has occurred for the Disruptor
+     * @throws Exceptions.AlertException if a status change has occurred for the Disruptor
      * @throws InterruptedException if the thread needs awaking on a condition variable.
      */
     public long waitFor(final long sequence, Runnable consumer)
-      throws AlertException, InterruptedException {
+            throws Exceptions.AlertException, InterruptedException {
         checkAlert();
 
         long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, consumer);
@@ -127,15 +127,15 @@ public final class SequenceBarrier implements Runnable, LongSupplier
     }
 
     /**
-         * Check if an alert has been raised and throw an {@link AlertException} if it has.
+         * Check if an alert has been raised and throw an {@link Exceptions.AlertException} if it has.
          *
-         * @throws AlertException if alert has been raised.
+         * @throws Exceptions.AlertException if alert has been raised.
          */
-    public void checkAlert() throws AlertException
+    public void checkAlert() throws Exceptions.AlertException
     {
         if (alerted)
         {
-            throw AlertException.INSTANCE;
+            throw Exceptions.AlertException.INSTANCE;
         }
     }
 

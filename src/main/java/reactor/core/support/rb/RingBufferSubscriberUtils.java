@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.error.AlertException;
-import reactor.core.error.CancelException;
+import reactor.core.support.Exceptions;
 import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.core.support.rb.disruptor.SequenceBarrier;
 import reactor.fn.LongSupplier;
@@ -58,12 +57,12 @@ public enum RingBufferSubscriberUtils {
 					barrier.waitFor(waitedSequence);
 				}
 				if(!isRunning.get()){
-					throw CancelException.INSTANCE;
+					throw Exceptions.CancelException.INSTANCE;
 				}
 				LockSupport.parkNanos(1L);
 			}
 		}
-		catch (CancelException | AlertException ae) {
+		catch (Exceptions.CancelException | Exceptions.AlertException ae) {
 			return false;
 		}
 		catch (InterruptedException ie) {

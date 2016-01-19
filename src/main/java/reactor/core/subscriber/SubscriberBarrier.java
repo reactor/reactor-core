@@ -17,9 +17,8 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.error.CancelException;
-import reactor.core.error.Exceptions;
 import reactor.core.support.BackpressureUtils;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
 
@@ -84,7 +83,7 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 		super.onNext(i);
 		try {
 			doNext(i);
-		} catch (CancelException c) {
+		} catch (Exceptions.CancelException c) {
 			throw c;
 		} catch (Throwable throwable) {
 			Subscription subscription = this.subscription;

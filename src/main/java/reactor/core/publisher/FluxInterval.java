@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import reactor.Flux;
-import reactor.core.error.Exceptions;
 import reactor.core.subscription.EmptySubscription;
+import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.timer.Timer;
 
