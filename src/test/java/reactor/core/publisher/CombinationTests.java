@@ -80,7 +80,7 @@ public class CombinationTests {
 	public void tesSubmitSession() throws Exception {
 		FluxProcessor<Integer, Integer> processor = Processors.emitter();
 		AtomicInteger count = new AtomicInteger();
-		processor.to(Processors.ioGroup()
+		processor.subscribeWith(Processors.ioGroup()
 		                       .get())
 		         .subscribe(Subscribers.create(s -> {
 			         try {
@@ -118,7 +118,7 @@ public class CombinationTests {
 		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
 
 		for (int i = 0; i < subs; i++) {
-			processor.to(Processors.singleGroup()
+			processor.subscribeWith(Processors.singleGroup()
 			                       .get())
 			         .subscribe(Subscribers.create(s -> {
 				         s.request(1L);

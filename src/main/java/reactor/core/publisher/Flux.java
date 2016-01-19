@@ -1098,14 +1098,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
 	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
 	 *
-	 * {@code flux.to(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeWith(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param subscriber
 	 * @param <E>
 	 *
 	 * @return the passed {@link Subscriber}
 	 */
-	public final <E extends Subscriber<? super T>> E to(E subscriber) {
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
 	}

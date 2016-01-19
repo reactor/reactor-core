@@ -912,7 +912,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 *
 	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
 	 */
-	public final <E extends Subscriber<? super T>> E to(E subscriber) {
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
 	}
