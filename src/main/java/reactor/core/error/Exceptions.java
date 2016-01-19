@@ -24,7 +24,8 @@ import reactor.core.support.ReactiveState;
 /**
  * Static Helpers to decorate an error with an associated data
  * <p>
- * Original design from https://github.com/ReactiveX/RxJava/blob/1.x/src/main/java/rx/exceptions/Exceptions.java
+ *
+ * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  *
  * @author Stephane Maldini
  * @since 2.0
