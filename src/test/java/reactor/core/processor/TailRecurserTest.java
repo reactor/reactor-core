@@ -1,11 +1,10 @@
-package reactor.core.processor;
+package reactor.core.publisher;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import reactor.fn.Consumer;
-import reactor.fn.Supplier;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertThat;
 

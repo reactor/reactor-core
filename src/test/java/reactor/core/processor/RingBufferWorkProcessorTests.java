@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +30,7 @@ import reactor.core.support.Assert;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class RingBufferWorkProcessorTests extends AbstractProcessorVerification {
+public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
@@ -99,7 +99,7 @@ public class RingBufferWorkProcessorTests extends AbstractProcessorVerification 
 	}
 
 	/*public static void main() {
-		final RingBufferWorkProcessor<Long> processor = RingBufferWorkProcessor.<Long>create("some-test");
+		final WorkQueueProcessor<Long> processor = WorkQueueProcessor.<Long>create("some-test");
 
 		Publisher<Long> pub = PublisherFactory.create(
 		  c -> {

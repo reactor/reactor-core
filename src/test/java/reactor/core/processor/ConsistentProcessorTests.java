@@ -13,7 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.processor;
+package reactor.core.publisher;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -23,11 +34,6 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Timers;
-
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -131,8 +137,8 @@ public class ConsistentProcessorTests {
 	}
 
 	private void setupPipeline() {
-		processor = RingBufferProcessor.create(false);
-		workProcessor = RingBufferWorkProcessor.create(false);
+		processor = TopicProcessor.create(false);
+		workProcessor = WorkQueueProcessor.create(false);
 		processor.subscribe(workProcessor);
 	}
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
@@ -24,7 +24,7 @@ import reactor.Processors;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class RingBufferProcessorTests extends AbstractProcessorVerification {
+public class TopicProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
@@ -45,7 +45,7 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 	@Test
 	public void testShutdown() {
 		for (int i = 0; i < 1000; i++) {
-			ExecutorProcessor dispatcher = Processors.topic("rb-test-shutdown", 16);
+			ProcessorExecutor dispatcher = Processors.topic("rb-test-shutdown", 16);
 			dispatcher.awaitAndShutdown();
 		}
 	}
@@ -59,7 +59,7 @@ public class RingBufferProcessorTests extends AbstractProcessorVerification {
 	@Ignore
 	public void extra_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
 			throws InterruptedException {
-		RingBufferProcessor<String> processor = RingBufferProcessor.create();
+		TopicProcessor<String> processor = TopicProcessor.create();
 		Publisher<String> publisher = Subscriber::onComplete;
 		publisher.subscribe(processor);
 

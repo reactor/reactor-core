@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -208,7 +208,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 	final private   Processor<Runnable, Runnable>         processor;
 	final protected boolean                               autoShutdown;
 	final protected int                                   concurrency;
-	final           ExecutorProcessor<Runnable, Runnable> executorProcessor;
+	final           ProcessorExecutor<Runnable, Runnable> executorProcessor;
 
 	@SuppressWarnings("unused")
 	private volatile int refCount = 0;
@@ -306,8 +306,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		if (processor == null) {
 			return true;
 		}
-		else if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
-			return ((ExecutorProcessor) processor).awaitAndShutdown(timeout, timeUnit);
+		else if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
+			return ((ProcessorExecutor) processor).awaitAndShutdown(timeout, timeUnit);
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
 	}
@@ -316,8 +316,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		if (processor == null) {
 			return;
 		}
-		else if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
-			((ExecutorProcessor) processor).forceShutdown();
+		else if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
+			((ProcessorExecutor) processor).forceShutdown();
 			return;
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
@@ -327,8 +327,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		if (processor == null) {
 			return true;
 		}
-		if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
-			return ((ExecutorProcessor) processor).alive();
+		if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
+			return ((ProcessorExecutor) processor).alive();
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
 	}
@@ -338,8 +338,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			return;
 		}
 		try {
-			if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
-				((ExecutorProcessor) processor).shutdown();
+			if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
+				((ProcessorExecutor) processor).shutdown();
 			}
 			else {
 				processor.onComplete();
@@ -403,9 +403,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			Assert.isTrue(this.processor != null);
 
 			// Managed Processor, providing for tail recursion,
-			if (ExecutorProcessor.class.isAssignableFrom(this.processor.getClass())) {
+			if (ProcessorExecutor.class.isAssignableFrom(this.processor.getClass())) {
 
-				this.executorProcessor = (ExecutorProcessor<Runnable, Runnable>) this.processor;
+				this.executorProcessor = (ProcessorExecutor<Runnable, Runnable>) this.processor;
 
 				if (concurrency == 1) {
 					int bufferSize = (int) Math.min(this.executorProcessor.getCapacity(), LIMIT_BUFFER_SIZE);
@@ -468,7 +468,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			return new SyncProcessorBarrier<>(this);
 		}
 
-		if (ExecutorProcessor.class.isAssignableFrom(processor.getClass()) && !((ExecutorProcessor) processor).alive()) {
+		if (ProcessorExecutor.class.isAssignableFrom(processor.getClass()) && !((ProcessorExecutor) processor).alive()) {
 			throw new IllegalStateException("Internal Processor is shutdown");
 		}
 

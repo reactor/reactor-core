@@ -1,4 +1,4 @@
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

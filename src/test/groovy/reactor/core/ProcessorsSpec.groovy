@@ -20,9 +20,9 @@ package reactor.core
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import reactor.Processors
-import reactor.core.processor.ProcessorGroup
-import reactor.core.processor.RingBufferProcessor
-import reactor.core.processor.RingBufferWorkProcessor
+import reactor.core.publisher.ProcessorGroup
+import reactor.core.publisher.TopicProcessor
+import reactor.core.publisher.WorkQueueProcessor
 import reactor.fn.BiConsumer
 import reactor.fn.Consumer
 import spock.lang.Shared
@@ -85,8 +85,8 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer processor with 16 backlog size"
-			def bc = RingBufferProcessor.<String> create(executorService, 16)
-			//def bc2 = RingBufferProcessor.<String> create(executorService, 16)
+			def bc = TopicProcessor.<String> create(executorService, 16)
+			//def bc2 = TopicProcessor.<String> create(executorService, 16)
 			def elems = 100
 			def latch = new CountDownLatch(elems)
 
@@ -110,7 +110,7 @@ class ProcessorsSpec extends Specification {
 
 		when:
 			latch = new CountDownLatch(elems)
-			bc = RingBufferProcessor.<String> create(executorService)
+			bc = TopicProcessor.<String> create(executorService)
 			bc.subscribe(sub('spec2', latch))
 			bc.start()
 
@@ -128,7 +128,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer processor with 16 backlog size"
-			def bc = RingBufferWorkProcessor.<String> create(executorService, 16)
+			def bc = WorkQueueProcessor.<String> create(executorService, 16)
 			def elems = 18
 			def latch = new CountDownLatch(elems)
 			def manualSub = new Subscription() {
@@ -333,7 +333,7 @@ class ProcessorsSpec extends Specification {
 
 		where:
 			d << [
-					ProcessorGroup.create(RingBufferWorkProcessor.create("rbWork", 1024), 4).dataDispatcher(),
+					ProcessorGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).dataDispatcher(),
 			]
 
 	}

@@ -162,17 +162,17 @@ image::images/signals.png[The Publishing Sequence, width=400, align="center"]
 
 |Processor
 |reactor-core, reactor-stream
-|reactor.core.processor.\*, reactor.rx.*
+|reactor.core.publisher.\*, reactor.rx.*
 |In Core, we offer backpressure-ready RingBuffer*Processor and more, in Stream we have a full set of Operations and Broadcasters.
 
 |Publisher
 |reactor-core, reactor-bus, reactor-stream, reactor-net
-|reactor.core.processor.\*, reactor.rx.stream.*, reactor.rx.action.\*, reactor.io.net.*
+|reactor.core.publisher.\*, reactor.rx.stream.*, reactor.rx.action.\*, reactor.io.net.*
 |In Core, processors implement Publisher. In Bus we publish an unbounded emission of routed events. In Stream, our Stream extensions directly implement Publisher. In Net, Channels implement Publisher to consume incoming data, we also provide publishers for flush and close callbacks.
 
 |Subscriber
 |reactor-core, reactor-bus, reactor-stream, reactor-net
-|reactor.core.processor.\*, reactor.bus.EventBus.*, reactor.rx.action.\*, reactor.io.net.impl.*
+|reactor.core.publisher.\*, reactor.bus.EventBus.*, reactor.rx.action.\*, reactor.io.net.impl.*
 |In Core, our processor implement Subscriber. In Bus, we expose bus capacities with unbounded Publisher/Subscriber. In Stream, actions are Subscribers computing specific callbacks. In Net, our IO layer implements subscribers to handle writes, closes and flushes.
 
 |Subscription

@@ -14,7 +14,7 @@ The specification doesn't recommend specifically to hit `Processor.onNext(d)` di
 One can explicitely use an anonymous Subscription to pass first to a Processor using Processor.onSubscribe to get the backpressure feedback within the implemented request method.
 
 [IMPORTANT]
-OnNext must be serialized e.g. coming from a single thread at a time (no concurrent _onXXX_ signal is allowed). However Reactor supports it if the Processors are created using the conventioned `Processor.share()` method, e.g. `RingBufferProcessor.share()`.
+OnNext must be serialized e.g. coming from a single thread at a time (no concurrent _onXXX_ signal is allowed). However Reactor supports it if the Processors are created using the conventioned `Processor.share()` method, e.g. `TopicProcessor.share()`.
 This decision must be taken at creation time in order to use the right coordination logic within the implementation, so choose wisely: _is this going to be a a standard publishing sequence_ (no concurrent) or is this going to be _hit by multiple threads_ ?
 
 .Reactor makes a single exception to the standard when it comes to the specific XXXX *Work* Processor artefacts:
@@ -31,7 +31,7 @@ RingBuffer-based Reactive Streams Processors are good for a bunch of #awesome re
 * Über high throughput
 * Replay from the latest not consumed data
 ** If no Subscriber is listening, data won't be lost (unlike `Broadcaster` from Reactor-Stream).
-** If a Subscriber cancels during processing, signal will be safely replayed, it actually works nicely with the <<core-processor.adoc#rbwp-note, RingBufferWorkProcessor>>
+** If a Subscriber cancels during processing, signal will be safely replayed, it actually works nicely with the <<core-processor.adoc#rbwp-note, WorkQueueProcessor>>
 * Smart back-pressure, it allows for a bounded size anytime and the subscribers have the responsibility to consume and request more data
 * Propagated back-pressure, since it's a Processor, it can be subscribed to pass the information along
 * Multi-threaded inbound/outbound Processor capabilities
@@ -43,23 +43,23 @@ Their only drawbacks is they might be costly at runtime to create and they can't
 That makes them suited for High-Throughput Pre-defined Data Pipelines.
 
 [[core-rbp]]
-=== RingBufferProcessor
+=== TopicProcessor
 
-Reactor's link:/docs/api/index.html?reactor/core/processor/RingBufferProcessor.html[RingBufferProcessor] component is essentially a https://github.com/LMAX-Exchange/disruptor[Disruptor RingBuffer] adapted to the Reactive Streams API. Its purpose is to provide as close to bare-metal efficiency as possible. It is intended for situations where you need to dispatch tasks onto another thread with extremely low overhead and extremely high throughput and manage backpressure in your workflow.
+Reactor's link:/docs/api/index.html?reactor/core/processor/TopicProcessor.html[TopicProcessor] component is essentially a https://github.com/LMAX-Exchange/disruptor[Disruptor RingBuffer] adapted to the Reactive Streams API. Its purpose is to provide as close to bare-metal efficiency as possible. It is intended for situations where you need to dispatch tasks onto another thread with extremely low overhead and extremely high throughput and manage backpressure in your workflow.
 
-"I use RingBufferProcessor to compute various output remote calls asynchronously: AMQP, SSD storage and an In-Memory store,
+"I use TopicProcessor to compute various output remote calls asynchronously: AMQP, SSD storage and an In-Memory store,
 the variable latency is totally eaten by the Processor and our Million-Message-Per-Sec Datasource never blocks !"
--- Happy Reactor user, Use Case for RingBufferProcessor
+-- Happy Reactor user, Use Case for TopicProcessor
 
 
-.RingBufferProcessor at a given time T, with 2 Subscribers, all consuming the same sequence, but delta consuming rate is allowed until the ring buffer is full. This will happen when blue cube is colliding with its next clockwise yellow cube.
+.TopicProcessor at a given time T, with 2 Subscribers, all consuming the same sequence, but delta consuming rate is allowed until the ring buffer is full. This will happen when blue cube is colliding with its next clockwise yellow cube.
 image::images/RBP.png[Ring Buffer message passing, width=650, align="center", link="images/RBP.png"]
 
-To create a `RingBufferProcessor`, you use static `create` helper methods.
+To create a `TopicProcessor`, you use static `create` helper methods.
 
 [source,java]
 ----
-Processor<Integer, Integer> p = RingBufferProcessor.create("test", 32); // <1>
+Processor<Integer, Integer> p = TopicProcessor.create("test", 32); // <1>
 Stream<Integer> s = Streams.from(p); // <2>
 
 s.consume(i -> System.out.println(Thread.currentThread() + " data=" + i)); // <3>
@@ -75,7 +75,7 @@ input.subscribe(p); // <6>
 <5> Each call to `consume` creates a Disruptor `EventProcessor` on its own `Thread`.
 <6> Subscribe this `Processor` to a Reactive Streams `Publisher`.
 
-Each element of data passed to the Processor's `Subscribe.onNext(Buffer)` method will be "broadcast" to all consumers. There's no round-robin distribution with this `Processor` because that's in the `RingBufferWorkProcessor`, discussed below. If you passed the integers 1, 2 and 3 into the `Processor`, you would see output in the console similar to this:
+Each element of data passed to the Processor's `Subscribe.onNext(Buffer)` method will be "broadcast" to all consumers. There's no round-robin distribution with this `Processor` because that's in the `WorkQueueProcessor`, discussed below. If you passed the integers 1, 2 and 3 into the `Processor`, you would see output in the console similar to this:
 
 ----
 Thread[test-2,5,main] data=1
@@ -92,26 +92,26 @@ Thread[test-3,5,main] data=3
 Each thread is receiving all values passed into the `Processor` and each thread gets the values in an ordered way since it's using the `RingBuffer` internally to manage the slots available to publish values.
 
 [IMPORTANT]
-RingBufferProcessor can replay missed signals -0 subscribers- to any future subscribers. That will force a processor to wait onNext() if a full buffer is not being drained by a subscriber.
+TopicProcessor can replay missed signals -0 subscribers- to any future subscribers. That will force a processor to wait onNext() if a full buffer is not being drained by a subscriber.
 From the last sequence acknowledged by a subsUp to the size of the configured ringbuffer will be kept ready to be replayed for every new subscriber, even if the event has already been sent (FanOut).
 
 [[work]]
-=== RingBufferWorkProcessor
+=== WorkQueueProcessor
 
-Unlike the standard `RingBufferProcessor`, which broadcasts its values to all consumers, the `RingBufferWorkProcessor` partitions the incoming values based on the number of consumers. Values come into the `Processor` and are sent to the various threads (because each consumer has its own thread) in a round-robin fashion, while still using the internal `RingBuffer` to efficiently manage the publication of values by providing backpressure to the producer when appropriate.
+Unlike the standard `TopicProcessor`, which broadcasts its values to all consumers, the `WorkQueueProcessor` partitions the incoming values based on the number of consumers. Values come into the `Processor` and are sent to the various threads (because each consumer has its own thread) in a round-robin fashion, while still using the internal `RingBuffer` to efficiently manage the publication of values by providing backpressure to the producer when appropriate.
 
-"We implemented a RingBufferWorkProcessor to scale-up and load-balance various HTTP microservices calls. I might be wrong but it looks like its faster than light (!) and the GC pressure is totally under control."
--- Happy Reactor user, Use Case for RingBufferWorkProcessor
+"We implemented a WorkQueueProcessor to scale-up and load-balance various HTTP microservices calls. I might be wrong but it looks like its faster than light (!) and the GC pressure is totally under control."
+-- Happy Reactor user, Use Case for WorkQueueProcessor
 
 
-.RingBufferWorkProcessor at a given time T, with 2 Subscribers, each consuming unique sequence (availabilty FIFO), delta consuming rate is allowed until the ring buffer is full. This will happen when blue cube is colliding with its next clockwise yellow cube.
+.WorkQueueProcessor at a given time T, with 2 Subscribers, each consuming unique sequence (availabilty FIFO), delta consuming rate is allowed until the ring buffer is full. This will happen when blue cube is colliding with its next clockwise yellow cube.
 image::images/RBWP.png[Ring Buffer message passing, width=650, align="center", link="images/RBWP.png"]
 
-To use the `RingBufferWorkProcessor`, the only thing you have to change from the above code sample is the reference to the static `create` method. You'll use the one on the `RingBufferWorkProcessor` class itself instead. The rest of the code remains identical.
+To use the `WorkQueueProcessor`, the only thing you have to change from the above code sample is the reference to the static `create` method. You'll use the one on the `WorkQueueProcessor` class itself instead. The rest of the code remains identical.
 
 [source,java]
 ----
-Processor<Integer, Integer> p = RingBufferWorkProcessor.create("test", 32); // <1>
+Processor<Integer, Integer> p = WorkQueueProcessor.create("test", 32); // <1>
 ----
 <1> Create a `Processor` with an internal RingBuffer capacity of 32 slots.
 
@@ -125,6 +125,6 @@ Thread[test-1,5,main] data=1
 
 [[rbwp-note]]
 [IMPORTANT]
-RingBufferWorkProcessor can replay interrupted signals, detecting `CancelException` from the terminating subscriber. It will be the only case where a signal will
+WorkQueueProcessor can replay interrupted signals, detecting `CancelException` from the terminating subscriber. It will be the only case where a signal will
 actually be played eventually once more with another Subscriber. *We guarantee at-least-once delivery for any events*.
-If you are familiar with semantic you might now say "Wait, this RingBufferWorkProcessor works like a Message Broker?", and the answer is yes.
+If you are familiar with semantic you might now say "Wait, this WorkQueueProcessor works like a Message Broker?", and the answer is yes.

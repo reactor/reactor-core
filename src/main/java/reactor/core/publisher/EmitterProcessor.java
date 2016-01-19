@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;

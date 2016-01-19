@@ -31,7 +31,6 @@ import reactor.Flux;
 import reactor.Mono;
 import reactor.Processors;
 import reactor.Subscribers;
-import reactor.core.processor.FluxProcessor;
 import reactor.core.subscription.ReactiveSession;
 import reactor.core.support.Assert;
 import reactor.core.support.Logger;

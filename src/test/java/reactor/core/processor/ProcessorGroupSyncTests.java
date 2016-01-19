@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;

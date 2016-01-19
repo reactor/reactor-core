@@ -1,4 +1,4 @@
-package reactor.core.processor;
+package reactor.core.publisher;
 
 import org.junit.Test;
 
@@ -11,10 +11,10 @@ import static org.junit.Assert.assertEquals;
 public class BaseProcessorGettersTests {
 
 	@Test
-	public void testRingBufferProcessorGetters() {
+	public void testTopicProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ExecutorProcessor<Object, Object> processor = RingBufferProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		ProcessorExecutor<Object, Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -23,10 +23,10 @@ public class BaseProcessorGettersTests {
 	}
 
 	@Test
-	public void testRingBufferWorkProcessorGetters() {
+	public void testWorkQueueProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ExecutorProcessor<Object, Object> processor = RingBufferWorkProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		ProcessorExecutor<Object, Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 

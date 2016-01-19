@@ -22,12 +22,12 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.processor.EmitterProcessor;
-import reactor.core.processor.ExecutorProcessor;
-import reactor.core.processor.FluxProcessor;
-import reactor.core.processor.ProcessorGroup;
-import reactor.core.processor.RingBufferProcessor;
-import reactor.core.processor.RingBufferWorkProcessor;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.ProcessorExecutor;
+import reactor.core.publisher.ProcessorGroup;
+import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.support.Assert;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
@@ -211,7 +211,7 @@ public final class Processors {
 			int i = 1;
 			@Override
 			public Processor<Runnable, Runnable> get() {
-				return RingBufferProcessor.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+				return TopicProcessor.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
 						.get(), false);
 			}
 		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
@@ -423,7 +423,7 @@ public final class Processors {
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-		return ProcessorGroup.create(RingBufferWorkProcessor.<Runnable>share(name, bufferSize,
+		return ProcessorGroup.create(WorkQueueProcessor.<Runnable>share(name, bufferSize,
 				waitStrategy, false),
 				concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
@@ -435,7 +435,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> queue() {
+	public static <E> ProcessorExecutor<E, E> queue() {
 		return queue("worker", ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -446,7 +446,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> queue(String name) {
+	public static <E> ProcessorExecutor<E, E> queue(String name) {
 		return queue(name, ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -459,7 +459,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> queue(boolean autoCancel) {
+	public static <E> ProcessorExecutor<E, E> queue(boolean autoCancel) {
 		return queue(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
@@ -473,7 +473,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> queue(String name, int bufferSize) {
+	public static <E> ProcessorExecutor<E, E> queue(String name, int bufferSize) {
 		return queue(name, bufferSize, true);
 	}
 
@@ -486,8 +486,8 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> queue(String name, int bufferSize, boolean autoCancel) {
-		return RingBufferWorkProcessor.create(name, bufferSize, autoCancel);
+	public static <E> ProcessorExecutor<E, E> queue(String name, int bufferSize, boolean autoCancel) {
+		return WorkQueueProcessor.create(name, bufferSize, autoCancel);
 	}
 
 	/**
@@ -595,7 +595,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> topic() {
+	public static <E> ProcessorExecutor<E, E> topic() {
 		return topic("async", ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -605,7 +605,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> topic(String name) {
+	public static <E> ProcessorExecutor<E, E> topic(String name) {
 		return topic(name, ReactiveState.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -618,7 +618,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> topic(boolean autoCancel) {
+	public static <E> ProcessorExecutor<E, E> topic(boolean autoCancel) {
 		return topic(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
@@ -632,7 +632,7 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> topic(String name, int bufferSize) {
+	public static <E> ProcessorExecutor<E, E> topic(String name, int bufferSize) {
 		return topic(name, bufferSize, true);
 	}
 
@@ -647,8 +647,8 @@ public final class Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ExecutorProcessor<E, E> topic(String name, int bufferSize, boolean autoCancel) {
-		return RingBufferProcessor.create(name, bufferSize, autoCancel);
+	public static <E> ProcessorExecutor<E, E> topic(String name, int bufferSize, boolean autoCancel) {
+		return TopicProcessor.create(name, bufferSize, autoCancel);
 	}
 
 	private Processors() {
