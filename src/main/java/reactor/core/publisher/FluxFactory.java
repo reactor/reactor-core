@@ -91,9 +91,9 @@ public abstract class FluxFactory implements ReactiveState {
 	 *
 	 * @return a fresh Reactive Streams publisher ready to be subscribed
 	 */
-	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
+	public static <T, C> Flux<T> createForEach(Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory) {
-		return create(requestConsumer, contextFactory, null);
+		return createForEach(requestConsumer, contextFactory, null);
 	}
 
 	/**
@@ -113,7 +113,7 @@ public abstract class FluxFactory implements ReactiveState {
 	 *
 	 * @return a fresh Reactive Streams publisher ready to be subscribed
 	 */
-	public static <T, C> Flux<T> create(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
+	public static <T, C> Flux<T> createForEach(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
 		Assert.notNull(requestConsumer, "A data producer must be provided");

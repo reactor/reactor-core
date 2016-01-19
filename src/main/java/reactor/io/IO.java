@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.Flux;
-import reactor.core.error.ReactorFatalException;
+import reactor.core.error.Exceptions;
 import reactor.core.publisher.FluxFactory;
 import reactor.core.publisher.FluxMap;
 import reactor.core.subscriber.SubscriberWithContext;
@@ -88,7 +88,7 @@ public final class IO {
 	 * @return a Publisher of Buffer values
 	 */
 	public static Flux<Buffer> read(final ReadableByteChannel channel, int chunkSize) {
-		return FluxFactory.create(
+		return FluxFactory.createForEach(
 		  chunkSize < 0 ? defaultChannelReadConsumer : new ChannelReadConsumer(chunkSize),
 		  new Function<Subscriber<? super Buffer>, ReadableByteChannel>() {
 			  @Override
@@ -148,7 +148,7 @@ public final class IO {
 	 * @return a Publisher of Buffer values read from file sequentially
 	 */
 	public static Flux<Buffer> readFile(final String path, int chunkSize) {
-		return FluxFactory.create(
+		return FluxFactory.createForEach(
 		  chunkSize < 0 ? defaultChannelReadConsumer : new ChannelReadConsumer(chunkSize),
 		  new Function<Subscriber<? super Buffer>, ReadableByteChannel>() {
 			  @Override
@@ -157,7 +157,8 @@ public final class IO {
 					  RandomAccessFile file = new RandomAccessFile(path, "r");
 					  return new FileContext(file);
 				  } catch (FileNotFoundException e) {
-					  throw ReactorFatalException.create(e);
+					  Exceptions.fail(e);
+					  return null;
 				  }
 			  }
 		  },

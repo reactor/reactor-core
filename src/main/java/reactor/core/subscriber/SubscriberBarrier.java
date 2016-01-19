@@ -68,9 +68,9 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 				doOnSubscribe(s);
 			}
 			catch (Throwable throwable) {
-				Exceptions.throwIfFatal(throwable);
 				s.cancel();
-				doOnSubscriberError(throwable);
+				Exceptions.throwIfFatal(throwable);
+				doOnSubscriberError(Exceptions.unwrap(throwable));
 			}
 		}
 	}
@@ -87,12 +87,12 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 		} catch (CancelException c) {
 			throw c;
 		} catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
 			Subscription subscription = this.subscription;
 			if(subscription != null){
 				subscription.cancel();
 			}
-			doOnSubscriberError(Exceptions.addValueAsLastCause(throwable, i));
+			Exceptions.throwIfFatal(throwable);
+			doOnSubscriberError(Exceptions.addValueAsLastCause(Exceptions.unwrap(throwable), i));
 		}
 	}
 
@@ -120,7 +120,8 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 		try {
 			doComplete();
 		} catch (Throwable throwable) {
-			doOnSubscriberError(throwable);
+			Exceptions.throwIfFatal(throwable);
+			doOnSubscriberError(Exceptions.unwrap(throwable));
 		}
 	}
 
@@ -135,7 +136,8 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
-			doOnSubscriberError(throwable);
+			Exceptions.throwIfFatal(throwable);
+			doOnSubscriberError(Exceptions.unwrap(throwable));
 		}
 	}
 
@@ -151,7 +153,8 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 		try {
 			doCancel();
 		} catch (Throwable throwable) {
-			doOnSubscriberError(throwable);
+			Exceptions.throwIfFatal(throwable);
+			doOnSubscriberError(Exceptions.unwrap(throwable));
 		}
 	}
 

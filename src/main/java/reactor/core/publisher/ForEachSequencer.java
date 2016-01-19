@@ -25,7 +25,7 @@ import reactor.fn.Consumer;
 import reactor.fn.Function;
 
 /**
- * Simple iterating consumer for {@link FluxFactory#create(Consumer, Function)} and its alias
+ * Simple iterating consumer for {@link FluxFactory#createForEach(Consumer, Function)} and its alias
  *
  * @param <T>
  *

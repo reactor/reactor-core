@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.Processors;
-import reactor.core.error.ReactorFatalException;
+import reactor.core.error.Exceptions;
 import reactor.core.support.Assert;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
@@ -64,7 +64,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 				Thread.sleep(1000);
 			}
 			catch(InterruptedException ie){
-				throw ReactorFatalException.create(ie);
+				Exceptions.fail(ie);
 			}
 		};
 		r.accept("Hello World!", c);

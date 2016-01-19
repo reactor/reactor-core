@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -210,7 +208,8 @@ public final class FluxMapSignal<T, R> extends reactor.Flux.FluxBarrier<T, R> {
 	    void error(Throwable e){
 		    done = true;
 		    s.cancel();
-		    actual.onError(e);
+		    Exceptions.throwIfFatal(e);
+		    actual.onError(Exceptions.unwrap(e));
 	    }
     }
 }

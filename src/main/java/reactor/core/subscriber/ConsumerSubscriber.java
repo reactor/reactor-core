@@ -19,7 +19,6 @@ package reactor.core.subscriber;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.error.Exceptions;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.ReactiveState;
 import reactor.fn.Consumer;
@@ -133,7 +132,7 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T>
 			errorConsumer.accept(t);
 		}
 		else {
-			throw ReactorFatalException.create(t);
+			Exceptions.onErrorDropped(t);
 		}
 	}
 

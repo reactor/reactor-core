@@ -268,7 +268,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <T, C> Flux<T> create(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
-		return FluxFactory.create(requestConsumer, contextFactory, shutdownConsumer);
+		return FluxFactory.createForEach(requestConsumer, contextFactory, shutdownConsumer);
 	}
 
 	/**
@@ -824,8 +824,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
+	@SuppressWarnings("unchecked")
 	public final Mono<Void> after() {
-		return new MonoIgnoreElements<>(this);
+		return (Mono<Void>)new MonoIgnoreElements<>(this);
 	}
 
 	/**

@@ -1,61 +1,61 @@
-/*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.Mono;
-import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.support.ReactiveState;
+import org.reactivestreams.Subscription;
 
 /**
- * Ignore onNext signals and therefore only pass request, cancel upstream and complete, error downstream
+ * Ignores normal values and passes only the terminal signals along.
  *
- * @author Stephane Maldini
+ * @param <T> the value type
+ */
+
+/**
+ * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-public final class MonoIgnoreElements<IN> extends Mono<Void> implements ReactiveState.Upstream {
+public final class MonoIgnoreElements<T> extends reactor.Mono.MonoBarrier<T, T> {
 
-	private final Publisher<IN> source;
-
-	public MonoIgnoreElements(Publisher<IN> source) {
-		this.source = source;
+	public MonoIgnoreElements(Publisher<? extends T> source) {
+		super(source);
 	}
-
+	
 	@Override
-	public Object upstream() {
-		return source;
+	public void subscribe(Subscriber<? super T> s) {
+		source.subscribe(new MonoIgnoreElementsSubscriber<>(s));
 	}
-
-	@Override
-	public void subscribe(Subscriber<? super Void> subscriber) {
-		source.subscribe(new CompletableBarrier<>(subscriber));
-	}
-
-	private static class CompletableBarrier<IN> extends SubscriberBarrier<IN, Void> {
-
-		public CompletableBarrier(Subscriber<? super Void> subscriber) {
-			super(subscriber);
+	
+	static final class MonoIgnoreElementsSubscriber<T> implements Subscriber<T>, Downstream {
+		final Subscriber<? super T> actual;
+		
+		public MonoIgnoreElementsSubscriber(Subscriber<? super T> actual) {
+			this.actual = actual;
 		}
 
 		@Override
-		protected void doNext(IN in) {
+		public void onSubscribe(Subscription s) {
+			actual.onSubscribe(s);
+			s.request(Long.MAX_VALUE);
+		}
+		
+		@Override
+		public void onNext(T t) {
+			// deliberately ignored
+		}
+		
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
+		
+		@Override
+		public void onComplete() {
+			actual.onComplete();
 		}
 
+		@Override
+		public Object downstream() {
+			return actual;
+		}
 	}
-
 }

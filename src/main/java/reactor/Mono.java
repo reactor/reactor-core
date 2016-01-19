@@ -28,7 +28,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.error.CancelException;
 import reactor.core.error.Exceptions;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.processor.ProcessorGroup;
 import reactor.core.publisher.FluxAmb;
 import reactor.core.publisher.FluxFlatMap;
@@ -439,10 +438,11 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Mono} completes.
 	 *
-	 * @return
+	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
+	@SuppressWarnings("unchecked")
 	public final Mono<Void> after() {
-		return new MonoIgnoreElements<>(this);
+		return (Mono<Void>)new MonoIgnoreElements<>(this);
 	}
 
 	/**
@@ -602,7 +602,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	/**
 	 * Convert this {@link Mono} to a {@link Flux}
 	 *
-	 * @return
+	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
 	public final Flux<T> flux() {
 		return new Flux.FluxBarrier<T, T>(this);
@@ -610,7 +610,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * ReactorFatalException if checked error or origin RuntimeException if unchecked.
+	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@link #DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * @return T the result
@@ -621,7 +621,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * ReactorFatalException if checked error or origin RuntimeException if unchecked.
+	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@link #DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
@@ -1010,7 +1010,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 			try {
 				source.subscribe((Subscriber<? super I>) s);
 			}
-			catch(ReactorFatalException rfe){
+			catch(Exceptions.UpstreamException rfe){
 				if(rfe.getCause() instanceof RuntimeException){
 					throw (RuntimeException)rfe.getCause();
 				}
@@ -1089,7 +1089,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 								if (error instanceof RuntimeException) {
 									throw (RuntimeException) error;
 								}
-								throw ReactorFatalException.create(error);
+								Exceptions.fail(error);
 							case COMPLETE:
 								return null;
 						}
@@ -1102,7 +1102,8 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				throw ReactorFatalException.create(e);
+				Exceptions.fail(e);
+				return null;
 			}
 			finally {
 				Subscription s = SUBSCRIPTION.getAndSet(this, CancelledSubscription.INSTANCE);

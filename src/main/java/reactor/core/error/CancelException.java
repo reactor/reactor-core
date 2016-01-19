@@ -22,7 +22,7 @@ import reactor.core.support.ReactiveState;
  *
  * @author Stephane Maldini
  */
-public final class CancelException extends ReactorFatalException {
+public final class CancelException extends Exceptions.UpstreamException {
 	public static final CancelException INSTANCE = new CancelException();
 
 	private CancelException() {

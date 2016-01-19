@@ -27,7 +27,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.error.CancelException;
 import reactor.core.error.Exceptions;
 import reactor.core.error.InsufficientCapacityException;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.ReactiveState;
 import reactor.core.timer.TimeUtils;
@@ -388,7 +387,7 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 				actual.onError(uncaughtException);
 				return;
 			}
-			throw ReactorFatalException.create(new IllegalStateException("Cached error cannot be null"));
+			throw new IllegalStateException("Cached error cannot be null");
 		}
 	}
 

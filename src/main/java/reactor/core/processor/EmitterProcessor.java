@@ -26,8 +26,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Flux;
 import reactor.core.error.CancelException;
+import reactor.core.error.Exceptions;
 import reactor.core.error.InsufficientCapacityException;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.ReactiveState;
@@ -230,7 +230,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	public void onError(Throwable t) {
 		super.onError(t);
 		if (autoCancel && done) {
-			throw ReactorFatalException.create(t);
+			Exceptions.onErrorDropped(t);
 		}
 		reportError(t);
 		done = true;

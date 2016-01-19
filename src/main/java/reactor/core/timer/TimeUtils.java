@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.error.ReactorFatalException;
+import reactor.core.error.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
 import reactor.core.support.rb.disruptor.Sequence;
@@ -109,7 +109,7 @@ public final class TimeUtils {
 
 	public static void checkResolution(long time, long resolution) {
 		if (time % resolution != 0) {
-			throw ReactorFatalException.create(new IllegalArgumentException(
+			Exceptions.failUpstream(new IllegalArgumentException(
 			  "Period must be a multiple of Timer resolution (e.g. period % resolution == 0 ). " +
 				"Resolution for this Timer is: " + resolution + "ms"
 			));

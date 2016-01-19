@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.reactivestreams.Subscription;
 import reactor.core.error.CancelException;
 import reactor.core.error.Exceptions;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.subscription.SubscriptionWithContext;
 import reactor.core.support.Assert;
 import reactor.core.support.BackpressureUtils;
@@ -133,7 +132,7 @@ public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscribe
 			errorConsumer.accept(t, subscriptionWithContext != null ? subscriptionWithContext.context() : null);
 		}
 		else {
-			throw ReactorFatalException.create(t);
+			Exceptions.onErrorDropped(t);
 		}
 	}
 

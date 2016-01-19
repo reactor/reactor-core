@@ -26,7 +26,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.Flux;
 import reactor.core.error.Exceptions;
-import reactor.core.error.ReactorFatalException;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberWithDemand;
 import reactor.core.subscription.EmptySubscription;
@@ -394,7 +393,7 @@ public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 
 		void reportError(Throwable t) {
 			if (!ERROR.compareAndSet(this, null, t)) {
-				throw ReactorFatalException.create(t);
+				Exceptions.onErrorDropped(t);
 			}
 		}
 

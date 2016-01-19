@@ -96,12 +96,12 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 
 	/*@Override
 	public Publisher<Long> createHelperPublisher(long elements) {
-		return Publishers.log(super.createHelperPublisher(elements), "publisher");
+		return Flux.log(super.createHelperPublisher(elements), "publisher");
 	}*/
 
 	/*@Override
 	public Publisher<Long> createHelperPublisher(long elements) {
-		return Publishers.<Long, AtomicLong>create(
+		return Flux.<Long, AtomicLong>create(
 		  (s) -> {
 			  long cursor = s.context().getAndIncrement();
 			  if (cursor < elements) {

@@ -108,7 +108,7 @@ public final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Reac
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);
-				afterSuccessOrFailure.accept(null, t);
+				afterSuccessOrFailure.accept(null, Exceptions.unwrap(t));
 			}
 		}
 
@@ -139,7 +139,7 @@ public final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Reac
 			}
 			catch (Throwable x) {
 				Exceptions.throwIfFatal(x);
-				afterSuccessOrFailure.accept(t, x);
+				afterSuccessOrFailure.accept(t, Exceptions.unwrap(x));
 			}
 		}
 
@@ -159,9 +159,10 @@ public final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Reac
 				subscriber.onError(throwable);
 			}
 			catch (Throwable t) {
+				Throwable _t = Exceptions.unwrap(t);
+				_t.addSuppressed(throwable);
 				Exceptions.throwIfFatal(t);
-				t.addSuppressed(throwable);
-				afterSuccessOrFailure.accept(null, t);
+				afterSuccessOrFailure.accept(null, _t);
 			}
 		}
 	}

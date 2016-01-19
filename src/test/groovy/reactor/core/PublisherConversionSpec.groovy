@@ -130,7 +130,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "submission publisher of 1000 to read queue"
 	def source = new java.util.concurrent.SubmissionPublisher()
-	def pub = Publishers.convert(source)
+	def pub = Flux.convert(source)
 	def queue = toReadQueue(pub)
 
 	when: "read the queue"
@@ -151,7 +151,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to Flow Publisher"
 	pub = from(1..1000)
-	def obs = Publishers.convert(pub, java.util.concurrent.Flow.Publisher.class)
+	def obs = Flux.convert(pub, java.util.concurrent.Flow.Publisher.class)
 	res = []
 	obs.subscribe(new java.util.concurrent.Flow.Subscriber<Object>() {
 	  java.util.concurrent.Flow.Subscription s
