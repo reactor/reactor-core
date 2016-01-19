@@ -26,7 +26,7 @@ import reactor.core.timer.Timer;
 /**
  * @author Stephane Maldini
  */
-public final class FluxInterval extends Flux<Long> implements ReactiveState.Timed {
+final class FluxInterval extends Flux<Long> implements ReactiveState.Timed {
 
 	final Timer    parent;
 	final long     period;

@@ -32,7 +32,7 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-public final class MonoEmpty
+final class MonoEmpty
 		extends Mono<Object>
 implements Supplier<Object>,
 											 ReactiveState.Factory,

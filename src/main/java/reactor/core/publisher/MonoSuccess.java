@@ -28,7 +28,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements ReactiveState.FeedbackLoop {
+final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements ReactiveState.FeedbackLoop {
 
 	private final Consumer<? super I>              onSuccess;
 	private final BiConsumer<? super I, Throwable> onSuccessOrFailure;

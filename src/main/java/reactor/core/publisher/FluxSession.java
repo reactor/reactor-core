@@ -28,7 +28,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class FluxSession<T> extends Flux<T> implements ReactiveState.Factory {
+final class FluxSession<T> extends Flux<T> implements ReactiveState.Factory {
 
 	final Consumer<? super ReactiveSession<T>> onSubscribe;
 

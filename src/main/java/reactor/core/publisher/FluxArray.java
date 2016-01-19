@@ -37,7 +37,7 @@ import reactor.core.support.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxArray<T>
+final class FluxArray<T>
 		extends Flux<T>
 implements 
 												ReactiveState.Factory  {

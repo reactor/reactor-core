@@ -39,7 +39,7 @@ import reactor.core.support.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxAmb<T>
+final class FluxAmb<T>
 		extends Flux<T>
 implements
 											  ReactiveState.Factory,

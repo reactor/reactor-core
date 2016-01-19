@@ -26,7 +26,7 @@ import reactor.core.timer.Timer;
 /**
  * @author Stephane Maldini
  */
-public final class MonoTimer extends Mono<Long> implements ReactiveState.Timed {
+final class MonoTimer extends Mono<Long> implements ReactiveState.Timed {
 
 	final Timer    parent;
 	final TimeUnit unit;

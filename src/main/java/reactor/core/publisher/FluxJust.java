@@ -27,7 +27,7 @@ import reactor.fn.Supplier;
  *
  * @since 2.5
  */
-public final class FluxJust<T> extends Flux<T> implements Supplier<T> {
+final class FluxJust<T> extends Flux<T> implements Supplier<T> {
 
 	final T value;
 

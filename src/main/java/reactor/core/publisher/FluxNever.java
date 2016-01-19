@@ -31,7 +31,7 @@ import reactor.core.support.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxNever
+final class FluxNever
 		extends Flux<Object>
 implements 
 											 ReactiveState.Factory,

@@ -27,7 +27,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoJust;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
@@ -225,7 +224,7 @@ public final class CompletableFutureConverter extends PublisherConverter<Complet
 		public void subscribe(final Subscriber<? super T> subscriber) {
 			try {
 				if (future.isDone()) {
-					new MonoJust<>(future.get()).subscribe(subscriber);
+					Mono.just(future.get()).subscribe(subscriber);
 				}
 				else if (future.isCancelled()) {
 					EmptySubscription.error(subscriber, Exceptions.CancelException.INSTANCE);
