@@ -181,6 +181,7 @@ public class HashWheelTimer extends Timer {
 								}
 								throw re;
 							}
+
 							registrations.remove(r);
 
 							if (r.asInterval() != null) {

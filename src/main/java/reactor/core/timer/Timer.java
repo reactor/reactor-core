@@ -23,6 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.Flux;
 import reactor.Mono;
 import reactor.Subscribers;
+import reactor.core.error.Exceptions;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Assert;
 import reactor.core.support.ReactiveState;
@@ -227,7 +228,8 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 				s.onSubscribe(parent.interval(s, period, unit, delay));
 			}
 			catch (Throwable t){
-				EmptySubscription.error(s, t);
+				Exceptions.throwIfFatal(t);
+				EmptySubscription.error(s, Exceptions.unwrap(t));
 			}
 		}
 
@@ -255,7 +257,8 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 				s.onSubscribe(parent.single(s, delay, unit));
 			}
 			catch (Throwable t){
-				EmptySubscription.error(s, t);
+				Exceptions.throwIfFatal(t);
+				EmptySubscription.error(s, Exceptions.unwrap(t));
 			}
 		}
 
