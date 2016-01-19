@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.support;
+package reactor.core.subscription;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.CancelledSubscription;
+import reactor.core.support.Exceptions;
 import reactor.core.support.rb.disruptor.Sequence;
 
 /**

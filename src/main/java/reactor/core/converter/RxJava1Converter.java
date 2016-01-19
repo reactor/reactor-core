@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.Flux;
 import reactor.core.publisher.FluxJust;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.BackpressureUtils;
+import reactor.core.subscription.BackpressureUtils;
 import reactor.core.support.Exceptions;
 import rx.Observable;
 import rx.Producer;

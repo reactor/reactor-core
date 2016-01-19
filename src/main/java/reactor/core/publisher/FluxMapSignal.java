@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.support.BackpressureUtils;
+import reactor.core.subscription.BackpressureUtils;
 import reactor.core.support.Exceptions;
 import reactor.fn.Function;
 import reactor.fn.Supplier;

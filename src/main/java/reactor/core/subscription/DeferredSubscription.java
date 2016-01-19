@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.support.BackpressureUtils;
 import reactor.core.support.ReactiveState;
 
 /**

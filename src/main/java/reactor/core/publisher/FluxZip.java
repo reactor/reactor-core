@@ -31,7 +31,7 @@ import org.reactivestreams.Subscription;
 import reactor.Flux;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.BackpressureUtils;
+import reactor.core.subscription.BackpressureUtils;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.internal.PlatformDependent;
