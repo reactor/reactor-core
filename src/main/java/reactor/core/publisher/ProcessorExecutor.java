@@ -31,7 +31,7 @@ import reactor.core.support.SingleUseExecutor;
  *
  * @author Stephane Maldini
  */
-abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
+public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements ReactiveState.ActiveUpstream, ReactiveState.ActiveDownstream, ReactiveState.Named, ReactiveState
 		.Identified, ReactiveState.FailState{
 
