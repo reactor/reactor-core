@@ -32,8 +32,8 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-public final class MonoEmpty 
-extends reactor.Mono<Object>
+public final class MonoEmpty
+		extends Mono<Object>
 implements Supplier<Object>,
 											 ReactiveState.Factory,
 											 ReactiveState.ActiveUpstream {
@@ -67,8 +67,8 @@ implements Supplier<Object>,
 	 * @return a properly parametrized instance of this empty Publisher
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> reactor.Mono<T> instance() {
-		return (reactor.Mono<T>) INSTANCE;
+	public static <T> Mono<T> instance() {
+		return (Mono<T>) INSTANCE;
 	}
 
 	@Override

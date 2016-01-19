@@ -19,8 +19,8 @@ package reactor.core
 
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import reactor.Processors
 import reactor.core.publisher.ProcessorGroup
+import reactor.core.publisher.Processors
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
 import reactor.fn.BiConsumer

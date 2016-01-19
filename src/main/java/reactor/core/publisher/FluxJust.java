@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.Flux;
 import reactor.core.subscription.ScalarSubscription;
 import reactor.fn.Supplier;
 

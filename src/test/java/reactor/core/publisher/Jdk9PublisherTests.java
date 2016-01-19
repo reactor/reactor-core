@@ -24,8 +24,8 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import reactor.Timers;
 import reactor.core.converter.DependencyUtils;
+import reactor.core.timer.Timers;
 
 /**
  * @author Stephane Maldini

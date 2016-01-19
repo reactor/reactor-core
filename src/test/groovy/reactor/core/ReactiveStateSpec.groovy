@@ -19,10 +19,10 @@ package reactor.core
 import reactor.core.support.ReactiveStateUtils
 import spock.lang.Specification
 
-import static reactor.Flux.*
-import static reactor.Processors.emitter
-import static reactor.Processors.singleGroup
-import static reactor.Subscribers.unbounded
+import static reactor.core.publisher.Flux.*
+import static reactor.core.publisher.Processors.emitter
+import static reactor.core.publisher.Processors.singleGroup
+import static reactor.core.subscriber.Subscribers.unbounded
 
 /**
  * @author Stephane Maldini

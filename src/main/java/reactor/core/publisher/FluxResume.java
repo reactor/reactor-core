@@ -35,7 +35,7 @@ import reactor.fn.Function;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxResume<T> extends reactor.Flux.FluxBarrier<T, T> {
+public final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 

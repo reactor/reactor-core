@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.Flux;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.subscription.ReactiveSession;
 import reactor.core.support.ReactiveState;

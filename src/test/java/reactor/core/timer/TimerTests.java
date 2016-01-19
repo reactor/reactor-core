@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.Timers;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.fn.Consumer;

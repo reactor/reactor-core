@@ -27,8 +27,7 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import reactor.Flux;
-import reactor.Timers;
+import reactor.core.timer.Timers;
 
 /**
  * @author Stephane Maldini

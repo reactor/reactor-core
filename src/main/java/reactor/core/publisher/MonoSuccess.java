@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.Mono;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.support.Assert;
 import reactor.core.support.Exceptions;

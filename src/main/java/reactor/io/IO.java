@@ -24,7 +24,7 @@ import java.nio.file.Path;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.Flux;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxFactory;
 import reactor.core.publisher.FluxMap;
 import reactor.core.subscriber.SubscriberWithContext;

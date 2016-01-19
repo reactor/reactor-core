@@ -32,8 +32,8 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-public final class MonoError<T> 
-extends reactor.Mono<T>
+public final class MonoError<T>
+		extends Mono<T>
 implements 
 												ReactiveState.Factory,
 												ReactiveState.FailState {

@@ -24,8 +24,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.subscription.EmptySubscription;
 import reactor.core.subscription.BackpressureUtils;
+import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.ReactiveState;
 
 /**
@@ -39,8 +39,8 @@ import reactor.core.support.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxAmb<T> 
-extends reactor.Flux<T>
+public final class FluxAmb<T>
+		extends Flux<T>
 implements
 											  ReactiveState.Factory,
 											  ReactiveState.LinkedUpstreams{

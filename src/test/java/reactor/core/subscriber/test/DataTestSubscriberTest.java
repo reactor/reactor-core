@@ -3,7 +3,7 @@ package reactor.core.subscriber.test;
 import java.util.Arrays;
 
 import org.junit.Test;
-import reactor.Flux;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Anatoly Kadyshev

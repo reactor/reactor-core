@@ -21,8 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import reactor.Flux;
-import reactor.Subscribers;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Stephane Maldini

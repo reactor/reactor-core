@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor;
+package reactor.core.publisher;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,12 +22,6 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.ProcessorExecutor;
-import reactor.core.publisher.ProcessorGroup;
-import reactor.core.publisher.TopicProcessor;
-import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.support.Assert;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;

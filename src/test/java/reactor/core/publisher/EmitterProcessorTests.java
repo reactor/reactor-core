@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Processor;
 import org.testng.annotations.AfterClass;
-import reactor.Processors;
 
 /**
  * @author Stephane Maldini

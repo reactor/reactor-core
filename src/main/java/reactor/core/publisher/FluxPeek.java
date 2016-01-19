@@ -39,7 +39,7 @@ import reactor.fn.LongConsumer;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxPeek<T> extends reactor.Flux.FluxBarrier<T, T> {
+public final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 

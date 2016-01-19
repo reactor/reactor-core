@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor;
+package reactor.core.timer;
 
 import reactor.core.support.WaitStrategy;
-import reactor.core.timer.GlobalTimer;
-import reactor.core.timer.HashWheelTimer;
-import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini

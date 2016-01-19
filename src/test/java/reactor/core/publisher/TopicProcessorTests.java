@@ -17,8 +17,6 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
-import reactor.Flux;
-import reactor.Processors;
 
 /**
  * @author Stephane Maldini

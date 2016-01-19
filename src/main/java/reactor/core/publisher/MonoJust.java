@@ -27,8 +27,8 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-public final class MonoJust<T> 
-extends reactor.Mono<T>
+public final class MonoJust<T>
+		extends Mono<T>
 implements Supplier<T>,
 											   ReactiveState.Factory,
 											   ReactiveState.Upstream {

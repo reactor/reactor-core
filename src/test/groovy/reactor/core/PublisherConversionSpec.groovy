@@ -16,10 +16,10 @@
 
 package reactor.core
 
-import reactor.Flux
-import reactor.Mono
 import reactor.core.converter.CompletableFutureConverter
 import reactor.core.converter.DependencyUtils
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import reactor.core.subscriber.test.DataTestSubscriber
 import rx.Observable
 import rx.Single
@@ -27,7 +27,7 @@ import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
-import static reactor.Flux.fromIterable
+import static Flux.fromIterable
 
 /**
  * @author Stephane Maldini

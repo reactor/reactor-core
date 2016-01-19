@@ -20,7 +20,7 @@ import reactor.core.publisher.FluxLift
 import reactor.core.subscriber.test.DataTestSubscriber
 import spock.lang.Specification
 
-import static reactor.Flux.fromIterable
+import static reactor.core.publisher.Flux.fromIterable
 
 /**
  * @author Stephane Maldini

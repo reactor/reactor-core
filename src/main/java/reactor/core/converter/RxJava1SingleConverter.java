@@ -17,7 +17,7 @@
 package reactor.core.converter;
 
 import org.reactivestreams.Publisher;
-import reactor.Mono;
+import reactor.core.publisher.Mono;
 import rx.Observable;
 import rx.Single;
 

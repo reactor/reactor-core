@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor;
+package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.ConsumerSubscriber;
-import reactor.core.subscriber.SubscriberWithSubscriptionContext;
 import reactor.core.subscription.SubscriptionWithContext;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;

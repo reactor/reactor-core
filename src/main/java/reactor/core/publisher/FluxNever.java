@@ -31,8 +31,8 @@ import reactor.core.support.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-public final class FluxNever 
-extends reactor.Flux<Object>
+public final class FluxNever
+		extends Flux<Object>
 implements 
 											 ReactiveState.Factory,
 											 ReactiveState.ActiveUpstream {
@@ -65,7 +65,7 @@ implements
 	 * @return a properly parametrized instance of this never Publisher
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> reactor.Flux<T> instance() {
-		return (reactor.Flux<T>) INSTANCE;
+	public static <T> Flux<T> instance() {
+		return (Flux<T>) INSTANCE;
 	}
 }
