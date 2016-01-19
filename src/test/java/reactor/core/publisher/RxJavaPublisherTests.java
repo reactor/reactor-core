@@ -19,7 +19,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import reactor.Flux;
+import reactor.core.converter.DependencyUtils;
 import rx.Observable;
 
 /**
@@ -43,12 +43,14 @@ public class RxJavaPublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return  Flux.<Long>convert(Observable.range(0, (int)Math.min(Integer.MAX_VALUE, elements))).log();
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(Observable.range(0, (int)Math.min(Integer.MAX_VALUE, elements)));
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return Flux.convert(Observable.error(new Exception("obs-test")));
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(Observable.error(new Exception("obs-test")));
 	}
 }

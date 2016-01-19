@@ -21,7 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import reactor.Flux;
+import reactor.core.converter.DependencyUtils;
 
 /**
  * @author Stephane Maldini
@@ -44,15 +44,17 @@ public class CompletableFutureTests extends PublisherVerification<Long> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return Flux.convert(CompletableFuture.completedFuture(1));
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(CompletableFuture.completedFuture(1));
 
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
 		CompletableFuture<Long> c = new CompletableFuture<>();
 		c.completeExceptionally(new Exception("cf-test"));
-		return Flux.convert(c);
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(c);
 	}
 }

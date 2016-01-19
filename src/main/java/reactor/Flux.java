@@ -29,6 +29,7 @@ import reactor.core.publisher.FluxAmb;
 import reactor.core.publisher.FluxArray;
 import reactor.core.publisher.FluxFactory;
 import reactor.core.publisher.FluxFlatMap;
+import reactor.core.publisher.FluxInterval;
 import reactor.core.publisher.FluxJust;
 import reactor.core.publisher.FluxLift;
 import reactor.core.publisher.FluxLog;
@@ -43,10 +44,10 @@ import reactor.core.publisher.FluxZip;
 import reactor.core.publisher.ForEachSequencer;
 import reactor.core.publisher.MonoIgnoreElements;
 import reactor.core.publisher.MonoNext;
-import reactor.core.publisher.convert.DependencyUtils;
 import reactor.core.subscriber.BlockingIterable;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscription.ReactiveSession;
+import reactor.core.support.Assert;
 import reactor.core.support.Logger;
 import reactor.core.support.QueueSupplier;
 import reactor.core.support.ReactiveState;
@@ -169,51 +170,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			return from(sources[0]);
 		}
 		return concat(fromArray(sources));
-	}
-
-	/**
-	 * Try to convert an object to a {@link Flux} using available support from reactor-core given the following
-	 * ordering  :
-	 * <ul>
-	 *     <li>null to {@link #empty()}</li>
-	 *     <li>Publisher to Flux</li>
-	 *     <li>Iterable to Flux</li>
-	 *     <li>Iterator to Flux</li>
-	 *     <li>RxJava 1 Single to Flux</li>
-	 *     <li>RxJava 1 Observable to Flux</li>
-	 *     <li>JDK 8 CompletableFuture to Flux</li>
-	 *     <li>JDK 9 Flow.Publisher to Flux</li>
-	 * </ul>
-	 *
-	 * @param source an object emitter to convert to a {@link Publisher}
-	 * @param <IN> a parameter candidate generic for the returned {@link Flux}
-	 *
-	 * @return a new parameterized (unchecked) converted {@link Flux}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <IN> Flux<IN> convert(Object source) {
-		if (source == null){
-			return empty();
-		}
-		if (source instanceof Publisher) {
-			return from((Publisher<IN>) source);
-		}
-		else if (source instanceof Iterable) {
-			return fromIterable((Iterable<IN>) source);
-		}
-		else if (source instanceof Iterator) {
-			Iterator<IN> defaultValues = (Iterator<IN>)source;
-			if (!defaultValues.hasNext()) {
-				return empty();
-			}
-			ForEachSequencer.IteratorSequencer<IN> iteratorPublisher =
-					new ForEachSequencer.IteratorSequencer<>(defaultValues);
-
-			return create(iteratorPublisher, iteratorPublisher);
-		}
-		else {
-			return (Flux<IN>) from(DependencyUtils.convertToPublisher(source));
-		}
 	}
 
 	/**
@@ -426,7 +382,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long period, TimeUnit unit, Timer timer) {
-		return timer.intervalPublisher(period, unit, TimeUnit.MILLISECONDS.convert(period, unit));
+		long timespan = TimeUnit.MILLISECONDS.convert(period, unit);
+		Assert.isTrue(timespan >= timer.period(), "The delay " + period + "ms cannot be less than the timer resolution" +
+				"" + timer.period() + "ms");
+
+		return new FluxInterval(timer, period, unit, period);
 	}
 
 
@@ -871,37 +831,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> concatWith(Publisher<? extends T> source) {
 		return concat(this, source);
-	}
-
-	/**
-	 * Try to convert this {@link Flux} using available support from reactor-core given the following ordering  :
-	 * <ul>
-	 *     <li>Flux to Publisher</li>
-	 *     <li>Flux to Iterable</li>
-	 *     <li>Flux to Iterator</li>
-	 *     <li>Flux to RxJava 1 Observable</li>
-	 *     <li>Flux to JDK 9 Flow.Publisher</li>
-	 * </ul>
-	 *
-	 * @param to a class of object emitter to convert from this Flux
-	 * @param <TO> a parameter candidate generic for the returned Flux
-	 *
-	 * @return a new converted Flux to candidate implementation
-	 */
-	@SuppressWarnings("unchecked")
-	public <TO> TO convert(Class<TO> to) {
-		if (Publisher.class.isAssignableFrom(to.getClass())) {
-			return (TO) this;
-		}
-		else if (Iterable.class.isAssignableFrom(to.getClass())) {
-			return (TO) toIterable();
-		}
-		else if (Iterator.class.isAssignableFrom(to.getClass())) {
-			return (TO) toIterable().iterator();
-		}
-		else {
-			return DependencyUtils.convertFromPublisher(this, to);
-		}
 	}
 
 	/**

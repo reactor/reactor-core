@@ -17,7 +17,9 @@
 package reactor.core
 
 import reactor.Flux
-import reactor.core.publisher.convert.CompletableFutureConverter
+import reactor.Mono
+import reactor.core.converter.CompletableFutureConverter
+import reactor.core.converter.DependencyUtils
 import reactor.core.subscriber.test.DataTestSubscriber
 import rx.Observable
 import rx.Single
@@ -36,7 +38,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Observable.range(1, 1000)
-	def pub = Flux.convert(obs)
+	def pub = DependencyUtils.convertToPublisher(obs)
 	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
 
 
@@ -51,7 +53,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to observable"
 	pub = fromIterable(1..1000)
-	obs = pub.convert(Observable.class)
+	obs = DependencyUtils.convertFromPublisher(pub, Observable.class)
 	def blocking = obs.toList()
 
 	def v = blocking.toBlocking().single()
@@ -66,7 +68,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Single.just(1)
-	def pub = Flux.convert(obs)
+	def pub = Mono.from(DependencyUtils.convertToPublisher(obs))
 	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
 
 	when: "read the queue"
@@ -80,7 +82,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to observable"
 	pub = Flux.just(1)
-	def single = pub.convert(Single.class)
+	def single = DependencyUtils.convertFromPublisher(pub, Single.class)
 	def blocking = single.toObservable().toBlocking()
 
 	def v = blocking.single()
@@ -93,7 +95,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1 to read queue"
 	def obs = CompletableFuture.completedFuture([1])
-	def pub = Flux.<List<Integer>> convert(obs)
+	def pub = DependencyUtils.convertToPublisher(obs)
 	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
 
 	when: "read the queue"
@@ -107,7 +109,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to completable future"
 	pub = fromIterable(1..1000)
-	obs = pub.<CompletableFuture<List<Integer>>> convert(CompletableFuture.class)
+	obs = DependencyUtils.convertFromPublisher(pub, CompletableFuture.class)
 	def vList = obs.get()
 
 	then: "queues values correct"
@@ -124,66 +126,6 @@ class PublisherConversionSpec extends Specification {
 	v == 1
   }
 
-/*
-
-  def "From and To Flow Publisher"() {
-
-	given: "submission publisher of 1000 to read queue"
-	def source = new java.util.concurrent.SubmissionPublisher()
-	def pub = Flux.convert(source)
-	def queue = toReadQueue(pub)
-
-	when: "read the queue"
-	def res = []
-	1000.times {
-
-	  source.submit(it)
-	  res[it] = queue.take()
-	}
-
-	source.close()
-
-	then: "queues values correct"
-	res[0] == 0
-	res[1] == 1
-	res[999] == 999
-
-
-	when: "Iterable publisher of 1000 to Flow Publisher"
-	pub = from(1..1000)
-	def obs = Flux.convert(pub, java.util.concurrent.Flow.Publisher.class)
-	res = []
-	obs.subscribe(new java.util.concurrent.Flow.Subscriber<Object>() {
-	  java.util.concurrent.Flow.Subscription s
-	  @Override
-	  void onSubscribe(java.util.concurrent.Flow.Subscription subscription) {
-		this.s = subscription
-		subscription.request(1L)
-	  }
-
-	  @Override
-	  void onNext(Object o) {
-		res << o
-		s.request(1L)
-	  }
-
-	  @Override
-	  void onError(Throwable throwable) {
-		throwable.printStackTrace()
-	  }
-
-	  @Override
-	  void onComplete() {
-		println 'complete'
-	  }
-	})
-
-	then: "queues values correct"
-	res[0] == 1
-	res[1] == 2
-	res[999] == 1000
-  }
-*/
 
 
 }

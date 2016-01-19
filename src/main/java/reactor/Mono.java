@@ -46,8 +46,9 @@ import reactor.core.publisher.MonoIgnoreElements;
 import reactor.core.publisher.MonoJust;
 import reactor.core.publisher.MonoNext;
 import reactor.core.publisher.MonoSuccess;
-import reactor.core.publisher.convert.DependencyUtils;
+import reactor.core.publisher.MonoTimer;
 import reactor.core.subscription.CancelledSubscription;
+import reactor.core.support.Assert;
 import reactor.core.support.BackpressureUtils;
 import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
@@ -115,34 +116,6 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		return new MonoBarrier<>(new FluxAmb<>(monos));
 	}
 
-
-	/**
-	 * Try to convert an object to a {@link Mono} with at most one emission using available support from reactor-core
-	 * given the following
-	 * ordering  :
-	 * <ul>
-	 *     <li>Publisher to Mono</li>
-	 *     <li>RxJava 1 Single to Mono</li>
-	 *     <li>RxJava 1 Observable to Mono</li>
-	 *     <li>JDK 8 CompletableFuture to Mono</li>
-	 *     <li>JDK 9 Flow.Publisher to Mono</li>
-	 * </ul>
-	 *
-	 * @param source an object emitter to convert to a {@link Publisher}
-	 * @param <IN> a parameter candidate generic for the returned {@link Mono}
-	 *
-	 * @return a new parameterized (unchecked) converted {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <IN> Mono<IN> convert(Object source) {
-		if (source instanceof Publisher) {
-			return from((Publisher<IN>) source);
-		}
-		else {
-			return (Mono<IN>) Mono.from(DependencyUtils.convertToPublisher(source));
-		}
-	}
-
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
@@ -179,7 +152,10 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration, TimeUnit unit, Timer timer) {
-		return timer.singlePublisher(duration, unit);
+		long timespan = TimeUnit.MILLISECONDS.convert(duration, unit);
+		Assert.isTrue(timespan >= timer.period(), "The delay " + duration + "ms cannot be less than the timer resolution" +
+				"" + timer.period() + "ms");
+		return new MonoTimer(timer, duration, unit);
 	}
 
 	/**

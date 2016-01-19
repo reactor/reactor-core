@@ -19,7 +19,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import reactor.Flux;
+import reactor.core.converter.DependencyUtils;
 import rx.Single;
 
 /**
@@ -43,12 +43,14 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return Flux.convert(Single.just(0));
+		return (Publisher<Long>)DependencyUtils.convertToPublisher(Single.just(0));
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return Flux.convert(Single.error(new Exception("single-test")));
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(Single.error(new Exception("single-test")));
 	}
 }

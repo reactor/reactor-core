@@ -20,12 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.Flux;
-import reactor.Mono;
 import reactor.Subscribers;
-import reactor.core.error.Exceptions;
-import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Assert;
 import reactor.core.support.ReactiveState;
 import reactor.fn.Consumer;
 
@@ -108,24 +103,6 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 	}
 
 	/**
-	 * Create a Flux that will emit an ever incrementing long after the initial delay has elapsed then on periodic
-	 * schedule. If no demand is produced in time an exception will be signalled instead.
-	 *
-	 * @param period the amount of time that should elapse before each invocation of {@code Subscriber}
-	 * @param timeUnit the unit of time the {@code period} is to be measured in
-	 * @param delayInMilliseconds the amount of time in milliseconds to defer the first signal
-	 *
-	 * @return a new {@link Flux}
-	 */
-	public final Flux<Long> intervalPublisher(long period, TimeUnit timeUnit, long delayInMilliseconds) {
-		long timespan = TimeUnit.MILLISECONDS.convert(period, timeUnit);
-		Assert.isTrue(timespan >= resolution, "The delay " + period + "ms cannot be less than the timer resolution" +
-				"" + resolution + "ms");
-
-		return new FluxInterval(this, period, timeUnit, delayInMilliseconds);
-	}
-
-	/**
 	 * Submit a task for arbitrary execution after the given time delay.
 	 *
 	 * @param consumer the {@code Consumer} to invoke
@@ -168,22 +145,6 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 	}
 
 	/**
-	 * Create a Mono that will emit a single long 0L after the delay has elapsed. If no demand is produced in time an
-	 * exception will be signalled instead.
-	 *
-	 * @param delay the amount of time that should elapse before invocation of {@code Subscriber}
-	 * @param timeUnit the unit of time the {@code delay} is to be measured in
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public final Mono<Long> singlePublisher(long delay, TimeUnit timeUnit) {
-		long timespan = TimeUnit.MILLISECONDS.convert(delay, timeUnit);
-		Assert.isTrue(timespan >= resolution, "The delay " + delay + "ms cannot be less than the timer resolution" +
-				"" + resolution + "ms");
-		return new MonoTimer(this, delay, timeUnit);
-	}
-
-	/**
 	 * Start the Timer, may throw an IllegalStateException if already started.
 	 */
 	public void start(){
@@ -208,63 +169,4 @@ public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstrea
 		return resolution;
 	}
 
-	final static class FluxInterval extends Flux<Long> implements Timed {
-
-		final Timer    parent;
-		final long     period;
-		final TimeUnit unit;
-		final long     delay;
-
-		public FluxInterval(Timer timer, long period, TimeUnit unit, long milliseconds) {
-			this.parent = timer;
-			this.period = period;
-			this.unit = unit;
-			this.delay = milliseconds;
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super Long> s) {
-			try {
-				s.onSubscribe(parent.interval(s, period, unit, delay));
-			}
-			catch (Throwable t){
-				Exceptions.throwIfFatal(t);
-				EmptySubscription.error(s, Exceptions.unwrap(t));
-			}
-		}
-
-		@Override
-		public long period() {
-			return delay;
-		}
-	}
-
-	final static class MonoTimer extends Mono<Long> implements Timed {
-
-		final Timer    parent;
-		final TimeUnit unit;
-		final long     delay;
-
-		public MonoTimer(Timer timer, long delay, TimeUnit unit) {
-			this.parent = timer;
-			this.delay = delay;
-			this.unit = unit;
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super Long> s) {
-			try {
-				s.onSubscribe(parent.single(s, delay, unit));
-			}
-			catch (Throwable t){
-				Exceptions.throwIfFatal(t);
-				EmptySubscription.error(s, Exceptions.unwrap(t));
-			}
-		}
-
-		@Override
-		public long period() {
-			return delay;
-		}
-	}
 }

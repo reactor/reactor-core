@@ -24,9 +24,8 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import reactor.Flux;
 import reactor.Timers;
-import reactor.core.publisher.convert.DependencyUtils;
+import reactor.core.converter.DependencyUtils;
 
 /**
  * @author Stephane Maldini
@@ -54,6 +53,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
 		if(!DependencyUtils.hasJdk9Flow()){
 			throw new SkipException("no jdk 9 classes found");
@@ -61,10 +61,11 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 
 		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
 		Timers.global().schedule(pub::submit, 50, TimeUnit.MILLISECONDS);
-		return Flux.convert(pub);
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
 		if(!DependencyUtils.hasJdk9Flow()){
 			throw new SkipException("no jdk 9 classes found");
@@ -72,6 +73,6 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 
 		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
 		pub.closeExceptionally(new Exception("jdk9-test"));
-		return Flux.convert(pub);
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 }
