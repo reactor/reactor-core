@@ -235,6 +235,24 @@ public abstract class Flux<T> implements Publisher<T> {
 		return Mono.<T>error(error).flux();
 	}
 
+	/**
+	 * Expose the specified {@link Publisher} with the {@link Flux} API.
+	 *
+	 * @param source
+	 * @param mapper
+	 * @param concurrency
+	 * @param bufferSize
+	 * @param <T>
+	 * @param <V>
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public static <T, V> Flux<V> flatMap(Publisher<? extends T> source,
+			Function<? super T, ? extends Publisher<? extends V>> mapper,
+			int concurrency,
+			int bufferSize) {
+		return new FluxFlatMap<>(source, mapper, concurrency, bufferSize);
+	}
 
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Flux} API.
@@ -362,6 +380,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param period The the time relative to given unit to wait before the next increment
 	 * @param unit The unit of time
+	 * @param timer
 	 *
 	 * @return a new timed {@link Flux}
 	 */
@@ -401,6 +420,40 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Create a {@link Flux} that will fallback to the produced {@link Publisher} given an onError signal.
+	 *
+	 * @param source
+	 * @param category
+	 * @param level
+	 * @param options
+	 * @param <T> the {@link Subscriber} type target
+	 *
+	 * @return a logged {@link Flux}
+	 */
+	public static <T> Flux<T> log(Publisher<T> source, String category, Level level, int options) {
+		return new FluxLog<>(source, category, level, options);
+	}
+
+	/**
+	 * Create a {@link Flux} that will transform all signals into a target type.
+	 *
+	 * @param source
+	 * @param nextMapper
+	 * @param errorMapper
+	 * @param completeMapper
+	 * @param <T> the input publisher type
+	 * @param <V> the output {@link Publisher} type target
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public static <T, V> Flux<V> mapSignal(Publisher<T> source,
+			Function<? super T, ? extends V> nextMapper,
+			Function<Throwable, ? extends V> errorMapper,
+			Supplier<? extends V> completeMapper) {
+		return new FluxMapSignal<>(source, nextMapper, errorMapper, completeMapper);
+	}
+
+	/**
 	 * @param source
 	 * @param <T>
 	 *
@@ -411,6 +464,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * @param sources
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a fresh Reactive Flux publisher ready to be subscribed
@@ -420,6 +474,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * @param sources
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a fresh Reactive Flux publisher ready to be subscribed
@@ -448,11 +503,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Flux} that never completes.
+	 * Create a {@link Flux} that will fallback to the produced {@link Publisher} given an onError signal.
 	 *
 	 * @param <T> the {@link Subscriber} type target
 	 *
-	 * @return a never completing {@link Flux}
+	 * @return a resilient {@link Flux}
 	 */
 	public static <T> Flux<T> onErrorResumeWith(
 			Publisher<? extends T> source,

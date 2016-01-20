@@ -49,7 +49,7 @@ import reactor.fn.Supplier;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
+final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 
 	/**
 	 * @param <T>

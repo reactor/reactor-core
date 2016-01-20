@@ -34,7 +34,7 @@ import reactor.fn.Supplier;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class FluxMapSignal<T, R> extends Flux.FluxBarrier<T, R> {
+final class FluxMapSignal<T, R> extends Flux.FluxBarrier<T, R> {
 
     final Function<? super T, ? extends R> mapperNext;
     final Function<Throwable, ? extends R> mapperError;
