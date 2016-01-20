@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberWithDemand;
-import reactor.core.subscription.BackpressureUtils;
 import reactor.core.util.Assert;
+import reactor.core.util.BackpressureUtils;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.Supplier;
 

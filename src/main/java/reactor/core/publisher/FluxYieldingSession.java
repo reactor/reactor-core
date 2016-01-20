@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.ReactiveSession;
-import reactor.core.subscription.EmptySubscription;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
 

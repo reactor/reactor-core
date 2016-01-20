@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscription;
+package reactor.core.util;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.ReactiveState;
 
 public final class ScalarSubscription<T> implements Subscription, ReactiveState.Downstream, ReactiveState.Upstream {
 

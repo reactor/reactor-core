@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package reactor.core.subscription;
+package reactor.core.util;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * Base class for Subscribers that will receive their Subscriptions at any time yet they need to be cancelled or

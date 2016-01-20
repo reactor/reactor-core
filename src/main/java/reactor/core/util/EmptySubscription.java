@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscription;
+package reactor.core.util;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * A singleton enumeration that represents a no-op Subscription instance that can be freely given out to clients.

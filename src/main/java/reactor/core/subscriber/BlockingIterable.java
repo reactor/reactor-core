@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscription.BackpressureUtils;
+import reactor.core.util.BackpressureUtils;
 import reactor.core.util.ReactiveState;
 import reactor.fn.Supplier;
 

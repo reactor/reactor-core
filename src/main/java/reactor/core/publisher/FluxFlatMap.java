@@ -29,7 +29,7 @@ import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberWithDemand;
-import reactor.core.subscription.EmptySubscription;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;

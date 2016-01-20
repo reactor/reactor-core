@@ -18,9 +18,8 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscription;
-import reactor.core.subscription.BackpressureUtils;
-import reactor.core.subscription.SubscriptionWithContext;
 import reactor.core.util.Assert;
+import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ReactiveState;
 import reactor.fn.BiConsumer;
@@ -30,7 +29,7 @@ import reactor.fn.Function;
 /**
  * @author Stephane Maldini
  */
-public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T>
+final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T>
 		implements ReactiveState.Bounded, ReactiveState.Upstream {
 
 	protected final Function<? super Subscription, C>                 subscriptionHandler;
@@ -47,7 +46,7 @@ public final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscribe
 	 * @param errorConsumer
 	 * @param completeConsumer
 	 */
-	public SubscriberWithSubscriptionContext(BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
+	SubscriberWithSubscriptionContext(BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
 			Function<? super Subscription, C> subscriptionHandler,
 			BiConsumer<Throwable, C> errorConsumer,
 			Consumer<C> completeConsumer) {

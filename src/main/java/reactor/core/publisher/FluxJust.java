@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.subscription.ScalarSubscription;
+import reactor.core.util.ScalarSubscription;
 import reactor.fn.Supplier;
 
 /**

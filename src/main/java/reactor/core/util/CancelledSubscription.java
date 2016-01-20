@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscription;
+package reactor.core.util;
 
 import org.reactivestreams.Subscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * A singleton Subscription that represents a cancelled subscription instance and should not be leaked to clients as it

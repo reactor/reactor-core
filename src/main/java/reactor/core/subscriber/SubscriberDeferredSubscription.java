@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscription.DeferredSubscription;
+import reactor.core.util.DeferredSubscription;
 import reactor.core.util.ReactiveState;
 
 /**

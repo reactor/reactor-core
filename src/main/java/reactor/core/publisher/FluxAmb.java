@@ -24,8 +24,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.subscription.BackpressureUtils;
-import reactor.core.subscription.EmptySubscription;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.ReactiveState;
 
 /**

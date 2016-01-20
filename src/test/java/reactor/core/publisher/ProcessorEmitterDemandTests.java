@@ -32,7 +32,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.test.DataTestSubscriber;
 import reactor.core.subscriber.test.TestSubscriber;
-import reactor.core.subscription.BackpressureUtils;
+import reactor.core.util.BackpressureUtils;
 
 /**
  * ?

@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.subscription.EmptySubscription;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.ReactiveState;
 import reactor.fn.Supplier;
 
