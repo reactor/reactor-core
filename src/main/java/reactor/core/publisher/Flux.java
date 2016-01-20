@@ -439,13 +439,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that never completes.
 	 *
-	 * @param <T>
+	 * @param <T> the {@link Subscriber} type target
 	 *
-	 * @return
+	 * @return a never completing {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> never() {
 		return FluxNever.instance();
+	}
+
+	/**
+	 * Create a {@link Flux} that never completes.
+	 *
+	 * @param <T> the {@link Subscriber} type target
+	 *
+	 * @return a never completing {@link Flux}
+	 */
+	public static <T> Flux<T> onErrorResumeWith(
+			Publisher<? extends T> source,
+			Function<Throwable, ? extends Publisher<? extends T>> fallback) {
+		return new FluxResume<>(source, fallback);
 	}
 
 	/**
@@ -1250,12 +1262,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
-		return onErrorResumeWith(new Function<Throwable, Publisher<? extends T>>() {
-			@Override
-			public Publisher<? extends T> apply(Throwable throwable) {
-				return fallback;
-			}
-		});
+		return onErrorResumeWith(FluxResume.create(fallback));
 	}
 
 	/**
