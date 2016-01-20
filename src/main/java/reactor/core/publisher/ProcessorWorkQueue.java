@@ -27,19 +27,18 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.RequestTask;
-import reactor.core.queue.RingBufferSubscriberUtils;
-import reactor.core.queue.disruptor.RingBuffer;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.SequenceBarrier;
-import reactor.core.queue.disruptor.Sequencer;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.SequenceBarrier;
+import reactor.core.queue.Sequencer;
+import reactor.core.queue.Slot;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ExecutorUtils;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.WaitStrategy;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ExecutorUtils;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 
@@ -471,10 +470,10 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 				autoCancel);
 	}
 
-	private static final Supplier FACTORY = new Supplier<RingBuffer.Slot>() {
+	private static final Supplier FACTORY = new Supplier<Slot>() {
 		@Override
-		public RingBuffer.Slot get() {
-			return new RingBuffer.Slot<>();
+		public Slot get() {
+			return new Slot<>();
 		}
 	};
 
@@ -488,9 +487,9 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 	final Sequence retrySequence =
 			Sequencer.newSequence(Sequencer.INITIAL_CURSOR_VALUE);
 
-	final RingBuffer<RingBuffer.Slot<E>> ringBuffer;
+	final RingBuffer<Slot<E>> ringBuffer;
 
-	volatile RingBuffer<RingBuffer.Slot<E>> retryBuffer;
+	volatile RingBuffer<Slot<E>> retryBuffer;
 
 	final static AtomicReferenceFieldUpdater<ProcessorWorkQueue, RingBuffer>
 			RETRY_REF = PlatformDependent
@@ -515,7 +514,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
 		}
 
-		Supplier<RingBuffer.Slot<E>> factory = (Supplier<RingBuffer.Slot<E>>) FACTORY;
+		Supplier<Slot<E>> factory = (Supplier<Slot<E>>) FACTORY;
 
 		Runnable spinObserver = new Runnable() {
 			@Override
@@ -582,7 +581,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 	@Override
 	public void onNext(E o) {
 		super.onNext(o);
-		RingBufferSubscriberUtils.onNext(o, ringBuffer);
+		RingBuffer.onNext(o, ringBuffer);
 	}
 
 	@Override
@@ -599,7 +598,8 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 
 	@Override
 	protected void requestTask(Subscription s) {
-		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(new RequestTask(s, new Runnable() {
+		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(RingBuffer.createRequestTask(s, new
+				Runnable() {
 			@Override
 			public void run() {
 				if (!alive()) {
@@ -661,11 +661,11 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 	}
 
 	@SuppressWarnings("unchecked")
-	RingBuffer<RingBuffer.Slot<E>> retryBuffer() {
-		RingBuffer<RingBuffer.Slot<E>> retry = retryBuffer;
+	RingBuffer<Slot<E>> retryBuffer() {
+		RingBuffer<Slot<E>> retry = retryBuffer;
 		if (retry == null) {
 			retry =
-					RingBuffer.createMultiProducer((Supplier<RingBuffer.Slot<E>>) FACTORY, 32, RingBuffer.NO_WAIT);
+					RingBuffer.createMultiProducer((Supplier<Slot<E>>) FACTORY, 32, RingBuffer.NO_WAIT);
 			retry.addGatingSequence(retrySequence);
 			if (!RETRY_REF.compareAndSet(this, null, retry)) {
 				retry = retryBuffer;
@@ -767,9 +767,9 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 				boolean processedSequence = true;
 				long cachedAvailableSequence = Long.MIN_VALUE;
 				long nextSequence = sequence.get();
-				RingBuffer.Slot<T> event = null;
+				Slot<T> event = null;
 
-				if (!RingBufferSubscriberUtils.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
+				if (!RingBuffer.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
 						waiter)) {
 					if(!running.get()){
 						return;
@@ -915,10 +915,10 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 		private boolean replay(final boolean unbounded) {
 
 			if (REPLAYING.compareAndSet(processor, 0, 1)) {
-				RingBuffer.Slot<T> signal;
+				Slot<T> signal;
 
 				try {
-					RingBuffer<RingBuffer.Slot<T>> q = processor.retryBuffer;
+					RingBuffer<Slot<T>> q = processor.retryBuffer;
 					if (q == null) {
 						return false;
 					}
@@ -959,11 +959,11 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 			}
 		}
 
-		private void reschedule(RingBuffer.Slot<T> event) {
+		private void reschedule(Slot<T> event) {
 			if (event != null &&
 					event.value != null) {
 
-				RingBuffer<RingBuffer.Slot<T>> retry = processor.retryBuffer();
+				RingBuffer<Slot<T>> retry = processor.retryBuffer();
 				long seq = retry.next();
 				retry.get(seq).value = event.value;
 				retry.publish(seq);

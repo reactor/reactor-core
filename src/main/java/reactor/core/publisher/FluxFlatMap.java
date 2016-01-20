@@ -24,15 +24,16 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.RingBuffer;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.Sequencer;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.Sequencer;
+import reactor.core.queue.Slot;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberWithDemand;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 
@@ -118,8 +119,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		final int                                                   bufferSize;
 		final int                                                   limit;
 
-		private          Sequence                       pollCursor;
-		private volatile RingBuffer<RingBuffer.Slot<V>> emitBuffer;
+		private          Sequence            pollCursor;
+		private volatile RingBuffer<Slot<V>> emitBuffer;
 
 		private volatile Throwable error;
 
@@ -250,8 +251,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 			}
 		}
 
-		RingBuffer<RingBuffer.Slot<V>> getMainQueue() {
-			RingBuffer<RingBuffer.Slot<V>> q = emitBuffer;
+		RingBuffer<Slot<V>> getMainQueue() {
+			RingBuffer<Slot<V>> q = emitBuffer;
 			if (q == null) {
 				q = RingBuffer.createSingleProducer(maxConcurrency == Integer.MAX_VALUE ? bufferSize : maxConcurrency);
 				q.addGatingSequence(pollCursor = Sequencer.newSequence(-1L));
@@ -276,7 +277,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 					}
 				}
 				else {
-					RingBuffer<RingBuffer.Slot<V>> q = getMainQueue();
+					RingBuffer<Slot<V>> q = getMainQueue();
 					long seq = q.tryNext();
 					q.get(seq).value = value;
 					q.publish(seq);
@@ -287,7 +288,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				}
 			}
 			else {
-				RingBuffer<RingBuffer.Slot<V>> q = getMainQueue();
+				RingBuffer<Slot<V>> q = getMainQueue();
 				long seq = q.tryNext();
 				q.get(seq).value = value;
 				q.publish(seq);
@@ -298,8 +299,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 			drainLoop();
 		}
 
-		RingBuffer<RingBuffer.Slot<V>> getInnerQueue(BufferSubscriber<T, V> inner) {
-			RingBuffer<RingBuffer.Slot<V>> q = inner.queue;
+		RingBuffer<Slot<V>> getInnerQueue(BufferSubscriber<T, V> inner) {
+			RingBuffer<Slot<V>> q = inner.queue;
 			if (q == null) {
 				q = RingBuffer.createSingleProducer(bufferSize);
 				q.addGatingSequence(inner.pollCursor = Sequencer.newSequence(-1L));
@@ -319,7 +320,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 					inner.requestMore(1);
 				}
 				else {
-					RingBuffer<RingBuffer.Slot<V>> q = getInnerQueue(inner);
+					RingBuffer<Slot<V>> q = getInnerQueue(inner);
 					long seq = q.tryNext();
 					q.get(seq).value = value;
 					q.publish(seq);
@@ -329,7 +330,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				}
 			}
 			else {
-				RingBuffer<RingBuffer.Slot<V>> q = getInnerQueue(inner);
+				RingBuffer<Slot<V>> q = getInnerQueue(inner);
 				long seq = q.tryNext();
 				q.get(seq).value = value;
 				q.publish(seq);
@@ -409,7 +410,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				if (checkTerminate()) {
 					return;
 				}
-				RingBuffer<RingBuffer.Slot<V>> svq = emitBuffer;
+				RingBuffer<Slot<V>> svq = emitBuffer;
 
 				long r = requestedFromDownstream();
 				boolean unbounded = r == Long.MAX_VALUE;
@@ -419,7 +420,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				if (svq != null) {
 					for (; ; ) {
 						long scalarEmission = 0;
-						RingBuffer.Slot<V> o;
+						Slot<V> o;
 						V oo = null;
 						while (r != 0L) {
 							long cursor = pollCursor.get() + 1;
@@ -509,7 +510,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 						}
 						@SuppressWarnings("unchecked") BufferSubscriber<T, V> is = (BufferSubscriber<T, V>) inner[j];
 
-						RingBuffer.Slot<V> o;
+						Slot<V> o;
 						V oo = null;
 						for (; ; ) {
 							long produced = 0;
@@ -517,7 +518,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 								if (checkTerminate()) {
 									return;
 								}
-								RingBuffer<RingBuffer.Slot<V>> q = is.queue;
+								RingBuffer<Slot<V>> q = is.queue;
 								if (q == null) {
 									break;
 								}
@@ -557,7 +558,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 							}
 						}
 						boolean innerDone = is.done;
-						RingBuffer<RingBuffer.Slot<V>> innerQueue = is.queue;
+						RingBuffer<Slot<V>> innerQueue = is.queue;
 						if (innerDone && (innerQueue == null || innerQueue.pending() == 0)) {
 							removeInner(is);
 							if (checkTerminate()) {
@@ -642,8 +643,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 
 		Sequence pollCursor;
 
-		volatile boolean                        done;
-		volatile RingBuffer<RingBuffer.Slot<V>> queue;
+		volatile boolean             done;
+		volatile RingBuffer<Slot<V>> queue;
 		int outstanding;
 
 		public BufferSubscriber(FluxFlatMapSubscriber<T, V> parent, long id) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc., Inc. All Rights Reserved.
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package reactor.core.queue;
 
 /**
- * Core components of the Reactor framework.
+ * A simple holder
+ * @param <T>
  */
-package reactor.core.support.internal;
-
-/**
- * INTERNAL ONLY, can change on minor version where convention is major.minor.patch
- * Mainly borrowed from Netty project.
- */
+public final class Slot<T> {
+	public T value = null;
+}

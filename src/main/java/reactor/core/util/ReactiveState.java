@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.support;
+package reactor.core.util;
 
 import java.util.Iterator;
 

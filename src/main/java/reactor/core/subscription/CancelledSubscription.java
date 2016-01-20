@@ -16,7 +16,7 @@
 package reactor.core.subscription;
 
 import org.reactivestreams.Subscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * A singleton Subscription that represents a cancelled subscription instance and should not be leaked to clients as it

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.util;
 
 import reactor.fn.LongSupplier;
 

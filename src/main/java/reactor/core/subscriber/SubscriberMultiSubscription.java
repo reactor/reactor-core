@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.BackpressureUtils;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the

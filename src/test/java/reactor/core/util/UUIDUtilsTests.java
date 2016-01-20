@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package reactor.core.support;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import reactor.fn.Supplier;
+package reactor.core.util;
 
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.junit.Ignore;
+import org.junit.Test;
+import reactor.fn.Supplier;
 
 /**
  * @author Andy Wilkinson

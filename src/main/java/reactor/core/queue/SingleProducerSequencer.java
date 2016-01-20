@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.core.support.Exceptions;
-import reactor.core.support.WaitStrategy;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
 
 abstract class SingleProducerSequencerPad extends Sequencer
 {
@@ -29,7 +30,7 @@ abstract class SingleProducerSequencerPad extends Sequencer
     }
 }
 
-abstract class SingleProducerSequencerFields extends reactor.core.queue.disruptor.SingleProducerSequencerPad
+abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
 {
     public SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
     {
@@ -49,7 +50,7 @@ abstract class SingleProducerSequencerFields extends reactor.core.queue.disrupto
  * to {@link Sequencer#publish(long)} is made.
  */
 
-final class SingleProducerSequencer extends reactor.core.queue.disruptor.SingleProducerSequencerFields
+final class SingleProducerSequencer extends SingleProducerSequencerFields
 {
     protected long p1, p2, p3, p4, p5, p6, p7;
 

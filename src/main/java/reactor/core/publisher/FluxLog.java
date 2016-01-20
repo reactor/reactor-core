@@ -22,7 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.support.Logger;
+import reactor.core.util.Logger;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them

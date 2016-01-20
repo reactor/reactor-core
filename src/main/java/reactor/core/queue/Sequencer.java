@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.WaitStrategy;
-import reactor.core.support.internal.PlatformDependent;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
+import reactor.core.util.internal.PlatformDependent;
+import reactor.fn.Consumer;
+import reactor.fn.LongSupplier;
 
 import static java.util.Arrays.copyOf;
 
@@ -395,168 +400,229 @@ public abstract class Sequencer
 	 *
      * @param <E>
      */
-    final static class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
-        public final E        delegate;
-        public final Sequence sequence;
+}
 
-        public Wrapped(E delegate, Sequence sequence) {
-            this.delegate = delegate;
-            this.sequence = sequence;
-        }
+final class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
+	public final E        delegate;
+	public final Sequence sequence;
 
-        @Override
-        public long get() {
-            return sequence.get();
-        }
+	public Wrapped(E delegate, Sequence sequence) {
+		this.delegate = delegate;
+		this.sequence = sequence;
+	}
 
-        @Override
-        public Object downstream() {
-            return delegate;
-        }
+	@Override
+	public long get() {
+		return sequence.get();
+	}
 
-        @Override
-        public void set(long value) {
-            sequence.set(value);
-        }
+	@Override
+	public Object downstream() {
+		return delegate;
+	}
 
-        @Override
-        public void setVolatile(long value) {
-            sequence.setVolatile(value);
-        }
+	@Override
+	public void set(long value) {
+		sequence.set(value);
+	}
 
-        @Override
-        public boolean compareAndSet(long expectedValue, long newValue) {
-            return sequence.compareAndSet(expectedValue, newValue);
-        }
+	@Override
+	public void setVolatile(long value) {
+		sequence.setVolatile(value);
+	}
 
-        @Override
-        public long incrementAndGet() {
-            return sequence.incrementAndGet();
-        }
+	@Override
+	public boolean compareAndSet(long expectedValue, long newValue) {
+		return sequence.compareAndSet(expectedValue, newValue);
+	}
 
-        @Override
-        public long addAndGet(long increment) {
-            return sequence.addAndGet(increment);
-        }
+	@Override
+	public long incrementAndGet() {
+		return sequence.incrementAndGet();
+	}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            Wrapped<?> wrapped = (Wrapped<?>) o;
+	@Override
+	public long addAndGet(long increment) {
+		return sequence.addAndGet(increment);
+	}
 
-            return sequence.equals(wrapped.sequence);
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		Wrapped<?> wrapped = (Wrapped<?>) o;
 
-        }
+		return sequence.equals(wrapped.sequence);
 
-        @Override
-        public int hashCode() {
-            return sequence.hashCode();
-        }
-    }
+	}
 
-	/**
-	 * Provides static methods for managing a {@link Sequence} object.
-	 */
-	static class SequenceGroups
-	{
-	    static <T> void addSequences(final T holder,
-	                                 final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
-	                                 final Sequencer cursor,
-	                                 final Sequence... sequencesToAdd)
-	    {
-	        long cursorSequence;
-	        Sequence[] updatedSequences;
-	        Sequence[] currentSequences;
+	@Override
+	public int hashCode() {
+		return sequence.hashCode();
+	}
+}
 
-	        do
-	        {
-	            currentSequences = updater.get(holder);
-	            updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
-	            cursorSequence = cursor.getCursor();
 
-	            int index = currentSequences.length;
-	            for (Sequence sequence : sequencesToAdd)
-	            {
-	                sequence.set(cursorSequence);
-	                updatedSequences[index++] = sequence;
-	            }
-	        }
-	        while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+/**
+ * Provides static methods for managing a {@link Sequence} object.
+ */
+final class SequenceGroups {
 
-	        cursorSequence = cursor.getCursor();
-	        for (Sequence sequence : sequencesToAdd)
-	        {
-	            sequence.set(cursorSequence);
-	        }
-	    }
+	static <T> void addSequences(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final Sequencer cursor,
+			final Sequence... sequencesToAdd) {
+		long cursorSequence;
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
 
-	    static <T> void addSequence(final T holder,
-	            final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
-	            final Sequence sequence)
-	    {
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
+			cursorSequence = cursor.getCursor();
 
-	        Sequence[] updatedSequences;
-	        Sequence[] currentSequences;
+			int index = currentSequences.length;
+			for (Sequence sequence : sequencesToAdd) {
+				sequence.set(cursorSequence);
+				updatedSequences[index++] = sequence;
+			}
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
 
-	        do
-	        {
-	            currentSequences = updater.get(holder);
-	            updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
+		cursorSequence = cursor.getCursor();
+		for (Sequence sequence : sequencesToAdd) {
+			sequence.set(cursorSequence);
+		}
+	}
 
-	            updatedSequences[currentSequences.length] = sequence;
-	        }
-	        while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
-	    }
+	static <T> void addSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final Sequence sequence) {
 
-	    static <T> boolean removeSequence(final T holder,
-	                                      final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
-	                                      final Sequence sequence)
-	    {
-	        int numToRemove;
-	        Sequence[] oldSequences;
-	        Sequence[] newSequences;
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
 
-	        do
-	        {
-	            oldSequences = sequenceUpdater.get(holder);
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
 
-	            numToRemove = countMatching(oldSequences, sequence);
+			updatedSequences[currentSequences.length] = sequence;
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+	}
 
-	            if (0 == numToRemove)
-	            {
-	                break;
-	            }
+	static <T> boolean removeSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
+			final Sequence sequence) {
+		int numToRemove;
+		Sequence[] oldSequences;
+		Sequence[] newSequences;
 
-	            final int oldSize = oldSequences.length;
-	            newSequences = new Sequence[oldSize - numToRemove];
+		do {
+			oldSequences = sequenceUpdater.get(holder);
 
-	            for (int i = 0, pos = 0; i < oldSize; i++)
-	            {
-	                final Sequence testSequence = oldSequences[i];
-	                if (sequence != testSequence)
-	                {
-	                    newSequences[pos++] = testSequence;
-	                }
-	            }
-	        }
-	        while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
+			numToRemove = countMatching(oldSequences, sequence);
 
-	        return numToRemove != 0;
-	    }
+			if (0 == numToRemove) {
+				break;
+			}
 
-	    private static <T> int countMatching(T[] values, final T toMatch)
-	    {
-	        int numToRemove = 0;
-	        for (T value : values)
-	        {
-	            if (value == toMatch) // Specifically uses identity
-	            {
-	                numToRemove++;
-	            }
-	        }
-	        return numToRemove;
-	    }
+			final int oldSize = oldSequences.length;
+			newSequences = new Sequence[oldSize - numToRemove];
+
+			for (int i = 0, pos = 0; i < oldSize; i++) {
+				final Sequence testSequence = oldSequences[i];
+				if (sequence != testSequence) {
+					newSequences[pos++] = testSequence;
+				}
+			}
+		}
+		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
+
+		return numToRemove != 0;
+	}
+
+	private static <T> int countMatching(T[] values, final T toMatch) {
+		int numToRemove = 0;
+		for (T value : values) {
+			if (value == toMatch) // Specifically uses identity
+			{
+				numToRemove++;
+			}
+		}
+		return numToRemove;
+	}
+}
+
+/**
+ * An async request client for ring buffer impls
+ *
+ * @author Stephane Maldini
+ */
+final class RequestTask implements Runnable {
+
+	final WaitStrategy waitStrategy;
+
+	final LongSupplier readCount;
+
+	final Subscription upstream;
+
+	final Runnable spinObserver;
+
+	final Consumer<Long> postWaitCallback;
+
+	final Subscriber<?> errorSubscriber;
+
+	final RingBuffer<?> ringBuffer;
+
+	public RequestTask(Subscription upstream,
+			Runnable stopCondition,
+			Consumer<Long> postWaitCallback,
+			LongSupplier readCount,
+			WaitStrategy waitStrategy,
+			Subscriber<?> errorSubscriber,
+			RingBuffer r) {
+		this.waitStrategy = waitStrategy;
+		this.readCount = readCount;
+		this.postWaitCallback = postWaitCallback;
+		this.errorSubscriber = errorSubscriber;
+		this.upstream = upstream;
+		this.spinObserver = stopCondition;
+		this.ringBuffer = r;
+	}
+
+	@Override
+	public void run() {
+		final long bufferSize = ringBuffer.getBufferSize();
+		final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
+		long cursor = -1;
+		try {
+			spinObserver.run();
+			upstream.request(bufferSize - 1);
+
+			for (; ; ) {
+				cursor = waitStrategy.waitFor(cursor + limit, readCount, spinObserver);
+				if (postWaitCallback != null) {
+					postWaitCallback.accept(cursor);
+				}
+				//spinObserver.accept(null);
+				upstream.request(limit);
+			}
+		}
+		catch (Exceptions.AlertException e) {
+			//completed
+		}
+		catch (Exceptions.CancelException ce) {
+			upstream.cancel();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread()
+			      .interrupt();
+		}
+		catch (Throwable t) {
+			Exceptions.throwIfFatal(t);
+			errorSubscriber.onError(t);
+		}
 	}
 }

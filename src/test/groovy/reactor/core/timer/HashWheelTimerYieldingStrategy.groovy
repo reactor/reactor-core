@@ -15,7 +15,7 @@
  */
 package reactor.core.timer
 
-import reactor.core.support.WaitStrategy
+import reactor.core.util.WaitStrategy
 import reactor.fn.Consumer
 import spock.lang.Specification
 

@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.RingBuffer;
+import reactor.core.queue.RingBuffer;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 import reactor.fn.tuple.Tuple;
@@ -532,7 +532,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 			this.parent = parent;
 			this.bufferSize = parent.parent.bufferSize;
 			this.limit = bufferSize >> 2;
-			this.queue = RingBuffer.newSequencedQueue(RingBuffer.createSingleProducer(bufferSize));
+			this.queue = RingBuffer.createSequencedQueue(RingBuffer.createSingleProducer(bufferSize));
 		}
 
 		@Override

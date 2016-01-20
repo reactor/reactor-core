@@ -24,11 +24,9 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
-import reactor.core.timer.Timers;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
-import reactor.fn.LongSupplier;
 import reactor.fn.Predicate;
 
 /**
@@ -62,8 +60,6 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 			return this == CANCELLED;
 		}
 	}
-
-	private static final LongSupplier NOW = Timers.currentTimeMillisResolver();
 
 	private static final Predicate NEVER = new Predicate(){
 		@Override
@@ -268,7 +264,7 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 	 * @return
 	 */
 	public long submit(E data, long timeout, TimeUnit unit, Predicate<E> dropPredicate) {
-		final long start = NOW.get();
+		final long start = System.currentTimeMillis();
 		long timespan =
 				timeout != -1L ? (start + TimeUnit.MILLISECONDS.convert(timeout, unit)) :
 						Long.MAX_VALUE;
@@ -276,7 +272,7 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 		Emission res;
 		try {
 			while ((res = emit(data)).isBackpressured()) {
-				if (timeout != -1L && NOW.get() > timespan) {
+				if (timeout != -1L && System.currentTimeMillis() > timespan) {
 					if(dropPredicate.test(data)){
 						timespan += TimeUnit.MILLISECONDS.convert(timeout, unit);
 					}

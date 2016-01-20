@@ -24,14 +24,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.RingBuffer;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.Sequencer;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.Sequencer;
+import reactor.core.queue.Slot;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.internal.PlatformDependent;
 
 /**
  * @author Stephane Maldini
@@ -52,7 +53,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	final int replay;
 	final boolean autoCancel;
 
-	private volatile RingBuffer<RingBuffer.Slot<T>> emitBuffer;
+	private volatile RingBuffer<Slot<T>> emitBuffer;
 
 	private volatile boolean done;
 
@@ -278,8 +279,8 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		return outstanding;
 	}
 
-	RingBuffer<RingBuffer.Slot<T>> getMainQueue() {
-		RingBuffer<RingBuffer.Slot<T>> q = emitBuffer;
+	RingBuffer<Slot<T>> getMainQueue() {
+		RingBuffer<Slot<T>> q = emitBuffer;
 		if (q == null) {
 			q = RingBuffer.createSingleProducer(bufferSize);
 			emitBuffer = q;
@@ -288,7 +289,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	final long buffer(T value) {
-		RingBuffer<RingBuffer.Slot<T>> q = getMainQueue();
+		RingBuffer<Slot<T>> q = getMainQueue();
 
 		long seq = q.next();
 
@@ -305,7 +306,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 
 	final void drainLoop() {
 		int missed = 1;
-		RingBuffer<RingBuffer.Slot<T>> q = null;
+		RingBuffer<Slot<T>> q = null;
 		for (; ; ) {
 			EmitterSubscriber<?>[] inner = subscribers;
 			if (inner == CANCELLED) {
@@ -601,7 +602,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 
 		void start() {
 			if (REQUESTED.compareAndSet(this, MASK_NOT_SUBSCRIBED, 0)) {
-				RingBuffer<RingBuffer.Slot<T>> ringBuffer = parent.emitBuffer;
+				RingBuffer<Slot<T>> ringBuffer = parent.emitBuffer;
 				if (ringBuffer != null) {
 					if (parent.replay > 0) {
 						long cursor = ringBuffer.getCursor();

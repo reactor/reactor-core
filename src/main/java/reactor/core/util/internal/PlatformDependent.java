@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support.internal;
+package reactor.core.util.internal;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 

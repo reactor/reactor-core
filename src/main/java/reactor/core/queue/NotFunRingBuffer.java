@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
 
-import reactor.core.support.Exceptions;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Sequence;
 import reactor.fn.Supplier;
 
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
@@ -63,7 +64,7 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
  *
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-final class NotFunRingBuffer<E> extends reactor.core.queue.disruptor.NotFunRingBufferFields<E>
+final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 {
     /**
      * Construct a RingBuffer with the full option set.

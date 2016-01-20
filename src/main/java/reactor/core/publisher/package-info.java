@@ -22,7 +22,7 @@
  *
  *
  * A {@link reactor.core.publisher.ProcessorExecutor} will manage its own thread(s), one by {@link org.reactivestreams.Subscriber}.
- * The message-passing will be implementation dependant, e.g. using a {@link reactor.core.queue.disruptor.RingBuffer}.
+ * The message-passing will be implementation dependant, e.g. using a {@link reactor.core.queue.RingBuffer}.
  * Usually, the boundary will be implemented with a queue-based event dispatching and the Reactive Stream contract will
  * offer control over the available backlog. Long.MAX demand will however switch off the contract and rely on the impl
  * coordination strategy to back-off, like the RingBuffer waiting strategy, to slow down the Processor publisher.

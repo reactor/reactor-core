@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the

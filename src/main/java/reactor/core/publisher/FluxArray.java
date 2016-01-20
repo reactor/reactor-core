@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * Emits the contents of a wrapped (shared) array.

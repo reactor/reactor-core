@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support;
+package reactor.core.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;

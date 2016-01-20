@@ -17,7 +17,7 @@ package reactor.core.subscription;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * A singleton enumeration that represents a no-op Subscription instance that can be freely given out to clients.

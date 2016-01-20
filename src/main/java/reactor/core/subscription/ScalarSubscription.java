@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 public final class ScalarSubscription<T> implements Subscription, ReactiveState.Downstream, ReactiveState.Upstream {
 

@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
 import reactor.fn.LongSupplier;
 
 /**

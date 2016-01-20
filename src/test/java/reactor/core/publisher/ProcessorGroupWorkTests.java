@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
-import reactor.core.support.Assert;
-import reactor.core.support.Exceptions;
+import reactor.core.util.Assert;
+import reactor.core.util.Exceptions;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 

@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.support.Exceptions;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Sequence;
 
 /**
  * A generic utility to check subscription, request size and to cap concurrent additive operations to Long

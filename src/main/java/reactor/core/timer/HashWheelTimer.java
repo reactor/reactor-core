@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.RingBuffer;
+import reactor.core.queue.RingBuffer;
 import reactor.core.subscription.BackpressureUtils;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ExecutorUtils;
-import reactor.core.support.WaitStrategy;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ExecutorUtils;
+import reactor.core.util.WaitStrategy;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 

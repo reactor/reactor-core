@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
-import reactor.core.support.Assert;
+import reactor.core.util.Assert;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 

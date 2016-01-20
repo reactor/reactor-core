@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
-import reactor.core.support.ReactiveState;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 import sun.misc.Unsafe;
 
@@ -25,12 +26,12 @@ class LhsPadding
     protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
-class Value extends reactor.core.queue.disruptor.LhsPadding
+class Value extends LhsPadding
 {
     protected volatile long value;
 }
 
-class RhsPadding extends reactor.core.queue.disruptor.Value
+class RhsPadding extends Value
 {
     protected long p9, p10, p11, p12, p13, p14, p15;
 }
@@ -43,7 +44,7 @@ class RhsPadding extends reactor.core.queue.disruptor.Value
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
  */
-final class UnsafeSequence extends reactor.core.queue.disruptor.RhsPadding
+final class UnsafeSequence extends RhsPadding
         implements Sequence, LongSupplier, ReactiveState.Trace
 {
     private static final Unsafe UNSAFE;

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Processor;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.support.Assert;
+import reactor.core.util.Assert;
 
 /**
  * @author Stephane Maldini

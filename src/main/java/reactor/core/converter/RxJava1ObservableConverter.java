@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
+import reactor.core.util.Exceptions;
 import rx.Observable;
 import rx.Producer;
 import rx.internal.util.ScalarSynchronousObservable;

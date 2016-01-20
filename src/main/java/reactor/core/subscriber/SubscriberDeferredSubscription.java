@@ -20,7 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.DeferredSubscription;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.ReactiveState;
 
 /**
  * Arbitrates the requests and cancellation for a Subscription that may be set onSubscribe once only.

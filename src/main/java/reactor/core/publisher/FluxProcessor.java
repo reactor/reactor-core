@@ -22,8 +22,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.subscription.ReactiveSession;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
 
 /**
  * A base processor with an async boundary trait to manage active subscribers (Threads), upstream subscription and

@@ -33,8 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import javax.annotation.concurrent.NotThreadSafe;
 
-import reactor.core.support.Assert;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Assert;
+import reactor.core.util.ReactiveState;
 import reactor.fn.Supplier;
 
 /**

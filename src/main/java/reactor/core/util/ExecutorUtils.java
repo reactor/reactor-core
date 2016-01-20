@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.support;
+package reactor.core.util;
 
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +40,7 @@ public enum ExecutorUtils {
 	 * @return
 	 */
 	public static ThreadFactory newNamedFactory(String name) {
-		return ExecutorUtils.newNamedFactory(name);
+		return new NamedDaemonThreadFactory(name);
 	}
 
 	/**
@@ -50,7 +50,7 @@ public enum ExecutorUtils {
 	 * @return
 	 */
 	public static ThreadFactory newNamedFactory(String name, ClassLoader cl) {
-		return ExecutorUtils.newNamedFactory(name, cl);
+		return new NamedDaemonThreadFactory(name, cl);
 	}
 
 	/**
@@ -65,7 +65,7 @@ public enum ExecutorUtils {
 			ClassLoader cl,
 			Thread.UncaughtExceptionHandler uncaughtExceptionHandler,
 			boolean daemon) {
-		return ExecutorUtils.newNamedFactory(name, cl, uncaughtExceptionHandler, daemon);
+		return new NamedDaemonThreadFactory(name, cl, uncaughtExceptionHandler, daemon);
 	}
 
 	/**

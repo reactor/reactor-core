@@ -21,7 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.BackpressureUtils;
-import reactor.core.support.Exceptions;
+import reactor.core.util.Exceptions;
 
 /**
  * Emits a single item at most from the source.

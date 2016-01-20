@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ExecutorUtils;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ExecutorUtils;
+import reactor.core.util.ReactiveState;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService

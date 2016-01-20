@@ -16,7 +16,7 @@
 
 package reactor.core
 
-import reactor.core.support.ReactiveStateUtils
+import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
 import static reactor.core.publisher.Flux.*

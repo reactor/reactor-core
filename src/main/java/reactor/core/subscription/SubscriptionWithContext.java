@@ -18,8 +18,8 @@ package reactor.core.subscription;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
 
 /**
  * A {@link Subscription} with a typed stateful context.

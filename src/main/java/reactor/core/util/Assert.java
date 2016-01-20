@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package reactor.core.support;
+package reactor.core.util;
 
 /**
  * Assertion utility class that assists in validating arguments. Useful for identifying programmer errors early and

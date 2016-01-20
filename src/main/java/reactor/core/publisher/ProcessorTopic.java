@@ -27,18 +27,17 @@ import java.util.concurrent.locks.LockSupport;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.RequestTask;
-import reactor.core.queue.RingBufferSubscriberUtils;
-import reactor.core.queue.disruptor.RingBuffer;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.SequenceBarrier;
-import reactor.core.queue.disruptor.Sequencer;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.SequenceBarrier;
+import reactor.core.queue.Sequencer;
+import reactor.core.queue.Slot;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ExecutorUtils;
-import reactor.core.support.ReactiveState;
-import reactor.core.support.WaitStrategy;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ExecutorUtils;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
@@ -538,7 +537,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 
 	final SequenceBarrier barrier;
 
-	final RingBuffer<RingBuffer.Slot<E>> ringBuffer;
+	final RingBuffer<Slot<E>> ringBuffer;
 
 	final Sequence minimum;
 
@@ -553,10 +552,10 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
 		}
 
-		Supplier<RingBuffer.Slot<E>> factory = new Supplier<RingBuffer.Slot<E>>() {
+		Supplier<Slot<E>> factory = new Supplier<Slot<E>>() {
 			@Override
-			public RingBuffer.Slot<E> get() {
-				RingBuffer.Slot<E> signal = new RingBuffer.Slot<>();
+			public Slot<E> get() {
+				Slot<E> signal = new Slot<>();
 				if (signalSupplier != null) {
 					signal.value = signalSupplier.get();
 				}
@@ -641,7 +640,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 	@Override
 	public void onNext(E o) {
 		super.onNext(o);
-		RingBufferSubscriberUtils.onNext(o, ringBuffer);
+		RingBuffer.onNext(o, ringBuffer);
 	}
 
 	@Override
@@ -656,9 +655,9 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 		barrier.signal();
 	}
 
-	final static <E> Publisher<E> coldSource(RingBuffer<RingBuffer.Slot<E>> ringBuffer, Throwable t, Throwable error,
+	final static <E> Publisher<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
-		Publisher<E> bufferIterable = fromIterable(RingBuffer.newSequencedQueue(ringBuffer, start.get()));
+		Publisher<E> bufferIterable = fromIterable(RingBuffer.createSequencedQueue(ringBuffer, start.get()));
 		if(error != null && t != null){
 				t.addSuppressed(error);
 				return concat(bufferIterable, Flux.<E>error(error));
@@ -671,7 +670,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 		return false;
 	}
 
-	RingBuffer<RingBuffer.Slot<E>> ringBuffer() {
+	RingBuffer<Slot<E>> ringBuffer() {
 		return ringBuffer;
 	}
 
@@ -685,7 +684,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
 		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false)
-				.newThread(new RequestTask(s, new Runnable() {
+		             .newThread(RingBuffer.createRequestTask(s, new Runnable() {
 					@Override
 					public void run() {
 						if (!alive()) {
@@ -826,7 +825,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 					return;
 				}
 
-				if (!RingBufferSubscriberUtils
+				if (!RingBuffer
 						.waitRequestOrTerminalEvent(pendingRequest, processor.barrier, running, sequence, waiter)) {
 					if(!running.get()){
 						return;
@@ -841,7 +840,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 					}
 				}
 
-				RingBuffer.Slot<T> event = null;
+				Slot<T> event = null;
 				long nextSequence = sequence.get() + 1L;
 				final boolean unbounded = pendingRequest.get() == Long.MAX_VALUE;
 

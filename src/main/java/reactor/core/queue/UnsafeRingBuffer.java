@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.queue.disruptor;
+package reactor.core.queue;
 
-import reactor.core.support.Exceptions;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Sequence;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.Supplier;
 import sun.misc.Unsafe;
 
@@ -25,7 +26,7 @@ abstract class RingBufferPad<E> extends RingBuffer<E>
     protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
-abstract class RingBufferFields<E> extends reactor.core.queue.disruptor.RingBufferPad<E>
+abstract class RingBufferFields<E> extends RingBufferPad<E>
 {
     private static final int  BUFFER_PAD;
     private static final long REF_ARRAY_BASE;
@@ -90,7 +91,7 @@ abstract class RingBufferFields<E> extends reactor.core.queue.disruptor.RingBuff
  *
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-final class UnsafeRingBuffer<E> extends reactor.core.queue.disruptor.RingBufferFields<E>
+final class UnsafeRingBuffer<E> extends RingBufferFields<E>
 {
     protected long p1, p2, p3, p4, p5, p6, p7;
 

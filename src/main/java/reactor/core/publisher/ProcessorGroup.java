@@ -28,15 +28,16 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.disruptor.RingBuffer;
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.Sequencer;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.Sequencer;
+import reactor.core.queue.Slot;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.support.Assert;
-import reactor.core.support.Exceptions;
-import reactor.core.support.Logger;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Assert;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Logger;
+import reactor.core.util.ReactiveState;
+import reactor.core.util.Sequence;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Supplier;
@@ -487,9 +488,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 	static class TailRecurser {
 
 		@SuppressWarnings("unchecked")
-		private static final Supplier<RingBuffer.Slot<Runnable>> EMITTED = RingBuffer.EMITTED;
+		private static final Supplier<Slot<Runnable>> EMITTED = RingBuffer.EMITTED;
 
-		private final ArrayList<RingBuffer.Slot<Runnable>> pile;
+		private final ArrayList<Slot<Runnable>> pile;
 
 		private final int pileSizeIncrement;
 
@@ -513,7 +514,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			}
 		}
 
-		public RingBuffer.Slot<Runnable> next() {
+		public Slot<Runnable> next() {
 			ensureEnoughTasks();
 			return pile.get(next++);
 		}
@@ -542,8 +543,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		protected final ProcessorGroup service;
 		protected final Publisher<? extends V> source;
 
-		private final RingBuffer<RingBuffer.Slot<V>> emitBuffer;
-		private final Sequence                       pollCursor;
+		private final RingBuffer<Slot<V>> emitBuffer;
+		private final Sequence            pollCursor;
 
 		private volatile Throwable error;
 

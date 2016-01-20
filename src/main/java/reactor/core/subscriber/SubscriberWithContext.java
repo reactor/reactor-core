@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
 
 /**
  * A {@link Subscriber} with a typed stateful context. Some error isolation is also provided

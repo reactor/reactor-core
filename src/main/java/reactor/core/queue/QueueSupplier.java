@@ -19,7 +19,6 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import reactor.core.queue.disruptor.RingBuffer;
 import reactor.fn.Supplier;
 
 /**
@@ -64,6 +63,6 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		else if(batchSize == 1){
 			return new ArrayBlockingQueue<>(1);
 		}
-		return RingBuffer.newSequencedQueue(RingBuffer.<T>createSingleProducer((int) batchSize));
+		return RingBuffer.createSequencedQueue(RingBuffer.<T>createSingleProducer((int) batchSize));
 	}
 }

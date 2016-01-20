@@ -16,13 +16,13 @@
 
 
 
-package reactor.core.support;
+package reactor.core.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.util.internal.PlatformDependent;
 
 /**
  * Repackaged Logger for internal purposes. Will pick up the existing

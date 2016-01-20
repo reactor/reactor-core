@@ -17,10 +17,10 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.subscription.ReactiveSession;
-import reactor.core.subscription.BackpressureUtils;
-import reactor.core.support.Exceptions;
+import reactor.core.util.Exceptions;
 
 /**
  * Convenience subscriber base class that checks for input errors and provide a self-subscription operation.

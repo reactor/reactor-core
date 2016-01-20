@@ -1,7 +1,6 @@
 package reactor.io.buffer;
 
 import org.junit.Test;
-import reactor.core.support.ReactiveState;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;

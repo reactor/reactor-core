@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriberDeferredScalar;
-import reactor.core.support.Exceptions;
-import reactor.core.support.ReactiveState;
+import reactor.core.util.Exceptions;
+import reactor.core.util.ReactiveState;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.

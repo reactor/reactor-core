@@ -20,11 +20,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.queue.disruptor.Sequence;
-import reactor.core.queue.disruptor.Sequencer;
-import reactor.core.support.Exceptions;
-import reactor.core.support.WaitStrategy;
-import reactor.core.support.internal.PlatformDependent;
+import reactor.core.queue.Sequencer;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
+import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 
 /**
