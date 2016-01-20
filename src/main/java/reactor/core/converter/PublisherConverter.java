@@ -25,7 +25,7 @@ import reactor.fn.Supplier;
 /**
  * @author Stephane Maldini
  */
-public abstract class PublisherConverter<TYPE>
+abstract class PublisherConverter<TYPE>
 		implements Function<Object, Publisher<?>>, BiFunction<Publisher<?>, Class<?>, TYPE>, Predicate<Object>,
 		           Supplier<Class<TYPE>> {
 

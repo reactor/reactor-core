@@ -26,7 +26,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxFactory;
-import reactor.core.publisher.FluxMap;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
@@ -55,7 +54,7 @@ public final class IO {
 	 * @return
 	 */
 	public static Flux<String> bufferToString(final Publisher<Buffer> channel) {
-		return new FluxMap<>(channel, BUFFER_TO_STRING);
+		return Flux.from(channel).map(BUFFER_TO_STRING);
 	}
 	/**
 	 *
@@ -63,7 +62,7 @@ public final class IO {
 	 * @return
 	 */
 	public static Flux<Buffer> stringToBuffer(final Publisher<String> channel) {
-		return new FluxMap<>(channel, STRING_TO_BUFFER);
+		return  Flux.from(channel).map(STRING_TO_BUFFER);
 	}
 
 	/**

@@ -27,7 +27,7 @@ import reactor.core.support.ReactiveState;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class MonoIgnoreElements<IN> extends Mono<IN> implements ReactiveState.Upstream {
+final class MonoIgnoreElements<IN> extends Mono<IN> implements ReactiveState.Upstream {
 
 	private final Publisher<IN> source;
 

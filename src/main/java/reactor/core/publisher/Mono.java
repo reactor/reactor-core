@@ -20,22 +20,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.subscription.BackpressureUtils;
-import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.Assert;
 import reactor.core.support.Exceptions;
 import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.ReactiveStateUtils;
-import reactor.core.support.SignalType;
-import reactor.core.support.internal.PlatformDependent;
 import reactor.core.timer.Timer;
 import reactor.core.timer.Timers;
 import reactor.fn.BiConsumer;
@@ -71,6 +66,18 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 //	 ==============================================================================================================
 //	 Static Generators
 //	 ==============================================================================================================
+
+	/**
+	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
+	 *
+	 * @param source the {@link Publisher to ignore}
+	 *
+	 * @return a new completable {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static Mono<Void> after(Publisher<?> source) {
+		return (Mono<Void>)new MonoIgnoreElements<>(source);
+	}
 
 	/**
 	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
@@ -206,6 +213,19 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	public static Mono<Void> fromRunnable(Runnable runnable) {
 		return new MonoBarrier<>(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
 	}
+
+	/**
+	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
+	 *
+	 * @param source the {@link Publisher to ignore}
+	 * @param <T> the source type of the ignored data
+	 *
+	 * @return a new completable {@link Mono}.
+	 */
+	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
+		return new MonoIgnoreElements<>(source);
+	}
+
 
 	/**
 	 * Create a new {@link Mono} that emits the specified item.
@@ -398,9 +418,8 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 *
 	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<Void> after() {
-		return (Mono<Void>)new MonoIgnoreElements<>(this);
+		return after(this);
 	}
 
 	/**
@@ -1020,101 +1039,6 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		@Override
 		public Object delegateOutput() {
 			return processor;
-		}
-	}
-
-	final static class MonoResult<I> implements Subscriber<I>, ActiveUpstream {
-
-		volatile SignalType   endState;
-		volatile I            value;
-		volatile Throwable    error;
-		volatile Subscription s;
-
-		static final AtomicReferenceFieldUpdater<MonoResult, Subscription> SUBSCRIPTION =
-				PlatformDependent.newAtomicReferenceFieldUpdater(MonoResult.class, "s");
-
-		public I await(long timeout, TimeUnit unit) {
-			long delay = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeout, unit);
-
-			try {
-				for (; ; ) {
-					SignalType endState = this.endState;
-					if(endState != null) {
-						switch (endState) {
-							case NEXT:
-								return value;
-							case ERROR:
-								if (error instanceof RuntimeException) {
-									throw (RuntimeException) error;
-								}
-								Exceptions.fail(error);
-							case COMPLETE:
-								return null;
-						}
-					}
-					if(delay < System.currentTimeMillis()){
-						Exceptions.failWithCancel();
-					}
-					Thread.sleep(1);
-				}
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				Exceptions.fail(e);
-				return null;
-			}
-			finally {
-				Subscription s = SUBSCRIPTION.getAndSet(this, CancelledSubscription.INSTANCE);
-
-				if (s != null && s != CancelledSubscription.INSTANCE) {
-					s.cancel();
-				}
-			}
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && endState == null;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return endState != null;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
-				this.s = s;
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
-		public void onNext(I i) {
-			s.cancel();
-			if (endState != null) {
-				Exceptions.onNextDropped(i);
-			}
-			value = i;
-			endState = SignalType.NEXT;
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (endState != null) {
-				Exceptions.onErrorDropped(t);
-			}
-			error = t;
-			endState = SignalType.ERROR;
-		}
-
-		@Override
-		public void onComplete() {
-			if (endState != null) {
-				return;
-			}
-			endState = SignalType.COMPLETE;
 		}
 	}
 

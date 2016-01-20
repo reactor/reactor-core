@@ -312,6 +312,182 @@ public enum Exceptions {
 		return new DownstreamException(t);
 	}
 
+	public static final class TimerOverflow extends java.util.concurrent.TimeoutException {
+
+		public static final TimerOverflow INSTANCE = new TimerOverflow();
+
+		private TimerOverflow() {
+			super("The subscriber has not requested for the timer signals, consider Stream#onBackpressureDrop or any " +
+					"unbounded subscriber");
+		}
+
+		public static TimerOverflow get() {
+			return ReactiveState.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
+		}
+	}
+
+	/**
+	 *
+	 */
+	public static final class Spec309_NullOrNegativeRequest extends IllegalArgumentException {
+
+		public Spec309_NullOrNegativeRequest(long elements) {
+			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
+			  elements);
+		}
+	}
+
+	/**
+	 *
+	 */
+	public static final class Spec213_ArgumentIsNull extends NullPointerException {
+
+		public Spec213_ArgumentIsNull() {
+			super("Spec 2.13: Signal/argument cannot be null");
+		}
+	}
+
+	/**
+	 *
+	 */
+	public static final class Spec212_DuplicateOnSubscribe extends IllegalStateException {
+
+		public Spec212_DuplicateOnSubscribe() {
+			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
+			" " +
+			  "(based on object equality)");
+		}
+	}
+
+	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
+		Throwable current = field.get(instance);
+		if (current != TERMINATED) {
+			current = field.getAndSet(instance, TERMINATED);
+		}
+		return current;
+	}
+
+	/**
+	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
+	 */
+	public static class ReactiveException extends RuntimeException {
+
+		public ReactiveException(Throwable cause) {
+			super(cause);
+		}
+		public ReactiveException(String message) {
+			super(message);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
+		}
+
+	}
+	/**
+	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
+	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
+	 * dealing with boundaries (queues, combinations and async).
+	 */
+	public static class UpstreamException extends ReactiveException {
+
+		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
+		public static UpstreamException instance() {
+			return INSTANCE;
+		}
+
+		public UpstreamException(String message) {
+			super(message);
+		}
+
+		public UpstreamException(Throwable cause) {
+			super(cause);
+		}
+
+	}
+	/**
+	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 */
+	public static class DownstreamException extends ReactiveException {
+
+		public DownstreamException(Throwable cause) {
+			super(cause);
+		}
+	}
+	/**
+	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
+	 * <p>
+	 * It does not fill in a stack trace for performance reasons.
+	 */
+	@SuppressWarnings("serial")
+	public static final class AlertException extends RuntimeException {
+
+		/** Pre-allocated exception to avoid garbage generation */
+		public static final AlertException INSTANCE = new AlertException();
+
+		/**
+		 * Private constructor so only a single instance exists.
+		 */
+		private AlertException() {
+		}
+
+		/**
+		 * Overridden so the stack trace is not filled in for this exception for performance reasons.
+		 *
+		 * @return this instance.
+		 */
+		@Override
+		public Throwable fillInStackTrace() {
+			return this;
+		}
+
+	}
+	/**
+	 * An error signal from downstream subscribers consuming data when their state is denying any additional event.
+	 *
+	 * @author Stephane Maldini
+	 */
+	public static final class CancelException extends UpstreamException {
+
+		public static final CancelException INSTANCE = new CancelException();
+
+		private CancelException() {
+			super("The subscriber has denied dispatching");
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_CANCEL ? super.fillInStackTrace() : this;
+		}
+
+	}
+	/**
+	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
+	 *
+	 * @author Stephane Maldini
+	 */
+	@SuppressWarnings("serial")
+	public static final class InsufficientCapacityException extends RuntimeException {
+
+		private static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
+
+		private InsufficientCapacityException() {
+			super("The subscriber is overrun by more signals than expected (bounded queue...)");
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return ReactiveState.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
+		}
+
+	}
+
 	/**
 	 * Represents an error that was encountered while trying to emit an item from an Observable, and
 	 * tries to preserve that item for future use and/or reporting.
@@ -365,180 +541,5 @@ public enum Exceptions {
 			return value.getClass().getName() + ".class : " + value;
 		}
 
-	}
-
-	public static final class TimerOverflow extends java.util.concurrent.TimeoutException {
-
-		public static final TimerOverflow INSTANCE = new TimerOverflow();
-
-		private TimerOverflow() {
-			super("The subscriber has not requested for the timer signals, consider Stream#onBackpressureDrop or any " +
-					"unbounded subscriber");
-		}
-
-		public static TimerOverflow get() {
-			return ReactiveState.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
-		}
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
-		}
-
-	}
-
-	/**
-	 *
-	 */
-	public static final class Spec309_NullOrNegativeRequest extends IllegalArgumentException {
-		public Spec309_NullOrNegativeRequest(long elements) {
-			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
-			  elements);
-		}
-
-	}
-
-	/**
-	 *
-	 */
-	public static final class Spec213_ArgumentIsNull extends NullPointerException {
-		public Spec213_ArgumentIsNull() {
-			super("Spec 2.13: Signal/argument cannot be null");
-		}
-
-	}
-
-	/**
-	 *
-	 */
-	public static final class Spec212_DuplicateOnSubscribe extends IllegalStateException {
-		public Spec212_DuplicateOnSubscribe() {
-			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
-			" " +
-			  "(based on object equality)");
-		}
-
-	}
-
-	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
-		Throwable current = field.get(instance);
-		if (current != TERMINATED) {
-			current = field.getAndSet(instance, TERMINATED);
-		}
-		return current;
-	}
-
-	/**
-	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
-	 */
-	public static class ReactiveException extends RuntimeException {
-		public ReactiveException(Throwable cause) {
-			super(cause);
-		}
-
-		public ReactiveException(String message) {
-			super(message);
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
-		}
-	}
-
-	/**
-	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
-	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
-	 * dealing with boundaries (queues, combinations and async).
-	 */
-	public static class UpstreamException extends ReactiveException {
-		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
-
-		public static UpstreamException instance() {
-			return INSTANCE;
-		}
-
-		public UpstreamException(String message) {
-			super(message);
-		}
-
-		public UpstreamException(Throwable cause) {
-			super(cause);
-		}
-	}
-
-	/**
-	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
-	 */
-	public static class DownstreamException extends ReactiveException {
-		public DownstreamException(Throwable cause) {
-			super(cause);
-		}
-	}
-
-	/**
-	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
-	 * <p>
-	 * It does not fill in a stack trace for performance reasons.
-	 */
-	@SuppressWarnings("serial")
-	public static final class AlertException extends RuntimeException {
-
-		/** Pre-allocated exception to avoid garbage generation */
-		public static final AlertException INSTANCE = new AlertException();
-
-		/**
-		 * Private constructor so only a single instance exists.
-		 */
-		private AlertException() {
-		}
-
-		/**
-		 * Overridden so the stack trace is not filled in for this exception for performance reasons.
-		 *
-		 * @return this instance.
-		 */
-		@Override
-		public Throwable fillInStackTrace() {
-			return this;
-		}
-	}
-
-	/**
-	 * An error signal from downstream subscribers consuming data when their state is denying any additional event.
-	 *
-	 * @author Stephane Maldini
-	 */
-	public static final class CancelException extends UpstreamException {
-
-		public static final CancelException INSTANCE = new CancelException();
-
-		private CancelException() {
-			super("The subscriber has denied dispatching");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_CANCEL ? super.fillInStackTrace() : this;
-		}
-	}
-
-	/**
-	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
-	 *
-	 * @author Stephane Maldini
-	 */
-	@SuppressWarnings("serial")
-	public static final class InsufficientCapacityException extends RuntimeException {
-
-		private static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
-
-		private InsufficientCapacityException() {
-			super("The subscriber is overrun by more signals than expected (bounded queue...)");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
-		}
 	}
 }

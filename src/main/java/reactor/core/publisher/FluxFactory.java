@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -378,7 +379,7 @@ public abstract class FluxFactory implements ReactiveState {
 
 	}
 
-	public static class PrematureCompleteException extends RuntimeException {
+	static final class PrematureCompleteException extends RuntimeException {
 
 		static public final PrematureCompleteException INSTANCE = new PrematureCompleteException();
 
@@ -388,6 +389,99 @@ public abstract class FluxFactory implements ReactiveState {
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return this;
+		}
+	}
+
+	/**
+	 * Simple iterating consumer for {@link FluxFactory#createForEach(Consumer, Function)} and its alias
+	 *
+	 * @param <T>
+	 *
+	 * @author Ben Hale
+	 * @author Stephane Maldini
+	 */
+	abstract static class ForEachSequencer<T>
+			implements Consumer<SubscriberWithContext<T, Iterator<? extends T>>>, Trace,
+			           Upstream {
+
+		@Override
+		public final void accept(SubscriberWithContext<T, Iterator<? extends T>> subscriber) {
+			final Iterator<? extends T> iterator = subscriber.context();
+			if (iterator.hasNext()) {
+				subscriber.onNext(iterator.next());
+				//peek next
+				if (!iterator.hasNext()) {
+					subscriber.onComplete();
+				}
+			}
+			else {
+				subscriber.onComplete();
+			}
+		}
+
+		/**
+		 * Simple Publisher implementations
+		 */
+		public static final class IterableSequencer<T> extends ForEachSequencer<T>
+				implements Function<Subscriber<? super T>, Iterator<? extends T>> {
+
+			private final Iterable<? extends T> defaultValues;
+
+			public IterableSequencer(Iterable<? extends T> defaultValues) {
+				this.defaultValues = defaultValues;
+			}
+
+			@Override
+			public Iterator<? extends T> apply(Subscriber<? super T> subscriber) {
+				if (defaultValues == null) {
+					throw PrematureCompleteException.INSTANCE;
+				}
+				Iterator<? extends T> it = defaultValues.iterator();
+				if (!it.hasNext()) {
+					throw PrematureCompleteException.INSTANCE;
+				}
+				return it;
+			}
+
+			@Override
+			public Object upstream() {
+				return defaultValues;
+			}
+
+			@Override
+			public String toString() {
+				return "{iterable : " + defaultValues + " }";
+			}
+		}
+
+		/**
+		 * Simple Publisher implementations
+		 */
+		public static final class IteratorSequencer<T> extends ForEachSequencer<T>
+				implements Function<Subscriber<? super T>, Iterator<? extends T>> {
+
+			private final Iterator<? extends T> defaultValues;
+
+			public IteratorSequencer(Iterator<? extends T> defaultValues) {
+				this.defaultValues = defaultValues;
+			}
+
+			@Override
+			public Iterator<? extends T> apply(Subscriber<? super T> subscriber) {
+				if (defaultValues == null) {
+					throw PrematureCompleteException.INSTANCE;
+				}
+				Iterator<? extends T> it = defaultValues;
+				if (!it.hasNext()) {
+					throw PrematureCompleteException.INSTANCE;
+				}
+				return it;
+			}
+
+			@Override
+			public Object upstream() {
+				return defaultValues;
+			}
 		}
 	}
 }

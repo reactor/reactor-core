@@ -126,7 +126,7 @@ public final class FluxLift<I, O> extends Flux.FluxBarrier<I, O> implements Flux
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static final class MonoLift<I, O> extends Mono.MonoBarrier<I, O> implements Flux.Operator<I, O> {
+	static final class MonoLift<I, O> extends Mono.MonoBarrier<I, O> implements Flux.Operator<I, O> {
 		final private Function<Subscriber<? super O>, Subscriber<? super I>> barrierProvider;
 
 		public MonoLift(Publisher<I> source, Function<Subscriber<? super O>, Subscriber<? super I>> barrierProvider) {

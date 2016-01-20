@@ -287,7 +287,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
-		ForEachSequencer.IterableSequencer<T> iterablePublisher = new ForEachSequencer.IterableSequencer<>(it);
+		FluxFactory.ForEachSequencer.IterableSequencer<T> iterablePublisher = new FluxFactory.ForEachSequencer.IterableSequencer<>(it);
 		return create(iterablePublisher, iterablePublisher);
 	}
 
@@ -459,7 +459,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a fresh Reactive Flux publisher ready to be subscribed
 	 */
 	public static <T> Flux<T> yield(Consumer<? super ReactiveSession<T>> sessionConsumer) {
-		return new FluxSession<>(sessionConsumer);
+		return new FluxYieldingSession<>(sessionConsumer);
 	}
 
 	/**
