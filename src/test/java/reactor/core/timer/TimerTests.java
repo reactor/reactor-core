@@ -90,7 +90,7 @@ public class TimerTests {
         AtomicInteger timesCalled = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(iterations);
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        TimeUtils.SettableTimeSupplier timeTravellingSupplier = new TimeUtils.SettableTimeSupplier(0L);
+        IncrementingTimeResolver.SettableTimeSupplier timeTravellingSupplier = new IncrementingTimeResolver.SettableTimeSupplier(0L);
 
         Timer timer = new HashWheelTimer("time-travelling-timer" + waitStrategy,
                                          500,

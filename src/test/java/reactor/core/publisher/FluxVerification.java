@@ -40,10 +40,10 @@ public class FluxVerification extends PublisherVerification<Long> {
 
 	@Override
 	public Publisher<Long> createPublisher(long elements) {
-		return Flux.<Long, AtomicLong>generate((demand, s) -> {
+		return Flux.<Long, AtomicLong>create(s -> {
 			long cursor = s.context()
 			               .getAndIncrement();
-			for (long i = 0; i < elements; i++) {
+			if(cursor < elements) {
 				s.onNext(cursor);
 			}
 

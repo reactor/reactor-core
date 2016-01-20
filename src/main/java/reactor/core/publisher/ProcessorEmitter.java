@@ -30,9 +30,9 @@ import reactor.core.queue.Slot;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
-import reactor.core.util.internal.PlatformDependent;
 
 /**
  * @author Stephane Maldini

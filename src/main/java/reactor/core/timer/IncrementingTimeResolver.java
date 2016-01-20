@@ -22,30 +22,30 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.queue.Sequencer;
 import reactor.core.util.Exceptions;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-final class TimeUtils {
+final class IncrementingTimeResolver {
 
 	final static private Timer NOOP = new Timer();
 
 	static final int      DEFAULT_RESOLUTION = 100;
 	static final Sequence now                = Sequencer.newSequence(-1);
 
-	static final TimeUtils INSTANCE = new TimeUtils();
+	static final IncrementingTimeResolver INSTANCE = new IncrementingTimeResolver();
 
 	volatile Timer timer = NOOP;
 
-	static final AtomicReferenceFieldUpdater<TimeUtils, Timer> REF =
-			PlatformDependent.newAtomicReferenceFieldUpdater(TimeUtils.class, "timer");
+	static final AtomicReferenceFieldUpdater<IncrementingTimeResolver, Timer> REF =
+			PlatformDependent.newAtomicReferenceFieldUpdater(IncrementingTimeResolver.class, "timer");
 
-	protected TimeUtils() {
+	protected IncrementingTimeResolver() {
 	}
 
 	public static long approxCurrentTimeMillis() {

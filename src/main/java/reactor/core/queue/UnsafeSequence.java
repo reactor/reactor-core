@@ -15,9 +15,9 @@
  */
 package reactor.core.queue;
 
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
-import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 import sun.misc.Unsafe;
 

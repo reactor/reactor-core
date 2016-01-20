@@ -17,9 +17,9 @@ package reactor.core.timer;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;
 import reactor.core.util.WaitStrategy;
-import reactor.core.util.internal.PlatformDependent;
 
 /**
  * A Global Timer

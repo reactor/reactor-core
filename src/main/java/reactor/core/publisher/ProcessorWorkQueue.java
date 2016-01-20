@@ -35,10 +35,10 @@ import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 

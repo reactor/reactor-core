@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.util.internal.PlatformDependent;
+import reactor.core.util.PlatformDependent;
 import reactor.fn.Consumer;
 
 /**

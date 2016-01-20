@@ -31,9 +31,9 @@ import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberWithDemand;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
-import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 

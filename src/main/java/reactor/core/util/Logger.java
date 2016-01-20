@@ -22,8 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
-import reactor.core.util.internal.PlatformDependent;
-
 /**
  * Repackaged Logger for internal purposes. Will pick up the existing
  * logger implementation. Refer Factory for more information.

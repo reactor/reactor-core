@@ -30,8 +30,8 @@ public enum Timers {
 	 * @return
 	 */
 	public static LongSupplier currentTimeMillisResolver(){
-		if (TimeUtils.isEnabled()){
-			return TimeUtils.now;
+		if (IncrementingTimeResolver.isEnabled()){
+			return IncrementingTimeResolver.now;
 		}
 		else{
 			return SYSTEM_NOW;

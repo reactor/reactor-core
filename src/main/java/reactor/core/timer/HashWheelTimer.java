@@ -242,7 +242,7 @@ class HashWheelTimer extends Timer {
 			Exceptions.failWithCancel();
 		}
 		if (recurringTimeout != 0) {
-			TimeUtils.checkResolution(recurringTimeout, resolution);
+			IncrementingTimeResolver.checkResolution(recurringTimeout, resolution);
 		}
 
 		long offset = recurringTimeout / resolution;

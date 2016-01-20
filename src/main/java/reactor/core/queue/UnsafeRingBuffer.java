@@ -16,8 +16,8 @@
 package reactor.core.queue;
 
 import reactor.core.util.Exceptions;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
-import reactor.core.util.internal.PlatformDependent;
 import reactor.fn.Supplier;
 import sun.misc.Unsafe;
 
