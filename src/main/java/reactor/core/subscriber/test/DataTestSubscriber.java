@@ -19,11 +19,14 @@ package reactor.core.subscriber.test;
 import java.util.ArrayList;
 import java.util.List;
 
+import reactor.fn.Consumer;
+
 /**
  * Subscriber capturing Next signals for assertion
  *
  * @author Anatoly Kadyshev
  * @author Stephane Maldini
+ * @author Brian Clozel
  */
 public class DataTestSubscriber<T> extends TestSubscriber<T> {
 
@@ -60,8 +63,37 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 	 * @throws InterruptedException if a thread was interrupted during a waiting
 	 */
 	@SafeVarargs
-	public final DataTestSubscriber<T> assertNextSignals(T... expectedNextSignals) throws InterruptedException {
-		int expectedNum = expectedNextSignals.length;
+	public final DataTestSubscriber<T> assertNextSignalsEqual(T... expectedNextSignals) throws InterruptedException {
+
+		final int expectedNum = expectedNextSignals.length;
+		final List<Consumer<T>> expectations = new ArrayList<>();
+		for (int i = 0; i < expectedNum; i++) {
+			final T expectedSignal = expectedNextSignals[i];
+			expectations.add(new Consumer<T>() {
+				@Override
+				public void accept(T actualSignal) {
+					if (!actualSignal.equals(expectedSignal)) {
+						throw new AssertionError(
+								String.format("Expected Next signal: %s, but got: %s", expectedSignal, actualSignal));
+					}
+				}
+			});
+		}
+		assertNextSignals(expectations.toArray(new Consumer[0]));
+		return this;
+	}
+
+	/**
+	 * Asserts that since the last call of the method Next signals
+	 * match the {@code expectations} given as arguments.
+	 *
+	 * @param expectations Consumers that will accept Next signals in order
+	 *
+	 * @throws InterruptedException if a thread was interrupted during a waiting
+	 */
+	@SafeVarargs
+	public final DataTestSubscriber<T> assertNextSignals(Consumer<T>... expectations) throws InterruptedException {
+		int expectedNum = expectations.length;
 		assertNumNextSignalsReceived(numAssertedNextSignals + expectedNum);
 
 		List<T> nextSignalsSnapshot;
@@ -77,12 +109,9 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 		}
 
 		for (int i = 0; i < expectedNum; i++) {
-			T expectedSignal = expectedNextSignals[i];
+			Consumer<T> consumer = expectations[i];
 			T actualSignal = nextSignalsSnapshot.get(i);
-			if (!actualSignal.equals(expectedSignal)) {
-				throw new AssertionError(
-						String.format("Expected Next signal: %s, but got: %s", expectedSignal, actualSignal));
-			}
+			consumer.accept(actualSignal);
 		}
 
 		numAssertedNextSignals += expectedNum;
