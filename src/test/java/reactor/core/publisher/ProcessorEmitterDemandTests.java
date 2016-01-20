@@ -171,7 +171,7 @@ public class ProcessorEmitterDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		subscriber.assertNextSignals("1");
+		subscriber.assertNextSignalsEqual("1");
 	}
 
 	@Test
@@ -186,7 +186,7 @@ public class ProcessorEmitterDemandTests {
 
 		subscriber.request(1);
 
-		subscriber.assertNextSignals("1");
+		subscriber.assertNextSignalsEqual("1");
 	}
 
 	@Test
@@ -205,10 +205,10 @@ public class ProcessorEmitterDemandTests {
 		         .subscribe(second);
 
 		second.request(1);
-		second.assertNextSignals("1");
+		second.assertNextSignalsEqual("1");
 
 		first.request(3);
-		first.assertNextSignals("1", "2", "3");
+		first.assertNextSignalsEqual("1", "2", "3");
 	}
 
 	@Test
@@ -222,13 +222,13 @@ public class ProcessorEmitterDemandTests {
 		processor.subscribe(first);
 
 		first.request(1);
-		first.assertNextSignals("1");
+		first.assertNextSignalsEqual("1");
 
 		DataTestSubscriber<String> second = DataTestSubscriber.createWithTimeoutSecs(1);
 		processor.subscribe(second);
 
 		second.request(3);
-		second.assertNextSignals("2", "3", "4");
+		second.assertNextSignalsEqual("2", "3", "4");
 	}
 
 	static class MyThread extends Thread {
