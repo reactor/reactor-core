@@ -32,9 +32,9 @@ import rx.internal.util.ScalarSynchronousObservable;
 /**
  * @author Stephane Maldini
  */
-public class RxJava1Converter extends PublisherConverter<Observable> {
+public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 
-	static final RxJava1Converter INSTANCE = new RxJava1Converter();
+	static final RxJava1ObservableConverter INSTANCE = new RxJava1ObservableConverter();
 
 	@SuppressWarnings("unchecked")
 	static public <T> Observable<T> from(Publisher<T> o) {

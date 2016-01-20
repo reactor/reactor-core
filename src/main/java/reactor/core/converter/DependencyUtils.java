@@ -33,7 +33,7 @@ public final class DependencyUtils {
 
 	static private final CompletableFutureConverter COMPLETABLE_FUTURE_CONVERTER;
 	static private final Jdk9FlowConverter          JDK_9_FLOW_CONVERTER;
-	static private final RxJava1Converter           RX_JAVA_1_CONVERTER;
+	static private final RxJava1ObservableConverter RX_JAVA_1_OBSERVABLE_CONVERTER;
 	static private final RxJava1SingleConverter     RX_JAVA_1_SINGLE_CONVERTER;
 
 	private DependencyUtils() {
@@ -101,10 +101,10 @@ public final class DependencyUtils {
 		}
 
 		if ((detected & RXJAVA_1_OBSERVABLE) == RXJAVA_1_OBSERVABLE) {
-			RX_JAVA_1_CONVERTER = RxJava1Converter.INSTANCE;
+			RX_JAVA_1_OBSERVABLE_CONVERTER = RxJava1ObservableConverter.INSTANCE;
 		}
 		else {
-			RX_JAVA_1_CONVERTER = null;
+			RX_JAVA_1_OBSERVABLE_CONVERTER = null;
 		}
 		if ((detected & RXJAVA_1_SINGLE) == RXJAVA_1_SINGLE) {
 			RX_JAVA_1_SINGLE_CONVERTER = RxJava1SingleConverter.INSTANCE;
@@ -138,7 +138,7 @@ public final class DependencyUtils {
 	}
 
 	public static boolean hasRxJava1() {
-		return RX_JAVA_1_CONVERTER != null;
+		return RX_JAVA_1_OBSERVABLE_CONVERTER != null;
 	}
 
 	public static boolean hasRxJava1Single() {
@@ -177,8 +177,8 @@ public final class DependencyUtils {
 			if (hasRxJava1Single() && RX_JAVA_1_SINGLE_CONVERTER.test(source)) {
 				return RX_JAVA_1_SINGLE_CONVERTER.apply(source);
 			}
-			else if (RX_JAVA_1_CONVERTER.test(source)) {
-				return RX_JAVA_1_CONVERTER.apply(source);
+			else if (RX_JAVA_1_OBSERVABLE_CONVERTER.test(source)) {
+				return RX_JAVA_1_OBSERVABLE_CONVERTER.apply(source);
 			}
 		}
 
@@ -202,9 +202,9 @@ public final class DependencyUtils {
 			                                                    .isAssignableFrom(to)) {
 				return (T) RX_JAVA_1_SINGLE_CONVERTER.apply(source, to);
 			}
-			else if (RX_JAVA_1_CONVERTER.get()
+			else if (RX_JAVA_1_OBSERVABLE_CONVERTER.get()
 			                            .isAssignableFrom(to)) {
-				return (T) RX_JAVA_1_CONVERTER.apply(source, to);
+				return (T) RX_JAVA_1_OBSERVABLE_CONVERTER.apply(source, to);
 			}
 		}
 
