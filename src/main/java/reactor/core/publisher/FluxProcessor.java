@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.subscriber.ReactiveSession;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
-import reactor.core.subscription.ReactiveSession;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ReactiveState;
 
