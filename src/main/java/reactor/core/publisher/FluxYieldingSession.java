@@ -43,7 +43,7 @@ final class FluxYieldingSession<T> extends Flux<T> implements ReactiveState.Fact
 			session.start();
 
 		}
-		catch (FluxFactory.PrematureCompleteException pce) {
+		catch (FluxGenerate.PrematureCompleteException pce) {
 			subscriber.onSubscribe(EmptySubscription.INSTANCE);
 			subscriber.onComplete();
 		}

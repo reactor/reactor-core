@@ -49,14 +49,8 @@ public class FluxVerification extends PublisherVerification<Long> {
 
 		}, s -> new AtomicLong(0L), null)
 
-
-
-
-
-
-
-				.lift(FluxLift.<Long, Long>lifter((data, sub) -> sub.onNext(data * 10)))
-		                           .log("log-test");
+				.map(data -> data * 10)
+				.log("log-test");
 	}
 
 	@Override

@@ -18,7 +18,9 @@ package reactor.core.subscriber.test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.support.internal.PlatformDependent;
 import reactor.fn.Consumer;
 
 /**
@@ -33,7 +35,10 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 	/**
 	 * Received Next signals
 	 */
-	private volatile List<T> nextSignals = new ArrayList<>();
+	volatile List<T> nextSignals;
+
+	static final AtomicReferenceFieldUpdater<DataTestSubscriber, List> NEXT_SIGNALS = PlatformDependent
+			.newAtomicReferenceFieldUpdater(DataTestSubscriber.class, "nextSignals");
 
 	/**
 	 * Total number of asserted Next signals
@@ -52,6 +57,7 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 
 	private DataTestSubscriber(int timeoutSecs) {
 		super(timeoutSecs);
+		NEXT_SIGNALS.lazySet(this, new ArrayList<>());
 	}
 
 	/**
@@ -63,6 +69,7 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 	 * @throws InterruptedException if a thread was interrupted during a waiting
 	 */
 	@SafeVarargs
+	@SuppressWarnings("unchecked")
 	public final DataTestSubscriber<T> assertNextSignalsEqual(T... expectedNextSignals) throws InterruptedException {
 
 		final int expectedNum = expectedNextSignals.length;
@@ -79,7 +86,7 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 				}
 			});
 		}
-		assertNextSignals(expectations.toArray(new Consumer[0]));
+		assertNextSignals(expectations.toArray((Consumer<T>[])new Consumer[0]));
 		return this;
 	}
 
@@ -97,9 +104,12 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 		assertNumNextSignalsReceived(numAssertedNextSignals + expectedNum);
 
 		List<T> nextSignalsSnapshot;
-		synchronized (nextSignals) {
+		List<T> empty = new ArrayList<>();
+		for(;;){
 			nextSignalsSnapshot = nextSignals;
-			nextSignals = new ArrayList<>();
+			if(NEXT_SIGNALS.compareAndSet(this, nextSignals, empty)){
+				break;
+			}
 		}
 
 		if (nextSignalsSnapshot.size() != expectedNum) {
@@ -168,8 +178,13 @@ public class DataTestSubscriber<T> extends TestSubscriber<T> {
 
 	@Override
 	protected void doNext(T data) {
-		synchronized (nextSignals) {
-			nextSignals.add(data);
+		List<T> nextSignalsSnapshot;
+		for (; ; ) {
+			nextSignalsSnapshot = nextSignals;
+			nextSignalsSnapshot.add(data);
+			if (NEXT_SIGNALS.compareAndSet(this, nextSignalsSnapshot, nextSignalsSnapshot)) {
+				break;
+			}
 		}
 		super.doNext(data);
 	}

@@ -16,7 +16,6 @@
 
 package reactor.core
 
-import reactor.core.publisher.FluxLift
 import reactor.core.subscriber.test.DataTestSubscriber
 import spock.lang.Specification
 
@@ -30,12 +29,12 @@ class PublishersSpec extends Specification {
   def "Error handling with onErrorReturn"() {
 
 	given: "Iterable publisher of 1000 to read queue"
-	def pub = fromIterable(1..1000).lift(FluxLift.lifter { d, s ->
+	def pub = fromIterable(1..1000).map{ d ->
 	  if (d == 3) {
 		throw new Exception('test')
 	  }
-	  s.onNext(d)
-	})
+	  d
+	}
 
 	when: "read the queue"
 	def s = DataTestSubscriber.createWithTimeoutSecs(3)
@@ -50,12 +49,12 @@ class PublishersSpec extends Specification {
   def "Error handling with onErrorResume"() {
 
 	given: "Iterable publisher of 1000 to read queue"
-	def pub = fromIterable(1..1000).lift(FluxLift.lifter { d, s ->
+	def pub = fromIterable(1..1000).map{ d ->
 	  if (d == 3) {
 		throw new Exception('test')
 	  }
-	  s.onNext(d)
-	})
+	  d
+	}
 
 	when: "read the queue"
 	def s = DataTestSubscriber.createWithTimeoutSecs(3)

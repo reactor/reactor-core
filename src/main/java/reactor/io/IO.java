@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxFactory;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
@@ -85,7 +84,7 @@ public enum IO {
 	 * @return a Publisher of Buffer values
 	 */
 	public static Flux<Buffer> read(final ReadableByteChannel channel, int chunkSize) {
-		return FluxFactory.createForEach(
+		return Flux.create(
 		  chunkSize < 0 ? defaultChannelReadConsumer : new ChannelReadConsumer(chunkSize),
 		  new Function<Subscriber<? super Buffer>, ReadableByteChannel>() {
 			  @Override
@@ -145,7 +144,7 @@ public enum IO {
 	 * @return a Publisher of Buffer values read from file sequentially
 	 */
 	public static Flux<Buffer> readFile(final String path, int chunkSize) {
-		return FluxFactory.createForEach(
+		return Flux.create(
 		  chunkSize < 0 ? defaultChannelReadConsumer : new ChannelReadConsumer(chunkSize),
 		  new Function<Subscriber<? super Buffer>, ReadableByteChannel>() {
 			  @Override

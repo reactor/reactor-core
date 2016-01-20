@@ -157,20 +157,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Publisher} reacting on each available {@link Subscriber} read derived with the passed {@link
+	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 *
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param <T> The type of the data sequence
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> create(Consumer<SubscriberWithContext<T, Void>> requestConsumer) {
 		return create(requestConsumer, null, null);
 	}
 
 	/**
-	 * Create a {@link Publisher} reacting on each available {@link Subscriber} read derived with the passed {@link
+	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 * The argument {@code contextFactory} is executed once by new subscriber to generate a context shared by every
 	 * request calls.
@@ -181,7 +181,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a new {@link Flux}
 	 */
 	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory) {
@@ -189,7 +189,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Publisher} reacting on each available {@link Subscriber} read derived with the passed {@link
+	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 * The argument {@code contextFactory} is executed once by new subscriber to generate a context shared by every
 	 * request calls. The argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel,
@@ -203,12 +203,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a new {@link Flux}
 	 */
 	public static <T, C> Flux<T> create(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
-		return FluxFactory.createForEach(requestConsumer, contextFactory, shutdownConsumer);
+		Assert.notNull(requestConsumer, "A data producer must be provided");
+		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
 	}
 
 	/**
@@ -305,7 +306,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
-		FluxFactory.ForEachSequencer.IterableSequencer<T> iterablePublisher = new FluxFactory.ForEachSequencer.IterableSequencer<>(it);
+		FluxGenerate.IterableSequencer<T> iterablePublisher = new FluxGenerate.IterableSequencer<>(it);
 		return create(iterablePublisher, iterablePublisher);
 	}
 
@@ -343,7 +344,9 @@ public abstract class Flux<T> implements Publisher<T> {
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
 
-		return FluxFactory.generate(requestConsumer, contextFactory, shutdownConsumer);
+		return new FluxGenerate<>(new FluxGenerate.RecursiveConsumer<>(requestConsumer),
+				contextFactory,
+				shutdownConsumer);
 	}
 
 	/**
