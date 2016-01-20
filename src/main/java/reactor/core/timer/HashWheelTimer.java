@@ -34,7 +34,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.queue.disruptor.RingBuffer;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.support.Exceptions;
-import reactor.core.support.NamedDaemonThreadFactory;
+import reactor.core.support.ExecutorUtils;
 import reactor.core.support.WaitStrategy;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
@@ -137,15 +137,15 @@ class HashWheelTimer extends Timer {
 
 		if (exec == null) {
 			this.executor =
-					Executors.newFixedThreadPool(1, new NamedDaemonThreadFactory(name + "-run", new ClassLoader(Thread.currentThread()
-					                                                                                                  .getContextClassLoader()) {
+					Executors.newFixedThreadPool(1, ExecutorUtils.newNamedFactory(name + "-run", new ClassLoader(Thread.currentThread()
+					                                                                                                                .getContextClassLoader()) {
 					}));
 		}
 		else {
 			this.executor = exec;
 		}
 
-		this.loop = new NamedDaemonThreadFactory(name).newThread(new Runnable() {
+		this.loop = ExecutorUtils.newNamedFactory(name).newThread(new Runnable() {
 			@Override
 			public void run() {
 				long deadline = timeMillisResolver.get();

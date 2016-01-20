@@ -395,7 +395,7 @@ public abstract class Sequencer
 	 *
      * @param <E>
      */
-    public final static class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
+    final static class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
         public final E        delegate;
         public final Sequence sequence;
 

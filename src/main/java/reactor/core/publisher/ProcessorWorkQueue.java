@@ -36,7 +36,7 @@ import reactor.core.queue.disruptor.Sequencer;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Exceptions;
-import reactor.core.support.NamedDaemonThreadFactory;
+import reactor.core.support.ExecutorUtils;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent;
@@ -599,7 +599,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E>
 
 	@Override
 	protected void requestTask(Subscription s) {
-		new NamedDaemonThreadFactory(name+"[request-task]", null, null, false).newThread(new RequestTask(s, new Runnable() {
+		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(new RequestTask(s, new Runnable() {
 			@Override
 			public void run() {
 				if (!alive()) {

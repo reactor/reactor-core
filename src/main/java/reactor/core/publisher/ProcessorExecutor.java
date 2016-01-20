@@ -23,8 +23,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Exceptions;
+import reactor.core.support.ExecutorUtils;
 import reactor.core.support.ReactiveState;
-import reactor.core.support.SingleUseExecutor;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -62,7 +62,7 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 		};
 		this.name = null != name ? name : getClass().getSimpleName();
 		if (executor == null) {
-			this.executor = SingleUseExecutor.create(name, contextClassLoader);
+			this.executor = ExecutorUtils.singleUse(name, contextClassLoader);
 		}
 		else {
 			this.executor = executor;
@@ -109,9 +109,7 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 	public final void onComplete() {
 		if (TERMINATED.compareAndSet(this, 0, 1)) {
 			upstreamSubscription = null;
-			if (executor.getClass() == SingleUseExecutor.class) {
-				executor.shutdown();
-			}
+			ExecutorUtils.shutdownIfSingleUse(executor);
 			doComplete();
 		}
 	}
@@ -126,9 +124,7 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 		if (TERMINATED.compareAndSet(this, 0, 1)) {
 			error = t;
 			upstreamSubscription = null;
-			if (executor.getClass() == SingleUseExecutor.class) {
-				executor.shutdown();
-			}
+			ExecutorUtils.shutdownIfSingleUse(executor);
 			doError(t);
 		}
 	}
@@ -158,9 +154,7 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 	protected void cancel(Subscription subscription) {
 		cancelled = true;
 		if(TERMINATED.compareAndSet(this, 0, 1)) {
-			if (executor.getClass() == SingleUseExecutor.class) {
-				executor.shutdown();
-			}
+			ExecutorUtils.shutdownIfSingleUse(executor);
 		}
 	}
 

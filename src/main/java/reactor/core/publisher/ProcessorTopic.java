@@ -36,7 +36,7 @@ import reactor.core.queue.disruptor.Sequencer;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Exceptions;
-import reactor.core.support.NamedDaemonThreadFactory;
+import reactor.core.support.ExecutorUtils;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.WaitStrategy;
 import reactor.fn.Consumer;
@@ -684,7 +684,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E>
 	protected void requestTask(Subscription s) {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
-		new NamedDaemonThreadFactory(name+"[request-task]", null, null, false)
+		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false)
 				.newThread(new RequestTask(s, new Runnable() {
 					@Override
 					public void run() {
