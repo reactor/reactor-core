@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.queue.disruptor.RingBuffer;
+import reactor.core.queue.disruptor.Sequence;
+import reactor.core.queue.disruptor.Sequencer;
 import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.EmptySubscription;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
 import reactor.core.support.internal.PlatformDependent;
-import reactor.core.support.rb.disruptor.RingBuffer;
-import reactor.core.support.rb.disruptor.Sequence;
-import reactor.core.support.rb.disruptor.Sequencer;
 
 /**
  * @author Stephane Maldini

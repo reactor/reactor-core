@@ -15,13 +15,14 @@
  */
 
 /**
- * This package offers a suite of asynchronous {@link org.reactivestreams.Processor} with backpressure support.
- * These components will be unique and bound to a given stream of data except
+ * This package offers a suite of asynchronous {@link org.reactivestreams.Publisher} with backpressure support.
+ * These components will generally bound to a given stream of data except
  * for the {@link reactor.core.publisher.ProcessorGroup} that allows
- *  Processor Pooling.
+ *  {@link org.reactivestreams.Processor} Pooling.
  *
- * A {@link org.reactivestreams.Processor} will manage its own thread(s), one by {@link org.reactivestreams.Subscriber}.
- * The message-passing will be implementation dependant, e.g. using a {@link reactor.core.support.rb.disruptor.RingBuffer}.
+ *
+ * A {@link reactor.core.publisher.ProcessorExecutor} will manage its own thread(s), one by {@link org.reactivestreams.Subscriber}.
+ * The message-passing will be implementation dependant, e.g. using a {@link reactor.core.queue.disruptor.RingBuffer}.
  * Usually, the boundary will be implemented with a queue-based event dispatching and the Reactive Stream contract will
  * offer control over the available backlog. Long.MAX demand will however switch off the contract and rely on the impl
  * coordination strategy to back-off, like the RingBuffer waiting strategy, to slow down the Processor publisher.

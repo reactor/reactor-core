@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support.rb.disruptor;
+package reactor.core.queue.disruptor;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -396,7 +396,7 @@ public abstract class Sequencer
      * @param <E>
      */
     public final static class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
-        public final E delegate;
+        public final E        delegate;
         public final Sequence sequence;
 
         public Wrapped(E delegate, Sequence sequence) {

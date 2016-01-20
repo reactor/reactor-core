@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support;
+package reactor.core.queue;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import reactor.core.support.rb.disruptor.RingBuffer;
+import reactor.core.queue.disruptor.RingBuffer;
 import reactor.fn.Supplier;
 
 /**

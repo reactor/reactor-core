@@ -13,59 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support.rb.disruptor;
+package reactor.core.queue.disruptor;
+
 
 import reactor.core.support.Exceptions;
-import reactor.core.support.internal.PlatformDependent0;
 import reactor.fn.Supplier;
-import sun.misc.Unsafe;
 
-abstract class RingBufferPad<E> extends RingBuffer<E>
+abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {
-    protected long p1, p2, p3, p4, p5, p6, p7;
-}
-
-abstract class RingBufferFields<E> extends RingBufferPad<E>
-{
-    private static final int  BUFFER_PAD;
-    private static final long REF_ARRAY_BASE;
-    private static final int  REF_ELEMENT_SHIFT;
-    private static final Unsafe UNSAFE = PlatformDependent0.getUnsafe();
-
-    static {
-        final int scale = UNSAFE.arrayIndexScale(Object[].class);
-        if (4 == scale) {
-            REF_ELEMENT_SHIFT = 2;
-        } else if (8 == scale) {
-            REF_ELEMENT_SHIFT = 3;
-        } else {
-            throw new IllegalStateException("Unknown pointer size");
-        }
-        BUFFER_PAD = 128 / scale;
-        // Including the buffer pad in the array base offset
-        REF_ARRAY_BASE = UNSAFE.arrayBaseOffset(Object[].class) + (BUFFER_PAD << REF_ELEMENT_SHIFT);
-    }
-
-    private final   long      indexMask;
-    private final   Object[]  entries;
-    protected final int       bufferSize;
+    private final long indexMask;
+    private final Object[] entries;
+    protected final int bufferSize;
     protected final Sequencer sequencer;
 
-    RingBufferFields(Supplier<E> eventFactory,
-                     Sequencer sequencer) {
-        this.sequencer = sequencer;
+    NotFunRingBufferFields(Supplier<E> eventFactory,
+                     Sequencer       sequencer)
+    {
+        this.sequencer  = sequencer;
         this.bufferSize = sequencer.getBufferSize();
 
-        if (bufferSize < 1) {
-            throw new IllegalArgumentException("bufferSize must not be less than 1");
-        }
-        if (!Sequencer.isPowerOfTwo(bufferSize))
+        if (bufferSize < 1)
         {
-            throw new IllegalArgumentException("bufferSize must be a power of 2");
+            throw new IllegalArgumentException("bufferSize must not be less than 1");
         }
 
         this.indexMask = bufferSize - 1;
-        this.entries   = new Object[sequencer.getBufferSize() + 2 * BUFFER_PAD];
+        this.entries   = new Object[sequencer.getBufferSize()];
         fill(eventFactory);
     }
 
@@ -73,14 +46,14 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
     {
         for (int i = 0; i < bufferSize; i++)
         {
-            entries[BUFFER_PAD + i] = eventFactory.get();
+            entries[i] = eventFactory.get();
         }
     }
 
     @SuppressWarnings("unchecked")
     protected final E elementAt(long sequence)
     {
-        return (E) UNSAFE.getObject(entries, REF_ARRAY_BASE + ((sequence & indexMask) << REF_ELEMENT_SHIFT));
+        return (E) entries[(int) (sequence & indexMask)];
     }
 }
 
@@ -90,10 +63,8 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
  *
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-final class UnsafeRingBuffer<E> extends RingBufferFields<E>
+final class NotFunRingBuffer<E> extends reactor.core.queue.disruptor.NotFunRingBufferFields<E>
 {
-    protected long p1, p2, p3, p4, p5, p6, p7;
-
     /**
      * Construct a RingBuffer with the full option set.
      *
@@ -101,7 +72,7 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
      * @param sequencer sequencer to handle the ordering of events moving through the RingBuffer.
      * @throws IllegalArgumentException if bufferSize is less than 1 or not a power of 2
      */
-    UnsafeRingBuffer(Supplier<E> eventFactory,
+    NotFunRingBuffer(Supplier<E> eventFactory,
                      Sequencer sequencer)
     {
         super(eventFactory, sequencer);

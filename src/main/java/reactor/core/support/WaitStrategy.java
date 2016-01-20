@@ -22,7 +22,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import reactor.core.support.rb.disruptor.Sequence;
+import reactor.core.queue.disruptor.Sequence;
 import reactor.fn.LongSupplier;
 
 /**

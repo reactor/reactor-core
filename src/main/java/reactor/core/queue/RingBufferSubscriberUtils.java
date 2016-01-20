@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support.rb;
+package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.queue.disruptor.RingBuffer;
+import reactor.core.queue.disruptor.SequenceBarrier;
 import reactor.core.support.Exceptions;
-import reactor.core.support.rb.disruptor.RingBuffer;
-import reactor.core.support.rb.disruptor.SequenceBarrier;
 import reactor.fn.LongSupplier;
 
 /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.support.rb.disruptor;
+package reactor.core.queue.disruptor;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -163,7 +163,8 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			Runnable spinObserver) {
 
 		if (PlatformDependent.hasUnsafe() && Sequencer.isPowerOfTwo(bufferSize)) {
-			MultiProducerSequencer sequencer = new MultiProducerSequencer(bufferSize, waitStrategy, spinObserver);
+			reactor.core.queue.disruptor.MultiProducerSequencer
+					sequencer = new reactor.core.queue.disruptor.MultiProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<E>(factory, sequencer);
 		}
@@ -202,7 +203,8 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			int bufferSize,
 			WaitStrategy waitStrategy,
 			Runnable spinObserver) {
-		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
+		reactor.core.queue.disruptor.SingleProducerSequencer
+				sequencer = new reactor.core.queue.disruptor.SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
 		if (PlatformDependent.hasUnsafe() && Sequencer.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);

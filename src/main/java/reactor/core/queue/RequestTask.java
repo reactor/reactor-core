@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package reactor.core.support.rb;
+package reactor.core.queue;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.queue.disruptor.RingBuffer;
 import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
-import reactor.core.support.rb.disruptor.RingBuffer;
 import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 

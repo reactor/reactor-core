@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support.rb.disruptor;
+package reactor.core.queue.disruptor;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -21,7 +21,6 @@ import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
 import reactor.core.support.internal.PlatformDependent0;
 import sun.misc.Unsafe;
-
 
 /**
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
