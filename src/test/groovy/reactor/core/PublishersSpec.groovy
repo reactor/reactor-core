@@ -43,7 +43,7 @@ class PublishersSpec extends Specification {
 	s.sendUnboundedRequest()
 
 	then: "queues values correct"
-	s.assertNextSignals(1, 2, 100000)
+	s.assertNextSignalsEqual(1, 2, 100000)
 			.assertCompleteReceived()
   }
 
@@ -63,7 +63,7 @@ class PublishersSpec extends Specification {
 	s.sendUnboundedRequest()
 
 	then: "queues values correct"
-	s.assertNextSignals(1, 2, 9999, 10000, 10001, 10002)
+	s.assertNextSignalsEqual(1, 2, 9999, 10000, 10001, 10002)
 			.assertCompleteReceived()
   }
 

@@ -47,7 +47,7 @@ class PublisherConversionSpec extends Specification {
 	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignals(*(1..1000))
+	queue.assertNextSignalsEqual(*(1..1000))
 			.assertCompleteReceived()
 
 
@@ -76,7 +76,7 @@ class PublisherConversionSpec extends Specification {
 	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignals(1)
+	queue.assertNextSignalsEqual(1)
 			.assertCompleteReceived()
 
 
@@ -103,7 +103,7 @@ class PublisherConversionSpec extends Specification {
 	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignals([1])
+	queue.assertNextSignalsEqual([1])
 			.assertCompleteReceived()
 
 
