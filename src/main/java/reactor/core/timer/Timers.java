@@ -22,7 +22,8 @@ import reactor.fn.LongSupplier;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class Timers {
+public enum Timers {
+	;
 
 	/**
 	 *
@@ -37,7 +38,7 @@ public final class Timers {
 		}
 	}
 
-	private Timers() {
+	Timers() {
 	}
 
 	/**

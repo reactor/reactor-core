@@ -44,7 +44,8 @@ package reactor.core.support;
  * @since 1.1.2
  */
 @SuppressWarnings({"rawtypes"})
-public abstract class Assert {
+public enum Assert {
+	;
 
 	/**
 	 * Assert a boolean expression, throwing {@code IllegalArgumentException} if the test result is {@code false}. <pre

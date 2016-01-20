@@ -37,7 +37,8 @@ import reactor.fn.Supplier;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class Processors {
+public enum Processors {
+	;
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
@@ -645,10 +646,6 @@ public final class Processors {
 		return ProcessorTopic.create(name, bufferSize, autoCancel);
 	}
 
-	private Processors() {
-	}
-
-
 	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
 		@Override
 		public WaitStrategy get() {
@@ -669,7 +666,7 @@ public final class Processors {
 		}
 	};
 
-	private static class DelegateProcessor<IN, OUT>
+	final static class DelegateProcessor<IN, OUT>
 			extends FluxProcessor<IN, OUT> implements ReactiveState.Downstream, ReactiveState.Bounded {
 
 		private final Publisher<OUT> downstream;

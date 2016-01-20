@@ -31,7 +31,8 @@ import sun.misc.Unsafe;
  * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
  * operations which requires access to {@code sun.misc.*}.
  */
-final class PlatformDependent0 {
+enum PlatformDependent0 {
+	;
 
 	private static final Unsafe UNSAFE;
 
@@ -113,7 +114,7 @@ final class PlatformDependent0 {
 		}
 	}
 
-	private PlatformDependent0() {
+	PlatformDependent0() {
 	}
 
 	private static final class UnsafeAtomicReferenceFieldUpdater<U, M> extends AtomicReferenceFieldUpdater<U, M> {

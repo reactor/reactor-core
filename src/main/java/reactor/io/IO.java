@@ -40,13 +40,11 @@ import reactor.io.buffer.StringBuffer;
  * @author Stephane Maldini
  * @since 2.0.4
  */
-public final class IO {
+public enum IO {
+	;
 
 	private static final Function<? super String, ? extends Buffer> STRING_TO_BUFFER = new StringToBuffer();
 	private static final Function<? super Buffer, ? extends String> BUFFER_TO_STRING = new BufferToString();
-
-	private IO() {
-	}
 
 	/**
 	 *

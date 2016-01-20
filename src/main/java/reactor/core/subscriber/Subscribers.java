@@ -41,7 +41,9 @@ import reactor.fn.Function;
  * @author Stephane Maldini
  * @since 2.0.3, 2.5
  */
-public final class Subscribers{
+public enum Subscribers{
+	;
+
 	/**
 	 * Create a {@link Subscriber} reacting onSubscribe with the passed {@link Consumer}
 	 *

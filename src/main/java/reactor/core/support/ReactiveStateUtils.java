@@ -28,10 +28,8 @@ import java.util.WeakHashMap;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class ReactiveStateUtils implements ReactiveState {
-
-	private ReactiveStateUtils() {
-	}
+public enum ReactiveStateUtils implements ReactiveState {
+	;
 
 	/**
 	 * Create an empty graph

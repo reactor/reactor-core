@@ -24,12 +24,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  *
  * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
  */
-public class PlatformDependent {
+public enum PlatformDependent {
+	;
 
 	private static final boolean HAS_UNSAFE = hasUnsafe0();
-
-	private PlatformDependent() {
-	}
 
 	@SuppressWarnings("unchecked")
 	public static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(

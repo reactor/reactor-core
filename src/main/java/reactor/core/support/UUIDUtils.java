@@ -25,8 +25,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * Helper for creating random and Type 1 (time-based) UUIDs.
  *
  * @author Jon Brisbin
+ * @author Stephane Maldini
  */
-public abstract class UUIDUtils {
+public enum UUIDUtils {
+	;
 
 	private static boolean IS_THREADLOCALRANDOM_AVAILABLE = false;
 	private static       Random random;
@@ -47,9 +49,6 @@ public abstract class UUIDUtils {
 		if (!IS_THREADLOCALRANDOM_AVAILABLE) {
 			random = new Random(leastSigBits);
 		}
-	}
-
-	private UUIDUtils() {
 	}
 
 	/**
