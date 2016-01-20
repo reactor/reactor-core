@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.support;
+package reactor.core.publisher;
 
 /**
  * @author Stephane Maldini
  */
-public enum SignalType {
+enum SignalType {
 	NEXT, ERROR, COMPLETE, SUBSCRIPTION
 }

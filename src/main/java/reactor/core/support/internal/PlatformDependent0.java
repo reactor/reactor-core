@@ -15,10 +15,6 @@
  */
 package reactor.core.support.internal;
 
-/**
- * @author Stephane Maldini
- */
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.Buffer;
@@ -35,7 +31,7 @@ import sun.misc.Unsafe;
  * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
  * operations which requires access to {@code sun.misc.*}.
  */
-public final class PlatformDependent0 {
+final class PlatformDependent0 {
 
 	private static final Unsafe UNSAFE;
 

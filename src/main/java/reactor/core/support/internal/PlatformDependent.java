@@ -52,6 +52,17 @@ public class PlatformDependent {
 		return HAS_UNSAFE;
 	}
 
+	/**
+	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
+	 * direct memory access.
+	 *
+	 * @param <T> the Unsafe type
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T getUnsafe() {
+		return (T)PlatformDependent0.getUnsafe();
+	}
+
 	private static boolean isAndroid() {
 		boolean android;
 		try {

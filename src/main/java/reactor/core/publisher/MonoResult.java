@@ -24,7 +24,6 @@ import reactor.core.subscription.BackpressureUtils;
 import reactor.core.subscription.CancelledSubscription;
 import reactor.core.support.Exceptions;
 import reactor.core.support.ReactiveState;
-import reactor.core.support.SignalType;
 import reactor.core.support.internal.PlatformDependent;
 
 /**

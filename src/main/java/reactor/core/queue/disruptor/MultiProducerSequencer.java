@@ -19,7 +19,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import reactor.core.support.Exceptions;
 import reactor.core.support.WaitStrategy;
-import reactor.core.support.internal.PlatformDependent0;
+import reactor.core.support.internal.PlatformDependent;
 import sun.misc.Unsafe;
 
 /**
@@ -32,7 +32,7 @@ import sun.misc.Unsafe;
  */
 final class MultiProducerSequencer extends Sequencer
 {
-    private static final Unsafe UNSAFE = PlatformDependent0.getUnsafe();
+    private static final Unsafe UNSAFE = PlatformDependent.getUnsafe();
     private static final long   BASE   = UNSAFE.arrayBaseOffset(int[].class);
     private static final long   SCALE  = UNSAFE.arrayIndexScale(int[].class);
 

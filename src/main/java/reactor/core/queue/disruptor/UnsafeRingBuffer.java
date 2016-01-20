@@ -16,7 +16,7 @@
 package reactor.core.queue.disruptor;
 
 import reactor.core.support.Exceptions;
-import reactor.core.support.internal.PlatformDependent0;
+import reactor.core.support.internal.PlatformDependent;
 import reactor.fn.Supplier;
 import sun.misc.Unsafe;
 
@@ -30,7 +30,7 @@ abstract class RingBufferFields<E> extends reactor.core.queue.disruptor.RingBuff
     private static final int  BUFFER_PAD;
     private static final long REF_ARRAY_BASE;
     private static final int  REF_ELEMENT_SHIFT;
-    private static final Unsafe UNSAFE = PlatformDependent0.getUnsafe();
+    private static final Unsafe UNSAFE = PlatformDependent.getUnsafe();
 
     static {
         final int scale = UNSAFE.arrayIndexScale(Object[].class);

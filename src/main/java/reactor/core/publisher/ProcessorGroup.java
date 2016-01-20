@@ -37,7 +37,6 @@ import reactor.core.support.Assert;
 import reactor.core.support.Exceptions;
 import reactor.core.support.Logger;
 import reactor.core.support.ReactiveState;
-import reactor.core.support.SignalType;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Supplier;
