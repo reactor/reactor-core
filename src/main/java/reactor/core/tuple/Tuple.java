@@ -16,14 +16,16 @@
 
 package reactor.core.tuple;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.util.function.Predicate;
 
 /**
  * A {@literal Tuple} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
@@ -106,7 +108,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple2}.
 	 */
 	public static <T1, T2> Tuple2<T1, T2> of(T1 t1, T2 t2) {
-		return new Tuple2<T1, T2>(2, t1, t2);
+		return new Tuple2<>(2, t1, t2);
 	}
 
 	/**
@@ -121,7 +123,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple3}.
 	 */
 	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(T1 t1, T2 t2, T3 t3) {
-		return new Tuple3<T1, T2, T3>(3, t1, t2, t3);
+		return new Tuple3<>(3, t1, t2, t3);
 	}
 
 	/**
@@ -138,7 +140,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple4}.
 	 */
 	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(T1 t1, T2 t2, T3 t3, T4 t4) {
-		return new Tuple4<T1, T2, T3, T4>(4, t1, t2, t3, t4);
+		return new Tuple4<>(4, t1, t2, t3, t4);
 	}
 
 	/**
@@ -157,7 +159,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple5}.
 	 */
 	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
-		return new Tuple5<T1, T2, T3, T4, T5>(5, t1, t2, t3, t4, t5);
+		return new Tuple5<>(5, t1, t2, t3, t4, t5);
 	}
 
 	/**
@@ -179,7 +181,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6
 	  t6) {
-		return new Tuple6<T1, T2, T3, T4, T5, T6>(6, t1, t2, t3, t4, t5, t6);
+		return new Tuple6<>(6, t1, t2, t3, t4, t5, t6);
 	}
 
 	/**
@@ -203,7 +205,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5,
 	                                                                                 T6 t6, T7 t7) {
-		return new Tuple7<T1, T2, T3, T4, T5, T6, T7>(7, t1, t2, t3, t4, t5, t6, t7);
+		return new Tuple7<>(7, t1, t2, t3, t4, t5, t6, t7);
 	}
 
 	/**
@@ -251,7 +253,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <R> Function<Object[], R> fnAny(final Function<Tuple, R> delegate) {
+	public static <R> Function<Object[], R> fnAny(Function<Tuple, R> delegate) {
 		return new Function<Object[], R>() {
 			@Override
 			public R apply(Object[] objects) {
@@ -299,13 +301,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <T1, T2, T3, R> Function<Object[], R> fn3(final Function<Tuple3<T1, T2, T3>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3>fn3().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, R> Function<Object[], R> fn3(Function<Tuple3<T1, T2, T3>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3>fn3().apply(objects));
 	}
 
 	/**
@@ -334,13 +331,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <T1, T2, T3, T4, R> Function<Object[], R> fn4(final Function<Tuple4<T1, T2, T3, T4>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4>fn4().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, T4, R> Function<Object[], R> fn4(Function<Tuple4<T1, T2, T3, T4>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4>fn4().apply(objects));
 	}
 
 	/**
@@ -371,13 +363,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <T1, T2, T3, T4, T5, R> Function<Object[], R> fn5(final Function<Tuple5<T1, T2, T3, T4, T5>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5>fn5().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, T4, T5, R> Function<Object[], R> fn5(Function<Tuple5<T1, T2, T3, T4, T5>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5>fn5().apply(objects));
 	}
 
 	/**
@@ -410,13 +397,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <T1, T2, T3, T4, T5, T6, R> Function<Object[], R> fn6(final Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, T4, T5, T6, R> Function<Object[], R> fn6(Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
 	}
 
 	/**
@@ -451,13 +433,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Object[], R> fn7(final Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Object[], R> fn7(Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
 	}
 
 	/**
@@ -493,13 +470,330 @@ public class Tuple implements Iterable, Serializable, Function {
 	 *
 	 * @return The unchecked conversion function to {@link Tuple8}.
 	 */
-	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Object[], R> fn8(final Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
-			}
-		};
+	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Object[], R> fn8(Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> delegate) {
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2> Consumer<Tuple2<T1, T2>> consumer(Consumer2<T1, T2> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3> Consumer<Tuple3<T1, T2, T3>> consumer(Consumer3<T1, T2, T3> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3, T4> Consumer<Tuple4<T1, T2, T3, T4>> consumer(Consumer4<T1, T2, T3, T4> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3, tuple.t4);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3, T4, T5> Consumer<Tuple5<T1, T2, T3, T4, T5>> consumer(Consumer5<T1, T2, T3, T4, T5> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6> Consumer<Tuple6<T1, T2, T3, T4, T5, T6>> consumer(Consumer6<T1, T2, T3, T4, T5, T6> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7> Consumer<Tuple7<T1, T2, T3, T4, T5, T6, T7>> consumer(Consumer7<T1, T2, T3, T4, T5, T6, T7> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7);
+	}
+
+	/**
+	 * Create a {@link Consumer} that dereferences a tuple.
+	 *
+	 * @param consumer an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @param <T8> The type of the eighth value.
+	 * @return The new {@link Consumer}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Consumer<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> consumer(Consumer8<T1, T2, T3, T4, T5, T6, T7, T8> consumer) {
+		return tuple -> consumer.accept(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7, tuple.t8);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, R> Function<Tuple2<T1, T2>, R> function(Function2<T1, T2, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, R> Function<Tuple3<T1, T2, T3>, R> function(Function3<T1, T2, T3, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, T4, R> Function<Tuple4<T1, T2, T3, T4>, R> function(Function4<T1, T2, T3, T4, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3, tuple.t4);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, T4, T5, R> Function<Tuple5<T1, T2, T3, T4, T5>, R> function(Function5<T1, T2, T3, T4, T5, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, R> Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> function(Function6<T1, T2, T3, T4, T5, T6, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> function(Function7<T1, T2, T3, T4, T5, T6, T7, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7);
+	}
+
+	/**
+	 * Create a {@link Function} that dereferences a tuple.
+	 *
+	 * @param function an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @param <T8> The type of the eighth value.
+	 * @param <R>  The type of the result.
+	 * @return The new {@link Function}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> function(Function8<T1, T2, T3, T4, T5, T6, T7, T8, R> function) {
+		return tuple -> function.apply(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7, tuple.t8);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2> Predicate<Tuple2<T1, T2>> predicate(Predicate2<T1, T2> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3> Predicate<Tuple3<T1, T2, T3>> predicate(Predicate3<T1, T2, T3> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3, T4> Predicate<Tuple4<T1, T2, T3, T4>> predicate(Predicate4<T1, T2, T3, T4> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3, tuple.t4);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3, T4, T5> Predicate<Tuple5<T1, T2, T3, T4, T5>> predicate(Predicate5<T1, T2, T3, T4, T5> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6> Predicate<Tuple6<T1, T2, T3, T4, T5, T6>> predicate(Predicate6<T1, T2, T3, T4, T5, T6> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7> Predicate<Tuple7<T1, T2, T3, T4, T5, T6, T7>> predicate(Predicate7<T1, T2, T3, T4, T5, T6, T7> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7);
+	}
+
+	/**
+	 * Create a {@link Predicate} that dereferences a tuple.
+	 *
+	 * @param predicate an implementation that consumes the dereferenced {@link Tuple} arguments
+	 * @param <T1> The type of the first value.
+	 * @param <T2> The type of the second value.
+	 * @param <T3> The type of the third value.
+	 * @param <T4> The type of the fourth value.
+	 * @param <T5> The type of the fifth value.
+	 * @param <T6> The type of the sixth value.
+	 * @param <T7> The type of the seventh value.
+	 * @param <T8> The type of the eighth value.
+	 * @return The new {@link Predicate}.
+	 */
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Predicate<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> predicate(Predicate8<T1, T2, T3, T4, T5, T6, T7, T8> predicate) {
+		return tuple -> predicate.test(tuple.t1, tuple.t2, tuple.t3, tuple.t4, tuple.t5, tuple.t6, tuple.t7, tuple.t8);
 	}
 
 	/**
