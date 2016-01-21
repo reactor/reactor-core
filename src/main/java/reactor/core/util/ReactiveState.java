@@ -43,7 +43,7 @@ public interface ReactiveState {
 	/**
 	 * A capacity aware component
 	 */
-	interface Bounded extends ReactiveState {
+	interface Bounded {
 
 		/**
 		 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs.
@@ -75,7 +75,7 @@ public interface ReactiveState {
 	 * A component that is linked to a source {@link Publisher}. Useful to traverse from left to right a pipeline of
 	 * reactive actions implementing this interface.
 	 */
-	interface Upstream extends ReactiveState {
+	interface Upstream  {
 
 		/**
 		 * Return the direct source of data, Supports reference
@@ -87,7 +87,7 @@ public interface ReactiveState {
 	 * A component that is linked to N {@link Publisher}. Useful to traverse from left to right a pipeline of reactive
 	 * actions implementing this interface.
 	 */
-	interface LinkedUpstreams extends ReactiveState {
+	interface LinkedUpstreams {
 
 		/**
 		 * Return the connected sources of data
@@ -103,7 +103,7 @@ public interface ReactiveState {
 	/**
 	 * A request aware component
 	 */
-	interface UpstreamDemand extends ReactiveState {
+	interface UpstreamDemand {
 
 		/**
 		 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs.
@@ -135,7 +135,7 @@ public interface ReactiveState {
 	 * A component that is linked to N target {@link Subscriber}. Useful to traverse from right to left a pipeline of
 	 * reactive actions implementing this interface.
 	 */
-	interface Downstream extends ReactiveState {
+	interface Downstream  {
 
 		/**
 		 * Return the direct data receiver
@@ -147,7 +147,7 @@ public interface ReactiveState {
 	 * A component that is linked to N target {@link Subscriber}. Useful to traverse from right to left a pipeline of
 	 * reactive actions implementing this interface.
 	 */
-	interface LinkedDownstreams extends ReactiveState {
+	interface LinkedDownstreams {
 
 		/**
 		 * @return the connected data receivers
@@ -164,7 +164,7 @@ public interface ReactiveState {
 	/**
 	 * A request aware component
 	 */
-	interface DownstreamDemand extends ReactiveState {
+	interface DownstreamDemand {
 
 		/**
 		 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs.
@@ -183,7 +183,7 @@ public interface ReactiveState {
 	/**
 	 * An nameable component
 	 */
-	interface Named extends ReactiveState {
+	interface Named {
 
 		/**
 		 * Return defined name
@@ -194,7 +194,7 @@ public interface ReactiveState {
 	/**
 	 * An identifiable component
 	 */
-	interface Identified extends ReactiveState {
+	interface Identified {
 
 		/**
 		 * Return defined id
@@ -205,7 +205,7 @@ public interface ReactiveState {
 	/**
 	 * A lifecycle backed upstream
 	 */
-	interface ActiveUpstream extends ReactiveState {
+	interface ActiveUpstream {
 
 		/**
 		 * @return
@@ -222,7 +222,7 @@ public interface ReactiveState {
 	/**
 	 * A lifecycle backed upstream
 	 */
-	interface ActiveDownstream extends ReactiveState {
+	interface ActiveDownstream {
 
 		/**
 		 *
@@ -234,7 +234,7 @@ public interface ReactiveState {
 	/**
 	 * A criteria grouped component
 	 */
-	interface Grouped<K> extends ReactiveState {
+	interface Grouped<K> {
 
 		/**
 		 * Return defined identifier
@@ -245,21 +245,21 @@ public interface ReactiveState {
 	/**
 	 * A component that is meant to be introspectable on finest logging level
 	 */
-	interface Trace extends ReactiveState {
+	interface Trace {
 
 	}
 
 	/**
 	 * A component that is meant to be embedded or gating user components
 	 */
-	interface Inner extends ReactiveState {
+	interface Inner {
 
 	}
 
 	/**
 	 * A component that holds a failure state if any
 	 */
-	interface FailState extends ReactiveState {
+	interface FailState {
 
 		Throwable getError();
 	}
@@ -268,14 +268,14 @@ public interface ReactiveState {
 	 * A component that emits traces with the following standard :
 	 * <pre>message, arg1: signalType, arg2: signalPayload and arg3: this</pre>
 	 */
-	interface Logging extends ReactiveState {
+	interface Logging {
 
 	}
 
 	/**
 	 * A component that is timed
 	 */
-	interface Timed extends ReactiveState {
+	interface Timed {
 
 		/**
 		 * Can represent a period in milliseconds
@@ -287,7 +287,7 @@ public interface ReactiveState {
 	/**
 	 * A component that is delegating to a sub-flow (processor, or publisher/subscriber chain)
 	 */
-	interface FeedbackLoop extends ReactiveState {
+	interface FeedbackLoop {
 
 		Object delegateInput();
 
@@ -297,14 +297,14 @@ public interface ReactiveState {
 	/**
 	 * A component that is intended to build others
 	 */
-	interface Factory extends ReactiveState {
+	interface Factory {
 
 	}
 
 	/**
 	 *
 	 */
-	interface Pausable extends ReactiveState, Subscription {
+	interface Pausable extends Subscription {
 
 		/**
 		 * Pause this {@literal Pausable}. The implementing component should stop reacting, pausing resources if necessary.
