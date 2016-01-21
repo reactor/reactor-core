@@ -23,7 +23,6 @@ include::core-publisher.adoc[]
 include::core-subscriber.adoc[]
 include::core-processor.adoc[]
 include::core-timer.adoc[]
-include::core-buffer.adoc[]
 
 [[reactor-samples]]
 == Cookbook
