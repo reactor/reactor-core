@@ -54,7 +54,7 @@ import reactor.fn.tuple.Tuple8;
  * (successfully or with an error).
  *
  * <p>
- * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/flux.png" alt="">
+ * <img width="640" height="200" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" alt="">
  * <p>
  *
  * <p>It is intended to be used in implementations and return types. Input parameters should keep using raw
@@ -82,7 +82,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
 	 *
 	 * <p>
-	 * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/amb.png" alt="">
+	 * <img width="640" height="200" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The competing source publishers
@@ -100,7 +100,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
 	 *
 	 * <p>
-	 * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/amb.png" alt="">
+	 * <img width="640" height="200" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The competing source publishers

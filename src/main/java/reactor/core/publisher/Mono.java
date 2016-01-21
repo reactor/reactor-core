@@ -49,7 +49,7 @@ import reactor.fn.tuple.Tuple6;
  * with an error.
  *
  * <p>
- * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/mono.png" alt="">
+ * <img width="640" height="200" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" alt="">
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
