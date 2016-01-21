@@ -53,6 +53,10 @@ import reactor.fn.tuple.Tuple8;
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes
  * (successfully or with an error).
  *
+ * <p>
+ * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/flux.png" alt="">
+ * <p>
+ *
  * <p>It is intended to be used in implementations and return types. Input parameters should keep using raw
  * {@link Publisher} as much as possible.
  *
@@ -77,6 +81,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
 	 *
+	 * <p>
+	 * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/amb.png" alt="">
+	 * <p>
+	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
 	 *
@@ -90,6 +98,10 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+	 *
+	 * <p>
+	 * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/amb.png" alt="">
+	 * <p>
 	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence

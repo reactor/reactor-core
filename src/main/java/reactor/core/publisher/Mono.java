@@ -47,6 +47,11 @@ import reactor.fn.tuple.Tuple6;
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
  * with an error.
+ *
+ * <p>
+ * <img width="640" height="200" src="https://next.projectreactor.io/assets/img/marble/mono.png" alt="">
+ * <p>
+ *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
  * property of the resulting {@link Mono}. For instance {@link Mono#flatMap} returns a {@link Flux} with possibly
  * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then}.
