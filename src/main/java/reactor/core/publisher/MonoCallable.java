@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriberDeferredScalar;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -35,11 +35,7 @@ import reactor.core.util.ReactiveState;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoCallable<T>
-		extends Mono<T>
-implements 
-												   ReactiveState.Factory,
-												   ReactiveState.Upstream {
+final class MonoCallable<T> extends Mono<T> implements Subscribable {
 
 	final Callable<? extends T> callable;
 

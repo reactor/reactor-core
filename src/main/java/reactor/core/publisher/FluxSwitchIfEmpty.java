@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriberMultiSubscription;
+import reactor.core.trait.Connectable;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -42,21 +43,20 @@ final class FluxSwitchIfEmpty<T> extends Flux.FluxBarrier<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxSwitchIfEmptySubscriber<T> parent = new FluxSwitchIfEmptySubscriber<>(s, other);
+		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(s, other);
 
 		s.onSubscribe(parent);
 
 		source.subscribe(parent);
 	}
 
-	static final class FluxSwitchIfEmptySubscriber<T> extends SubscriberMultiSubscription<T, T>
-	implements FeedbackLoop {
+	static final class SwitchIfEmptySubscriber<T> extends SubscriberMultiSubscription<T, T> implements Connectable {
 
 		final Publisher<? extends T> other;
 
 		boolean once;
 
-		public FluxSwitchIfEmptySubscriber(Subscriber<? super T> actual, Publisher<? extends T> other) {
+		public SwitchIfEmptySubscriber(Subscriber<? super T> actual, Publisher<? extends T> other) {
 			super(actual);
 			this.other = other;
 		}
@@ -82,12 +82,12 @@ final class FluxSwitchIfEmpty<T> extends Flux.FluxBarrier<T, T> {
 		}
 
 		@Override
-		public Object delegateInput() {
+		public Object connectedInput() {
 			return null;
 		}
 
 		@Override
-		public Object delegateOutput() {
+		public Object connectedOutput() {
 			return other;
 		}
 	}

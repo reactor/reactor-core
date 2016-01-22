@@ -24,10 +24,14 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
 import reactor.fn.Predicate;
 
@@ -35,13 +39,10 @@ import reactor.fn.Predicate;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<E>, Subscription,
-                                           ReactiveState.Bounded,
-                                           ReactiveState.FailState,
-                                           ReactiveState.ActiveDownstream,
-                                           ReactiveState.DownstreamDemand,
-                                           Consumer<E>,
-                                           Closeable {
+public class ReactiveSession<E>
+		implements Publishable, Subscriber<E>, Subscription, Backpressurable, Failurable, Cancellable, Requestable,
+		           Consumer<E>,
+		           Closeable {
 
 	/**
 	 *
@@ -347,7 +348,8 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 
 	@Override
 	public long getCapacity() {
-		return Bounded.class.isAssignableFrom(actual.getClass()) ? ((Bounded) actual).getCapacity() : Long.MAX_VALUE;
+		return Backpressurable.class.isAssignableFrom(actual.getClass()) ? ((Backpressurable) actual).getCapacity() :
+				Long.MAX_VALUE;
 	}
 
 	@Override
@@ -399,6 +401,11 @@ public class ReactiveSession<E> implements ReactiveState.Downstream, Subscriber<
 	@Override
 	public boolean isCancelled() {
 		return cancelled;
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
 	}
 
 	@Override

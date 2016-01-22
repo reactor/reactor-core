@@ -24,10 +24,12 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberWithContext;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
@@ -50,7 +52,7 @@ import reactor.fn.Function;
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
  */
-class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
+class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 
 	final           Function<Subscriber<? super T>, C>            contextFactory;
 	protected final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
@@ -83,7 +85,7 @@ class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
 		return new SubscriberProxy<>(this, subscriber, context, requestConsumer, shutdownConsumer);
 	}
 
-	static final class FluxForEach<T, C> extends FluxGenerate<T, C> implements Upstream {
+	static final class FluxForEach<T, C> extends FluxGenerate<T, C> implements Subscribable {
 
 		final Consumer<SubscriberWithContext<T, C>> forEachConsumer;
 
@@ -211,7 +213,7 @@ class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
 		 */
 		static final class IterableSequencer<T> implements Function<Subscriber<? super T>, Iterator<? extends T>>,
 		                                                   Consumer<SubscriberWithContext<T, Iterator<? extends T>>>,
-		                                                   Trace, Upstream {
+		                                                   Introspectable, Subscribable {
 
 			private final Iterable<? extends T> defaultValues;
 
@@ -247,6 +249,16 @@ class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
 			}
 
 			@Override
+			public int getMode() {
+				return TRACE_ONLY;
+			}
+
+			@Override
+			public String getName() {
+				return IterableSequencer.class.getSimpleName();
+			}
+
+			@Override
 			public Object upstream() {
 				return defaultValues;
 			}
@@ -259,7 +271,7 @@ class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
 		}
 
 	private final static class SubscriberProxy<T, C> extends SubscriberWithContext<T, C>
-			implements Subscription, Upstream, ActiveUpstream, Named {
+			implements Subscription, Subscribable, Completable, Introspectable {
 
 		private final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
 
@@ -347,6 +359,11 @@ class FluxGenerate<T, C> extends Flux<T> implements ReactiveState.Factory {
 				Exceptions.throwIfFatal(t);
 				subscriber.onError(t);
 			}
+		}
+
+		@Override
+		public int getMode() {
+			return 0;
 		}
 
 		@Override

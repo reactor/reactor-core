@@ -29,10 +29,17 @@ import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberWithDemand;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Prefetchable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.PublishableMany;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
@@ -107,12 +114,11 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				return;
 			}
 		}
-		source.subscribe(new FluxFlatMapSubscriber<>(s, mapper, maxConcurrency, bufferSize));
+		source.subscribe(new FlatMapSubscriber<>(s, mapper, maxConcurrency, bufferSize));
 	}
 
-	static final class FluxFlatMapSubscriber<T, V> extends SubscriberWithDemand<T, V>
-			implements ReactiveState.LinkedUpstreams, ReactiveState.ActiveDownstream, ReactiveState.Buffering,
-			           ReactiveState.FailState {
+	static final class FlatMapSubscriber<T, V> extends SubscriberWithDemand<T, V>
+			implements PublishableMany, Cancellable, Backpressurable, Failurable {
 
 		final Function<? super T, ? extends Publisher<? extends V>> mapper;
 		final int                                                   maxConcurrency;
@@ -125,19 +131,19 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		private volatile Throwable error;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxFlatMapSubscriber, Throwable> ERROR =
-				PlatformDependent.newAtomicReferenceFieldUpdater(FluxFlatMapSubscriber.class, "error");
+		static final AtomicReferenceFieldUpdater<FlatMapSubscriber, Throwable> ERROR =
+				PlatformDependent.newAtomicReferenceFieldUpdater(FlatMapSubscriber.class, "error");
 
 		volatile BufferSubscriber<?, ?>[] subscribers;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxFlatMapSubscriber, BufferSubscriber[]> SUBSCRIBERS =
-				PlatformDependent.newAtomicReferenceFieldUpdater(FluxFlatMapSubscriber.class, "subscribers");
+		static final AtomicReferenceFieldUpdater<FlatMapSubscriber, BufferSubscriber[]> SUBSCRIBERS =
+				PlatformDependent.newAtomicReferenceFieldUpdater(FlatMapSubscriber.class, "subscribers");
 
 		@SuppressWarnings("unused")
 		private volatile int running;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<FluxFlatMapSubscriber> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(FluxFlatMapSubscriber.class, "running");
+		static final AtomicIntegerFieldUpdater<FlatMapSubscriber> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "running");
 
 		static final BufferSubscriber<?, ?>[] EMPTY = new BufferSubscriber<?, ?>[0];
 
@@ -148,7 +154,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		long lastId;
 		int  lastIndex;
 
-		public FluxFlatMapSubscriber(Subscriber<? super V> actual,
+		public FlatMapSubscriber(Subscriber<? super V> actual,
 				Function<? super T, ? extends Publisher<? extends V>> mapper,
 				int maxConcurrency,
 				int bufferSize) {
@@ -193,8 +199,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		}
 
 		@Override
-		public long pending() {
-			return emitBuffer != null ? emitBuffer.pending() : -1;
+		public long getPending() {
+			return emitBuffer != null ? emitBuffer.getPending() : -1;
 		}
 
 		void addInner(BufferSubscriber<T, V> inner) {
@@ -468,7 +474,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 				BufferSubscriber<?, ?>[] inner = subscribers;
 				int n = inner.length;
 
-				if (d && !isCancelled() && (svq == null || svq.pending() == 0) && n == 0) {
+				if (d && !isCancelled() && (svq == null || svq.getPending() == 0) && n == 0) {
 					Throwable e = error;
 					if (e == null) {
 						child.onComplete();
@@ -559,7 +565,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 						}
 						boolean innerDone = is.done;
 						RingBuffer<Slot<V>> innerQueue = is.queue;
-						if (innerDone && (innerQueue == null || innerQueue.pending() == 0)) {
+						if (innerDone && (innerQueue == null || innerQueue.getPending() == 0)) {
 							removeInner(is);
 							if (checkTerminate()) {
 								return;
@@ -627,14 +633,12 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 	}
 
 	static final class BufferSubscriber<T, V> extends BaseSubscriber<V>
-			implements ReactiveState.Bounded, ReactiveState.Upstream, ReactiveState.Downstream, ReactiveState.Buffering,
-			           ReactiveState.ActiveDownstream, ReactiveState.ActiveUpstream, ReactiveState.UpstreamDemand,
-			           ReactiveState.UpstreamPrefetch, ReactiveState.Inner {
+			implements Publishable, Backpressurable, Cancellable, Completable, Prefetchable, Introspectable {
 
-		final long                        id;
-		final FluxFlatMapSubscriber<T, V> parent;
-		final int                         limit;
-		final int                         bufferSize;
+		final long                    id;
+		final FlatMapSubscriber<T, V> parent;
+		final int                     limit;
+		final int                     bufferSize;
 
 		@SuppressWarnings("unused")
 		volatile Subscription subscription;
@@ -647,7 +651,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		volatile RingBuffer<Slot<V>> queue;
 		int outstanding;
 
-		public BufferSubscriber(FluxFlatMapSubscriber<T, V> parent, long id) {
+		public BufferSubscriber(FlatMapSubscriber<T, V> parent, long id) {
 			this.id = id;
 			this.parent = parent;
 			this.bufferSize = parent.bufferSize;
@@ -742,8 +746,8 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 		}
 
 		@Override
-		public long pending() {
-			return !done && queue != null ? queue.pending() : -1L;
+		public long getPending() {
+			return !done && queue != null ? queue.getPending() : -1L;
 		}
 
 		@Override
@@ -758,7 +762,17 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 
 		@Override
 		public boolean isTerminated() {
-			return done && (queue == null || queue.pending() == 0L);
+			return done && (queue == null || queue.getPending() == 0L);
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return FlatMapSubscriber.class.getSimpleName();
 		}
 	}
 

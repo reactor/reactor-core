@@ -31,12 +31,22 @@ import org.reactivestreams.Subscription;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Prefetchable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Requestable;
+import reactor.core.trait.SubscribableMany;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveState;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
@@ -58,7 +68,7 @@ import reactor.fn.Supplier;
  * @author Anatoly Kadyshev
  * @author Stephane Maldini
  */
-public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveState.FeedbackLoop {
+public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable {
 
 	private static final Logger log = Logger.getLogger(ProcessorGroup.class);
 
@@ -387,7 +397,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 	};
 
-	private final static int LIMIT_BUFFER_SIZE = ReactiveState.SMALL_BUFFER_SIZE / 2;
+	private final static int LIMIT_BUFFER_SIZE = PlatformDependent.SMALL_BUFFER_SIZE / 2;
 
 	@SuppressWarnings("unchecked")
 	protected ProcessorGroup(Supplier<? extends Processor<Runnable, Runnable>> processor,
@@ -443,12 +453,12 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 	}
 
 	@Override
-	public Object delegateInput() {
+	public Object connectedInput() {
 		return processor;
 	}
 
 	@Override
-	public Object delegateOutput() {
+	public Object connectedOutput() {
 		return processor;
 	}
 
@@ -535,9 +545,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 	}
 
 	private static class ProcessorBarrier<V> extends FluxProcessor<V, V>
-			implements Consumer<Runnable>, BiConsumer<V, Consumer<? super V>>, Executor, Subscription,
-			           Bounded, Upstream, FeedbackLoop, Downstream, Buffering, ActiveDownstream, ActiveUpstream,
-			           Named, UpstreamDemand, UpstreamPrefetch, DownstreamDemand, FailState,
+			implements Consumer<Runnable>, BiConsumer<V, Consumer<? super V>>, Executor, Subscription, Backpressurable,
+			           Connectable, Publishable, Cancellable, Completable, Prefetchable, Requestable, Failurable,
 			           Runnable {
 
 		protected final ProcessorGroup service;
@@ -578,8 +587,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 				pollCursor = null;
 			}
 			else {
-				outstanding = SMALL_BUFFER_SIZE;
-				emitBuffer = RingBuffer.<V>createSingleProducer(SMALL_BUFFER_SIZE);
+				outstanding = PlatformDependent.SMALL_BUFFER_SIZE;
+				emitBuffer = RingBuffer.<V>createSingleProducer(PlatformDependent.SMALL_BUFFER_SIZE);
 				pollCursor = Sequencer.newSequence(-1L);
 				emitBuffer.addGatingSequence(pollCursor);
 			}
@@ -710,7 +719,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			service.processor.onNext(new Runnable() {
 				@Override
 				public void run() {
-					doRequest(SMALL_BUFFER_SIZE);
+					doRequest(PlatformDependent.SMALL_BUFFER_SIZE);
 					if (RUNNING.decrementAndGet(ProcessorBarrier.this) != 0) {
 						ProcessorBarrier.this.run();
 					}
@@ -775,7 +784,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 
 		@Override
 		public long limit() {
-			return ReactiveState.SMALL_BUFFER_SIZE;
+			return PlatformDependent.SMALL_BUFFER_SIZE;
 		}
 
 		@Override
@@ -823,8 +832,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 
 		@Override
-		public long pending() {
-			return emitBuffer != null ? emitBuffer.pending() : -1L;
+		public long getPending() {
+			return emitBuffer != null ? emitBuffer.getPending() : -1L;
 		}
 
 		@Override
@@ -880,7 +889,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 						subscriber = null;
 						return;
 					}
-					else if (emitBuffer.pending() == 0) {
+					else if (emitBuffer.getPending() == 0) {
 						route(null, subscriber, SignalType.COMPLETE);
 						this.upstreamSubscription = null;
 						subscriber = null;
@@ -890,9 +899,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 
 				Subscription subscription = upstreamSubscription;
 				if (outstanding < LIMIT_BUFFER_SIZE && subscription != null) {
-					int k = SMALL_BUFFER_SIZE - outstanding;
+					int k = PlatformDependent.SMALL_BUFFER_SIZE - outstanding;
 
-					this.outstanding = SMALL_BUFFER_SIZE;
+					this.outstanding = PlatformDependent.SMALL_BUFFER_SIZE;
 					subscription.request(k);
 				}
 //				else{
@@ -909,12 +918,12 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 
 		@Override
-		public Object delegateInput() {
+		public Object connectedInput() {
 			return service.processor;
 		}
 
 		@Override
-		public Object delegateOutput() {
+		public Object connectedOutput() {
 			return service.processor;
 		}
 
@@ -964,14 +973,14 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 
 		@Override
 		public long getCapacity() {
-			return emitBuffer != null ? SMALL_BUFFER_SIZE : Long.MAX_VALUE;
+			return emitBuffer != null ? PlatformDependent.SMALL_BUFFER_SIZE : Long.MAX_VALUE;
 		}
 
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "{" +
 					"subscription=" + upstreamSubscription +
-					(emitBuffer != null ? ", pendingReceive=" + outstanding + ", buffered=" + emitBuffer.pending() :
+					(emitBuffer != null ? ", pendingReceive=" + outstanding + ", buffered=" + emitBuffer.getPending() :
 							"") +
 					(requested != 0 ? ", pendingSend=" + requested : "") +
 					'}';
@@ -1132,7 +1141,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 	}
 
-	private static class TaskSubscriber implements Subscriber<Runnable>, Trace {
+	private static class TaskSubscriber implements Subscriber<Runnable>, Introspectable {
 
 		private final Consumer<Throwable> uncaughtExceptionHandler;
 		private final Runnable      shutdownHandler;
@@ -1173,6 +1182,16 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 
 		@Override
+		public int getMode() {
+			return TRACE_ONLY;
+		}
+
+		@Override
+		public String getName() {
+			return TaskSubscriber.class.getSimpleName();
+		}
+
+		@Override
 		public void onError(Throwable t) {
 			Exceptions.throwIfFatal(t);
 			if (uncaughtExceptionHandler != null) {
@@ -1203,7 +1222,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 		}
 	}
 
-	final static class PooledProcessorGroup<T> extends ProcessorGroup<T> implements LinkedDownstreams {
+	final static class PooledProcessorGroup<T> extends ProcessorGroup<T> implements SubscribableMany {
 
 		final ProcessorGroup[] processorGroups;
 
@@ -1312,7 +1331,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 			return next().get();
 		}
 
-		private class InnerProcessorGroup extends ProcessorGroup<T> implements Inner {
+		private class InnerProcessorGroup extends ProcessorGroup<T> implements Introspectable {
 
 			public InnerProcessorGroup(Supplier<? extends Processor<Runnable, Runnable>> processor,
 					Consumer<Throwable> uncaughtExceptionHandler,
@@ -1332,6 +1351,17 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, ReactiveSta
 				REF_COUNT.incrementAndGet(this);
 				PooledProcessorGroup.this.incrementReference();
 			}
+
+			@Override
+			public int getMode() {
+				return INNER;
+			}
+
+			@Override
+			public String getName() {
+				return InnerProcessorGroup.class.getSimpleName();
+			}
 		}
+
 	}
 }

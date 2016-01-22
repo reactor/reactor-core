@@ -17,7 +17,7 @@ package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import reactor.core.util.ReactiveState;
+import reactor.core.trait.Introspectable;
 import reactor.core.util.Sequence;
 import reactor.fn.LongSupplier;
 
@@ -29,7 +29,7 @@ import reactor.fn.LongSupplier;
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
  */
-final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence, ReactiveState.Trace
+final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence, Introspectable
 {
 
     private static final AtomicLongFieldUpdater<Value> UPDATER =
@@ -95,5 +95,15 @@ final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence,
     public String toString()
     {
         return Long.toString(get());
+    }
+
+    @Override
+    public int getMode() {
+        return TRACE_ONLY;
+    }
+
+    @Override
+    public String getName() {
+        return AtomicSequence.class.getSimpleName();
     }
 }

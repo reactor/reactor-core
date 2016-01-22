@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberMultiSubscription;
+import reactor.core.trait.Connectable;
 import reactor.core.util.Exceptions;
 import reactor.fn.Function;
 
@@ -70,17 +71,16 @@ final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxResumeSubscriber<>(s, nextFactory));
+		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	static final class FluxResumeSubscriber<T> extends SubscriberMultiSubscription<T, T>
-	implements FeedbackLoop {
+	static final class ResumeSubscriber<T> extends SubscriberMultiSubscription<T, T> implements Connectable {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
 		boolean second;
 
-		public FluxResumeSubscriber(Subscriber<? super T> actual,
+		public ResumeSubscriber(Subscriber<? super T> actual,
 										 Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
 			super(actual);
 			this.nextFactory = nextFactory;
@@ -132,12 +132,12 @@ final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
 		}
 
 		@Override
-		public Object delegateInput() {
+		public Object connectedInput() {
 			return nextFactory;
 		}
 
 		@Override
-		public Object delegateOutput() {
+		public Object connectedOutput() {
 			return null;
 		}
 	}

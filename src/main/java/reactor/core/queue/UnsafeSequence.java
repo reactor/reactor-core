@@ -15,8 +15,8 @@
  */
 package reactor.core.queue;
 
+import reactor.core.trait.Introspectable;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
 import reactor.fn.LongSupplier;
 import sun.misc.Unsafe;
@@ -44,8 +44,7 @@ class RhsPadding extends Value
  * <p>Also attempts to be more efficient with regards to false
  * sharing by adding padding around the volatile field.
  */
-final class UnsafeSequence extends RhsPadding
-        implements Sequence, LongSupplier, ReactiveState.Trace
+final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier, Introspectable
 {
     private static final Unsafe UNSAFE;
     private static final long VALUE_OFFSET;
@@ -123,5 +122,15 @@ final class UnsafeSequence extends RhsPadding
     public String toString()
     {
         return Long.toString(get());
+    }
+
+    @Override
+    public int getMode() {
+        return TRACE_ONLY;
+    }
+
+    @Override
+    public String getName() {
+        return UnsafeSequence.class.getSimpleName();
     }
 }

@@ -18,9 +18,9 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriberBarrier;
+import reactor.core.trait.Connectable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 
@@ -28,7 +28,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements ReactiveState.FeedbackLoop {
+final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Connectable {
 
 	private final Consumer<? super I>              onSuccess;
 	private final BiConsumer<? super I, Throwable> onSuccessOrFailure;
@@ -60,12 +60,12 @@ final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements ReactiveSta
 	}
 
 	@Override
-	public Object delegateInput() {
+	public Object connectedInput() {
 		return onSuccess;
 	}
 
 	@Override
-	public Object delegateOutput() {
+	public Object connectedOutput() {
 		return afterSuccessOrFailure == null ? onSuccessOrFailure : afterSuccessOrFailure;
 	}
 

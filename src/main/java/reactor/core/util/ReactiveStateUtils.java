@@ -24,11 +24,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Groupable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Prefetchable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.PublishableMany;
+import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
+import reactor.core.trait.SubscribableMany;
+import reactor.core.trait.Timeable;
+
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-public enum ReactiveStateUtils implements ReactiveState {
+public enum ReactiveStateUtils {
 	;
 
 	/**
@@ -147,7 +162,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasUpstream(Object o) {
-		return reactiveStateCheck(o, Upstream.class) && ((Upstream) o).upstream() != null;
+		return reactiveStateCheck(o, Subscribable.class) && ((Subscribable) o).upstream() != null;
 	}
 
 	/**
@@ -156,7 +171,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasUpstreams(Object o) {
-		return reactiveStateCheck(o, LinkedUpstreams.class);
+		return reactiveStateCheck(o, PublishableMany.class);
 	}
 
 	/**
@@ -165,7 +180,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasDownstream(Object o) {
-		return reactiveStateCheck(o, Downstream.class) && ((Downstream) o).downstream() != null;
+		return reactiveStateCheck(o, Publishable.class) && ((Publishable) o).downstream() != null;
 	}
 
 	/**
@@ -174,7 +189,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasDownstreams(Object o) {
-		return reactiveStateCheck(o, LinkedDownstreams.class);
+		return reactiveStateCheck(o, SubscribableMany.class);
 	}
 
 	/**
@@ -183,7 +198,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasFeedbackLoop(Object o) {
-		return reactiveStateCheck(o, FeedbackLoop.class);
+		return reactiveStateCheck(o, Connectable.class);
 	}
 
 	/**
@@ -192,7 +207,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isTraceOnly(Object o) {
-		return reactiveStateCheck(o, Trace.class);
+		return reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.TRACE_ONLY) == Introspectable.TRACE_ONLY;
 	}
 
 	/**
@@ -201,7 +217,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean hasSubscription(Object o) {
-		return reactiveStateCheck(o, ActiveUpstream.class);
+		return reactiveStateCheck(o, Completable.class);
 	}
 
 	/**
@@ -210,7 +226,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isCancellable(Object o) {
-		return reactiveStateCheck(o, ActiveDownstream.class);
+		return reactiveStateCheck(o, Cancellable.class);
 	}
 
 	/**
@@ -219,7 +235,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isContained(Object o) {
-		return reactiveStateCheck(o, Inner.class);
+		return reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.INNER) == Introspectable.INNER;
 	}
 
 	/**
@@ -228,7 +245,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isLogging(Object o) {
-		return reactiveStateCheck(o, Logging.class);
+		return reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.LOGGING) == Introspectable.LOGGING;
 	}
 
 	/**
@@ -237,8 +255,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getCapacity(Object o) {
-		if (reactiveStateCheck(o, Bounded.class)) {
-			return ((Bounded) o).getCapacity();
+		if (reactiveStateCheck(o, Backpressurable.class)) {
+			return ((Backpressurable) o).getCapacity();
 		}
 		return -1L;
 	}
@@ -249,8 +267,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static Throwable getFailedState(Object o) {
-		if (reactiveStateCheck(o, FailState.class)) {
-			return ((FailState) o).getError();
+		if (reactiveStateCheck(o, Failurable.class)) {
+			return ((Failurable) o).getError();
 		}
 		return null;
 	}
@@ -261,8 +279,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getTimedPeriod(Object o) {
-		if (reactiveStateCheck(o, Timed.class)) {
-			return ((Timed) o).period();
+		if (reactiveStateCheck(o, Timeable.class)) {
+			return ((Timeable) o).period();
 		}
 		return -1;
 	}
@@ -273,8 +291,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getUpstreamLimit(Object o) {
-		if (reactiveStateCheck(o, UpstreamPrefetch.class)) {
-			return ((UpstreamPrefetch) o).limit();
+		if (reactiveStateCheck(o, Prefetchable.class)) {
+			return ((Prefetchable) o).limit();
 		}
 		return -1L;
 	}
@@ -285,8 +303,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getExpectedUpstream(Object o) {
-		if (reactiveStateCheck(o, UpstreamDemand.class)) {
-			return ((UpstreamDemand) o).expectedFromUpstream();
+		if (reactiveStateCheck(o, Prefetchable.class)) {
+			return ((Prefetchable) o).expectedFromUpstream();
 		}
 		return -1L;
 	}
@@ -297,8 +315,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getRequestedDownstream(Object o) {
-		if (reactiveStateCheck(o, DownstreamDemand.class)) {
-			return ((DownstreamDemand) o).requestedFromDownstream();
+		if (reactiveStateCheck(o, Requestable.class)) {
+			return ((Requestable) o).requestedFromDownstream();
 		}
 		return -1L;
 	}
@@ -313,9 +331,11 @@ public enum ReactiveStateUtils implements ReactiveState {
 			return null;
 		}
 
-		String name = Named.class.isAssignableFrom(o.getClass()) ? (((Named) o).getName()) : (o.getClass()
-		                                                                                       .getSimpleName()
-		                                                                                       .isEmpty() ?
+		String name =
+				Introspectable.class.isAssignableFrom(o.getClass()) ? (((Introspectable) o).getName()) :
+						(o.getClass()
+						  .getSimpleName()
+						  .isEmpty() ?
 				o.toString() : o.getClass()
 				                .getSimpleName());
 
@@ -334,7 +354,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 			return null;
 		}
 
-		Object key = Grouped.class.isAssignableFrom(o.getClass()) ? (((Grouped) o).key()) : null;
+		Object key = Groupable.class.isAssignableFrom(o.getClass()) ? (((Groupable) o).key()) : null;
 
 		if (key == null) {
 			return null;
@@ -349,8 +369,9 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static String getIdOrDefault(Object o) {
-		if(reactiveStateCheck(o, Identified.class)){
-			return ((Identified) o).getId();
+		if (reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.UNIQUE) == Introspectable.UNIQUE) {
+			return  o instanceof Groupable ? ((Groupable)o).key().toString() : ((Introspectable) o).getName();
 		}
 		return getName(o).hashCode() + ":" + o.hashCode();
 	}
@@ -361,7 +382,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isUnique(Object o) {
-		return reactiveStateCheck(o, Identified.class);
+		return reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.UNIQUE) == Introspectable.UNIQUE;
 	}
 
 	/**
@@ -370,7 +392,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static boolean isFactory(Object o) {
-		return reactiveStateCheck(o, Factory.class);
+		return reactiveStateCheck(o, Introspectable.class) &&
+				(((Introspectable)o).getMode() & Introspectable.FACTORY) == Introspectable.FACTORY;
 	}
 
 	/**
@@ -379,8 +402,8 @@ public enum ReactiveStateUtils implements ReactiveState {
 	 * @return
 	 */
 	public static long getBuffered(Object o) {
-		if (reactiveStateCheck(o, Buffering.class)) {
-			return ((Buffering) o).pending();
+		if (reactiveStateCheck(o, Backpressurable.class)) {
+			return ((Backpressurable) o).getPending();
 		}
 		return -1L;
 	}
@@ -525,7 +548,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 				child = grandchild;
 			}
 			if (hasUpstream(target.object)) {
-				Object in = ((Upstream) target.object).upstream();
+				Object in = ((Subscribable) target.object).upstream();
 				if (!virtualRef(in, target)) {
 					Node upstream = expandReactiveSate(in, target.rootId);
 					if (child != null && (trace || !isTraceOnly(upstream.object))) {
@@ -535,10 +558,10 @@ public enum ReactiveStateUtils implements ReactiveState {
 				}
 			}
 			if (hasUpstreams(target.object)) {
-				addUpstreams(child, ((LinkedUpstreams) target.object).upstreams());
+				addUpstreams(child, ((PublishableMany) target.object).upstreams());
 			}
 			if (hasDownstreams(target.object)) {
-				addDownstreams(child, ((LinkedDownstreams) target.object).downstreams());
+				addDownstreams(child, ((SubscribableMany) target.object).downstreams());
 			}
 		}
 
@@ -578,7 +601,7 @@ public enum ReactiveStateUtils implements ReactiveState {
 				root = ancestor;
 			}
 			if (hasDownstream(origin.object)) {
-				Object out = ((Downstream) origin.object).downstream();
+				Object out = ((Publishable) origin.object).downstream();
 				if (!virtualRef(out, origin)) {
 					Node downstream = expandReactiveSate(out, origin.rootId);
 					if (root != null && (trace || !isTraceOnly(downstream.object))) {
@@ -588,11 +611,11 @@ public enum ReactiveStateUtils implements ReactiveState {
 				}
 			}
 			if (hasDownstreams(origin.object)) {
-				addDownstreams(root, ((LinkedDownstreams) origin.object).downstreams());
+				addDownstreams(root, ((SubscribableMany) origin.object).downstreams());
 			}
 
 			if (hasUpstreams(origin.object)) {
-				addUpstreams(root, ((LinkedUpstreams) origin.object).upstreams());
+				addUpstreams(root, ((PublishableMany) origin.object).upstreams());
 			}
 		}
 
@@ -626,16 +649,16 @@ public enum ReactiveStateUtils implements ReactiveState {
 			Node r = new Node(name, id, o, rootid);
 
 			if ((trace || !isTraceOnly(o)) && hasFeedbackLoop(o)) {
-				FeedbackLoop loop = (FeedbackLoop) o;
+				Connectable loop = (Connectable) o;
 
-				Object target = loop.delegateInput();
+				Object target = loop.connectedInput();
 				if (target != null && target != loop && !virtualRef(target, r)) {
 					Node input = expandReactiveSate(target, r.rootId);
 					addEdge(r.createEdgeTo(input, Edge.Type.feedbackLoop));
 					addDownstream(input, null);
 				}
 
-				target = loop.delegateOutput();
+				target = loop.connectedOutput();
 
 				if (target != null && target != loop && !virtualRef(target, r)) {
 					Node output = expandReactiveSate(target, r.rootId);
@@ -793,21 +816,21 @@ public enum ReactiveStateUtils implements ReactiveState {
 			if (!hasSubscription(object)) {
 				return null;
 			}
-			return ((ActiveUpstream) object).isStarted();
+			return ((Completable) object).isStarted();
 		}
 
 		public final Boolean isTerminated() {
 			if (!hasSubscription(object)) {
 				return null;
 			}
-			return ((ActiveUpstream) object).isTerminated();
+			return ((Completable) object).isTerminated();
 		}
 
 		public final Boolean isCancelled() {
 			if (!isCancellable(object)) {
 				return null;
 			}
-			return ((ActiveDownstream) object).isCancelled();
+			return ((Cancellable) object).isCancelled();
 		}
 
 		protected final Edge createEdgeTo(Node to) {

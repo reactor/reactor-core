@@ -22,9 +22,11 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
@@ -51,7 +53,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> asyncGroup() {
-		return asyncGroup("async", ReactiveState.MEDIUM_BUFFER_SIZE);
+		return asyncGroup("async", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -60,7 +62,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> asyncGroup(String name) {
-		return asyncGroup(name, ReactiveState.MEDIUM_BUFFER_SIZE);
+		return asyncGroup(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -233,7 +235,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link Processor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link Processor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -250,17 +252,17 @@ public enum Processors {
 	 */
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> emitter(boolean autoCancel) {
-		return emitter(ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
+		return emitter(PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -270,7 +272,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -280,7 +282,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -290,7 +292,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -314,7 +316,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> ioGroup() {
-		return ioGroup("io", ReactiveState.MEDIUM_BUFFER_SIZE);
+		return ioGroup("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -323,7 +325,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> ioGroup(String name) {
-		return ioGroup(name, ReactiveState.MEDIUM_BUFFER_SIZE);
+		return ioGroup(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -424,29 +426,29 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorWorkQueue<E> queue() {
-		return queue("worker", ReactiveState.SMALL_BUFFER_SIZE, true);
+		return queue("worker", PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorWorkQueue<E> queue(String name) {
-		return queue(name, ReactiveState.SMALL_BUFFER_SIZE, true);
+		return queue(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -455,11 +457,11 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorWorkQueue<E> queue(boolean autoCancel) {
-		return queue(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
+		return queue(Processors.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -486,17 +488,17 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> replay() {
-		return replay(ReactiveState.SMALL_BUFFER_SIZE);
+		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -506,7 +508,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -516,7 +518,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -530,7 +532,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> singleGroup() {
-		return singleGroup("single", ReactiveState.MEDIUM_BUFFER_SIZE);
+		return singleGroup("single", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -539,7 +541,7 @@ public enum Processors {
 	 * @return
 	 */
 	public static <E> ProcessorGroup<E> singleGroup(String name) {
-		return singleGroup(name, ReactiveState.MEDIUM_BUFFER_SIZE);
+		return singleGroup(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -585,27 +587,27 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorTopic<E> topic() {
-		return topic("async", ReactiveState.SMALL_BUFFER_SIZE, true);
+		return topic("async", PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorTopic<E> topic(String name) {
-		return topic(name, ReactiveState.SMALL_BUFFER_SIZE, true);
+		return topic(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -614,11 +616,11 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> ProcessorTopic<E> topic(boolean autoCancel) {
-		return topic(Processors.class.getSimpleName(), ReactiveState.SMALL_BUFFER_SIZE, autoCancel);
+		return topic(Processors.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link ReactiveState#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -666,8 +668,8 @@ public enum Processors {
 		}
 	};
 
-	final static class DelegateProcessor<IN, OUT>
-			extends FluxProcessor<IN, OUT> implements ReactiveState.Downstream, ReactiveState.Bounded {
+	final static class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+			implements Publishable, Backpressurable {
 
 		private final Publisher<OUT> downstream;
 		private final Subscriber<IN> upstream;
@@ -687,7 +689,8 @@ public enum Processors {
 
 		@Override
 		public long getCapacity() {
-			return Bounded.class.isAssignableFrom(upstream.getClass()) ? ((Bounded) upstream).getCapacity() :
+			return Backpressurable.class.isAssignableFrom(upstream.getClass()) ?
+					((Backpressurable) upstream).getCapacity() :
 					Long.MAX_VALUE;
 		}
 

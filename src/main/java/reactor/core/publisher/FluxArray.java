@@ -23,9 +23,12 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.PublishableMany;
+import reactor.core.trait.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -37,10 +40,7 @@ import reactor.core.util.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxArray<T>
-		extends Flux<T>
-implements 
-												ReactiveState.Factory  {
+final class FluxArray<T> extends Flux<T> {
 	final T[] array;
 
 	@SafeVarargs
@@ -54,11 +54,11 @@ implements
 			EmptySubscription.complete(s);
 			return;
 		}
-		s.onSubscribe(new FluxArraySubscription<>(s, array));
+		s.onSubscribe(new ArraySubscription<>(s, array));
 	}
 
-	static final class FluxArraySubscription<T>
-	  implements Subscription, Downstream, DownstreamDemand, ActiveDownstream, LinkedUpstreams {
+	static final class ArraySubscription<T>
+			implements Subscription, Publishable, Requestable, Cancellable, PublishableMany {
 		final Subscriber<? super T> actual;
 
 		final T[] array;
@@ -69,10 +69,10 @@ implements
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<FluxArraySubscription> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(FluxArraySubscription.class, "requested");
+		static final AtomicLongFieldUpdater<ArraySubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
 
-		public FluxArraySubscription(Subscriber<? super T> actual, T[] array) {
+		public ArraySubscription(Subscriber<? super T> actual, T[] array) {
 			this.actual = actual;
 			this.array = array;
 		}

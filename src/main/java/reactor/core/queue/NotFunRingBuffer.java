@@ -178,7 +178,7 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public int getBufferSize()
+    public long getCapacity()
     {
         return bufferSize;
     }
@@ -208,9 +208,9 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public long pending()
+    public long getPending()
     {
-        return sequencer.pending();
+        return sequencer.getPending();
     }
 
     @Override

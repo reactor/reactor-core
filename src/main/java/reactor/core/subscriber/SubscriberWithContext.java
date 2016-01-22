@@ -19,8 +19,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 
 /**
  * A {@link Subscriber} with a typed stateful context. Some error isolation is also provided
@@ -29,11 +32,7 @@ import reactor.core.util.ReactiveState;
  * @author Stephane Maldini
  * @since 2.0.2
  */
-public class SubscriberWithContext<T, C> implements Subscriber<T>,
-                                                    ReactiveState.ActiveUpstream,
-                                                    ReactiveState.ActiveDownstream,
-                                                    ReactiveState.Downstream,
-                                                    ReactiveState.FeedbackLoop {
+public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, Cancellable, Publishable, Connectable {
 
 	private volatile       int                                              terminated       = 0;
 	protected static final AtomicIntegerFieldUpdater<SubscriberWithContext> TERMINAL_UPDATER =
@@ -132,12 +131,17 @@ public class SubscriberWithContext<T, C> implements Subscriber<T>,
 	}
 
 	@Override
-	public Object delegateInput() {
+	public Object connectedInput() {
 		return context;
 	}
 
 	@Override
-	public Object delegateOutput() {
+	public Object connectedOutput() {
 		return context;
+	}
+
+	@Override
+	public Object upstream() {
+		return null;
 	}
 }

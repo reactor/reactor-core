@@ -17,9 +17,11 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.ReactiveStateUtils;
 
 /**
@@ -30,11 +32,8 @@ import reactor.core.util.ReactiveStateUtils;
  * @author Stephane Maldini
  * @since 2.0.4
  */
-public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscription,
-                                                                          ReactiveState.Bounded,
-                                                                          ReactiveState.ActiveUpstream,
-                                                                          ReactiveState.Downstream,
-                                                                          ReactiveState.Upstream {
+public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
+		implements Subscription, Backpressurable, Completable, Publishable {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -167,14 +166,19 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I> implements Subscr
 
 	@Override
 	public boolean isTerminated() {
-		return ReactiveStateUtils.hasSubscription(subscription) && ((ActiveUpstream)subscription).isTerminated();
+		return ReactiveStateUtils.hasSubscription(subscription) && ((Completable) subscription).isTerminated();
 	}
 
 	@Override
 	public long getCapacity() {
-		return subscriber != null && Bounded.class.isAssignableFrom(subscriber.getClass()) ?
-		  ((Bounded) subscriber).getCapacity() :
+		return subscriber != null && Backpressurable.class.isAssignableFrom(subscriber.getClass()) ?
+				((Backpressurable) subscriber).getCapacity() :
 		  Long.MAX_VALUE;
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
 	}
 
 	@Override

@@ -207,7 +207,7 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public int getBufferSize()
+    public long getCapacity()
     {
         return bufferSize;
     }
@@ -237,9 +237,9 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public long pending()
+    public long getPending()
     {
-        return sequencer.pending();
+        return sequencer.getPending();
     }
 
     @Override

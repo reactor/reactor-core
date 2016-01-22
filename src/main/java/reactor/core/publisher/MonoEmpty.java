@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.trait.Completable;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Supplier;
 
 /**
@@ -32,26 +32,12 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoEmpty
-		extends Mono<Object>
-implements Supplier<Object>,
-											 ReactiveState.Factory,
-											 ReactiveState.ActiveUpstream {
+final class MonoEmpty extends Mono<Object> implements Supplier<Object>, Completable {
 
 	private static final Publisher<Object> INSTANCE = new MonoEmpty();
 
 	private MonoEmpty() {
 		// deliberately no op
-	}
-
-	@Override
-	public boolean isStarted() {
-		return false;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return true;
 	}
 
 	@Override
@@ -74,5 +60,20 @@ implements Supplier<Object>,
 	@Override
 	public Object get() {
 		return null; /* Scalar optimizations on empty */
+	}
+
+	@Override
+	public Object upstream() {
+		return null;
+	}
+
+	@Override
+	public boolean isStarted() {
+		return false;
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return true;
 	}
 }

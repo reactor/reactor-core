@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
@@ -41,12 +44,11 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new MonoNextSubscriber<>(s));
+		source.subscribe(new NextSubscriber<>(s));
 	}
 
-	static final class MonoNextSubscriber<T>
-			implements Subscriber<T>, Subscription, Upstream, ActiveUpstream,
-					   Bounded, Downstream {
+	static final class NextSubscriber<T>
+			implements Subscriber<T>, Subscription, Completable, Backpressurable, Publishable {
 
 		final Subscriber<? super T> actual;
 
@@ -56,10 +58,10 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MonoNextSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(MonoNextSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<NextSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(NextSubscriber.class, "wip");
 
-		public MonoNextSubscriber(Subscriber<? super T> actual) {
+		public NextSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -136,6 +138,11 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 		@Override
 		public Object downstream() {
 			return actual;
+		}
+
+		@Override
+		public long getPending() {
+			return -1L;
 		}
 	}
 }

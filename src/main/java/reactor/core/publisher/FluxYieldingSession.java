@@ -20,15 +20,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.ReactiveSession;
+import reactor.core.trait.Introspectable;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxYieldingSession<T> extends Flux<T> implements ReactiveState.Factory {
+final class FluxYieldingSession<T> extends Flux<T> implements Introspectable {
 
 	final Consumer<? super ReactiveSession<T>> onSubscribe;
 

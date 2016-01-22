@@ -20,16 +20,16 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 
 /**
  * @author Stephane Maldini
  */
-final class MonoResult<I> implements Subscriber<I>, ReactiveState.ActiveUpstream {
+final class MonoResult<I> implements Subscriber<I>, Completable {
 
 	volatile SignalType   endState;
 	volatile I            value;
@@ -122,5 +122,10 @@ final class MonoResult<I> implements Subscriber<I>, ReactiveState.ActiveUpstream
 			return;
 		}
 		endState = SignalType.COMPLETE;
+	}
+
+	@Override
+	public Object upstream() {
+		return s;
 	}
 }

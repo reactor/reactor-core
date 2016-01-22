@@ -20,8 +20,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Supplier;
 
 /**
@@ -32,8 +35,7 @@ import reactor.fn.Supplier;
  * @param <O> The downstream sequence type
  */
 public class SubscriberDeferredScalar<I, O>
-		implements Subscriber<I>, Subscription, Supplier<O>, ReactiveState.FeedbackLoop, ReactiveState.ActiveUpstream,
-		           ReactiveState.ActiveDownstream, ReactiveState.Downstream {
+		implements Subscriber<I>, Completable, Subscription, Supplier<O>, Connectable, Cancellable, Publishable {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 	static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
@@ -133,6 +135,12 @@ public class SubscriberDeferredScalar<I, O>
 		this.value = value;
 	}
 
+	/**
+	 * Tries to emit the value and complete the underlying subscriber or stores the value away until there is a request
+	 * for it.
+	 *
+	 * @param value the value to emit
+	 */
 	public final void complete(O value) {
 		Objects.requireNonNull(value);
 		for (; ; ) {
@@ -161,17 +169,22 @@ public class SubscriberDeferredScalar<I, O>
 	}
 
 	@Override
-	public Object delegateInput() {
+	public Object connectedInput() {
 		return null;
 	}
 
 	@Override
-	public Object delegateOutput() {
+	public Object connectedOutput() {
 		return value;
 	}
 
 	@Override
 	public boolean isTerminated() {
 		return isCancelled();
+	}
+
+	@Override
+	public Object upstream() {
+		return value;
 	}
 }

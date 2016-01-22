@@ -21,15 +21,17 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.Subscribers;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Pausable;
+import reactor.core.trait.Timeable;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-public class Timer implements ReactiveState.Timed, ReactiveState.ActiveDownstream {
+public class Timer implements Timeable, Cancellable {
 
 	protected final int resolution;
 

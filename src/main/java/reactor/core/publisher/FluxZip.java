@@ -30,11 +30,20 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.queue.RingBuffer;
 import reactor.core.subscriber.BaseSubscriber;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Prefetchable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.PublishableMany;
+import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 import reactor.fn.tuple.Tuple;
@@ -45,8 +54,7 @@ import reactor.fn.tuple.Tuple;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
-		implements ReactiveState.Factory, ReactiveState.LinkedUpstreams {
+final class FluxZip<TUPLE extends Tuple, V> extends Flux<V> implements Introspectable, PublishableMany {
 
 	/**
 	 *
@@ -87,7 +95,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 		try {
 
-			final FluxZipSubscriber<TUPLE, V> barrier;
+			final ZipSubscriber<TUPLE, V> barrier;
 			if (iterableSources != null) {
 				Iterator<? extends Publisher<?>> it = iterableSources.iterator();
 				if (!it.hasNext()) {
@@ -118,7 +126,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 				}
 				while (it.hasNext());
 
-				barrier = new FluxZipSubscriber<>(s, list.toArray(new Publisher[list.size()]), this);
+				barrier = new ZipSubscriber<>(s, list.toArray(new Publisher[list.size()]), this);
 			}
 			else if (sources == null || sources.length == 0) {
 				s.onSubscribe(EmptySubscription.INSTANCE);
@@ -126,7 +134,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 				return;
 			}
 			else {
-				barrier = new FluxZipSubscriber<>(s, sources, this);
+				barrier = new ZipSubscriber<>(s, sources, this);
 			}
 
 			barrier.start();
@@ -149,10 +157,9 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		return iterableSources != null ? -1L : (sources != null ? sources.length : 0);
 	}
 
-	static final class FluxZipSubscriber<TUPLE extends Tuple, V>
-			implements Subscription, LinkedUpstreams, ActiveDownstream,
-			           Buffering, ActiveUpstream, DownstreamDemand,
-			           FailState {
+	static final class ZipSubscriber<TUPLE extends Tuple, V>
+			implements Subscription, PublishableMany, Cancellable, Backpressurable, Completable, Requestable,
+			           Failurable {
 
 		final FluxZip<TUPLE, V>     parent;
 		final int                   limit;
@@ -166,26 +173,26 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		private volatile boolean cancelled;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxZipSubscriber, Throwable> ERROR =
-				PlatformDependent.newAtomicReferenceFieldUpdater(FluxZipSubscriber.class, "error");
+		static final AtomicReferenceFieldUpdater<ZipSubscriber, Throwable> ERROR =
+				PlatformDependent.newAtomicReferenceFieldUpdater(ZipSubscriber.class, "error");
 
 		@SuppressWarnings("unused")
-		private volatile       long                                      requested = 0L;
+		private volatile       long                                  requested = 0L;
 		@SuppressWarnings("rawtypes")
-		protected static final AtomicLongFieldUpdater<FluxZipSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FluxZipSubscriber.class, "requested");
+		protected static final AtomicLongFieldUpdater<ZipSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(ZipSubscriber.class, "requested");
 
 		@SuppressWarnings("unused")
 		private volatile int running;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<FluxZipSubscriber> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(FluxZipSubscriber.class, "running");
+		static final AtomicIntegerFieldUpdater<ZipSubscriber> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(ZipSubscriber.class, "running");
 
 		Object[] valueCache;
 
 		final static Object[] TERMINATED_CACHE = new Object[0];
 
-		public FluxZipSubscriber(Subscriber<? super V> actual, Publisher[] sources, FluxZip<TUPLE, V> parent) {
+		public ZipSubscriber(Subscriber<? super V> actual, Publisher[] sources, FluxZip<TUPLE, V> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.sources = sources;
@@ -280,7 +287,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 
 		@Override
-		public long pending() {
+		public long getPending() {
 			Object[] values = valueCache;
 			int count = 0;
 			for (int i = 0; i < values.length; i++) {
@@ -430,10 +437,14 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 			}
 			return false;
 		}
+
+		@Override
+		public Object upstream() {
+			return null;
+		}
 	}
 
-	interface ZipState<V> extends ActiveDownstream, Buffering, ActiveUpstream,
-	                              Inner {
+	interface ZipState<V> extends Cancellable, Backpressurable, Completable, Introspectable {
 
 		V readNext();
 
@@ -482,6 +493,11 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 
 		@Override
+		public Object upstream() {
+			return val;
+		}
+
+		@Override
 		public void requestMore() {
 			read = true;
 		}
@@ -492,7 +508,17 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 
 		@Override
-		public long pending() {
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return ScalarState.class.getSimpleName();
+		}
+
+		@Override
+		public long getPending() {
 			return read ? 0L : 1L;
 		}
 
@@ -511,14 +537,13 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 	}
 
 	static final class BufferSubscriber<V> extends BaseSubscriber<Object>
-			implements Subscriber<Object>, Bounded, ZipState<Object>, Upstream,
-			           ActiveUpstream, UpstreamPrefetch, UpstreamDemand,
-			           Downstream {
+			implements Subscriber<Object>, Backpressurable, ZipState<Object>, Subscribable, Completable, Prefetchable,
+			           Publishable {
 
-		final FluxZipSubscriber<?, V> parent;
-		final Queue<Object>           queue;
-		final int                     limit;
-		final int                     bufferSize;
+		final ZipSubscriber<?, V> parent;
+		final Queue<Object>       queue;
+		final int                 limit;
+		final int                 bufferSize;
 
 		@SuppressWarnings("unused")
 		volatile Subscription subscription;
@@ -528,7 +553,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		volatile boolean done;
 		int outstanding;
 
-		public BufferSubscriber(FluxZipSubscriber<?, V> parent) {
+		public BufferSubscriber(ZipSubscriber<?, V> parent) {
 			this.parent = parent;
 			this.bufferSize = parent.parent.bufferSize;
 			this.limit = bufferSize >> 2;
@@ -546,7 +571,7 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		}
 
 		@Override
-		public long pending() {
+		public long getPending() {
 			return queue.size();
 		}
 
@@ -615,6 +640,16 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V>
 		@Override
 		public boolean isStarted() {
 			return subscription != null;
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return BufferSubscriber.class.getSimpleName();
 		}
 
 		@Override

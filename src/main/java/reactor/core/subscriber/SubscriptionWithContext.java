@@ -18,8 +18,9 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 
 /**
  * A {@link Subscription} with a typed stateful context.
@@ -27,7 +28,7 @@ import reactor.core.util.ReactiveState;
  * @author Stephane Maldini
  * @since 2.0.2
  */
-public class SubscriptionWithContext<C> implements Subscription, ReactiveState.Upstream, ReactiveState.Trace {
+public class SubscriptionWithContext<C> implements Subscription, Subscribable, Introspectable {
 
 	private volatile       int                                                terminated         = 0;
 	protected static final AtomicIntegerFieldUpdater<SubscriptionWithContext> TERMINATED_UPDATER =
@@ -88,6 +89,16 @@ public class SubscriptionWithContext<C> implements Subscription, ReactiveState.U
 		if (TERMINATED_UPDATER.compareAndSet(this, 0, 1)) {
 			subscription.cancel();
 		}
+	}
+
+	@Override
+	public int getMode() {
+		return TRACE_ONLY;
+	}
+
+	@Override
+	public String getName() {
+		return SubscriptionWithContext.class.getSimpleName();
 	}
 
 	public boolean isCancelled() {

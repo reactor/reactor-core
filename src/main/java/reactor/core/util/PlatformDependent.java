@@ -18,16 +18,68 @@ package reactor.core.util;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * Borrowed from Netty project which itself borrows from JCTools and various other projects.
  *
  * Expose some runtime properties such as Unsafe access or Android environment.
  *
+ * Borrowed from Netty project which itself borrows from JCTools and various other projects.
  * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
  */
 public enum PlatformDependent {
 	;
 
-	private static final boolean HAS_UNSAFE = hasUnsafe0();
+	/**
+	 *
+	 */
+	public static final  boolean TRACE_CANCEL                    =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
+	/**
+	 *
+	 */
+	public static final  boolean TRACE_TIMEROVERLOW              =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.timeroverflow", "false"));
+	/**
+	 *
+	 */
+	public static final  boolean TRACE_NOCAPACITY                =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.nocapacity", "false"));
+	/**
+	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
+	 * subscribers
+	 */
+	public static final  int     XS_BUFFER_SIZE                  = 32;
+	/**
+	 * A small default of available slots in a given container, compromise between intensive pipelines, small
+	 * subscribers numbers and memory use.
+	 */
+	public static final  int     SMALL_BUFFER_SIZE               = 256;
+	/**
+	 * A larger default of available slots in a given container, e.g. mutualized processors, intensive pipelines or
+	 * larger subscribers number
+	 */
+	public static final  int     MEDIUM_BUFFER_SIZE              = 8192;
+	/**
+	 * The size, in bytes, of a small buffer. Can be configured using the {@code reactor.io.defaultBufferSize} system
+	 * property. Default to 16384 bytes.
+	 */
+	public static final  int     SMALL_IO_BUFFER_SIZE            =
+			Integer.parseInt(System.getProperty("reactor.io.defaultBufferSize", "" + 1024 * 16));
+	/**
+	 * The maximum allowed buffer size in bytes. Can be configured using the {@code reactor.io.maxBufferSize} system
+	 * property. Defaults to 16384000 bytes.
+	 */
+	public static final  int     MAX_IO_BUFFER_SIZE              =
+			Integer.parseInt(System.getProperty("reactor.io.maxBufferSize", "" + 1024 * 1000 * 16));
+	/**
+	 *
+	 */
+	public static final  long    DEFAULT_TIMEOUT                 =
+			Long.parseLong(System.getProperty("reactor.await.defaultTimeout", "30000"));
+	/**
+	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
+	 */
+	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
+			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
+	private static final boolean HAS_UNSAFE                      = hasUnsafe0();
 
 	@SuppressWarnings("unchecked")
 	public static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(

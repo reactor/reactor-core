@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.fn.Consumer;
@@ -71,11 +73,10 @@ final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxPeekSubscriber<>(s, this));
+		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
-	static final class FluxPeekSubscriber<T> implements Subscriber<T>, Subscription,
-															 Upstream, Downstream {
+	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Subscribable, Publishable {
 
 		final Subscriber<? super T> actual;
 
@@ -83,7 +84,7 @@ final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
 
 		Subscription s;
 
-		public FluxPeekSubscriber(Subscriber<? super T> actual, FluxPeek<T> parent) {
+		public PeekSubscriber(Subscriber<? super T> actual, FluxPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}

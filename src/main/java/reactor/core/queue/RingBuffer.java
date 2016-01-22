@@ -25,6 +25,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -38,7 +39,7 @@ import reactor.fn.Supplier;
  * and ringbuffer consumers.
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-public abstract class RingBuffer<E> implements LongSupplier {
+public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	public static final WaitStrategy.BusySpin NO_WAIT = new WaitStrategy.BusySpin();
 
@@ -344,11 +345,6 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	/**
-	 * The size of the buffer.
-	 */
-	abstract public int getBufferSize();
-
-	/**
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@link
 	 * Sequencer} that is being used.
 	 * @see MultiProducerSequencer
@@ -429,12 +425,6 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	abstract public long next(int n);
 
 	/**
-	 * Get the pending capacity for this ringBuffer.
-	 * @return The number of slots taken.
-	 */
-	abstract public long pending();
-
-	/**
 	 * Publish the specified sequence.  This action marks this particular message as being available to be read.
 	 * @param sequence the sequence to publish.
 	 */
@@ -471,7 +461,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 
 	@Override
 	public String toString() {
-		return "RingBuffer{pending:" + pending() + ", size:" + getBufferSize() + ", cursor:" + get() + ", " +
+		return "RingBuffer{pending:" + getPending() + ", size:" + getCapacity() + ", cursor:" + get() + ", " +
 				"min:" + getMinimumGatingSequence() + ", subscribers:" + getSequencer().gatingSequences.length + "}";
 	}
 
@@ -558,7 +548,7 @@ class WriteQueue<T> implements Queue<T> {
 
 	@Override
 	public boolean isEmpty() {
-		return buffer.pending() == 0L;
+		return buffer.getPending() == 0L;
 	}
 
 	@Override
@@ -612,7 +602,7 @@ class WriteQueue<T> implements Queue<T> {
 
 	@Override
 	public int size() {
-		return (int) buffer.pending();
+		return (int) buffer.getPending();
 	}
 
 	@Override
@@ -724,7 +714,7 @@ final class SPSCQueue<T> extends WriteQueue<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public T[] toArray() {
-		return toArray((T[]) new Object[buffer.getBufferSize()]);
+		return toArray((T[]) new Object[(int) buffer.getCapacity()]);
 	}
 
 	@Override

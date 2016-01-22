@@ -19,9 +19,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
@@ -67,8 +68,8 @@ public abstract class Sequencer
      * @return
      */
     public static Sequence wrap(long init, Object delegate){
-        if(ReactiveState.TRACEABLE_RING_BUFFER_PROCESSOR) {
-            return wrap(newSequence(init), delegate);
+	    if (PlatformDependent.TRACEABLE_RING_BUFFER_PROCESSOR) {
+		    return wrap(newSequence(init), delegate);
         }
         else{
             return newSequence(init);
@@ -318,7 +319,7 @@ public abstract class Sequencer
      * Get the pending capacity for this sequencer.
      * @return The number of slots pending consuming.
      */
-    public abstract long pending();
+    public abstract long getPending();
 
     /**
      * Claim the next event in sequence for publishing.
@@ -402,7 +403,7 @@ public abstract class Sequencer
      */
 }
 
-final class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.Downstream {
+final class Wrapped<E> implements Sequence, Introspectable, Publishable {
 	public final E        delegate;
 	public final Sequence sequence;
 
@@ -460,6 +461,16 @@ final class Wrapped<E> implements Sequence, ReactiveState.Trace, ReactiveState.D
 	@Override
 	public int hashCode() {
 		return sequence.hashCode();
+	}
+
+	@Override
+	public int getMode() {
+		return TRACE_ONLY | INNER;
+	}
+
+	@Override
+	public String getName() {
+		return Wrapped.class.getSimpleName();
 	}
 }
 
@@ -594,7 +605,7 @@ final class RequestTask implements Runnable {
 
 	@Override
 	public void run() {
-		final long bufferSize = ringBuffer.getBufferSize();
+		final long bufferSize = ringBuffer.getCapacity();
 		final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
 		long cursor = -1;
 		try {

@@ -18,17 +18,17 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ConsumerSubscriber<T> extends BaseSubscriber<T>
-		implements ReactiveState.Upstream, ReactiveState.ActiveUpstream, ReactiveState.Bounded {
+public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Completable, Backpressurable {
 
 	private final Consumer<? super T>         consumer;
 	private final Consumer<? super Throwable> errorConsumer;
@@ -184,6 +184,11 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T>
 			subscription = null;
 			s.cancel();
 		}
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
 	}
 
 	@Override

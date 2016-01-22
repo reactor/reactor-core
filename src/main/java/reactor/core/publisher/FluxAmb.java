@@ -24,9 +24,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.PublishableMany;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -39,11 +41,7 @@ import reactor.core.util.ReactiveState;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxAmb<T>
-		extends Flux<T>
-implements
-											  ReactiveState.Factory,
-											  ReactiveState.LinkedUpstreams{
+final class FluxAmb<T> extends Flux<T> implements PublishableMany {
 
 	final Publisher<? extends T>[] array;
 
@@ -151,34 +149,33 @@ implements
 			return;
 		}
 
-		FluxAmbCoordinator<T> coordinator = new FluxAmbCoordinator<>(n);
+		AmbCoordinator<T> coordinator = new AmbCoordinator<>(n);
 
 		coordinator.subscribe(a, n, s);
 	}
 
-	static final class FluxAmbCoordinator<T>
-	  implements Subscription, LinkedUpstreams, ActiveDownstream {
+	static final class AmbCoordinator<T> implements Subscription, PublishableMany, Cancellable {
 
-		final FluxAmbSubscriber<T>[] subscribers;
+		final AmbSubscriber<T>[] subscribers;
 
 		volatile boolean cancelled;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<FluxAmbCoordinator> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(FluxAmbCoordinator.class, "wip");
+		static final AtomicIntegerFieldUpdater<AmbCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(AmbCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		public FluxAmbCoordinator(int n) {
-			subscribers = new FluxAmbSubscriber[n];
+		public AmbCoordinator(int n) {
+			subscribers = new AmbSubscriber[n];
 			wip = Integer.MIN_VALUE;
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n, Subscriber<? super T> actual) {
-			FluxAmbSubscriber<T>[] a = subscribers;
+			AmbSubscriber<T>[] a = subscribers;
 
 			for (int i = 0; i < n; i++) {
-				a[i] = new FluxAmbSubscriber<>(actual, this, i);
+				a[i] = new AmbSubscriber<>(actual, this, i);
 			}
 
 			actual.onSubscribe(this);
@@ -209,7 +206,7 @@ implements
 				if (w >= 0) {
 					subscribers[w].request(n);
 				} else {
-					for (FluxAmbSubscriber<T> s : subscribers) {
+					for (AmbSubscriber<T> s : subscribers) {
 						s.request(n);
 					}
 				}
@@ -227,7 +224,7 @@ implements
 			if (w >= 0) {
 				subscribers[w].cancel();
 			} else {
-				for (FluxAmbSubscriber<T> s : subscribers) {
+				for (AmbSubscriber<T> s : subscribers) {
 					s.cancel();
 				}
 			}
@@ -237,7 +234,7 @@ implements
 			if (wip == Integer.MIN_VALUE) {
 				if (WIP.compareAndSet(this, Integer.MIN_VALUE, index)) {
 
-					FluxAmbSubscriber<T>[] a = subscribers;
+					AmbSubscriber<T>[] a = subscribers;
 					int n = a.length;
 
 					for (int i = 0; i < n; i++) {
@@ -268,15 +265,15 @@ implements
 		}
 	}
 
-	static final class FluxAmbSubscriber<T> extends SubscriberDeferredSubscription<T, T>
-	implements Inner {
-		final FluxAmbCoordinator<T> parent;
+	static final class AmbSubscriber<T> extends SubscriberDeferredSubscription<T, T> implements Introspectable {
+
+		final AmbCoordinator<T> parent;
 
 		final int index;
 
 		boolean won;
 
-		public FluxAmbSubscriber(Subscriber<? super T> actual, FluxAmbCoordinator<T> parent, int index) {
+		public AmbSubscriber(Subscriber<? super T> actual, AmbCoordinator<T> parent, int index) {
 			super(actual);
 			this.parent = parent;
 			this.index = index;
@@ -310,6 +307,16 @@ implements
 				won = true;
 				subscriber.onComplete();
 			}
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return getClass().getSimpleName();
 		}
 	}
 }

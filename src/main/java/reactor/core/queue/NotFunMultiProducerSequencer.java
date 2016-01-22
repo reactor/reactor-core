@@ -186,13 +186,13 @@ final class NotFunMultiProducerSequencer extends Sequencer
     @Override
     public long remainingCapacity()
     {
-        return getBufferSize() - pending();
+        return getBufferSize() - getPending();
     }
     /**
-     * @see Sequencer#pending()
+     * @see Sequencer#getPending()
      */
     @Override
-    public long pending()
+    public long getPending()
     {
         long consumed = Sequencer.getMinimumSequence(gatingSequences, cursor.get());
         long produced = cursor.get();

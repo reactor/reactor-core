@@ -17,8 +17,8 @@ package reactor.core.timer;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.trait.Introspectable;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.WaitStrategy;
 
 /**
@@ -27,7 +27,7 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  * @since 2.5
  */
-class GlobalTimer extends HashWheelTimer implements ReactiveState.Trace {
+class GlobalTimer extends HashWheelTimer implements Introspectable {
 
 	private static final class GlobalContext{
 		volatile GlobalTimer timer;
@@ -97,6 +97,16 @@ class GlobalTimer extends HashWheelTimer implements ReactiveState.Trace {
 		while ((timer = GLOBAL_TIMER.getAndSet(context, null)) != null) {
 			timer._cancel();
 		}
+	}
+
+	@Override
+	public int getMode() {
+		return TRACE_ONLY;
+	}
+
+	@Override
+	public String getName() {
+		return GlobalTimer.class.getSimpleName();
 	}
 
 	/**

@@ -19,14 +19,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.timer.Timer;
+import reactor.core.trait.Timeable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 
 /**
  * @author Stephane Maldini
  */
-final class MonoTimer extends Mono<Long> implements ReactiveState.Timed {
+final class MonoTimer extends Mono<Long> implements Timeable {
 
 	final Timer    parent;
 	final TimeUnit unit;

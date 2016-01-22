@@ -146,14 +146,14 @@ public enum Exceptions {
 	 * Throw a {@link CancelException}
 	 */
 	public static void failWithCancel() {
-		throw ReactiveState.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+		throw PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**
 	 * Throw a {@link InsufficientCapacityException}
 	 */
 	public static void failWithOverflow() {
-		throw ReactiveState.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+		throw PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
 
@@ -322,12 +322,12 @@ public enum Exceptions {
 		}
 
 		public static TimerOverflow get() {
-			return ReactiveState.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
+			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
 		}
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
+			return PlatformDependent.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
 		}
 	}
 
@@ -463,7 +463,7 @@ public enum Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_CANCEL ? super.fillInStackTrace() : this;
+			return PlatformDependent.TRACE_CANCEL ? super.fillInStackTrace() : this;
 		}
 
 	}
@@ -483,7 +483,7 @@ public enum Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return ReactiveState.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
+			return PlatformDependent.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
 		}
 
 	}

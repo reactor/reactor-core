@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.util;
 
 import java.util.Objects;
@@ -21,13 +20,15 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Requestable;
 
 /**
- * Base class for Subscribers that will receive their Subscriptions at any time yet they need to be cancelled or
- * requested at any time.
+ * Base class for Subscribers that will receive their Subscriptions at any time yet
+ * they need to be cancelled or requested at any time.
  */
-public class DeferredSubscription implements Subscription, ReactiveState.ActiveUpstream, ReactiveState.ActiveDownstream,
-                                             ReactiveState.DownstreamDemand, ReactiveState.Upstream {
+public class DeferredSubscription implements Subscription, Cancellable, Requestable, Completable {
 
 	volatile Subscription s;
 	static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
@@ -45,7 +46,6 @@ public class DeferredSubscription implements Subscription, ReactiveState.ActiveU
 	 * Atomically sets the single subscription and requests the missed amount from it.
 	 *
 	 * @param s
-	 *
 	 * @return false if this arbiter is cancelled or there was a subscription already set
 	 */
 	public final boolean set(Subscription s) {

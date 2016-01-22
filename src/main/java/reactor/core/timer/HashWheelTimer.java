@@ -32,6 +32,11 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.queue.RingBuffer;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Pausable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Requestable;
+import reactor.core.trait.Timeable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
@@ -246,21 +251,21 @@ class HashWheelTimer extends Timer {
 		}
 
 		long offset = recurringTimeout / resolution;
-		long rounds = offset / wheel.getBufferSize();
+		long rounds = offset / wheel.getCapacity();
 
 		long firstFireOffset = firstDelay / resolution;
-		long firstFireRounds = firstFireOffset / wheel.getBufferSize();
+		long firstFireRounds = firstFireOffset / wheel.getCapacity();
 
 		HashWheelSubscription r;
 		if (recurringTimeout != 0) {
-			r = new IntervalSubscription(resolution * wheel.getBufferSize(),
+			r = new IntervalSubscription(resolution * wheel.getCapacity(),
 					firstFireRounds,
 					offset,
 					subscriber,
 					rounds);
 		}
 		else{
-			r = new TimerSubscription(resolution * wheel.getBufferSize(), firstFireRounds, offset, subscriber);
+			r = new TimerSubscription(resolution * wheel.getCapacity(), firstFireRounds, offset, subscriber);
 		}
 
 		wheel.get(wheel.getCursor() + firstFireOffset + (recurringTimeout != 0 ? 1 : 0))
@@ -308,11 +313,11 @@ class HashWheelTimer extends Timer {
 
 	@Override
 	public String toString() {
-		return String.format("HashWheelTimer { Buffer Size: %d, Resolution: %d }", wheel.getBufferSize(), resolution);
+		return String.format("HashWheelTimer { Buffer Size: %d, Resolution: %d }", wheel.getCapacity(), resolution);
 	}
 
 	static abstract class HashWheelSubscription
-			implements Runnable, Comparable, Pausable, Subscription, ActiveDownstream, Downstream, Timed {
+			implements Runnable, Comparable, Pausable, Subscription, Cancellable, Publishable, Timeable {
 
 		volatile long rounds;
 		volatile int  status;
@@ -427,7 +432,7 @@ class HashWheelTimer extends Timer {
 		}
 	}
 
-	static final class IntervalSubscription extends HashWheelSubscription implements DownstreamDemand {
+	static final class IntervalSubscription extends HashWheelSubscription implements Requestable {
 
 		final long rescheduleRounds;
 

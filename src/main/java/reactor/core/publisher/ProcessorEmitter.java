@@ -27,11 +27,20 @@ import org.reactivestreams.Subscription;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Prefetchable;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
+import reactor.core.trait.SubscribableMany;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveState;
 import reactor.core.util.Sequence;
 
 /**
@@ -39,13 +48,7 @@ import reactor.core.util.Sequence;
  * @since 2.5
  */
 public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
-		implements ReactiveState.LinkedDownstreams,
-		           ReactiveState.ActiveUpstream,
-		           ReactiveState.ActiveDownstream,
-		           ReactiveState.UpstreamDemand,
-		           ReactiveState.UpstreamPrefetch,
-		           ReactiveState.Buffering,
-		           ReactiveState.FailState{
+		implements SubscribableMany, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
 
 	final int maxConcurrency;
 	final int bufferSize;
@@ -88,7 +91,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	boolean firstDrain = true;
 
 	public ProcessorEmitter(){
-		this(true, Integer.MAX_VALUE, SMALL_BUFFER_SIZE, -1);
+		this(true, Integer.MAX_VALUE, PlatformDependent.SMALL_BUFFER_SIZE, -1);
 	}
 
 	public ProcessorEmitter(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
@@ -124,8 +127,8 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public long pending() {
-		return (emitBuffer == null ? -1L : emitBuffer.pending());
+	public long getPending() {
+		return (emitBuffer == null ? -1L : emitBuffer.getPending());
 	}
 
 	@Override
@@ -266,7 +269,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 
 	@Override
 	public boolean isTerminated() {
-		return done && (emitBuffer == null || emitBuffer.pending() == 0L);
+		return done && (emitBuffer == null || emitBuffer.getPending() == 0L);
 	}
 
 	@Override
@@ -390,7 +393,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 				}
 				else {
 					if (q != null) {
-						requestMore((int) q.pending());
+						requestMore((int) q.getPending());
 					}
 					else {
 						requestMore(0);
@@ -540,8 +543,8 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	static final class EmitterSubscriber<T>
-			implements Subscription, Inner, ActiveUpstream, ActiveDownstream, Buffering, Bounded, Upstream,
-			           DownstreamDemand, Downstream {
+			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Subscribable,
+			           Requestable, Publishable {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final ProcessorEmitter<T>   parent;
@@ -607,7 +610,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 					if (parent.replay > 0) {
 						long cursor = ringBuffer.getCursor();
 						startTracking(Math.max(0L,
-								cursor - Math.min(parent.replay, cursor % ringBuffer.getBufferSize())));
+								cursor - Math.min(parent.replay, cursor % ringBuffer.getCapacity())));
 					}
 					else {
 						startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence()));
@@ -624,7 +627,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public long pending() {
+		public long getPending() {
 			return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor
 					.get();
 		}
@@ -642,6 +645,16 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		@Override
 		public Object upstream() {
 			return parent;
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return EmitterSubscriber.class.getSimpleName();
 		}
 
 		@Override

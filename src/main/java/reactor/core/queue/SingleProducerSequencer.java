@@ -171,14 +171,14 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     @Override
     public long remainingCapacity()
     {
-        return getBufferSize() - pending();
+        return getBufferSize() - getPending();
     }
 
     /**
-     * @see Sequencer#pending()
+     * @see Sequencer#getPending()
      */
     @Override
-    public long pending()
+    public long getPending()
     {
         long nextValue = this.nextValue;
 

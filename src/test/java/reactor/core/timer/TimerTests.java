@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.util.ReactiveState;
+import reactor.core.trait.Pausable;
 import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 
@@ -45,7 +45,7 @@ public class TimerTests {
 
 		AtomicLong sysTime = new AtomicLong();
 
-		ReactiveState.Pausable pausable = timer.schedule((time) -> {
+		Pausable pausable = timer.schedule((time) -> {
 			if (phaser.getPhase() == 0) {
 				phaser.arrive();
 				sysTime.set(System.nanoTime());

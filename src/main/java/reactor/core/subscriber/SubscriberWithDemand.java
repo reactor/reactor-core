@@ -21,15 +21,15 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Requestable;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.ReactiveState;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-public class SubscriberWithDemand<I, O> extends SubscriberBarrier<I, O>
-		implements ReactiveState.DownstreamDemand, ReactiveState.FailState {
+public class SubscriberWithDemand<I, O> extends SubscriberBarrier<I, O> implements Requestable, Failurable {
 
 	protected final static int NOT_TERMINATED = 0;
 	protected final static int TERMINATED_WITH_SUCCESS = 1;

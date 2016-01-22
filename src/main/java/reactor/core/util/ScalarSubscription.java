@@ -20,8 +20,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 
-public final class ScalarSubscription<T> implements Subscription, ReactiveState.Downstream, ReactiveState.Upstream {
+public final class ScalarSubscription<T> implements Subscription, Publishable, Subscribable {
 
 	final Subscriber<? super T> actual;
 

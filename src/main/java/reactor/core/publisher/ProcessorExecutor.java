@@ -21,10 +21,13 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Cancellable;
+import reactor.core.trait.Completable;
+import reactor.core.trait.Failurable;
+import reactor.core.trait.Groupable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
-import reactor.core.util.ReactiveState;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -32,8 +35,7 @@ import reactor.core.util.ReactiveState;
  * @author Stephane Maldini
  */
 public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements ReactiveState.ActiveUpstream, ReactiveState.ActiveDownstream, ReactiveState.Named, ReactiveState
-		.Identified, ReactiveState.FailState{
+		implements Completable, Cancellable, Failurable, Groupable {
 
 	protected final ExecutorService executor;
 
@@ -70,8 +72,13 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public String getId() {
-		return contextClassLoader.hashCode()+"";
+	public int getMode() {
+		return UNIQUE;
+	}
+
+	@Override
+	public Object key() {
+		return contextClassLoader.hashCode();
 	}
 
 	@Override

@@ -19,8 +19,8 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Publishable;
 import reactor.core.util.DeferredSubscription;
-import reactor.core.util.ReactiveState;
 
 /**
  * Arbitrates the requests and cancellation for a Subscription that may be set onSubscribe once only.
@@ -31,7 +31,7 @@ import reactor.core.util.ReactiveState;
  * @param <O> the output value type
  */
 public class SubscriberDeferredSubscription<I, O> extends DeferredSubscription
-		implements Subscription, Subscriber<I>, ReactiveState.Downstream {
+		implements Subscription, Subscriber<I>, Publishable {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -49,7 +49,6 @@ public class SubscriberDeferredSubscription<I, O> extends DeferredSubscription
 	 *
 	 * @param subscriber the actual subscriber
 	 * @param initialRequest
-	 *
 	 * @throws IllegalArgumentException if initialRequest is negative
 	 */
 	public SubscriberDeferredSubscription(Subscriber<? super O> subscriber, long initialRequest) {

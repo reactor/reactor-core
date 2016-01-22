@@ -28,10 +28,14 @@ import org.reactivestreams.Subscription;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.timer.Timers;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveState;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
@@ -66,7 +70,7 @@ import reactor.fn.tuple.Tuple6;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
+public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -156,11 +160,12 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
 	 *
 	 * @param source the {@link Publisher to ignore}
+	 * @param <T> the reified {@link Publisher} type
 	 *
 	 * @return a new completable {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Mono<Void> empty(Publisher<?> source) {
+	public static <T> Mono<Void> empty(Publisher<T> source) {
 		return (Mono<Void>)new MonoIgnoreElements<>(source);
 	}
 
@@ -560,7 +565,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, ReactiveState.SMALL_BUFFER_SIZE, Integer.MAX_VALUE);
+		return new FluxFlatMap<>(this, mapper, PlatformDependent.SMALL_BUFFER_SIZE, Integer.MAX_VALUE);
 	}
 
 	/**
@@ -582,8 +587,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.IDENTITY_FUNCTION,
-				ReactiveState.SMALL_BUFFER_SIZE, 32);
+				Flux.IDENTITY_FUNCTION, PlatformDependent.SMALL_BUFFER_SIZE, 32);
 	}
 
 	/**
@@ -598,18 +602,18 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@link #DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@see PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * @return T the result
 	 */
 	public T get() {
-		return get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+		return get(PlatformDependent.DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@link #DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@see PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -623,6 +627,27 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		MonoResult<T> result = new MonoResult<>();
 		subscribe(result);
 		return result.await(timeout, unit);
+	}
+
+	@Override
+	public final long getCapacity() {
+		return 1L;
+	}
+
+	@Override
+	public int getMode() {
+		return FACTORY;
+	}
+
+	@Override
+	public String getName() {
+		return getClass().getSimpleName()
+		                 .replace(Mono.class.getSimpleName(), "");
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
 	}
 
 	/**
@@ -958,11 +983,6 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		return then(new WhereFunction<>(tester));
 	}
 
-	@Override
-	public final long getCapacity() {
-		return 1L;
-	}
-
 //	 ==============================================================================================================
 //	 Containers
 //	 ==============================================================================================================
@@ -973,17 +993,12 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static class MonoBarrier<I, O> extends Mono<O> implements Factory, Named, Upstream {
+	public static class MonoBarrier<I, O> extends Mono<O> implements Subscribable {
 
 		protected final Publisher<? extends I> source;
 
 		public MonoBarrier(Publisher<? extends I> source) {
 			this.source = source;
-		}
-
-		@Override
-		public String getName() {
-			return getClass().getSimpleName().replaceAll("Mono|Stream|Operator", "");
 		}
 
 		/**
@@ -1018,7 +1033,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		}
 	}
 
-	static final class MonoProcessorGroup<I> extends MonoBarrier<I, I> implements FeedbackLoop {
+	static final class MonoProcessorGroup<I> extends MonoBarrier<I, I> implements Connectable {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;
@@ -1042,12 +1057,12 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		}
 
 		@Override
-		public Object delegateInput() {
+		public Object connectedInput() {
 			return processor;
 		}
 
 		@Override
-		public Object delegateOutput() {
+		public Object connectedOutput() {
 			return processor;
 		}
 	}

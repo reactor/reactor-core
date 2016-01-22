@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberBarrier;
+import reactor.core.trait.Introspectable;
 import reactor.core.util.Logger;
 
 /**
@@ -65,7 +66,7 @@ final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 		source.subscribe(new LoggerBarrier<>(this, newId, subscriber));
 	}
 
-	private final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN> implements Named, Logging {
+	private final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN> implements Introspectable {
 
 		private final int    options;
 		private final Logger log;
@@ -164,6 +165,11 @@ final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 				log(Logger.SignalKind.cancel, "", this);
 			}
 			super.doCancel();
+		}
+
+		@Override
+		public int getMode() {
+			return 0;
 		}
 
 		@Override

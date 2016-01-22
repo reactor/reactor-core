@@ -20,10 +20,11 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.ReactiveSession;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 
 /**
  * A base processor with an async boundary trait to manage active subscribers (Threads), upstream subscription and
@@ -32,7 +33,7 @@ import reactor.core.util.ReactiveState;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, ReactiveState.Bounded, ReactiveState.Upstream {
+		implements Processor<IN, OUT>, Backpressurable, Subscribable {
 
 	//protected static final int DEFAULT_BUFFER_SIZE = 1024;
 
@@ -126,4 +127,13 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return upstreamSubscription;
 	}
 
+	@Override
+	public long getPending() {
+		return -1L;
+	}
+
+	@Override
+	public int getMode() {
+		return 0;
+	}
 }

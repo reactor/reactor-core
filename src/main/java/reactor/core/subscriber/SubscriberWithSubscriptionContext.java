@@ -18,10 +18,11 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscription;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveState;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
@@ -29,8 +30,7 @@ import reactor.fn.Function;
 /**
  * @author Stephane Maldini
  */
-final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T>
-		implements ReactiveState.Bounded, ReactiveState.Upstream {
+final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> implements Backpressurable, Subscribable {
 
 	protected final Function<? super Subscription, C>                 subscriptionHandler;
 	protected final BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer;
@@ -144,6 +144,11 @@ final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T>
 				onError(t);
 			}
 		}
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
 	}
 
 	@Override

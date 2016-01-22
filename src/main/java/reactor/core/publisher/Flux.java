@@ -31,9 +31,13 @@ import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.timer.Timers;
+import reactor.core.trait.Backpressurable;
+import reactor.core.trait.Connectable;
+import reactor.core.trait.Introspectable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveState;
+import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.BiConsumer;
 import reactor.fn.BiFunction;
@@ -68,7 +72,7 @@ import reactor.fn.tuple.Tuple8;
  * @see Mono
  * @since 2.5
  */
-public abstract class Flux<T> implements Publisher<T> {
+public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -499,7 +503,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
-		return new FluxFlatMap<>(source, ReactiveState.SMALL_BUFFER_SIZE, 32);
+		return new FluxFlatMap<>(source, PlatformDependent.SMALL_BUFFER_SIZE, 32);
 	}
 
 	/**
@@ -582,8 +586,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
 
 		return new FluxZip<>(new Publisher[]{source1, source2},
-				(Function<Tuple2<T1, T2>, Tuple2<T1, T2>>) IDENTITY_FUNCTION,
-				ReactiveState.XS_BUFFER_SIZE);
+				(Function<Tuple2<T1, T2>, Tuple2<T1, T2>>) IDENTITY_FUNCTION, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -605,7 +608,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			public O apply(Tuple2<T1, T2> tuple) {
 				return combinator.apply(tuple.getT1(), tuple.getT2());
 			}
-		}, ReactiveState.XS_BUFFER_SIZE);
+		}, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -627,7 +630,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
 			Function<Tuple3<T1, T2, T3>, ? extends V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3}, combinator, ReactiveState.XS_BUFFER_SIZE);
+		return new FluxZip<>(new Publisher[]{source1, source2, source3}, combinator, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -669,7 +672,9 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4,
 			Function<Tuple4<T1, T2, T3, T4>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4}, combinator, ReactiveState.XS_BUFFER_SIZE);
+		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4},
+				combinator,
+				PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -716,7 +721,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5,
 			Function<Tuple5<T1, T2, T3, T4, T5>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5}, combinator, ReactiveState
+		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5}, combinator, PlatformDependent
 				.XS_BUFFER_SIZE);
 	}
 
@@ -771,7 +776,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T6> source6,
 			Function<Tuple6<T1, T2, T3, T4, T5, T6>, V> combinator) {
 		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6}, combinator,
-				ReactiveState
+				PlatformDependent
 				.XS_BUFFER_SIZE);
 	}
 
@@ -831,7 +836,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T7> source7,
 			Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, V> combinator) {
 		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6, source7}, combinator,
-				ReactiveState
+				PlatformDependent
 						.XS_BUFFER_SIZE);
 	}
 
@@ -869,8 +874,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T8> source8,
 			Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, V> combinator) {
 		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6, source7, source8},
-				combinator,
-				ReactiveState
+				combinator, PlatformDependent
 						.XS_BUFFER_SIZE);
 	}
 
@@ -898,7 +902,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, ReactiveState.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -917,7 +921,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, ReactiveState.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 //	 ==============================================================================================================
@@ -1124,7 +1128,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, ReactiveState.SMALL_BUFFER_SIZE, 32);
+		return new FluxFlatMap<>(this, mapper, PlatformDependent.SMALL_BUFFER_SIZE, 32);
 	}
 
 	/**
@@ -1144,8 +1148,18 @@ public abstract class Flux<T> implements Publisher<T> {
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				IDENTITY_FUNCTION,
-				ReactiveState.SMALL_BUFFER_SIZE, 32);
+				IDENTITY_FUNCTION, PlatformDependent.SMALL_BUFFER_SIZE, 32);
+	}
+
+	@Override
+	public String getName() {
+		return getClass().getName()
+		                 .replace(Flux.class.getSimpleName(), "");
+	}
+
+	@Override
+	public int getMode() {
+		return FACTORY;
 	}
 
 	/**
@@ -1297,9 +1311,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(
-				this instanceof ReactiveState.Bounded ?
-				((ReactiveState.Bounded)this).getCapacity() : Long.MAX_VALUE
+		return toIterable(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
 		);
 	}
 
@@ -1388,7 +1400,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
-		return new FluxZip<>(new Publisher[]{this, source2}, IDENTITY_FUNCTION, ReactiveState.XS_BUFFER_SIZE);
+		return new FluxZip<>(new Publisher[]{this, source2}, IDENTITY_FUNCTION, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -1410,7 +1422,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			public V apply(Tuple2<T, R> tuple) {
 				return zipper.apply(tuple.getT1(), tuple.getT2());
 			}
-		}, ReactiveState.XS_BUFFER_SIZE);
+		}, PlatformDependent.XS_BUFFER_SIZE);
 
 	}
 
@@ -1424,8 +1436,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I>
 	 * @param <O>
 	 */
-	public interface Operator<I, O>
-			extends Function<Subscriber<? super O>, Subscriber<? super I>>, ReactiveState.Factory {
+	public interface Operator<I, O> extends Function<Subscriber<? super O>, Subscriber<? super I>> {
 
 	}
 
@@ -1435,8 +1446,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static class FluxBarrier<I, O> extends Flux<O>
-			implements ReactiveState.Factory, ReactiveState.Bounded, ReactiveState.Named, ReactiveState.Upstream {
+	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Subscribable {
 
 		protected final Publisher<? extends I> source;
 
@@ -1446,13 +1456,14 @@ public abstract class Flux<T> implements Publisher<T> {
 
 		@Override
 		public long getCapacity() {
-			return Bounded.class.isAssignableFrom(source.getClass()) ? ((Bounded) source).getCapacity() :
+			return Backpressurable.class.isAssignableFrom(source.getClass()) ?
+					((Backpressurable) source).getCapacity() :
 					Long.MAX_VALUE;
 		}
 
 		@Override
-		public String getName() {
-			return getClass().getSimpleName().replaceAll("Flux|Operator", "");
+		public long getPending() {
+			return -1L;
 		}
 
 		/**
@@ -1509,7 +1520,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 	}
 
-	static final class FluxProcessorGroup<I> extends FluxBarrier<I, I> implements ReactiveState.FeedbackLoop{
+	static final class FluxProcessorGroup<I> extends FluxBarrier<I, I> implements Connectable {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;
@@ -1533,12 +1544,12 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 
 		@Override
-		public Object delegateInput() {
+		public Object connectedInput() {
 			return processor;
 		}
 
 		@Override
-		public Object delegateOutput() {
+		public Object connectedOutput() {
 			return processor;
 		}
 	}
