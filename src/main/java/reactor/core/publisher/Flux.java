@@ -122,6 +122,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
@@ -137,6 +139,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * returns false. A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned Publisher.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
@@ -150,6 +154,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Concat all sources pulled from the given {@link Publisher[]}.
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned Publisher.
+	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
@@ -172,6 +178,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
+	 *
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param <T> The type of the data sequence
 	 *
@@ -186,6 +194,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 * The argument {@code contextFactory} is executed once by new subscriber to generate a context shared by every
 	 * request calls.
+	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
 	 *
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param contextFactory A {@link Function} called for every new subscriber returning an immutable context (IO
@@ -207,6 +217,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * request calls. The argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel,
 	 * onComplete, onError).
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
+	 *
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param contextFactory A {@link Function} called once for every new subscriber returning an immutable context (IO
 	 * connection...)
@@ -227,6 +239,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that completes without emitting any item.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
+	 *
 	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
 	 * @return an empty {@link Flux}
@@ -239,6 +253,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that completes with the specified error.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
+	 *
 	 * @param error the error to signal to each {@link Subscriber}
 	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
@@ -250,6 +266,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Flux} API.
+	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
 	 *
 	 * @param source
 	 * @param mapper
@@ -269,6 +287,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Flux} API.
+	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
 	 *
 	 * @param source
 	 * @param <T>
@@ -293,6 +313,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromarray.png" alt="">
+	 *
 	 * @param array the {@link T[]} array to read data from
 	 * @param <T> the {@link Publisher} type to stream
 	 *
@@ -311,6 +333,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 * A new iterator will be created for each subscriber.
+	 *
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromiterable.png" alt="">
 	 *
 	 * @param it the {@link Iterable} to read data from
 	 * @param <T> the {@link Iterable} type to stream

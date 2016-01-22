@@ -73,18 +73,6 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 //	 ==============================================================================================================
 
 	/**
-	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
-	 *
-	 * @param source the {@link Publisher to ignore}
-	 *
-	 * @return a new completable {@link Mono}.
-	 */
-	@SuppressWarnings("unchecked")
-	public static Mono<Void> after(Publisher<?> source) {
-		return (Mono<Void>)new MonoIgnoreElements<>(source);
-	}
-
-	/**
 	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
 	 *
 	 * @param monos The deferred monos to use.
@@ -385,6 +373,19 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		return new MonoBarrier<>(new FluxZip<>(new Mono[]{p1, p2, p3, p4, p5, p6}, Flux.IDENTITY_FUNCTION, 1));
 	}
 
+
+	/**
+	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
+	 *
+	 * @param source the {@link Publisher to ignore}
+	 *
+	 * @return a new completable {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static Mono<Void> whenever(Publisher<?> source) {
+		return (Mono<Void>)new MonoIgnoreElements<>(source);
+	}
+
 //	 ==============================================================================================================
 //	 Operators
 //	 ==============================================================================================================
@@ -424,7 +425,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
 	public final Mono<Void> after() {
-		return after(this);
+		return whenever(this);
 	}
 
 	/**
@@ -432,8 +433,13 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 	 *
 	 * @return
 	 */
-	public final <V> Mono<V> after(Supplier<? extends Mono<V>> sourceSupplier) {
-		return new MonoBarrier<>(after().flatMap(null, null, sourceSupplier));
+	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
+		return new MonoBarrier<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
+			@Override
+			public Publisher<? extends V> apply(Throwable throwable) {
+				return Flux.concat(sourceSupplier.get(), error(throwable));
+			}
+		}, sourceSupplier));
 	}
 
 	/**
