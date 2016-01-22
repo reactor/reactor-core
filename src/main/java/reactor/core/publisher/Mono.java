@@ -437,7 +437,7 @@ public abstract class Mono<T> implements Publisher<T>, ReactiveState.Bounded {
 		return new MonoBarrier<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
 			@Override
 			public Publisher<? extends V> apply(Throwable throwable) {
-				return Flux.concat(sourceSupplier.get(), error(throwable));
+				return Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable));
 			}
 		}, sourceSupplier));
 	}
