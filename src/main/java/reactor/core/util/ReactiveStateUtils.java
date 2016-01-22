@@ -333,11 +333,13 @@ public enum ReactiveStateUtils {
 
 		String name =
 				Introspectable.class.isAssignableFrom(o.getClass()) ? (((Introspectable) o).getName()) :
-						(o.getClass()
-						  .getSimpleName()
-						  .isEmpty() ?
+						null;
+
+		name = name == null ? (o.getClass()
+		                       .getSimpleName()
+		                       .isEmpty() ?
 				o.toString() : o.getClass()
-				                .getSimpleName());
+				                .getSimpleName()): name;
 
 		name = name.replaceAll("Mono|Flux|Stream|Subscriber","");
 
