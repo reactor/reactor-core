@@ -54,10 +54,4 @@ public interface Introspectable {
 	 */
 	String getName();
 
-	/**
-	 * A component that is meant to be introspectable on finest logging level
-	 */
-	interface Trace {
-
-	}
 }
