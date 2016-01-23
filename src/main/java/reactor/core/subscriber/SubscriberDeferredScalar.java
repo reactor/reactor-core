@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.trait.Cancellable;
 import reactor.core.trait.Completable;
 import reactor.core.trait.Connectable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.fn.Supplier;
 
@@ -35,7 +35,7 @@ import reactor.fn.Supplier;
  * @param <O> The downstream sequence type
  */
 public class SubscriberDeferredScalar<I, O>
-		implements Subscriber<I>, Completable, Subscription, Supplier<O>, Connectable, Cancellable, Publishable {
+		implements Subscriber<I>, Completable, Subscription, Supplier<O>, Connectable, Cancellable, Subscribable {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 	static final int SDS_NO_REQUEST_HAS_VALUE  = 1;

@@ -14,7 +14,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Backpressurable;
 import reactor.core.trait.Completable;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.fn.Supplier;
@@ -27,7 +27,7 @@ import reactor.fn.Supplier;
  *
  * @param <T> the value type
  */
-public final class BlockingIterable<T> implements Iterable<T>, Subscribable, Backpressurable {
+public final class BlockingIterable<T> implements Iterable<T>, Publishable, Backpressurable {
 
 	final Publisher<? extends T> source;
 

@@ -17,14 +17,14 @@
 package reactor.core.trait;
 
 /**
- * A component that will emit events to a downstream.
+ * A component that is linked to a source producer.
  */
 public interface Publishable {
 
 	/**
-	 * Return the direct data receiver.
+	 * Return the direct source of data, Supports reference.
 	 *
-	 * @return the direct data receiver
+	 * @return the direct source of data, Supports reference.
 	 */
-	Object downstream();
+	Object upstream();
 }

@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.trait.Publishable;
 import reactor.core.trait.Subscribable;
 
-public final class ScalarSubscription<T> implements Subscription, Publishable, Subscribable {
+public final class ScalarSubscription<T> implements Subscription, Subscribable, Publishable {
 
 	final Subscriber<? super T> actual;
 

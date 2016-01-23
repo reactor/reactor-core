@@ -537,8 +537,8 @@ final class FluxZip<TUPLE extends Tuple, V> extends Flux<V> implements Introspec
 	}
 
 	static final class BufferSubscriber<V> extends BaseSubscriber<Object>
-			implements Subscriber<Object>, Backpressurable, ZipState<Object>, Subscribable, Completable, Prefetchable,
-			           Publishable {
+			implements Subscriber<Object>, Backpressurable, ZipState<Object>, Publishable, Completable, Prefetchable,
+			           Subscribable {
 
 		final ZipSubscriber<?, V> parent;
 		final Queue<Object>       queue;

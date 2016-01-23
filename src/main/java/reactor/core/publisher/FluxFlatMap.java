@@ -35,8 +35,8 @@ import reactor.core.trait.Completable;
 import reactor.core.trait.Failurable;
 import reactor.core.trait.Introspectable;
 import reactor.core.trait.Prefetchable;
-import reactor.core.trait.Publishable;
 import reactor.core.trait.PublishableMany;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
@@ -633,7 +633,7 @@ final class FluxFlatMap<T, V> extends Flux.FluxBarrier<T, V> {
 	}
 
 	static final class BufferSubscriber<T, V> extends BaseSubscriber<V>
-			implements Publishable, Backpressurable, Cancellable, Completable, Prefetchable, Introspectable {
+			implements Subscribable, Backpressurable, Cancellable, Completable, Prefetchable, Introspectable {
 
 		final long                    id;
 		final FlatMapSubscriber<T, V> parent;

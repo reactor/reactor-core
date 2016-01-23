@@ -699,8 +699,8 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * parallel coordination of an event.
 	 */
 	private final static class QueueSubscriberLoop<T>
-			implements Runnable, Publishable, Backpressurable, Completable, Cancellable, Introspectable,
-			           Requestable, Subscription, Subscribable {
+			implements Runnable, Subscribable, Backpressurable, Completable, Cancellable, Introspectable,
+			           Requestable, Subscription, Publishable {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 

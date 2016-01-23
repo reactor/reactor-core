@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.DeferredSubscription;
 
 /**
@@ -31,7 +31,7 @@ import reactor.core.util.DeferredSubscription;
  * @param <O> the output value type
  */
 public class SubscriberDeferredSubscription<I, O> extends DeferredSubscription
-		implements Subscription, Subscriber<I>, Publishable {
+		implements Subscription, Subscriber<I>, Subscribable {
 
 	protected final Subscriber<? super O> subscriber;
 

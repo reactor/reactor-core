@@ -38,8 +38,8 @@ import reactor.core.trait.Connectable;
 import reactor.core.trait.Failurable;
 import reactor.core.trait.Introspectable;
 import reactor.core.trait.Prefetchable;
-import reactor.core.trait.Publishable;
 import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
 import reactor.core.trait.SubscribableMany;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
@@ -546,7 +546,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 
 	private static class ProcessorBarrier<V> extends FluxProcessor<V, V>
 			implements Consumer<Runnable>, BiConsumer<V, Consumer<? super V>>, Executor, Subscription, Backpressurable,
-			           Connectable, Publishable, Cancellable, Completable, Prefetchable, Requestable, Failurable,
+			           Connectable, Subscribable, Cancellable, Completable, Prefetchable, Requestable, Failurable,
 			           Runnable {
 
 		protected final ProcessorGroup service;

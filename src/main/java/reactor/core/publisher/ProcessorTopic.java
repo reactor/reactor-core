@@ -773,7 +773,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * parallel coordination of an event.
 	 */
 	private final static class TopicSubscriberLoop<T>
-			implements Runnable, Publishable, Backpressurable, Completable, Subscribable, Cancellable,
+			implements Runnable, Subscribable, Backpressurable, Completable, Publishable, Cancellable,
 			           Introspectable, Requestable, Subscription {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);

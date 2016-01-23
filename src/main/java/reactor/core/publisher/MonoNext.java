@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Backpressurable;
 import reactor.core.trait.Completable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
@@ -48,7 +48,7 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 	}
 
 	static final class NextSubscriber<T>
-			implements Subscriber<T>, Subscription, Completable, Backpressurable, Publishable {
+			implements Subscriber<T>, Subscription, Completable, Backpressurable, Subscribable {
 
 		final Subscriber<? super T> actual;
 

@@ -17,14 +17,14 @@
 package reactor.core.trait;
 
 /**
- * A component that is linked to a source producer.
+ * A component that will emit events to a downstream.
  */
 public interface Subscribable {
 
 	/**
-	 * Return the direct source of data, Supports reference.
+	 * Return the direct data receiver.
 	 *
-	 * @return the direct source of data, Supports reference.
+	 * @return the direct data receiver
 	 */
-	Object upstream();
+	Object downstream();
 }

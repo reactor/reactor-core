@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -41,7 +41,7 @@ final class MonoIgnoreElements<T> extends Mono.MonoBarrier<T, T> {
 		source.subscribe(new IgnoreElementsSubscriber<>(s));
 	}
 
-	static final class IgnoreElementsSubscriber<T> implements Subscriber<T>, Publishable {
+	static final class IgnoreElementsSubscriber<T> implements Subscriber<T>, Subscribable {
 
 		final Subscriber<? super T> actual;
 

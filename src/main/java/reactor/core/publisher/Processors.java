@@ -23,7 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Backpressurable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
@@ -669,7 +669,7 @@ public enum Processors {
 	};
 
 	final static class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-			implements Publishable, Backpressurable {
+			implements Subscribable, Backpressurable {
 
 		private final Publisher<OUT> downstream;
 		private final Subscriber<IN> upstream;

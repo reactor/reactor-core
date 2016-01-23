@@ -24,8 +24,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Cancellable;
 import reactor.core.trait.Completable;
-import reactor.core.trait.Publishable;
 import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -42,7 +42,7 @@ import reactor.core.util.BackpressureUtils;
  * @param <O> the output value type
  */
 public abstract class SubscriberMultiSubscription<I, O>
-		implements Subscription, Subscriber<I>, Publishable, Cancellable, Requestable, Completable {
+		implements Subscription, Subscriber<I>, Subscribable, Cancellable, Requestable, Completable {
 
 	protected final Subscriber<? super O> subscriber;
 

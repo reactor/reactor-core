@@ -76,7 +76,7 @@ final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
-	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Subscribable, Publishable {
+	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Publishable, Subscribable {
 
 		final Subscriber<? super T> actual;
 

@@ -162,7 +162,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasUpstream(Object o) {
-		return reactiveStateCheck(o, Subscribable.class) && ((Subscribable) o).upstream() != null;
+		return reactiveStateCheck(o, Publishable.class) && ((Publishable) o).upstream() != null;
 	}
 
 	/**
@@ -180,7 +180,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasDownstream(Object o) {
-		return reactiveStateCheck(o, Publishable.class) && ((Publishable) o).downstream() != null;
+		return reactiveStateCheck(o, Subscribable.class) && ((Subscribable) o).downstream() != null;
 	}
 
 	/**
@@ -550,7 +550,7 @@ public enum ReactiveStateUtils {
 				child = grandchild;
 			}
 			if (hasUpstream(target.object)) {
-				Object in = ((Subscribable) target.object).upstream();
+				Object in = ((Publishable) target.object).upstream();
 				if (!virtualRef(in, target)) {
 					Node upstream = expandReactiveSate(in, target.rootId);
 					if (child != null && (trace || !isTraceOnly(upstream.object))) {
@@ -603,7 +603,7 @@ public enum ReactiveStateUtils {
 				root = ancestor;
 			}
 			if (hasDownstream(origin.object)) {
-				Object out = ((Publishable) origin.object).downstream();
+				Object out = ((Subscribable) origin.object).downstream();
 				if (!virtualRef(out, origin)) {
 					Node downstream = expandReactiveSate(out, origin.rootId);
 					if (root != null && (trace || !isTraceOnly(downstream.object))) {

@@ -72,7 +72,7 @@ final class FluxMapSignal<T, R> extends Flux.FluxBarrier<T, R> {
         source.subscribe(new FluxMapSignalSubscriber<>(s, this));
     }
 
-    static final class FluxMapSignalSubscriber<T, R> implements Subscriber<T>, Subscribable, Publishable, Completable {
+    static final class FluxMapSignalSubscriber<T, R> implements Subscriber<T>, Publishable, Subscribable, Completable {
 
         final Subscriber<? super R>            actual;
         final FluxMapSignal<T, R> parent;

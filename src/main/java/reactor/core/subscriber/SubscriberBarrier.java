@@ -19,7 +19,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Backpressurable;
 import reactor.core.trait.Completable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ReactiveStateUtils;
@@ -33,7 +33,7 @@ import reactor.core.util.ReactiveStateUtils;
  * @since 2.0.4
  */
 public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
-		implements Subscription, Backpressurable, Completable, Publishable {
+		implements Subscription, Backpressurable, Completable, Subscribable {
 
 	protected final Subscriber<? super O> subscriber;
 

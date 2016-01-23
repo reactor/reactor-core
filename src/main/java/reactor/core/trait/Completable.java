@@ -19,7 +19,7 @@ package reactor.core.trait;
 /**
  * A lifecycle backed upstream
  */
-public interface Completable extends Subscribable {
+public interface Completable extends Publishable {
 
 	/**
 	 * @return has this upstream started or "onSubscribed" ?

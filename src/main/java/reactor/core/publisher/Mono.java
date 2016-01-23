@@ -31,7 +31,7 @@ import reactor.core.timer.Timers;
 import reactor.core.trait.Backpressurable;
 import reactor.core.trait.Connectable;
 import reactor.core.trait.Introspectable;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
@@ -993,7 +993,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static class MonoBarrier<I, O> extends Mono<O> implements Subscribable {
+	public static class MonoBarrier<I, O> extends Mono<O> implements Publishable {
 
 		protected final Publisher<? extends I> source;
 

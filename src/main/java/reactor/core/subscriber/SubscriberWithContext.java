@@ -22,7 +22,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.trait.Cancellable;
 import reactor.core.trait.Completable;
 import reactor.core.trait.Connectable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -32,7 +32,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  * @since 2.0.2
  */
-public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, Cancellable, Publishable, Connectable {
+public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, Cancellable, Subscribable, Connectable {
 
 	private volatile       int                                              terminated       = 0;
 	protected static final AtomicIntegerFieldUpdater<SubscriberWithContext> TERMINAL_UPDATER =

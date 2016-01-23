@@ -543,8 +543,8 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	static final class EmitterSubscriber<T>
-			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Subscribable,
-			           Requestable, Publishable {
+			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Publishable,
+			           Requestable, Subscribable {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final ProcessorEmitter<T>   parent;

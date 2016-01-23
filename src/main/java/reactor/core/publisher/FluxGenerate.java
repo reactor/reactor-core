@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.trait.Completable;
 import reactor.core.trait.Introspectable;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -85,7 +85,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 		return new SubscriberProxy<>(this, subscriber, context, requestConsumer, shutdownConsumer);
 	}
 
-	static final class FluxForEach<T, C> extends FluxGenerate<T, C> implements Subscribable {
+	static final class FluxForEach<T, C> extends FluxGenerate<T, C> implements Publishable {
 
 		final Consumer<SubscriberWithContext<T, C>> forEachConsumer;
 
@@ -213,7 +213,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 		 */
 		static final class IterableSequencer<T> implements Function<Subscriber<? super T>, Iterator<? extends T>>,
 		                                                   Consumer<SubscriberWithContext<T, Iterator<? extends T>>>,
-		                                                   Introspectable, Subscribable {
+		                                                   Introspectable, Publishable {
 
 			private final Iterable<? extends T> defaultValues;
 
@@ -271,7 +271,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 		}
 
 	private final static class SubscriberProxy<T, C> extends SubscriberWithContext<T, C>
-			implements Subscription, Subscribable, Completable, Introspectable {
+			implements Subscription, Publishable, Completable, Introspectable {
 
 		private final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
 

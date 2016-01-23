@@ -34,8 +34,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.queue.RingBuffer;
 import reactor.core.trait.Cancellable;
 import reactor.core.trait.Pausable;
-import reactor.core.trait.Publishable;
 import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
 import reactor.core.trait.Timeable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
@@ -317,7 +317,7 @@ class HashWheelTimer extends Timer {
 	}
 
 	static abstract class HashWheelSubscription
-			implements Runnable, Comparable, Pausable, Subscription, Cancellable, Publishable, Timeable {
+			implements Runnable, Comparable, Pausable, Subscription, Cancellable, Subscribable, Timeable {
 
 		volatile long rounds;
 		volatile int  status;

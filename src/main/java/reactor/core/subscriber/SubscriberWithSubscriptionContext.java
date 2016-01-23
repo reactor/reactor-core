@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Backpressurable;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
@@ -30,7 +30,7 @@ import reactor.fn.Function;
 /**
  * @author Stephane Maldini
  */
-final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> implements Backpressurable, Subscribable {
+final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> implements Backpressurable, Publishable {
 
 	protected final Function<? super Subscription, C>                 subscriptionHandler;
 	protected final BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer;

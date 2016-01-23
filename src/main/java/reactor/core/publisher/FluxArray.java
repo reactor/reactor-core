@@ -24,9 +24,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Cancellable;
-import reactor.core.trait.Publishable;
 import reactor.core.trait.PublishableMany;
 import reactor.core.trait.Requestable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 
@@ -58,7 +58,7 @@ final class FluxArray<T> extends Flux<T> {
 	}
 
 	static final class ArraySubscription<T>
-			implements Subscription, Publishable, Requestable, Cancellable, PublishableMany {
+			implements Subscription, Subscribable, Requestable, Cancellable, PublishableMany {
 		final Subscriber<? super T> actual;
 
 		final T[] array;

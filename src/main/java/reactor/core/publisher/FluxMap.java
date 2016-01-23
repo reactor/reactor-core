@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.trait.Completable;
 import reactor.core.trait.Connectable;
-import reactor.core.trait.Publishable;
+import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.fn.Function;
@@ -63,7 +63,7 @@ final class FluxMap<T, R> extends Flux.FluxBarrier<T, R> {
 		source.subscribe(new MapSubscriber<>(s, mapper));
 	}
 
-	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Publishable, Connectable {
+	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Subscribable, Connectable {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 

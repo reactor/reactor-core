@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.ScalarSubscription;
 import reactor.fn.Supplier;
 
@@ -27,7 +27,7 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoJust<T> extends Mono<T> implements Supplier<T>, Subscribable {
+final class MonoJust<T> extends Mono<T> implements Supplier<T>, Publishable {
 
 	final T value;
 

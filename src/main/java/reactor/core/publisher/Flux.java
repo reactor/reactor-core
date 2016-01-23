@@ -34,7 +34,7 @@ import reactor.core.timer.Timers;
 import reactor.core.trait.Backpressurable;
 import reactor.core.trait.Connectable;
 import reactor.core.trait.Introspectable;
-import reactor.core.trait.Subscribable;
+import reactor.core.trait.Publishable;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -1446,7 +1446,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Subscribable {
+	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Publishable {
 
 		protected final Publisher<? extends I> source;
 
