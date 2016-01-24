@@ -15,7 +15,7 @@
  */
 
 /**
- * This packages offer core utility functions to work with Reactive components, specifically:
+ * Core utility functions to work with Reactive components, specifically:
  * {@link org.reactivestreams.Subscription}, backpressure, logging {@link java.lang.Exception} handling, traits or the
  * environment settings.
  *

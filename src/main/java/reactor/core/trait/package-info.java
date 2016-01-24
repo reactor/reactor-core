@@ -15,7 +15,8 @@
  */
 
 /**
- * Common traits shared by reactive components: backpressure, activity state, request tracking, connected components...
+ * Common traits shared by reactive components: backpressure, activity state, request tracking, or connected
+ * upstreams/downstreams.
  * <p>
  * The state read accuracy (volatility) is implementation-dependent and implementors MAY return cached value for a given
  * state.
