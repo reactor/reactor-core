@@ -194,7 +194,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Create a {@link Mono} that completes with the specified error immediately after onSubscribe.
 	 *
 	 * <p>
-	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/errany.png" alt="">
 	 *
 	 * @param error the onError signal
 	 * @param <T> the reified {@link Subscriber} type
@@ -475,7 +475,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
 	 * <p>
-	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param other the {@link Mono} to combine with
 	 *
@@ -899,7 +899,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Emit the any of the result from this mono or from the given mono
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/or.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
 	 *
 	 * @param other the racing other {@link Mono} to compete with for the result
 	 *
