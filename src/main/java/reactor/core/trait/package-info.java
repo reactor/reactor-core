@@ -15,7 +15,7 @@
  */
 
 /**
- * Suite of State accessor for reactive components: buffers, capacity, names, connected upstream/downstreams...
+ * Common traits shared by reactive components: backpressure, activity state, request tracking, connected components...
  * <p>
  * The state read accuracy (volatility) is implementation-dependent and implementors MAY return cached value for a given
  * state.

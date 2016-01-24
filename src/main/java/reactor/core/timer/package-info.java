@@ -15,7 +15,10 @@
  */
 
 /**
- * Core components of the Reactor framework supporting Reactive Stream programming model.
+ * Time sensitive helpers. Used for scheduling
+ * {@link reactor.core.publisher.Mono#delay} or  {@link reactor.core.publisher.Flux#interval}, timeout handling
+ * or polling tasks.
  *
+ * @author Stephane Maldini
  */
-package reactor.core;
+package reactor.core.timer;

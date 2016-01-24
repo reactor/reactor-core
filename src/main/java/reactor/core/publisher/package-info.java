@@ -16,11 +16,13 @@
 
 /**
  * This package offers a suite of asynchronous {@link org.reactivestreams.Publisher} with backpressure support.
+ *
+ * <p>
  * These components will generally bound to a given stream of data except
  * for the {@link reactor.core.publisher.ProcessorGroup} that allows
  *  {@link org.reactivestreams.Processor} Pooling.
  *
- *
+ * <p>
  * A {@link reactor.core.publisher.ProcessorExecutor} will manage its own thread(s), one by {@link org.reactivestreams.Subscriber}.
  * The message-passing will be implementation dependent, e.g. using a {@link reactor.core.queue.RingBuffer}.
  * Usually, the boundary will be implemented with a queue-based event dispatching and the Reactive Stream contract will

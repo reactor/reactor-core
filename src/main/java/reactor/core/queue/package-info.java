@@ -15,7 +15,9 @@
  */
 
 /**
- * Core components of the Reactor framework supporting Reactive Stream programming model.
+ * Queueing helpers and implementation of the bounded hardware friendly {@link reactor.core.queue.RingBuffer}.
+ * Used for operational serialization (serializing threads) or buffering (asynchronous boundary).
  *
+ * @author Stephane Maldini
  */
-package reactor.core;
+package reactor.core.queue;

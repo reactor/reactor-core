@@ -15,13 +15,9 @@
  */
 
 /**
- * This package offers a suite of asynchronous {@link org.reactivestreams.Processor} with backpressure support.
- * Unlike {@link reactor.ReactorProcessor}, these components will be unique and bound to a given stream of data.
- * A {@link org.reactivestreams.Processor} will manage its own thread(s), one by {@link org.reactivestreams.Subscriber}.
- * The message-passing will be implementation dependent, e.g. using a {@link reactor.core.queue.RingBuffer}.
- * Usually, the boundary will be implemented with a queue-based event dispatching and the Reactive Stream contract will
- * offer control over the available backlog. Long.MAX demand will however switch off the contract and rely on the impl
- * coordination strategy to back-off, like the RingBuffer waiting strategy, to slow down the Processor publisher.
+ * This packages offer core utility functions to work with Reactive components, specifically:
+ * {@link org.reactivestreams.Subscription}, backpressure, logging {@link java.lang.Exception} handling, traits or the
+ * environment settings.
  *
  * @author Stephane Maldini
  */

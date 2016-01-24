@@ -45,12 +45,16 @@ public interface Introspectable {
 	int LOGGING = 0b000010000;
 
 	/**
-	 * @return
+	 * Flags determining the nature of this {@link Introspectable}, can be a combination of those, e.g. :
+	 * <pre>
+	 *     int mode = Introspectable.LOGGING | Introspectable.FACTORY
+	 *
+	 * @return the current reactive modes
 	 */
 	int getMode();
 
 	/**
-	 * @return
+	 * @return the current assign name or identifier (if {#link #getMode} includes {@link #UNIQUE} option.
 	 */
 	String getName();
 

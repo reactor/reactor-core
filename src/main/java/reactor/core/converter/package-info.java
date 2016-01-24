@@ -15,7 +15,9 @@
  */
 
 /**
- * Core components of the Reactor framework supporting Reactive Stream programming model.
+ * Convert {@link org.reactivestreams.Publisher} from/to JDK8 CompletableFuture, JDK9 Flow.Publisher, RxJava1
+ * Observable and Single.
  *
+ * @author Stephane Maldini
  */
-package reactor.core;
+package reactor.core.converter;
