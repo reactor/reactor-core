@@ -16,7 +16,7 @@
 
 /**
  * Subscribers implementations to build on like
- * {@link reactor.core.subscriber.SubscriberBarrier} or for direct use via {@link reactor.core.subscriber.Subscribers} or {@link reactor.core.subscriber.ReactiveSession}
+ * {@link reactor.core.subscriber.SubscriberBarrier} or for direct use via {@link reactor.core.subscriber.Subscribers} factory or {@link reactor.core.subscriber.ReactiveSession}
  *
  * @author Stephane Maldini
  */
