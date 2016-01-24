@@ -665,9 +665,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	static <E> Publisher<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
 		Publisher<E> bufferIterable = fromIterable(RingBuffer.createSequencedQueue(ringBuffer, start.get()));
-		if(error != null && t != null){
+		if (error != null) {
+			if (t != null) {
 				t.addSuppressed(error);
-				return concat(bufferIterable, Flux.<E>error(error));
+				return concat(bufferIterable, Flux.<E>error(t));
+			}
+			return concat(bufferIterable, Flux.<E>error(error));
 		}
 		return bufferIterable;
 	}
