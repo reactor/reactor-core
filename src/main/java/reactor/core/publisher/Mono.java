@@ -210,7 +210,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/next.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from1.png" alt="">
 	 *
 	 * @param source the {@link Publisher} source
 	 * @param <T> the source type
