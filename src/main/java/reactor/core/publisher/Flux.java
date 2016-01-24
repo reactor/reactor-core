@@ -299,7 +299,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
 	 *
 	 * @param source the source to decorate
-	 * @param <T>
+	 * @param <T> the source sequence type
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -1052,13 +1052,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	/**
 	 * Like {@link #flatMap(Function)}, but concatenate emissions instead of merging (no interleave).
 	 *
-	 * @param mapper
-	 * @param <R>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
+	 *
+	 * @param mapper the function to transform this sequence of T into concated sequences of R
+	 * @param <R> the produced concated type
 	 *
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, 1, 32);
+		return new FluxFlatMap<>(this, mapper, 1, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
