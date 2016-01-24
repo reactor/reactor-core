@@ -126,7 +126,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
 	 *
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
@@ -1232,7 +1232,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmaps.png" alt="">
 	 *
 	 * @param mapperOnNext
 	 * @param mapperOnError
