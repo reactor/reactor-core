@@ -79,6 +79,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
+	 *
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
 	 *
@@ -93,6 +96,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
+	 *
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
 	 *
@@ -106,6 +112,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
+	 *
 	 * @param duration in seconds
 	 *
 	 * @return a new {@link Mono}
@@ -117,6 +126,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} of given unit and complete on the global timer.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 *
 	 * @param duration in unit of time
 	 * @param unit the time unit
@@ -130,6 +142,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 *
 	 * @param duration in unit of time
 	 * @param unit the time unit
@@ -147,6 +162,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a {@link Mono} that completes without emitting any item.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
+	 *
 	 * @param <T> the reified {@link Subscriber} type
 	 *
 	 * @return a completed {@link Mono}
@@ -158,6 +176,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
 	 *
 	 * @param source the {@link Publisher to ignore}
 	 * @param <T> the reified {@link Publisher} type
@@ -172,22 +193,28 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a {@link Mono} that completes with the specified error immediately after onSubscribe.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
+	 *
 	 * @param error the onError signal
 	 * @param <T> the reified {@link Subscriber} type
 	 *
 	 * @return a failed {@link Mono}
 	 */
 	public static <T> Mono<T> error(Throwable error) {
-		return new MonoError<T>(error);
+		return new MonoError<>(error);
 	}
 
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
 	 *
-	 * @param source
-	 * @param <T>
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/next.png" alt="">
 	 *
-	 * @return
+	 * @param source the {@link Publisher} source
+	 * @param <T> the source type
+	 *
+	 * @return the next item emitted as a {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> from(Publisher<T> source) {
@@ -203,6 +230,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a {@link Mono} producing the value for the {@link Mono} using the given supplier.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcallable.png" alt="">
+	 *
 	 * @param supplier {@link Supplier} that will produce the value
 	 * @param <T> type of the expected value
 	 *
@@ -216,6 +246,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Create a {@link Mono} only producing a completion signal after using the given
 	 * runnable.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromrunnable.png" alt="">
+	 *
 	 * @param runnable {@link Runnable} that will callback the completion signal
 	 *
 	 * @return A {@link Mono}.
@@ -226,6 +259,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
 	 *
 	 * @param source the {@link Publisher to ignore}
 	 * @param <T> the source type of the ignored data
@@ -240,6 +276,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a new {@link Mono} that emits the specified item.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/just.png" alt="">
+	 *
 	 * @param data the only item to onNext
 	 * @param <T> the type of the produced item
 	 *
@@ -252,6 +291,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
 	 * Monos} have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
@@ -268,6 +310,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
 	 * Monos} have been fulfilled.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 *
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
 	 *
@@ -281,6 +326,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -297,6 +345,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -315,6 +366,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -338,6 +392,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -364,6 +421,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 *
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -414,7 +474,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
-	 * @param other
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+	 *
+	 * @param other the {@link Mono} to combine with
 	 *
 	 * @return a new combined Mono
 	 * @see #when
@@ -426,6 +489,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Mono} completes.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
+	 *
 	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
 	public final Mono<Void> after() {
@@ -433,9 +499,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} that completes when this {@link Mono} completes.
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} will emit at most one result in the
+	 * returned {@link Mono}.
 	 *
-	 * @return
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return new MonoBarrier<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
@@ -459,6 +529,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Provide a default unique value if this mono is completed without any data
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty1.png" alt="">
+	 *
 	 * @param defaultV the alternate value if this sequence is empty
 	 *
 	 * @return a new {@link Mono}
@@ -473,6 +546,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Run onSubscribe, request, cancel, onNext, onComplete and onError on a supplied
 	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
 	 * It naturally combines with {@link Processors#singleGroup} and {@link Processors#asyncGroup} which implement
@@ -491,10 +566,19 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
+	 * The arguments will be null depending on success, success with data and error:
+	 * <ul>
+	 *     <li>null, null : completed without data</li>
+	 *     <li>T, null : completed with data</li>
+	 *     <li>null, Throwable : failed with/without data</li>
+	 * </ul>
 	 *
-	 * @param afterTerminate
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate1.png" alt="">
 	 *
-	 * @return
+	 * @param afterTerminate the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
 		return new MonoSuccess<>(this, null, null, afterTerminate);
@@ -503,9 +587,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Triggered when the {@link Mono} is cancelled.
 	 *
-	 * @param onCancel
 	 *
-	 * @return
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
+	 *
+	 * @param onCancel the callback to call on {@link Subscription#cancel()}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		return new MonoBarrier<>(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
@@ -514,9 +602,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Triggered when the {@link Mono} completes successfully.
 	 *
-	 * @param onSuccess
+	 * <ul>
+	 *     <li>null : completed without data</li>
+	 *     <li>T: completed with data</li>
+	 * </ul>
 	 *
-	 * @return
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsuccess.png" alt="">
+	 *
+	 * @param onSuccess the callback to call on
+	 * {@link Subscriber#onNext} or {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
 		return new MonoSuccess<>(this, onSuccess, null, null);
@@ -525,9 +622,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Triggered when the {@link Mono} completes with an error.
 	 *
-	 * @param onError
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror1.png" alt="">
 	 *
-	 * @return
+	 * @param onError the error callback to call on {@link Subscriber#onError(Throwable)}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		return new MonoBarrier<>(new FluxPeek<>(this, null, null, onError, null, null, null, null));
@@ -536,9 +636,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Triggered when the {@link Mono} is subscribed.
 	 *
-	 * @param onSubscribe
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
 	 *
-	 * @return
+	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe(Subscription)}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		return new MonoBarrier<>(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
@@ -547,9 +650,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Triggered when the {@link Mono} terminates, either by completing successfully or with an error.
 	 *
-	 * @param onTerminate
+	 * <ul>
+	 *     <li>null, null : completing without data</li>
+	 *     <li>T, null : completing with data</li>
+	 *     <li>null, Throwable : failing with/without data</li>
+	 * </ul>
 	 *
-	 * @return
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonterminate1.png" alt="">
+	 *
+	 * @param onTerminate the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
 		return new MonoSuccess<>(this, null, onTerminate, null);
@@ -559,10 +671,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
+	 *
 	 * @param mapper
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return new FluxFlatMap<>(this, mapper, PlatformDependent.SMALL_BUFFER_SIZE, Integer.MAX_VALUE);
@@ -572,12 +687,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
+	 *
 	 * @param mapperOnNext
 	 * @param mapperOnError
 	 * @param mapperOnComplete
 	 * @param <R>
 	 *
-	 * @return
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 *
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
@@ -596,7 +714,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
 	public final Flux<T> flux() {
-		return new Flux.FluxBarrier<T, T>(this);
+		return new Flux.FluxBarrier<>(this);
 	}
 
 	/**
@@ -618,8 +736,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
-	 * @param timeout
-	 * @param unit
+	 * @param timeout maximum time period to wait for before raising a {@link reactor.core.util.Exceptions.CancelException}
+	 * @param unit unit of time
 	 *
 	 * @return T the result
 	 */
@@ -653,10 +771,14 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Create a {@link Mono} intercepting all source signals with the returned Subscriber that might choose to pass them
 	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
-
-	 * @param lifter
-	 * @param <V>
-	 * @return
+	 *
+	 * <p>
+	 * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/lift1.png" alt="">
+	 *
+	 * @param lifter the function accepting the target {@link Subscriber} and returning the {@linK Subscriber}
+	 * exposed this sequence
+	 * @param <V> the output type
+	 * @return a new lifted {@link Mono}
 	 *
 	 * @see Flux#lift
 	 */
@@ -665,7 +787,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * @return
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
+	 *
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 *
+	 *
+	 * @return a new {@link Mono}
 	 *
 	 * @see Flux#log()
 	 */
@@ -674,30 +806,60 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * @param category
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> log(String category) {
 		return log(category, Level.INFO, Logger.ALL);
 	}
 
 	/**
-	 * @param category
-	 * @param level
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> log(String category, Level level) {
 		return log(category, level, Logger.ALL);
 	}
 
 	/**
-	 * @param category
-	 * @param level
-	 * @param options
+	 * Observe Reactive Streams signals matching the passed flags {@code options} and use {@link Logger} support to
+	 * handle trace
+	 * implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * @return
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
+	 *
+	 * @return a new {@link Mono}
+	 *
 	 */
 	public final Mono<T> log(String category, Level level, int options) {
 		return new MonoBarrier<>(new FluxLog<>(this, category, level, options));
@@ -706,10 +868,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Transform the item emitted by this {@link Mono} by applying a function to item emitted.
 	 *
-	 * @param mapper
-	 * @param <R>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
 	 *
-	 * @return
+	 * @param mapper the transforming function
+	 * @param <R> the transformed type
+	 *
+	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		return new MonoBarrier<>(new FluxMap<>(this, mapper));
@@ -718,33 +883,43 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Merge emissions of this {@link Mono} with the provided {@link Publisher}.
 	 *
-	 * @param source
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge1.png" alt="">
 	 *
-	 * @return
+	 * @param other the other {@link Publisher} to merge with
+	 *
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be at most 1
 	 */
 	@SuppressWarnings("unchecked")
-	public final Flux<T> mergeWith(Publisher<? extends T> source) {
-		return Flux.merge(Flux.just(this, source));
+	public final Flux<T> mergeWith(Publisher<? extends T> other) {
+		return Flux.merge(this, other);
 	}
 
 	/**
 	 * Emit the any of the result from this mono or from the given mono
 	 *
-	 * @param source
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/or.png" alt="">
+	 *
+	 * @param other the racing other {@link Mono} to compete with for the result
 	 *
 	 * @return a new Mono
 	 * @see #any
 	 */
-	public final Mono<T> or(Mono<? extends T> source) {
-		return any(this, source);
+	public final Mono<T> or(Mono<? extends T> other) {
+		return any(this, other);
 	}
 
 	/**
 	 * Subscribe to a returned fallback publisher when any error occurs.
 	 *
-	 * @param fallback
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwise.png" alt="">
 	 *
-	 * @return
+	 * @param fallback the function to map an alternative {@link Mono}
+	 *
+	 * @return a new {@link Mono}
+	 *
 	 * @see Flux#onErrorResumeWith
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
@@ -753,6 +928,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Provide an alternative {@link Mono} if this mono is completed without data
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwiseempty.png" alt="">
 	 *
 	 * @param alternate the alternate mono if this mono is empty
 	 *
@@ -766,9 +944,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Subscribe to a returned fallback value when any error occurs.
 	 *
-	 * @param fallback
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisejust.png" alt="">
 	 *
-	 * @return
+	 * @param fallback the value to emit if an error occurs
+	 *
+	 * @return a new {@link Mono}
+	 *
 	 * @see Flux#onErrorReturn
 	 */
 	public final Mono<T> otherwiseJust(final T fallback) {
@@ -786,9 +968,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * {@code mono.publishOn(Processors.ioGroup()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 *
-	 * @return
+	 * @param group the {@link ProcessorGroup} to schedule the subscribe/request on.
+	 *
+	 * @return a new asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> publishOn(ProcessorGroup group) {
@@ -805,8 +990,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Convert the value of {@link Mono} to another {@link Mono} possibly with another value type.
 	 *
-	 * @param transformer
-	 * @param <R>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/then.png" alt="">
+	 *
+	 * @param transformer the function to dynamically bind a new {@link Mono}
+	 * @param <R> the result type bound
 	 *
 	 * @return a new {@link Mono} containing the merged values
 	 */
@@ -817,6 +1005,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
 	 * the result as a combined {@code Tuple}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/thenn.png" alt="">
 	 *
 	 * @param fn1 the transformation function
 	 * @param fn2 the transformation function
@@ -839,6 +1030,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
 	 * the result as a combined {@code Tuple}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/thenn.png" alt="">
 	 *
 	 * @param fn1 the transformation function
 	 * @param fn2 the transformation function
@@ -864,6 +1058,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
 	 * the result as a combined {@code Tuple}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/thenn.png" alt="">
 	 *
 	 * @param fn1 the transformation function
 	 * @param fn2 the transformation function
@@ -894,6 +1091,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
 	 * the result as a combined {@code Tuple}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/thenn.png" alt="">
 	 *
 	 * @param fn1 the transformation function
 	 * @param fn2 the transformation function
@@ -926,6 +1126,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Assign the given {@link Function} to transform the incoming value {@code T} into n {@code Mono<? extends T1>} and pass
 	 * the result as a combined {@code Tuple}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/thenn.png" alt="">
 	 *
 	 * @param fn1 the transformation function
 	 * @param fn2 the transformation function
@@ -975,6 +1178,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Test the result if any of this {@link Mono} and replay it if predicate returns true.
 	 * Otherwise complete without value.
 	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/where.png" alt="">
+	 *
 	 * @param tester the predicate to evaluate
 	 *
 	 * @return a filtered {@link Mono}
@@ -1003,8 +1209,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 		/**
 		 * Default is delegating and decorating with Mono API
-		 *
-		 * @param s
 		 */
 		@Override
 		@SuppressWarnings("unchecked")
