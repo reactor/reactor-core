@@ -54,7 +54,7 @@ public interface Introspectable {
 	int getMode();
 
 	/**
-	 * @return the current assign name or identifier (if {#link #getMode} includes {@link #UNIQUE} option.
+	 * @return the current assigned name or identifier (if {@link #getMode} includes {@link #UNIQUE} option.
 	 */
 	String getName();
 
