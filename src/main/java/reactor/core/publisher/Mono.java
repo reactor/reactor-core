@@ -675,8 +675,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
 	 * <p>
-	 * @param mapper
-	 * @param <R>
+	 * @param mapper the
+	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
+	 * @param <R> the merged sequence type
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
