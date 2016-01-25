@@ -1279,8 +1279,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
 	 * <p>
-	 * @param mapper
-	 * @param <R>
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param <R> the merged output sequence type
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -1328,13 +1328,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/lift.png" alt="">
 	 * <p>
-	 * @param operator
-	 * @param <R>
+	 * @param lifter the function accepting the target {@link Subscriber} and returning the {@link Subscriber}
+	 * exposed this sequence
+	 * @param <R> the output operator type
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<R> lift(Function<Subscriber<? super R>, Subscriber<? super T>> operator) {
-		return new FluxLift<>(this, operator);
+	public final <R> Flux<R> lift(Function<Subscriber<? super R>, Subscriber<? super T>> lifter) {
+		return new FluxLift<>(this, lifter);
 	}
 
 	/**
@@ -1407,8 +1408,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map.png" alt="">
 	 * <p>
-	 * @param mapper
-	 * @param <R>
+	 * @param mapper the transforming {@link Function}
+	 * @param <R> the transformed type
 	 *
 	 * @return a new {@link Flux}
 	 */
