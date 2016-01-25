@@ -63,7 +63,7 @@ final class FluxMap<T, R> extends Flux.FluxBarrier<T, R> {
 		source.subscribe(new MapSubscriber<>(s, mapper));
 	}
 
-	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Subscribable, Connectable {
+	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Subscribable, Connectable, Subscription {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -81,7 +81,7 @@ final class FluxMap<T, R> extends Flux.FluxBarrier<T, R> {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
 
-				actual.onSubscribe(s);
+				actual.onSubscribe(this);
 			}
 		}
 
@@ -163,6 +163,16 @@ final class FluxMap<T, R> extends Flux.FluxBarrier<T, R> {
 		@Override
 		public Object upstream() {
 			return s;
+		}
+		
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+		
+		@Override
+		public void cancel() {
+			s.cancel();
 		}
 	}
 }

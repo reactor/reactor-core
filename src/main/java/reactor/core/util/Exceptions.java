@@ -397,6 +397,8 @@ public enum Exceptions {
 	 */
 	public static class UpstreamException extends ReactiveException {
 
+		private static final long serialVersionUID = 2491425277432776142L;
+
 		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
 		public static UpstreamException instance() {
 			return INSTANCE;
@@ -415,6 +417,8 @@ public enum Exceptions {
 	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 */
 	public static class DownstreamException extends ReactiveException {
+
+		private static final long serialVersionUID = 2491425227432776143L;
 
 		public DownstreamException(Throwable cause) {
 			super(cause);
@@ -455,6 +459,8 @@ public enum Exceptions {
 	 */
 	public static final class CancelException extends UpstreamException {
 
+		private static final long serialVersionUID = 2491425227432776144L;
+
 		public static final CancelException INSTANCE = new CancelException();
 
 		private CancelException() {
@@ -474,6 +480,8 @@ public enum Exceptions {
 	 */
 	@SuppressWarnings("serial")
 	public static final class InsufficientCapacityException extends RuntimeException {
+
+		private static final long serialVersionUID = 2491425227432776145L;
 
 		private static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
 

@@ -351,6 +351,15 @@ public enum BackpressureUtils {
 		return false;
 	}
 
+	/**
+	 * Sets the given subscription once and returns true if successful, false
+	 * if the field has a subscription already or has been cancelled.
+	 * @param <F> the instance type containing the field
+	 * @param field the field accessor
+	 * @param instance the parent instance
+	 * @param s the subscription to set once
+	 * @return true if successful, false if the target was not empty or has been cancelled
+	 */
 	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
 		Subscription a = field.get(instance);
 		if (a == CancelledSubscription.INSTANCE) {

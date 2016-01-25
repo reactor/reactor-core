@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package reactor.core.subscriber;
 
 import java.util.Iterator;
@@ -21,7 +36,7 @@ import reactor.fn.Supplier;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
- *
+ * 
  * <p> It also implements methods to stream the contents via Stream
  * that also supports cancellation.
  *
@@ -30,9 +45,9 @@ import reactor.fn.Supplier;
 public final class BlockingIterable<T> implements Iterable<T>, Publishable, Backpressurable {
 
 	final Publisher<? extends T> source;
-
+	
 	final long batchSize;
-
+	
 	final Supplier<Queue<T>> queueSupplier;
 
 	public BlockingIterable(Publisher<? extends T> source, long batchSize, Supplier<Queue<T>> queueSupplier) {
@@ -43,33 +58,34 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 		this.batchSize = batchSize;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
-
+	
 	@Override
 	public Iterator<T> iterator() {
 		SubscriberIterator<T> it = createIterator();
-
+		
 		source.subscribe(it);
-
+		
 		return it;
 	}
-
+	
 	SubscriberIterator<T> createIterator() {
 		Queue<T> q;
-
+		
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
 			throwError(e);
 			return null;
 		}
-
+		
 		if (q == null) {
 			throw new NullPointerException("The queueSupplier returned a null queue");
 		}
-
+		
 		return new SubscriberIterator<>(q, batchSize);
 	}
 
+	@Override
 	public long getCapacity() {
 		return batchSize;
 	}
@@ -90,31 +106,31 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 		}
 		throw new RuntimeException(e);
 	}
-
+	
 	static final class SubscriberIterator<T> implements Subscriber<T>, Iterator<T>, Runnable, Completable {
 
 		final Queue<T> queue;
-
+		
 		final long batchSize;
-
+		
 		final long limit;
-
+		
 		final Lock lock;
-
+		
 		final Condition condition;
-
+		
 		long produced;
-
+		
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SubscriberIterator, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(SubscriberIterator.class, Subscription.class, "s");
-
+		
 		volatile boolean done;
 		Throwable error;
 
 		volatile boolean cancelled;
-
+		
 		public SubscriberIterator(Queue<T> queue, long batchSize) {
 			this.queue = queue;
 			this.batchSize = batchSize;
@@ -164,13 +180,13 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 		public T next() {
 			if (hasNext()) {
 				T v = queue.poll();
-
+				
 				if (v == null) {
 					run();
-
+					
 					throw new IllegalStateException("Queue empty?!");
 				}
-
+				
 				long p = produced + 1;
 				if (p == limit) {
 					produced = 0;
@@ -178,7 +194,7 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 				} else {
 					produced = p;
 				}
-
+				
 				return v;
 			}
 			throw new NoSuchElementException();
@@ -195,7 +211,7 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
 				BackpressureUtils.terminate(S, this);
-
+				
 				onError(new IllegalStateException("Queue full?!"));
 			} else {
 				signalConsumer();
@@ -214,7 +230,7 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 			done = true;
 			signalConsumer();
 		}
-
+		
 		void signalConsumer() {
 			lock.lock();
 			try {
@@ -229,7 +245,7 @@ public final class BlockingIterable<T> implements Iterable<T>, Publishable, Back
 			BackpressureUtils.terminate(S, this);
 			signalConsumer();
 		}
-
+		
 		@Override // otherwise default method which isn't available in Java 7
 		public void remove() {
 			throw new UnsupportedOperationException("remove");

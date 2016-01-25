@@ -29,6 +29,7 @@ import reactor.core.trait.Requestable;
 import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
+import reactor.core.util.SynchronousSource;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -40,7 +41,8 @@ import reactor.core.util.EmptySubscription;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxArray<T> extends Flux<T> {
+final class FluxArray<T> 
+extends Flux<T> {
 	final T[] array;
 
 	@SafeVarargs
@@ -58,7 +60,8 @@ final class FluxArray<T> extends Flux<T> {
 	}
 
 	static final class ArraySubscription<T>
-			implements Subscription, Subscribable, Requestable, Cancellable, PublishableMany {
+	extends SynchronousSource<T>
+	  implements Subscription, Subscribable, Requestable, Cancellable, PublishableMany {
 		final Subscriber<? super T> actual;
 
 		final T[] array;
@@ -70,7 +73,7 @@ final class FluxArray<T> extends Flux<T> {
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ArraySubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
+		  AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
 
 		public ArraySubscription(Subscriber<? super T> actual, T[] array) {
 			this.actual = actual;
@@ -192,6 +195,44 @@ final class FluxArray<T> extends Flux<T> {
 		@Override
 		public long upstreamsCount() {
 			return array instanceof Publisher[] ? array.length : -1;
+		}
+
+		@Override
+		public T poll() {
+			int i = index++;
+			T[] a = array;
+			if (i < a.length) {
+				T t = a[i];
+				if (t == null) {
+					throw new NullPointerException();
+				}
+				return t;
+			}
+			return null;
+		}
+
+		@Override
+		public T peek() {
+			int i = index;
+			T[] a = array;
+			if (i < a.length) {
+				T t = a[i];
+				if (t == null) {
+					throw new NullPointerException();
+				}
+				return t;
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return index == array.length;
+		}
+
+		@Override
+		public void clear() {
+			index = array.length;
 		}
 	}
 }
