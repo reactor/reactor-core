@@ -16,7 +16,7 @@
 
 package reactor.core
 
-import reactor.core.subscriber.test.DataTestSubscriber
+import reactor.core.test.TestSubscriber
 import spock.lang.Specification
 
 import static reactor.core.publisher.Flux.fromIterable
@@ -37,13 +37,12 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = DataTestSubscriber.createWithTimeoutSecs(3)
+	def s = new TestSubscriber()
 	pub.onErrorReturn(100000).subscribe(s)
-	s.sendUnboundedRequest()
 
 	then: "queues values correct"
-	s.assertNextSignalsEqual(1, 2, 100000)
-			.assertCompleteReceived()
+	s.awaitAndAssertValues(1, 2, 100000)
+			.assertComplete()
   }
 
   def "Error handling with onErrorResume"() {
@@ -57,13 +56,12 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = DataTestSubscriber.createWithTimeoutSecs(3)
+	def s = new TestSubscriber()
 	pub.switchOnError(fromIterable(9999..10002)).subscribe(s)
-	s.sendUnboundedRequest()
 
 	then: "queues values correct"
-	s.assertNextSignalsEqual(1, 2, 9999, 10000, 10001, 10002)
-			.assertCompleteReceived()
+	s.awaitAndAssertValues(1, 2, 9999, 10000, 10001, 10002)
+			.assertComplete()
   }
 
 }

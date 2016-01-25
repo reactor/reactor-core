@@ -30,8 +30,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.test.DataTestSubscriber;
-import reactor.core.subscriber.test.TestSubscriber;
+import reactor.core.test.TestSubscriber;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -52,7 +51,7 @@ public class ProcessorEmitterDemandTests {
 
 	@Test
 	@Ignore
-	public void test() throws InterruptedException {
+	public void test() {
 		ProcessorGroup<String> asyncGroup = Processors.asyncGroup("async", 128, 1);
 		FluxProcessor<String, String> publishOn = asyncGroup.publishOn();
 		FluxProcessor<String, String> emitter = Processors.emitter();
@@ -77,14 +76,8 @@ public class ProcessorEmitterDemandTests {
 
 		publisher.subscribe(publishOn);
 
-		TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> subscriber = new TestSubscriber<>();
 		emitter.subscribe(subscriber);
-
-		subscriber.request(Long.MAX_VALUE);
-
-		if (!requestReceived.await(1, TimeUnit.SECONDS)) {
-			throw new RuntimeException();
-		}
 
 		int i = 0;
 		for (; ; ) {
@@ -100,7 +93,7 @@ public class ProcessorEmitterDemandTests {
 
 	@Test
 	@Ignore
-	public void testPerformance() throws InterruptedException {
+	public void testPerformance() {
 		FluxProcessor<String, String> emitter = Processors.emitter();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);
@@ -139,13 +132,8 @@ public class ProcessorEmitterDemandTests {
 
 		publisher.subscribe(emitter);
 
-		TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> subscriber = new TestSubscriber<>();
 		emitter.subscribe(subscriber);
-		subscriber.requestUnboundedWithTimeout();
-
-		if (!requestReceived.await(1, TimeUnit.SECONDS)) {
-			throw new RuntimeException();
-		}
 
 		String buffer = "Hello";
 		int i = 0;
@@ -161,74 +149,68 @@ public class ProcessorEmitterDemandTests {
 	}
 
 	@Test
-	public void testRed() throws InterruptedException {
+	public void testRed() {
 		FluxProcessor<String, String> processor = Processors.emitter();
-		DataTestSubscriber<String> subscriber = DataTestSubscriber.createWithTimeoutSecs(1);
-		processor.subscribe(subscriber);
-
-		subscriber.request(1);
-		Flux.fromIterable(DATA)
-		    .log()
-		    .subscribe(processor);
-
-		subscriber.assertNextSignalsEqual("1");
-	}
-
-	@Test
-	public void testGreen() throws InterruptedException {
-		FluxProcessor<String, String> processor = Processors.emitter();
-		DataTestSubscriber<String> subscriber = DataTestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
 		processor.subscribe(subscriber);
 
 		Flux.fromIterable(DATA)
 		    .log()
 		    .subscribe(processor);
 
-		subscriber.request(1);
-
-		subscriber.assertNextSignalsEqual("1");
+		subscriber.awaitAndAssertValues("1");
 	}
 
 	@Test
-	public void testHanging() throws InterruptedException {
+	public void testGreen() {
+		FluxProcessor<String, String> processor = Processors.emitter();
+		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
+		processor.subscribe(subscriber);
+
+		Flux.fromIterable(DATA)
+		    .log()
+		    .subscribe(processor);
+
+
+		subscriber.awaitAndAssertValues("1");
+	}
+
+	@Test
+	public void testHanging() {
 		FluxProcessor<String, String> processor = Processors.emitter(2);
 		Flux.fromIterable(DATA)
 		    .log()
 		    .subscribe(processor);
 
-		DataTestSubscriber<String> first = DataTestSubscriber.createWithTimeoutSecs(1);
-		processor.log("after-1")
-		         .subscribe(first);
+		TestSubscriber<String> first = new TestSubscriber<>(0);
+		processor.log("after-1").subscribe(first);
 
-		DataTestSubscriber<String> second = DataTestSubscriber.createWithTimeoutSecs(1);
-		processor.log("after-2")
-		         .subscribe(second);
+		TestSubscriber<String> second = new TestSubscriber<>(0);
+		processor.log("after-2").subscribe(second);
 
 		second.request(1);
-		second.assertNextSignalsEqual("1");
+		second.awaitAndAssertValues("1");
 
 		first.request(3);
-		first.assertNextSignalsEqual("1", "2", "3");
+		first.awaitAndAssertValues("1", "2", "3");
 	}
 
 	@Test
-	public void testNPE() throws InterruptedException {
+	public void testNPE() {
 		FluxProcessor<String, String> processor = Processors.emitter(8);
 		Flux.fromIterable(DATA)
 		    .log()
 		    .subscribe(processor);
 
-		DataTestSubscriber<String> first = DataTestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> first = new TestSubscriber<>(1);
 		processor.subscribe(first);
 
-		first.request(1);
-		first.assertNextSignalsEqual("1");
+		first.awaitAndAssertValues("1");
 
-		DataTestSubscriber<String> second = DataTestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> second = new TestSubscriber<>(3);
 		processor.subscribe(second);
 
-		second.request(3);
-		second.assertNextSignalsEqual("2", "3", "4");
+		second.awaitAndAssertValues("2", "3", "4");
 	}
 
 	static class MyThread extends Thread {
@@ -267,7 +249,7 @@ public class ProcessorEmitterDemandTests {
 		}
 
 		public void doRun() throws Exception {
-			TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(5);
+			TestSubscriber<String> subscriber = new TestSubscriber<>(5);
 			processor.subscribe(subscriber);
 			barrier.await();
 
@@ -277,8 +259,9 @@ public class ProcessorEmitterDemandTests {
 
 			try{
 				subscriber
-						.assertNumNextSignalsReceived(n)
-						.assertCompleteReceived();
+						.await()
+						.assertValueCount(n)
+						.assertComplete();
 			}
 			finally {
 				System.out.println(subscriber.debug());

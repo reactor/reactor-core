@@ -67,7 +67,7 @@ public class ProcessorTopicTests extends AbstractProcessorVerification {
 		TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(1);
 		processor.subscribe(subscriber);
 
-		subscriber.assertCompleteReceived();
+		subscriber.assertComplete();
 	}*/
 
 }
