@@ -15,10 +15,22 @@
  */
 package reactor.core.queue;
 
+import java.io.Serializable;
+
+import reactor.core.trait.Recyclable;
+
 /**
  * A simple holder
  * @param <T>
  */
-public final class Slot<T> {
+public final class Slot<T> implements Recyclable, Serializable {
+
+	private static final long serialVersionUID = 5172014386416785095L;
+
 	public T value = null;
+
+	@Override
+	public void recycle() {
+		value = null;
+	}
 }
