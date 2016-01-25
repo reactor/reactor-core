@@ -1421,12 +1421,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
 	 *
-	 * @param source
+	 * @param other the {@link Publisher} to merge with
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<T> mergeWith(Publisher<? extends T> source) {
-		return merge(just(this, source));
+	public final Flux<T> mergeWith(Publisher<? extends T> other) {
+		return merge(just(this, other));
 	}
 
 	/**
@@ -1447,7 +1447,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png" alt="">
 	 *
-	 * @param fallback
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -1475,8 +1475,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * {@code flux.subscribeWith(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param subscriber
-	 * @param <E>
+	 * @param subscriber the {@link Subscriber} to subscribe and return
+	 * @param <E> the reified type from the input/output subscriber
 	 *
 	 * @return the passed {@link Subscriber}
 	 */
@@ -1576,15 +1576,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Combine the emissions of multiple Publishers together and emit single {@link Tuple2} for each
-	 * combination.
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
 	 *
-	 * @param source2
-	 * @param <R>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <R> type of the value from source2
 	 *
-	 * @return a new {@link Flux}
+	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
@@ -1592,25 +1592,27 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Combine the emissions of multiple Publishers together via a specified function and emit single items for each
-	 * combination based on the results of this function.
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+	 * produced by the passed combinator from the most recent items emitted by each source until any of them
+	 * completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
 	 *
-	 * @param source2
-	 * @param zipper
-	 * @param <R>
-	 * @param <V>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+	 * to signal downstream
+	 * @param <R> type of the value from source2
+	 * @param <V> The produced output after transformation by {@param combinator}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a zipped {@link Flux}
 	 */
 	public final <R, V> Flux<V> zipWith(Publisher<? extends R> source2,
-			final BiFunction<? super T, ? super R, ? extends V> zipper) {
+			final BiFunction<? super T, ? super R, ? extends V> combinator) {
 
 		return new FluxZip<>(new Publisher[]{this, source2}, new Function<Tuple2<T, R>, V>() {
 			@Override
 			public V apply(Tuple2<T, R> tuple) {
-				return zipper.apply(tuple.getT1(), tuple.getT2());
+				return combinator.apply(tuple.getT1(), tuple.getT2());
 			}
 		}, PlatformDependent.XS_BUFFER_SIZE);
 
@@ -1623,8 +1625,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	/**
 	 * A marker interface for components responsible for augmenting subscribers with features like {@link #lift}
 	 *
-	 * @param <I>
-	 * @param <O>
+	 * @param <I> Upstream type
+	 * @param <O> Downstream type
 	 */
 	public interface Operator<I, O> extends Function<Subscriber<? super O>, Subscriber<? super I>> {
 
@@ -1633,8 +1635,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	/**
 	 * A connecting Flux Publisher (right-to-left from a composition chain perspective)
 	 *
-	 * @param <I>
-	 * @param <O>
+	 * @param <I> Upstream type
+	 * @param <O> Downstream type
 	 */
 	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Publishable {
 
@@ -1658,8 +1660,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 		/**
 		 * Default is delegating and decorating with Flux API
-		 *
-		 * @param s
 		 */
 		@Override
 		@SuppressWarnings("unchecked")
