@@ -531,7 +531,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Provide a default unique value if this mono is completed without any data
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty1.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
 	 *
 	 * @param defaultV the alternate value if this sequence is empty
 	 *
