@@ -870,7 +870,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Transform the item emitted by this {@link Mono} by applying a function to item emitted.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map1.png" alt="">
 	 * <p>
 	 * @param mapper the transforming function
 	 * @param <R> the transformed type
