@@ -1169,7 +1169,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
-	 *
+	 * <p>
 	 * {@code flux.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool
@@ -1187,9 +1187,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate.png" alt="">
 	 *
-	 * @param afterTerminate
+	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		return new FluxPeek<>(this, null, null, null, afterTerminate, null, null, null);
@@ -1200,9 +1200,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
 	 *
-	 * @param onCancel
+	 * @param onCancel the callback to call on {@link Subscription#cancel}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		return new FluxPeek<>(this, null, null, null, null, null, null, onCancel);
@@ -1213,9 +1213,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncomplete.png" alt="">
 	 *
-	 * @param onComplete
+	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		return new FluxPeek<>(this, null, null, null, onComplete, null, null, null);
@@ -1226,9 +1226,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror.png" alt="">
 	 *
-	 * @param onError
+	 * @param onError the callback to call on {@link Subscriber#onError}
 	 *
-	 * @return
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
 		return new FluxPeek<>(this, null, null, onError, null, null, null, null);
@@ -1239,9 +1239,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
 	 *
-	 * @param onNext
+	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		return new FluxPeek<>(this, null, onNext, null, null, null, null, null);
@@ -1252,9 +1252,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
 	 *
-	 * @param onSubscribe
+	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		return new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null);
@@ -1265,9 +1265,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonterminate.png" alt="">
 	 *
-	 * @param onTerminate
+	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		return new FluxPeek<>(this, null, null, null, null, onTerminate, null, null);
@@ -1345,7 +1345,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * The default log category will be "reactor.core.publisher.FluxLog".
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log() {
 		return log(null, Level.INFO, Logger.ALL);
@@ -1359,7 +1359,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category) {
 		return log(category, Level.INFO, Logger.ALL);
@@ -1374,7 +1374,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level) {
 		return log(category, level, Logger.ALL);
@@ -1396,7 +1396,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param level the level to enforce for this tracing Flux
 	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level, int options) {
 		return new FluxLog<>(this, category, level, options);
