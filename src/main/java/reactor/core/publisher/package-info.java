@@ -15,8 +15,7 @@
  */
 
 /**
- * Provide for
- * {@link reactor.core.publisher.Mono}, {@link reactor.core.publisher.Flux} API and {@link org.reactivestreams.Processor} implementations
+ * Provide for {@link reactor.core.publisher.Flux}, {@link reactor.core.publisher.Mono} composition API and {@link org.reactivestreams.Processor} implementations
  *
  * @author Stephane Maldini
  */
