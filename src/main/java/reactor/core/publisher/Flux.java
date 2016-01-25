@@ -1085,8 +1085,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Emit from the fastest first sequence between this publisher and the given publisher
+	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 *
+	 * @param other the {@link Publisher} to race with
 	 *
 	 * @return the fastest sequence
 	 */
