@@ -1469,57 +1469,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		return switchOnError(just(fallbackValue));
 	}
 
-	/**
-	 *
-	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
-	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
-	 *
-	 * {@code flux.subscribeWith(Processors.queue()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param subscriber the {@link Subscriber} to subscribe and return
-	 * @param <E> the reified type from the input/output subscriber
-	 *
-	 * @return the passed {@link Subscriber}
-	 */
-	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(subscriber);
-		return subscriber;
-	}
-
-	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
-	 *
-	 * @return a blocking {@link Iterable}
-	 */
-	public final Iterable<T> toIterable() {
-		return toIterable(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
-		);
-	}
-
-	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
-	 *
-	 * @return a blocking {@link Iterable}
-	 */
-	public final Iterable<T> toIterable(long batchSize) {
-		return toIterable(batchSize, null);
-	}
-
-	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
-	 *
-	 * @return a blocking {@link Iterable}
-	 */
-	public final Iterable<T> toIterable(final long batchSize, Supplier<Queue<T>> queueProvider) {
-		final Supplier<Queue<T>> provider;
-		if(queueProvider == null){
-			provider = QueueSupplier.get(batchSize);
-		}
-		else{
-			provider = queueProvider;
-		}
-		return new BlockingIterable<>(this, batchSize, provider);
-	}
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
@@ -1571,9 +1520,77 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Start the chain and request unbounded demand.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
+	 * <p>
 	 */
 	public final void subscribe() {
 		subscribe(Subscribers.unbounded());
+	}
+
+	/**
+	 *
+	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
+	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
+	 *
+	 * {@code flux.subscribeWith(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param subscriber the {@link Subscriber} to subscribe and return
+	 * @param <E> the reified type from the input/output subscriber
+	 *
+	 * @return the passed {@link Subscriber}
+	 */
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
+		subscribe(subscriber);
+		return subscriber;
+	}
+
+	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterable.png" alt="">
+	 * <p>
+	 *
+	 * @return a blocking {@link Iterable}
+	 */
+	public final Iterable<T> toIterable() {
+		return toIterable(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
+		);
+	}
+
+	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
+	 * <p>
+	 *
+	 * @return a blocking {@link Iterable}
+	 */
+	public final Iterable<T> toIterable(long batchSize) {
+		return toIterable(batchSize, null);
+	}
+
+	/**
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
+	 * <p>
+	 *
+	 * @return a blocking {@link Iterable}
+	 */
+	public final Iterable<T> toIterable(final long batchSize, Supplier<Queue<T>> queueProvider) {
+		final Supplier<Queue<T>> provider;
+		if(queueProvider == null){
+			provider = QueueSupplier.get(batchSize);
+		}
+		else{
+			provider = queueProvider;
+		}
+		return new BlockingIterable<>(this, batchSize, provider);
 	}
 
 	/**

@@ -983,6 +983,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Start the chain and request unbounded demand.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded1.png" alt="">
+	 * <p>
 	 */
 	public final void subscribe() {
 		subscribe(Subscribers.unbounded());
