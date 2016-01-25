@@ -795,7 +795,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <pre>
 	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 *
 	 *
 	 * @return a new {@link Mono}
@@ -814,7 +814,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <pre>
 	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 *
@@ -832,7 +832,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <pre>
 	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
@@ -853,7 +853,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <pre>
 	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
@@ -870,7 +870,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Transform the item emitted by this {@link Mono} by applying a function to item emitted.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 *
 	 * @param mapper the transforming function
 	 * @param <R> the transformed type
