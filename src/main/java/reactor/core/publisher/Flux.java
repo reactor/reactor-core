@@ -455,7 +455,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	/**
 	 * Create a new {@link Flux} that emits the specified items and then complete.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromarray.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justn.png" alt="">
 	 *
 	 * @param data the consecutive data objects to emit
 	 * @param <T> the emitted data type
@@ -505,29 +505,30 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mapsignal.png" alt="">
 	 *
 	 * @param source
-	 * @param nextMapper
-	 * @param errorMapper
-	 * @param completeMapper
+	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
+	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
+	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
 	 * @param <T> the input publisher type
 	 * @param <V> the output {@link Publisher} type target
 	 *
 	 * @return a new {@link Flux}
 	 */
 	public static <T, V> Flux<V> mapSignal(Publisher<T> source,
-			Function<? super T, ? extends V> nextMapper,
-			Function<Throwable, ? extends V> errorMapper,
-			Supplier<? extends V> completeMapper) {
-		return new FluxMapSignal<>(source, nextMapper, errorMapper, completeMapper);
+			Function<? super T, ? extends V> mapperOnNext,
+			Function<Throwable, ? extends V> mapperOnError,
+			Supplier<? extends V> mapperOnComplete) {
+		return new FluxMapSignal<>(source, mapperOnNext, mapperOnError, mapperOnComplete);
 	}
 
 	/**
+	 * Merge emitted {@link Publisher }sequences by the passed {@link Publisher} into an interleaved merged sequence.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
 	 *
-	 * @param source
-	 * @param <T>
+	 * @param source a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param <T> the merged type
 	 *
-	 * @return
+	 * @return a merged {@link Flux}
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
 		return new FluxFlatMap<>(source, PlatformDependent.SMALL_BUFFER_SIZE, 32);

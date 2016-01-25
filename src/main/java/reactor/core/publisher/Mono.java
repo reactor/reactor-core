@@ -689,12 +689,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmaps1.png" alt="">
 	 *
-	 * @param mapperOnNext
-	 * @param mapperOnError
-	 * @param mapperOnComplete
-	 * @param <R>
+	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
+	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
+	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
+	 * @param <R> the type of the produced merged sequence
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 *
@@ -900,7 +900,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Emit the any of the result from this mono or from the given mono
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/or.png" alt="">
 	 *
 	 * @param other the racing other {@link Mono} to compete with for the result
 	 *
