@@ -262,7 +262,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignoreelements.png" alt="">
 	 *
 	 * @param source the {@link Publisher to ignore}
 	 * @param <T> the source type of the ignored data
