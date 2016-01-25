@@ -476,7 +476,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
 	 *
 	 * @param other the {@link Mono} to combine with
 	 *

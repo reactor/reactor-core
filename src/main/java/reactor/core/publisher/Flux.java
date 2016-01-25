@@ -483,14 +483,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Create a {@link Flux} that will fallback to the produced {@link Publisher} given an onError signal.
+	 * Observe Reactive Streams signals matching the passed flags {@code options} and use {@link Logger} support to
+	 * handle trace
+	 * implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
+	 *
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     flux.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
 	 *
-	 * @param source
-	 * @param category
-	 * @param level
-	 * @param options
+	 * @param source the source {@link Publisher} to log
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
+	 *
 	 * @param <T> the {@link Subscriber} type target
 	 *
 	 * @return a logged {@link Flux}
@@ -504,7 +512,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mapsignal.png" alt="">
 	 *
-	 * @param source
+	 * @param source the source {@link Publisher} to map
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
 	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
@@ -521,7 +529,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Merge emitted {@link Publisher }sequences by the passed {@link Publisher} into an interleaved merged sequence.
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into an interleaved merged sequence.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
 	 *
@@ -569,7 +577,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Create a {@link Flux} that never completes.
+	 * Create a {@link Flux} that will never signal any data, error or completion signal.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
 	 *
