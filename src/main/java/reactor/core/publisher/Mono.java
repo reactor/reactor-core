@@ -544,7 +544,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onSubscribe, request, cancel, onNext, onComplete and onError on a supplied
+	 * Run request, cancel, onNext, onComplete and onError on a supplied
 	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
 	 *
 	 * <p>

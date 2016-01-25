@@ -1160,7 +1160,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Run onSubscribe, request, cancel, onNext, onComplete and onError on a supplied
+	 * Run request, cancel, onNext, onComplete and onError on a supplied
 	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
 	 *
 	 * <p>
