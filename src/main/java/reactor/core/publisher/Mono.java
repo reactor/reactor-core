@@ -724,6 +724,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@see PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
 	 * @return T the result
 	 */
 	public T get() {
@@ -737,6 +741,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
 	 *
 	 * @param timeout maximum time period to wait for before raising a {@link reactor.core.util.Exceptions.CancelException}
 	 * @param unit unit of time
