@@ -87,7 +87,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 * <p>
+	 * <p> <p>
 	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
@@ -105,7 +105,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 * <p>
+	 * <p> <p>
 	 *
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
@@ -127,7 +127,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
-	 *
+	 * <p>
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
@@ -144,7 +144,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * passed to the returned Publisher.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
-	 *
+	 * <p>
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
@@ -160,7 +160,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * passed to the returned Publisher.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
-	 *
+	 * <p>
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
@@ -183,7 +183,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
-	 *
+	 * <p>
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param <T> The type of the data sequence
 	 *
@@ -200,7 +200,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * request calls.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
-	 *
+	 * <p>
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param contextFactory A {@link Function} called for every new subscriber returning an immutable context (IO
 	 * connection...)
@@ -222,7 +222,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * onComplete, onError).
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
-	 *
+	 * <p>
 	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
 	 * @param contextFactory A {@link Function} called once for every new subscriber returning an immutable context (IO
 	 * connection...)
@@ -244,7 +244,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a {@link Flux} that completes without emitting any item.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
-	 *
+	 * <p>
 	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
 	 * @return an empty {@link Flux}
@@ -258,7 +258,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a {@link Flux} that completes with the specified error.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/error.png" alt="">
-	 *
+	 * <p>
 	 * @param error the error to signal to each {@link Subscriber}
 	 * @param <T> the reified type of the target {@link Subscriber}
 	 *
@@ -276,7 +276,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * main one) and replenish its request cycle on a threshold free capacity.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
-	 *
+	 * <p>
 	 * @param source the source to flatten
 	 * @param mapper the function to transform the upstream sequence into N sub-sequences
 	 * @param concurrency the maximum alive transformations at a given time
@@ -297,7 +297,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Expose the specified {@link Publisher} with the {@link Flux} API.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
-	 *
+	 * <p>
 	 * @param source the source to decorate
 	 * @param <T> the source sequence type
 	 *
@@ -322,7 +322,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromarray.png" alt="">
-	 *
+	 * <p>
 	 * @param array the {@link T[]} array to read data from
 	 * @param <T> the {@link Publisher} type to stream
 	 *
@@ -343,7 +343,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * A new iterator will be created for each subscriber.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromiterable.png" alt="">
-	 *
+	 * <p>
 	 * @param it the {@link Iterable} to read data from
 	 * @param <T> the {@link Iterable} type to stream
 	 *
@@ -360,7 +360,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromtuple.png" alt="">
-	 * <p>
+	 * <p> <p>
 	 *
 	 * @param tuple the {@link Tuple} to read data from
 	 *
@@ -379,7 +379,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * onError).
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
-	 *
+	 * <p>
 	 * @param requestConsumer A {@link BiConsumer} with left argument request and right argument target subscriber
 	 * @param contextFactory A {@link Function} called once for every new subscriber returning an immutable context (IO
 	 * connection...)
@@ -405,7 +405,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
-	 *
+	 * <p>
 	 * @param seconds The number of seconds to wait before the next increment
 	 *
 	 * @return a new timed {@link Flux}
@@ -420,7 +420,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
-	 *
+	 * <p>
 	 * @param period The the time relative to given unit to wait before the next increment
 	 * @param unit The unit of time
 	 *
@@ -436,7 +436,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
-	 *
+	 * <p>
 	 * @param period The the time relative to given unit to wait before the next increment
 	 * @param unit The unit of time
 	 * @param timer a {@link Timer} instance
@@ -456,7 +456,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a new {@link Flux} that emits the specified items and then complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justn.png" alt="">
-	 *
+	 * <p>
 	 * @param data the consecutive data objects to emit
 	 * @param <T> the emitted data type
 	 *
@@ -472,7 +472,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a new {@link Flux} that will only emit the passed data then onComplete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/just.png" alt="">
-	 *
+	 * <p>
 	 * @param data the unique data to emit
 	 * @param <T> the emitted data type
 	 *
@@ -493,7 +493,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *     flux.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
-	 *
+	 * <p>
 	 * @param source the source {@link Publisher} to log
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
@@ -512,7 +512,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * completion signal after its mapping callback has been applied.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mapsignal.png" alt="">
-	 *
+	 * <p>
 	 * @param source the source {@link Publisher} to map
 	 * @param mapperOnNext the {@link Function} to call on next data and returning the target transformed data
 	 * @param mapperOnError the {@link Function} to call on error signal and returning the target transformed data
@@ -533,7 +533,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into an interleaved merged sequence.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
-	 *
+	 * <p>
 	 * @param source a {@link Publisher} of {@link Publisher} sequence to merge
 	 * @param <T> the merged type
 	 *
@@ -548,7 +548,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * {@link Iterable#iterator()} will be called for each {@link Publisher#subscribe}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
-	 *
+	 * <p>
 	 * @param sources the {@link Iterable} to lazily iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param <I> The source type of the data sequence
 	 *
@@ -563,7 +563,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * sequence.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
-	 *
+	 * <p>
 	 * @param sources the {@link Publisher[]} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param <I> The source type of the data sequence
 	 *
@@ -585,7 +585,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a {@link Flux} that will never signal any data, error or completion signal.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
-	 *
+	 * <p>
 	 * @param <T> the {@link Subscriber} type target
 	 *
 	 * @return a never completing {@link Flux}
@@ -598,7 +598,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Create a {@link Flux} that will fallback to the produced {@link Publisher} given an onError signal.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png" alt="">
-	 *
+	 * <p>
 	 * @param <T> the {@link Subscriber} type target
 	 *
 	 * @return a resilient {@link Flux}
@@ -615,7 +615,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * signals.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 *
+	 * <p>
 	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
 	 * @param <T> The type of the data sequence
 	 *
@@ -631,7 +631,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
@@ -659,7 +659,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param <T1> type of the value from source1
@@ -680,7 +680,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -705,7 +705,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -726,7 +726,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -756,7 +756,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -780,7 +780,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -811,7 +811,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -837,7 +837,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -873,7 +873,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -904,7 +904,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -944,7 +944,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -988,7 +988,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 *
 	 * @return a zipped {@link Flux}
@@ -1028,7 +1028,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the
 	 * value to signal downstream
 	 * @param sources the {@link Publisher[]} to iterate on {@link Publisher#subscribe(Subscriber)}
@@ -1075,7 +1075,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * This will actively ignore the sequence and only replay completion or error signals.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
-	 *
+	 * <p>
 	 * @return a new {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
@@ -1088,7 +1088,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 *
+	 * <p>
 	 * @param other the {@link Publisher} to race with
 	 *
 	 * @return the fastest sequence
@@ -1114,7 +1114,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
-	 *
+	 * <p>
 	 * @param mapper the function to transform this sequence of T into concated sequences of R
 	 * @param <R> the produced concated type
 	 *
@@ -1128,7 +1128,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
-	 *
+	 * <p>
 	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
 	 *
 	 * @return a new {@link Flux}
@@ -1150,7 +1150,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Provide a default unique value if this sequence is completed without any data
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defaultifempty.png" alt="">
-	 *
+	 * <p>
 	 * @param defaultV the alternate value if this sequence is empty
 	 *
 	 * @return a new {@link Flux}
@@ -1169,7 +1169,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
-	 * <p>
+	 * <p> <p>
 	 * {@code flux.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool
@@ -1186,7 +1186,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered after the {@link Flux} terminates, either by completing downstream successfully or with an error.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate.png" alt="">
-	 *
+	 * <p>
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1199,7 +1199,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} is cancelled.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncancel.png" alt="">
-	 *
+	 * <p>
 	 * @param onCancel the callback to call on {@link Subscription#cancel}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1212,7 +1212,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} completes successfully.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dooncomplete.png" alt="">
-	 *
+	 * <p>
 	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1225,7 +1225,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} completes with an error.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror.png" alt="">
-	 *
+	 * <p>
 	 * @param onError the callback to call on {@link Subscriber#onError}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1238,7 +1238,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} emits an item.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
-	 *
+	 * <p>
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1251,7 +1251,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} is subscribed.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsubscribe.png" alt="">
-	 *
+	 * <p>
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1264,7 +1264,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Triggered when the {@link Flux} terminates, either by completing successfully or with an error.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonterminate.png" alt="">
-	 *
+	 * <p>
 	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1278,7 +1278,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
-	 *
+	 * <p>
 	 * @param mapper
 	 * @param <R>
 	 *
@@ -1294,7 +1294,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * OnError will be transformed into completion signal after its mapping callback has been applied.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmaps.png" alt="">
-	 *
+	 * <p>
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
 	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
@@ -1327,7 +1327,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/lift.png" alt="">
-	 *
+	 * <p>
 	 * @param operator
 	 * @param <R>
 	 *
@@ -1342,7 +1342,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
-	 *
+	 * <p>
 	 * The default log category will be "reactor.core.publisher.FluxLog".
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1356,7 +1356,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
-	 *
+	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 *
 	 * @return a new unaltered {@link Flux}
@@ -1370,7 +1370,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
-	 *
+	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
 	 *
@@ -1391,7 +1391,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *     flux.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
-	 *
+	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
 	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
@@ -1406,7 +1406,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Transform the items emitted by this {@link Flux} by applying a function to each item.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map.png" alt="">
-	 *
+	 * <p>
 	 * @param mapper
 	 * @param <R>
 	 *
@@ -1420,7 +1420,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Merge emissions of this {@link Flux} with the provided {@link Publisher}, so that they may interleave.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
-	 *
+	 * <p>
 	 * @param other the {@link Publisher} to merge with
 	 *
 	 * @return a new {@link Flux}
@@ -1433,7 +1433,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Emit only the first item emitted by this {@link Flux}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/next.png" alt="">
-	 *
+	 * <p>
 	 * If the sequence emits more than 1 data, emit {@link ArrayIndexOutOfBoundsException}.
 	 *
 	 * @return a new {@link Mono}
@@ -1446,7 +1446,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Subscribe to a returned fallback publisher when any error occurs.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png" alt="">
-	 *
+	 * <p>
 	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
 	 *
 	 * @return a new {@link Flux}
@@ -1459,7 +1459,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Fallback to the given value if an error is observed on this {@link Flux}
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
-	 *
+	 * <p>
 	 * @param fallbackValue alternate value on fallback
 	 *
 	 * @return a new {@link Flux}
@@ -1525,7 +1525,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * {@link ProcessorGroup#publishOn} reference {@link org.reactivestreams.Processor}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 *
+	 * <p>
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
 	 * It naturally combines with {@link Processors#ioGroup} which implements work-queue thread dispatching.
@@ -1548,7 +1548,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param fallback the alternate {@link Publisher}
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
-	 *
+	 * <p>
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
@@ -1559,7 +1559,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Provide an alternative if this sequence is completed without any data
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
-	 *
+	 * <p>
 	 * @param alternate the alternate publisher if this sequence is empty
 	 *
 	 * @return a new {@link Flux}
@@ -1580,7 +1580,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 *
+	 * <p>
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param <R> type of the value from source2
 	 *
@@ -1597,7 +1597,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * completes. Errors will immediately be forwarded.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 *
+	 * <p>
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
 	 * to signal downstream
