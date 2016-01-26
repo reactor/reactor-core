@@ -21,10 +21,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import reactor.fn.BiFunction;
 import reactor.fn.Function;
 
 /**
