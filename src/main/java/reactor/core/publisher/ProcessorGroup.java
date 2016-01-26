@@ -636,7 +636,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 			final boolean set, subscribed;
 			synchronized (this) {
 				if (subscriber == null) {
-					subscriber = s;
+					if(source == null) {
+						subscriber = s;
+					}
 					set = true;
 				}
 				else {
@@ -712,6 +714,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 		protected void doStart(final Subscriber<? super V> subscriber) {
 			RUNNING.incrementAndGet(this);
 
+			this.subscriber = subscriber;
 			subscriber.onSubscribe(this);
 			if(source != null){
 				source.subscribe(this);
@@ -1001,14 +1004,12 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 					if(source != null) {
 						source.subscribe(WorkProcessorBarrier.this);
 					}
-					Subscriber subscriber = WorkProcessorBarrier.this.subscriber;
-					if(subscriber != null) {
-						if(error != null){
-							EmptySubscription.error(subscriber, error);
-							return;
-						}
-						subscriber.onSubscribe(WorkProcessorBarrier.this);
+					if(error != null){
+						EmptySubscription.error(subscriber, error);
+						return;
 					}
+					WorkProcessorBarrier.this.subscriber = subscriber;
+					subscriber.onSubscribe(WorkProcessorBarrier.this);
 				}
 			});
 		}
