@@ -295,7 +295,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -313,7 +313,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -333,7 +333,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -358,7 +358,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -386,7 +386,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -417,7 +417,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Monos} have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
@@ -437,6 +437,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 * <p>
+	 * @param combinator the combinator {@link Function}
 	 * @param monos The monos to use.
 	 * @param <T> The super incoming type
 	 * @param <V> The type of the function result.
@@ -454,8 +455,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Monos} have been fulfilled.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
+	 *
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
 	 *
@@ -473,6 +475,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
 	 * <p>
+	 *
+	 * @param combinator the combinator {@link Function}
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
 	 *
