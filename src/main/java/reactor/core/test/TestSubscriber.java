@@ -344,28 +344,45 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	/**
 	 * Assert the specified values have been received. Values storage should be enabled to
 	 * use this method.
+	 * @param expectations One or more methods that can verify the values and throw a
+	 * exception (like an {@link AssertionError}) if the value is not valid.
+	 * @see #configureValuesStorage(boolean)
+	 */
+	public final TestSubscriber<T> assertValuesWith(Consumer<T>... expectations) {
+		if (!valuesStorage) {
+			throw new IllegalStateException("Using assertNoValues() requires enabling values storage");
+		}
+		final int expectedValueCount = expectations.length;
+		if (expectedValueCount != values.size()) {
+			throw new AssertionError("Different value count: expected = " + expectedValueCount + ", actual = " + valueCount, null);
+		}
+		for (int i = 0; i < expectedValueCount; i++) {
+			Consumer<T> consumer = expectations[i];
+			T actualValue = values.get(i);
+			consumer.accept(actualValue);
+		}
+		return this;
+	}
+
+	/**
+	 * Assert the specified values have been received. Values storage should be enabled to
+	 * use this method.
 	 * @param expectedSequence the values to assert
 	 * @see #configureValuesStorage(boolean)
 	 */
 	public final TestSubscriber<T> assertValueSequence(Iterable<? extends T> expectedSequence) {
-
 		if (!valuesStorage) {
 			throw new IllegalStateException("Using assertNoValues() requires enabling values storage");
 		}
-
 		Iterator<T> actual = values.iterator();
 		Iterator<? extends T> expected = expectedSequence.iterator();
-
 		int i = 0;
-
 		for (; ; ) {
 			boolean n1 = actual.hasNext();
 			boolean n2 = expected.hasNext();
-
 			if (n1 && n2) {
 				T t1 = actual.next();
 				T t2 = expected.next();
-
 				if (!Objects.equals(t1, t2)) {
 					throw new AssertionError("The " + i + " th elements differ: expected = " + valueAndClass(t2) + ", actual ="
 					  + valueAndClass(
@@ -379,9 +396,7 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 			} else {
 				break;
 			}
-
 		}
-
 		return this;
 	}
 
@@ -482,8 +497,8 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 
 		for (int i = 0; i < expectedValueCount; i++) {
 			Consumer<T> consumer = expectations[i];
-			T actualSignal = nextValuesSnapshot.get(i);
-			consumer.accept(actualSignal);
+			T actualValue = nextValuesSnapshot.get(i);
+			consumer.accept(actualValue);
 		}
 		nextValueAssertedCount += expectedValueCount;
 		return this;
