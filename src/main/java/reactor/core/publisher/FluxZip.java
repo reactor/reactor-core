@@ -261,7 +261,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 		
 		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
-			WIP.lazySet(this, sc);
+			WIP.lazySet(this, n - sc);
 			ZipSingleSubscriber<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
 				if (wip <= 0 || isCancelled()) {
