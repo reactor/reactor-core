@@ -15,8 +15,8 @@
  */
 
 /**
- * Convert {@link org.reactivestreams.Publisher} from/to JDK8 CompletableFuture, JDK9 Flow.Publisher, RxJava1
- * Observable and Single.
+ * Convert
+ * {@link org.reactivestreams.Publisher} from/to JDK8 {@link reactor.core.converter.CompletableFutureConverter CompletableFuture}, JDK9 {@link reactor.core.converter.Jdk9FlowConverter Flow.Publisher}, RxJava1 {@link reactor.core.converter.RxJava1ObservableConverter Observable} and {@link reactor.core.converter.RxJava1SingleConverter Single}.
  *
  * @author Stephane Maldini
  */
