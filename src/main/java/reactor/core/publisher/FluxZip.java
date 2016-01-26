@@ -554,7 +554,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 		public long getPending() {
 			int nonEmpties = 0;
 			for(int i =0; i < subscribers.length; i++){
-				if(subscribers[i].queue != null && subscribers[i].queue .isEmpty()){
+				if(subscribers[i].queue != null && !subscribers[i].queue .isEmpty()){
 					nonEmpties++;
 				}
 			}
