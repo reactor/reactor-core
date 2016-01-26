@@ -1004,8 +1004,12 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 					if(source != null) {
 						source.subscribe(WorkProcessorBarrier.this);
 					}
-					if(error != null){
-						EmptySubscription.error(subscriber, error);
+					if(terminated == 1) {
+						if (error != null) {
+							EmptySubscription.error(subscriber, error);
+							return;
+						}
+						EmptySubscription.complete(subscriber);
 						return;
 					}
 					WorkProcessorBarrier.this.subscriber = subscriber;
