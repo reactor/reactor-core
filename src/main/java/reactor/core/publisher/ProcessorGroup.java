@@ -691,7 +691,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 					error = t;
 				}
 				if (subscriber == null) {
-					Exceptions.onErrorDropped(t);
+					return;
 				}
 
 				doError(t);
