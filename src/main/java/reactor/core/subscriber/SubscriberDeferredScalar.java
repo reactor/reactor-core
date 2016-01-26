@@ -25,7 +25,6 @@ import reactor.core.trait.Completable;
 import reactor.core.trait.Connectable;
 import reactor.core.trait.Subscribable;
 import reactor.core.util.BackpressureUtils;
-import reactor.fn.Supplier;
 
 /**
  * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
@@ -35,7 +34,7 @@ import reactor.fn.Supplier;
  * @param <O> The downstream sequence type
  */
 public class SubscriberDeferredScalar<I, O>
-		implements Subscriber<I>, Completable, Subscription, Supplier<O>, Connectable, Cancellable, Subscribable {
+		implements Subscriber<I>, Completable, Subscription, Connectable, Cancellable, Subscribable {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 	static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
@@ -121,7 +120,6 @@ public class SubscriberDeferredScalar<I, O>
 		return STATE.compareAndSet(this, expected, updated);
 	}
 
-	@Override
 	public O get() {
 		return value;
 	}
