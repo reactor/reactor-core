@@ -30,10 +30,12 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.EmptySubscriber;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
+import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.Consumer;
+import reactor.fn.Supplier;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -93,6 +95,55 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	private long valuesTimeout = DEFAULT_VALUES_TIMEOUT;
 
 	private boolean valuesStorage = true;
+
+
+//	 ==============================================================================================================
+//	 Static methods
+//	 ==============================================================================================================
+
+	/**
+	 * Await {@code conditionSupplier} returns true, or if it does not before the specified
+	 * timeout, throw an {@link AssertionError} with the specified error message.
+	 * @throws AssertionError
+	 */
+	public static void await(long timeoutInSeconds, Supplier<String> errorMessageSupplier,
+			Supplier<Boolean> conditionSupplier) {
+
+		Assert.notNull(errorMessageSupplier);
+		Assert.notNull(conditionSupplier);
+		Assert.isTrue(timeoutInSeconds > 0);
+
+		long timeoutNs = TimeUnit.SECONDS.toNanos(timeoutInSeconds);
+		long startTime = System.nanoTime();
+		do {
+			if (conditionSupplier.get()) {
+				return;
+			}
+			try {
+				Thread.sleep(100);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException(e);
+			}
+		}
+		while (System.nanoTime() - startTime < timeoutNs);
+		throw new AssertionError(errorMessageSupplier.get());
+	}
+
+	/**
+	 * Await {@code conditionSupplier} returns true, or if it does not before the specified
+	 * timeout, throw an {@link AssertionError} with the specified error message.
+	 * @throws AssertionError
+	 */
+	public static void await(long timeoutInSeconds, final String errorMessage, Supplier<Boolean> resultSupplier) {
+		await(timeoutInSeconds, new Supplier<String>() {
+			@Override
+			public String get() {
+				return errorMessage;
+			}
+		}, resultSupplier);
+	}
 
 
 //	 ==============================================================================================================
@@ -458,28 +509,14 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	public final TestSubscriber<T> awaitAndAssertValuesWith(Consumer<T>... expectations) {
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
-		long timeoutNs = TimeUnit.SECONDS.toNanos(valuesTimeout);
-		long startTime = System.nanoTime();
-		boolean valuesReceived = false;
-		do {
-			if (valueCount == (nextValueAssertedCount + expectedValueCount)) {
-				valuesReceived = true;
-				break;
+		await(valuesTimeout,
+				String.format("%d out of %d next values received within %d secs", valueCount, nextValueAssertedCount + expectedValueCount, valuesTimeout),
+				new Supplier<Boolean>() {
+			@Override
+			public Boolean get() {
+				return valueCount == (nextValueAssertedCount + expectedValueCount);
 			}
-			try {
-				Thread.sleep(100);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new RuntimeException(e);
-			}
-		}
-		while (System.nanoTime() - startTime < timeoutNs);
-		if (!valuesReceived) {
-			throw new AssertionError(String.format("%d out of %d next values received within %d secs",
-						valueCount, nextValueAssertedCount + expectedValueCount, valuesTimeout));
-		}
-
+		});
 		List<T> nextValuesSnapshot;
 		List<T> empty = new ArrayList<>();
 		for(;;){
@@ -488,13 +525,11 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 				break;
 			}
 		}
-
 		if (nextValuesSnapshot.size() != expectedValueCount) {
 			throw new AssertionError(String.format("Expected %d number of signals but received %d",
 					expectedValueCount,
 					nextValuesSnapshot.size()));
 		}
-
 		for (int i = 0; i < expectedValueCount; i++) {
 			Consumer<T> consumer = expectations[i];
 			T actualValue = nextValuesSnapshot.get(i);
