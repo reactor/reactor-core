@@ -15,7 +15,8 @@
  */
 
 /**
- * Time sensitive factory {@link reactor.core.timer.Timers} and contract {@link reactor.core.timer.Timer}. Used for scheduling
+ * Time sensitive {@link reactor.core.timer.Timers} factory and the {@link reactor.core.timer.Timer} contract. Used for
+ * scheduling
  * {@link reactor.core.publisher.Mono#delay} or  {@link reactor.core.publisher.Flux#interval}, timeout handling
  * or polling tasks.
  *
