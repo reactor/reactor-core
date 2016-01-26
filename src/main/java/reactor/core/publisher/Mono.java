@@ -447,7 +447,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"varargs", "unchecked"})
 	private static <T, V> Mono<V> when(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>get(1), 1));
+		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 	/**
@@ -485,7 +485,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public static <T, V> Mono<V> when(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>get(1), 1));
+		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 //	 ==============================================================================================================

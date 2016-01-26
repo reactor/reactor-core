@@ -140,7 +140,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				IDENTITY_FUNCTION,
 				false,
 				1,
-				QueueSupplier.<I>get(1),
+				QueueSupplier.<I>one(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<I>xs()
 		);
@@ -1148,7 +1148,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				mapper,
 				false,
 				1,
-				QueueSupplier.<R>get(1),
+				QueueSupplier.<R>one(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<R>xs()
 		);

@@ -36,6 +36,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 	private final long batchSize;
 
+
+	/**
+	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return an unbounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> unbounded(){
+		return (Supplier<Queue<T>>)CLQ_SUPPLIER;
+	}
 	/**
 	 *
 	 * @param <T> the reified {@link Queue} generic type
@@ -54,6 +64,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> xs(){
 		return (Supplier<Queue<T>>)XSRB_SUPPLIER;
+	}
+
+	/**
+	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return a bounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> one(){
+		return (Supplier<Queue<T>>)ABQ_SUPPLIER;
 	}
 
 	/**
