@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.timer.Timers;
@@ -682,7 +683,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, PlatformDependent.SMALL_BUFFER_SIZE, Integer.MAX_VALUE);
+		return new FluxFlatMap<>(
+				this,
+				mapper,
+				false,
+				Integer.MAX_VALUE,
+				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				PlatformDependent.SMALL_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**
@@ -705,9 +714,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
+
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.IDENTITY_FUNCTION, PlatformDependent.SMALL_BUFFER_SIZE, 32);
+				Flux.IDENTITY_FUNCTION,
+				false,
+				PlatformDependent.SMALL_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**

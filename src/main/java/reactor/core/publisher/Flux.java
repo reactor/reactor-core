@@ -92,7 +92,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a new Flux eventually subscribed to one of the sources or empty
+	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
 	 */
 	@SuppressWarnings({"unchecked", "varargs"})
 	@SafeVarargs
@@ -110,7 +110,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources The competing source publishers
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a new Flux eventually subscribed to one of the sources or empty
+	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
 	 */
 	@SuppressWarnings("unchecked")
 	public static <I> Flux<I> amb(Iterable<? extends Publisher<? extends I>> sources) {
@@ -131,10 +131,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a new Flux concatenating all inner sources sequences until complete or error
+	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
+	@SuppressWarnings("unchecked")
 	public static <I> Flux<I> concat(Publisher<? extends Publisher<? extends I>> sources) {
-		return new FluxFlatMap<>(sources, 1, 32);
+		return new FluxFlatMap<>(
+				sources,
+				IDENTITY_FUNCTION,
+				false,
+				1,
+				QueueSupplier.<I>get(1),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<I>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**
@@ -148,14 +157,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a new Flux concatenating all source sequences
+	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	public static <I> Flux<I> concat(Iterable<? extends Publisher<? extends I>> sources) {
 		return concat(fromIterable(sources));
 	}
 
 	/**
-	 * Concat all sources pulled from the given {@link Publisher[]}.
+	 * Concat all sources pulled from the given {@link Publisher} array.
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned Publisher.
 	 * <p>
@@ -164,7 +173,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources The {@link Publisher} of {@link Publisher} to concat
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a new Flux concatenating all source sequences
+	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked", "varargs"})
@@ -269,10 +278,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Consume the passed 
+	 * Consume the passed
 	 * {@link Publisher} source and transform its sequence of T into a N sequences of V via the given {@link Function}.
 	 * The produced sequences {@link Publisher} will be merged back in the returned {@link Flux}.
-	 * The backpressure will apply using the provided bufferSize which will actively consume each sequence (and the 
+	 * The backpressure will apply using the provided bufferSize which will actively consume each sequence (and the
 	 * main one) and replenish its request cycle on a threshold free capacity.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
@@ -286,11 +295,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a new merged {@link Flux}
 	 */
-	public static <T, V> Flux<V> flatMap(Publisher<? extends T> source,
+	public static <T, V> Flux<V> flatMap(
+			Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends V>> mapper,
 			int concurrency,
 			int bufferSize) {
-		return new FluxFlatMap<>(source, mapper, concurrency, bufferSize);
+
+		return new FluxFlatMap<>(
+				source,
+				mapper,
+				false,
+				concurrency,
+				QueueSupplier.<V>get(concurrency),
+				bufferSize,
+				QueueSupplier.<V>get(bufferSize)
+		);
 	}
 
 	/**
@@ -323,7 +342,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromarray.png" alt="">
 	 * <p>
-	 * @param array the {@link T[]} array to read data from
+	 * @param array the array to read data from
 	 * @param <T> the {@link Publisher} type to stream
 	 *
 	 * @return a new {@link Flux}
@@ -388,7 +407,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, C> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
@@ -539,8 +558,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a merged {@link Flux}
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
-		return new FluxFlatMap<>(source, PlatformDependent.SMALL_BUFFER_SIZE, 32);
+		return new FluxFlatMap<>(
+				source,
+				IDENTITY_FUNCTION,
+				false,
+				PlatformDependent.SMALL_BUFFER_SIZE,
+				QueueSupplier.<T>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<T>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**
@@ -552,22 +580,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sources the {@link Iterable} to lazily iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
 		return merge(fromIterable(sources));
 	}
 
 	/**
-	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher[]} into an interleaved merged
+	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
 	 * sequence.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
 	 * <p>
-	 * @param sources the {@link Publisher[]} to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param <I> The source type of the data sequence
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked", "varargs"})
@@ -619,7 +647,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
 	 * @param <T> The type of the data sequence
 	 *
-	 * @return a fresh Reactive Flux publisher ready to be subscribed
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T> Flux<T> yield(Consumer<? super ReactiveSession<T>> sessionConsumer) {
 		return new FluxYieldingSession<>(sessionConsumer);
@@ -632,13 +660,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
 	 * <p>
+	 *
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
+	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the
+	 * value to signal downstream
 	 * @param <T1> type of the value from source1
 	 * @param <T2> type of the value from source2
-	 * @param <O> The produced output after transformation by {@param combinator}
+	 * @param <O> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
 	 */
@@ -681,6 +710,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
 	 * <p>
+	 *
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -689,7 +719,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T1> type of the value from source1
 	 * @param <T2> type of the value from source2
 	 * @param <T3> type of the value from source3
-	 * @param <V> The produced output after transformation by {@param combinator}
+	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
 	 */
@@ -727,6 +757,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
 	 * <p>
+	 *
 	 * @param source1 The first upstream {@link Publisher} to subscribe to.
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param source3 The third upstream {@link Publisher} to subscribe to.
@@ -737,7 +768,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T2> type of the value from source2
 	 * @param <T3> type of the value from source3
 	 * @param <T4> type of the value from source4
-	 * @param <V> The produced output after transformation by {@param combinator}
+	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a {@link Flux} based on the produced value
 	 */
@@ -792,7 +823,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T3> type of the value from source3
 	 * @param <T4> type of the value from source4
 	 * @param <T5> type of the value from source5
-	 * @param <V> The produced output after transformation by {@param combinator}
+	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a {@link Flux} based on the produced value
 	 */
@@ -852,7 +883,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T4> type of the value from source4
 	 * @param <T5> type of the value from source5
 	 * @param <T6> type of the value from source6
-	 * @param <V> The produced output after transformation by {@param combinator}
+	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a {@link Flux} based on the produced value
 	 */
@@ -1031,7 +1062,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the
 	 * value to signal downstream
-	 * @param sources the {@link Publisher[]} to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param <O> the combined produced type
 	 *
 	 * @return a zipped {@link Flux}
@@ -1056,7 +1087,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Immediately apply the given transformation to this Flux in order to generate a target {@link Publisher} type.
+	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target {@link Publisher} type.
 	 *
 	 * {@code flux.as(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
@@ -1121,7 +1152,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, 1, PlatformDependent.XS_BUFFER_SIZE);
+		return new FluxFlatMap<>(
+				this,
+				mapper,
+				false,
+				1,
+				QueueSupplier.<R>get(1),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**
@@ -1138,9 +1177,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Introspect this Flux graph
+	 * Introspect this {@link Flux} graph
 	 *
-	 * @return {@link ReactiveStateUtils.Graph} representation of a publisher graph
+	 * @return {@link ReactiveStateUtils} {@literal Graph} representation of the operational flow
 	 */
 	public final ReactiveStateUtils.Graph debug() {
 		return ReactiveStateUtils.scan(this);
@@ -1285,7 +1324,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new FluxFlatMap<>(this, mapper, PlatformDependent.SMALL_BUFFER_SIZE, 32);
+		return new FluxFlatMap<>(
+				this,
+				mapper,
+				false,
+				PlatformDependent.SMALL_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	/**
@@ -1308,7 +1355,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				IDENTITY_FUNCTION, PlatformDependent.SMALL_BUFFER_SIZE, 32);
+				Flux.IDENTITY_FUNCTION,
+				false,
+				PlatformDependent.SMALL_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+		);
 	}
 
 	@Override
@@ -1620,7 +1673,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
 	 * to signal downstream
 	 * @param <R> type of the value from source2
-	 * @param <V> The produced output after transformation by {@param combinator}
+	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
 	 */
@@ -1651,7 +1704,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * A connecting Flux Publisher (right-to-left from a composition chain perspective)
+	 * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
 	 *
 	 * @param <I> Upstream type
 	 * @param <O> Downstream type
@@ -1677,7 +1730,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		}
 
 		/**
-		 * Default is delegating and decorating with Flux API
+		 * Default is delegating and decorating with {@link Flux} API
 		 */
 		@Override
 		@SuppressWarnings("unchecked")
@@ -1699,7 +1752,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Decorate a Flux with a capacity for downstream accessors
+	 * Decorate a {@link Flux} with a capacity for downstream accessors
 	 *
 	 * @param <I>
 	 */
