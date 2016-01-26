@@ -724,9 +724,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				mapper,
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				QueueSupplier.<R>small(),
 				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<R>xs()
 		);
 	}
 
@@ -756,9 +756,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				Flux.IDENTITY_FUNCTION,
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				QueueSupplier.<R>small(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<R>xs()
 		);
 	}
 

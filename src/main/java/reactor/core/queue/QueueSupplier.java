@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import reactor.core.util.PlatformDependent;
 import reactor.fn.Supplier;
 
 /**
@@ -28,16 +29,38 @@ import reactor.fn.Supplier;
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
-	private static final Supplier CLQ_SUPPLIER = new QueueSupplier<>(Long.MAX_VALUE);
-	private static final Supplier ABQ_SUPPLIER = new QueueSupplier<>(1);
+	private static final Supplier CLQ_SUPPLIER     = new QueueSupplier<>(Long.MAX_VALUE);
+	private static final Supplier ABQ_SUPPLIER     = new QueueSupplier<>(1);
+	private static final Supplier XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE);
+	private static final Supplier SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE);
 
 	private final long batchSize;
 
 	/**
 	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return a bounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> small(){
+		return (Supplier<Queue<T>>)SMALLRB_SUPPLIER;
+	}
+
+	/**
+	 *
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return a bounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> xs(){
+		return (Supplier<Queue<T>>)XSRB_SUPPLIER;
+	}
+
+	/**
+	 *
 	 * @param batchSize
-	 * @param <T>
-	 * @return
+	 * @param <T> the reified {@link Queue} generic type
+	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(long batchSize){

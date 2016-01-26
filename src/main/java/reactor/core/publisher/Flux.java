@@ -142,7 +142,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				1,
 				QueueSupplier.<I>get(1),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<I>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<I>xs()
 		);
 	}
 
@@ -565,9 +565,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				IDENTITY_FUNCTION,
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<T>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				QueueSupplier.<T>small(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<T>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<T>xs()
 		);
 	}
 
@@ -1039,7 +1039,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.get(PlatformDependent.XS_BUFFER_SIZE),
+		return new FluxZip<>(sources, combinator, QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE);
 	}
 
@@ -1066,7 +1066,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.get(PlatformDependent.XS_BUFFER_SIZE),
+		return new FluxZip<>(sources, combinator, QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE);
 	}
 
@@ -1150,7 +1150,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				1,
 				QueueSupplier.<R>get(1),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<R>xs()
 		);
 	}
 
@@ -1320,9 +1320,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				mapper,
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				QueueSupplier.<R>small(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<R>xs()
 		);
 	}
 
@@ -1349,9 +1349,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				Flux.IDENTITY_FUNCTION,
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.SMALL_BUFFER_SIZE),
+				QueueSupplier.<R>small(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>get(PlatformDependent.XS_BUFFER_SIZE)
+				QueueSupplier.<R>xs()
 		);
 	}
 
