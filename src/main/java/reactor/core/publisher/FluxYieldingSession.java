@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.state.Introspectable;
 import reactor.core.subscriber.ReactiveSession;
-import reactor.core.trait.Introspectable;
 import reactor.core.util.EmptySubscription;
 import reactor.fn.Consumer;
 

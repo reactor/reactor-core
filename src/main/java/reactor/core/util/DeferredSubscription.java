@@ -20,28 +20,29 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Completable;
-import reactor.core.trait.Requestable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Requestable;
 
 /**
  * Base class for Subscribers that will receive their Subscriptions at any time yet
  * they need to be cancelled or requested at any time.
  */
-public class DeferredSubscription implements Subscription, Cancellable, Requestable, Completable {
+public class DeferredSubscription
+		implements Subscription, Cancellable, Requestable, Completable {
 
 	volatile Subscription s;
 	static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
+		AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
 
 	volatile long requested;
 	static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
+		AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
 
 	protected final void setInitialRequest(long n) {
 		REQUESTED.lazySet(this, n);
 	}
-
+	
 	/**
 	 * Atomically sets the single subscription and requests the missed amount from it.
 	 *
@@ -78,7 +79,7 @@ public class DeferredSubscription implements Subscription, Cancellable, Requesta
 			s.cancel();
 			return false;
 		}
-
+		
 		BackpressureUtils.reportSubscriptionSet();
 		return false;
 	}
@@ -88,8 +89,7 @@ public class DeferredSubscription implements Subscription, Cancellable, Requesta
 		Subscription a = s;
 		if (a != null) {
 			a.request(n);
-		}
-		else {
+		} else {
 			BackpressureUtils.addAndGet(REQUESTED, this, n);
 
 			a = s;

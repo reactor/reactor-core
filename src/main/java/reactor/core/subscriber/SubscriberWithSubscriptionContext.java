@@ -18,8 +18,8 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Backpressurable;
-import reactor.core.trait.Publishable;
+import reactor.core.graph.Publishable;
+import reactor.core.state.Backpressurable;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;

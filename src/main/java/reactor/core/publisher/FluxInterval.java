@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.state.Timeable;
 import reactor.core.timer.Timer;
-import reactor.core.trait.Timeable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 

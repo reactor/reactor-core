@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
 
 /**
- * A simple interface that marks an object as being recyclable.
+ * A component that holds a failure state if any
  */
+public interface Failurable {
 
-public interface Recyclable {
-
-	/**
-	 * Free any internal resources and reset the state of the object to enable reuse.
-	 */
-	void recycle();
-
+	Throwable getError();
 }

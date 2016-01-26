@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-/**
- * Common traits shared by reactive components: backpressure, lifecycle state, request tracking, or connected
- * upstreams/downstreams.
- * <p>
- * The state read accuracy (volatility) is implementation-dependent and implementors MAY return cached value for a given
- * state.
- *
- * @author Stephane Maldini
- */
+package reactor.core.state;
 
-package reactor.core.trait;
+/**
+ * A storing component
+ */
+public interface Backpressurable {
+
+	/**
+	 * Return defined element capacity
+	 *
+	 * @return long capacity
+	 */
+	long getCapacity();
+
+	/**
+	 * Return current used space in buffer
+	 *
+	 * @return long capacity
+	 */
+	long getPending();
+}

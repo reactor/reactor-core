@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
 
 /**
- * A storing component
+ * A criteria grouped component
  */
-public interface Backpressurable {
+public interface Groupable<K> {
 
 	/**
-	 * Return defined element capacity
-	 *
-	 * @return long capacity
+	 * Return defined identifier
 	 */
-	long getCapacity();
-
-	/**
-	 * Return current used space in buffer
-	 *
-	 * @return long capacity
-	 */
-	long getPending();
+	K key();
 }

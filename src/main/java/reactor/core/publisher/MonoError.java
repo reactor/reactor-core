@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.trait.Failurable;
+import reactor.core.state.Failurable;
 import reactor.core.util.EmptySubscription;
 import reactor.fn.Supplier;
 
@@ -32,7 +32,9 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoError<T> extends Mono<T> implements Failurable {
+final class MonoError<T> 
+extends Mono<T>
+		implements Failurable {
 
 	final Supplier<? extends Throwable> supplier;
 

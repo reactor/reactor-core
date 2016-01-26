@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.trait.Publishable;
+import reactor.core.graph.Publishable;
 import reactor.core.util.ScalarSubscription;
 import reactor.fn.Supplier;
 

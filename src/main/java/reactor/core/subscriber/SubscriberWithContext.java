@@ -19,10 +19,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Completable;
-import reactor.core.trait.Connectable;
-import reactor.core.trait.Subscribable;
+import reactor.core.graph.Connectable;
+import reactor.core.graph.Subscribable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
 import reactor.core.util.Exceptions;
 
 /**

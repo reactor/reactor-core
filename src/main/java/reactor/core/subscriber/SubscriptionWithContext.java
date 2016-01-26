@@ -18,8 +18,8 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Introspectable;
-import reactor.core.trait.Publishable;
+import reactor.core.graph.Publishable;
+import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 
 /**

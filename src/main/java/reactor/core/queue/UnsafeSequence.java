@@ -15,7 +15,7 @@
  */
 package reactor.core.queue;
 
-import reactor.core.trait.Introspectable;
+import reactor.core.state.Introspectable;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.fn.LongSupplier;

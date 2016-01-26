@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
 
 /**
- * A component that is timed
+ * A request aware component
  */
-public interface Timeable {
+public interface Requestable {
 
 	/**
-	 * Can represent a period in milliseconds
+	 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs. This
+	 * is the maximum in-flight data allowed to transit to this elements.
 	 *
-	 * @return
+	 * @return long capacity
 	 */
-	long period();
+	long requestedFromDownstream();
 }

@@ -17,7 +17,7 @@ package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import reactor.core.trait.Introspectable;
+import reactor.core.state.Introspectable;
 import reactor.core.util.Sequence;
 import reactor.fn.LongSupplier;
 

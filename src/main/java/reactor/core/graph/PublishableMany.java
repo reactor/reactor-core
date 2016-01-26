@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.graph;
+
+import java.util.Iterator;
 
 /**
- * A lifecycle backed downstream
+ * A component that is linked to N upstreams producers.
  */
-public interface Cancellable {
+public interface PublishableMany {
 
 	/**
-	 * @return has the downstream "cancelled" and interrupted its consuming ?
+	 * Return the connected sources of data.
+	 *
+	 * @return the connected sources of data
 	 */
-	boolean isCancelled();
+	Iterator<?> upstreams();
+
+	/**
+	 * @return the number of upstreams
+	 */
+	long upstreamsCount();
 }

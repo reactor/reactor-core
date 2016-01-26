@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.trait.Completable;
+import reactor.core.state.Completable;
 import reactor.core.util.EmptySubscription;
 import reactor.fn.Supplier;
 
@@ -32,7 +32,9 @@ import reactor.fn.Supplier;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoEmpty extends Mono<Object> implements Supplier<Object>, Completable {
+final class MonoEmpty 
+extends Mono<Object>
+implements Supplier<Object>, Completable {
 
 	private static final Publisher<Object> INSTANCE = new MonoEmpty();
 

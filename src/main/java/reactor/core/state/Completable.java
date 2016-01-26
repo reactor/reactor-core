@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
+
+import reactor.core.graph.Publishable;
 
 /**
- * A criteria grouped component
+ * A lifecycle backed upstream
  */
-public interface Groupable<K> {
+public interface Completable extends Publishable {
 
 	/**
-	 * Return defined identifier
+	 * @return has this upstream started or "onSubscribed" ?
 	 */
-	K key();
+	boolean isStarted();
+
+	/**
+	 * @return has this upstream finished or "completed" / "failed" ?
+	 */
+	boolean isTerminated();
 }

@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.graph.PublishableMany;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Introspectable;
-import reactor.core.trait.PublishableMany;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 
@@ -41,7 +41,9 @@ import reactor.core.util.EmptySubscription;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxAmb<T> extends Flux<T> implements PublishableMany {
+final class FluxAmb<T> 
+extends Flux<T>
+		implements PublishableMany {
 
 	final Publisher<? extends T>[] array;
 
@@ -154,7 +156,8 @@ final class FluxAmb<T> extends Flux<T> implements PublishableMany {
 		coordinator.subscribe(a, n, s);
 	}
 
-	static final class AmbCoordinator<T> implements Subscription, PublishableMany, Cancellable {
+	static final class AmbCoordinator<T>
+	  implements Subscription, PublishableMany, Cancellable {
 
 		final AmbSubscriber<T>[] subscribers;
 
@@ -163,7 +166,7 @@ final class FluxAmb<T> extends Flux<T> implements PublishableMany {
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<AmbCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(AmbCoordinator.class, "wip");
+		  AtomicIntegerFieldUpdater.newUpdater(AmbCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
 		public AmbCoordinator(int n) {
@@ -265,8 +268,8 @@ final class FluxAmb<T> extends Flux<T> implements PublishableMany {
 		}
 	}
 
-	static final class AmbSubscriber<T> extends SubscriberDeferredSubscription<T, T> implements Introspectable {
-
+	static final class AmbSubscriber<T> extends SubscriberDeferredSubscription<T, T>
+			implements Introspectable {
 		final AmbCoordinator<T> parent;
 
 		final int index;

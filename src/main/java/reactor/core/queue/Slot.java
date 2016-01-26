@@ -17,7 +17,7 @@ package reactor.core.queue;
 
 import java.io.Serializable;
 
-import reactor.core.trait.Recyclable;
+import reactor.core.state.Recyclable;
 
 /**
  * A simple holder

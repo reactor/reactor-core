@@ -17,7 +17,7 @@ package reactor.core.timer;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.trait.Introspectable;
+import reactor.core.state.Introspectable;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
 

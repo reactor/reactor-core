@@ -14,12 +14,24 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
+
+import org.reactivestreams.Subscription;
 
 /**
- * A component that holds a failure state if any
+ *
  */
-public interface Failurable {
+public interface Pausable extends Subscription {
 
-	Throwable getError();
+	/**
+	 * Pause this {@literal Pausable}. The implementing component should stop reacting, pausing resources if necessary.
+	 */
+	void pause();
+
+	/**
+	 * Unpause this {@literal Pausable}. The implementing component should resume back from a previous pause,
+	 * re-activating resources if necessary.
+	 */
+	void resume();
+
 }

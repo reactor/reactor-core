@@ -21,8 +21,8 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.trait.Introspectable;
 import reactor.core.util.Logger;
 
 /**

@@ -24,20 +24,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import reactor.core.trait.Backpressurable;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Completable;
-import reactor.core.trait.Connectable;
-import reactor.core.trait.Failurable;
-import reactor.core.trait.Groupable;
-import reactor.core.trait.Introspectable;
-import reactor.core.trait.Prefetchable;
-import reactor.core.trait.Publishable;
-import reactor.core.trait.PublishableMany;
-import reactor.core.trait.Requestable;
-import reactor.core.trait.Subscribable;
-import reactor.core.trait.SubscribableMany;
-import reactor.core.trait.Timeable;
+import reactor.core.graph.Connectable;
+import reactor.core.graph.Publishable;
+import reactor.core.graph.PublishableMany;
+import reactor.core.graph.Subscribable;
+import reactor.core.graph.SubscribableMany;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Failurable;
+import reactor.core.state.Groupable;
+import reactor.core.state.Introspectable;
+import reactor.core.state.Prefetchable;
+import reactor.core.state.Requestable;
+import reactor.core.state.Timeable;
 
 /**
  * @author Stephane Maldini

@@ -20,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Pausable;
+import reactor.core.state.Timeable;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Pausable;
-import reactor.core.trait.Timeable;
 import reactor.core.util.Exceptions;
 import reactor.fn.Consumer;
 

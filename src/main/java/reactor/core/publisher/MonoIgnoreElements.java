@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Subscribable;
+import reactor.core.graph.Subscribable;
 
 /**
  * Ignores normal values and passes only the terminal signals along.

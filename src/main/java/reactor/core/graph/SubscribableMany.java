@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.graph;
 
-import org.reactivestreams.Subscription;
+import java.util.Iterator;
 
 /**
- *
+ * A component that will emit events to N downstreams.
  */
-public interface Pausable extends Subscription {
+public interface SubscribableMany {
 
 	/**
-	 * Pause this {@literal Pausable}. The implementing component should stop reacting, pausing resources if necessary.
+	 * @return the connected data receivers
 	 */
-	void pause();
+	Iterator<?> downstreams();
 
 	/**
-	 * Unpause this {@literal Pausable}. The implementing component should resume back from a previous pause,
-	 * re-activating resources if necessary.
+	 * @return the number of downstream receivers
 	 */
-	void resume();
+	long downstreamsCount();
 
 }

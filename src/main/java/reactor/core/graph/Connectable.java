@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.graph;
 
 /**
- * A component that will emit events to a downstream.
+ * A component that is forking to a sub-flow given a delegate input and that is consuming from a given delegate output
  */
-public interface Subscribable {
+public interface Connectable {
 
-	/**
-	 * Return the direct data receiver.
-	 *
-	 * @return the direct data receiver
-	 */
-	Object downstream();
+	Object connectedInput();
+
+	Object connectedOutput();
 }

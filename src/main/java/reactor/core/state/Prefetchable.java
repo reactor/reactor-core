@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
 
 /**
  * An upstream producer tracker

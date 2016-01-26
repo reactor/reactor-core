@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
-
-import java.util.Iterator;
+package reactor.core.state;
 
 /**
- * A component that will emit events to N downstreams.
+ * A lifecycle backed downstream
  */
-public interface SubscribableMany {
+public interface Cancellable {
 
 	/**
-	 * @return the connected data receivers
+	 * @return has the downstream "cancelled" and interrupted its consuming ?
 	 */
-	Iterator<?> downstreams();
-
-	/**
-	 * @return the number of downstream receivers
-	 */
-	long downstreamsCount();
-
+	boolean isCancelled();
 }

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.trait.Pausable;
+import reactor.core.state.Pausable;
 import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 

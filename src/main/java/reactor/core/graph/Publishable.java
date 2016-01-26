@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.graph;
 
 /**
- * A lifecycle backed upstream
+ * A component that is linked to a source producer.
  */
-public interface Completable extends Publishable {
+public interface Publishable {
 
 	/**
-	 * @return has this upstream started or "onSubscribed" ?
+	 * Return the direct source of data, Supports reference.
+	 *
+	 * @return the direct source of data, Supports reference.
 	 */
-	boolean isStarted();
-
-	/**
-	 * @return has this upstream finished or "completed" / "failed" ?
-	 */
-	boolean isTerminated();
+	Object upstream();
 }

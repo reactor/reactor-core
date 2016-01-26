@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
+package reactor.core.state;
 
 /**
- * A component that is forking to a sub-flow given a delegate input and that is consuming from a given delegate output
+ * A simple interface that marks an object as being recyclable.
  */
-public interface Connectable {
 
-	Object connectedInput();
+public interface Recyclable {
 
-	Object connectedOutput();
+	/**
+	 * Free any internal resources and reset the state of the object to enable reuse.
+	 */
+	void recycle();
+
 }

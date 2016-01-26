@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
-
 /**
- * A request aware component
+ * Common traits shared by reactive components: backpressure, lifecycle state, request tracking, or connected
+ * upstreams/downstreams.
+ * <p>
+ * The state read accuracy (volatility) is implementation-dependent and implementors MAY return cached value for a given
+ * state.
+ *
+ * @author Stephane Maldini
  */
-public interface Requestable {
 
-	/**
-	 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs. This
-	 * is the maximum in-flight data allowed to transit to this elements.
-	 *
-	 * @return long capacity
-	 */
-	long requestedFromDownstream();
-}
+package reactor.core.state;

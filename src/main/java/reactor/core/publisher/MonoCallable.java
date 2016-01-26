@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.graph.Publishable;
 import reactor.core.subscriber.SubscriberDeferredScalar;
-import reactor.core.trait.Publishable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -35,7 +35,9 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoCallable<T> extends Mono<T> implements Publishable {
+final class MonoCallable<T> 
+extends Mono<T>
+		implements Publishable {
 
 	final Callable<? extends T> callable;
 

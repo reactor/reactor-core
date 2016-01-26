@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Publishable;
-import reactor.core.trait.Subscribable;
+import reactor.core.graph.Publishable;
+import reactor.core.graph.Subscribable;
 
 public final class ScalarSubscription<T> implements Subscription, Subscribable, Publishable {
 
@@ -32,7 +32,7 @@ public final class ScalarSubscription<T> implements Subscription, Subscribable, 
 	volatile int once;
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<ScalarSubscription> ONCE =
-			AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
+	  AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
 
 	public ScalarSubscription(Subscriber<? super T> actual, T value) {
 		this.value = Objects.requireNonNull(value, "value");

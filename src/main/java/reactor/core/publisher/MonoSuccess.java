@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.graph.Connectable;
 import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.trait.Connectable;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.fn.BiConsumer;

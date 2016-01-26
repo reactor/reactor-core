@@ -16,7 +16,7 @@
 package reactor.core.util;
 
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Cancellable;
+import reactor.core.state.Cancellable;
 
 /**
  * A singleton Subscription that represents a cancelled subscription instance and should not be leaked to clients as it
@@ -41,5 +41,6 @@ public enum CancelledSubscription implements Subscription, Cancellable {
 	public void cancel() {
 		// deliberately no op
 	}
+
 
 }

@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package reactor.core.trait;
-
-import java.util.Iterator;
+package reactor.core.state;
 
 /**
- * A component that is linked to N upstreams producers.
+ * A component that is timed
  */
-public interface PublishableMany {
+public interface Timeable {
 
 	/**
-	 * Return the connected sources of data.
+	 * Can represent a period in milliseconds
 	 *
-	 * @return the connected sources of data
+	 * @return
 	 */
-	Iterator<?> upstreams();
-
-	/**
-	 * @return the number of upstreams
-	 */
-	long upstreamsCount();
+	long period();
 }

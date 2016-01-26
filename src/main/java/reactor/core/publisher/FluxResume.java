@@ -20,8 +20,8 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.graph.Connectable;
 import reactor.core.subscriber.SubscriberMultiSubscription;
-import reactor.core.trait.Connectable;
 import reactor.core.util.Exceptions;
 import reactor.fn.Function;
 
@@ -74,7 +74,8 @@ final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
 		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	static final class ResumeSubscriber<T> extends SubscriberMultiSubscription<T, T> implements Connectable {
+	static final class ResumeSubscriber<T> extends SubscriberMultiSubscription<T, T>
+			implements Connectable {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 

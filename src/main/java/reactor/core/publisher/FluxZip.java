@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -24,8 +26,18 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.graph.PublishableMany;
+import reactor.core.graph.Subscribable;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Failurable;
+import reactor.core.state.Introspectable;
+import reactor.core.state.Prefetchable;
+import reactor.core.state.Requestable;
 import reactor.core.subscriber.SubscriberDeferredScalar;
 import reactor.core.util.BackpressureUtils;
+import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.SynchronousSource;
@@ -44,7 +56,7 @@ import reactor.fn.Supplier;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxZip<T, R> extends Flux<R> {
+final class FluxZip<T, R> extends Flux<R> implements Introspectable, PublishableMany {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -233,7 +245,19 @@ final class FluxZip<T, R> extends Flux<R> {
 			coordinator.subscribe(srcs, n);
 		}
 	}
-	static final class ZipSingleCoordinator<T, R> extends SubscriberDeferredScalar<R, R> {
+
+	@Override
+	public Iterator<?> upstreams() {
+		return sources == null ? sourcesIterable.iterator() : Arrays.asList(sources).iterator();
+	}
+
+	@Override
+	public long upstreamsCount() {
+		return sources == null ? -1 : sources.length;
+	}
+
+	static final class ZipSingleCoordinator<T, R> extends SubscriberDeferredScalar<R, R>
+	implements PublishableMany, Backpressurable {
 
 		final Function<? super Object[], ? extends R> zipper;
 		
@@ -320,6 +344,26 @@ final class FluxZip<T, R> extends Flux<R> {
 			cancelAll();
 		}
 
+		@Override
+		public long getCapacity() {
+			return upstreamsCount();
+		}
+
+		@Override
+		public long getPending() {
+			return wip;
+		}
+
+		@Override
+		public Iterator<?> upstreams() {
+			return Arrays.asList(subscribers).iterator();
+		}
+
+		@Override
+		public long upstreamsCount() {
+			return subscribers.length;
+		}
+
 		void cancelAll() {
 			for (ZipSingleSubscriber<T> s : subscribers) {
 				if (s != null) {
@@ -329,7 +373,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 	}
 	
-	static final class ZipSingleSubscriber<T> implements Subscriber<T> {
+	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Backpressurable, Completable, Introspectable{
 		final ZipSingleCoordinator<T, ?> parent;
 		
 		final int index;
@@ -387,13 +431,54 @@ final class FluxZip<T, R> extends Flux<R> {
 			done = true;
 			parent.complete(index);
 		}
-		
+
+		@Override
+		public long getCapacity() {
+			return 1;
+		}
+
+		@Override
+		public long getPending() {
+			return !done ? 1 : -1;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return s == CancelledSubscription.INSTANCE;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return !done && !isCancelled();
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
+		}
+
+		@Override
+		public String getName() {
+			return "ScalarZipSubscriber";
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
 		void cancel() {
 			BackpressureUtils.terminate(S, this);
 		}
 	}
 	
-	static final class ZipCoordinator<T, R> implements Subscription {
+	static final class ZipCoordinator<T, R> implements Subscription, PublishableMany, Cancellable, Backpressurable, Completable, Requestable,
+																Failurable {
 
 		final Subscriber<? super R> actual;
 		
@@ -459,7 +544,63 @@ final class FluxZip<T, R> extends Flux<R> {
 				cancelAll();
 			}
 		}
-		
+
+		@Override
+		public long getCapacity() {
+			return upstreamsCount();
+		}
+
+		@Override
+		public long getPending() {
+			int nonEmpties = 0;
+			for(int i =0; i < subscribers.length; i++){
+				if(!subscribers[i].queue.isEmpty()){
+					nonEmpties++;
+				}
+			}
+			return nonEmpties;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public Object upstream() {
+			return null;
+		}
+
+		@Override
+		public Iterator<?> upstreams() {
+			return Arrays.asList(subscribers).iterator();
+		}
+
+		@Override
+		public long upstreamsCount() {
+			return subscribers.length;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
 		void error(Throwable e, int index) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
@@ -637,7 +778,11 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 	}
 	
-	static final class ZipInner<T> implements Subscriber<T> {
+	static final class ZipInner<T> implements Subscriber<T>,
+													   Backpressurable,
+													   Completable,
+													   Prefetchable,
+													   Subscribable {
 		
 		final ZipCoordinator<T, ?> parent;
 
@@ -712,7 +857,47 @@ final class FluxZip<T, R> extends Flux<R> {
 			done = true;
 			parent.drain();
 		}
-		
+
+		@Override
+		public long getCapacity() {
+			return prefetch;
+		}
+
+		@Override
+		public long getPending() {
+			return queue != null ? queue.size() : -1;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done && (queue == null || queue.isEmpty());
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return produced;
+		}
+
+		@Override
+		public long limit() {
+			return limit;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public Object downstream() {
+			return null;
+		}
+
 		void cancel() {
 			BackpressureUtils.terminate(S, this);
 		}

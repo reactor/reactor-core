@@ -20,10 +20,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Completable;
-import reactor.core.trait.Connectable;
-import reactor.core.trait.Subscribable;
+import reactor.core.graph.Connectable;
+import reactor.core.graph.Subscribable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -33,8 +33,8 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> The upstream sequence type
  * @param <O> The downstream sequence type
  */
-public class SubscriberDeferredScalar<I, O>
-		implements Subscriber<I>, Completable, Subscription, Connectable, Cancellable, Subscribable {
+public class SubscriberDeferredScalar<I, O> implements Subscriber<I>, Completable, Subscription, Connectable, Cancellable,
+													   Subscribable {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 	static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
@@ -48,7 +48,7 @@ public class SubscriberDeferredScalar<I, O>
 	volatile int state;
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<SubscriberDeferredScalar> STATE =
-			AtomicIntegerFieldUpdater.newUpdater(SubscriberDeferredScalar.class, "state");
+	  AtomicIntegerFieldUpdater.newUpdater(SubscriberDeferredScalar.class, "state");
 
 	public SubscriberDeferredScalar(Subscriber<? super O> subscriber) {
 		this.subscriber = subscriber;
@@ -65,7 +65,7 @@ public class SubscriberDeferredScalar<I, O>
 				if (s == SDS_NO_REQUEST_HAS_VALUE) {
 					if (compareAndSetState(SDS_NO_REQUEST_HAS_VALUE, SDS_HAS_REQUEST_HAS_VALUE)) {
 						Subscriber<? super O> a = downstream();
-						a.onNext(get());
+						a.onNext(value);
 						a.onComplete();
 					}
 					return;
@@ -120,10 +120,6 @@ public class SubscriberDeferredScalar<I, O>
 		return STATE.compareAndSet(this, expected, updated);
 	}
 
-	public O get() {
-		return value;
-	}
-
 	@Override
 	public final Subscriber<? super O> downstream() {
 		return subscriber;
@@ -134,9 +130,8 @@ public class SubscriberDeferredScalar<I, O>
 	}
 
 	/**
-	 * Tries to emit the value and complete the underlying subscriber or stores the value away until there is a request
-	 * for it.
-	 *
+	 * Tries to emit the value and complete the underlying subscriber or
+	 * stores the value away until there is a request for it.
 	 * @param value the value to emit
 	 */
 	public final void complete(O value) {

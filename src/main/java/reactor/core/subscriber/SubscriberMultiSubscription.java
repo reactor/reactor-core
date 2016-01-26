@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.trait.Cancellable;
-import reactor.core.trait.Completable;
-import reactor.core.trait.Requestable;
-import reactor.core.trait.Subscribable;
+import reactor.core.graph.Subscribable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -37,12 +37,12 @@ import reactor.core.util.BackpressureUtils;
  * <p>
  * You should call {@link #produced(long)} or {@link #producedOne()} after each element has been delivered to properly
  * account the outstanding request amount in case a Subscription switch happens.
- *
+ * 
  * @param <I> the input value type
  * @param <O> the output value type
  */
-public abstract class SubscriberMultiSubscription<I, O>
-		implements Subscription, Subscriber<I>, Subscribable, Cancellable, Requestable, Completable {
+public abstract class SubscriberMultiSubscription<I, O> implements Subscription, Subscriber<I>, Subscribable, Cancellable,
+																   Requestable, Completable {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -59,24 +59,24 @@ public abstract class SubscriberMultiSubscription<I, O>
 	volatile Subscription missedSubscription;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<SubscriberMultiSubscription, Subscription> MISSED_SUBSCRIPTION =
-			AtomicReferenceFieldUpdater.newUpdater(SubscriberMultiSubscription.class,
-					Subscription.class,
-					"missedSubscription");
+	  AtomicReferenceFieldUpdater.newUpdater(SubscriberMultiSubscription.class,
+		Subscription.class,
+		"missedSubscription");
 
 	volatile long missedRequested;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<SubscriberMultiSubscription> MISSED_REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedRequested");
+	  AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedRequested");
 
 	volatile long missedProduced;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<SubscriberMultiSubscription> MISSED_PRODUCED =
-			AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedProduced");
+	  AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedProduced");
 
 	volatile int wip;
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<SubscriberMultiSubscription> WIP =
-			AtomicIntegerFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "wip");
+	  AtomicIntegerFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "wip");
 
 	volatile boolean cancelled;
 
@@ -251,8 +251,7 @@ public abstract class SubscriberMultiSubscription<I, O>
 				if (ms != null) {
 					ms.cancel();
 				}
-			}
-			else {
+			} else {
 				long r = requested;
 				if (r != Long.MAX_VALUE) {
 					long u = BackpressureUtils.addCap(r, mr);
@@ -264,8 +263,7 @@ public abstract class SubscriberMultiSubscription<I, O>
 							v = 0;
 						}
 						r = v;
-					}
-					else {
+					} else {
 						r = u;
 					}
 					requested = r;
@@ -279,8 +277,7 @@ public abstract class SubscriberMultiSubscription<I, O>
 					if (r != 0L) {
 						ms.request(r);
 					}
-				}
-				else if (mr != 0L && a != null) {
+				} else if (mr != 0L && a != null) {
 					a.request(mr);
 				}
 			}
