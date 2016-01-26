@@ -16,7 +16,7 @@
 
 /**
  * Topology representation of reactive flows :
- * {@link reactor.core.graph.Publishable upstream}({@link reactor.core.graph.PublishableMany s}), {@link reactor.core.graph.Subscribable downstream}
+ * {@link reactor.core.graph.Publishable upstream} ({@link reactor.core.graph.PublishableMany s}), {@link reactor.core.graph.Subscribable downstream}
  * ({@link reactor.core.graph.SubscribableMany s}) and
  * {@link reactor.core.graph.Connectable loopback} flows.
  *
