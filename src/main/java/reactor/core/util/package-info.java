@@ -16,8 +16,9 @@
 
 /**
  * Core utility functions to work with Reactive components, specifically:
- * {@link org.reactivestreams.Subscription}, backpressure, logging {@link java.lang.Exception} handling, traits or the
- * environment settings.
+ * {@link org.reactivestreams.Subscription}, {@link reactor.core.util.BackpressureUtils backpressure}, {@link reactor.core.util.Logger logging}, {@link reactor.core.util.Exceptions Exception} handling,
+ * {@link reactor.core.util.ReactiveStateUtils traits} or the {@link reactor.core.util.PlatformDependent environment}
+ * settings.
  *
  * @author Stephane Maldini
  */
