@@ -698,7 +698,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
-	private final static class QueueSubscriberLoop<T>
+	final static class QueueSubscriberLoop<T>
 			implements Runnable, Subscribable, Backpressurable, Completable, Cancellable, Introspectable,
 			           Requestable, Subscription, Publishable {
 

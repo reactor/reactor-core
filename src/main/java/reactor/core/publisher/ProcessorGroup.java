@@ -999,13 +999,13 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 				@Override
 				public void run() {
 					Subscriber subscriber = WorkProcessorBarrier.this.subscriber;
+					if(subscriber != null) {
+						subscriber.onSubscribe(WorkProcessorBarrier.this);
+					}
 					if(source != null) {
 						source.subscribe(WorkProcessorBarrier.this);
 					}
 
-					if(subscriber != null) {
-						subscriber.onSubscribe(WorkProcessorBarrier.this);
-					}
 				}
 			});
 		}
