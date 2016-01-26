@@ -549,36 +549,36 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 			           Connectable, Subscribable, Cancellable, Completable, Prefetchable, Requestable, Failurable,
 			           Runnable {
 
-		protected final ProcessorGroup service;
-		protected final Publisher<? extends V> source;
+		final ProcessorGroup service;
+		final Publisher<? extends V> source;
 
-		private final RingBuffer<Slot<V>> emitBuffer;
-		private final Sequence            pollCursor;
+		final RingBuffer<Slot<V>> emitBuffer;
+		final Sequence            pollCursor;
 
-		private volatile Throwable error;
+		volatile Throwable error;
 
-		private volatile boolean cancelled;
+		volatile boolean cancelled;
 
-		private int outstanding;
+		int outstanding;
 
 		@SuppressWarnings("unused")
-		private volatile int running;
+		volatile int running;
 		protected static final AtomicIntegerFieldUpdater<ProcessorBarrier> RUNNING =
 				AtomicIntegerFieldUpdater.newUpdater(ProcessorBarrier.class, "running");
 
 		@SuppressWarnings("unused")
-		private volatile int terminated;
+		volatile int terminated;
 		protected static final AtomicIntegerFieldUpdater<ProcessorBarrier> TERMINATED =
 				AtomicIntegerFieldUpdater.newUpdater(ProcessorBarrier.class, "terminated");
 
 		@SuppressWarnings("unused")
-		private volatile long requested;
+		volatile long requested;
 		protected static final AtomicLongFieldUpdater<ProcessorBarrier> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ProcessorBarrier.class, "requested");
 
-		protected Subscriber<? super V> subscriber;
+		Subscriber<? super V> subscriber;
 
-		public ProcessorBarrier(boolean buffer, final ProcessorGroup service,
+		ProcessorBarrier(boolean buffer, final ProcessorGroup service,
 				 final Publisher<? extends V> source ) {
 			this.service = service;
 			this.source = source;
@@ -998,14 +998,17 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 			dispatch(new Runnable() {
 				@Override
 				public void run() {
-					Subscriber subscriber = WorkProcessorBarrier.this.subscriber;
-					if(subscriber != null) {
-						subscriber.onSubscribe(WorkProcessorBarrier.this);
-					}
 					if(source != null) {
 						source.subscribe(WorkProcessorBarrier.this);
 					}
-
+					Subscriber subscriber = WorkProcessorBarrier.this.subscriber;
+					if(subscriber != null) {
+						if(error != null){
+							EmptySubscription.error(subscriber, error);
+							return;
+						}
+						subscriber.onSubscribe(WorkProcessorBarrier.this);
+					}
 				}
 			});
 		}
