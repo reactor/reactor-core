@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -78,9 +79,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 //	 Static Generators
 //	 ==============================================================================================================
 
-	static final IdentityFunction IDENTITY_FUNCTION = new IdentityFunction();
-	static final Flux<?>          EMPTY             = Mono.empty()
-	                                                      .flux();
+	static final IdentityFunction IDENTITY_FUNCTION      = new IdentityFunction();
+	static final Flux<?>          EMPTY                  = Mono.empty().flux();
 
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
@@ -675,12 +675,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T2> source2,
 			final BiFunction<? super T1, ? super T2, ? extends O> combinator) {
 
-		return new FluxZip<>(new Publisher[]{source1, source2}, new Function<Tuple2<T1, T2>, O>() {
+		return zip(new Function<Object[], O>() {
 			@Override
-			public O apply(Tuple2<T1, T2> tuple) {
-				return combinator.apply(tuple.getT1(), tuple.getT2());
+			@SuppressWarnings("unchecked")
+			public O apply(Object[] tuple) {
+				return combinator.apply((T1)tuple[0], (T2)tuple[1]);
 			}
-		}, PlatformDependent.XS_BUFFER_SIZE);
+		}, source1, source2);
 	}
 
 	/**
@@ -696,11 +697,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
-
-		return new FluxZip<>(new Publisher[]{source1, source2},
-				(Function<Tuple2<T1, T2>, Tuple2<T1, T2>>) IDENTITY_FUNCTION, PlatformDependent.XS_BUFFER_SIZE);
+		return zip(Tuple.<T1, T2>fn2(), source1, source2);
 	}
 
 	/**
@@ -727,7 +725,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
 			Function<Tuple3<T1, T2, T3>, ? extends V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3}, combinator, PlatformDependent.XS_BUFFER_SIZE);
+		return zip(Tuple.fn3(combinator), source1, source2, source3);
 	}
 
 	/**
@@ -747,7 +745,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3) {
-		return zip(IDENTITY_FUNCTION, source1, source2, source3);
+		return zip(Tuple.<T1, T2, T3>fn3(), source1, source2, source3);
 	}
 
 	/**
@@ -777,9 +775,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4,
 			Function<Tuple4<T1, T2, T3, T4>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4},
-				combinator,
-				PlatformDependent.XS_BUFFER_SIZE);
+		return zip(Tuple.fn4(combinator), source1, source2, source3, source4);
 	}
 
 	/**
@@ -802,7 +798,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4) {
-		return zip(IDENTITY_FUNCTION, source1, source2, source3, source4);
+		return zip(Tuple.<T1, T2, T3, T4>fn4(), source1, source2, source3, source4);
 	}
 
 	/**
@@ -833,8 +829,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5,
 			Function<Tuple5<T1, T2, T3, T4, T5>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5}, combinator, PlatformDependent
-				.XS_BUFFER_SIZE);
+		return zip(Tuple.fn5(combinator), source1, source2, source3, source4, source5);
 	}
 
 	/**
@@ -859,7 +854,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5) {
-		return zip(IDENTITY_FUNCTION, source1, source2, source3, source4, source5);
+		return zip(Tuple.<T1, T2, T3, T4, T5>fn5(), source1, source2, source3, source4, source5);
 	}
 
 	/**
@@ -894,9 +889,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6,
 			Function<Tuple6<T1, T2, T3, T4, T5, T6>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6}, combinator,
-				PlatformDependent
-				.XS_BUFFER_SIZE);
+		return zip(Tuple.fn6(combinator), source1, source2, source3, source4, source5, source6);
 	}
 
 	/**
@@ -925,7 +918,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6) {
-		return zip(IDENTITY_FUNCTION, source1, source2, source3, source4, source5, source6);
+		return zip(Tuple.<T1, T2, T3, T4, T5, T6>fn6(), source1, source2, source3, source4, source5, source6);
 	}
 
 
@@ -963,9 +956,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T6> source6,
 			Publisher<? extends T7> source7,
 			Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6, source7}, combinator,
-				PlatformDependent
-						.XS_BUFFER_SIZE);
+		return zip(Tuple.fn7(combinator), source1, source2, source3, source4, source5, source6, source7);
 	}
 
 
@@ -1007,9 +998,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T7> source7,
 			Publisher<? extends T8> source8,
 			Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, V> combinator) {
-		return new FluxZip<>(new Publisher[]{source1, source2, source3, source4, source5, source6, source7, source8},
-				combinator, PlatformDependent
-						.XS_BUFFER_SIZE);
+		return zip(Tuple.fn8(combinator), source1, source2, source3, source4, source5, source6, source7, source8);
 	}
 
 	/**
@@ -1026,7 +1015,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Flux<Tuple> zip(Iterable<? extends Publisher<?>> sources) {
-		return zip(sources, IDENTITY_FUNCTION);
+		return zip(sources, Tuple.fnAny());
 	}
 
 	/**
@@ -1044,13 +1033,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a zipped {@link Flux}
 	 */
 	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
-			final Function<Tuple, ? extends O> combinator) {
+			final Function<? super Object[], ? extends O> combinator) {
 
 		if (sources == null) {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, PlatformDependent.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, QueueSupplier.get(PlatformDependent.XS_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -1070,13 +1060,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <I, O> Flux<O> zip(
-			final Function<? super Tuple, ? extends O> combinator, Publisher<? extends I>... sources) {
+			final Function<? super Object[], ? extends O> combinator, Publisher<? extends I>... sources) {
 
 		if (sources == null) {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, PlatformDependent.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, QueueSupplier.get(PlatformDependent.XS_BUFFER_SIZE),
+				PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 //	 ==============================================================================================================
@@ -1657,9 +1648,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
-		return new FluxZip<>(new Publisher[]{this, source2}, IDENTITY_FUNCTION, PlatformDependent.XS_BUFFER_SIZE);
+		return zip(this, source2);
 	}
 
 	/**
@@ -1679,13 +1669,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 */
 	public final <R, V> Flux<V> zipWith(Publisher<? extends R> source2,
 			final BiFunction<? super T, ? super R, ? extends V> combinator) {
-
-		return new FluxZip<>(new Publisher[]{this, source2}, new Function<Tuple2<T, R>, V>() {
-			@Override
-			public V apply(Tuple2<T, R> tuple) {
-				return combinator.apply(tuple.getT1(), tuple.getT2());
-			}
-		}, PlatformDependent.XS_BUFFER_SIZE);
+		return zip(this, source2, combinator);
 
 	}
 
@@ -1823,6 +1807,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		@Override
 		public Object apply(Object o) {
 			return o;
+		}
+	}
+
+	/**
+	 * T(n) -> List(n)
+	 */
+	static final class TupleListFunction implements Function<Tuple, List> {
+
+		@Override
+		public List apply(Tuple o) {
+			return o.toList();
 		}
 	}
 
