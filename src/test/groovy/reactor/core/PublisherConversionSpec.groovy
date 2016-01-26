@@ -20,7 +20,7 @@ import reactor.core.converter.CompletableFutureConverter
 import reactor.core.converter.DependencyUtils
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.subscriber.test.DataTestSubscriber
+import reactor.core.test.TestSubscriber
 import rx.Observable
 import rx.Single
 import spock.lang.Specification
@@ -39,16 +39,15 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Observable.range(1, 1000)
 	def pub = DependencyUtils.convertToPublisher(obs)
-	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
+	def queue = new TestSubscriber()
 
 
 	when: "read the queue"
 	pub.subscribe(queue)
-	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignalsEqual(*(1..1000))
-			.assertCompleteReceived()
+	queue.awaitAndAssertValues(*(1..1000))
+			.assertComplete()
 
 
 	when: "Iterable publisher of 1000 to observable"
@@ -69,15 +68,14 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Single.just(1)
 	def pub = Mono.from(DependencyUtils.convertToPublisher(obs))
-	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
+	def queue = new TestSubscriber()
 
 	when: "read the queue"
 	pub.subscribe(queue)
-	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignalsEqual(1)
-			.assertCompleteReceived()
+	queue.awaitAndAssertValues(1)
+			.assertComplete()
 
 
 	when: "Iterable publisher of 1000 to observable"
@@ -96,15 +94,14 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1 to read queue"
 	def obs = CompletableFuture.completedFuture([1])
 	def pub = DependencyUtils.convertToPublisher(obs)
-	def queue = DataTestSubscriber.createWithTimeoutSecs(3)
+	def queue = new TestSubscriber()
 
 	when: "read the queue"
 	pub.subscribe(queue)
-	queue.sendUnboundedRequest()
 
 	then: "queues values correct"
-	queue.assertNextSignalsEqual([1])
-			.assertCompleteReceived()
+	queue.awaitAndAssertValues([1])
+			.assertComplete()
 
 
 	when: "Iterable publisher of 1000 to completable future"
