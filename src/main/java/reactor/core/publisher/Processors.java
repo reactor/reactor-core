@@ -34,7 +34,7 @@ import reactor.fn.Supplier;
 
 /**
  * Main gateway to build various asynchronous {@link Processor} or "pool" services that allow their reuse. Reactor
- * offers a few management API via the subclassed {@link FluxProcessor} for the underlying {@link
+ * offers a few management API via the subclassed {@link ProcessorExecutor} for the underlying {@link
  * java.util.concurrent.Executor} in use.
  * @author Stephane Maldini
  * @since 2.5
@@ -235,7 +235,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link Processor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -245,14 +245,7 @@ public enum Processors {
 	}
 
 	/**
-	 *
-	 * Non-Blocking "Asynchronous" Work Queue (akin to vanilla Java Executor)
-	 *
-	 *
-	 */
-
-	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -262,7 +255,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -272,7 +265,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -282,7 +275,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -292,7 +285,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -426,7 +419,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
@@ -437,7 +430,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
@@ -448,7 +441,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -461,7 +454,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -475,7 +468,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using the passed buffer size and auto-cancel settings. <p> A new Cached
+	 * Create a new {@link ProcessorWorkQueue} using the passed buffer size and auto-cancel settings. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -488,7 +481,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -498,7 +491,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -508,7 +501,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -518,7 +511,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -587,7 +580,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -597,7 +590,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -607,7 +600,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -620,7 +613,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -634,7 +627,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link FluxProcessor} using the blockingWait Strategy, passed backlog size, and auto-cancel
+	 * Create a new {@link ProcessorTopic} using the blockingWait Strategy, passed backlog size, and auto-cancel
 	 * settings. <p> A Shared Processor authorizes concurrent onNext calls and is suited for multi-threaded publisher
 	 * that will fan-in data. <p> The passed {@link java.util.concurrent.ExecutorService} will execute as many
 	 * event-loop consuming the ringbuffer as subscribers.
