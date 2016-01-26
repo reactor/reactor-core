@@ -388,6 +388,8 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	 * @param expectedValues the values to assert
 	 * @see #configureValuesStorage(boolean)
 	 */
+	@SafeVarargs
+	@SuppressWarnings("varargs")
 	public final TestSubscriber<T> assertValues(T... expectedValues) {
 		return assertValueSequence(Arrays.asList(expectedValues));
 	}
@@ -399,6 +401,7 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	 * exception (like an {@link AssertionError}) if the value is not valid.
 	 * @see #configureValuesStorage(boolean)
 	 */
+	@SafeVarargs
 	public final TestSubscriber<T> assertValuesWith(Consumer<T>... expectations) {
 		if (!valuesStorage) {
 			throw new IllegalStateException("Using assertNoValues() requires enabling values storage");
