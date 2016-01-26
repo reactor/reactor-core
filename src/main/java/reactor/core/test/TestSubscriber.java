@@ -102,8 +102,9 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 //	 ==============================================================================================================
 
 	/**
-	 * Await {@code conditionSupplier} returns true, or if it does not before the specified
-	 * timeout, throw an {@link AssertionError} with the specified error message.
+	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
+	 * not before the specified timeout, throws an {@link AssertionError} with the specified
+	 * error message.
 	 * @throws AssertionError
 	 */
 	public static void await(long timeoutInSeconds, Supplier<String> errorMessageSupplier,
@@ -132,8 +133,9 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	}
 
 	/**
-	 * Await {@code conditionSupplier} returns true, or if it does not before the specified
-	 * timeout, throw an {@link AssertionError} with the specified error message.
+	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
+	 * not before the specified timeout, throw an {@link AssertionError} with the specified
+	 * error message.
 	 * @throws AssertionError
 	 */
 	public static void await(long timeoutInSeconds, final String errorMessage, Supplier<Boolean> resultSupplier) {
@@ -503,8 +505,8 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	}
 
 	/**
-	 * Blocking method that waits until n values as been received (n is the number of
-	 * expectations provided) to assert them.
+	 * Blocking method that waits until {@code n} next values have been received
+	 * (n is the number of expectations provided) to assert them.
 	 * @param expectations One or more methods that can verify the values and throw a
 	 * exception (like an {@link AssertionError}) if the value is not valid.
 	 */
@@ -513,7 +515,7 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
 		await(valuesTimeout,
-				String.format("%d out of %d next values received within %d secs", valueCount, nextValueAssertedCount + expectedValueCount, valuesTimeout),
+				String.format("%d out of %d next values received within %d secs", valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout),
 				new Supplier<Boolean>() {
 			@Override
 			public Boolean get() {
@@ -543,8 +545,8 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	}
 
 	/**
-	 * Blocking method that waits until n values as been received (n is the number of
-	 * values provided) to assert them.
+	 * Blocking method that waits until {@code n} next values have been received
+	 * (n is the number of values provided) to assert them.
 	 * @param expectedValues the values to assert
 	 */
 	@SafeVarargs
@@ -565,6 +567,23 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 			});
 		}
 		awaitAndAssertValuesWith(expectations.toArray((Consumer<T>[])new Consumer[0]));
+		return this;
+	}
+
+	/**
+	 * Blocking method that waits until {@code n} next values have been received.
+	 * @param n the value count to assert
+	 */
+	public final TestSubscriber<T> awaitAndAssertValueCount(final long n) {
+		await(valuesTimeout,
+				String.format("%d out of %d next values received within %d secs", valueCount - nextValueAssertedCount, n, valuesTimeout),
+				new Supplier<Boolean>() {
+			@Override
+			public Boolean get() {
+				return valueCount == (nextValueAssertedCount + n);
+			}
+		});
+		nextValueAssertedCount += n;
 		return this;
 	}
 
