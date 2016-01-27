@@ -27,9 +27,9 @@ import java.util.concurrent.locks.LockSupport;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.flow.Producer;
 import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.SequenceBarrier;
 import reactor.core.queue.Sequencer;
@@ -51,7 +51,12 @@ import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 
 /**
- * An implementation of a RingBuffer backed message-passing Processor. <p> The processor
+ ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
+ * loops.
+ * <p>
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+ * <p>
+ * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any
  * onXXXX method. Each subscriber will be assigned a unique thread that will only stop on
  * terminal event: Complete, Error or Cancel. If Auto-Cancel is enabled, when all

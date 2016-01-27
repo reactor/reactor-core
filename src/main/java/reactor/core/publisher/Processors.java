@@ -33,9 +33,29 @@ import reactor.fn.Function;
 import reactor.fn.Supplier;
 
 /**
- * Main gateway to build various asynchronous {@link Processor} or "pool" services that allow their reuse. Reactor
- * offers a few management API via the subclassed {@link ProcessorExecutor} for the underlying {@link
- * java.util.concurrent.Executor} in use.
+ * Main gateway to build various reactive {@link Processor} or "pooled" groups that allow their reuse.
+ * Reactor offers a few management API via the subclassed {@link ProcessorExecutor} for the underlying {@link
+ * java.util.concurrent.Executor} in use, in addition to the state accessors like
+ * {@link reactor.core.state.Backpressurable}.
+ * <p>
+ * There are 2+2 decisions to make when choosing a factory from {@link Processors} :
+ * <ul>
+ *     <li>It is supporting a dynamically created data flow ({@link Flux} or {@link Mono}: <ul>
+ *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
+ *     {@link #emitter} and {@link #replay}</li>
+ *         <li>It needs asynchronousity : for slow publishers prefer
+ *         {@link #ioGroup} and {@link ProcessorGroup#publishOn}, for fast publisher prefer
+ *         {@link #asyncGroup} and {@link ProcessorGroup#dispatchOn}</li>
+ *     </ul></li>
+ *     <li>It is a demanding data flow : <ul>
+ *         <li>A dedicated pub-sub event buffering executor : {@link #topic}</li>
+ *         <li>A dedicated  FIFO work queue distribution for slow consumers : {@link #queue}</li>
+ *     </ul></li>
+ *     <li></li>
+ * </ul>
+ * <p>
+ * Ultimately
+ *
  * @author Stephane Maldini
  * @since 2.5
  */
@@ -236,7 +256,11 @@ public enum Processors {
 
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 *
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -246,7 +270,10 @@ public enum Processors {
 
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -256,7 +283,10 @@ public enum Processors {
 
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -266,7 +296,10 @@ public enum Processors {
 
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -277,6 +310,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -287,6 +323,10 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -422,6 +462,9 @@ public enum Processors {
 	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -433,6 +476,9 @@ public enum Processors {
 	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -445,6 +491,9 @@ public enum Processors {
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param autoCancel Should this propagate cancellation when unregistered by all subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -458,6 +507,9 @@ public enum Processors {
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
@@ -470,6 +522,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorWorkQueue} using the passed buffer size and auto-cancel settings. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to qualify the created threads.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param autoCancel Should this propagate cancellation when unregistered by all subscribers ?
@@ -483,6 +538,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -493,6 +551,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -503,6 +564,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -513,6 +577,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -582,6 +649,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -592,6 +662,9 @@ public enum Processors {
 	/**
 	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -604,6 +677,10 @@ public enum Processors {
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+	 * <p>
+	 *
 	 * @param autoCancel Should this propagate cancellation when unregistered by all subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -617,6 +694,9 @@ public enum Processors {
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
@@ -631,6 +711,9 @@ public enum Processors {
 	 * settings. <p> A Shared Processor authorizes concurrent onNext calls and is suited for multi-threaded publisher
 	 * that will fan-in data. <p> The passed {@link java.util.concurrent.ExecutorService} will execute as many
 	 * event-loop consuming the ringbuffer as subscribers.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param autoCancel Should this propagate cancellation when unregistered by all subscribers ?

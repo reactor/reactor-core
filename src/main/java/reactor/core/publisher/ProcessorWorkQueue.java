@@ -27,9 +27,9 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.flow.Producer;
 import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.SequenceBarrier;
 import reactor.core.queue.Sequencer;
@@ -50,7 +50,12 @@ import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
 
 /**
- * An implementation of a RingBuffer backed message-passing WorkProcessor. <p> The
+ ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
+ * async event loops.
+ * <p>
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
+ * <p>
+ *     The
  * processor is very similar to {@link ProcessorTopic} but
  * only partially respects the Reactive Streams contract. <p> The purpose of this
  * processor is to distribute the signals to only one of the subscribed subscribers and to

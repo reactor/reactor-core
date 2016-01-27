@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.flow.Producer;
 import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
@@ -44,6 +44,12 @@ import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 
 /**
+ ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
+ * synchronous (thread-stealing and happen-before interactions) drain loops.
+ * <p>
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+ * <p>
+ *
  * @author Stephane Maldini
  * @since 2.5
  */
