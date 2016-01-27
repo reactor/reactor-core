@@ -153,6 +153,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 				}
 				srcs[n] = p;
 			}
+			n++;
 		}
 		
 		if (n == 0) {
@@ -205,7 +206,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 	}
 
 	void handleBoth(Subscriber<? super R> s, Publisher<? extends T>[] srcs, Object[] scalars, int n, int sc) {
-		if (scalars != null) {
+		if (sc != 0) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator = 
 						new ZipSingleCoordinator<>(s, scalars, n, zipper);
