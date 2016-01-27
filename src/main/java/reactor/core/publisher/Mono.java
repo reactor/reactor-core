@@ -557,7 +557,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Introspect this Mono graph
 	 *
-	 * @return {@link ReactiveStateUtils.Graph} representation of a publisher graph
+	 * @return {@literal ReactiveStateUtils.Graph} representation of a publisher graph
 	 */
 	public final ReactiveStateUtils.Graph debug() {
 		return ReactiveStateUtils.scan(this);
@@ -773,8 +773,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@see PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
@@ -788,8 +788,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@link Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@see PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -798,7 +798,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for before raising a {@link reactor.core.util.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.util.Exceptions.CancelException}
 	 * @param unit unit of time
 	 *
 	 * @return T the result

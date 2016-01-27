@@ -169,7 +169,7 @@ final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
 
 		@Override
 		public int getMode() {
-			return 0;
+			return LOGGING;
 		}
 
 		@Override
