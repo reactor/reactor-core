@@ -36,7 +36,7 @@ import reactor.fn.Function;
 @SuppressWarnings({"rawtypes"})
 public class Tuple implements Iterable, Serializable, Function, BiFunction {
 
-	static final long     serialVersionUID = 8777121214502020843L;
+	static final long     serialVersionUID = 8777121294502020843L;
 	static final Object[] emptyArray       = new Object[0];
 	static final Tuple    empty            = new Tuple(0);
 
@@ -279,35 +279,6 @@ public class Tuple implements Iterable, Serializable, Function, BiFunction {
 	}
 
 	/**
-	 * A converting function from Object array to {@link Tuple1}
-	 *
-	 * @param <T1> The type of the first value.
-	 *
-	 * @return The unchecked conversion function to {@link Tuple1}.
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T1> Function<Object[], Tuple1<T1>> fn1() {
-		return (Function<Object[], Tuple1<T1>>) empty;
-	}
-
-	/**
-	 * A converting function from Object array to {@link Tuple1} to R.
-	 *
-	 * @param <T1> The type of the first value.
-	 * @param <R> The type of the return value.
-	 *
-	 * @return The unchecked conversion function to R.
-	 */
-	public static <T1, R> Function<Object[], R> fn1(final Function<Tuple1<T1>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1>fn1().apply(objects));
-			}
-		};
-	}
-
-	/**
 	 * A converting function from Object array to {@link Tuple2}
 	 *
 	 * @param <T1> The type of the first value.
@@ -320,26 +291,6 @@ public class Tuple implements Iterable, Serializable, Function, BiFunction {
 		return (Function<Object[], Tuple2<T1, T2>>) empty;
 	}
 
-
-	/**
-	 * A converting function from Object array to 2-args to R.
-	 *
-	 * @param <T1> The type of the first value.
-	 * @param <T2> The type of the second value.
-	 * @param <R> The type of the return value.
-	 *
-	 * @return The unchecked conversion function to R.
-	 */
-	public static <T1, T2, R> Function<? super Object[], ? extends R> fn2Bi(
-			final BiFunction<? super T1, ? super T2, ? extends R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			@SuppressWarnings("unchecked")
-			public R apply(Object[] objects) {
-				return delegate.apply((T1)objects[0], (T2)objects[1]);
-			}
-		};
-	}
 
 	/**
 	 * A converting function from Object array to {@link Tuple3}

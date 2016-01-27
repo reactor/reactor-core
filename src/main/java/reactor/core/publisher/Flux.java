@@ -290,6 +290,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param mapper the function to transform the upstream sequence into N sub-sequences
 	 * @param concurrency the maximum alive transformations at a given time
 	 * @param bufferSize the bounded capacity for each individual merged sequence
+	 * @param delayError Consume all pending sequence backlogs before replaying any captured error
 	 * @param <T> the source type
 	 * @param <V> the produced merged type
 	 *
@@ -299,12 +300,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends V>> mapper,
 			int concurrency,
-			int bufferSize) {
+			int bufferSize,
+			boolean delayError) {
 
 		return new FluxFlatMap<>(
 				source,
 				mapper,
-				false,
+				delayError,
 				concurrency,
 				QueueSupplier.<V>get(concurrency),
 				bufferSize,
