@@ -40,7 +40,7 @@ import reactor.fn.Supplier;
  * <p>
  * There are 2+2 decisions to make when choosing a factory from {@link Processors} :
  * <ul>
- *     <li>It is supporting a dynamically created data flow ({@link Flux} or {@link Mono}: <ul>
+ *     <li>It is supporting a dynamically created data flow ({@link Flux} or {@link Mono}): <ul>
  *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
  *     {@link #emitter} and {@link #replay}</li>
  *         <li>It needs asynchronousity :
