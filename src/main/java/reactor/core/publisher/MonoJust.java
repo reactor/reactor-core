@@ -16,11 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 import reactor.core.util.ScalarSubscription;
-import reactor.fn.Supplier;
 
 
 /**
@@ -29,7 +29,7 @@ import reactor.fn.Supplier;
  */
 final class MonoJust<T> 
 extends Mono<T>
-implements Supplier<T>, Publishable {
+implements Supplier<T>, Receiver {
 
 	final T value;
 

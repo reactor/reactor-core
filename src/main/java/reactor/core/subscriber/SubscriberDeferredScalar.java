@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
@@ -33,8 +33,8 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> The upstream sequence type
  * @param <O> The downstream sequence type
  */
-public class SubscriberDeferredScalar<I, O> implements Subscriber<I>, Completable, Subscription, Connectable, Cancellable,
-													   Subscribable {
+public class SubscriberDeferredScalar<I, O> implements Subscriber<I>, Completable, Subscription, Loopback, Cancellable,
+													   Producer {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 	static final int SDS_NO_REQUEST_HAS_VALUE  = 1;

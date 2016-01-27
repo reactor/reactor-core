@@ -27,9 +27,9 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
-import reactor.core.graph.Subscribable;
-import reactor.core.graph.SubscribableMany;
+import reactor.core.flow.Receiver;
+import reactor.core.flow.Producer;
+import reactor.core.flow.MultiProducer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.SequenceBarrier;
 import reactor.core.queue.Sequencer;
@@ -62,7 +62,7 @@ import reactor.fn.Supplier;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  */
-public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> implements Backpressurable, SubscribableMany {
+public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> implements Backpressurable, MultiProducer {
 
 	/**
 	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
@@ -699,8 +699,8 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * parallel coordination of an event.
 	 */
 	final static class QueueSubscriberLoop<T>
-			implements Runnable, Subscribable, Backpressurable, Completable, Cancellable, Introspectable,
-			           Requestable, Subscription, Publishable {
+			implements Runnable, Producer, Backpressurable, Completable, Cancellable, Introspectable,
+			           Requestable, Subscription, Receiver {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 

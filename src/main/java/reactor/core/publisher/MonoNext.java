@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
@@ -48,7 +48,7 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 	}
 
 	static final class NextSubscriber<T>
-			implements Subscriber<T>, Subscription, Completable, Backpressurable, Subscribable {
+			implements Subscriber<T>, Subscription, Completable, Backpressurable, Producer {
 
 		final Subscriber<? super T> actual;
 

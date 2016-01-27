@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package reactor.core.graph;
+package reactor.core.flow;
 
 import java.util.Iterator;
 
 /**
- * A component that is linked to N upstreams producers.
+ * A component that will emit events to N downstreams.
  */
-public interface PublishableMany {
+public interface MultiProducer {
 
 	/**
-	 * Return the connected sources of data.
-	 *
-	 * @return the connected sources of data
+	 * @return the connected data receivers
 	 */
-	Iterator<?> upstreams();
+	Iterator<?> downstreams();
 
 	/**
-	 * @return the number of upstreams
+	 * @return the number of downstream receivers
 	 */
-	long upstreamsCount();
+	long downstreamsCount();
+
 }

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package reactor.core.graph;
+package reactor.core.flow;
 
 /**
  * A component that will emit events to a downstream.
  */
-public interface Subscribable {
+public interface Producer {
 
 	/**
 	 * Return the direct data receiver.

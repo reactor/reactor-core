@@ -22,10 +22,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
+import reactor.core.util.BackpressureUtils;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -41,7 +42,7 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> the input value type
  * @param <O> the output value type
  */
-public abstract class SubscriberMultiSubscription<I, O> implements Subscription, Subscriber<I>, Subscribable, Cancellable,
+public abstract class SubscriberMultiSubscription<I, O> implements Subscription, Subscriber<I>, Producer, Cancellable,
 																   Requestable, Completable {
 
 	protected final Subscriber<? super O> subscriber;

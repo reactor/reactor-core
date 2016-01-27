@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.util.Exceptions;
@@ -32,7 +32,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  * @since 2.0.2
  */
-public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, Cancellable, Subscribable, Connectable {
+public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, Cancellable, Producer, Loopback {
 
 	private volatile       int                                              terminated       = 0;
 	protected static final AtomicIntegerFieldUpdater<SubscriberWithContext> TERMINAL_UPDATER =

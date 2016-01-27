@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.graph.Connectable;
+import reactor.core.flow.Loopback;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
@@ -28,7 +28,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Connectable {
+final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Loopback {
 
 	private final Consumer<? super I>              onSuccess;
 	private final BiConsumer<? super I, Throwable> onSuccessOrFailure;

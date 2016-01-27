@@ -28,9 +28,9 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Subscribable;
-import reactor.core.graph.SubscribableMany;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
+import reactor.core.flow.MultiProducer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
@@ -68,7 +68,7 @@ import reactor.fn.Supplier;
  * @author Anatoly Kadyshev
  * @author Stephane Maldini
  */
-public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable {
+public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
 	private static final Logger log = Logger.getLogger(ProcessorGroup.class);
 
@@ -546,7 +546,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 
 	private static class ProcessorBarrier<V> extends FluxProcessor<V, V>
 			implements Consumer<Runnable>, BiConsumer<V, Consumer<? super V>>, Executor, Subscription, Backpressurable,
-			           Connectable, Subscribable, Cancellable, Completable, Prefetchable, Requestable, Failurable,
+			           Loopback, Producer, Cancellable, Completable, Prefetchable, Requestable, Failurable,
 			           Runnable {
 
 		final ProcessorGroup service;
@@ -1230,7 +1230,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Connectable
 		}
 	}
 
-	final static class PooledProcessorGroup<T> extends ProcessorGroup<T> implements SubscribableMany {
+	final static class PooledProcessorGroup<T> extends ProcessorGroup<T> implements MultiProducer {
 
 		final ProcessorGroup[] processorGroups;
 

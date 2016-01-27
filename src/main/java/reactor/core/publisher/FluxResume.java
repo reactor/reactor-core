@@ -16,14 +16,14 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import reactor.fn.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
+import reactor.core.flow.Loopback;
 import reactor.core.subscriber.SubscriberMultiSubscription;
 import reactor.core.util.Exceptions;
-import reactor.fn.Function;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -75,7 +75,7 @@ final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
 	}
 
 	static final class ResumeSubscriber<T> extends SubscriberMultiSubscription<T, T>
-			implements Connectable {
+			implements Loopback {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 

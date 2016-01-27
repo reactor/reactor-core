@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.PublishableMany;
+import reactor.core.flow.MultiReceiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
+import reactor.core.util.BackpressureUtils;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -43,7 +43,7 @@ import reactor.core.util.EmptySubscription;
  */
 final class FluxAmb<T> 
 extends Flux<T>
-		implements PublishableMany {
+		implements MultiReceiver {
 
 	final Publisher<? extends T>[] array;
 
@@ -157,7 +157,7 @@ extends Flux<T>
 	}
 
 	static final class AmbCoordinator<T>
-	  implements Subscription, PublishableMany, Cancellable {
+	  implements Subscription, MultiReceiver, Cancellable {
 
 		final AmbSubscriber<T>[] subscribers;
 

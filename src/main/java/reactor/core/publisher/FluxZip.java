@@ -22,12 +22,14 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import reactor.fn.Function;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.PublishableMany;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.MultiReceiver;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -40,9 +42,9 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.SynchronousSource;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.SynchronousSubscription;
+import reactor.core.util.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -56,7 +58,7 @@ import reactor.fn.Supplier;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxZip<T, R> extends Flux<R> implements Introspectable, PublishableMany {
+final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiver {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -258,7 +260,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 	}
 
 	static final class ZipSingleCoordinator<T, R> extends SubscriberDeferredScalar<R, R>
-	implements PublishableMany, Backpressurable {
+			implements MultiReceiver, Backpressurable {
 
 		final Function<? super Object[], ? extends R> zipper;
 		
@@ -478,7 +480,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 		}
 	}
 	
-	static final class ZipCoordinator<T, R> implements Subscription, PublishableMany, Cancellable, Backpressurable, Completable, Requestable,
+	static final class ZipCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable, Backpressurable, Completable, Requestable,
 																Failurable {
 
 		final Subscriber<? super R> actual;
@@ -782,8 +784,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 	static final class ZipInner<T> implements Subscriber<T>,
 													   Backpressurable,
 													   Completable,
-													   Prefetchable,
-													   Subscribable {
+													   Prefetchable, Producer {
 		
 		final ZipCoordinator<T, ?> parent;
 
@@ -820,10 +821,10 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Publishable
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof SynchronousSource) {
+				if (s instanceof SynchronousSubscription) {
 					synchronousMode = true;
 					
-					queue = (SynchronousSource<T>)s;
+					queue = (SynchronousSubscription<T>)s;
 					done = true;
 					parent.drain();
 				} else {

@@ -17,7 +17,6 @@ package reactor.core.util;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Queue;
 
 /**
  * Base class for synchronous sources which have fixed size and can
@@ -26,16 +25,12 @@ import java.util.Queue;
  *
  * @param <T> the content value type
  */
-public abstract class SynchronousSource<T> implements Queue<T> {
-	// -----------------------------------------------------------------------------------
-	// The rest of the methods are not applicable
-	// -----------------------------------------------------------------------------------
-	
+public abstract class SynchronousSubscription<T> implements FusionSubscription<T> {
 	@Override
 	public final boolean offer(T e) {
 		throw new UnsupportedOperationException("Operators should not use this method!");
 	}
-	
+
 	@Override
 	public final int size() {
 		throw new UnsupportedOperationException("Operators should not use this method!");
@@ -84,6 +79,11 @@ public abstract class SynchronousSource<T> implements Queue<T> {
 	@Override
 	public final boolean retainAll(Collection<?> c) {
 		throw new UnsupportedOperationException("Operators should not use this method!");
+	}
+
+	@Override
+	public boolean enableOperatorFusion() {
+		return true;
 	}
 
 	@Override

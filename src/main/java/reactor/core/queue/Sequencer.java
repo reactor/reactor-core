@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
@@ -403,7 +403,7 @@ public abstract class Sequencer
      */
 }
 
-final class Wrapped<E> implements Sequence, Introspectable, Subscribable {
+final class Wrapped<E> implements Sequence, Introspectable, Producer {
 	public final E        delegate;
 	public final Sequence sequence;
 

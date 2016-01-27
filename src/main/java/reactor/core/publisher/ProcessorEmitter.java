@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
-import reactor.core.graph.Subscribable;
-import reactor.core.graph.SubscribableMany;
+import reactor.core.flow.Receiver;
+import reactor.core.flow.Producer;
+import reactor.core.flow.MultiProducer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
@@ -48,7 +48,7 @@ import reactor.core.util.Sequence;
  * @since 2.5
  */
 public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
-		implements SubscribableMany, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
+		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
 
 	final int maxConcurrency;
 	final int bufferSize;
@@ -543,8 +543,8 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	static final class EmitterSubscriber<T>
-			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Publishable,
-			           Requestable, Subscribable {
+			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Receiver,
+			           Requestable, Producer {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final ProcessorEmitter<T>   parent;

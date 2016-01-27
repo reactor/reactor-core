@@ -17,7 +17,7 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
@@ -33,7 +33,7 @@ import reactor.core.util.ReactiveStateUtils;
  * @since 2.0.4
  */
 public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
-		implements Subscription, Backpressurable, Completable, Subscribable {
+		implements Subscription, Backpressurable, Completable, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 

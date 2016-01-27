@@ -15,15 +15,16 @@
  */
 package reactor.core.publisher;
 
+import reactor.fn.Consumer;
+import reactor.fn.LongConsumer;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.fn.Consumer;
-import reactor.fn.LongConsumer;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -76,7 +77,7 @@ final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
-	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Publishable, Subscribable {
+	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer {
 
 		final Subscriber<? super T> actual;
 

@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.util.DeferredSubscription;
 
 /**
@@ -32,7 +32,7 @@ import reactor.core.util.DeferredSubscription;
  */
 public class SubscriberDeferredSubscription<I, O>
 		extends DeferredSubscription
-implements Subscription, Subscriber<I>, Subscribable {
+implements Subscription, Subscriber<I>, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 

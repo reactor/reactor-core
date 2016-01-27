@@ -15,11 +15,12 @@
  */
 package reactor.core.publisher;
 
+import reactor.fn.Supplier;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Completable;
 import reactor.core.util.EmptySubscription;
-import reactor.fn.Supplier;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.

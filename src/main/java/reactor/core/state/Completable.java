@@ -16,12 +16,12 @@
 
 package reactor.core.state;
 
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 
 /**
  * A lifecycle backed upstream
  */
-public interface Completable extends Publishable {
+public interface Completable extends Receiver {
 
 	/**
 	 * @return has this upstream started or "onSubscribed" ?

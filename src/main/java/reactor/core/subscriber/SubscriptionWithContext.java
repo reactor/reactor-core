@@ -18,7 +18,7 @@ package reactor.core.subscriber;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 
@@ -28,7 +28,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  * @since 2.0.2
  */
-public class SubscriptionWithContext<C> implements Subscription, Publishable, Introspectable {
+public class SubscriptionWithContext<C> implements Subscription, Receiver, Introspectable {
 
 	private volatile       int                                                terminated         = 0;
 	protected static final AtomicIntegerFieldUpdater<SubscriptionWithContext> TERMINATED_UPDATER =

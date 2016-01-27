@@ -16,11 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Failurable;
 import reactor.core.util.EmptySubscription;
-import reactor.fn.Supplier;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.

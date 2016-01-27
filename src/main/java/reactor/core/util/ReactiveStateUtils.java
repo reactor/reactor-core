@@ -24,11 +24,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Publishable;
-import reactor.core.graph.PublishableMany;
-import reactor.core.graph.Subscribable;
-import reactor.core.graph.SubscribableMany;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Receiver;
+import reactor.core.flow.MultiReceiver;
+import reactor.core.flow.Producer;
+import reactor.core.flow.MultiProducer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -162,7 +162,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasUpstream(Object o) {
-		return reactiveStateCheck(o, Publishable.class) && ((Publishable) o).upstream() != null;
+		return reactiveStateCheck(o, Receiver.class) && ((Receiver) o).upstream() != null;
 	}
 
 	/**
@@ -171,7 +171,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasUpstreams(Object o) {
-		return reactiveStateCheck(o, PublishableMany.class);
+		return reactiveStateCheck(o, MultiReceiver.class);
 	}
 
 	/**
@@ -180,7 +180,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasDownstream(Object o) {
-		return reactiveStateCheck(o, Subscribable.class) && ((Subscribable) o).downstream() != null;
+		return reactiveStateCheck(o, Producer.class) && ((Producer) o).downstream() != null;
 	}
 
 	/**
@@ -189,7 +189,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasDownstreams(Object o) {
-		return reactiveStateCheck(o, SubscribableMany.class);
+		return reactiveStateCheck(o, MultiProducer.class);
 	}
 
 	/**
@@ -198,7 +198,7 @@ public enum ReactiveStateUtils {
 	 * @return
 	 */
 	public static boolean hasFeedbackLoop(Object o) {
-		return reactiveStateCheck(o, Connectable.class);
+		return reactiveStateCheck(o, Loopback.class);
 	}
 
 	/**
@@ -550,7 +550,7 @@ public enum ReactiveStateUtils {
 				child = grandchild;
 			}
 			if (hasUpstream(target.object)) {
-				Object in = ((Publishable) target.object).upstream();
+				Object in = ((Receiver) target.object).upstream();
 				if (!virtualRef(in, target)) {
 					Node upstream = expandReactiveSate(in, target.rootId);
 					if (child != null && (trace || !isTraceOnly(upstream.object))) {
@@ -560,10 +560,10 @@ public enum ReactiveStateUtils {
 				}
 			}
 			if (hasUpstreams(target.object)) {
-				addUpstreams(child, ((PublishableMany) target.object).upstreams());
+				addUpstreams(child, ((MultiReceiver) target.object).upstreams());
 			}
 			if (hasDownstreams(target.object)) {
-				addDownstreams(child, ((SubscribableMany) target.object).downstreams());
+				addDownstreams(child, ((MultiProducer) target.object).downstreams());
 			}
 		}
 
@@ -603,7 +603,7 @@ public enum ReactiveStateUtils {
 				root = ancestor;
 			}
 			if (hasDownstream(origin.object)) {
-				Object out = ((Subscribable) origin.object).downstream();
+				Object out = ((Producer) origin.object).downstream();
 				if (!virtualRef(out, origin)) {
 					Node downstream = expandReactiveSate(out, origin.rootId);
 					if (root != null && (trace || !isTraceOnly(downstream.object))) {
@@ -613,11 +613,11 @@ public enum ReactiveStateUtils {
 				}
 			}
 			if (hasDownstreams(origin.object)) {
-				addDownstreams(root, ((SubscribableMany) origin.object).downstreams());
+				addDownstreams(root, ((MultiProducer) origin.object).downstreams());
 			}
 
 			if (hasUpstreams(origin.object)) {
-				addUpstreams(root, ((PublishableMany) origin.object).upstreams());
+				addUpstreams(root, ((MultiReceiver) origin.object).upstreams());
 			}
 		}
 
@@ -651,7 +651,7 @@ public enum ReactiveStateUtils {
 			Node r = new Node(name, id, o, rootid);
 
 			if ((trace || !isTraceOnly(o)) && hasFeedbackLoop(o)) {
-				Connectable loop = (Connectable) o;
+				Loopback loop = (Loopback) o;
 
 				Object target = loop.connectedInput();
 				if (target != null && target != loop && !virtualRef(target, r)) {

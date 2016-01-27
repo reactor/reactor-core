@@ -22,12 +22,14 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import reactor.fn.Function;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.PublishableMany;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.MultiReceiver;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -39,10 +41,10 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.core.util.FusionSubscription;
 import reactor.core.util.ScalarSubscription;
-import reactor.core.util.SynchronousSource;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.Exceptions;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them 
@@ -133,8 +135,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 	}
 
 	static final class FlatMapMain<T, R> 
-	implements Subscriber<T>, Subscription,
-			   PublishableMany, Requestable, Completable, Subscribable,
+	implements Subscriber<T>, Subscription, MultiReceiver, Requestable, Completable, Producer,
 			   Cancellable, Backpressurable, Failurable {
 		
 		final Subscriber<? super R> actual;
@@ -869,8 +870,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 	}
 	
 	static final class FlatMapInner<R> 
-	implements Subscriber<R>, Subscription,
-			   Subscribable,
+	implements Subscriber<R>, Subscription, Producer,
 			   Backpressurable,
 			   Cancellable,
 			   Completable,
@@ -894,7 +894,20 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 		
 		volatile boolean done;
 		
-		boolean synchronousSource;
+		/** Represents the optimization mode of this inner subscriber. */
+		int mode;
+		
+		/** Running with regular, arbitrary source. */
+		static final int NORMAL = 0;
+		/** Running with a source that implements SynchronousSource. */
+		static final int SYNC = 1;
+		/** Running with a source that implements AsynchronousSource. */
+		static final int ASYNC = 2;
+
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<FlatMapInner> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(FlatMapInner.class, "once");
 		
 		public FlatMapInner(FlatMapMain<?, R> parent, int prefetch) {
 			this.parent = parent;
@@ -906,36 +919,51 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof SynchronousSource) {
-					synchronousSource = true;
-					queue = (SynchronousSource<R>)s;
-					done = true;
-					parent.drain();
-				} else {
-					s.request(prefetch);
+				if (s instanceof FusionSubscription) {
+					FusionSubscription<R> f = (FusionSubscription<R>)s;
+					queue = f;
+					if(f.enableOperatorFusion()){
+						mode = SYNC;
+						done = true;
+						parent.drain();
+						return;
+					}
+					else {
+						mode = ASYNC;
+						f.enableOperatorFusion();
+					}
 				}
+				s.request(prefetch);
 			}
 		}
 
 		@Override
 		public void onNext(R t) {
-			parent.innerNext(this, t);
+			if (mode == ASYNC) {
+				parent.drain();
+			} else {
+				parent.innerNext(this, t);
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			parent.innerError(this, t);
+			// we don't want to emit the same error twice in case of subscription-race in async mode
+			if (mode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
+				parent.innerError(this, t);
+			}
 		}
 
 		@Override
 		public void onComplete() {
+			// onComplete is practically idempotent so there is no risk due to subscription-race in async mode
 			done = true;
 			parent.drain();
 		}
 
 		@Override
 		public void request(long n) {
-			if (!synchronousSource) {
+			if (mode != SYNC) {
 				long p = produced + n;
 				if (p >= limit) {
 					produced = 0L;

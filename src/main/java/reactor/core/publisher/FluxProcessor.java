@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.subscriber.ReactiveSession;
 import reactor.core.util.BackpressureUtils;
@@ -33,7 +33,7 @@ import reactor.core.util.Exceptions;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Publishable {
+		implements Processor<IN, OUT>, Backpressurable, Receiver {
 
 	//protected static final int DEFAULT_BUFFER_SIZE = 1024;
 

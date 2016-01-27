@@ -14,14 +14,24 @@
  * limitations under the License.
  */
 
-package reactor.core.graph;
+package reactor.core.flow;
+
+import java.util.Iterator;
 
 /**
- * A component that is forking to a sub-flow given a delegate input and that is consuming from a given delegate output
+ * A component that is linked to N upstreams producers.
  */
-public interface Connectable {
+public interface MultiReceiver {
 
-	Object connectedInput();
+	/**
+	 * Return the connected sources of data.
+	 *
+	 * @return the connected sources of data
+	 */
+	Iterator<?> upstreams();
 
-	Object connectedOutput();
+	/**
+	 * @return the number of upstreams
+	 */
+	long upstreamsCount();
 }

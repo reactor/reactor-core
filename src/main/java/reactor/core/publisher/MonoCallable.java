@@ -17,9 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 import reactor.core.subscriber.SubscriberDeferredScalar;
 import reactor.core.util.Exceptions;
 
@@ -37,7 +38,7 @@ import reactor.core.util.Exceptions;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Publishable {
+		implements Receiver {
 
 	final Callable<? extends T> callable;
 

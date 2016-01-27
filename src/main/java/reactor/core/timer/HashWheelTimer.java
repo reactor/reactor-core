@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Pausable;
@@ -317,7 +317,7 @@ class HashWheelTimer extends Timer {
 	}
 
 	static abstract class HashWheelSubscription
-			implements Runnable, Comparable, Pausable, Subscription, Cancellable, Subscribable, Timeable {
+			implements Runnable, Comparable, Pausable, Subscription, Cancellable, Producer, Timeable {
 
 		volatile long rounds;
 		volatile int  status;

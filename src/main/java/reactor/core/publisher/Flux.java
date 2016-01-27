@@ -25,8 +25,8 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -45,14 +45,7 @@ import reactor.fn.BiFunction;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
-import reactor.fn.tuple.Tuple;
-import reactor.fn.tuple.Tuple2;
-import reactor.fn.tuple.Tuple3;
-import reactor.fn.tuple.Tuple4;
-import reactor.fn.tuple.Tuple5;
-import reactor.fn.tuple.Tuple6;
-import reactor.fn.tuple.Tuple7;
-import reactor.fn.tuple.Tuple8;
+import reactor.fn.tuple.*;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes
@@ -1695,7 +1688,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <I> Upstream type
 	 * @param <O> Downstream type
 	 */
-	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Publishable {
+	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Receiver {
 
 		protected final Publisher<? extends I> source;
 
@@ -1767,7 +1760,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		}
 	}
 
-	static final class FluxProcessorGroup<I> extends FluxBarrier<I, I> implements Connectable {
+	static final class FluxProcessorGroup<I> extends FluxBarrier<I, I> implements Loopback {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;

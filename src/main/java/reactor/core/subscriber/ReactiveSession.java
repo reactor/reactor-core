@@ -24,7 +24,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Failurable;
@@ -40,7 +40,7 @@ import reactor.fn.Predicate;
  * @since 2.5
  */
 public class ReactiveSession<E>
-		implements Subscribable, Subscriber<E>, Subscription, Backpressurable, Failurable, Cancellable, Requestable,
+		implements Producer, Subscriber<E>, Subscription, Backpressurable, Failurable, Cancellable, Requestable,
 		           Consumer<E>,
 		           Closeable {
 

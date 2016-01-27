@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
-import reactor.core.graph.Subscribable;
+import reactor.core.flow.Receiver;
+import reactor.core.flow.Producer;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
@@ -72,7 +72,7 @@ final class FluxMapSignal<T, R> extends Flux.FluxBarrier<T, R> {
         source.subscribe(new FluxMapSignalSubscriber<>(s, this));
     }
 
-    static final class FluxMapSignalSubscriber<T, R> implements Subscriber<T>, Publishable, Subscribable, Completable {
+    static final class FluxMapSignalSubscriber<T, R> implements Subscriber<T>, Receiver, Producer, Completable {
 
         final Subscriber<? super R>            actual;
         final FluxMapSignal<T, R> parent;

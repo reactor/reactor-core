@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-package reactor.core.graph;
-
-import java.util.Iterator;
-
 /**
- * A component that will emit events to N downstreams.
+ * Topology representation of reactive flows :
+ * {@link reactor.core.flow.Receiver upstream} ({@link reactor.core.flow.MultiReceiver s}), {@link reactor.core.flow.Producer downstream}
+ * ({@link reactor.core.flow.MultiProducer s}) and
+ * {@link reactor.core.flow.Loopback loopback} flows.
+ *
+ * @author Stephane Maldini
  */
-public interface SubscribableMany {
 
-	/**
-	 * @return the connected data receivers
-	 */
-	Iterator<?> downstreams();
-
-	/**
-	 * @return the number of downstream receivers
-	 */
-	long downstreamsCount();
-
-}
+package reactor.core.flow;

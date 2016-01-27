@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package reactor.core.graph;
+package reactor.core.flow;
 
 /**
  * A component that is linked to a source producer.
  */
-public interface Publishable {
+public interface Receiver {
 
 	/**
 	 * Return the direct source of data, Supports reference.

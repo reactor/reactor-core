@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-/**
- * Topology representation of reactive flows :
- * {@link reactor.core.graph.Publishable upstream} ({@link reactor.core.graph.PublishableMany s}), {@link reactor.core.graph.Subscribable downstream}
- * ({@link reactor.core.graph.SubscribableMany s}) and
- * {@link reactor.core.graph.Connectable loopback} flows.
- *
- * @author Stephane Maldini
- */
+package reactor.core.flow;
 
-package reactor.core.graph;
+/**
+ * A component that is forking to a sub-flow given a delegate input and that is consuming from a given delegate output
+ */
+public interface Loopback {
+
+	Object connectedInput();
+
+	Object connectedOutput();
+}

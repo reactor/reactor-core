@@ -23,16 +23,16 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import reactor.fn.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
-import reactor.fn.Supplier;
+import reactor.core.util.BackpressureUtils;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -42,7 +42,7 @@ import reactor.fn.Supplier;
  *
  * @param <T> the value type
  */
-public final class BlockingIterable<T> implements Iterable<T>, Publishable, Backpressurable {
+public final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurable {
 
 	final Publisher<? extends T> source;
 	

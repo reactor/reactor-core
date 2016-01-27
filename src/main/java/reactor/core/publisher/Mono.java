@@ -24,8 +24,8 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.graph.Connectable;
-import reactor.core.graph.Publishable;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -42,12 +42,7 @@ import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.fn.Predicate;
 import reactor.fn.Supplier;
-import reactor.fn.tuple.Tuple;
-import reactor.fn.tuple.Tuple2;
-import reactor.fn.tuple.Tuple3;
-import reactor.fn.tuple.Tuple4;
-import reactor.fn.tuple.Tuple5;
-import reactor.fn.tuple.Tuple6;
+import reactor.fn.tuple.*;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -1265,7 +1260,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <I>
 	 * @param <O>
 	 */
-	public static class MonoBarrier<I, O> extends Mono<O> implements Publishable {
+	public static class MonoBarrier<I, O> extends Mono<O> implements Receiver {
 
 		protected final Publisher<? extends I> source;
 
@@ -1303,7 +1298,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 	}
 
-	static final class MonoProcessorGroup<I> extends MonoBarrier<I, I> implements Connectable {
+	static final class MonoProcessorGroup<I> extends MonoBarrier<I, I> implements Loopback {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;
