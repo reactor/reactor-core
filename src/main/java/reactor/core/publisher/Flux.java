@@ -1359,7 +1359,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	@Override
 	public String getName() {
-		return getClass().getName()
+		return getClass().getSimpleName()
 		                 .replace(Flux.class.getSimpleName(), "");
 	}
 
