@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.EmptySubscriber;
@@ -49,12 +50,9 @@ import reactor.fn.Supplier;
  * <p>Usage:
  * <pre>
  * {@code
- * TestSubscriber<String> testSubscriber = new TestSubscriber<>();
+ * TestSubscriber<String> ts = new TestSubscriber<>();
  * Publisher<String> publisher = new FooPublisher<>();
- * publisher.subscribe(testSubscriber);
- * testSubscriber.assertValue("ABC", "DEF")
-			  .assertComplete()
-			  .assertNoError();
+ * ts.bindTo(publisher).assertValue("ABC", "DEF").assertComplete();
  * }
  * </pre>
  *
@@ -590,6 +588,14 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 //	 ==============================================================================================================
 //	 Utility methods
 //	 ==============================================================================================================
+
+	/**
+	 * Allow the specified {@code publisher} to subscribe to this {@link TestSubscriber} instance.
+	 */
+	public TestSubscriber<T> bindTo(Publisher<T> publisher) {
+		publisher.subscribe(this);
+		return this;
+	}
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available.

@@ -24,6 +24,14 @@ public class TestSubscriberTests {
 	}
 
 	@Test
+	public void bindTo() {
+		TestSubscriber<String> ts = new TestSubscriber<>();
+		ts.bindTo(Flux.just("foo"));
+		ts.assertSubscribed();
+		ts.assertValues("foo");
+	}
+
+	@Test
 	public void assertValues() {
 		TestSubscriber<String> ts = new TestSubscriber<>();
 		Flux.<String>empty().subscribe(ts);
