@@ -548,7 +548,9 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 								r = REQUESTED.addAndGet(this, -e);
 							}
 							e = 0L;
+							again = true;
 						}
+						
 					}
 
 					if (r != 0L) {
