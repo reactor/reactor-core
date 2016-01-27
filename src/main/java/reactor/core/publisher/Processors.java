@@ -464,7 +464,7 @@ public enum Processors {
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -478,7 +478,7 @@ public enum Processors {
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -493,7 +493,7 @@ public enum Processors {
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param autoCancel Should this propagate cancellation when unregistered by all subscribers ?
 	 * @param <E> Type of processed signals
@@ -509,7 +509,7 @@ public enum Processors {
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -524,7 +524,7 @@ public enum Processors {
 	 * Create a new {@link ProcessorWorkQueue} using the passed buffer size and auto-cancel settings. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to qualify the created threads.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param name Use a new Cached ExecutorService and assign this name to the created threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -540,7 +540,7 @@ public enum Processors {
 	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/queue.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
 	 * <p>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
