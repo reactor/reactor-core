@@ -28,7 +28,6 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the
@@ -44,7 +43,7 @@ import reactor.core.util.BackpressureUtils;
  * @param <O> the output value type
  */
 public abstract class SubscriberMultiSubscription<I, O> implements Subscription, Subscriber<I>, Producer, Cancellable,
-                                                                   Receiver, Requestable, Completable {
+																   Requestable, Receiver, Completable {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -82,6 +81,8 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 
 	volatile boolean cancelled;
 
+	protected boolean unbounded;
+	
 	public SubscriberMultiSubscription(Subscriber<? super O> subscriber) {
 		this.subscriber = subscriber;
 	}
@@ -103,10 +104,34 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 
 	public final void set(Subscription s) {
 		if (cancelled) {
+			s.cancel();
 			return;
 		}
 
 		Objects.requireNonNull(s);
+		
+		if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+			Subscription a = actual;
+			
+			if (a != null) {
+				a.cancel();
+			}
+			
+			actual = s;
+			
+			long r = requested;
+			if (r != 0L) {
+				s.request(r);
+			}
+			
+			if (WIP.decrementAndGet(this) == 0) {
+				return;
+			}
+
+			drainLoop();
+
+			return;
+		}
 
 		Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
 		if (a != null) {
@@ -118,12 +143,18 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 	@Override
 	public final void request(long n) {
 		if (BackpressureUtils.validate(n)) {
-
+			if (unbounded) {
+				return;
+			}
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
 
 				if (r != Long.MAX_VALUE) {
-					requested = BackpressureUtils.addCap(r, n);
+					r = BackpressureUtils.addCap(r, n);
+					requested = r;
+					if (r == Long.MAX_VALUE) {
+						unbounded = true;
+					}
 				}
 				Subscription a = actual;
 				if (a != null) {
@@ -146,6 +177,9 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 	}
 
 	public final void producedOne() {
+		if (unbounded) {
+			return;
+		}
 		if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 			long r = requested;
 
@@ -156,6 +190,8 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 					r = 0;
 				}
 				requested = r;
+			} else {
+				unbounded = true;
 			}
 
 			if (WIP.decrementAndGet(this) == 0) {
@@ -173,32 +209,35 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 	}
 
 	public final void produced(long n) {
-		if (BackpressureUtils.validate(n)) {
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				long r = requested;
+		if (unbounded) {
+			return;
+		}
+		if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+			long r = requested;
 
-				if (r != Long.MAX_VALUE) {
-					long u = r - n;
-					if (u < 0L) {
-						BackpressureUtils.reportMoreProduced();
-						u = 0;
-					}
-					requested = u;
+			if (r != Long.MAX_VALUE) {
+				long u = r - n;
+				if (u < 0L) {
+					BackpressureUtils.reportMoreProduced();
+					u = 0;
 				}
+				requested = u;
+			} else {
+				unbounded = true;
+			}
 
-				if (WIP.decrementAndGet(this) == 0) {
-					return;
-				}
-
-				drainLoop();
-
+			if (WIP.decrementAndGet(this) == 0) {
 				return;
 			}
 
-			BackpressureUtils.addAndGet(MISSED_PRODUCED, this, n);
+			drainLoop();
 
-			drain();
+			return;
 		}
+
+		BackpressureUtils.addAndGet(MISSED_PRODUCED, this, n);
+
+		drain();
 	}
 
 	@Override
@@ -314,5 +353,9 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 	@Override
 	public boolean isStarted() {
 		return upstream() != null;
+	}
+	
+	public final boolean isUnbounded() {
+		return unbounded;
 	}
 }
