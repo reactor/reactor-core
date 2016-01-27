@@ -22,6 +22,8 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+import reactor.core.flow.Receiver;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 
@@ -376,7 +378,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 	}
 	
-	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Backpressurable, Completable, Introspectable{
+	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Receiver, Cancellable, Backpressurable, Completable, Introspectable{
 		final ZipSingleCoordinator<T, ?> parent;
 		
 		final int index;
@@ -585,11 +587,6 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 
 		@Override
-		public Object upstream() {
-			return null;
-		}
-
-		@Override
 		public Iterator<?> upstreams() {
 			return Arrays.asList(subscribers).iterator();
 		}
@@ -782,9 +779,9 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 	}
 	
 	static final class ZipInner<T> implements Subscriber<T>,
-													   Backpressurable,
-													   Completable,
-													   Prefetchable, Producer {
+	                                          Backpressurable,
+	                                          Completable,
+	                                          Prefetchable, Receiver, Producer {
 		
 		final ZipCoordinator<T, ?> parent;
 

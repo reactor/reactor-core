@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -134,7 +135,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 
 	static final class FlatMapMain<T, R> 
 	implements Subscriber<T>, Subscription, MultiReceiver, Requestable, Completable, Producer,
-			   Cancellable, Backpressurable, Failurable {
+	           Cancellable, Backpressurable, Receiver, Failurable {
 		
 		final Subscriber<? super R> actual;
 
@@ -868,7 +869,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 	}
 	
 	static final class FlatMapInner<R> 
-	implements Subscriber<R>, Subscription, Producer,
+	implements Subscriber<R>, Subscription, Receiver, Producer,
 			   Backpressurable,
 			   Cancellable,
 			   Completable,

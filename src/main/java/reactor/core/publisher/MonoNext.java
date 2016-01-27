@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
@@ -48,7 +49,7 @@ final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
 	}
 
 	static final class NextSubscriber<T>
-			implements Subscriber<T>, Subscription, Completable, Backpressurable, Producer {
+			implements Subscriber<T>, Receiver, Subscription, Completable, Backpressurable, Producer {
 
 		final Subscriber<? super T> actual;
 

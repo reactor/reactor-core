@@ -107,7 +107,7 @@ public final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpre
 		throw new RuntimeException(e);
 	}
 	
-	static final class SubscriberIterator<T> implements Subscriber<T>, Iterator<T>, Runnable, Completable {
+	static final class SubscriberIterator<T> implements Subscriber<T>, Iterator<T>, Runnable, Receiver, Completable {
 
 		final Queue<T> queue;
 		

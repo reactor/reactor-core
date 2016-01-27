@@ -58,11 +58,6 @@ extends Flux<Object>
 	}
 
 	@Override
-	public Object upstream() {
-		return null;
-	}
-
-	@Override
 	public boolean isStarted() {
 		return false;
 	}

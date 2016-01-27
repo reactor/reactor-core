@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
@@ -29,7 +30,7 @@ import reactor.core.util.PlatformDependent;
 /**
  * @author Stephane Maldini
  */
-final class MonoResult<I> implements Subscriber<I>, Completable {
+final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 
 	volatile SignalType   endState;
 	volatile I            value;

@@ -140,8 +140,4 @@ public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, 
 		return context;
 	}
 
-	@Override
-	public Object upstream() {
-		return null;
-	}
 }

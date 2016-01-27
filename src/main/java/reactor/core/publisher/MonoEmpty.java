@@ -66,11 +66,6 @@ implements Supplier<Object>, Completable {
 	}
 
 	@Override
-	public Object upstream() {
-		return null;
-	}
-
-	@Override
 	public boolean isStarted() {
 		return false;
 	}

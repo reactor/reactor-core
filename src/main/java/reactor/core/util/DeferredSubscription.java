@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
@@ -29,7 +30,7 @@ import reactor.core.state.Requestable;
  * they need to be cancelled or requested at any time.
  */
 public class DeferredSubscription
-		implements Subscription, Cancellable, Requestable, Completable {
+		implements Subscription, Receiver, Cancellable, Requestable, Completable {
 
 	volatile Subscription s;
 	static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =

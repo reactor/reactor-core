@@ -16,12 +16,10 @@
 
 package reactor.core.state;
 
-import reactor.core.flow.Receiver;
-
 /**
  * A lifecycle backed upstream
  */
-public interface Completable extends Receiver {
+public interface Completable {
 
 	/**
 	 * @return has this upstream started or "onSubscribed" ?

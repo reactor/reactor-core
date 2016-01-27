@@ -18,6 +18,7 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
@@ -28,7 +29,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Completable, Backpressurable {
+public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver, Completable, Backpressurable {
 
 	private final Consumer<? super T>         consumer;
 	private final Consumer<? super Throwable> errorConsumer;

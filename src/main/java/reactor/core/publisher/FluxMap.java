@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+
+import reactor.core.flow.Receiver;
 import reactor.fn.Function;
 
 import org.reactivestreams.Publisher;
@@ -63,7 +65,7 @@ final class FluxMap<T, R> extends Flux.FluxBarrier<T, R> {
 		source.subscribe(new MapSubscriber<>(s, mapper));
 	}
 
-	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Producer, Loopback, Subscription {
+	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
