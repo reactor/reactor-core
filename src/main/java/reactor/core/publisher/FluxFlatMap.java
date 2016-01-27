@@ -22,8 +22,6 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -43,8 +41,8 @@ import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.FusionSubscription;
 import reactor.core.util.ScalarSubscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+import reactor.fn.Function;
+import reactor.fn.Supplier;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them 
@@ -922,7 +920,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 				if (s instanceof FusionSubscription) {
 					FusionSubscription<R> f = (FusionSubscription<R>)s;
 					queue = f;
-					if(f.enableOperatorFusion()){
+					if(f.requestSyncFusion()){
 						mode = SYNC;
 						done = true;
 						parent.drain();
@@ -930,7 +928,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 					}
 					else {
 						mode = ASYNC;
-						f.enableOperatorFusion();
+						f.requestSyncFusion();
 					}
 				}
 				s.request(prefetch);
