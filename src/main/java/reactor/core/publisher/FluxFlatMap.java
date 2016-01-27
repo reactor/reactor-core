@@ -199,9 +199,10 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 			this.delayError = delayError;
 			this.maxConcurrency = maxConcurrency;
 			this.mainQueueSupplier = mainQueueSupplier;
-			this.prefetch = prefetch;
+			int pf = Math.min(maxConcurrency, prefetch);
+			this.prefetch = pf;
 			this.innerQueueSupplier = innerQueueSupplier;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = pf - (pf >> 2);
 			SUBSCRIBERS.lazySet(this, EMPTY);
 		}
 
@@ -894,7 +895,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 		volatile boolean done;
 		
 		/** Represents the optimization mode of this inner subscriber. */
-		int mode;
+		int sourceMode;
 		
 		/** Running with regular, arbitrary source. */
 		static final int NORMAL = 0;
@@ -914,22 +915,20 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 			this.limit = prefetch - (prefetch >> 2);
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
 				if (s instanceof FusionSubscription) {
+					@SuppressWarnings("unchecked")
 					FusionSubscription<R> f = (FusionSubscription<R>)s;
 					queue = f;
-					if(f.requestSyncFusion()){
-						mode = SYNC;
+					if (f.requestSyncFusion()){
+						sourceMode = SYNC;
 						done = true;
 						parent.drain();
 						return;
-					}
-					else {
-						mode = ASYNC;
-						f.requestSyncFusion();
+					} else {
+						sourceMode = ASYNC;
 					}
 				}
 				s.request(prefetch);
@@ -938,7 +937,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 
 		@Override
 		public void onNext(R t) {
-			if (mode == ASYNC) {
+			if (sourceMode == ASYNC) {
 				parent.drain();
 			} else {
 				parent.innerNext(this, t);
@@ -948,7 +947,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			// we don't want to emit the same error twice in case of subscription-race in async mode
-			if (mode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
+			if (sourceMode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
 				parent.innerError(this, t);
 			}
 		}
@@ -962,7 +961,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (mode != SYNC) {
+			if (sourceMode != SYNC) {
 				long p = produced + n;
 				if (p >= limit) {
 					produced = 0L;
