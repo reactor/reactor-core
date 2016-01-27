@@ -44,8 +44,8 @@ import reactor.fn.Supplier;
  *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
  *     {@link #emitter} and {@link #replay}</li>
  *         <li>It needs asynchronousity :
- *         <ul>for slow publishers prefer
- *           <li>{@link #ioGroup} and {@link ProcessorGroup#publishOn}</li>
+ *         <ul>
+ *           <li>for slow publishers prefer {@link #ioGroup} and {@link ProcessorGroup#publishOn}</li>
  *           <li>for fast publisher prefer {@link #asyncGroup} and {@link ProcessorGroup#dispatchOn}</li>
  *         </ul>
  *        </li>
