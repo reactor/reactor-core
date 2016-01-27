@@ -68,14 +68,14 @@ public class TestSubscriberTests {
 		ts.assertValuesWith(value -> Assert.assertEquals("foo", value), value -> Assert.assertEquals("foo", value));
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void assertValueSequence() {
 		TestSubscriber<String> ts = new TestSubscriber<>();
 		Flux.just("foo", "bar").subscribe(ts);
 		ts.assertValueSequence(Arrays.asList("foo", "bar"));
 	}
 
-	@Test
+	@Test(expected = AssertionError.class)
 	public void assertValueSequenceFailure() {
 		TestSubscriber<String> ts = new TestSubscriber<>();
 		Flux.just("foo", "bar").subscribe(ts);
