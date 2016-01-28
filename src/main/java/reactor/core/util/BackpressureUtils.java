@@ -425,7 +425,7 @@ public enum BackpressureUtils {
 	 *
 	 */
 	public static void reportSubscriptionSet() {
-		throw Exceptions.argumentIsNullException();
+		throw Exceptions.duplicateOnSubscribeException();
 	}
 
 	/**
