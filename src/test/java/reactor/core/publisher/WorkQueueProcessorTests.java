@@ -50,8 +50,8 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		final FluxProcessor<Integer, Integer> sink = Processors.topic("topic");
-		final FluxProcessor<Integer, Integer> processor = Processors.queue("queue");
+		final FluxProcessor<Integer, Integer> sink = TopicProcessor.create("topic");
+		final FluxProcessor<Integer, Integer> processor = WorkQueueProcessor.create("queue");
 
 		int elems = 1_000_000;
 		CountDownLatch latch = new CountDownLatch(elems);

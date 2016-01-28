@@ -52,7 +52,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	@Ignore
 	public void test() {
-		ProcessorGroup<String> asyncGroup = Processors.asyncGroup("async", 128, 1);
+		ProcessorGroup<String> asyncGroup = ProcessorGroup.async("async", 128, 1);
 		FluxProcessor<String, String> publishOn = asyncGroup.publishOn();
 		FluxProcessor<String, String> emitter = Processors.emitter();
 

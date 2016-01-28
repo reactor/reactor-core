@@ -1194,12 +1194,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Processors#singleGroup} and {@link Processors#asyncGroup} which implement
+	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
 	 * <p> <p>
-	 * {@code flux.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool
 	 *
@@ -1521,10 +1521,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link Processors#ioGroup} which implements work-queue thread dispatching.
+	 * It naturally combines with {@link ProcessorGroup#io} which implements work-queue thread dispatching.
 	 *
 	 * <p>
-	 * {@code flux.publishOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool
 	 *
@@ -1577,7 +1577,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
 	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
 	 *
-	 * {@code flux.subscribeWith(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe and return
 	 * @param <E> the reified type from the input/output subscriber

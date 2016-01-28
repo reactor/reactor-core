@@ -33,7 +33,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return Processors.<Long>ioGroup("shared-work", bufferSize, 2, Throwable::printStackTrace).get();
+		return ProcessorGroup.<Long>io("shared-work", bufferSize, 2, Throwable::printStackTrace).get();
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		ProcessorGroup<String> serviceRB = Processors.asyncGroup("rbWork", 32, 1);
+		ProcessorGroup<String> serviceRB = ProcessorGroup.async("rbWork", 32, 1);
 		BiConsumer<String, Consumer<? super String>>  r = serviceRB.dataDispatcher();
 
 		long start = System.currentTimeMillis();

@@ -585,10 +585,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
 	 * <p> <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Processors#singleGroup} and {@link Processors#asyncGroup} which implement
+	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
 	 * fast async event loops.
 	 *
-	 * {@code mono.dispatchOn(Processors.queue()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool
 	 *
@@ -1025,7 +1025,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Run the requests to this Publisher {@link Mono} on a given processor thread from the given {@link
 	 * ProcessorGroup}
 	 * <p>
-	 * {@code mono.publishOn(Processors.ioGroup()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.publishOn(ProcessorGroup.io()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">

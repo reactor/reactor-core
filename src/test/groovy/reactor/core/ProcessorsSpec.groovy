@@ -20,7 +20,6 @@ package reactor.core
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import reactor.core.publisher.ProcessorGroup
-import reactor.core.publisher.Processors
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
 import reactor.fn.BiConsumer
@@ -166,7 +165,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			def sameThread = ProcessorGroup.sync().dataDispatcher()
-			BiConsumer<String, Consumer<String>> diffThread = Processors.ioGroup("rbWork").dataDispatcher()
+			BiConsumer<String, Consumer<String>> diffThread = ProcessorGroup.io("rbWork").dataDispatcher()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
 			Consumer<String> consumer = { ev ->
@@ -202,7 +201,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer eventBus"
-			def serviceRB = Processors.singleGroup("rb", 32)
+			def serviceRB = ProcessorGroup.single("rb", 32)
 			def r = serviceRB.dataDispatcher()
 			def latch = new CountDownLatch(2)
 
@@ -232,7 +231,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"a Reactor with a ThreadPoolExecutorDispatcher"
-			def serviceRB = Processors.ioGroup("rbWork", 32)
+			def serviceRB = ProcessorGroup.io("rbWork", 32)
 			def r = serviceRB.dataDispatcher()
 			long start = System.currentTimeMillis()
 			def hello = ""
@@ -259,7 +258,7 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = Processors.singleGroup("rb", 8)
+			def serviceRB = ProcessorGroup.single("rb", 8)
 			def dispatcher = serviceRB.executor()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -279,7 +278,7 @@ class ProcessorsSpec extends Specification {
 	def "WorkQueueDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRBWork = Processors.ioGroup("rbWork", 1024, 8)
+			def serviceRBWork = ProcessorGroup.io("rbWork", 1024, 8)
 			def dispatcher = serviceRBWork.executor()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()

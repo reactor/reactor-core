@@ -80,8 +80,7 @@ public class CombinationTests {
 	public void tesSubmitSession() throws Exception {
 		FluxProcessor<Integer, Integer> processor = Processors.emitter();
 		AtomicInteger count = new AtomicInteger();
-		processor.subscribeWith(Processors.ioGroup()
-		                       .get())
+		processor.subscribeWith(ProcessorGroup.io().get())
 		         .subscribe(Subscribers.create(s -> {
 			         try {
 				         Thread.sleep(1000);
@@ -118,7 +117,7 @@ public class CombinationTests {
 		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
 
 		for (int i = 0; i < subs; i++) {
-			processor.subscribeWith(Processors.singleGroup()
+			processor.subscribeWith(ProcessorGroup.single()
 			                       .get())
 			         .subscribe(Subscribers.create(s -> {
 				         s.request(1L);
@@ -152,7 +151,7 @@ public class CombinationTests {
 	public Publisher<SensorData> sensorOdd() {
 		if (sensorOdd == null) {
 			// this is the stream we publish odd-numbered events to
-			this.sensorOdd = Processors.blackbox(Processors.topic("odd"), p -> p.log("odd"));
+			this.sensorOdd = Processors.blackbox(TopicProcessor.create("odd"), p -> p.log("odd"));
 
 			// add substream to "master" list
 			//allSensors().add(sensorOdd.reduce(this::computeMin).timeout(1000));
@@ -164,7 +163,7 @@ public class CombinationTests {
 	public Publisher<SensorData> sensorEven() {
 		if (sensorEven == null) {
 			// this is the stream we publish even-numbered events to
-			this.sensorEven = Processors.blackbox(Processors.topic("even"), p -> p.log("even"));
+			this.sensorEven = Processors.blackbox(TopicProcessor.create("even"), p -> p.log("even"));
 
 			// add substream to "master" list
 			//allSensors().add(sensorEven.reduce(this::computeMin).timeout(1000));

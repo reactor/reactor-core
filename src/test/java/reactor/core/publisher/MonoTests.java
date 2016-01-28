@@ -40,7 +40,7 @@ public class MonoTests {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException("Some Exception");
 			})
-			    .publishOn(Processors.ioGroup())
+			    .publishOn(ProcessorGroup.io())
 			    .doOnError(t -> latch1.countDown())
 			    .doOnSuccess(v -> latch2.countDown())
 			    .get();
@@ -58,7 +58,7 @@ public class MonoTests {
 			Thread.sleep(400);
 			return "hello";
 		})
-		               .publishOn(Processors.ioGroup())
+		               .publishOn(ProcessorGroup.io())
 		               .after(() -> Mono.just("world"))
 		               .get();
 		assertThat("Alternate mono not seen", h, is("world"));

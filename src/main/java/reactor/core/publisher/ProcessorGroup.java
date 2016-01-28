@@ -70,7 +70,7 @@ import reactor.fn.Supplier;
  */
 public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
-	private static final Logger log = Logger.getLogger(ProcessorGroup.class);
+	private static final Logger log               = Logger.getLogger(ProcessorGroup.class);
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
@@ -79,13 +79,119 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
 	                                                            .availableProcessors(), 4);
 
-	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
-		@Override
-		public WaitStrategy get() {
-			return WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
-		}
-	};
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(String name, int bufferSize) {
+		return io(name, bufferSize, DEFAULT_POOL_SIZE);
+	}
 
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param concurrency
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(String name, int bufferSize, int concurrency) {
+		return io(name, bufferSize, concurrency, null, null, true);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param concurrency
+	 * @param uncaughtExceptionHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(String name,
+			int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler) {
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, null, true);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param concurrency
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(String name,
+			int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler) {
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param concurrency
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(final String name,
+			final int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown,
+				DEFAULT_WAIT_STRATEGY.get());
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param concurrency
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+	 * @param waitStrategy
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(final String name,
+			final int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown,
+			WaitStrategy waitStrategy) {
+
+		return create(WorkQueueProcessor.<Runnable>share(name, bufferSize,
+				waitStrategy, false),
+				concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
+
+	/**
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io() {
+		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param name
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> io(String name) {
+		return io(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
 
 	/**
 	 * @param <E>
@@ -376,6 +482,65 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
 
 	/**
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single() {
+		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param name
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single(String name) {
+		return single(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single(String name, int bufferSize) {
+		return single(name, bufferSize, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single(String name, int bufferSize, Consumer<Throwable> errorC) {
+		return single(name, bufferSize, errorC, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single(String name, int bufferSize, Consumer<Throwable> errorC,
+			Runnable shutdownC) {
+		return single(name, bufferSize, errorC, shutdownC, SINGLE_WAIT_STRATEGY);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> single(String name, int bufferSize, Consumer<Throwable> errorC,
+			Runnable shutdownC, Supplier<? extends WaitStrategy> waitStrategy) {
+		return async(name, bufferSize, 1, errorC, shutdownC, true, waitStrategy);
+	}
+
+	/**
 	 * @param sharedProcessorReferences
 	 * @return
 	 */
@@ -391,9 +556,20 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 	}
 
-	/*
-	 * INSTANCE STUFF *
-	 */
+	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
+		@Override
+		public WaitStrategy get() {
+			return WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
+		}
+	};
+
+	private static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
+		@Override
+		public WaitStrategy get() {
+			return WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
+		}
+	};
+
 
 	final private TailRecurser tailRecurser;
 

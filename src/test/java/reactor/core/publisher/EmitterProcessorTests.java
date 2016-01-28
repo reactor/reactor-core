@@ -30,8 +30,8 @@ public class EmitterProcessorTests extends AbstractProcessorVerification {
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		FluxProcessor<Long, Long> p = Processors.<Long>emitter(bufferSize);
 
-		/*Processor<Long, Long> p2 = Processors.queue();
-		Processor<Long, Long> p3 = Processors.topic();
+		/*Processor<Long, Long> p2 = WorkQueueProcessor.create();
+		Processor<Long, Long> p3 = TopicProcessor.create();
 
 		Processors.log(p2, "queue").subscribe(p);
 		Processors.log(p, "emitter").subscribe(p3);

@@ -45,8 +45,8 @@ import reactor.fn.Supplier;
  *     {@link #emitter} and {@link #replay}</li>
  *         <li>It needs asynchronousity :
  *         <ul>
- *           <li>for slow publishers prefer {@link #ioGroup} and {@link ProcessorGroup#publishOn}</li>
- *           <li>for fast publisher prefer {@link #asyncGroup} and {@link ProcessorGroup#dispatchOn}</li>
+ *           <li>for slow publishers prefer {@link ProcessorGroup#io} and {@link ProcessorGroup#publishOn}</li>
+ *           <li>for fast publisher prefer {@link #async} and {@link ProcessorGroup#dispatchOn}</li>
  *         </ul>
  *        </li>
  *     </ul></li>
@@ -63,12 +63,6 @@ import reactor.fn.Supplier;
 public enum Processors {
 	;
 
-	/**
-	 * Default number of processors available to the runtime on init (min 4)
-	 * @see Runtime#availableProcessors()
-	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
-	                                                            .availableProcessors(), 4);
 	/**
 	 * @param <E>
 	 * @return
@@ -178,7 +172,7 @@ public enum Processors {
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
 			boolean autoShutdown) {
-		return asyncGroup(name, bufferSize, DEFAULT_POOL_SIZE, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+		return asyncGroup(name, bufferSize, ProcessorGroup.DEFAULT_POOL_SIZE, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
 
 	/**
@@ -344,120 +338,6 @@ public enum Processors {
 	 * or publisherOn().
 	 *
 	 */
-
-	/**
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup() {
-		return ioGroup("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
-	}
-
-	/**
-	 * @param name
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(String name) {
-		return ioGroup(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(String name, int bufferSize) {
-		return ioGroup(name, bufferSize, DEFAULT_POOL_SIZE);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(String name, int bufferSize, int concurrency) {
-		return ioGroup(name, bufferSize, concurrency, null, null, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(String name,
-			int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler) {
-		return ioGroup(name, bufferSize, concurrency, uncaughtExceptionHandler, null, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(String name,
-			int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler) {
-		return ioGroup(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(final String name,
-			final int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return ioGroup(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown,
-				DEFAULT_WAIT_STRATEGY.get());
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-	 * @param waitStrategy
-	 * @param <E>
-	 * @return
-	 */
-	public static <E> ProcessorGroup<E> ioGroup(final String name,
-			final int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown,
-			WaitStrategy waitStrategy) {
-
-		return ProcessorGroup.create(WorkQueueProcessor.<Runnable>share(name, bufferSize,
-				waitStrategy, false),
-				concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-	}
 
 	/**
 	 * Create a new {@link WorkQueueProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait

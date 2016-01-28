@@ -68,7 +68,7 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Test
 	public void testDispatch() throws InterruptedException {
-		ProcessorGroup<String> service = Processors.singleGroup("dispatcher", BUFFER_SIZE, t -> {
+		ProcessorGroup<String> service = ProcessorGroup.single("dispatcher", BUFFER_SIZE, t -> {
 			exceptionThrown.set(true);
 			t.printStackTrace();
 		});

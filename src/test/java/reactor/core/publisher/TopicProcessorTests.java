@@ -43,7 +43,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 	@Test
 	public void testShutdown() {
 		for (int i = 0; i < 1000; i++) {
-			ExecutorProcessor dispatcher = Processors.topic("rb-test-shutdown", 16);
+			ExecutorProcessor dispatcher = TopicProcessor.create("rb-test-shutdown", 16);
 			dispatcher.awaitAndShutdown();
 		}
 	}

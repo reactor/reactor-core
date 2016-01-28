@@ -92,6 +92,18 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 	}
 
 	/**
+	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * @param name
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> TopicProcessor<E> create(String name) {
+		return create(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
+	}
+
+
+	/**
 	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.

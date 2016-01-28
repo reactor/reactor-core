@@ -87,6 +87,7 @@ public enum PlatformDependent {
 	 */
 	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
 			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
+
 	private static final boolean HAS_UNSAFE                      = hasUnsafe0();
 
 	@SuppressWarnings("unchecked")

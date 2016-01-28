@@ -21,7 +21,6 @@ import spock.lang.Specification
 
 import static reactor.core.publisher.Flux.*
 import static reactor.core.publisher.Processors.emitter
-import static reactor.core.publisher.Processors.singleGroup
 import static reactor.core.subscriber.Subscribers.unbounded
 
 /**
