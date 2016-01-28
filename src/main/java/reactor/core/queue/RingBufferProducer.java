@@ -15,9 +15,13 @@
  */
 package reactor.core.queue;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
 import reactor.core.util.Exceptions;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
+
+import static java.util.Arrays.copyOf;
 
 /**
  * Base class for the various sequencer types (single/multi).  Provides common functionality like the management of
@@ -25,11 +29,15 @@ import reactor.core.util.WaitStrategy;
  */
 abstract class RingBufferProducer {
 
-	protected final Runnable     spinObserver;
-	protected final int          bufferSize;
-	protected final WaitStrategy waitStrategy;
-	protected final    Sequence   cursor          = RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
-	protected volatile Sequence[] gatingSequences = new Sequence[0];
+	static final AtomicReferenceFieldUpdater<RingBufferProducer, Sequence[]>
+			SEQUENCE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(RingBufferProducer.class, Sequence[].class,
+			"gatingSequences");
+
+	final Runnable     spinObserver;
+	final int          bufferSize;
+	final WaitStrategy waitStrategy;
+	final    Sequence   cursor          = RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
+	volatile Sequence[] gatingSequences = new Sequence[0];
 
 	/**
 	 * Create with the specified buffer size and wait strategy.
@@ -82,7 +90,7 @@ abstract class RingBufferProducer {
 	 * @param gatingSequences The sequences to add.
 	 */
 	public final void addGatingSequences(Sequence... gatingSequences) {
-		SequenceGroups.addSequences(this, RingBuffer.SEQUENCE_UPDATER, this, gatingSequences);
+		SequenceGroups.addSequences(this, SEQUENCE_UPDATER, this, gatingSequences);
 	}
 
 	/**
@@ -92,7 +100,7 @@ abstract class RingBufferProducer {
 	 * @param gatingSequence The sequences to add.
 	 */
 	public final void addGatingSequence(Sequence gatingSequence) {
-		SequenceGroups.addSequence(this, RingBuffer.SEQUENCE_UPDATER, gatingSequence);
+		SequenceGroups.addSequence(this, SEQUENCE_UPDATER, gatingSequence);
 	}
 
 	/**
@@ -102,7 +110,7 @@ abstract class RingBufferProducer {
 	 * @return <tt>true</tt> if this sequence was found, <tt>false</tt> otherwise.
 	 */
 	public boolean removeGatingSequence(Sequence sequence) {
-		return SequenceGroups.removeSequence(this, RingBuffer.SEQUENCE_UPDATER, sequence);
+		return SequenceGroups.removeSequence(this, SEQUENCE_UPDATER, sequence);
 	}
 
 	/**
@@ -257,4 +265,95 @@ abstract class RingBufferProducer {
 	public Sequence[] getGatingSequences() {
 		return gatingSequences;
     }
+}
+
+/**
+ * Provides static methods for managing a {@link Sequence} object.
+ */
+final class SequenceGroups {
+
+	static <T> void addSequences(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final RingBufferProducer cursor,
+			final Sequence... sequencesToAdd) {
+		long cursorSequence;
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
+
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
+			cursorSequence = cursor.getCursor();
+
+			int index = currentSequences.length;
+			for (Sequence sequence : sequencesToAdd) {
+				sequence.set(cursorSequence);
+				updatedSequences[index++] = sequence;
+			}
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+
+		cursorSequence = cursor.getCursor();
+		for (Sequence sequence : sequencesToAdd) {
+			sequence.set(cursorSequence);
+		}
+	}
+
+	static <T> void addSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final Sequence sequence) {
+
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
+
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
+
+			updatedSequences[currentSequences.length] = sequence;
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+	}
+
+	static <T> boolean removeSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
+			final Sequence sequence) {
+		int numToRemove;
+		Sequence[] oldSequences;
+		Sequence[] newSequences;
+
+		do {
+			oldSequences = sequenceUpdater.get(holder);
+
+			numToRemove = countMatching(oldSequences, sequence);
+
+			if (0 == numToRemove) {
+				break;
+			}
+
+			final int oldSize = oldSequences.length;
+			newSequences = new Sequence[oldSize - numToRemove];
+
+			for (int i = 0, pos = 0; i < oldSize; i++) {
+				final Sequence testSequence = oldSequences[i];
+				if (sequence != testSequence) {
+					newSequences[pos++] = testSequence;
+				}
+			}
+		}
+		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
+
+		return numToRemove != 0;
+	}
+
+	private static <T> int countMatching(T[] values, final T toMatch) {
+		int numToRemove = 0;
+		for (T value : values) {
+			if (value == toMatch) // Specifically uses identity
+			{
+				numToRemove++;
+			}
+		}
+		return numToRemove;
+	}
 }

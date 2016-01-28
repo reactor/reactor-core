@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
@@ -36,8 +35,6 @@ import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
-
-import static java.util.Arrays.copyOf;
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
@@ -59,10 +56,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * Set to -1 as sequence starting point
 	 */
 	public static final long     INITIAL_CURSOR_VALUE = -1L;
-
-	static final AtomicReferenceFieldUpdater<RingBufferProducer, Sequence[]>
-			SEQUENCE_UPDATER =
-			AtomicReferenceFieldUpdater.newUpdater(RingBufferProducer.class, Sequence[].class, "gatingSequences");
 
 	/**
 	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
@@ -497,6 +490,10 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 */
 	abstract public Sequence getSequence();
 
+	/**
+	 *
+	 * @return
+	 */
 	public Sequence[] getSequenceReceivers() {
 		return getSequencer().getGatingSequences();
 	}
@@ -953,97 +950,6 @@ final class Wrapped<E> implements Sequence, Introspectable, Producer {
 	@Override
 	public String getName() {
 		return Wrapped.class.getSimpleName();
-	}
-}
-
-/**
- * Provides static methods for managing a {@link Sequence} object.
- */
-final class SequenceGroups {
-
-	static <T> void addSequences(final T holder,
-			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
-			final RingBufferProducer cursor,
-			final Sequence... sequencesToAdd) {
-		long cursorSequence;
-		Sequence[] updatedSequences;
-		Sequence[] currentSequences;
-
-		do {
-			currentSequences = updater.get(holder);
-			updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
-			cursorSequence = cursor.getCursor();
-
-			int index = currentSequences.length;
-			for (Sequence sequence : sequencesToAdd) {
-				sequence.set(cursorSequence);
-				updatedSequences[index++] = sequence;
-			}
-		}
-		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
-
-		cursorSequence = cursor.getCursor();
-		for (Sequence sequence : sequencesToAdd) {
-			sequence.set(cursorSequence);
-		}
-	}
-
-	static <T> void addSequence(final T holder,
-			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
-			final Sequence sequence) {
-
-		Sequence[] updatedSequences;
-		Sequence[] currentSequences;
-
-		do {
-			currentSequences = updater.get(holder);
-			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
-
-			updatedSequences[currentSequences.length] = sequence;
-		}
-		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
-	}
-
-	static <T> boolean removeSequence(final T holder,
-			final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
-			final Sequence sequence) {
-		int numToRemove;
-		Sequence[] oldSequences;
-		Sequence[] newSequences;
-
-		do {
-			oldSequences = sequenceUpdater.get(holder);
-
-			numToRemove = countMatching(oldSequences, sequence);
-
-			if (0 == numToRemove) {
-				break;
-			}
-
-			final int oldSize = oldSequences.length;
-			newSequences = new Sequence[oldSize - numToRemove];
-
-			for (int i = 0, pos = 0; i < oldSize; i++) {
-				final Sequence testSequence = oldSequences[i];
-				if (sequence != testSequence) {
-					newSequences[pos++] = testSequence;
-				}
-			}
-		}
-		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
-
-		return numToRemove != 0;
-	}
-
-	private static <T> int countMatching(T[] values, final T toMatch) {
-		int numToRemove = 0;
-		for (T value : values) {
-			if (value == toMatch) // Specifically uses identity
-			{
-				numToRemove++;
-			}
-		}
-		return numToRemove;
 	}
 }
 
