@@ -47,6 +47,7 @@ import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
+import reactor.core.util.WaitStrategy;
 import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Supplier;
@@ -70,6 +71,21 @@ import reactor.fn.Supplier;
 public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
 	private static final Logger log = Logger.getLogger(ProcessorGroup.class);
+
+	/**
+	 * Default number of processors available to the runtime on init (min 4)
+	 * @see Runtime#availableProcessors()
+	 */
+	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
+	                                                            .availableProcessors(), 4);
+
+	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
+		@Override
+		public WaitStrategy get() {
+			return WaitStrategy.PhasedOff.withLiteLock(200, 200, TimeUnit.MILLISECONDS);
+		}
+	};
+
 
 	/**
 	 * @param <E>
@@ -193,6 +209,173 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 	}
 
 	/**
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async() {
+		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param name
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name) {
+		return async(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name, int bufferSize) {
+		return async(name, bufferSize, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name, int bufferSize, int concurrency) {
+		return async(name, bufferSize, concurrency, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name,
+			int bufferSize,
+			Consumer<Throwable> uncaughtExceptionHandler) {
+		return async(name, bufferSize, uncaughtExceptionHandler, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name,
+			int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler) {
+		return async(name, bufferSize, concurrency, uncaughtExceptionHandler, null);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name,
+			int bufferSize,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler) {
+		return async(name, bufferSize, uncaughtExceptionHandler, shutdownHandler, true);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name,
+			int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler) {
+		return async(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(String name,
+			int bufferSize,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return async(name, bufferSize, DEFAULT_POOL_SIZE, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
+
+	/**
+	 *
+	 * Non-Blocking "Asynchronous" Dedicated Pub-Sub (1 Thread by Sub)
+	 *
+	 *
+	 */
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(final String name,
+			final int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+
+		return async(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown, DEFAULT_WAIT_STRATEGY);
+	}
+
+	/**
+	 * @param name
+	 * @param bufferSize
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+	 * @param waitprovider
+	 * @param <E>
+	 * @return
+	 */
+	public static <E> ProcessorGroup<E> async(final String name,
+			final int bufferSize,
+			final int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown,
+			final Supplier<? extends WaitStrategy> waitprovider) {
+
+		return ProcessorGroup.create(new Supplier<Processor<Runnable, Runnable>>() {
+			int i = 1;
+			@Override
+			public Processor<Runnable, Runnable> get() {
+				return ProcessorTopic.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+						.get(), false);
+			}
+		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
+
+
+	/**
 	 * @param sharedProcessorReferences
 	 * @return
 	 */
@@ -208,7 +391,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 	}
 
-	/**
+	/*
 	 * INSTANCE STUFF *
 	 */
 
