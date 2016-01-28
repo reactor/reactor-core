@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.SubscriberDeferredSubscription;
+import reactor.core.subscriber.DeferredSubscriptionSubscriber;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 
@@ -268,7 +268,7 @@ extends Flux<T>
 		}
 	}
 
-	static final class AmbSubscriber<T> extends SubscriberDeferredSubscription<T, T>
+	static final class AmbSubscriber<T> extends DeferredSubscriptionSubscriber<T, T>
 			implements Introspectable {
 		final AmbCoordinator<T> parent;
 

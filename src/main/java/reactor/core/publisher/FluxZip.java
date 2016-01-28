@@ -36,7 +36,7 @@ import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.subscriber.SubscriberDeferredScalar;
+import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
@@ -216,7 +216,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 				
 				coordinator.subscribe(n, sc, srcs);
 			} else {
-				SubscriberDeferredScalar<R, R> sds = new SubscriberDeferredScalar<>(s);
+				DeferredScalarSubscriber<R, R> sds = new DeferredScalarSubscriber<>(s);
 
 				s.onSubscribe(sds);
 				
@@ -258,7 +258,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		return sources == null ? -1 : sources.length;
 	}
 
-	static final class ZipSingleCoordinator<T, R> extends SubscriberDeferredScalar<R, R>
+	static final class ZipSingleCoordinator<T, R> extends DeferredScalarSubscriber<R, R>
 			implements MultiReceiver, Backpressurable {
 
 		final Function<? super Object[], ? extends R> zipper;

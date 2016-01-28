@@ -17,11 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import reactor.fn.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Receiver;
-import reactor.core.subscriber.SubscriberDeferredScalar;
+import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.Exceptions;
 
 /**
@@ -54,7 +53,7 @@ extends Mono<T>
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		SubscriberDeferredScalar<T, T> sds = new SubscriberDeferredScalar<>(s);
+		DeferredScalarSubscriber<T, T> sds = new DeferredScalarSubscriber<>(s);
 
 		s.onSubscribe(sds);
 

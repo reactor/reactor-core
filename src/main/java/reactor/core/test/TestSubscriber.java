@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.subscriber.Subscribers;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.PlatformDependent;
@@ -154,7 +152,7 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	 * Create a new {@link TestSubscriber} that requests an unbounded number of values
 	 */
 	public TestSubscriber() {
-		 this(Subscribers.empty(), Long.MAX_VALUE);
+		 this(EmptySubscriber.instance(), Long.MAX_VALUE);
 	}
 
 	/**
@@ -163,7 +161,7 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 	 * with {@code request(long n)} method).
 	 */
 	public TestSubscriber(long n) {
-		super(Subscribers.empty(), n);
+		super(EmptySubscriber.instance(), n);
 	}
 
 	/**
@@ -665,6 +663,36 @@ public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
 		}
 		return o + " (" + o.getClass()
 		  .getSimpleName() + ")";
+	}
+
+	private enum EmptySubscriber implements Subscriber<Object> {
+
+		INSTANCE;
+
+		@SuppressWarnings("unchecked")
+		public static <T> Subscriber<T> instance() {
+			return (Subscriber<T>) INSTANCE;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onNext(Object t) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onComplete() {
+			// deliberately no op
+		}
 	}
 
 }

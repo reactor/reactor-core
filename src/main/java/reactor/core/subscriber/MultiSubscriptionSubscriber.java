@@ -42,8 +42,8 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> the input value type
  * @param <O> the output value type
  */
-public abstract class SubscriberMultiSubscription<I, O> implements Subscription, Subscriber<I>, Producer, Cancellable,
-																   Requestable, Receiver, Completable {
+public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription, Subscriber<I>, Producer, Cancellable,
+                                                                   Requestable, Receiver, Completable {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -59,31 +59,31 @@ public abstract class SubscriberMultiSubscription<I, O> implements Subscription,
 
 	volatile Subscription missedSubscription;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<SubscriberMultiSubscription, Subscription> MISSED_SUBSCRIPTION =
-	  AtomicReferenceFieldUpdater.newUpdater(SubscriberMultiSubscription.class,
+	static final AtomicReferenceFieldUpdater<MultiSubscriptionSubscriber, Subscription> MISSED_SUBSCRIPTION =
+	  AtomicReferenceFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class,
 		Subscription.class,
 		"missedSubscription");
 
 	volatile long missedRequested;
 	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<SubscriberMultiSubscription> MISSED_REQUESTED =
-	  AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedRequested");
+	static final AtomicLongFieldUpdater<MultiSubscriptionSubscriber> MISSED_REQUESTED =
+	  AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedRequested");
 
 	volatile long missedProduced;
 	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<SubscriberMultiSubscription> MISSED_PRODUCED =
-	  AtomicLongFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "missedProduced");
+	static final AtomicLongFieldUpdater<MultiSubscriptionSubscriber> MISSED_PRODUCED =
+	  AtomicLongFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "missedProduced");
 
 	volatile int wip;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<SubscriberMultiSubscription> WIP =
-	  AtomicIntegerFieldUpdater.newUpdater(SubscriberMultiSubscription.class, "wip");
+	static final AtomicIntegerFieldUpdater<MultiSubscriptionSubscriber> WIP =
+	  AtomicIntegerFieldUpdater.newUpdater(MultiSubscriptionSubscriber.class, "wip");
 
 	volatile boolean cancelled;
 
 	protected boolean unbounded;
 	
-	public SubscriberMultiSubscription(Subscriber<? super O> subscriber) {
+	public MultiSubscriptionSubscriber(Subscriber<? super O> subscriber) {
 		this.subscriber = subscriber;
 	}
 

@@ -21,7 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
-import reactor.core.subscriber.SubscriberMultiSubscription;
+import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.util.Exceptions;
 import reactor.fn.Function;
 
@@ -74,7 +74,7 @@ final class FluxResume<T> extends FluxSource<T, T> {
 		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	static final class ResumeSubscriber<T> extends SubscriberMultiSubscription<T, T>
+	static final class ResumeSubscriber<T> extends MultiSubscriptionSubscriber<T, T>
 			implements Loopback {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;

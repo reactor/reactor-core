@@ -34,7 +34,7 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> The upstream sequence type
  * @param <O> The downstream sequence type
  */
-public class SubscriberDeferredScalar<I, O> implements Subscriber<I>, Completable, Subscription, Loopback, Cancellable,
+public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completable, Subscription, Loopback, Cancellable,
                                                        Receiver, Producer {
 
 	static final int SDS_NO_REQUEST_NO_VALUE   = 0;
@@ -48,10 +48,10 @@ public class SubscriberDeferredScalar<I, O> implements Subscriber<I>, Completabl
 
 	volatile int state;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<SubscriberDeferredScalar> STATE =
-	  AtomicIntegerFieldUpdater.newUpdater(SubscriberDeferredScalar.class, "state");
+	static final AtomicIntegerFieldUpdater<DeferredScalarSubscriber> STATE =
+	  AtomicIntegerFieldUpdater.newUpdater(DeferredScalarSubscriber.class, "state");
 
-	public SubscriberDeferredScalar(Subscriber<? super O> subscriber) {
+	public DeferredScalarSubscriber(Subscriber<? super O> subscriber) {
 		this.subscriber = subscriber;
 	}
 
