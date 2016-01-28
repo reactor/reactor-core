@@ -4,7 +4,7 @@
 
 [![Build Status](https://drone.io/github.com/reactor/reactor-core/status.png)](https://drone.io/github.com/reactor/reactor-core/latest)
 
-A Reactive Streams micro-toolkit to build fantastic Reactive libraries or application on the JVM.
+Non-Blocking Reactive Foundation for the JVM.
 
 ## Reference
 http://next.projectreactor.io/core/docs/reference/
