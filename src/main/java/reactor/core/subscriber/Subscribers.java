@@ -259,6 +259,13 @@ public enum Subscribers{
 		return new SubscriberWithSubscriptionContext<T, C>(dataConsumer, subscriptionHandler, errorConsumer, completeConsumer);
 	}
 
+	/**
+	 * Return an empty subscriber.
+	 */
+	public static <T> Subscriber<T> empty() {
+		return EmptySubscriber.instance();
+	}
+
 	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = new Function<Subscription, Void>() {
 		@Override
 		public Void apply(Subscription subscription) {
@@ -266,4 +273,35 @@ public enum Subscribers{
 			return null;
 		}
 	};
+
+
+	private enum EmptySubscriber implements Subscriber<Object> {
+
+		INSTANCE;
+
+		@SuppressWarnings("unchecked")
+		public static <T> Subscriber<T> instance() {
+			return (Subscriber<T>) INSTANCE;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onNext(Object t) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			// deliberately no op
+		}
+
+		@Override
+		public void onComplete() {
+			// deliberately no op
+		}
+	}
 }
