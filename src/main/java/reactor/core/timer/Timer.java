@@ -120,7 +120,7 @@ public class Timer implements Timeable, Cancellable {
 	 *                   return a new {@link Timer}
 	 */
 	public static Timer create(String name, int resolution, int bufferSize) {
-		Timer timer = new HashWheelTimer(name, resolution, bufferSize, new WaitStrategy.Sleeping(), null);
+		Timer timer = new HashWheelTimer(name, resolution, bufferSize, WaitStrategy.sleeping(), null);
 		timer.start();
 		return timer;
 	}

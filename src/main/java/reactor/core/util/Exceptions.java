@@ -31,12 +31,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public enum Exceptions {
 	;
 
-	private static final int MAX_DEPTH = 25;
-
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
+	private static final int MAX_DEPTH = 25;
 
 	/**
 	 * Adds a {@code Throwable} to a causality-chain of Throwables, as an additional cause (if it does not
@@ -122,6 +121,22 @@ public enum Exceptions {
 	}
 
 	/**
+	 *
+	 * @return
+	 */
+	public static ArgumentIsNullException argumentIsNullException() {
+		return new ArgumentIsNullException();
+	}
+
+	/**
+	 *
+	 * @return
+	 */
+	public static DuplicateOnSubscribeException duplicateOnSubscribeException() {
+		return new DuplicateOnSubscribeException();
+	}
+
+	/**
 	 * Throw an unchecked
 	 * {@link RuntimeException} that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 *
@@ -158,6 +173,25 @@ public enum Exceptions {
 	}
 
 	/**
+	 * Get the {@code Throwable} at the end of the causality-chain for a particular {@code Throwable}
+	 *
+	 * @param e the {@code Throwable} whose final cause you are curious about
+	 * @return the last {@code Throwable} in the causality-chain of {@code e} (or a "Stack too deep to get
+	 * final cause" {@code RuntimeException} if the chain is too long to traverse)
+	 */
+	public static Throwable getFinalCause(Throwable e) {
+		int i = 0;
+		while (e.getCause() != null) {
+			if (i++ >= MAX_DEPTH) {
+				// stack too deep to get final cause
+				return new RuntimeException("Stack too deep to get final cause");
+			}
+			e = e.getCause();
+		}
+		return e;
+	}
+
+	/**
 	 * Try to find the last value at the end of the causality-chain for a particular {@code Throwable}
 	 * If the final cause wasn't of type {@link ValueCauseException},
 	 * return null;
@@ -176,22 +210,12 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Get the {@code Throwable} at the end of the causality-chain for a particular {@code Throwable}
 	 *
-	 * @param e the {@code Throwable} whose final cause you are curious about
-	 * @return the last {@code Throwable} in the causality-chain of {@code e} (or a "Stack too deep to get
-	 * final cause" {@code RuntimeException} if the chain is too long to traverse)
+	 * @param elements
+	 * @return
 	 */
-	public static Throwable getFinalCause(Throwable e) {
-		int i = 0;
-		while (e.getCause() != null) {
-			if (i++ >= MAX_DEPTH) {
-				// stack too deep to get final cause
-				return new RuntimeException("Stack too deep to get final cause");
-			}
-			e = e.getCause();
-		}
-		return e;
+	public static NullOrNegativeRequestException nullOrNegativeRequestException(long elements) {
+		return new NullOrNegativeRequestException(elements);
 	}
 
 	/**
@@ -225,28 +249,37 @@ public enum Exceptions {
 	}
 
 	/**
+	 * Throws the exception if it is a regular runtimeException or wraps
+	 * it into a ReactiveException.
+	 * <p>
+	 * Use unwrap to get back the original cause.
+	 * <p>
+	 * The method calls throwIfFatal().
 	 *
-	 * @return
+	 * @param e the exception to propagate
+	 * @return dummy return type to allow using throw with the function call
 	 */
-	public static DuplicateOnSubscribeException duplicateOnSubscribeException() {
-		return new DuplicateOnSubscribeException();
+	public static RuntimeException propagate(Throwable e) {
+		throwIfFatal(e);
+		if (e instanceof RuntimeException) {
+			throw (RuntimeException)e;
+		}
+		throw new UpstreamException(e);
 	}
 
 	/**
 	 *
+	 * @param field
+	 * @param instance
+	 * @param <T>
 	 * @return
 	 */
-	public static ArgumentIsNullException argumentIsNullException() {
-		return new ArgumentIsNullException();
-	}
-
-	/**
-	 *
-	 * @param elements
-	 * @return
-	 */
-	public static NullOrNegativeRequestException nullOrNegativeRequestException(long elements) {
-		return new NullOrNegativeRequestException(elements);
+	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
+		Throwable current = field.get(instance);
+		if (current != TERMINATED) {
+			current = field.getAndSet(instance, TERMINATED);
+		}
+		return current;
 	}
 
 	/**
@@ -293,18 +326,6 @@ public enum Exceptions {
 	 *
 	 * @param t the root cause
 	 */
-	public static RuntimeException wrapUpstream(Throwable t) {
-		if(t instanceof UpstreamException){
-			return (UpstreamException) t;
-		}
-		return new UpstreamException(t);
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
 	public static RuntimeException wrapDownstream(Throwable t) {
 		if(t instanceof DownstreamException){
 			return (DownstreamException)t;
@@ -312,17 +333,29 @@ public enum Exceptions {
 		return new DownstreamException(t);
 	}
 
+	/**
+	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
+	 *
+	 * @param t the root cause
+	 */
+	public static RuntimeException wrapUpstream(Throwable t) {
+		if(t instanceof UpstreamException){
+			return (UpstreamException) t;
+		}
+		return new UpstreamException(t);
+	}
+
 	public static final class TimerOverflowException extends java.util.concurrent.TimeoutException {
 
 		public static final TimerOverflowException INSTANCE = new TimerOverflowException();
 
+		public static TimerOverflowException get() {
+			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
+		}
+
 		private TimerOverflowException() {
 			super("The subscriber has not requested for the timer signals, consider Stream#onBackpressureDrop or any " +
 					"unbounded subscriber");
-		}
-
-		public static TimerOverflowException get() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
 		}
 
 		@Override
@@ -364,14 +397,6 @@ public enum Exceptions {
 		}
 	}
 
-	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
-		Throwable current = field.get(instance);
-		if (current != TERMINATED) {
-			current = field.getAndSet(instance, TERMINATED);
-		}
-		return current;
-	}
-
 	/**
 	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
 	 */
@@ -397,9 +422,9 @@ public enum Exceptions {
 	 */
 	public static class UpstreamException extends ReactiveException {
 
+		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
 		private static final long serialVersionUID = 2491425277432776142L;
 
-		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
 		public static UpstreamException instance() {
 			return INSTANCE;
 		}
@@ -459,9 +484,8 @@ public enum Exceptions {
 	 */
 	public static final class CancelException extends UpstreamException {
 
-		private static final long serialVersionUID = 2491425227432776144L;
-
 		public static final CancelException INSTANCE = new CancelException();
+		private static final long serialVersionUID = 2491425227432776144L;
 
 		private CancelException() {
 			super("The subscriber has denied dispatching");
@@ -504,27 +528,6 @@ public enum Exceptions {
 	public static class ValueCauseException extends RuntimeException {
 
 		private static final long serialVersionUID = -3454462756050397899L;
-		private final Object value;
-
-		/**
-		 * Create a {@code CauseValue} error and include in its error message a string representation of
-		 * the item that was intended to be emitted at the time the error was handled.
-		 *
-		 * @param value the item that the component was trying to emit at the time of the error
-		 */
-		public ValueCauseException(Object value) {
-			super("Exception while signaling value: " + renderValue(value));
-			this.value = value;
-		}
-
-		/**
-		 * Retrieve the item that the component was trying to emit at the time this error occurred.
-		 *
-		 * @return the item that the component was trying to emit at the time of the error
-		 */
-		public Object getValue() {
-			return value;
-		}
 
 		/**
 		 * Render the object if it is a basic type. This avoids the library making potentially expensive
@@ -547,6 +550,27 @@ public enum Exceptions {
 				return ((Enum) value).name();
 			}
 			return value.getClass().getName() + ".class : " + value;
+		}
+		private final Object value;
+
+		/**
+		 * Create a {@code CauseValue} error and include in its error message a string representation of
+		 * the item that was intended to be emitted at the time the error was handled.
+		 *
+		 * @param value the item that the component was trying to emit at the time of the error
+		 */
+		public ValueCauseException(Object value) {
+			super("Exception while signaling value: " + renderValue(value));
+			this.value = value;
+		}
+
+		/**
+		 * Retrieve the item that the component was trying to emit at the time this error occurred.
+		 *
+		 * @return the item that the component was trying to emit at the time of the error
+		 */
+		public Object getValue() {
+			return value;
 		}
 
 	}

@@ -43,8 +43,6 @@ import reactor.fn.Supplier;
  */
 public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
-	public static final WaitStrategy.BusySpin NO_WAIT = new WaitStrategy.BusySpin();
-
 	@SuppressWarnings("raw")
 	public static final Supplier EMITTED = new Supplier() {
 		@Override
@@ -97,7 +95,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link #NO_WAIT}.
+	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
 	 *
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 *
@@ -106,18 +104,18 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createMultiProducer(int bufferSize) {
-		return createMultiProducer(EMITTED, bufferSize, new WaitStrategy.Blocking());
+		return createMultiProducer(EMITTED, bufferSize, WaitStrategy.blocking());
 	}
 
 	/**
-	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link #NO_WAIT}.
+	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @throws IllegalArgumentException if <tt>bufferSize</tt> is less than 1 or not a power of 2
 	 * @see MultiProducerSequencer
 	 */
 	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory, int bufferSize) {
-		return createMultiProducer(factory, bufferSize, NO_WAIT);
+		return createMultiProducer(factory, bufferSize, WaitStrategy.busySpin());
 	}
 
 	/**
@@ -181,33 +179,33 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * Create a new single producer RingBuffer using the default wait strategy  {@link #NO_WAIT}.
+	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @see MultiProducerSequencer
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize) {
-		return createSingleProducer(EMITTED, bufferSize, NO_WAIT);
+		return createSingleProducer(EMITTED, bufferSize, WaitStrategy.busySpin());
 	}
 
 	/**
-	 * Create a new single producer RingBuffer using the default wait strategy  {@link #NO_WAIT}.
+	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @see MultiProducerSequencer
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize, Runnable spinObserver) {
-		return createSingleProducer(EMITTED, bufferSize, NO_WAIT, spinObserver);
+		return createSingleProducer(EMITTED, bufferSize, WaitStrategy.busySpin(), spinObserver);
 	}
 
 	/**
-	 * Create a new single producer RingBuffer using the default wait strategy   {@link #NO_WAIT}.
+	 * Create a new single producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @see MultiProducerSequencer
 	 */
 	public static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory, int bufferSize) {
-		return createSingleProducer(factory, bufferSize, NO_WAIT);
+		return createSingleProducer(factory, bufferSize, WaitStrategy.busySpin());
 	}
 
 	/**

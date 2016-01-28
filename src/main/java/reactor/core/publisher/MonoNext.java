@@ -49,7 +49,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 	}
 
 	static final class NextSubscriber<T>
-			implements Subscriber<T>, Receiver, Subscription, Completable, Backpressurable, Producer {
+			implements Subscriber<T>, Subscription, Completable, Backpressurable, Receiver, Producer {
 
 		final Subscriber<? super T> actual;
 

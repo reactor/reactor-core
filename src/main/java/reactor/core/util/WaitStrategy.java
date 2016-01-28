@@ -25,10 +25,118 @@ import java.util.concurrent.locks.ReentrantLock;
 import reactor.fn.LongSupplier;
 
 /**
- * Strategy employed for making ringbuffer consumers wait on a cursor {@link Sequence}.
+ * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
  */
-public interface WaitStrategy
+public abstract class WaitStrategy
 {
+
+    final static WaitStrategy YIELDING  = new Yielding();
+    final static WaitStrategy SLEEPING  = new Sleeping();
+    final static WaitStrategy BUSY_SPIN = new BusySpin();
+
+    /**
+     * Variation of the {@link Blocking} that attempts to elide conditional wake-ups when the lock is uncontended.
+     * Shows performance improvements on microbenchmarks.  However this wait strategy should be considered experimental
+     * as I have not full proved the correctness of the lock elision code.
+     */
+    public static WaitStrategy blocking() {
+        return new Blocking();
+    }
+
+    /**
+     * Busy Spin strategy that uses a busy spin loop for ringbuffer consumers waiting on a barrier.
+     *
+     * This strategy will use CPU resource to avoid syscalls which can introduce latency jitter.  It is best
+     * used when threads can be bound to specific CPU cores.
+     */
+    public static WaitStrategy busySpin() {
+        return BUSY_SPIN;
+    }
+
+    /**
+     * Variation of the {@link Blocking} that attempts to elide conditional wake-ups when the lock is uncontended.
+     * Shows performance improvements on microbenchmarks.  However this wait strategy should be considered experimental
+     * as I have not full proved the correctness of the lock elision code.
+     */
+    public static WaitStrategy liteBlocking() {
+        return new LiteBlocking();
+    }
+
+    /**
+     * <p>Phased wait strategy for waiting ringbuffer consumers on a barrier.</p>
+     * <p>
+     * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource. Spins, then
+     * yields, then waits using the configured fallback WaitStrategy.</p>
+     *
+     * @param delegate the target wait strategy to fallback on
+     */
+    public static WaitStrategy phasedOff(long spinTimeout, long yieldTimeout, TimeUnit units, WaitStrategy delegate) {
+        return new PhasedOff(spinTimeout, yieldTimeout, units, delegate);
+    }
+
+    /**
+     * Block with wait/notifyAll semantics
+     */
+    public static WaitStrategy phasedOffLiteLock(long spinTimeout, long yieldTimeout, TimeUnit units) {
+        return phasedOff(spinTimeout, yieldTimeout, units, liteBlocking());
+    }
+
+    /**
+     * Block with wait/notifyAll semantics
+     */
+    public static WaitStrategy phasedOffLock(long spinTimeout, long yieldTimeout, TimeUnit units) {
+        return phasedOff(spinTimeout, yieldTimeout, units, blocking());
+    }
+
+    /**
+     * Block by sleeping in a loop
+     */
+    public static WaitStrategy phasedOffSleep(long spinTimeout, long yieldTimeout, TimeUnit units) {
+        return phasedOff(spinTimeout, yieldTimeout, units, sleeping(0));
+    }
+
+    /**
+     * Sleeping strategy that initially spins, then uses a Thread.yield(), and eventually sleep
+     * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
+     * ringbuffer consumers are waiting on a barrier.
+     * <p>
+     * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
+     * periods.
+     */
+    public static WaitStrategy sleeping() {
+        return SLEEPING;
+    }
+
+    /**
+     * Sleeping strategy that initially spins, then uses a Thread.yield(), and eventually sleep
+     * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
+     * ringbuffer consumers are waiting on a barrier.
+     * <p>
+     * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
+     * periods.
+     *
+     * @param retries
+     */
+    public static WaitStrategy sleeping(int retries) {
+        return new Sleeping(retries);
+    }
+
+    /**
+     * Yielding strategy that uses a Thread.yield() for ringbuffer consumers waiting on a barrier
+     * after an initially spinning.
+     *
+     * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
+     */
+    public static WaitStrategy yielding() {
+        return YIELDING;
+    }
+
+    /**
+     * Implementations should signal the waiting ringbuffer consumers that the cursor has advanced.
+     */
+    public void signalAllWhenBlocking() {
+    }
+
     /**
      * Wait for the given sequence to be available.  It is possible for this method to return a value
      * less than the sequence number supplied depending on the implementation of the WaitStrategy.  A common
@@ -43,23 +151,33 @@ public interface WaitStrategy
      * @throws Exceptions.AlertException if the status of the Disruptor has changed.
      * @throws InterruptedException if the thread is interrupted.
      */
-    long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
+    public abstract long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
             throws Exceptions.AlertException, InterruptedException;
 
-    /**
-     * Implementations should signal the waiting ringbuffer consumers that the cursor has advanced.
-     */
-    void signalAllWhenBlocking();
 
     /**
      * Blocking strategy that uses a lock and condition variable for ringbuffer consumer waiting on a barrier.
      *
      * This strategy can be used when throughput and low-latency are not as important as CPU resource.
      */
-    final class Blocking implements WaitStrategy
-    {
+    final static class Blocking extends WaitStrategy {
+
         private final Lock      lock                     = new ReentrantLock();
         private final Condition processorNotifyCondition = lock.newCondition();
+
+        @Override
+        public void signalAllWhenBlocking()
+        {
+            lock.lock();
+            try
+            {
+                processorNotifyCondition.signalAll();
+            }
+            finally
+            {
+                lock.unlock();
+            }
+        }
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
@@ -90,30 +208,11 @@ public interface WaitStrategy
 
             return availableSequence;
         }
-
-        @Override
-        public void signalAllWhenBlocking()
-        {
-            lock.lock();
-            try
-            {
-                processorNotifyCondition.signalAll();
-            }
-            finally
-            {
-                lock.unlock();
-            }
-        }
     }
 
-    /**
-     * Busy Spin strategy that uses a busy spin loop for ringbuffer consumers waiting on a barrier.
-     *
-     * This strategy will use CPU resource to avoid syscalls which can introduce latency jitter.  It is best
-     * used when threads can be bound to specific CPU cores.
-     */
-    final class BusySpin implements WaitStrategy
-    {
+
+    final static class BusySpin extends WaitStrategy {
+
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
                 throws Exceptions.AlertException, InterruptedException
@@ -127,24 +226,30 @@ public interface WaitStrategy
 
             return availableSequence;
         }
+    }
+
+    final static class LiteBlocking extends WaitStrategy {
+
+        private final Lock          lock                     = new ReentrantLock();
+        private final Condition     processorNotifyCondition = lock.newCondition();
+        private final AtomicBoolean signalNeeded             = new AtomicBoolean(false);
 
         @Override
         public void signalAllWhenBlocking()
         {
+            if (signalNeeded.getAndSet(false))
+            {
+                lock.lock();
+                try
+                {
+                    processorNotifyCondition.signalAll();
+                }
+                finally
+                {
+                    lock.unlock();
+                }
+            }
         }
-    }
-
-    /**
-     * Variation of the {@link Blocking} that attempts to elide conditional wake-ups when
-     * the lock is uncontended.  Shows performance improvements on microbenchmarks.  However this
-     * wait strategy should be considered experimental as I have not full proved the correctness of
-     * the lock elision code.
-     */
-    final class LiteBlocking implements WaitStrategy
-    {
-        private final Lock          lock                     = new ReentrantLock();
-        private final Condition     processorNotifyCondition = lock.newCondition();
-        private final AtomicBoolean signalNeeded             = new AtomicBoolean(false);
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
@@ -184,40 +289,17 @@ public interface WaitStrategy
 
             return availableSequence;
         }
-
-        @Override
-        public void signalAllWhenBlocking()
-        {
-            if (signalNeeded.getAndSet(false))
-            {
-                lock.lock();
-                try
-                {
-                    processorNotifyCondition.signalAll();
-                }
-                finally
-                {
-                    lock.unlock();
-                }
-            }
-        }
     }
 
-    /**
-     * <p>Phased wait strategy for waiting ringbuffer consumers on a barrier.</p>
-     *
-     * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource.
-     * Spins, then yields, then waits using the configured fallback WaitStrategy.</p>
-     */
-    final class PhasedOff implements WaitStrategy
-    {
+
+    final static class PhasedOff extends WaitStrategy {
+
         private static final int SPIN_TRIES = 10000;
         private final long spinTimeoutNanos;
         private final long yieldTimeoutNanos;
         private final WaitStrategy fallbackStrategy;
 
-        public PhasedOff(long spinTimeout,
-                                         long yieldTimeout,
+        PhasedOff(long spinTimeout, long yieldTimeout,
                                          TimeUnit units,
                                          WaitStrategy fallbackStrategy)
         {
@@ -226,37 +308,10 @@ public interface WaitStrategy
             this.fallbackStrategy = fallbackStrategy;
         }
 
-        /**
-         * Block with wait/notifyAll semantics
-         */
-        public static PhasedOff withLock(long spinTimeout,
-                                                         long yieldTimeout,
-                                                         TimeUnit units)
+        @Override
+        public void signalAllWhenBlocking()
         {
-            return new PhasedOff(spinTimeout, yieldTimeout,
-                                                 units, new Blocking());
-        }
-
-        /**
-         * Block with wait/notifyAll semantics
-         */
-        public static PhasedOff withLiteLock(long spinTimeout,
-                                                             long yieldTimeout,
-                                                             TimeUnit units)
-        {
-            return new PhasedOff(spinTimeout, yieldTimeout,
-                                                 units, new LiteBlocking());
-        }
-
-        /**
-         * Block by sleeping in a loop
-         */
-        public static PhasedOff withSleep(long spinTimeout,
-                                                          long yieldTimeout,
-                                                          TimeUnit units)
-        {
-            return new PhasedOff(spinTimeout, yieldTimeout,
-                                                 units, new Sleeping(0));
+            fallbackStrategy.signalAllWhenBlocking();
         }
 
         @Override
@@ -298,57 +353,20 @@ public interface WaitStrategy
             }
             while (true);
         }
-
-        @Override
-        public void signalAllWhenBlocking()
-        {
-            fallbackStrategy.signalAllWhenBlocking();
-        }
     }
 
-    /**
-     * Sleeping strategy that initially spins, then uses a Thread.yield(), and
-     * eventually sleep (<code>LockSupport.parkNanos(1)</code>) for the minimum
-     * number of nanos the OS and JVM will allow while the
-     * ringbuffer consumers are waiting on a barrier.
-     *
-     * This strategy is a good compromise between performance and CPU resource.
-     * Latency spikes can occur after quiet periods.
-     */
-    final class Sleeping implements WaitStrategy
-    {
+    final static class Sleeping extends WaitStrategy {
+
         private static final int DEFAULT_RETRIES = 200;
 
         private final int retries;
 
-        public Sleeping()
-        {
+        Sleeping() {
             this(DEFAULT_RETRIES);
         }
 
-        public Sleeping(int retries)
-        {
+        Sleeping(int retries) {
             this.retries = retries;
-        }
-
-        @Override
-        public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws Exceptions.AlertException, InterruptedException
-        {
-            long availableSequence;
-            int counter = retries;
-
-            while ((availableSequence = cursor.get()) < sequence)
-            {
-                counter = applyWaitMethod(barrier, counter);
-            }
-
-            return availableSequence;
-        }
-
-        @Override
-        public void signalAllWhenBlocking()
-        {
         }
 
         private int applyWaitMethod(final Runnable barrier, int counter)
@@ -372,24 +390,13 @@ public interface WaitStrategy
 
             return counter;
         }
-    }
-
-    /**
-     * Yielding strategy that uses a Thread.yield() for ringbuffer consumers waiting on a barrier
-     * after an initially spinning.
-     *
-     * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
-     */
-    final class Yielding implements WaitStrategy
-    {
-        private static final int SPIN_TRIES = 100;
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
                 throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
-            int counter = SPIN_TRIES;
+            int counter = retries;
 
             while ((availableSequence = cursor.get()) < sequence)
             {
@@ -398,11 +405,11 @@ public interface WaitStrategy
 
             return availableSequence;
         }
+    }
 
-        @Override
-        public void signalAllWhenBlocking()
-        {
-        }
+    final static class Yielding extends WaitStrategy {
+
+        private static final int SPIN_TRIES = 100;
 
         private int applyWaitMethod(final Runnable barrier, int counter)
                 throws Exceptions.AlertException
@@ -419,6 +426,21 @@ public interface WaitStrategy
             }
 
             return counter;
+        }
+
+        @Override
+        public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
+                throws Exceptions.AlertException, InterruptedException
+        {
+            long availableSequence;
+            int counter = SPIN_TRIES;
+
+            while ((availableSequence = cursor.get()) < sequence)
+            {
+                counter = applyWaitMethod(barrier, counter);
+            }
+
+            return availableSequence;
         }
     }
 }

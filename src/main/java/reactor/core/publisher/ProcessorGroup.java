@@ -82,7 +82,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
 		@Override
 		public WaitStrategy get() {
-			return WaitStrategy.PhasedOff.withLiteLock(200, 200, TimeUnit.MILLISECONDS);
+			return WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
 		}
 	};
 

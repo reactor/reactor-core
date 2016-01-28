@@ -79,7 +79,7 @@ final class IncrementingTimeResolver {
 	Timer getTimer() {
 		Timer timer = this.timer;
 		if (NOOP == timer) {
-			timer = new HashWheelTimer("time-utils", DEFAULT_RESOLUTION, HashWheelTimer.DEFAULT_WHEEL_SIZE, new WaitStrategy.Sleeping(), null);
+			timer = new HashWheelTimer("time-utils", DEFAULT_RESOLUTION, HashWheelTimer.DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping(), null);
 			if(!REF.compareAndSet(this, NOOP, timer)){
 				timer.cancel();
 				timer = this.timer;

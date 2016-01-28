@@ -74,16 +74,16 @@ public class TimerTests {
 
     @Test
     public void timeTravelWithYieldingWaitStrategyTest() throws InterruptedException {
-        timeTravelTest(new WaitStrategy.Yielding(), 1);
-        timeTravelTest(new WaitStrategy.Yielding(), 5);
-        timeTravelTest(new WaitStrategy.Yielding(), 10);
+        timeTravelTest(WaitStrategy.yielding(), 1);
+        timeTravelTest(WaitStrategy.yielding(), 5);
+        timeTravelTest(WaitStrategy.yielding(), 10);
     }
 
     @Test
     public void timeTravelWithSleepingWaitStrategyTest() throws InterruptedException {
-        timeTravelTest(new WaitStrategy.Sleeping(), 1);
-        timeTravelTest(new WaitStrategy.Sleeping(), 5);
-        timeTravelTest(new WaitStrategy.Sleeping(), 10);
+        timeTravelTest(WaitStrategy.sleeping(), 1);
+        timeTravelTest(WaitStrategy.sleeping(), 5);
+        timeTravelTest(WaitStrategy.sleeping(), 10);
     }
 
     private void timeTravelTest(WaitStrategy waitStrategy, int iterations) throws InterruptedException {

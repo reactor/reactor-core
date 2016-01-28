@@ -39,7 +39,7 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 	private static final GlobalContext context = new GlobalContext();
 
 	public GlobalTimer() {
-		super("global-timer", 50, DEFAULT_WHEEL_SIZE, new WaitStrategy.Sleeping(), null);
+		super("global-timer", 50, DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping(), null);
 	}
 
 	private void _cancel() {
@@ -127,7 +127,7 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 		Timer timer = context.timer;
 
 		if (timer == null) {
-			timer = new HashWheelTimer(50, 64, new WaitStrategy.Sleeping());
+			timer = new HashWheelTimer(50, 64, WaitStrategy.sleeping());
 			timer.start();
 		}
 		return timer;

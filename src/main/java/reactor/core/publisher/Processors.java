@@ -728,7 +728,7 @@ public enum Processors {
 	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
 		@Override
 		public WaitStrategy get() {
-			return WaitStrategy.PhasedOff.withLiteLock(200, 200, TimeUnit.MILLISECONDS);
+			return WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
 		}
 	};
 
@@ -741,7 +741,7 @@ public enum Processors {
 	private static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
 		@Override
 		public WaitStrategy get() {
-			return WaitStrategy.PhasedOff.withLiteLock(500, 50, TimeUnit.MILLISECONDS);
+			return WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
 		}
 	};
 

@@ -34,7 +34,7 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 
 		given:
 			"a new globalTimer"
-			def timer = new HashWheelTimer(10, 8, new WaitStrategy.Sleeping())
+			def timer = new HashWheelTimer(10, 8, WaitStrategy.sleeping())
 			timer.start()
 			def latch = new CountDownLatch(10)
 
@@ -61,7 +61,7 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 		given:
 			"a new globalTimer"
 			def delay = 500
-			def timer = new HashWheelTimer(10, 8, new WaitStrategy.Sleeping())
+			def timer = new HashWheelTimer(10, 8, WaitStrategy.sleeping())
 			timer.start()
 			def latch = new CountDownLatch(1)
 			def start = System.currentTimeMillis()

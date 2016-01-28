@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -38,9 +39,7 @@ import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.FusionSubscription;
 import reactor.core.util.ScalarSubscription;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
@@ -91,42 +90,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		
-		if (source instanceof Supplier) {
-			@SuppressWarnings("unchecked")
-			T t = ((Supplier<? extends T>)source).get();
-			
-			if (t == null) {
-				EmptySubscription.complete(s);
-				return;
-			}
-			
-			Publisher<? extends R> p;
-			
-			try {
-				p = mapper.apply(t);
-			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				EmptySubscription.error(s, e);
-				return;
-			}
-			
-			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The mapper returned a null Publisher"));
-				return;
-			}
-			
-			if (p instanceof Supplier) {
-				@SuppressWarnings("unchecked")
-				R v = ((Supplier<R>)p).get();
-				if (v != null) {
-					s.onSubscribe(new ScalarSubscription<>(s, v));
-				} else {
-					EmptySubscription.complete(s);
-				}
-			} else {
-				p.subscribe(s);
-			} 
-			
+		if (ScalarSubscription.trySubscribeScalarMap(source, s, mapper)) {
 			return;
 		}
 		
@@ -134,8 +98,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class FlatMapMain<T, R> 
-	implements Subscriber<T>, Subscription, MultiReceiver, Requestable, Completable, Producer,
-	           Cancellable, Backpressurable, Receiver, Failurable {
+	implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable, Completable, Producer,
+			   Cancellable, Backpressurable, Failurable {
 		
 		final Subscriber<? super R> actual;
 
@@ -312,6 +276,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public void onNext(T t) {
 			if (done) {
@@ -338,8 +303,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 			
 			if (p instanceof Supplier) {
-				@SuppressWarnings("unchecked")
-				R v = ((Supplier<R>)p).get();
+				R v;
+				try {
+					v = ((Supplier<R>)p).get();
+				} catch (Throwable e) {
+					s.cancel();
+					onError(Exceptions.unwrap(e));
+					return;
+				}
 				emitScalar(v);
 			} else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
@@ -870,7 +841,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 	
 	static final class FlatMapInner<R> 
-	implements Subscriber<R>, Subscription, Receiver, Producer,
+	implements Subscriber<R>, Subscription, Producer, Receiver,
 			   Backpressurable,
 			   Cancellable,
 			   Completable,
@@ -918,9 +889,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof FusionSubscription) {
-					@SuppressWarnings("unchecked")
-					FusionSubscription<R> f = (FusionSubscription<R>)s;
+				if (s instanceof Fuseable.QueueSubscription) {
+					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
 					queue = f;
 					if (f.requestSyncFusion()){
 						sourceMode = SYNC;

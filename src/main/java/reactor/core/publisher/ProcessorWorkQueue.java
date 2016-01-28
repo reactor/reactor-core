@@ -509,7 +509,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 			RETRY_REF = PlatformDependent
 			.newAtomicReferenceFieldUpdater(ProcessorWorkQueue.class, "retryBuffer");
 
-	final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
+	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 	final WaitStrategy writeWait;
 
 	volatile int replaying = 0;
@@ -540,7 +540,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 		};
 
 		WaitStrategy strategy = waitStrategy == null ?
-				new WaitStrategy.LiteBlocking() :
+				WaitStrategy.liteBlocking() :
 				waitStrategy;
 
 		this.writeWait = strategy;
@@ -679,7 +679,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 		RingBuffer<Slot<E>> retry = retryBuffer;
 		if (retry == null) {
 			retry =
-					RingBuffer.createMultiProducer((Supplier<Slot<E>>) FACTORY, 32, RingBuffer.NO_WAIT);
+					RingBuffer.createMultiProducer((Supplier<Slot<E>>) FACTORY, 32, WaitStrategy.busySpin());
 			retry.addGatingSequence(retrySequence);
 			if (!RETRY_REF.compareAndSet(this, null, retry)) {
 				retry = retryBuffer;

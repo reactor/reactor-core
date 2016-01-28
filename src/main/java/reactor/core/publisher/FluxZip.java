@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -41,7 +42,6 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.FusionSubscription;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
 
@@ -121,7 +121,14 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 			if (p instanceof Supplier) {
 				Supplier<T> supplier = (Supplier<T>) p;
 				
-				T v = supplier.get();
+				T v;
+				
+				try {
+					v = supplier.get();
+				} catch (Throwable e) {
+					EmptySubscription.error(s, Exceptions.unwrap(e));
+					return;
+				}
 				
 				if (v == null) {
 					EmptySubscription.complete(s);
@@ -165,6 +172,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
+	@SuppressWarnings("unchecked")
 	void handleArrayMode(Subscriber<? super R> s, Publisher<? extends T>[] srcs) {
 		
 		int n = srcs.length;
@@ -186,8 +194,14 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 			}
 			
 			if (p instanceof Supplier) {
-				@SuppressWarnings("unchecked")
-				Object v = ((Supplier<? extends T>)p).get();
+				Object v;
+				
+				try {
+					v = ((Supplier<? extends T>)p).get();
+				} catch (Throwable e) {
+					EmptySubscription.error(s, Exceptions.unwrap(e));
+					return;
+				}
 				
 				if (v == null) {
 					EmptySubscription.complete(s);
@@ -828,10 +842,10 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof FusionSubscription) {
-					FusionSubscription<T> f = (FusionSubscription<T>) s;
+				if (s instanceof Fuseable.QueueSubscription) {
+					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
-					queue = (FusionSubscription<T>)s;
+					queue = (Fuseable.QueueSubscription<T>)s;
 					
 					if (f.requestSyncFusion()) {
 						sourceMode = SYNC;

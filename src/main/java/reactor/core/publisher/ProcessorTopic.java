@@ -176,7 +176,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 */
 	public static <E> ProcessorTopic<E> create(ExecutorService service,
 	                                                int bufferSize) {
-		return create(service, bufferSize, new WaitStrategy.LiteBlocking(), true);
+		return create(service, bufferSize, WaitStrategy.liteBlocking(), true);
 	}
 
 	/**
@@ -192,7 +192,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 */
 	public static <E> ProcessorTopic<E> create(ExecutorService service,
 	                                                int bufferSize, boolean autoCancel) {
-		return create(service, bufferSize, new WaitStrategy.LiteBlocking(), autoCancel);
+		return create(service, bufferSize, WaitStrategy.liteBlocking(), autoCancel);
 	}
 
 	/**
@@ -552,7 +552,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 
 	final Sequence minimum;
 
-	final WaitStrategy readWait = new WaitStrategy.LiteBlocking();
+	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 
 	private ProcessorTopic(String name, ExecutorService executor, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
@@ -584,7 +584,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		};
 
 		WaitStrategy strategy = waitStrategy == null ?
-				WaitStrategy.PhasedOff.withLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+				WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
 				waitStrategy;
 		if (shared) {
 			this.ringBuffer = RingBuffer

@@ -81,7 +81,7 @@ class HashWheelTimer extends Timer {
 	 * @param resolution         the resolution of this timer, in milliseconds
 	 */
 	public HashWheelTimer(int resolution) {
-		this(resolution, DEFAULT_WHEEL_SIZE, new WaitStrategy.Sleeping());
+		this(resolution, DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping());
 	}
 
 	/**
