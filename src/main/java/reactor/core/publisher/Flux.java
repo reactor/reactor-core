@@ -29,7 +29,7 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.BlockingIterable;
-import reactor.core.subscriber.ReactiveSession;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
@@ -638,7 +638,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link ReactiveSession} context ready to accept
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
 	 * signals.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
@@ -648,8 +648,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T> Flux<T> yield(Consumer<? super ReactiveSession<T>> sessionConsumer) {
-		return new FluxYieldingSession<>(sessionConsumer);
+	public static <T> Flux<T> yield(Consumer<? super SignalEmitter<T>> sessionConsumer) {
+		return new FluxYieldingEmitter<>(sessionConsumer);
 	}
 
 	/**

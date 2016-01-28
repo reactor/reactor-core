@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.ReactiveSession;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.EmptySubscription;
 import reactor.fn.Consumer;
 
@@ -28,18 +28,18 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxYieldingSession<T> extends Flux<T> implements Introspectable {
+final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
 
-	final Consumer<? super ReactiveSession<T>> onSubscribe;
+	final Consumer<? super SignalEmitter<T>> onSubscribe;
 
-	public FluxYieldingSession(Consumer<? super ReactiveSession<T>> onSubscribe) {
+	public FluxYieldingEmitter(Consumer<? super SignalEmitter<T>> onSubscribe) {
 		this.onSubscribe = onSubscribe;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
 		try {
-			ReactiveSession<T> session = new YieldingReactiveSession<>(onSubscribe, subscriber);
+			SignalEmitter<T> session = new YieldingSignalEmitter<>(onSubscribe, subscriber);
 			session.start();
 
 		}
@@ -52,17 +52,17 @@ final class FluxYieldingSession<T> extends Flux<T> implements Introspectable {
 		}
 	}
 
-	private static class YieldingReactiveSession<T> extends ReactiveSession<T> {
+	private static class YieldingSignalEmitter<T> extends SignalEmitter<T> {
 
-		final Consumer<? super ReactiveSession<T>> onSubscribe;
+		final Consumer<? super SignalEmitter<T>> onSubscribe;
 
 		@SuppressWarnings("unused")
 		private volatile int running = 0;
 
-		private final static AtomicIntegerFieldUpdater<YieldingReactiveSession> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(YieldingReactiveSession.class, "running");
+		private final static AtomicIntegerFieldUpdater<YieldingSignalEmitter> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(YieldingSignalEmitter.class, "running");
 
-		public YieldingReactiveSession(Consumer<? super ReactiveSession<T>> onSubscribe, Subscriber<? super T> actual) {
+		public YieldingSignalEmitter(Consumer<? super SignalEmitter<T>> onSubscribe, Subscriber<? super T> actual) {
 			super(actual);
 			this.onSubscribe = onSubscribe;
 		}

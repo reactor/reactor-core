@@ -47,16 +47,16 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	 *
 	 * @return
 	 */
-	public ReactiveSession<T> startSession() {
-		return bindSession(true);
+	public SignalEmitter<T> startEmitter() {
+		return bindEmitter(true);
 	}
 
 	/**
 	 *
 	 * @return
 	 */
-	public ReactiveSession<T> bindSession(boolean autostart) {
-		return ReactiveSession.create(this, autostart);
+	public SignalEmitter<T> bindEmitter(boolean autostart) {
+		return SignalEmitter.create(this, autostart);
 	}
 
 	@Override

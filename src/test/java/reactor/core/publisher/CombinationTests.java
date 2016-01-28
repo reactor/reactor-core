@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.ReactiveSession;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
@@ -93,7 +93,7 @@ public class CombinationTests {
 			         return null;
 		         }, (d, s) -> count.incrementAndGet()));
 
-		ReactiveSession<Integer> session = processor.startSession();
+		SignalEmitter<Integer> session = processor.startEmitter();
 		long emission = session.submit(1);
 		if (emission == -1L) {
 			throw new IllegalStateException("Negatime " + emission);
@@ -130,7 +130,7 @@ public class CombinationTests {
 			         }, null, d -> latch.countDown()));
 		}
 
-		ReactiveSession<Integer> session = processor.startSession();
+		SignalEmitter<Integer> session = processor.startEmitter();
 
 		for (int i = 0; i < n; i++) {
 			while (!session.emit(i)

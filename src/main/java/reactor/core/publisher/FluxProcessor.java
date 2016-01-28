@@ -21,7 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
-import reactor.core.subscriber.ReactiveSession;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -56,16 +56,16 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return
 	 */
-	public ReactiveSession<IN> startSession() {
-		return bindSession(true);
+	public SignalEmitter<IN> startEmitter() {
+		return bindEmitter(true);
 	}
 
 	/**
 	 *
 	 * @return
 	 */
-	public ReactiveSession<IN> bindSession(boolean autostart) {
-		return ReactiveSession.create(this, autostart);
+	public SignalEmitter<IN> bindEmitter(boolean autostart) {
+		return SignalEmitter.create(this, autostart);
 	}
 
 

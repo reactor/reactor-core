@@ -39,7 +39,7 @@ import reactor.fn.Predicate;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ReactiveSession<E>
+public class SignalEmitter<E>
 		implements Producer, Subscriber<E>, Subscription, Backpressurable, Failurable, Cancellable, Requestable,
 		           Consumer<E>,
 		           Closeable {
@@ -74,10 +74,10 @@ public class ReactiveSession<E>
 	private final Subscriber<? super E> actual;
 
 	@SuppressWarnings("unused")
-	private volatile long                                    requested = 0L;
+	private volatile long                                  requested = 0L;
 	@SuppressWarnings("rawtypes")
-	static final     AtomicLongFieldUpdater<ReactiveSession> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(ReactiveSession.class, "requested");
+	static final     AtomicLongFieldUpdater<SignalEmitter> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(SignalEmitter.class, "requested");
 
 	private Throwable uncaughtException;
 
@@ -89,7 +89,7 @@ public class ReactiveSession<E>
 	 * @param <E>
 	 * @return
 	 */
-	public static <E> ReactiveSession<E> create(Subscriber<? super E> subscriber) {
+	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber) {
 		return create(subscriber, true);
 	}
 
@@ -100,15 +100,15 @@ public class ReactiveSession<E>
 	 * @param <E>
 	 * @return
 	 */
-	public static <E> ReactiveSession<E> create(Subscriber<? super E> subscriber, boolean autostart) {
-		ReactiveSession<E> sub = new ReactiveSession<>(subscriber);
+	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber, boolean autostart) {
+		SignalEmitter<E> sub = new SignalEmitter<>(subscriber);
 		if (autostart) {
 			sub.start();
 		}
 		return sub;
 	}
 
-	protected ReactiveSession(Subscriber<? super E> actual) {
+	protected SignalEmitter(Subscriber<? super E> actual) {
 		this.actual = actual;
 	}
 
@@ -410,7 +410,7 @@ public class ReactiveSession<E>
 
 	@Override
 	public String toString() {
-		return "ReactiveSession{" +
+		return "SignalEmitter{" +
 				"requested=" + requested +
 				", uncaughtException=" + uncaughtException +
 				", cancelled=" + cancelled +
