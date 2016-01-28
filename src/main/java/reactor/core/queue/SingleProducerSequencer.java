@@ -21,7 +21,7 @@ import reactor.core.util.Exceptions;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
 
-abstract class SingleProducerSequencerPad extends Sequencer
+abstract class SingleProducerSequencerPad extends RingBufferProducer
 {
     protected long p1, p2, p3, p4, p5, p6, p7;
     public SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
@@ -46,8 +46,8 @@ abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
  * Not safe for use from multiple threads as it does not implement any barriers.</p>
  *
- * <p>Note on {@link Sequencer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link Sequencer#publish(long)} is made.
+ * <p>Note on {@link RingBufferProducer#getCursor()}:  With this sequencer the cursor value is updated after the call
+ * to {@link RingBufferProducer#publish(long)} is made.
  */
 
 final class SingleProducerSequencer extends SingleProducerSequencerFields
@@ -66,7 +66,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#hasAvailableCapacity(int)
+     * @see RingBufferProducer#hasAvailableCapacity(int)
      */
     @Override
     public boolean hasAvailableCapacity(final int requiredCapacity)
@@ -78,7 +78,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
 
         if (wrapPoint > cachedGatingSequence || cachedGatingSequence > nextValue)
         {
-            long minSequence = Sequencer.getMinimumSequence(gatingSequences, nextValue);
+            long minSequence = RingBuffer.getMinimumSequence(gatingSequences, nextValue);
             this.cachedValue = minSequence;
 
             if (wrapPoint > minSequence)
@@ -91,7 +91,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#next()
+     * @see RingBufferProducer#next()
      */
     @Override
     public long next()
@@ -100,7 +100,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#next(int)
+     * @see RingBufferProducer#next(int)
      */
     @Override
     public long next(int n)
@@ -119,7 +119,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
         if (wrapPoint > cachedGatingSequence || cachedGatingSequence > nextValue)
         {
             long minSequence;
-            while (wrapPoint > (minSequence = Sequencer.getMinimumSequence(gatingSequences, nextValue)))
+            while (wrapPoint > (minSequence = RingBuffer.getMinimumSequence(gatingSequences, nextValue)))
             {
                 if(spinObserver != null) {
                     spinObserver.run();
@@ -136,7 +136,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#tryNext()
+     * @see RingBufferProducer#tryNext()
      */
     @Override
     public long tryNext() throws Exceptions.InsufficientCapacityException
@@ -145,7 +145,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#tryNext(int)
+     * @see RingBufferProducer#tryNext(int)
      */
     @Override
     public long tryNext(int n) throws Exceptions.InsufficientCapacityException
@@ -166,7 +166,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#remainingCapacity()
+     * @see RingBufferProducer#remainingCapacity()
      */
     @Override
     public long remainingCapacity()
@@ -175,14 +175,14 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#getPending()
+     * @see RingBufferProducer#getPending()
      */
     @Override
     public long getPending()
     {
         long nextValue = this.nextValue;
 
-        long consumed = Sequencer.getMinimumSequence(gatingSequences, nextValue);
+        long consumed = RingBuffer.getMinimumSequence(gatingSequences, nextValue);
         long produced = nextValue;
         return produced - consumed;
     }
@@ -197,7 +197,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#claim(long)
+     * @see RingBufferProducer#claim(long)
      */
     @Override
     public void claim(long sequence)
@@ -206,7 +206,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#publish(long)
+     * @see RingBufferProducer#publish(long)
      */
     @Override
     public void publish(long sequence)
@@ -216,7 +216,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#publish(long, long)
+     * @see RingBufferProducer#publish(long, long)
      */
     @Override
     public void publish(long lo, long hi)
@@ -225,7 +225,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see Sequencer#isAvailable(long)
+     * @see RingBufferProducer#isAvailable(long)
      */
     @Override
     public boolean isAvailable(long sequence)

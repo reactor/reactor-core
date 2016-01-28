@@ -31,8 +31,7 @@ import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
-import reactor.core.queue.SequenceBarrier;
-import reactor.core.queue.Sequencer;
+import reactor.core.queue.RingBufferReceiver;
 import reactor.core.queue.Slot;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
@@ -547,7 +546,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 				autoCancel, null);
 	}
 
-	final SequenceBarrier barrier;
+	final RingBufferReceiver barrier;
 
 	final RingBuffer<Slot<E>> ringBuffer;
 
@@ -560,7 +559,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	                            boolean autoCancel, final Supplier<E> signalSupplier) {
 		super(name, executor, autoCancel);
 
-		if (!Sequencer.isPowerOfTwo(bufferSize) ){
+		if (!RingBuffer.isPowerOfTwo(bufferSize) ){
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
 		}
 
@@ -596,7 +595,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 					.createSingleProducer(factory, bufferSize, strategy, spinObserver);
 		}
 
-		this.minimum = Sequencer.newSequence(-1);
+		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newBarrier();
 	}
 
@@ -610,7 +609,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		}
 
 		//create a unique eventProcessor for this subscriber
-		final Sequence pendingRequest = Sequencer.newSequence(0);
+		final Sequence pendingRequest = RingBuffer.newSequence(0);
 		final TopicSubscriberLoop<E> signalProcessor =
 				new TopicSubscriberLoop<>(this, pendingRequest, subscriber);
 
@@ -787,7 +786,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
 		private final Sequence sequence =
-				Sequencer.wrap(Sequencer.INITIAL_CURSOR_VALUE, this);
+				RingBuffer.wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
 		private final ProcessorTopic<T> processor;
 

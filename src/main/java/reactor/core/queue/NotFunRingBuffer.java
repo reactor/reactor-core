@@ -22,16 +22,16 @@ import reactor.fn.Supplier;
 
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {
-    private final long indexMask;
-    private final Object[] entries;
-    protected final int bufferSize;
-    protected final Sequencer sequencer;
+    private final   long               indexMask;
+    private final   Object[]           entries;
+    protected final int                bufferSize;
+    protected final RingBufferProducer sequenceProducer;
 
     NotFunRingBufferFields(Supplier<E> eventFactory,
-                     Sequencer       sequencer)
+                     RingBufferProducer sequenceProducer)
     {
-        this.sequencer  = sequencer;
-        this.bufferSize = sequencer.getBufferSize();
+        this.sequenceProducer = sequenceProducer;
+        this.bufferSize = sequenceProducer.getBufferSize();
 
         if (bufferSize < 1)
         {
@@ -39,7 +39,7 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
         }
 
         this.indexMask = bufferSize - 1;
-        this.entries   = new Object[sequencer.getBufferSize()];
+        this.entries   = new Object[sequenceProducer.getBufferSize()];
         fill(eventFactory);
     }
 
@@ -70,13 +70,13 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
      * Construct a RingBuffer with the full option set.
      *
      * @param eventFactory to newInstance entries for filling the RingBuffer
-     * @param sequencer sequencer to handle the ordering of events moving through the RingBuffer.
+     * @param sequenceProducer sequencer to handle the ordering of events moving through the RingBuffer.
      * @throws IllegalArgumentException if bufferSize is less than 1 or not a power of 2
      */
     NotFunRingBuffer(Supplier<E> eventFactory,
-                     Sequencer sequencer)
+                     RingBufferProducer sequenceProducer)
     {
-        super(eventFactory, sequencer);
+        super(eventFactory, sequenceProducer);
     }
 
     @Override
@@ -88,57 +88,57 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     @Override
     public long next()
     {
-        return sequencer.next();
+        return sequenceProducer.next();
     }
 
     @Override
     public long next(int n)
     {
-        return sequencer.next(n);
+        return sequenceProducer.next(n);
     }
 
     @Override
     public long tryNext() throws Exceptions.InsufficientCapacityException
     {
-        return sequencer.tryNext();
+        return sequenceProducer.tryNext();
     }
 
     @Override
     public long tryNext(int n) throws Exceptions.InsufficientCapacityException
     {
-        return sequencer.tryNext(n);
+        return sequenceProducer.tryNext(n);
     }
 
     @Override
     public void resetTo(long sequence)
     {
-        sequencer.claim(sequence);
-        sequencer.publish(sequence);
+        sequenceProducer.claim(sequence);
+        sequenceProducer.publish(sequence);
     }
 
     @Override
     public E claimAndGetPreallocated(long sequence)
     {
-        sequencer.claim(sequence);
+        sequenceProducer.claim(sequence);
         return get(sequence);
     }
 
     @Override
     public boolean isPublished(long sequence)
     {
-        return sequencer.isAvailable(sequence);
+        return sequenceProducer.isAvailable(sequence);
     }
 
     @Override
     public void addGatingSequences(Sequence... gatingSequences)
     {
-        sequencer.addGatingSequences(gatingSequences);
+        sequenceProducer.addGatingSequences(gatingSequences);
     }
 
     @Override
     public void addGatingSequence(Sequence gatingSequence)
     {
-        sequencer.addGatingSequence(gatingSequence);
+        sequenceProducer.addGatingSequence(gatingSequence);
     }
 
     @Override
@@ -150,31 +150,31 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     @Override
     public long getMinimumGatingSequence(Sequence sequence)
     {
-        return sequencer.getMinimumSequence(sequence);
+        return sequenceProducer.getMinimumSequence(sequence);
     }
 
     @Override
     public boolean removeGatingSequence(Sequence sequence)
     {
-        return sequencer.removeGatingSequence(sequence);
+        return sequenceProducer.removeGatingSequence(sequence);
     }
 
     @Override
-    public SequenceBarrier newBarrier()
+    public RingBufferReceiver newBarrier()
     {
-        return sequencer.newBarrier();
+        return sequenceProducer.newBarrier();
     }
 
     @Override
     public long getCursor()
     {
-        return sequencer.getCursor();
+        return sequenceProducer.getCursor();
     }
 
     @Override
     public Sequence getSequence()
     {
-        return sequencer.getSequence();
+        return sequenceProducer.getSequence();
     }
 
     @Override
@@ -186,42 +186,42 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     @Override
     public boolean hasAvailableCapacity(int requiredCapacity)
     {
-        return sequencer.hasAvailableCapacity(requiredCapacity);
+        return sequenceProducer.hasAvailableCapacity(requiredCapacity);
     }
 
     @Override
     public void publish(long sequence)
     {
-        sequencer.publish(sequence);
+        sequenceProducer.publish(sequence);
     }
 
     @Override
     public void publish(long lo, long hi)
     {
-        sequencer.publish(lo, hi);
+        sequenceProducer.publish(lo, hi);
     }
 
     @Override
     public long remainingCapacity()
     {
-        return sequencer.remainingCapacity();
+        return sequenceProducer.remainingCapacity();
     }
 
     @Override
     public long getPending()
     {
-        return sequencer.getPending();
+        return sequenceProducer.getPending();
     }
 
     @Override
-    public Sequencer getSequencer() {
-        return sequencer;
+    public RingBufferProducer getSequencer() {
+        return sequenceProducer;
     }
 
     @Override
     public long cachedRemainingCapacity()
     {
-        return sequencer.cachedRemainingCapacity();
+        return sequenceProducer.cachedRemainingCapacity();
     }
 
 

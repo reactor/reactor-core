@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.queue.Sequencer;
+import reactor.core.queue.RingBuffer;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -36,7 +36,7 @@ final class IncrementingTimeResolver {
 	final static private Timer NOOP = new Timer();
 
 	static final int      DEFAULT_RESOLUTION = 100;
-	static final Sequence now                = Sequencer.newSequence(-1);
+	static final Sequence now                = RingBuffer.newSequence(-1);
 
 	static final IncrementingTimeResolver INSTANCE = new IncrementingTimeResolver();
 

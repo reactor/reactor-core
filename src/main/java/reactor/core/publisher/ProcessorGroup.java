@@ -32,7 +32,6 @@ import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.queue.RingBuffer;
-import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
@@ -589,7 +588,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			else {
 				outstanding = PlatformDependent.SMALL_BUFFER_SIZE;
 				emitBuffer = RingBuffer.<V>createSingleProducer(PlatformDependent.SMALL_BUFFER_SIZE);
-				pollCursor = Sequencer.newSequence(-1L);
+				pollCursor = RingBuffer.newSequence(-1L);
 				emitBuffer.addGatingSequence(pollCursor);
 			}
 		}

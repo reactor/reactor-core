@@ -31,8 +31,7 @@ import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
-import reactor.core.queue.SequenceBarrier;
-import reactor.core.queue.Sequencer;
+import reactor.core.queue.RingBufferReceiver;
 import reactor.core.queue.Slot;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
@@ -497,10 +496,10 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 */
 
 	final Sequence workSequence =
-			Sequencer.newSequence(Sequencer.INITIAL_CURSOR_VALUE);
+			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
 	final Sequence retrySequence =
-			Sequencer.newSequence(Sequencer.INITIAL_CURSOR_VALUE);
+			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
 	final RingBuffer<Slot<E>> ringBuffer;
 
@@ -525,7 +524,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	                                boolean autoCancel) {
 		super(name, executor, autoCancel);
 
-		if (!Sequencer.isPowerOfTwo(bufferSize) ){
+		if (!RingBuffer.isPowerOfTwo(bufferSize) ){
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
 		}
 
@@ -714,11 +713,11 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
 		private final Sequence sequence =
-				Sequencer.wrap(Sequencer.INITIAL_CURSOR_VALUE, this);
+				RingBuffer.wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
-		private final Sequence pendingRequest = Sequencer.newSequence(0);
+		private final Sequence pendingRequest = RingBuffer.newSequence(0);
 
-		private final SequenceBarrier barrier;
+		private final RingBufferReceiver barrier;
 
 		private final ProcessorWorkQueue<T> processor;
 

@@ -21,11 +21,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
+import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -33,6 +36,8 @@ import reactor.core.util.WaitStrategy;
 import reactor.fn.Consumer;
 import reactor.fn.LongSupplier;
 import reactor.fn.Supplier;
+
+import static java.util.Arrays.copyOf;
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
@@ -50,6 +55,26 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			return new Slot<>();
 		}
 	};
+	/**
+	 * Set to -1 as sequence starting point
+	 */
+	public static final long     INITIAL_CURSOR_VALUE = -1L;
+
+	static final AtomicReferenceFieldUpdater<RingBufferProducer, Sequence[]>
+			SEQUENCE_UPDATER =
+			AtomicReferenceFieldUpdater.newUpdater(RingBufferProducer.class, Sequence[].class, "gatingSequences");
+
+	/**
+	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
+	 * Jr.
+	 *
+	 * @param x Value to round up
+	 *
+	 * @return The next power of 2 from x inclusive
+	 */
+	public static int ceilingNextPowerOfTwo(final int x) {
+		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
+	}
 
 	/**
 	 *
@@ -126,10 +151,9 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 */
 	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
 			int bufferSize,
-			WaitStrategy waitStrategy,
-			Runnable spinObserver) {
+			WaitStrategy waitStrategy, Runnable spinObserver) {
 
-		if (PlatformDependent.hasUnsafe() && Sequencer.isPowerOfTwo(bufferSize)) {
+		if (PlatformDependent.hasUnsafe() && isPowerOfTwo(bufferSize)) {
 			MultiProducerSequencer sequencer = new MultiProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<E>(factory, sequencer);
@@ -222,7 +246,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (PlatformDependent.hasUnsafe() && Sequencer.isPowerOfTwo(bufferSize)) {
+		if (PlatformDependent.hasUnsafe() && isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
@@ -239,6 +263,81 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	public static <T> Queue<T> createWriteOnlyQueue(RingBuffer<Slot<T>> buffer){
 		return new WriteQueue<>(buffer);
 	}
+
+	/**
+	 * Get the minimum sequence from an array of {@link Sequence}s.
+	 *
+	 * @param sequences to compare.
+	 * @param minimum an initial default minimum.  If the array is empty this value will be returned.
+	 *
+	 * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
+	 */
+	public static long getMinimumSequence(final Sequence[] sequences, long minimum) {
+		for (int i = 0, n = sequences.length; i < n; i++) {
+			long value = sequences[i].get();
+			minimum = Math.min(minimum, value);
+		}
+
+		return minimum;
+	}
+
+	/**
+	 * Get the minimum sequence from an array of {@link Sequence}s.
+	 *
+	 * @param excludeSequence to exclude from search.
+	 * @param sequences to compare.
+	 * @param minimum an initial default minimum.  If the array is empty this value will be returned.
+	 *
+	 * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
+	 */
+	public static long getMinimumSequence(Sequence excludeSequence, final Sequence[] sequences, long minimum) {
+		for (int i = 0, n = sequences.length; i < n; i++) {
+			if (excludeSequence == null || sequences[i] != excludeSequence) {
+				long value = sequences[i].get();
+				minimum = Math.min(minimum, value);
+			}
+		}
+
+		return minimum;
+	}
+
+	/**
+	 *
+	 * @param x
+	 * @return
+	 */
+	public static boolean isPowerOfTwo(final int x) {
+		return Integer.bitCount(x) == 1;
+	}
+
+	/**
+	 * Calculate the log base 2 of the supplied integer, essentially reports the location of the highest bit.
+	 *
+	 * @param i Value to calculate log2 for.
+	 *
+	 * @return The log2 value
+	 */
+	public static int log2(int i) {
+		int r = 0;
+		while ((i >>= 1) != 0) {
+			++r;
+		}
+		return r;
+	}
+
+	/**
+	 * @param init
+	 *
+	 * @return
+	 */
+	public static Sequence newSequence(long init) {
+		if (PlatformDependent.hasUnsafe()) {
+			return new UnsafeSequence(init);
+		}
+		else {
+			return new AtomicSequence(init);
+		}
+    }
 
 	/**
 	 *
@@ -263,7 +362,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @return
 	 */
 	public static boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
-			SequenceBarrier barrier,
+			RingBufferReceiver barrier,
 			AtomicBoolean isRunning,
 			LongSupplier nextSequence,
 			Runnable waiter) {
@@ -295,6 +394,32 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 		return true;
 	}
+
+	/**
+	 * @param init
+	 * @param delegate
+	 *
+	 * @return
+	 */
+	public static Sequence wrap(long init, Object delegate) {
+		if (PlatformDependent.TRACEABLE_RING_BUFFER_PROCESSOR) {
+			return wrap(newSequence(init), delegate);
+		}
+		else {
+			return newSequence(init);
+		}
+	}
+
+	/**
+	 * @param init
+	 * @param delegate
+	 * @param <E>
+	 *
+	 * @return
+	 */
+	public static <E> Wrapped<E> wrap(Sequence init, E delegate){
+		return new Wrapped<>(delegate, init);
+    }
 
 	/**
 	 * Add the specified gating sequence to this instance of the Disruptor.  It will safely and atomically be added to
@@ -332,8 +457,8 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * RingBuffer#publish(long)}.</p>
 	 *
 	 * <p>Secondly use this call when consuming data from the ring buffer.  After calling {@link
-	 * SequenceBarrier#waitFor(long)} call this method with any value greater than that your current consumer sequence
-	 * and less than or equal to the value returned from the {@link SequenceBarrier#waitFor(long)} method.</p>
+	 * RingBufferReceiver#waitFor(long)} call this method with any value greater than that your current consumer sequence
+	 * and less than or equal to the value returned from the {@link RingBufferReceiver#waitFor(long)} method.</p>
 	 * @param sequence for the event
 	 * @return the event for the given sequence
 	 */
@@ -346,7 +471,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	/**
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@link
-	 * Sequencer} that is being used.
+	 * RingBufferProducer} that is being used.
 	 * @see MultiProducerSequencer
 	 * @see SingleProducerSequencer
 	 */
@@ -366,13 +491,13 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	/**
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@link
-	 * Sequencer} that is being used.
+	 * RingBufferProducer} that is being used.
 	 * @see MultiProducerSequencer
 	 * @see SingleProducerSequencer
 	 */
 	abstract public Sequence getSequence();
 
-	abstract public Sequencer getSequencer();
+	abstract public RingBufferProducer getSequencer();
 
 	/**
 	 * Given specified <tt>requiredCapacity</tt> determines if that amount of space is available.  Note, you can not
@@ -391,12 +516,12 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	abstract public boolean isPublished(long sequence);
 
 	/**
-	 * Create a new SequenceBarrier to be used by an EventProcessor to track which messages are available to be read
+	 * Create a new {@link RingBufferReceiver} to be used by an EventProcessor to track which messages are available to be read
 	 * from the ring buffer given a list of sequences to track.
 	 * @return A sequence barrier that will track the ringbuffer.
-	 * @see SequenceBarrier
+	 * @see RingBufferReceiver
 	 */
-	abstract public SequenceBarrier newBarrier();
+	abstract public RingBufferReceiver newBarrier();
 
 	/**
 	 * Increment and return the next sequence for the ring buffer.  Calls of this method should ensure that they always
@@ -420,7 +545,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * The same functionality as {@link RingBuffer#next()}, but allows the caller to claim the next n sequences.
 	 * @param n number of slots to claim
 	 * @return sequence number of the highest slot claimed
-	 * @see Sequencer#next(int)
+	 * @see RingBufferProducer#next(int)
 	 */
 	abstract public long next(int n);
 
@@ -434,7 +559,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * Publish the specified sequences.  This action marks these particular messages as being available to be read.
 	 * @param lo the lowest sequence number to be published
 	 * @param hi the highest sequence number to be published
-	 * @see Sequencer#next(int)
+	 * @see RingBufferProducer#next(int)
 	 */
 	abstract public void publish(long lo, long hi);
 
@@ -496,6 +621,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @throws Exceptions.InsufficientCapacityException if the necessary space in the ring buffer is not available
 	 */
 	abstract public long tryNext(int n) throws Exceptions.InsufficientCapacityException;
+
 }
 
 class WriteQueue<T> implements Queue<T> {
@@ -631,7 +757,7 @@ final class SPSCQueue<T> extends WriteQueue<T> {
 
 	SPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
 		super(buffer);
-		this.pollCursor = Sequencer.newSequence(startingSequence);
+		this.pollCursor = RingBuffer.newSequence(startingSequence);
 		buffer.addGatingSequence(pollCursor);
 		this.pollCursor.set(startingSequence);
 	}
@@ -751,5 +877,240 @@ final class SPSCQueue<T> extends WriteQueue<T> {
 				"pollCursor=" + pollCursor +
 				", parent=" + buffer.toString() +
 				'}';
+	}
+}
+
+final class Wrapped<E> implements Sequence, Introspectable, Producer {
+
+	public final E        delegate;
+	public final Sequence sequence;
+
+	public Wrapped(E delegate, Sequence sequence) {
+		this.delegate = delegate;
+		this.sequence = sequence;
+	}
+
+	@Override
+	public long get() {
+		return sequence.get();
+	}
+
+	@Override
+	public Object downstream() {
+		return delegate;
+	}
+
+	@Override
+	public void set(long value) {
+		sequence.set(value);
+	}
+
+	@Override
+	public void setVolatile(long value) {
+		sequence.setVolatile(value);
+	}
+
+	@Override
+	public boolean compareAndSet(long expectedValue, long newValue) {
+		return sequence.compareAndSet(expectedValue, newValue);
+	}
+
+	@Override
+	public long incrementAndGet() {
+		return sequence.incrementAndGet();
+	}
+
+	@Override
+	public long addAndGet(long increment) {
+		return sequence.addAndGet(increment);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		Wrapped<?> wrapped = (Wrapped<?>) o;
+
+		return sequence.equals(wrapped.sequence);
+
+	}
+
+	@Override
+	public int hashCode() {
+		return sequence.hashCode();
+	}
+
+	@Override
+	public int getMode() {
+		return TRACE_ONLY | INNER;
+	}
+
+	@Override
+	public String getName() {
+		return Wrapped.class.getSimpleName();
+	}
+}
+
+/**
+ * Provides static methods for managing a {@link Sequence} object.
+ */
+final class SequenceGroups {
+
+	static <T> void addSequences(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final RingBufferProducer cursor,
+			final Sequence... sequencesToAdd) {
+		long cursorSequence;
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
+
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
+			cursorSequence = cursor.getCursor();
+
+			int index = currentSequences.length;
+			for (Sequence sequence : sequencesToAdd) {
+				sequence.set(cursorSequence);
+				updatedSequences[index++] = sequence;
+			}
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+
+		cursorSequence = cursor.getCursor();
+		for (Sequence sequence : sequencesToAdd) {
+			sequence.set(cursorSequence);
+		}
+	}
+
+	static <T> void addSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final Sequence sequence) {
+
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
+
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
+
+			updatedSequences[currentSequences.length] = sequence;
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+	}
+
+	static <T> boolean removeSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
+			final Sequence sequence) {
+		int numToRemove;
+		Sequence[] oldSequences;
+		Sequence[] newSequences;
+
+		do {
+			oldSequences = sequenceUpdater.get(holder);
+
+			numToRemove = countMatching(oldSequences, sequence);
+
+			if (0 == numToRemove) {
+				break;
+			}
+
+			final int oldSize = oldSequences.length;
+			newSequences = new Sequence[oldSize - numToRemove];
+
+			for (int i = 0, pos = 0; i < oldSize; i++) {
+				final Sequence testSequence = oldSequences[i];
+				if (sequence != testSequence) {
+					newSequences[pos++] = testSequence;
+				}
+			}
+		}
+		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
+
+		return numToRemove != 0;
+	}
+
+	private static <T> int countMatching(T[] values, final T toMatch) {
+		int numToRemove = 0;
+		for (T value : values) {
+			if (value == toMatch) // Specifically uses identity
+			{
+				numToRemove++;
+			}
+		}
+		return numToRemove;
+	}
+}
+
+/**
+ * An async request client for ring buffer impls
+ *
+ * @author Stephane Maldini
+ */
+final class RequestTask implements Runnable {
+
+	final WaitStrategy waitStrategy;
+
+	final LongSupplier readCount;
+
+	final Subscription upstream;
+
+	final Runnable spinObserver;
+
+	final Consumer<Long> postWaitCallback;
+
+	final Subscriber<?> errorSubscriber;
+
+	final RingBuffer<?> ringBuffer;
+
+	public RequestTask(Subscription upstream,
+			Runnable stopCondition,
+			Consumer<Long> postWaitCallback,
+			LongSupplier readCount,
+			WaitStrategy waitStrategy,
+			Subscriber<?> errorSubscriber,
+			RingBuffer r) {
+		this.waitStrategy = waitStrategy;
+		this.readCount = readCount;
+		this.postWaitCallback = postWaitCallback;
+		this.errorSubscriber = errorSubscriber;
+		this.upstream = upstream;
+		this.spinObserver = stopCondition;
+		this.ringBuffer = r;
+	}
+
+	@Override
+	public void run() {
+		final long bufferSize = ringBuffer.getCapacity();
+		final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
+		long cursor = -1;
+		try {
+			spinObserver.run();
+			upstream.request(bufferSize - 1);
+
+			for (; ; ) {
+				cursor = waitStrategy.waitFor(cursor + limit, readCount, spinObserver);
+				if (postWaitCallback != null) {
+					postWaitCallback.accept(cursor);
+				}
+				//spinObserver.accept(null);
+				upstream.request(limit);
+			}
+		}
+		catch (Exceptions.AlertException e) {
+			//completed
+		}
+		catch (Exceptions.CancelException ce) {
+			upstream.cancel();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread()
+			      .interrupt();
+		}
+		catch (Throwable t) {
+			Exceptions.throwIfFatal(t);
+			errorSubscriber.onError(t);
+		}
 	}
 }

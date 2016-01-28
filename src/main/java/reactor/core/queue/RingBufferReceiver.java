@@ -24,17 +24,17 @@ import reactor.fn.LongSupplier;
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
  * using the given WaitStrategy.
  */
-public final class SequenceBarrier implements Runnable, LongSupplier
+public final class RingBufferReceiver implements Runnable, LongSupplier
 {
     private final WaitStrategy waitStrategy;
     private volatile boolean alerted = false;
-    private final Sequence  cursorSequence;
-    private final Sequencer sequencer;
+    private final Sequence           cursorSequence;
+    private final RingBufferProducer sequenceProducer;
 
-    public SequenceBarrier(final Sequencer sequencer,
+    RingBufferReceiver(final RingBufferProducer sequenceProducer,
                            final WaitStrategy waitStrategy,
                            final Sequence cursorSequence) {
-        this.sequencer = sequencer;
+        this.sequenceProducer = sequenceProducer;
         this.waitStrategy = waitStrategy;
         this.cursorSequence = cursorSequence;
     }
@@ -57,7 +57,7 @@ public final class SequenceBarrier implements Runnable, LongSupplier
             return availableSequence;
         }
 
-        return sequencer.getHighestPublishedSequence(sequence, availableSequence);
+        return sequenceProducer.getHighestPublishedSequence(sequence, availableSequence);
     }
 
     /**
@@ -79,7 +79,7 @@ public final class SequenceBarrier implements Runnable, LongSupplier
             return availableSequence;
         }
 
-        return sequencer.getHighestPublishedSequence(sequence, availableSequence);
+        return sequenceProducer.getHighestPublishedSequence(sequence, availableSequence);
     }
 
     /**

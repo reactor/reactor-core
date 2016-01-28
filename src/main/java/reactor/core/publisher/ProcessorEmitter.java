@@ -28,7 +28,6 @@ import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
-import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
@@ -603,7 +602,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		}
 
 		void startTracking(long seq) {
-			Sequence pollSequence = Sequencer.newSequence(seq - 1L);
+			Sequence pollSequence = RingBuffer.newSequence(seq - 1L);
 			if (CURSOR.compareAndSet(this, null, pollSequence)) {
 				parent.emitBuffer.addGatingSequence(pollSequence);
 			}

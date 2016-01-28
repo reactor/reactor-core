@@ -25,13 +25,13 @@ import reactor.core.util.WaitStrategy;
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
  * Suitable for use for sequencing across multiple publisher threads.</p>
  *
- * <p> * <p>Note on {@link Sequencer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link Sequencer#next()}, to determine the highest available sequence that can be read, then
- * {@link Sequencer#getHighestPublishedSequence(long, long)} should be used.
+ * <p> * <p>Note on {@link RingBufferProducer#getCursor()}:  With this sequencer the cursor value is updated after the call
+ * to {@link RingBufferProducer#next()}, to determine the highest available sequence that can be read, then
+ * {@link RingBufferProducer#getHighestPublishedSequence(long, long)} should be used.
  */
-final class NotFunMultiProducerSequencer extends Sequencer
+final class NotFunMultiProducerSequencer extends RingBufferProducer
 {
-    private final Sequence gatingSequenceCache = new AtomicSequence(INITIAL_CURSOR_VALUE);
+    private final Sequence gatingSequenceCache = new AtomicSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
     // availableBuffer tracks the state of each ringbuffer slot
     // see below for more details on the approach
@@ -49,12 +49,12 @@ final class NotFunMultiProducerSequencer extends Sequencer
         super(bufferSize, waitStrategy, spinObserver);
         availableBuffer = new int[bufferSize];
         indexMask = bufferSize - 1;
-        indexShift = Sequencer.log2(bufferSize);
+        indexShift = RingBuffer.log2(bufferSize);
         initialiseAvailableBuffer();
     }
 
     /**
-     * @see Sequencer#hasAvailableCapacity(int)
+     * @see RingBufferProducer#hasAvailableCapacity(int)
      */
     @Override
     public boolean hasAvailableCapacity(final int requiredCapacity) {
@@ -66,7 +66,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
         long cachedGatingSequence = gatingSequenceCache.get();
 
         if (wrapPoint > cachedGatingSequence || cachedGatingSequence > cursorValue) {
-            long minSequence = Sequencer.getMinimumSequence(gatingSequences, cursorValue);
+            long minSequence = RingBuffer.getMinimumSequence(gatingSequences, cursorValue);
             gatingSequenceCache.set(minSequence);
 
             if (wrapPoint > minSequence) {
@@ -78,7 +78,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#claim(long)
+     * @see RingBufferProducer#claim(long)
      */
     @Override
     public void claim(long sequence)
@@ -87,7 +87,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#next()
+     * @see RingBufferProducer#next()
      */
     @Override
     public long next()
@@ -96,7 +96,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#next(int)
+     * @see RingBufferProducer#next(int)
      */
     @Override
     public long next(int n)
@@ -119,7 +119,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
 
             if (wrapPoint > cachedGatingSequence || cachedGatingSequence > current)
             {
-                long gatingSequence = Sequencer.getMinimumSequence(gatingSequences, current);
+                long gatingSequence = RingBuffer.getMinimumSequence(gatingSequences, current);
 
                 if (wrapPoint > gatingSequence)
                 {
@@ -143,7 +143,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#tryNext()
+     * @see RingBufferProducer#tryNext()
      */
     @Override
     public long tryNext() throws Exceptions.InsufficientCapacityException
@@ -152,7 +152,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#tryNext(int)
+     * @see RingBufferProducer#tryNext(int)
      */
     @Override
     public long tryNext(int n) throws Exceptions.InsufficientCapacityException
@@ -181,7 +181,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#remainingCapacity()
+     * @see RingBufferProducer#remainingCapacity()
      */
     @Override
     public long remainingCapacity()
@@ -189,12 +189,12 @@ final class NotFunMultiProducerSequencer extends Sequencer
         return getBufferSize() - getPending();
     }
     /**
-     * @see Sequencer#getPending()
+     * @see RingBufferProducer#getPending()
      */
     @Override
     public long getPending()
     {
-        long consumed = Sequencer.getMinimumSequence(gatingSequences, cursor.get());
+        long consumed = RingBuffer.getMinimumSequence(gatingSequences, cursor.get());
         long produced = cursor.get();
         return produced - consumed;
     }
@@ -218,7 +218,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#publish(long)
+     * @see RingBufferProducer#publish(long)
      */
     @Override
     public void publish(final long sequence)
@@ -228,7 +228,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#publish(long, long)
+     * @see RingBufferProducer#publish(long, long)
      */
     @Override
     public void publish(long lo, long hi)
@@ -270,7 +270,7 @@ final class NotFunMultiProducerSequencer extends Sequencer
     }
 
     /**
-     * @see Sequencer#isAvailable(long)
+     * @see RingBufferProducer#isAvailable(long)
      */
     @Override
     public boolean isAvailable(long sequence)
