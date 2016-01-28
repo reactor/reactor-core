@@ -332,7 +332,7 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> emitter(int bufferSize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize, -1);
+		return EmitterProcessor.create(autoCancel, concurrency, bufferSize, -1);
 	}
 
 	/**
@@ -585,7 +585,7 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
+		return EmitterProcessor.create(autoCancel, concurrency, historySize, historySize);
 	}
 
 	/**
