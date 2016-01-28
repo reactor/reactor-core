@@ -31,7 +31,7 @@ import reactor.core.util.Logger;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxLog<IN> extends Flux.FluxBarrier<IN, IN> {
+final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 	private final Logger log;
 	private final Level  level;

@@ -57,7 +57,7 @@ import reactor.fn.Supplier;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
+final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 	

@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -26,7 +25,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
-import reactor.core.flow.Receiver;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -45,7 +43,14 @@ import reactor.fn.BiFunction;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
-import reactor.fn.tuple.*;
+import reactor.fn.tuple.Tuple;
+import reactor.fn.tuple.Tuple2;
+import reactor.fn.tuple.Tuple3;
+import reactor.fn.tuple.Tuple4;
+import reactor.fn.tuple.Tuple5;
+import reactor.fn.tuple.Tuple6;
+import reactor.fn.tuple.Tuple7;
+import reactor.fn.tuple.Tuple8;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes
@@ -329,7 +334,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				return just(t);
 			}
 		}
-		return new FluxBarrier<>(source);
+		return new FluxSource<>(source);
 	}
 
 	/**
@@ -1671,71 +1676,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 //	 ==============================================================================================================
 //	 Containers
 //	 ==============================================================================================================
-
-	/**
-	 * A marker interface for components responsible for augmenting subscribers with features like {@link #lift}
-	 *
-	 * @param <I> Upstream type
-	 * @param <O> Downstream type
-	 */
-	public interface Operator<I, O> extends Function<Subscriber<? super O>, Subscriber<? super I>> {
-
-	}
-
-	/**
-	 * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
-	 *
-	 * @param <I> Upstream type
-	 * @param <O> Downstream type
-	 */
-	public static class FluxBarrier<I, O> extends Flux<O> implements Backpressurable, Receiver {
-
-		protected final Publisher<? extends I> source;
-
-		public FluxBarrier(Publisher<? extends I> source) {
-			this.source = source;
-		}
-
-		@Override
-		public long getCapacity() {
-			return Backpressurable.class.isAssignableFrom(source.getClass()) ?
-					((Backpressurable) source).getCapacity() :
-					Long.MAX_VALUE;
-		}
-
-		@Override
-		public long getPending() {
-			return -1L;
-		}
-
-		/**
-		 * Default is delegating and decorating with {@link Flux} API
-		 */
-		@Override
-		@SuppressWarnings("unchecked")
-		public void subscribe(Subscriber<? super O> s) {
-			source.subscribe((Subscriber<? super I>) s);
-		}
-
-		@Override
-		public String toString() {
-			return "{" +
-					" operator : \"" + getName() + "\" " +
-					'}';
-		}
-
-		@Override
-		public final Publisher<? extends I> upstream() {
-			return source;
-		}
-	}
-
 	/**
 	 * Decorate a {@link Flux} with a capacity for downstream accessors
 	 *
 	 * @param <I>
 	 */
-	final static class FluxBounded<I> extends FluxBarrier<I, I> {
+	final static class FluxBounded<I> extends FluxSource<I, I> {
 
 		final private long capacity;
 
@@ -1760,7 +1706,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		}
 	}
 
-	static final class FluxProcessorGroup<I> extends FluxBarrier<I, I> implements Loopback {
+	static final class FluxProcessorGroup<I> extends FluxSource<I, I> implements Loopback {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;
@@ -1802,17 +1748,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		@Override
 		public Object apply(Object o) {
 			return o;
-		}
-	}
-
-	/**
-	 * T(n) -> List(n)
-	 */
-	static final class TupleListFunction implements Function<Tuple, List> {
-
-		@Override
-		public List apply(Tuple o) {
-			return o.toList();
 		}
 	}
 

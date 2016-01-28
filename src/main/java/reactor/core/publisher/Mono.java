@@ -25,7 +25,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
-import reactor.core.flow.Receiver;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -33,7 +32,6 @@ import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.timer.Timers;
 import reactor.core.util.Assert;
-import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -42,7 +40,12 @@ import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.fn.Predicate;
 import reactor.fn.Supplier;
-import reactor.fn.tuple.*;
+import reactor.fn.tuple.Tuple;
+import reactor.fn.tuple.Tuple2;
+import reactor.fn.tuple.Tuple3;
+import reactor.fn.tuple.Tuple4;
+import reactor.fn.tuple.Tuple5;
+import reactor.fn.tuple.Tuple6;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -87,7 +90,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <T> Mono<T> any(Mono<? extends T>... monos) {
-		return new MonoBarrier<>(new FluxAmb<>(monos));
+		return new MonoSource<>(new FluxAmb<>(monos));
 	}
 
 	/**
@@ -102,7 +105,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> any(Iterable<? extends Mono<? extends T>> monos) {
-		return new MonoBarrier<>(new FluxAmb<>(monos));
+		return new MonoSource<>(new FluxAmb<>(monos));
 	}
 
 	/**
@@ -251,7 +254,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return new MonoBarrier<>(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
+		return new MonoSource<>(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
 	}
 
 	/**
@@ -442,7 +445,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"varargs", "unchecked"})
 	private static <T, V> Mono<V> when(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return new MonoSource<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 	/**
@@ -480,7 +483,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public static <T, V> Mono<V> when(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return new MonoBarrier<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return new MonoSource<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 //	 ==============================================================================================================
@@ -541,7 +544,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return new MonoBarrier<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
+		return new MonoSource<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
 			@Override
 			public Publisher<? extends V> apply(Throwable throwable) {
 				return Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable));
@@ -572,7 +575,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-		return new MonoBarrier<>(new FluxSwitchIfEmpty<>(this, just(defaultV)));
+		return new MonoSource<>(new FluxSwitchIfEmpty<>(this, just(defaultV)));
 	}
 
 	/**
@@ -629,7 +632,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
-		return new MonoBarrier<>(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
+		return new MonoSource<>(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
 	}
 
 	/**
@@ -663,7 +666,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
-		return new MonoBarrier<>(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+		return new MonoSource<>(new FluxPeek<>(this, null, null, onError, null, null, null, null));
 	}
 
 	/**
@@ -677,7 +680,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-		return new MonoBarrier<>(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
+		return new MonoSource<>(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
 	}
 
 	/**
@@ -763,7 +766,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
 	public final Flux<T> flux() {
-		return new Flux.FluxBarrier<>(this);
+		return new FluxSource<>(this);
 	}
 
 	/**
@@ -919,7 +922,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> log(String category, Level level, int options) {
-		return new MonoBarrier<>(new FluxLog<>(this, category, level, options));
+		return new MonoSource<>(new FluxLog<>(this, category, level, options));
 	}
 
 	/**
@@ -934,7 +937,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
-		return new MonoBarrier<>(new FluxMap<>(this, mapper));
+		return new MonoSource<>(new FluxMap<>(this, mapper));
 	}
 
 	/**
@@ -980,7 +983,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#onErrorResumeWith
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
-		return new MonoBarrier<>(new FluxResume<>(this, fallback));
+		return new MonoSource<>(new FluxResume<>(this, fallback));
 	}
 
 	/**
@@ -995,7 +998,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return new MonoBarrier<>(new FluxSwitchIfEmpty<>(this, alternate));
+		return new MonoSource<>(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**
@@ -1060,7 +1063,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} containing the merged values
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
-		return new MonoBarrier<>(flatMap(transformer));
+		return new MonoSource<>(flatMap(transformer));
 	}
 
 	/**
@@ -1254,51 +1257,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 //	 Containers
 //	 ==============================================================================================================
 
-	/**
-	 * A connecting Mono Publisher (right-to-left from a composition chain perspective)
-	 *
-	 * @param <I>
-	 * @param <O>
-	 */
-	public static class MonoBarrier<I, O> extends Mono<O> implements Receiver {
-
-		protected final Publisher<? extends I> source;
-
-		public MonoBarrier(Publisher<? extends I> source) {
-			this.source = source;
-		}
-
-		/**
-		 * Default is delegating and decorating with Mono API
-		 */
-		@Override
-		@SuppressWarnings("unchecked")
-		public void subscribe(Subscriber<? super O> s) {
-			try {
-				source.subscribe((Subscriber<? super I>) s);
-			}
-			catch(Exceptions.UpstreamException rfe){
-				if(rfe.getCause() instanceof RuntimeException){
-					throw (RuntimeException)rfe.getCause();
-				}
-				throw rfe;
-			}
-		}
-
-		@Override
-		public String toString() {
-			return "{" +
-					" operator : \"" + getName() + "\" " +
-					'}';
-		}
-
-		@Override
-		public final Publisher<? extends I> upstream() {
-			return source;
-		}
-	}
-
-	static final class MonoProcessorGroup<I> extends MonoBarrier<I, I> implements Loopback {
+	static final class MonoProcessorGroup<I> extends MonoSource<I, I> implements Loopback {
 
 		private final ProcessorGroup<I> processor;
 		private final boolean publishOn;

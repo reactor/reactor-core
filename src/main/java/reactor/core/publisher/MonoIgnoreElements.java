@@ -30,7 +30,7 @@ import reactor.core.flow.Producer;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoIgnoreElements<T> extends Mono.MonoBarrier<T, T> {
+final class MonoIgnoreElements<T> extends MonoSource<T, T> {
 
 	public MonoIgnoreElements(Publisher<? extends T> source) {
 		super(source);

@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import reactor.fn.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -24,6 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.subscriber.SubscriberMultiSubscription;
 import reactor.core.util.Exceptions;
+import reactor.fn.Function;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -36,7 +36,7 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxResume<T> extends Flux.FluxBarrier<T, T> {
+final class FluxResume<T> extends FluxSource<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 

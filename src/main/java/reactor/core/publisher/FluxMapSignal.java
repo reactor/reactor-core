@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
 import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
@@ -37,7 +37,7 @@ import reactor.fn.Supplier;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxMapSignal<T, R> extends Flux.FluxBarrier<T, R> {
+final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
     final Function<? super T, ? extends R> mapperNext;
     final Function<Throwable, ? extends R> mapperError;

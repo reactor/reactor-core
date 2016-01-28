@@ -28,7 +28,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class MonoSuccess<I> extends Mono.MonoBarrier<I, I> implements Loopback {
+final class MonoSuccess<I> extends MonoSource<I, I> implements Loopback {
 
 	private final Consumer<? super I>              onSuccess;
 	private final BiConsumer<? super I, Throwable> onSuccessOrFailure;

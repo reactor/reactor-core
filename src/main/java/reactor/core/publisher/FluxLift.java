@@ -18,18 +18,14 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.subscriber.SubscriberWithContext;
-import reactor.fn.BiConsumer;
-import reactor.fn.Consumer;
 import reactor.fn.Function;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxLift<I, O> extends Flux.FluxBarrier<I, O> implements Flux.Operator<I, O> {
+final class FluxLift<I, O> extends FluxSource<I, O>
+		implements Function<Subscriber<? super O>, Subscriber<? super I>>  {
 
 	final private Function<Subscriber<? super O>, Subscriber<? super I>> barrierProvider;
 
@@ -53,7 +49,8 @@ final class FluxLift<I, O> extends Flux.FluxBarrier<I, O> implements Flux.Operat
 	 * @param <I>
 	 * @param <O>
 	 */
-	static final class MonoLift<I, O> extends Mono.MonoBarrier<I, O> implements Flux.Operator<I, O> {
+	static final class MonoLift<I, O> extends MonoSource<I, O>
+			implements Function<Subscriber<? super O>, Subscriber<? super I>> {
 		final private Function<Subscriber<? super O>, Subscriber<? super I>> barrierProvider;
 
 		public MonoLift(Publisher<I> source, Function<Subscriber<? super O>, Subscriber<? super I>> barrierProvider) {

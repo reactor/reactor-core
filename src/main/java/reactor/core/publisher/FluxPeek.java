@@ -15,9 +15,6 @@
  */
 package reactor.core.publisher;
 
-import reactor.fn.Consumer;
-import reactor.fn.LongConsumer;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -25,6 +22,8 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.fn.Consumer;
+import reactor.fn.LongConsumer;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -42,7 +41,7 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxPeek<T> extends Flux.FluxBarrier<T, T> {
+final class FluxPeek<T> extends FluxSource<T, T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 

@@ -37,7 +37,7 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoNext<T> extends Mono.MonoBarrier<T, T> {
+final class MonoNext<T> extends MonoSource<T, T> {
 
 	public MonoNext(Publisher<? extends T> source) {
 		super(source);
