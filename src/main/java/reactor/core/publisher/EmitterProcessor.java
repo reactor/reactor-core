@@ -68,7 +68,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create() {
+	public static <E> EmitterProcessor<E> create() {
 		return create(true);
 	}
 
@@ -81,7 +81,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(boolean autoCancel) {
+	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
 		return create(PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
@@ -94,7 +94,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(int bufferSize) {
+	public static <E> EmitterProcessor<E> create(int bufferSize) {
 		return create(bufferSize, Integer.MAX_VALUE);
 	}
 
@@ -107,7 +107,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(int bufferSize, int concurrency) {
+	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency) {
 		return create(bufferSize, concurrency, true);
 	}
 
@@ -120,7 +120,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(int bufferSize, boolean autoCancel) {
+	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
 		return create(bufferSize, Integer.MAX_VALUE, autoCancel);
 	}
 
@@ -134,7 +134,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(int bufferSize, int concurrency, boolean autoCancel) {
+	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize, -1);
 	}
 
@@ -147,7 +147,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> replay() {
+	public static <E> EmitterProcessor<E> replay() {
 		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
@@ -160,7 +160,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> replay(int historySize) {
+	public static <E> EmitterProcessor<E> replay(int historySize) {
 		return replay(historySize, Integer.MAX_VALUE);
 	}
 
@@ -173,7 +173,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency) {
+	public static <E> EmitterProcessor<E> replay(int historySize, int concurrency) {
 		return replay(historySize, concurrency, false);
 	}
 
@@ -186,7 +186,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency, boolean autoCancel) {
+	public static <E> EmitterProcessor<E> replay(int historySize, int concurrency, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
 	}
 
