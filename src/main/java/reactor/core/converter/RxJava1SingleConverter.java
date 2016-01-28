@@ -37,7 +37,7 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static public <T> Publisher<T> from(Single<T> o) {
+	static public <T> Mono<T> from(Single<T> o) {
 		return INSTANCE.toPublisher(o);
 	}
 

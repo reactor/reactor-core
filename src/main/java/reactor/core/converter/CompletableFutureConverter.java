@@ -56,7 +56,7 @@ public final class CompletableFutureConverter extends PublisherConverter<Complet
 	}
 
 	@SuppressWarnings("unchecked")
-	static public <T> Publisher<T> from(CompletableFuture<T> o) {
+	static public <T> Mono<T> from(CompletableFuture<T> o) {
 		return INSTANCE.toPublisher(o);
 	}
 
