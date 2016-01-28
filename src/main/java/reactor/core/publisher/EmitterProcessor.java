@@ -101,10 +101,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
-	 * <p>
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -114,11 +111,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
-	 * <p>
-
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -128,10 +121,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
-	 * <p>
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -141,10 +131,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
-	 * <p>
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -154,10 +141,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
-	 * <p>
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -167,10 +151,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
-	 * <p>
+	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
