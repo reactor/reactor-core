@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.subscriber.DeferredSubscriptionSubscriber;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.PlatformDependent;
@@ -63,7 +64,7 @@ import reactor.fn.Supplier;
  * @author Brian Clozel
  * @since 2.5
  */
-public class TestSubscriber<T> extends SubscriberDeferredSubscription<T, T> {
+public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
 
 	/**
 	 * Default timeout in seconds for waiting next values to be received
