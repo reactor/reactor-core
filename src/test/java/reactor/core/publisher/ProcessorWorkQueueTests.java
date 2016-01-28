@@ -28,7 +28,7 @@ import reactor.core.util.Assert;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class ProcessorWorkQueueTests extends AbstractProcessorVerification {
+public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
@@ -97,7 +97,7 @@ public class ProcessorWorkQueueTests extends AbstractProcessorVerification {
 	}
 
 	/*public static void main() {
-		final ProcessorWorkQueue<Long> processor = ProcessorWorkQueue.<Long>create("some-test");
+		final WorkQueueProcessor<Long> processor = WorkQueueProcessor.<Long>create("some-test");
 
 		Publisher<Long> pub = PublisherFactory.create(
 		  c -> {

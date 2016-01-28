@@ -46,13 +46,16 @@ import reactor.core.util.Sequence;
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
  * synchronous (thread-stealing and happen-before interactions) drain loops.
  * <p>
+ *     The RingBuffer nature gives this processor a natural ability to replay data to late subscribers.
+ *
+ * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
  * <p>
  *
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
+public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
 
 	final int maxConcurrency;
@@ -73,33 +76,33 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	private volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ProcessorEmitter, Throwable> ERROR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(ProcessorEmitter.class, "error");
+	static final AtomicReferenceFieldUpdater<ReplayProcessor, Throwable> ERROR =
+			PlatformDependent.newAtomicReferenceFieldUpdater(ReplayProcessor.class, "error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ProcessorEmitter, EmitterSubscriber[]> SUBSCRIBERS =
-			PlatformDependent.newAtomicReferenceFieldUpdater(ProcessorEmitter.class, "subscribers");
+	static final AtomicReferenceFieldUpdater<ReplayProcessor, EmitterSubscriber[]> SUBSCRIBERS =
+			PlatformDependent.newAtomicReferenceFieldUpdater(ReplayProcessor.class, "subscribers");
 
 	@SuppressWarnings("unused")
 	private volatile int running;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<ProcessorEmitter> RUNNING =
-			AtomicIntegerFieldUpdater.newUpdater(ProcessorEmitter.class, "running");
+	static final AtomicIntegerFieldUpdater<ReplayProcessor> RUNNING =
+			AtomicIntegerFieldUpdater.newUpdater(ReplayProcessor.class, "running");
 
 	@SuppressWarnings("unused")
 	private volatile int outstanding;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<ProcessorEmitter> OUTSTANDING =
-			AtomicIntegerFieldUpdater.newUpdater(ProcessorEmitter.class, "outstanding");
+	static final AtomicIntegerFieldUpdater<ReplayProcessor> OUTSTANDING =
+			AtomicIntegerFieldUpdater.newUpdater(ReplayProcessor.class, "outstanding");
 
 	boolean firstDrain = true;
 
-	public ProcessorEmitter(){
+	public ReplayProcessor(){
 		this(true, Integer.MAX_VALUE, PlatformDependent.SMALL_BUFFER_SIZE, -1);
 	}
 
-	public ProcessorEmitter(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
+	public ReplayProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
 		this.autoCancel = autoCancel;
 		this.maxConcurrency = maxConcurrency;
 		this.bufferSize = bufferSize;
@@ -552,7 +555,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 			           Requestable, Producer {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
-		final ProcessorEmitter<T>   parent;
+		final ReplayProcessor<T>    parent;
 		final Subscriber<? super T> actual;
 
 		volatile boolean done;
@@ -571,7 +574,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
 				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
 
-		public EmitterSubscriber(ProcessorEmitter<T> parent, final Subscriber<? super T> actual) {
+		public EmitterSubscriber(ReplayProcessor<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -580,7 +583,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, actual)) {
 				BackpressureUtils.getAndAdd(REQUESTED, this, n);
-				if (ProcessorEmitter.RUNNING.getAndIncrement(parent) == 0) {
+				if (ReplayProcessor.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}
 			}

@@ -59,7 +59,7 @@ import reactor.fn.Supplier;
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueuef.png" alt="">
  * <p>
  *     The
- * processor is very similar to {@link ProcessorTopic} but
+ * processor is very similar to {@link TopicProcessor} but
  * only partially respects the Reactive Streams contract. <p> The purpose of this
  * processor is to distribute the signals to only one of the subscribed subscribers and to
  * share the demand amongst all subscribers. The scenario is akin to Executor or
@@ -70,22 +70,22 @@ import reactor.fn.Supplier;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  */
-public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> implements Backpressurable, MultiProducer {
+public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> implements Backpressurable, MultiProducer {
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create() {
-		return create(ProcessorWorkQueue.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> WorkQueueProcessor<E> create() {
+		return create(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -93,13 +93,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(boolean autoCancel) {
-		return create(ProcessorWorkQueue.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> WorkQueueProcessor<E> create(boolean autoCancel) {
+		return create(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -107,12 +107,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService service) {
+	public static <E> WorkQueueProcessor<E> create(ExecutorService service) {
 		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -122,14 +122,14 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			boolean autoCancel) {
 		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the default buffer size 32, blockingWait
+	 * Create a new TopicProcessor using the default buffer size 32, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely
 	 * created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -137,12 +137,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(String name) {
+	public static <E> WorkQueueProcessor<E> create(String name) {
 		return create(name, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely
 	 * created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -151,12 +151,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(String name, int bufferSize) {
+	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
 		return create(name, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A new Cached ThreadExecutorPool
 	 * will be implicitely created and will use the passed name to qualify the created
 	 * threads.
@@ -168,13 +168,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			boolean autoCancel) {
 		return create(name, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -182,13 +182,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			int bufferSize) {
 		return create(service, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -198,13 +198,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			int bufferSize, boolean autoCancel) {
 		return create(service, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely
 	 * created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -215,13 +215,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy) {
 		return create(name, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel settings. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -234,14 +234,14 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new ProcessorWorkQueue<E>(name, null, bufferSize, strategy, false,
+		return new WorkQueueProcessor<E>(name, null, bufferSize, strategy, false,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size and blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size and blockingWait
 	 * Strategy settings but will auto-cancel. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -252,13 +252,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService executor,
+	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy) {
 		return create(executor, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, wait strategy
+	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
 	 * and auto-cancel settings. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param executor A provided ExecutorService to manage threading infrastructure
@@ -270,27 +270,27 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> create(ExecutorService executor,
+	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new ProcessorWorkQueue<E>(null, executor, bufferSize, strategy, false,
+		return new WorkQueueProcessor<E>(null, executor, bufferSize, strategy, false,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share() {
-		return share(ProcessorWorkQueue.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> WorkQueueProcessor<E> share() {
+		return share(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -299,13 +299,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(boolean autoCancel) {
-		return share(ProcessorWorkQueue.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> WorkQueueProcessor<E> share(boolean autoCancel) {
+		return share(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -313,12 +313,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService service) {
+	public static <E> WorkQueueProcessor<E> share(ExecutorService service) {
 		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -329,14 +329,14 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			boolean autoCancel) {
 		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
@@ -347,12 +347,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(String name, int bufferSize) {
+	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
 		return share(name, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes
 	 * concurrent onNext calls and is suited for multi-threaded publisher that will fan-in
 	 * data. <p> A new Cached ThreadExecutorPool will be implicitely created and will use
@@ -365,13 +365,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			boolean autoCancel) {
 		return share(name, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the passed buffer size, blockingWait
+	 * Create a new TopicProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -381,13 +381,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			int bufferSize) {
 		return share(service, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -399,13 +399,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService service,
+	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			int bufferSize, boolean autoCancel) {
 		return share(service, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
@@ -418,13 +418,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy) {
 		return share(name, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel settings. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created and will use the passed
@@ -439,14 +439,14 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(String name, int bufferSize,
+	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new ProcessorWorkQueue<E>(name, null, bufferSize, strategy, true,
+		return new WorkQueueProcessor<E>(name, null, bufferSize, strategy, true,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size and blockingWait
+	 * Create a new WorkQueueProcessor using the passed buffer size and blockingWait
 	 * Strategy settings but will auto-cancel. <p> A Shared Processor authorizes
 	 * concurrent onNext calls and is suited for multi-threaded publisher that will fan-in
 	 * data. <p> The passed {@link ExecutorService} will execute as
@@ -458,13 +458,13 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService executor,
+	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy) {
 		return share(executor, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorWorkQueue using the passed buffer size, wait strategy
+	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
 	 * and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -478,9 +478,9 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> share(ExecutorService executor,
+	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new ProcessorWorkQueue<E>(null, executor, bufferSize, strategy, true,
+		return new WorkQueueProcessor<E>(null, executor, bufferSize, strategy, true,
 				autoCancel);
 	}
 
@@ -505,21 +505,21 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 
 	volatile RingBuffer<Slot<E>> retryBuffer;
 
-	final static AtomicReferenceFieldUpdater<ProcessorWorkQueue, RingBuffer>
+	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer>
 			RETRY_REF = PlatformDependent
-			.newAtomicReferenceFieldUpdater(ProcessorWorkQueue.class, "retryBuffer");
+			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
 
 	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 	final WaitStrategy writeWait;
 
 	volatile int replaying = 0;
 
-	static final AtomicIntegerFieldUpdater<ProcessorWorkQueue> REPLAYING =
+	static final AtomicIntegerFieldUpdater<WorkQueueProcessor> REPLAYING =
 			AtomicIntegerFieldUpdater
-					.newUpdater(ProcessorWorkQueue.class, "replaying");
+					.newUpdater(WorkQueueProcessor.class, "replaying");
 
 	@SuppressWarnings("unchecked")
-	private ProcessorWorkQueue(String name, ExecutorService executor, int bufferSize,
+	private WorkQueueProcessor(String name, ExecutorService executor, int bufferSize,
 	                                WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
 		super(name, executor, autoCancel);
@@ -562,7 +562,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 		super.subscribe(subscriber);
 
 		if (!alive()) {
-			ProcessorTopic.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);
+			TopicProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);
 			return;
 		}
 
@@ -584,7 +584,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 			decrementSubscribers();
 			ringBuffer.removeGatingSequence(signalProcessor.sequence);
 			if(RejectedExecutionException.class.isAssignableFrom(t.getClass())){
-				ProcessorTopic.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
+				TopicProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
 			}
 			else {
 				EmptySubscription.error(subscriber, t);
@@ -651,7 +651,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 
 	@Override
 	public String toString() {
-		return "ProcessorWorkQueue{" +
+		return "WorkQueueProcessor{" +
 				", ringBuffer=" + ringBuffer +
 				", executor=" + executor +
 				", workSequence=" + workSequence +
@@ -719,7 +719,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 
 		private final RingBufferReceiver barrier;
 
-		private final ProcessorWorkQueue<T> processor;
+		private final WorkQueueProcessor<T> processor;
 
 		private final Subscriber<? super T> subscriber;
 
@@ -738,7 +738,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 		 * updating its sequence
 		 */
 		public QueueSubscriberLoop(Subscriber<? super T> subscriber,
-				ProcessorWorkQueue<T> processor) {
+				WorkQueueProcessor<T> processor) {
 			this.processor = processor;
 			this.subscriber = subscriber;
 

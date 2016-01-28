@@ -33,12 +33,12 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.timer.Timer;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini
@@ -137,8 +137,8 @@ public class ConsistentProcessorTests {
 	}
 
 	private void setupPipeline() {
-		processor = ProcessorTopic.create(false);
-		workProcessor = ProcessorWorkQueue.create(false);
+		processor = TopicProcessor.create(false);
+		workProcessor = WorkQueueProcessor.create(false);
 		processor.subscribe(workProcessor);
 	}
 

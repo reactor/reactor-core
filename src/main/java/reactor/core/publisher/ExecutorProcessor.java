@@ -34,7 +34,7 @@ import reactor.core.util.ExecutorUtils;
  *
  * @author Stephane Maldini
  */
-public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
+public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements Completable, Cancellable, Failurable, Groupable {
 
 	protected final ExecutorService executor;
@@ -49,14 +49,14 @@ public abstract class ProcessorExecutor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
-	protected static final AtomicIntegerFieldUpdater<ProcessorExecutor> SUBSCRIBER_COUNT =
+	protected static final AtomicIntegerFieldUpdater<ExecutorProcessor> SUBSCRIBER_COUNT =
 			AtomicIntegerFieldUpdater
-					.newUpdater(ProcessorExecutor.class, "subscriberCount");
+					.newUpdater(ExecutorProcessor.class, "subscriberCount");
 
-	protected final static AtomicIntegerFieldUpdater<ProcessorExecutor> TERMINATED =
-			AtomicIntegerFieldUpdater.newUpdater(ProcessorExecutor.class, "terminated");
+	protected final static AtomicIntegerFieldUpdater<ExecutorProcessor> TERMINATED =
+			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "terminated");
 
-	protected ProcessorExecutor(String name, ExecutorService executor,
+	protected ExecutorProcessor(String name, ExecutorService executor,
 			boolean autoCancel) {
 		this.autoCancel = autoCancel;
 		contextClassLoader = new ClassLoader(Thread.currentThread()

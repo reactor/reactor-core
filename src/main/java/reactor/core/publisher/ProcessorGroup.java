@@ -368,7 +368,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			int i = 1;
 			@Override
 			public Processor<Runnable, Runnable> get() {
-				return ProcessorTopic.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+				return TopicProcessor.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
 						.get(), false);
 			}
 		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
@@ -400,7 +400,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 	final private   Processor<Runnable, Runnable>         processor;
 	final protected boolean                               autoShutdown;
 	final protected int                                   concurrency;
-	final           ProcessorExecutor<Runnable, Runnable> executorProcessor;
+	final           ExecutorProcessor<Runnable, Runnable> executorProcessor;
 
 	@SuppressWarnings("unused")
 	private volatile int refCount = 0;
@@ -498,8 +498,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		if (processor == null) {
 			return true;
 		}
-		else if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
-			return ((ProcessorExecutor) processor).awaitAndShutdown(timeout, timeUnit);
+		else if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
+			return ((ExecutorProcessor) processor).awaitAndShutdown(timeout, timeUnit);
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
 	}
@@ -508,8 +508,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		if (processor == null) {
 			return;
 		}
-		else if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
-			((ProcessorExecutor) processor).forceShutdown();
+		else if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
+			((ExecutorProcessor) processor).forceShutdown();
 			return;
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
@@ -519,8 +519,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		if (processor == null) {
 			return true;
 		}
-		if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
-			return ((ProcessorExecutor) processor).alive();
+		if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
+			return ((ExecutorProcessor) processor).alive();
 		}
 		throw new UnsupportedOperationException("Underlying Processor doesn't implement Resource");
 	}
@@ -530,8 +530,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			return;
 		}
 		try {
-			if (ProcessorExecutor.class.isAssignableFrom(processor.getClass())) {
-				((ProcessorExecutor) processor).shutdown();
+			if (ExecutorProcessor.class.isAssignableFrom(processor.getClass())) {
+				((ExecutorProcessor) processor).shutdown();
 			}
 			else {
 				processor.onComplete();
@@ -595,9 +595,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			Assert.isTrue(this.processor != null);
 
 			// Managed Processor, providing for tail recursion,
-			if (ProcessorExecutor.class.isAssignableFrom(this.processor.getClass())) {
+			if (ExecutorProcessor.class.isAssignableFrom(this.processor.getClass())) {
 
-				this.executorProcessor = (ProcessorExecutor<Runnable, Runnable>) this.processor;
+				this.executorProcessor = (ExecutorProcessor<Runnable, Runnable>) this.processor;
 
 				if (concurrency == 1) {
 					int bufferSize = (int) Math.min(this.executorProcessor.getCapacity(), LIMIT_BUFFER_SIZE);
@@ -660,7 +660,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			return new SyncProcessorBarrier<>(this);
 		}
 
-		if (ProcessorExecutor.class.isAssignableFrom(processor.getClass()) && !((ProcessorExecutor) processor).alive()) {
+		if (ExecutorProcessor.class.isAssignableFrom(processor.getClass()) && !((ExecutorProcessor) processor).alive()) {
 			throw new IllegalStateException("Internal Processor is shutdown");
 		}
 

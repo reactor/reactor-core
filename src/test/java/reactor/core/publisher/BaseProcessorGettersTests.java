@@ -11,10 +11,10 @@ import static org.junit.Assert.assertEquals;
 public class BaseProcessorGettersTests {
 
 	@Test
-	public void testProcessorTopicGetters() {
+	public void testTopicProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ProcessorExecutor<Object, Object> processor = ProcessorTopic.create("testProcessor", TEST_BUFFER_SIZE);
+		ExecutorProcessor<Object, Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -23,10 +23,10 @@ public class BaseProcessorGettersTests {
 	}
 
 	@Test
-	public void testProcessorWorkQueueGetters() {
+	public void testWorkQueueProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ProcessorExecutor<Object, Object> processor = ProcessorWorkQueue.create("testProcessor", TEST_BUFFER_SIZE);
+		ExecutorProcessor<Object, Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 

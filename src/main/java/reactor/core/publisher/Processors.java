@@ -34,7 +34,7 @@ import reactor.fn.Supplier;
 
 /**
  * Main gateway to build various reactive {@link Processor} or "pooled" groups that allow their reuse.
- * Reactor offers a few management API via the subclassed {@link ProcessorExecutor} for the underlying {@link
+ * Reactor offers a few management API via the subclassed {@link ExecutorProcessor} for the underlying {@link
  * java.util.concurrent.Executor} in use, in addition to the state accessors like
  * {@link reactor.core.state.Backpressurable}.
  * <p>
@@ -229,7 +229,7 @@ public enum Processors {
 			int i = 1;
 			@Override
 			public Processor<Runnable, Runnable> get() {
-				return ProcessorTopic.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+				return TopicProcessor.share(name+(concurrency > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
 						.get(), false);
 			}
 		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
@@ -256,7 +256,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -270,7 +270,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -283,7 +283,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -296,7 +296,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -309,7 +309,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -322,7 +322,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -332,7 +332,7 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> emitter(int bufferSize, int concurrency, boolean autoCancel) {
-		return new ProcessorEmitter<>(autoCancel, concurrency, bufferSize, -1);
+		return new ReplayProcessor<>(autoCancel, concurrency, bufferSize, -1);
 	}
 
 	/**
@@ -454,13 +454,13 @@ public enum Processors {
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-		return ProcessorGroup.create(ProcessorWorkQueue.<Runnable>share(name, bufferSize,
+		return ProcessorGroup.create(WorkQueueProcessor.<Runnable>share(name, bufferSize,
 				waitStrategy, false),
 				concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
 
 	/**
-	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link WorkQueueProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
@@ -469,12 +469,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> queue() {
+	public static <E> WorkQueueProcessor<E> queue() {
 		return queue("worker", PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link WorkQueueProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is suited for
 	 * multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
@@ -483,12 +483,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> queue(String name) {
+	public static <E> WorkQueueProcessor<E> queue(String name) {
 		return queue(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link WorkQueueProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -499,12 +499,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> queue(boolean autoCancel) {
+	public static <E> WorkQueueProcessor<E> queue(boolean autoCancel) {
 		return queue(Processors.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link ProcessorWorkQueue} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link WorkQueueProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -516,12 +516,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> queue(String name, int bufferSize) {
+	public static <E> WorkQueueProcessor<E> queue(String name, int bufferSize) {
 		return queue(name, bufferSize, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorWorkQueue} using the passed buffer size and auto-cancel settings. <p> A new Cached
+	 * Create a new {@link WorkQueueProcessor} using the passed buffer size and auto-cancel settings. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to qualify the created threads.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
@@ -532,12 +532,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorWorkQueue<E> queue(String name, int bufferSize, boolean autoCancel) {
-		return ProcessorWorkQueue.create(name, bufferSize, autoCancel);
+	public static <E> WorkQueueProcessor<E> queue(String name, int bufferSize, boolean autoCancel) {
+		return WorkQueueProcessor.create(name, bufferSize, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
@@ -550,7 +550,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -563,7 +563,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -576,7 +576,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorEmitter} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
@@ -585,7 +585,7 @@ public enum Processors {
 	 * @return a fresh processor
 	 */
 	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency, boolean autoCancel) {
-		return new ProcessorEmitter<>(autoCancel, concurrency, historySize, historySize);
+		return new ReplayProcessor<>(autoCancel, concurrency, historySize, historySize);
 	}
 
 	/**
@@ -648,7 +648,7 @@ public enum Processors {
 	}
 
 	/**
-	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
@@ -656,12 +656,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> topic() {
+	public static <E> TopicProcessor<E> topic() {
 		return topic("async", PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
@@ -669,12 +669,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> topic(String name) {
+	public static <E> TopicProcessor<E> topic(String name) {
 		return topic(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
@@ -686,12 +686,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> topic(boolean autoCancel) {
+	public static <E> TopicProcessor<E> topic(boolean autoCancel) {
 		return topic(Processors.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link ProcessorTopic} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created and will use the passed name to qualify the created threads.
@@ -703,12 +703,12 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> topic(String name, int bufferSize) {
+	public static <E> TopicProcessor<E> topic(String name, int bufferSize) {
 		return topic(name, bufferSize, true);
 	}
 
 	/**
-	 * Create a new {@link ProcessorTopic} using the blockingWait Strategy, passed backlog size, and auto-cancel
+	 * Create a new {@link TopicProcessor} using the blockingWait Strategy, passed backlog size, and auto-cancel
 	 * settings. <p> A Shared Processor authorizes concurrent onNext calls and is suited for multi-threaded publisher
 	 * that will fan-in data. <p> The passed {@link java.util.concurrent.ExecutorService} will execute as many
 	 * event-loop consuming the ringbuffer as subscribers.
@@ -721,8 +721,8 @@ public enum Processors {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> topic(String name, int bufferSize, boolean autoCancel) {
-		return ProcessorTopic.create(name, bufferSize, autoCancel);
+	public static <E> TopicProcessor<E> topic(String name, int bufferSize, boolean autoCancel) {
+		return TopicProcessor.create(name, bufferSize, autoCancel);
 	}
 
 	private static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {

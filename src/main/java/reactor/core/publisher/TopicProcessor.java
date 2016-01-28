@@ -77,22 +77,22 @@ import reactor.fn.Supplier;
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
  */
-public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements Backpressurable, MultiProducer {
+public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements Backpressurable, MultiProducer {
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create() {
-		return create(ProcessorTopic.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> TopicProcessor<E> create() {
+		return create(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -100,13 +100,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(boolean autoCancel) {
-		return create(ProcessorTopic.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> TopicProcessor<E> create(boolean autoCancel) {
+		return create(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -114,12 +114,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service) {
+	public static <E> TopicProcessor<E> create(ExecutorService service) {
 		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -129,13 +129,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service,
+	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                boolean autoCancel) {
 		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
 	 * qualify the created threads.
@@ -144,12 +144,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 */
-	public static <E> ProcessorTopic<E> create(String name, int bufferSize) {
+	public static <E> TopicProcessor<E> create(String name, int bufferSize) {
 		return create(name, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the blockingWait Strategy, passed backlog
+	 * Create a new TopicProcessor using the blockingWait Strategy, passed backlog
 	 * size, and auto-cancel settings. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -160,13 +160,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(String name, int bufferSize,
+	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                boolean autoCancel) {
 		return create(name, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and will auto-cancel. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -174,13 +174,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service,
+	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize) {
 		return create(service, bufferSize, WaitStrategy.liteBlocking(), true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and the auto-cancel argument. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -190,13 +190,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service,
+	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, boolean autoCancel) {
 		return create(service, bufferSize, WaitStrategy.liteBlocking(), autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and will
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created and
 	 * will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -207,13 +207,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(String name, int bufferSize,
+	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy) {
 		return create(name, bufferSize, strategy, null);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy, signal
+	 * Create a new TopicProcessor using passed backlog size, wait strategy, signal
 	 * supplier. The created processor is not shared and will auto-cancel. <p> A new
 	 * Cached ThreadExecutorPool will be implicitely created and will use the passed name
 	 * to qualify the created threads.
@@ -227,15 +227,15 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(String name, int bufferSize,
+	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                Supplier<E> signalSupplier) {
-		return new ProcessorTopic<E>(name, null, bufferSize, strategy, false, true,
+		return new TopicProcessor<E>(name, null, bufferSize, strategy, false, true,
 				signalSupplier);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A new Cached ThreadExecutorPool will be implicitely
 	 * created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
@@ -248,15 +248,15 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(String name, int bufferSize,
+	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new ProcessorTopic<E>(name, null, bufferSize, strategy, false,
+		return new TopicProcessor<E>(name, null, bufferSize, strategy, false,
 				autoCancel, null);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and will
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> The passed {@link ExecutorService} will
 	 * execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -266,14 +266,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service,
+	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize,
 	                                                WaitStrategy strategy) {
 		return create(service, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -285,28 +285,28 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> create(ExecutorService service,
+	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new ProcessorTopic<E>(null, service, bufferSize, strategy, false,
+		return new TopicProcessor<E>(null, service, bufferSize, strategy, false,
 				autoCancel, null);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share() {
-		return share(ProcessorTopic.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> TopicProcessor<E> share() {
+		return share(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -315,13 +315,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(boolean autoCancel) {
-		return share(ProcessorTopic.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+	public static <E> TopicProcessor<E> share(boolean autoCancel) {
+		return share(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * The passed {@link ExecutorService} will execute as many
@@ -330,12 +330,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service) {
+	public static <E> TopicProcessor<E> share(ExecutorService service) {
 		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -346,14 +346,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service,
+	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               boolean autoCancel) {
 		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created
@@ -364,12 +364,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize) {
+	public static <E> TopicProcessor<E> share(String name, int bufferSize) {
 		return share(name, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using the blockingWait Strategy, passed backlog
+	 * Create a new TopicProcessor using the blockingWait Strategy, passed backlog
 	 * size, and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext
 	 * calls and is suited for multi-threaded publisher that will fan-in data. <p> The
 	 * passed {@link ExecutorService} will execute as many event-loop
@@ -382,13 +382,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               boolean autoCancel) {
 		return share(name, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and will auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -398,13 +398,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service,
+	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize) {
 		return share(service, bufferSize, null, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and the auto-cancel argument. <p> A Shared Processor authorizes concurrent onNext
 	 * calls and is suited for multi-threaded publisher that will fan-in data. <p> The
 	 * passed {@link ExecutorService} will execute as many event-loop
@@ -416,13 +416,13 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service,
+	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, boolean autoCancel) {
 		return share(service, bufferSize, null, autoCancel);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and will
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
@@ -435,14 +435,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy) {
-		return new ProcessorTopic<E>(name, null, bufferSize, strategy, true, true,
+		return new TopicProcessor<E>(name, null, bufferSize, strategy, true, true,
 				null);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
@@ -455,14 +455,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               Supplier<E> signalSupplier) {
-		return new ProcessorTopic<E>(name, null, bufferSize,
+		return new TopicProcessor<E>(name, null, bufferSize,
 				null, true, true, signalSupplier);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
@@ -476,14 +476,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize, WaitStrategy waitStrategy,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize, WaitStrategy waitStrategy,
 	                                               Supplier<E> signalSupplier) {
-		return new ProcessorTopic<E>(name, null, bufferSize,
+		return new TopicProcessor<E>(name, null, bufferSize,
 				waitStrategy, true, true, signalSupplier);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
@@ -498,15 +498,15 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(String name, int bufferSize,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new ProcessorTopic<E>(name, null, bufferSize, strategy, true,
+		return new TopicProcessor<E>(name, null, bufferSize, strategy, true,
 				autoCancel, null);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and will
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -518,14 +518,14 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service,
+	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize,
 	                                               WaitStrategy strategy) {
 		return share(service, bufferSize, strategy, true);
 	}
 
 	/**
-	 * Create a new ProcessorTopic using passed backlog size, wait strategy and
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -539,10 +539,10 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> ProcessorTopic<E> share(ExecutorService service,
+	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new ProcessorTopic<E>(null, service, bufferSize, strategy, true,
+		return new TopicProcessor<E>(null, service, bufferSize, strategy, true,
 				autoCancel, null);
 	}
 
@@ -554,7 +554,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 
 	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 
-	private ProcessorTopic(String name, ExecutorService executor, int bufferSize,
+	private TopicProcessor(String name, ExecutorService executor, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
 	                            boolean autoCancel, final Supplier<E> signalSupplier) {
 		super(name, executor, autoCancel);
@@ -577,7 +577,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		Runnable spinObserver = new Runnable() {
 			@Override
 			public void run() {
-				if (!alive() && SUBSCRIBER_COUNT.get(ProcessorTopic.this) == 0) {
+				if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
 					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
@@ -718,7 +718,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 				}, new LongSupplier() {
 					@Override
 					public long get() {
-						return SUBSCRIBER_COUNT.get(ProcessorTopic.this) == 0 ?
+						return SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
 								minimum.get() :
 								ringBuffer.getMinimumGatingSequence(minimum);
 					}
@@ -733,7 +733,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 
 	@Override
 	public String toString() {
-		return "ProcessorTopic{" +
+		return "TopicProcessor{" +
 				"barrier=" + barrier +
 				", remaining=" + ringBuffer.remainingCapacity() +
 				'}';
@@ -788,7 +788,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		private final Sequence sequence =
 				RingBuffer.wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
-		private final ProcessorTopic<T> processor;
+		private final TopicProcessor<T> processor;
 
 		private final Sequence pendingRequest;
 
@@ -807,7 +807,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 		 * Construct a ringbuffer consumer that will automatically track the progress by
 		 * updating its sequence
 		 */
-		public TopicSubscriberLoop(ProcessorTopic<T> processor,
+		public TopicSubscriberLoop(TopicProcessor<T> processor,
 		                            Sequence pendingRequest,
 		                            Subscriber<? super T> subscriber) {
 			this.processor = processor;
