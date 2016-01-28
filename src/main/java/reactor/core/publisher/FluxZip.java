@@ -254,7 +254,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 	}
 
 	@Override
-	public long upstreamsCount() {
+	public long upstreamCount() {
 		return sources == null ? -1 : sources.length;
 	}
 
@@ -348,7 +348,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 
 		@Override
 		public long getCapacity() {
-			return upstreamsCount();
+			return upstreamCount();
 		}
 
 		@Override
@@ -362,7 +362,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 
 		@Override
-		public long upstreamsCount() {
+		public long upstreamCount() {
 			return subscribers.length;
 		}
 
@@ -550,7 +550,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 
 		@Override
 		public long getCapacity() {
-			return upstreamsCount();
+			return upstreamCount();
 		}
 
 		@Override
@@ -590,7 +590,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 
 		@Override
-		public long upstreamsCount() {
+		public long upstreamCount() {
 			return subscribers.length;
 		}
 

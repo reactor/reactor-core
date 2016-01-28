@@ -854,7 +854,7 @@ final class FluxFlatMap<T, R> extends Flux.FluxBarrier<T, R> {
 		}
 
 		@Override
-		public long upstreamsCount() {
+		public long upstreamCount() {
 			return subscribers.length;
 		}
 

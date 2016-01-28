@@ -1274,7 +1274,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 
 		@Override
-		public long downstreamsCount() {
+		public long downstreamCount() {
 			return processorGroups.length;
 		}
 

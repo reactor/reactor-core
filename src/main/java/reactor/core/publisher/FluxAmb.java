@@ -27,8 +27,8 @@ import reactor.core.flow.MultiReceiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberDeferredSubscription;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.BackpressureUtils;
+import reactor.core.util.EmptySubscription;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -66,7 +66,7 @@ extends Flux<T>
 	}
 
 	@Override
-	public long upstreamsCount() {
+	public long upstreamCount() {
 		return array != null ? array.length : -1L;
 	}
 
@@ -263,7 +263,7 @@ extends Flux<T>
 		}
 
 		@Override
-		public long upstreamsCount() {
+		public long upstreamCount() {
 			return subscribers.length;
 		}
 	}

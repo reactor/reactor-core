@@ -696,7 +696,7 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 	}
 
 	@Override
-	public long downstreamsCount() {
+	public long downstreamCount() {
 		return ringBuffer.getSequencer().getGatingSequences().length - 1;
 	}
 

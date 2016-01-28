@@ -769,7 +769,7 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 	}
 
 	@Override
-	public long downstreamsCount() {
+	public long downstreamCount() {
 		return ringBuffer.getSequencer().getGatingSequences().length - (isStarted() ? 1 : 0);
 	}
 

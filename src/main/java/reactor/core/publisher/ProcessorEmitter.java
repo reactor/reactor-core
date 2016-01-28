@@ -534,7 +534,7 @@ public final class ProcessorEmitter<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public long downstreamsCount() {
+	public long downstreamCount() {
 		return subscribers.length;
 	}
 

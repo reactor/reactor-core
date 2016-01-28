@@ -28,7 +28,6 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.SynchronousSubscription;
 
 /**
@@ -193,7 +192,7 @@ extends Flux<T> {
 		}
 
 		@Override
-		public long upstreamsCount() {
+		public long upstreamCount() {
 			return array instanceof Publisher[] ? array.length : -1;
 		}
 
