@@ -15,10 +15,9 @@
  */
 
 /**
- * Time sensitive {@link reactor.core.timer.Timers} factory and the {@link reactor.core.timer.Timer} contract. Used for
- * scheduling
- * {@link reactor.core.publisher.Mono#delay} or  {@link reactor.core.publisher.Flux#interval}, timeout handling
- * or polling tasks.
+ * Time sensitive {@link reactor.core.timer.Timer} contract and static factory methods. Used for
+ * scheduling {@link reactor.core.publisher.Mono#delay},
+ * {@link reactor.core.publisher.Flux#interval}, timeout handling or polling tasks.
  *
  * @author Stephane Maldini
  */
