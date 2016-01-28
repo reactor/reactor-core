@@ -40,7 +40,7 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return Processors.<Long>singleGroup("shared-async", bufferSize,
+		return ProcessorGroup.<Long>single("shared-async", bufferSize,
 				Throwable::printStackTrace).get();
 
 	}

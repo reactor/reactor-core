@@ -78,7 +78,7 @@ public class CombinationTests {
 
 	@Test
 	public void tesSubmitSession() throws Exception {
-		FluxProcessor<Integer, Integer> processor = Processors.emitter();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
 		processor.subscribeWith(ProcessorGroup.io().get())
 		         .subscribe(Subscribers.create(s -> {
@@ -110,7 +110,7 @@ public class CombinationTests {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = Processors.emitter();
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;
@@ -151,7 +151,7 @@ public class CombinationTests {
 	public Publisher<SensorData> sensorOdd() {
 		if (sensorOdd == null) {
 			// this is the stream we publish odd-numbered events to
-			this.sensorOdd = Processors.blackbox(TopicProcessor.create("odd"), p -> p.log("odd"));
+			this.sensorOdd = FluxProcessor.blackbox(TopicProcessor.create("odd"), p -> p.log("odd"));
 
 			// add substream to "master" list
 			//allSensors().add(sensorOdd.reduce(this::computeMin).timeout(1000));
@@ -163,7 +163,7 @@ public class CombinationTests {
 	public Publisher<SensorData> sensorEven() {
 		if (sensorEven == null) {
 			// this is the stream we publish even-numbered events to
-			this.sensorEven = Processors.blackbox(TopicProcessor.create("even"), p -> p.log("even"));
+			this.sensorEven = FluxProcessor.blackbox(TopicProcessor.create("even"), p -> p.log("even"));
 
 			// add substream to "master" list
 			//allSensors().add(sensorEven.reduce(this::computeMin).timeout(1000));
@@ -267,7 +267,7 @@ public class CombinationTests {
 	public void sampleZipTest3() throws Exception {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
-		Processor<SensorData, SensorData> sensorDataProcessor = Processors.<SensorData>singleGroup().get();
+		Processor<SensorData, SensorData> sensorDataProcessor = ProcessorGroup.<SensorData>single().get();
 
 		sensorDataProcessor.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null,

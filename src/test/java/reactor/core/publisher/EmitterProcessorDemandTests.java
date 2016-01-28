@@ -54,7 +54,7 @@ public class EmitterProcessorDemandTests {
 	public void test() {
 		ProcessorGroup<String> asyncGroup = ProcessorGroup.async("async", 128, 1);
 		FluxProcessor<String, String> publishOn = asyncGroup.publishOn();
-		FluxProcessor<String, String> emitter = Processors.emitter();
+		FluxProcessor<String, String> emitter = EmitterProcessor.create();
 
 		publishOn.subscribe(emitter);
 
@@ -94,7 +94,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	@Ignore
 	public void testPerformance() {
-		FluxProcessor<String, String> emitter = Processors.emitter();
+		FluxProcessor<String, String> emitter = EmitterProcessor.create();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);
 
@@ -150,7 +150,7 @@ public class EmitterProcessorDemandTests {
 
 	@Test
 	public void testRed() {
-		FluxProcessor<String, String> processor = Processors.emitter();
+		FluxProcessor<String, String> processor = EmitterProcessor.create();
 		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
 		processor.subscribe(subscriber);
 
@@ -163,7 +163,7 @@ public class EmitterProcessorDemandTests {
 
 	@Test
 	public void testGreen() {
-		FluxProcessor<String, String> processor = Processors.emitter();
+		FluxProcessor<String, String> processor = EmitterProcessor.create();
 		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
 		processor.subscribe(subscriber);
 
@@ -177,7 +177,7 @@ public class EmitterProcessorDemandTests {
 
 	@Test
 	public void testHanging() {
-		FluxProcessor<String, String> processor = Processors.emitter(2);
+		FluxProcessor<String, String> processor = EmitterProcessor.create(2);
 		Flux.fromIterable(DATA)
 		    .log()
 		    .subscribe(processor);
@@ -197,7 +197,7 @@ public class EmitterProcessorDemandTests {
 
 	@Test
 	public void testNPE() {
-		FluxProcessor<String, String> processor = Processors.emitter(8);
+		FluxProcessor<String, String> processor = EmitterProcessor.create(8);
 		Flux.fromIterable(DATA)
 		    .log()
 		    .subscribe(processor);
@@ -280,7 +280,7 @@ public class EmitterProcessorDemandTests {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;
 
-		FluxProcessor<String, String> processor = Processors.emitter(4);
+		FluxProcessor<String, String> processor = EmitterProcessor.create(4);
 		List<String> data = new ArrayList<>();
 		for (int i = 1; i <= N_ITEMS; i++) {
 			data.add(String.valueOf(i));

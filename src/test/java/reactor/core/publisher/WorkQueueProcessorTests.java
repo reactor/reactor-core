@@ -33,7 +33,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		System.out.println("new processor");
-		return Processors.blackbox(Processors.<Long>queue("rb-work", bufferSize), Flux::log);
+		return FluxProcessor.blackbox(WorkQueueProcessor.<Long>create("rb-work", bufferSize), Flux::log);
 	}
 
 	@Override

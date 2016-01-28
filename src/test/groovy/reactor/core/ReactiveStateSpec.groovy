@@ -19,8 +19,8 @@ package reactor.core
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
+import static reactor.core.publisher.EmitterProcessor.create
 import static reactor.core.publisher.Flux.*
-import static reactor.core.publisher.Processors.emitter
 import static reactor.core.subscriber.Subscribers.unbounded
 
 /**
@@ -61,8 +61,8 @@ class ReactiveStateSpec extends Specification {
 
 	when: "processors"
 
-	def proc1 = emitter()
-	def proc2 = emitter()
+	def proc1 = create()
+	def proc2 = create()
 	def sub1 = unbounded()
 	def sub2 = unbounded()
 	def sub3 = unbounded()

@@ -26,7 +26,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return Processors.blackbox(Processors.<Long>topic("rb-async", bufferSize), Flux::log);
+		return FluxProcessor.blackbox(TopicProcessor.<Long>create("rb-async", bufferSize), Flux::log);
 	}
 
 	@Override
