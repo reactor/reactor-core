@@ -24,8 +24,6 @@ import org.reactivestreams.Publisher;
  */
 public final class DependencyUtils {
 
-	static private final String VERSION = "2.5.0.BUILD-SNAPSHOT";
-
 	static private final boolean HAS_REACTOR_STREAM;
 	static private final boolean HAS_REACTOR_CODEC;
 	static private final boolean HAS_REACTOR_NET;
@@ -220,7 +218,4 @@ public final class DependencyUtils {
 		throw new UnsupportedOperationException("Cannot convert " + source.getClass() + " source to " + to.getClass() + " type");
 	}
 
-	public static String reactorVersion() {
-		return VERSION;
-	}
 }
