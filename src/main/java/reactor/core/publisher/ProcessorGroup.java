@@ -606,7 +606,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		@Override
 		public final void accept(V data, Consumer<? super V> consumer) {
 			if (consumer == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			dispatch(new ConsumerRunnable<>(data, consumer));
 		}
@@ -614,7 +614,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		@Override
 		public final void accept(Runnable consumer) {
 			if (consumer == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			dispatch(consumer);
 		}
@@ -622,7 +622,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		@Override
 		public final void execute(Runnable command) {
 			if (command == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			dispatch(command);
 		}
@@ -630,7 +630,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		@Override
 		public final void subscribe(Subscriber<? super V> s) {
 			if (s == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			final boolean set, subscribed;
 			synchronized (this) {

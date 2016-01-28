@@ -87,7 +87,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	@Override
 	public void onNext(IN t) {
 		if (t == null) {
-			throw Exceptions.spec_2_13_exception();
+			throw Exceptions.argumentIsNullException();
 		}
 
 	}
@@ -95,7 +95,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	@Override
 	public void onError(Throwable t) {
 		if (t == null) {
-			throw Exceptions.spec_2_13_exception();
+			throw Exceptions.argumentIsNullException();
 		}
 		Exceptions.throwIfFatal(t);
 	}
@@ -112,7 +112,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	@Override
 	public void subscribe(Subscriber<? super OUT> s) {
 		if (s == null) {
-			throw Exceptions.spec_2_13_exception();
+			throw Exceptions.argumentIsNullException();
 		}
 	}
 

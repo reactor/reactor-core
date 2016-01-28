@@ -794,7 +794,7 @@ public enum Processors {
 		@Override
 		public void subscribe(Subscriber<? super OUT> s) {
 			if(s == null)
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			downstream.subscribe(s);
 		}
 	}

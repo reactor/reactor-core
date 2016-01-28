@@ -110,14 +110,14 @@ public enum Exceptions {
 	 */
 	public static Throwable addValueAsLastCause(Throwable e, Object value) {
 		Throwable lastCause = Exceptions.getFinalCause(e);
-		if (lastCause != null && lastCause instanceof ValueCause) {
+		if (lastCause != null && lastCause instanceof ValueCauseException) {
 			// purposefully using == for object reference check
-			if (((ValueCause) lastCause).getValue() == value) {
+			if (((ValueCauseException) lastCause).getValue() == value) {
 				// don't add another
 				return e;
 			}
 		}
-		Exceptions.addCause(e, new ValueCause(value));
+		Exceptions.addCause(e, new ValueCauseException(value));
 		return e;
 	}
 
@@ -159,7 +159,7 @@ public enum Exceptions {
 
 	/**
 	 * Try to find the last value at the end of the causality-chain for a particular {@code Throwable}
-	 * If the final cause wasn't of type {@link ValueCause},
+	 * If the final cause wasn't of type {@link ValueCauseException},
 	 * return null;
 	 *
 	 * @param e the {@code Throwable} whose final cause you are curious about
@@ -169,8 +169,8 @@ public enum Exceptions {
 	@SuppressWarnings("unchecked")
 	public static Object getFinalValueCause(Throwable e) {
 		Throwable t = getFinalCause(e);
-		if (ValueCause.class.isAssignableFrom(t.getClass())) {
-			return ((ValueCause) t).getValue();
+		if (ValueCauseException.class.isAssignableFrom(t.getClass())) {
+			return ((ValueCauseException) t).getValue();
 		}
 		return null;
 	}
@@ -228,16 +228,16 @@ public enum Exceptions {
 	 *
 	 * @return
 	 */
-	public static IllegalStateException spec_2_12_exception() {
-		return new Spec212_DuplicateOnSubscribe();
+	public static DuplicateOnSubscribeException duplicateOnSubscribeException() {
+		return new DuplicateOnSubscribeException();
 	}
 
 	/**
 	 *
 	 * @return
 	 */
-	public static NullPointerException spec_2_13_exception() {
-		return new Spec213_ArgumentIsNull();
+	public static ArgumentIsNullException argumentIsNullException() {
+		return new ArgumentIsNullException();
 	}
 
 	/**
@@ -245,8 +245,8 @@ public enum Exceptions {
 	 * @param elements
 	 * @return
 	 */
-	public static IllegalArgumentException spec_3_09_exception(long elements) {
-		return new Spec309_NullOrNegativeRequest(elements);
+	public static NullOrNegativeRequestException nullOrNegativeRequestException(long elements) {
+		return new NullOrNegativeRequestException(elements);
 	}
 
 	/**
@@ -312,17 +312,17 @@ public enum Exceptions {
 		return new DownstreamException(t);
 	}
 
-	public static final class TimerOverflow extends java.util.concurrent.TimeoutException {
+	public static final class TimerOverflowException extends java.util.concurrent.TimeoutException {
 
-		public static final TimerOverflow INSTANCE = new TimerOverflow();
+		public static final TimerOverflowException INSTANCE = new TimerOverflowException();
 
-		private TimerOverflow() {
+		private TimerOverflowException() {
 			super("The subscriber has not requested for the timer signals, consider Stream#onBackpressureDrop or any " +
 					"unbounded subscriber");
 		}
 
-		public static TimerOverflow get() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflow() : INSTANCE;
+		public static TimerOverflowException get() {
+			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
 		}
 
 		@Override
@@ -334,9 +334,9 @@ public enum Exceptions {
 	/**
 	 *
 	 */
-	public static final class Spec309_NullOrNegativeRequest extends IllegalArgumentException {
+	public static final class NullOrNegativeRequestException extends IllegalArgumentException {
 
-		public Spec309_NullOrNegativeRequest(long elements) {
+		public NullOrNegativeRequestException(long elements) {
 			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
 			  elements);
 		}
@@ -345,9 +345,9 @@ public enum Exceptions {
 	/**
 	 *
 	 */
-	public static final class Spec213_ArgumentIsNull extends NullPointerException {
+	public static final class ArgumentIsNullException extends NullPointerException {
 
-		public Spec213_ArgumentIsNull() {
+		public ArgumentIsNullException() {
 			super("Spec 2.13: Signal/argument cannot be null");
 		}
 	}
@@ -355,9 +355,9 @@ public enum Exceptions {
 	/**
 	 *
 	 */
-	public static final class Spec212_DuplicateOnSubscribe extends IllegalStateException {
+	public static final class DuplicateOnSubscribeException extends IllegalStateException {
 
-		public Spec212_DuplicateOnSubscribe() {
+		public DuplicateOnSubscribeException() {
 			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
 			" " +
 			  "(based on object equality)");
@@ -501,7 +501,7 @@ public enum Exceptions {
 	 * tries to preserve that item for future use and/or reporting.
 	 */
 
-	public static class ValueCause extends RuntimeException {
+	public static class ValueCauseException extends RuntimeException {
 
 		private static final long serialVersionUID = -3454462756050397899L;
 		private final Object value;
@@ -512,7 +512,7 @@ public enum Exceptions {
 		 *
 		 * @param value the item that the component was trying to emit at the time of the error
 		 */
-		public ValueCause(Object value) {
+		public ValueCauseException(Object value) {
 			super("Exception while signaling value: " + renderValue(value));
 			this.value = value;
 		}

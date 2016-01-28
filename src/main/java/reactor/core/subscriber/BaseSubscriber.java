@@ -68,7 +68,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	@Override
 	public void onNext(T t) {
 		if (t == null) {
-			throw Exceptions.spec_2_13_exception();
+			throw Exceptions.argumentIsNullException();
 		}
 
 	}
@@ -76,7 +76,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	@Override
 	public void onError(Throwable t) {
 		if (t == null) {
-			throw Exceptions.spec_2_13_exception();
+			throw Exceptions.argumentIsNullException();
 		}
 		Exceptions.throwIfFatal(t);
 	}

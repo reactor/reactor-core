@@ -112,7 +112,7 @@ public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 			try {
 				BackpressureUtils.checkRequest(n);
 			}
-			catch (Exceptions.Spec309_NullOrNegativeRequest c) {
+			catch (Exceptions.NullOrNegativeRequestException c) {
 				subscriber.onError(c);
 			}
 
@@ -213,7 +213,7 @@ public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 		@Override
 		public void onError(Throwable e) {
 			if (e == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			s.onError(e);
 		}
@@ -221,7 +221,7 @@ public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 		@Override
 		public void onNext(Object o) {
 			if (o == null) {
-				throw Exceptions.spec_2_13_exception();
+				throw Exceptions.argumentIsNullException();
 			}
 			s.onNext(o);
 		}

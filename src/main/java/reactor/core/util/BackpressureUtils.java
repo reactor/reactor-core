@@ -80,7 +80,7 @@ public enum BackpressureUtils {
 	 */
 	public static void checkRequest(long n) throws IllegalArgumentException {
 		if (n <= 0L) {
-			throw Exceptions.spec_3_09_exception(n);
+			throw Exceptions.nullOrNegativeRequestException(n);
 		}
 	}
 
@@ -97,9 +97,9 @@ public enum BackpressureUtils {
 	public static boolean checkRequest(long n, Subscriber<?> subscriber) {
 		if (n <= 0L) {
 			if (null != subscriber) {
-				subscriber.onError(Exceptions.spec_3_09_exception(n));
+				subscriber.onError(Exceptions.nullOrNegativeRequestException(n));
 			} else {
-				throw Exceptions.spec_3_09_exception(n);
+				throw Exceptions.nullOrNegativeRequestException(n);
 			}
 			return false;
 		}
@@ -425,7 +425,7 @@ public enum BackpressureUtils {
 	 *
 	 */
 	public static void reportSubscriptionSet() {
-		throw Exceptions.spec_2_13_exception();
+		throw Exceptions.argumentIsNullException();
 	}
 
 	/**
@@ -433,7 +433,7 @@ public enum BackpressureUtils {
 	 * @param n
 	 */
 	public static void reportBadRequest(long n) {
-		throw Exceptions.spec_3_09_exception(n);
+		throw Exceptions.nullOrNegativeRequestException(n);
 	}
 
 	/**
