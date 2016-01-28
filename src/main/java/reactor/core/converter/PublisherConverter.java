@@ -23,7 +23,10 @@ import reactor.fn.Predicate;
 import reactor.fn.Supplier;
 
 /**
+ * Base class for Reactive Streams {@link Publisher} converters.
+ *
  * @author Stephane Maldini
+ * @since 2.5
  */
 abstract class PublisherConverter<TYPE>
 		implements Function<Object, Publisher<?>>, BiFunction<Publisher<?>, Class<?>, TYPE>, Predicate<Object>,

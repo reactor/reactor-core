@@ -19,6 +19,8 @@ package reactor.core.converter;
 import org.reactivestreams.Publisher;
 
 /**
+ * Utility class related to the various composition libraries supported.
+ *
  * @author Stephane Maldini
  * @since 2.5
  */

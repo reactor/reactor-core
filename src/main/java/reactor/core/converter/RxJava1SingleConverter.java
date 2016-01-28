@@ -22,7 +22,10 @@ import rx.Observable;
 import rx.Single;
 
 /**
+ * Convert a RxJava 1 {@link Single} to/from a Reactive Streams {@link Publisher}.
+ *
  * @author Stephane Maldini
+ * @since 2.5
  */
 public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 

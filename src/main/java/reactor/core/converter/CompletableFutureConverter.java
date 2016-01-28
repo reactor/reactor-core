@@ -35,8 +35,11 @@ import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 
 /**
+ * Convert a Java 8+ {@link CompletableFuture} to/from a Reactive Streams {@link Publisher}.
+ *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @since 2.5
  */
 public final class CompletableFutureConverter extends PublisherConverter<CompletableFuture> {
 

@@ -24,7 +24,10 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 
 /**
+ * Convert a Java 9+ {@link Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
+ *
  * @author Stephane Maldini
+ * @since 2.5
  */
 public final class Jdk9FlowConverter extends PublisherConverter<Flow.Publisher> {
 
