@@ -67,9 +67,9 @@ public class TimerTests {
 
     @Test
     public void timeTravelWithBusySpinStrategyTest() throws InterruptedException {
-        timeTravelTest(new WaitStrategy.BusySpin(), 1);
-        timeTravelTest(new WaitStrategy.BusySpin(), 5);
-        timeTravelTest(new WaitStrategy.BusySpin(), 10);
+        timeTravelTest(WaitStrategy.busySpin(), 1);
+        timeTravelTest(WaitStrategy.busySpin(), 5);
+        timeTravelTest(WaitStrategy.busySpin(), 10);
     }
 
     @Test
