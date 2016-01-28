@@ -32,7 +32,7 @@
  *     ({@link reactor.core.publisher.Flux} or {@link reactor.core.publisher.Mono}): <ul>
  *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
  *
- *     {@link reactor.core.publisher.EmitterProcessor#create} EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
+ *     {@link reactor.core.publisher.EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
  *         <li>It needs asynchronousity :
  *         <ul>
  *           <li>for slow publishers prefer
@@ -45,9 +45,9 @@
  *        </li>
  *     </ul></li>
  *     <li>It is a demanding data flow : <ul>
- *         <li>A dedicated pub-sub event buffering executor : {@link reactor.core.publisher.TopicProcessor#create}</li>
+ *         <li>A dedicated pub-sub event buffering executor : {@link reactor.core.publisher.TopicProcessor}</li>
  *         <li>A dedicated  FIFO work queue distribution for slow consumers :
- *         {@link reactor.core.publisher.WorkQueueProcessor#create}</li>
+ *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
  *     </ul></li>
  * </ul>
  * <p>
