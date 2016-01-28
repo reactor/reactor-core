@@ -20,7 +20,7 @@ import java.io.Serializable;
 import reactor.core.state.Recyclable;
 
 /**
- * A simple holder
+ * A simple reusable data container.
  * @param <T>
  */
 public final class Slot<T> implements Recyclable, Serializable {
