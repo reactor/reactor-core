@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *	   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -889,9 +889,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
-					queue = f;
+				if (s instanceof Fuseable.FusionSubscription) {
+					@SuppressWarnings("unchecked") Fuseable.FusionSubscription<R> f = (Fuseable.FusionSubscription<R>)s;
+					queue = f.queue();
 					if (f.requestSyncFusion()){
 						sourceMode = SYNC;
 						done = true;
