@@ -16,7 +16,7 @@
 
 /**
  * Provide for
- * {@link reactor.core.publisher.Flux}, {@link reactor.core.publisher.Mono} composition API and {@link reactor.core.publisher.Processors}
+ * {@link reactor.core.publisher.Flux}, {@link reactor.core.publisher.Mono} composition API and {@link reactor.core.publisher.FluxProcessor}
  * implementations
  *
  * <h2>Flux</h2>

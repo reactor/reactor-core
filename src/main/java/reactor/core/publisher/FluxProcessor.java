@@ -33,6 +33,7 @@ import reactor.fn.Function;
 /**
  * A base processor with an async boundary trait to manage active subscribers (Threads), upstream subscription and
  * shutdown options.
+ *
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
  */
