@@ -24,7 +24,7 @@ import org.testng.annotations.AfterClass;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class ReplayProcessorTests extends AbstractProcessorVerification {
+public class EmitterProcessorTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {

@@ -55,8 +55,140 @@ import reactor.core.util.Sequence;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class ReplayProcessor<T> extends FluxProcessor<T, T>
+public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 *
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create() {
+		return create(true);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create(boolean autoCancel) {
+		return create(PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create(int bufferSize) {
+		return create(bufferSize, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create(int bufferSize, int concurrency) {
+		return create(bufferSize, concurrency, true);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create(int bufferSize, boolean autoCancel) {
+		return create(bufferSize, Integer.MAX_VALUE, autoCancel);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> create(int bufferSize, int concurrency, boolean autoCancel) {
+		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize, -1);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> replay() {
+		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> replay(int historySize) {
+		return replay(historySize, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency) {
+		return replay(historySize, concurrency, false);
+	}
+
+	/**
+	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Strategy and auto-cancel. <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
+	 * <p>
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> FluxProcessor<E, E> replay(int historySize, int concurrency, boolean autoCancel) {
+		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
+	}
 
 	final int maxConcurrency;
 	final int bufferSize;
@@ -76,33 +208,33 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	private volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ReplayProcessor, Throwable> ERROR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(ReplayProcessor.class, "error");
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
+			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ReplayProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			PlatformDependent.newAtomicReferenceFieldUpdater(ReplayProcessor.class, "subscribers");
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
+			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "subscribers");
 
 	@SuppressWarnings("unused")
 	private volatile int running;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<ReplayProcessor> RUNNING =
-			AtomicIntegerFieldUpdater.newUpdater(ReplayProcessor.class, "running");
+	static final AtomicIntegerFieldUpdater<EmitterProcessor> RUNNING =
+			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "running");
 
 	@SuppressWarnings("unused")
 	private volatile int outstanding;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<ReplayProcessor> OUTSTANDING =
-			AtomicIntegerFieldUpdater.newUpdater(ReplayProcessor.class, "outstanding");
+	static final AtomicIntegerFieldUpdater<EmitterProcessor> OUTSTANDING =
+			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
 
 	boolean firstDrain = true;
 
-	public ReplayProcessor(){
+	EmitterProcessor(){
 		this(true, Integer.MAX_VALUE, PlatformDependent.SMALL_BUFFER_SIZE, -1);
 	}
 
-	public ReplayProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
+	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
 		this.autoCancel = autoCancel;
 		this.maxConcurrency = maxConcurrency;
 		this.bufferSize = bufferSize;
@@ -555,7 +687,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			           Requestable, Producer {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
-		final ReplayProcessor<T>    parent;
+		final EmitterProcessor<T>   parent;
 		final Subscriber<? super T> actual;
 
 		volatile boolean done;
@@ -574,7 +706,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
 				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
 
-		public EmitterSubscriber(ReplayProcessor<T> parent, final Subscriber<? super T> actual) {
+		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -583,7 +715,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, actual)) {
 				BackpressureUtils.getAndAdd(REQUESTED, this, n);
-				if (ReplayProcessor.RUNNING.getAndIncrement(parent) == 0) {
+				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}
 			}
