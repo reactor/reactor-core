@@ -16,7 +16,7 @@
 
 /**
  * Convert
- * {@link org.reactivestreams.Publisher} from/to Java 8+ {@link reactor.core.converter.CompletableFutureConverter CompletableFuture}, Java 9+ {@link reactor.core.converter.Jdk9FlowConverter Flow.Publisher}, RxJava1 {@link reactor.core.converter.RxJava1ObservableConverter Observable} and {@link reactor.core.converter.RxJava1SingleConverter Single}.
+ * {@link org.reactivestreams.Publisher} from/to Java 8+ {@link reactor.core.converter.CompletableFutureConverter CompletableFuture}, Java 9+ {@link reactor.core.converter.FlowPublisherConverter Flow.Publisher}, RxJava1 {@link reactor.core.converter.RxJava1ObservableConverter Observable} and {@link reactor.core.converter.RxJava1SingleConverter Single}.
  *
  * @author Stephane Maldini
  */

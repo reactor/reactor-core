@@ -29,9 +29,9 @@ import reactor.core.publisher.Flux;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class Jdk9FlowConverter extends PublisherConverter<Flow.Publisher> {
+public final class FlowPublisherConverter extends PublisherConverter<Flow.Publisher> {
 
-	static final Jdk9FlowConverter INSTANCE = new Jdk9FlowConverter();
+	static final FlowPublisherConverter INSTANCE = new FlowPublisherConverter();
 
 	@SuppressWarnings("unchecked")
 	static public <T> Flow.Publisher<T> from(Publisher<T> o) {

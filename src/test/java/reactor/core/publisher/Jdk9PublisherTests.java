@@ -55,7 +55,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		if(!DependencyUtils.hasJdk9Flow()){
+		if(!DependencyUtils.hasFlowPublisher()){
 			throw new SkipException("no jdk 9 classes found");
 		}
 
@@ -67,7 +67,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		if(!DependencyUtils.hasJdk9Flow()){
+		if(!DependencyUtils.hasFlowPublisher()){
 			throw new SkipException("no jdk 9 classes found");
 		}
 
