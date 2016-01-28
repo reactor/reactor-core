@@ -26,7 +26,7 @@ import reactor.core.state.Backpressurable;
  * @param <I> Upstream type
  * @param <O> Downstream type
  */
-class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiver {
+public class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiver {
 
 	protected final Publisher<? extends I> source;
 
