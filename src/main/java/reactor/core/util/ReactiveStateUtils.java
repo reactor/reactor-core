@@ -50,8 +50,8 @@ public enum ReactiveStateUtils {
 	 * Create an empty graph
 	 * @return a Graph
 	 */
-	public static Graph newGraph() {
-		return newGraph(false);
+	public static Graph createGraph() {
+		return createGraph(false);
 	}
 
 	/**
@@ -59,7 +59,7 @@ public enum ReactiveStateUtils {
 	 * @param trace
 	 * @return
 	 */
-	public static Graph newGraph(boolean trace) {
+	public static Graph createGraph(boolean trace) {
 		return new Graph(false, trace);
 	}
 
