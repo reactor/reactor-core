@@ -764,12 +764,12 @@ public final class ProcessorTopic<E> extends ProcessorExecutor<E, E> implements 
 
 	@Override
 	public Iterator<?> downstreams() {
-		return Arrays.asList(ringBuffer.getSequencer().getGatingSequences()).iterator();
+		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
 	}
 
 	@Override
 	public long downstreamCount() {
-		return ringBuffer.getSequencer().getGatingSequences().length - (isStarted() ? 1 : 0);
+		return ringBuffer.getSequenceReceivers().length - (isStarted() ? 1 : 0);
 	}
 
 	/**

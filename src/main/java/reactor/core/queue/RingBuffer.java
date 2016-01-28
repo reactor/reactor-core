@@ -497,7 +497,11 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 */
 	abstract public Sequence getSequence();
 
-	abstract public RingBufferProducer getSequencer();
+	public Sequence[] getSequenceReceivers() {
+		return getSequencer().getGatingSequences();
+	}
+
+	abstract RingBufferProducer getSequencer();
 
 	/**
 	 * Given specified <tt>requiredCapacity</tt> determines if that amount of space is available.  Note, you can not

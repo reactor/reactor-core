@@ -691,12 +691,12 @@ public final class ProcessorWorkQueue<E> extends ProcessorExecutor<E, E> impleme
 
 	@Override
 	public Iterator<?> downstreams() {
-		return Arrays.asList(ringBuffer.getSequencer().getGatingSequences()).iterator();
+		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
 	}
 
 	@Override
 	public long downstreamCount() {
-		return ringBuffer.getSequencer().getGatingSequences().length - 1;
+		return ringBuffer.getSequenceReceivers().length - 1;
 	}
 
 	/**

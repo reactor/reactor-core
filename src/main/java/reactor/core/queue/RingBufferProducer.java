@@ -257,9 +257,4 @@ abstract class RingBufferProducer {
 	public Sequence[] getGatingSequences() {
 		return gatingSequences;
     }
-
-    /**
-	 *
-     * @param <E>
-     */
 }
