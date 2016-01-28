@@ -93,7 +93,7 @@ class HashWheelTimer extends Timer {
 	 * @param waitStrategy       strategy for waiting for the next tick
 	 */
 	public HashWheelTimer(int res, int wheelSize, WaitStrategy waitStrategy) {
-		this(DEFAULT_TIMER_NAME, res, wheelSize, waitStrategy, null, Timers.currentTimeMillisResolver());
+		this(DEFAULT_TIMER_NAME, res, wheelSize, waitStrategy, null, Timer.currentTimeMillisResolver());
 	}
 
 	/**
@@ -107,7 +107,7 @@ class HashWheelTimer extends Timer {
 	 * @param exec               {@code Executor} instance to submit tasks to
 	 */
 	public HashWheelTimer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec) {
-		this(name, res,wheelSize, strategy, exec, Timers.currentTimeMillisResolver());
+		this(name, res,wheelSize, strategy, exec, Timer.currentTimeMillisResolver());
 	}
 
 	/**

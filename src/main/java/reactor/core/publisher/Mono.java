@@ -30,7 +30,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
-import reactor.core.timer.Timers;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -136,7 +135,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration, TimeUnit unit) {
-		return delay(duration, unit, Timers.global());
+		return delay(duration, unit, Timer.global());
 	}
 
 	/**

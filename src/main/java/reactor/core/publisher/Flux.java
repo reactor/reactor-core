@@ -33,7 +33,6 @@ import reactor.core.subscriber.ReactiveSession;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
-import reactor.core.timer.Timers;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -446,7 +445,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long period, TimeUnit unit) {
-		return interval(period, unit, Timers.global());
+		return interval(period, unit, Timer.global());
 	}
 
 	/**

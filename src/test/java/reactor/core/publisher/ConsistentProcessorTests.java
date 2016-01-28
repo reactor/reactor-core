@@ -33,12 +33,12 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.timer.Timers;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini
@@ -218,7 +218,7 @@ public class ConsistentProcessorTests {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			Timers.global().submit(time -> finish(s), 5, TimeUnit.SECONDS);
+			Timer.global().submit(time -> finish(s), 5, TimeUnit.SECONDS);
 			s.request(Long.MAX_VALUE);
 		}
 

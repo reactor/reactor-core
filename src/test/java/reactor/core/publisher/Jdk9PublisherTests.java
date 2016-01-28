@@ -25,7 +25,7 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import reactor.core.converter.DependencyUtils;
-import reactor.core.timer.Timers;
+import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini
@@ -39,7 +39,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 
 	@BeforeTest
 	public void before(){
-		Timers.global();
+		Timer.global();
 	}
 
 	@org.junit.Test
@@ -60,7 +60,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 		}
 
 		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
-		Timers.global().schedule(pub::submit, 50, TimeUnit.MILLISECONDS);
+		Timer.global().schedule(pub::submit, 50, TimeUnit.MILLISECONDS);
 		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 

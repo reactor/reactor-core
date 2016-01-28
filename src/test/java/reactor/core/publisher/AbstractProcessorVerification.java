@@ -27,7 +27,7 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import reactor.core.timer.Timers;
+import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini
@@ -60,7 +60,7 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 
 	@BeforeClass
 	public void setup() {
-		Timers.global();
+		Timer.global();
 	}
 
 	@AfterClass

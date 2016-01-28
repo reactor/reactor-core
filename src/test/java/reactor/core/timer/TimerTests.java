@@ -36,7 +36,7 @@ public class TimerTests {
 
 	@Test
 	public void verifyPause() throws InterruptedException {
-		Timer timer = Timers.create();
+		Timer timer = Timer.create();
 
 		AtomicInteger count = new AtomicInteger();
 
