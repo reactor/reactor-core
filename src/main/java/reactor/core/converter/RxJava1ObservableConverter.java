@@ -30,7 +30,10 @@ import rx.Producer;
 import rx.internal.util.ScalarSynchronousObservable;
 
 /**
+ * Convert a RxJava 1 {@link Observable} to/from a Reactive Streams {@link Publisher}.
+ *
  * @author Stephane Maldini
+ * @since 2.5
  */
 public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 

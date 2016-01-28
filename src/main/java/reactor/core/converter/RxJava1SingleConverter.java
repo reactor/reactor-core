@@ -22,7 +22,10 @@ import rx.Observable;
 import rx.Single;
 
 /**
+ * Convert a RxJava 1 {@link Single} to/from a Reactive Streams {@link Publisher}.
+ *
  * @author Stephane Maldini
+ * @since 2.5
  */
 public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 
@@ -34,7 +37,7 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static public <T> Publisher<T> from(Single<T> o) {
+	static public <T> Mono<T> from(Single<T> o) {
 		return INSTANCE.toPublisher(o);
 	}
 
