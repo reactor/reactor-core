@@ -34,7 +34,7 @@ public class TupleN extends Tuple8 {
 	private final Object[] entries;
 
 	@SuppressWarnings("unchecked")
-	TupleN(Object... values) {
+	public TupleN(Object... values) {
 		super(values.length, toT(0, values), toT(1, values), toT(2, values), toT(3, values), toT(4, values), toT(5,
 				values), toT(6, values), toT(7, values));
 		if(values.length > 8) {

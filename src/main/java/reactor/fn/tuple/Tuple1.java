@@ -34,7 +34,7 @@ public class Tuple1<T1> extends Tuple {
 
 	public final T1 t1;
 
-	Tuple1(int size, T1 t1) {
+	public Tuple1(int size, T1 t1) {
 		super(size);
 		this.t1 = t1;
 	}
