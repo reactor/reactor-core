@@ -29,8 +29,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
-import reactor.core.flow.Producer;
 import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Sequencer;
 import reactor.core.queue.Slot;
@@ -203,8 +203,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 
 		for (Object sharedProcessorReference : sharedProcessorReferences) {
-			if (sharedProcessorReference != null && ProcessorBarrier.class.isAssignableFrom(sharedProcessorReference.getClass())) {
-				((ProcessorBarrier) sharedProcessorReference).cancel();
+			if (sharedProcessorReference != null && DispatchOn.class.isAssignableFrom(sharedProcessorReference.getClass())) {
+				((DispatchOn) sharedProcessorReference).cancel();
 			}
 		}
 	}
@@ -472,7 +472,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		REF_COUNT.incrementAndGet(this);
 	}
 
-	private <Y> ProcessorBarrier<Y> createBarrier(boolean forceWork, Publisher<? extends Y> source) {
+	private <Y> DispatchOn<Y> createBarrier(boolean forceWork, Publisher<? extends Y> source) {
 
 		if (processor == null) {
 			return new SyncProcessorBarrier<>(this);
@@ -485,10 +485,10 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		incrementReference();
 
 		if (forceWork || concurrency > 1) {
-			return new WorkProcessorBarrier<>(this, source);
+			return new PublishOn<>(this, source);
 		}
 
-		return new ProcessorBarrier<>(true, this, source);
+		return new DispatchOn<>(true, this, source);
 	}
 
 	/**
@@ -544,7 +544,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
 	}
 
-	private static class ProcessorBarrier<V> extends FluxProcessor<V, V>
+	private static class DispatchOn<V> extends FluxProcessor<V, V>
 			implements Consumer<Runnable>, BiConsumer<V, Consumer<? super V>>, Executor, Subscription, Backpressurable,
 			           Loopback, Producer, Cancellable, Completable, Prefetchable, Requestable, Failurable,
 			           Runnable {
@@ -563,22 +563,22 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 
 		@SuppressWarnings("unused")
 		volatile int running;
-		protected static final AtomicIntegerFieldUpdater<ProcessorBarrier> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(ProcessorBarrier.class, "running");
+		protected static final AtomicIntegerFieldUpdater<DispatchOn> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(DispatchOn.class, "running");
 
 		@SuppressWarnings("unused")
 		volatile int terminated;
-		protected static final AtomicIntegerFieldUpdater<ProcessorBarrier> TERMINATED =
-				AtomicIntegerFieldUpdater.newUpdater(ProcessorBarrier.class, "terminated");
+		protected static final AtomicIntegerFieldUpdater<DispatchOn> TERMINATED =
+				AtomicIntegerFieldUpdater.newUpdater(DispatchOn.class, "terminated");
 
 		@SuppressWarnings("unused")
 		volatile long requested;
-		protected static final AtomicLongFieldUpdater<ProcessorBarrier> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ProcessorBarrier.class, "requested");
+		protected static final AtomicLongFieldUpdater<DispatchOn> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(DispatchOn.class, "requested");
 
 		Subscriber<? super V> subscriber;
 
-		ProcessorBarrier(boolean buffer, final ProcessorGroup service,
+		DispatchOn(boolean buffer, final ProcessorGroup service,
 				 final Publisher<? extends V> source ) {
 			this.service = service;
 			this.source = source;
@@ -723,8 +723,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 				@Override
 				public void run() {
 					doRequest(PlatformDependent.SMALL_BUFFER_SIZE);
-					if (RUNNING.decrementAndGet(ProcessorBarrier.this) != 0) {
-						ProcessorBarrier.this.run();
+					if (RUNNING.decrementAndGet(DispatchOn.this) != 0) {
+						DispatchOn.this.run();
 					}
 				}
 			});
@@ -990,9 +990,9 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 	}
 
-	private static final class WorkProcessorBarrier<V> extends ProcessorBarrier<V> {
+	private static final class PublishOn<V> extends DispatchOn<V> {
 
-		public WorkProcessorBarrier(ProcessorGroup service, Publisher<? extends V> source) {
+		public PublishOn(ProcessorGroup service, Publisher<? extends V> source) {
 			super(false, service, source);
 		}
 
@@ -1002,7 +1002,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 				@Override
 				public void run() {
 					if(source != null) {
-						source.subscribe(WorkProcessorBarrier.this);
+						source.subscribe(PublishOn.this);
 					}
 					if(terminated == 1) {
 						if (error != null) {
@@ -1012,8 +1012,8 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 						EmptySubscription.complete(subscriber);
 						return;
 					}
-					WorkProcessorBarrier.this.subscriber = subscriber;
-					subscriber.onSubscribe(WorkProcessorBarrier.this);
+					PublishOn.this.subscriber = subscriber;
+					subscriber.onSubscribe(PublishOn.this);
 				}
 			});
 		}
@@ -1082,7 +1082,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 	}
 
-	private static final class SyncProcessorBarrier<V> extends ProcessorBarrier<V>{
+	private static final class SyncProcessorBarrier<V> extends DispatchOn<V> {
 
 		public SyncProcessorBarrier(ProcessorGroup service) {
 			super(false, service, null);

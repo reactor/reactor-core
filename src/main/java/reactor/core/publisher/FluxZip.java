@@ -23,15 +23,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.flow.Receiver;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -44,9 +41,9 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.SynchronousSubscription;
-import reactor.core.util.Exceptions;
+import reactor.core.util.FusionSubscription;
+import reactor.fn.Function;
+import reactor.fn.Supplier;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -378,7 +375,8 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 	}
 	
-	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Receiver, Cancellable, Backpressurable, Completable, Introspectable{
+	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Backpressurable,
+																  Completable, Introspectable, Receiver {
 		final ZipSingleCoordinator<T, ?> parent;
 		
 		final int index;
@@ -779,9 +777,9 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 	}
 	
 	static final class ZipInner<T> implements Subscriber<T>,
-	                                          Backpressurable,
-	                                          Completable,
-	                                          Prefetchable, Receiver, Producer {
+													   Backpressurable,
+													   Completable,
+													   Prefetchable, Receiver, Producer {
 		
 		final ZipCoordinator<T, ?> parent;
 
@@ -804,7 +802,19 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		
 		volatile boolean done;
 		
-		boolean synchronousMode;
+		int sourceMode;
+		
+		/** Running with regular, arbitrary source. */
+		static final int NORMAL = 0;
+		/** Running with a source that implements SynchronousSource. */
+		static final int SYNC = 1;
+		/** Running with a source that implements AsynchronousSource. */
+		static final int ASYNC = 2;
+		
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ZipInner> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(ZipInner.class, "once");
 		
 		public ZipInner(ZipCoordinator<T, ?> parent, int prefetch, int index, Supplier<? extends Queue<T>> queueSupplier) {
 			this.parent = parent;
@@ -818,12 +828,20 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof SynchronousSubscription) {
-					synchronousMode = true;
+				if (s instanceof FusionSubscription) {
+					FusionSubscription<T> f = (FusionSubscription<T>) s;
+
+					queue = (FusionSubscription<T>)s;
 					
-					queue = (SynchronousSubscription<T>)s;
-					done = true;
-					parent.drain();
+					if (f.requestSyncFusion()) {
+						sourceMode = SYNC;
+						
+						done = true;
+						parent.drain();
+						return;
+					} else {
+						sourceMode = ASYNC;
+					}
 				} else {
 					
 					try {
@@ -835,20 +853,24 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 						return;
 					}
 					
-					s.request(prefetch);
 				}
+				s.request(prefetch);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			queue.offer(t);
+			if (sourceMode != ASYNC) {
+				queue.offer(t);
+			}
 			parent.drain();
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			parent.error(t, index);
+			if (sourceMode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
+				parent.error(t, index);
+			}
 		}
 
 		@Override
@@ -902,7 +924,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		}
 		
 		void request(long n) {
-			if (!synchronousMode) {
+			if (sourceMode != SYNC) {
 				long p = produced + n;
 				if (p >= limit) {
 					produced = 0L;
