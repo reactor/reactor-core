@@ -16,6 +16,6 @@
 
 /**
  * Contains the foundational abstractions on which Reactor's functional and reactive callback are
- * built. It aims to backport JDK8 java.util.function.
+ * built. It aims to backport Java 8+ java.util.function.
  */
 package reactor.fn;
