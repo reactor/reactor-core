@@ -336,7 +336,7 @@ public enum Exceptions {
 	 */
 	public static final class NullOrNegativeRequestException extends IllegalArgumentException {
 
-		public NullOrNegativeRequestException(long elements) {
+		NullOrNegativeRequestException(long elements) {
 			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
 			  elements);
 		}
@@ -347,7 +347,7 @@ public enum Exceptions {
 	 */
 	public static final class ArgumentIsNullException extends NullPointerException {
 
-		public ArgumentIsNullException() {
+		ArgumentIsNullException() {
 			super("Spec 2.13: Signal/argument cannot be null");
 		}
 	}
@@ -357,7 +357,7 @@ public enum Exceptions {
 	 */
 	public static final class DuplicateOnSubscribeException extends IllegalStateException {
 
-		public DuplicateOnSubscribeException() {
+		DuplicateOnSubscribeException() {
 			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
 			" " +
 			  "(based on object equality)");
