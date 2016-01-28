@@ -16,6 +16,7 @@
 
 package reactor.core
 
+import reactor.core.publisher.ProcessorGroup
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
@@ -66,7 +67,7 @@ class ReactiveStateSpec extends Specification {
 	def sub1 = unbounded()
 	def sub2 = unbounded()
 	def sub3 = unbounded()
-	def group = singleGroup().get()
+	def group = ProcessorGroup.single().get()
 	proc1.log(" test").subscribe(sub1)
 	group.subscribe(sub2)
 	proc1.log(" test").subscribe(sub3)
