@@ -1198,7 +1198,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
-	 * <p> <p>
+	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param group a {@link ProcessorGroup} pool

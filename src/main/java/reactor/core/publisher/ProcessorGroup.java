@@ -53,13 +53,29 @@ import reactor.fn.Consumer;
 import reactor.fn.Supplier;
 
 /**
- * A Shared Processor Service is a {@link Processor} factory eventually sharing one or more internal {@link Processor}.
- * <p> Its purpose is to mutualize some threading and event loop resources, thus creating an (a)sync gateway reproducing
- * the input sequence of signals to their attached subscriber context. Its default behavior will be to request a fair
- * share of the internal {@link Processor} to allow many concurrent use of a single async resource. <p> Alongside
- * building Processor, SharedProcessor can generate unbounded dispatchers as: - a {@link BiConsumer} that schedules the
- * data argument over the  {@link Consumer} task argument. - a {@link Consumer} that schedules  {@link Consumer} task
- * argument. - a {@link Executor} that runs an arbitrary {@link Runnable} task. <p> SharedProcessor maintains a
+ * A Shared Processor Group is a {@link Processor} {@link Supplier} eventually sharing one or more internal {@link Processor}.
+ * <p> Its purpose is to mutualize some threading and event loop resources, thus creating an (a)sync gateway scheduling
+ * the input sequence of signals to their attached subscriber context.
+ * {@link ProcessorGroup} can supply two main {@link Processor} behaviors regarding which signal scheduling
+ * asynchronously :
+ * <ul>
+ *     <li>{@link #dispatchOn}
+ *     <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+ *     </li>
+ *     <li>{@link #publishOn}
+ *     <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+ *     </li>
+ * </ul>
+ *
+ * <p> Alongside
+ * building Processor, {@link ProcessorGroup} can generate unbounded dispatchers as:
+ * <ul>
+ *     <li>a {@link BiConsumer} that schedules the data argument over the  {@link Consumer} task argument.</li>
+ *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
+ *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
+ *     <li>an {@link Executor} that runs an arbitrary {@link Runnable} task. </li>
+ * </ul>
+ * -  -  - <p> SharedProcessor maintains a
  * reference count on how many artefacts have been built. Therefore it will automatically shutdown the internal async
  * resource after all references have been released. Each reference (consumer, executor or processor) can be used in
  * combination with {@link ProcessorGroup#release(Object...)} to cleanly unregister and eventually shutdown when no more
