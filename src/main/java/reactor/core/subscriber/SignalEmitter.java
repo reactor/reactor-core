@@ -37,10 +37,12 @@ import reactor.fn.Predicate;
 
 /**
  *
- * A "hot" sequence source to provide to any {@link Subscriber} and {@link org.reactivestreams.Processor} in particular.
+ * A "hot" sequence source to decorate any {@link Subscriber} or {@link org.reactivestreams.Processor}.
  *
- * The key property of {@link SignalEmitter} is the pending demand tracker. Any emission can be safely sent to the
- * delegate {@link Subscriber} by using {@link #submit} to block on backpressure (missing demand) or {@link #emit} to
+ * The {@link SignalEmitter} keeps track of the decorated {@link Subscriber} demand. Therefore any emission can be
+ * safely sent to
+ * the delegate
+ * {@link Subscriber} by using {@link #submit} to block on backpressure (missing demand) or {@link #emit} to
  * never block and return instead an {@link Emission} status.
  *
  * The emitter is itself a {@link Subscriber} that will request an unbounded value if subscribed.
@@ -155,10 +157,13 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * A non-blocking {@link Subscriber#onNext(Object)} that will return a status {@link Emission}. The status will
+	 * indicate if the decorated
+	 * subscriber is backpressuring this {@link SignalEmitter} and if it has previously been terminated successfully or
+	 * not.
 	 *
-	 *
-	 * @param data
-	 * @return
+	 * @param data the data to signal
+	 * @return an {@link Emission} status
 	 */
 	public Emission emit(E data) {
 		if (uncaughtException != null) {
@@ -193,8 +198,10 @@ public class SignalEmitter<E>
 
 	/**
 	 *
-	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. Might fail with an
-	 * unchecked exception if an error has already been recorded by this {@link SignalEmitter}.
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link SignalEmitter#failWith(Throwable)}
+	 * might fail itself with an
+	 * unchecked exception if an error has already been recorded or it
+	 * has previously been terminated via {@link #cancel()}, {@link #finish()} or {@link #onComplete()}.
 	 *
 	 * @param error the exception to signal
 	 */
@@ -219,8 +226,11 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Try emitting {@link #onComplete()} to the decorated {@link Subscriber}. The completion might not return a
+	 * successful {@link Emission#isOk()} if this {@link SignalEmitter} was previously terminated or the delegate
+	 * failed consuming the signal.
 	 *
-	 * @return
+	 * @return an {@link Emission} status
 	 */
 	public Emission finish() {
 		if (uncaughtException != null) {
@@ -248,9 +258,11 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Blocking {@link Subscriber#onNext(Object)} call with an infinite wait on backpressure.
 	 *
-	 * @param data
-	 * @return
+	 * @param data the data to signal
+	 *
+	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
 	@SuppressWarnings("unchecked")
 	public long submit(E data) {
@@ -258,10 +270,12 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Blocking {@link Subscriber#onNext(Object)} call with a timed wait on backpressure.
 	 *
-	 * @param data
-	 * @param timeout
-	 * @return
+	 * @param data the data to signal
+	 * @param timeout the maximum waiting time in milliseconds before giving up
+	 *
+	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
 	@SuppressWarnings("unchecked")
 	public long submit(E data, long timeout) {
@@ -269,10 +283,14 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Blocking {@link Subscriber#onNext(Object)} call with a timed wait on backpressure. A retry predicate will
+	 * evaluate when a timeout occurs, returning true will re-schedule an emission while false will drop the signal.
 	 *
-	 * @param data
-	 * @param timeout
-	 * @return
+	 * @param data the data to signal
+	 * @param timeout the maximum waiting time in milliseconds before giving up
+	 * @param dropPredicate the dropped signal callback evaluating if retry should occur or not
+	 *
+	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
 	@SuppressWarnings("unchecked")
 	public long submit(E data, long timeout, Predicate<E> dropPredicate) {
@@ -280,11 +298,13 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Blocking {@link Subscriber#onNext(Object)} call with a timed wait on backpressure.
 	 *
-	 * @param data
-	 * @param timeout
-	 * @param unit
-	 * @return
+	 * @param data the data to signal
+	 * @param timeout the maximum waiting time in given unit before giving up
+	 * @param unit the waiting time unit
+	 *
+	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
 	@SuppressWarnings("unchecked")
 	public long submit(E data, long timeout, TimeUnit unit) {
@@ -292,12 +312,14 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 * Blocking {@link Subscriber#onNext(Object)} call with a timed wait on backpressure. A retry predicate will
+	 * evaluate when a timeout occurs, returning true will re-schedule an emission while false will drop the signal.
 	 *
-	 * @param data
-	 * @param timeout
-	 * @param unit
-	 * @param dropPredicate
-	 * @return
+	 * @param data the data to signal
+	 * @param timeout the maximum waiting time in given unit before giving up
+	 * @param unit the waiting time unit
+	 * @param dropPredicate the dropped signal callback evaluating if retry should occur or not
+	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
 	public long submit(E data, long timeout, TimeUnit unit, Predicate<E> dropPredicate) {
 		final long start = System.currentTimeMillis();
@@ -327,8 +349,7 @@ public class SignalEmitter<E>
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return true if the decorated {@link Subscriber} is actively demanding
 	 */
 	public boolean hasRequested() {
 		return !cancelled && requested != 0L;
@@ -340,16 +361,15 @@ public class SignalEmitter<E>
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return true if the {@link SignalEmitter} has observed any error
 	 */
 	public boolean hasFailed() {
 		return uncaughtException != null;
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return true if the
+	 * {@link SignalEmitter} has received one of {@link Subscriber#onComplete()} or {@link Subscription#cancel()}
 	 */
 	public boolean hasEnded() {
 		return cancelled;
