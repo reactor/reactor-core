@@ -36,6 +36,15 @@ import reactor.fn.Consumer;
 import reactor.fn.Predicate;
 
 /**
+ *
+ * A "hot" sequence source to provide to any {@link Subscriber} and {@link org.reactivestreams.Processor} in particular.
+ *
+ * The key property of {@link SignalEmitter} is the pending demand tracker. Any emission can be safely sent to the
+ * delegate {@link Subscriber} by using {@link #submit} to block on backpressure (missing demand) or {@link #emit} to
+ * never block and return instead an {@link Emission} status.
+ *
+ * The emitter is itself a {@link Subscriber} that will request an unbounded value if subscribed.
+ *
  * @author Stephane Maldini
  * @since 2.5
  */
@@ -45,6 +54,8 @@ public class SignalEmitter<E>
 		           Closeable {
 
 	/**
+	 * An acknowledgement signal returned by {@link #emit}.
+	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
 	 *
 	 */
 	public enum Emission {
@@ -85,9 +96,16 @@ public class SignalEmitter<E>
 
 	/**
 	 *
-	 * @param subscriber
-	 * @param <E>
-	 * @return
+	 * Create a
+	 * {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
+	 *
+	 * The subscriber will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
+	 * this call.
+	 *
+	 * @param subscriber the decorated {@link Subscriber}
+	 * @param <E> the reified {@link Subscriber} type
+	 *
+	 * @return a new pre-subscribed {@link SignalEmitter}
 	 */
 	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber) {
 		return create(subscriber, true);
@@ -95,10 +113,19 @@ public class SignalEmitter<E>
 
 	/**
 	 *
-	 * @param subscriber
-	 * @param autostart
-	 * @param <E>
-	 * @return
+	 * Create a
+	 * {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
+	 *
+	 * The subscriber will be immediately {@link #start started} only if the autostart property is true.  via
+	 * {@link Subscriber#onSubscribe(Subscription)} as the
+	 * result of
+	 * this call.
+	 *
+	 * @param subscriber the decorated {@link Subscriber}
+	 * @param autostart true if {@link Subscriber#onSubscribe(Subscription)} is invoked during this call
+	 * @param <E> the reified {@link Subscriber} type
+	 *
+	 * @return a new {@link SignalEmitter}
 	 */
 	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber, boolean autostart) {
 		SignalEmitter<E> sub = new SignalEmitter<>(subscriber);
@@ -113,7 +140,9 @@ public class SignalEmitter<E>
 	}
 
 	/**
-	 *
+	 * Subscribe the decorated subscriber
+	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link SignalEmitter} might be
+	 * cancelled as per Reactive Streams Specification enforce.
 	 */
 	public void start() {
 		try {
@@ -126,6 +155,7 @@ public class SignalEmitter<E>
 	}
 
 	/**
+	 *
 	 *
 	 * @param data
 	 * @return
@@ -163,7 +193,10 @@ public class SignalEmitter<E>
 
 	/**
 	 *
-	 * @param error
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. Might fail with an
+	 * unchecked exception if an error has already been recorded by this {@link SignalEmitter}.
+	 *
+	 * @param error the exception to signal
 	 */
 	public void failWith(Throwable error) {
 		if (uncaughtException == null) {
