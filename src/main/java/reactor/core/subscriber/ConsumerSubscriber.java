@@ -55,7 +55,6 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver
 	 * @param consumer     A {@link Consumer} with argument onNext data
 	 * @param errorConsumer    A {@link Consumer} called onError
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual context if any
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public ConsumerSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,

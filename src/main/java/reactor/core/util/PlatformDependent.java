@@ -30,7 +30,9 @@ import sun.misc.Unsafe;
  * Expose some runtime properties such as Unsafe access or Android environment.
  *
  * Borrowed from Netty project which itself borrows from JCTools and various other projects.
- * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
+ *
+ * Original Reference :
+ * <a href='https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java'>Netty</a>.
  */
 public enum PlatformDependent {
 	;

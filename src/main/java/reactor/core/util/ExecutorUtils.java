@@ -35,31 +35,34 @@ public enum ExecutorUtils {
 	;
 
 	/**
-	 * @param name
+	 * Create a named {@link ThreadFactory} that will set the created threads as daemon with an incrementing derived
+	 * name.
 	 *
-	 * @return
+	 * @param name The prefix given to created threads
+	 *
+	 * @return a new {@link ThreadFactory}
 	 */
 	public static ThreadFactory newNamedFactory(String name) {
 		return new NamedDaemonThreadFactory(name);
 	}
 
 	/**
-	 * @param name
-	 * @param cl
+	 * @param name The prefix given to created threads
+	 * @param cl An arbitrary classloader to assign to the created threads
 	 *
-	 * @return
+	 * @return a new {@link ThreadFactory}
 	 */
 	public static ThreadFactory newNamedFactory(String name, ClassLoader cl) {
 		return new NamedDaemonThreadFactory(name, cl);
 	}
 
 	/**
-	 * @param name
-	 * @param cl
-	 * @param uncaughtExceptionHandler
-	 * @param daemon
+	 * @param name The prefix given to created threads
+	 * @param cl An arbitrary classloader to assign to the created threads
+	 * @param uncaughtExceptionHandler an uncaught exception fatal callback
+	 * @param daemon manually set if the created threads should prevent JVM shutdown (non-daemon) or not (daemon).
 	 *
-	 * @return
+	 * @return a new {@link ThreadFactory}
 	 */
 	public static ThreadFactory newNamedFactory(String name,
 			ClassLoader cl,
@@ -69,7 +72,9 @@ public enum ExecutorUtils {
 	}
 
 	/**
-	 * @param executor
+	 * Call {@link ExecutorService#shutdown()} if the instance is decorated with the single-user marking container.
+	 *
+	 * @param executor the service to eventually shutdown.
 	 */
 	public static void shutdownIfSingleUse(ExecutorService executor) {
 		if (executor.getClass() == ExecutorUtils.SingleUseExecutor.class) {
@@ -78,34 +83,31 @@ public enum ExecutorUtils {
 	}
 
 	/**
-	 * @param name
+	 * Create and mark an unbounded cached {@link ExecutorService} as an auto-closable service in particular when
+	 * observing reactive stream terminal error, completion and cancel signals.
 	 *
-	 * @return
+	 * @param name The prefix given to created threads
+	 *
+	 * @return a new {@link ExecutorService} derived from {@link Executors#newCachedThreadPool}
 	 */
 	public static ExecutorService singleUse(String name) {
 		return singleUse(name, null);
 	}
 
 	/**
-	 * @param name
-	 * @param contextClassLoader
+	 * Create and mark an unbounded cached {@link ExecutorService} as an auto-closable service in particular when
+	 * observing reactive stream terminal error, completion and cancel signals.
 	 *
-	 * @return
+	 * @param name The prefix given to created threads
+	 * @param contextClassLoader An arbitrary classloader to assign to the created threads
+	 *
+	 * @return a new {@link ExecutorService} derived from {@link Executors#newCachedThreadPool}
 	 */
 	public static ExecutorService singleUse(String name, ClassLoader contextClassLoader) {
 		return new SingleUseExecutor(Executors.newCachedThreadPool(ExecutorUtils.newNamedFactory(name,
 				contextClassLoader,
 				null,
 				false)));
-	}
-
-	/**
-	 * @param delegate
-	 *
-	 * @return
-	 */
-	public static ExecutorService wrapSingleUse(ExecutorService delegate) {
-		return new SingleUseExecutor(delegate);
 	}
 
 	/**

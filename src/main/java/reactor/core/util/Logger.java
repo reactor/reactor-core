@@ -24,7 +24,7 @@ import java.util.regex.Matcher;
 
 /**
  * Repackaged Logger for internal purposes. Will pick up the existing
- * logger implementation. Refer Factory for more information.
+ * logger implementation. Refer to the individual factories for more information.
  */
 public abstract class Logger {
 
@@ -58,34 +58,46 @@ public abstract class Logger {
 	}
 
 	/**
+	 * Try getting an appropriate
+	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logging}.
 	 *
-	 * @param name
-	 * @return
+	 * @param name the category or logger name to assign
+	 *
+	 * @return a new {@link Logger} instance
 	 */
 	public static Logger getLogger(String name) {
 		return defaultFactory.getLogger(name);
 	}
 
 	/**
+	 * Try getting an appropriate
+	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logging}.
 	 *
-	 * @param klass
-	 * @return
+	 * @param klass the source {@link Class} to derive the name from.
+	 *
+	 * @return a new {@link Logger} instance
 	 */
 	public static Logger getLogger(Class<?> klass) {
 		return defaultFactory.getLogger(klass.getName());
 	}
 
 	/**
+	 * Define a globally set {@link Extension} callback to observe logging statements.
 	 *
-	 * @param extension
+	 * @param extension the {@link Extension} plugin to provide globally
+	 *
+	 * @return true if extensions have been successfully enabled
 	 */
 	public static boolean enableExtension(Extension extension) {
 		return EXTENSION.compareAndSet(LoggerFactory.globalExtension, null, extension);
 	}
 
 	/**
+	 * Unsubscribe the passed {@link Extension} reference if currently available globally.
 	 *
-	 * @param extension
+	 * @param extension the {@link Extension} to unregister
+	 *
+	 * @return true if successfully unregistered
 	 */
 	public static boolean disableExtension(Extension extension) {
 		if(EXTENSION.compareAndSet(LoggerFactory.globalExtension, extension, null)){
@@ -96,10 +108,11 @@ public abstract class Logger {
 	}
 
 	/**
+	 * Format a {@link String} using curly brackets for interpolling
 	 *
-	 * @param from
-	 * @param arguments
-	 * @return
+	 * @param from Origin String
+	 * @param arguments objects to interpolate from the passed String
+	 * @return the formatted {@link String}
 	 */
 	public static String format(String from, Object... arguments){
 		if(from != null) {
@@ -114,12 +127,12 @@ public abstract class Logger {
 		return null;
 	}
 
+	/**
+	 * Logging scope enumeration combined with {@link #format(String, Object...)}
+	 */
 	public enum SignalKind {request, onSubscribe, onNext, onError, onComplete, cancel, graph}
 
-	/**
-	 *
-	 */
-	public interface LoggerFactory {
+	interface LoggerFactory {
 		
 		GlobalExtension globalExtension = new GlobalExtension();
 		
@@ -127,7 +140,8 @@ public abstract class Logger {
 	}
 
 	/**
-	 *
+	 * A callback to observe logging statements that can be assigned globally via
+	 * {@link Logger#enableExtension(Extension)}.
 	 */
 	public interface Extension {
 

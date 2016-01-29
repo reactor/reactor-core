@@ -23,8 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * Static Helpers to decorate an error with an associated data
  * <p>
  *
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
- *
+ * @see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>
  * @author Stephane Maldini
  * @since 2.0
  */
@@ -121,16 +120,14 @@ public enum Exceptions {
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return a new {@link ArgumentIsNullException} with a cause message abiding to reactive stream specification.
 	 */
 	public static ArgumentIsNullException argumentIsNullException() {
 		return new ArgumentIsNullException();
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return a new {@link DuplicateOnSubscribeException} with a cause message abiding to reactive stream specification.
 	 */
 	public static DuplicateOnSubscribeException duplicateOnSubscribeException() {
 		return new DuplicateOnSubscribeException();
@@ -210,9 +207,8 @@ public enum Exceptions {
 	}
 
 	/**
-	 *
-	 * @param elements
-	 * @return
+	 * @param elements the invalid requested demand
+	 * @return a new {@link NullOrNegativeRequestException} with a cause message abiding to reactive stream specification.
 	 */
 	public static NullOrNegativeRequestException nullOrNegativeRequestException(long elements) {
 		return new NullOrNegativeRequestException(elements);
@@ -242,7 +238,7 @@ public enum Exceptions {
 	/**
 	 * An unexpected event is about to be dropped
 	 *
-	 * @param t
+	 * @param t the dropping data
 	 */
 	public static <T> void onNextDropped(T t) {
 		failWithCancel();
@@ -268,11 +264,12 @@ public enum Exceptions {
 	}
 
 	/**
+	 * Atomic utility to safely mark a volatile throwable reference with a terminal marker.
 	 *
-	 * @param field
-	 * @param instance
-	 * @param <T>
-	 * @return
+	 * @param field the atomic container
+	 * @param instance the reference instance
+	 * @param <T> the instance type
+	 * @return the previously masked throwable
 	 */
 	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
 		Throwable current = field.get(instance);
@@ -293,7 +290,7 @@ public enum Exceptions {
 	 * <li>{@code LinkageError}</li>
 	 * </ul>
 	 *
-	 * @param t
+	 * @param t the exception to evaluate
 	 */
 	public static void throwIfFatal(Throwable t) {
 		if (t instanceof UpstreamException) {
@@ -312,7 +309,7 @@ public enum Exceptions {
 	/**
 	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
 	 *
-	 * @param t
+	 * @param t the exception to wrap
 	 */
 	public static Throwable unwrap(Throwable t) {
 		if (t instanceof ReactiveException) {
@@ -477,6 +474,7 @@ public enum Exceptions {
 		}
 
 	}
+
 	/**
 	 * An error signal from downstream subscribers consuming data when their state is denying any additional event.
 	 *
@@ -497,6 +495,7 @@ public enum Exceptions {
 		}
 
 	}
+
 	/**
 	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
 	 *

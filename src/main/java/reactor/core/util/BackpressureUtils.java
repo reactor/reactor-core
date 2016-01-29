@@ -59,9 +59,9 @@ public enum BackpressureUtils {
 	}
 
 	/**
-	 *
-	 * @param n
-	 * @return
+	 * Evaluate if a request is strictly positive otherwise {@link #reportBadRequest(long)}
+	 * @param n the request value
+	 * @return true if valid
 	 */
 	public static boolean validate(long n) {
 		if (n < 0) {
@@ -192,12 +192,13 @@ public enum BackpressureUtils {
 	}
 
 	/**
+	 * Concurrent addition bound to Long.MAX_VALUE.
+	 * Any concurrent write will "happen" before this operation.
 	 *
-	 * @param updater
-	 * @param instance
-	 * @param n
-	 * @param <T>
-	 * @return
+	 * @param updater  current field updater
+	 * @param instance current instance to update
+	 * @param n    delta to add
+	 * @return Addition result or Long.MAX_VALUE
 	 */
 	public static <T> long addAndGet(AtomicLongFieldUpdater<T> updater, T instance, long n) {
 		for (;;) {
@@ -219,7 +220,7 @@ public enum BackpressureUtils {
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toAdd    delta to add
-	 * @return Addition result or Long.MAX_VALUE
+	 * @return value before addition or Long.MAX_VALUE
 	 */
 	public static <T> long getAndAdd(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
 		long r, u;
@@ -239,7 +240,7 @@ public enum BackpressureUtils {
 	 *
 	 * @param sequence current sequence to update
 	 * @param toAdd    delta to add
-	 * @return Addition result or Long.MAX_VALUE
+	 * @return value before addition or Long.MAX_VALUE
 	 */
 	public static long getAndAdd(Sequence sequence, long toAdd) {
 		long u, r;
@@ -260,7 +261,7 @@ public enum BackpressureUtils {
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toSub    delta to sub
-	 * @return Substraction result or zero
+	 * @return value before subscription or zero
 	 */
 	public static <T> long getAndSub(AtomicLongFieldUpdater<T> updater, T instance, long toSub) {
 		long r, u;
@@ -282,7 +283,7 @@ public enum BackpressureUtils {
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toSub    delta to sub
-	 * @return Substraction result or zero
+	 * @return value before subscription or zero
 	 */
 	public static <T> long getAndSub(AtomicIntegerFieldUpdater<T> updater, T instance, int toSub) {
 		int r, u;
@@ -303,7 +304,7 @@ public enum BackpressureUtils {
 	 *
 	 * @param sequence current sequence to update
 	 * @param toSub    delta to sub
-	 * @return Substraction result, 0 or Long.MAX_VALUE
+	 * @return value before subscription, 0 or Long.MAX_VALUE
 	 */
 	public static long getAndSub(Sequence sequence, long toSub) {
 		long r, u;
@@ -324,7 +325,7 @@ public enum BackpressureUtils {
 	 *
 	 * @param sequence current atomic to update
 	 * @param toSub    delta to sub
-	 * @return Substraction result, 0 or Long.MAX_VALUE
+	 * @return value before subscription, 0 or Long.MAX_VALUE
 	 */
 	public static long getAndSub(AtomicLong sequence, long toSub) {
 		long r, u;
@@ -384,6 +385,16 @@ public enum BackpressureUtils {
 		return false;
 	}
 
+	/**
+	 * A generic utility to atomically replace a subscription or cancel if marked by a {@link CancelledSubscription}
+	 * or concurrently set before.
+	 *
+	 * @param field The Atomic container
+	 * @param instance the instance reference
+	 * @param s the subscription
+	 * @param <F> the instance type
+	 * @return true if replaced
+	 */
 	public static <F> boolean set(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
 		for (;;) {
 			Subscription a = field.get(instance);
@@ -401,12 +412,13 @@ public enum BackpressureUtils {
 	}
 
 	/**
+	 * A generic utility to atomically replace a subscription or cancel if marked by a {@link CancelledSubscription}.
 	 *
-	 * @param field
-	 * @param instance
-	 * @param s
-	 * @param <F>
-	 * @return
+	 * @param field The Atomic container
+	 * @param instance the instance reference
+	 * @param s the subscription
+	 * @param <F> the instance type
+	 * @return true if replaced
 	 */
 	public static <F> boolean replace(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
 		for (;;) {
@@ -422,22 +434,22 @@ public enum BackpressureUtils {
 	}
 
 	/**
-	 *
+	 * Throw {@link reactor.core.util.Exceptions.DuplicateOnSubscribeException}
 	 */
 	public static void reportSubscriptionSet() {
 		throw Exceptions.duplicateOnSubscribeException();
 	}
 
 	/**
-	 *
-	 * @param n
+	 * Throw {@link reactor.core.util.Exceptions.NullOrNegativeRequestException}
+	 * @param n the demand to evaluate
 	 */
 	public static void reportBadRequest(long n) {
 		throw Exceptions.nullOrNegativeRequestException(n);
 	}
 
 	/**
-	 *
+	 * Throw {@link reactor.core.util.Exceptions.InsufficientCapacityException}
 	 */
 	public static void reportMoreProduced() {
 		Exceptions.failWithOverflow();

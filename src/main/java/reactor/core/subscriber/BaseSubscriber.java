@@ -44,16 +44,19 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	}
 
 	/**
+	 * Create a {@link SignalEmitter} and attach it via {@link #onSubscribe(Subscription)}.
 	 *
-	 * @return
+	 * @return a new subscribed {@link SignalEmitter}
 	 */
 	public SignalEmitter<T> startEmitter() {
 		return bindEmitter(true);
 	}
 
 	/**
+	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * set to true.
 	 *
-	 * @return
+	 * @return a new {@link SignalEmitter}
 	 */
 	public SignalEmitter<T> bindEmitter(boolean autostart) {
 		return SignalEmitter.create(this, autostart);
