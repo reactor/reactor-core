@@ -67,19 +67,18 @@ import reactor.fn.Supplier;
  *     </li>
  * </ul>
  *
- * <p> Alongside
- * building Processor, {@link ProcessorGroup} can generate unbounded dispatchers as:
+ * <p> Alongside building {@link Processor}s proxies, {@link ProcessorGroup} can generate unbounded proxies such as:
  * <ul>
  *     <li>a {@link BiConsumer} that schedules the data argument over the  {@link Consumer} task argument.</li>
  *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
  *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
  *     <li>an {@link Executor} that runs an arbitrary {@link Runnable} task. </li>
  * </ul>
- * -  -  - <p> SharedProcessor maintains a
- * reference count on how many artefacts have been built. Therefore it will automatically shutdown the internal async
- * resource after all references have been released. Each reference (consumer, executor or processor) can be used in
- * combination with {@link ProcessorGroup#release(Object...)} to cleanly unregister and eventually shutdown when no more
- * references use that service.
+ * <p> {@link ProcessorGroup} maintains a reference count on how many artefacts have been built. Therefore it will
+ * automatically shutdown the internal async resource after all references have been released. Each reference
+ * (consumer, executor or processor) can be used in combination with {@link ProcessorGroup#release(Object...)} to
+ * cleanly unregister and eventually shutdown when no more references use that {@link ProcessorGroup}.
+ *
  * @param <T> the default type (not enforced at runtime)
  * @author Anatoly Kadyshev
  * @author Stephane Maldini
