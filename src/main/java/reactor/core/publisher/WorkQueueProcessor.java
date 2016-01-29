@@ -56,7 +56,8 @@ import reactor.fn.Supplier;
  *     <p>
  *         Created from {@link #share}, the {@link WorkQueueProcessor} will authorize concurrent publishing
  *         (multi-producer) from its receiving side {@link Subscriber#onNext(Object)}.
- *         {@link WorkQueueProcessor} are able to replay up to its buffer size number of failed signals (either dropped or
+ *         {@link WorkQueueProcessor} is able to replay up to its buffer size number of failed signals (either
+ *         dropped or
  *         fatally throwing on child {@link Subscriber#onNext}).
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueuef.png" alt="">
  * <p>
