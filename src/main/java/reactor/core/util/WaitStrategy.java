@@ -35,9 +35,9 @@ public abstract class WaitStrategy
     final static WaitStrategy BUSY_SPIN = new BusySpin();
 
     /**
-     * Variation of the {@link Blocking} that attempts to elide conditional wake-ups when the lock is uncontended.
-     * Shows performance improvements on microbenchmarks.  However this wait strategy should be considered experimental
-     * as I have not full proved the correctness of the lock elision code.
+     * Blocking strategy that uses a lock and condition variable for ringbuffer consumer waiting on a barrier.
+     *
+     * This strategy can be used when throughput and low-latency are not as important as CPU resource.
      */
     public static WaitStrategy blocking() {
         return new Blocking();
@@ -54,7 +54,7 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Variation of the {@link Blocking} that attempts to elide conditional wake-ups when the lock is uncontended.
+     * Variation of the {@link #blocking()} that attempts to elide conditional wake-ups when the lock is uncontended.
      * Shows performance improvements on microbenchmarks.  However this wait strategy should be considered experimental
      * as I have not full proved the correctness of the lock elision code.
      */
@@ -115,7 +115,7 @@ public abstract class WaitStrategy
      * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
      * periods.
      *
-     * @param retries
+     * @param retries the spin cycle count before parking
      */
     public static WaitStrategy sleeping(int retries) {
         return new Sleeping(retries);
@@ -155,11 +155,7 @@ public abstract class WaitStrategy
             throws Exceptions.AlertException, InterruptedException;
 
 
-    /**
-     * Blocking strategy that uses a lock and condition variable for ringbuffer consumer waiting on a barrier.
-     *
-     * This strategy can be used when throughput and low-latency are not as important as CPU resource.
-     */
+
     final static class Blocking extends WaitStrategy {
 
         private final Lock      lock                     = new ReentrantLock();

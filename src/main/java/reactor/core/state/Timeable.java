@@ -24,7 +24,7 @@ public interface Timeable {
 	/**
 	 * Can represent a period in milliseconds
 	 *
-	 * @return
+	 * @return a time resolution for a periodic execution
 	 */
 	long period();
 }

@@ -63,7 +63,7 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
     /**
      * Wait for the given sequence to be available for consumption.
      *
-     * @param consumer
+     * @param consumer a spin observer to invoke when nothing is available to read
      * @param sequence to wait for
      * @return the sequence up to which is available
      * @throws Exceptions.AlertException if a status change has occurred for the Disruptor
@@ -128,10 +128,10 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
     }
 
     /**
-         * Check if an alert has been raised and throw an {@link Exceptions.AlertException} if it has.
-         *
-         * @throws Exceptions.AlertException if alert has been raised.
-         */
+     * Check if an alert has been raised and throw an {@link Exceptions alert} if it has.
+     *
+     * @throws RuntimeException a {@link Exceptions alert} if alert has been raised.
+     */
     public void checkAlert() throws Exceptions.AlertException
     {
         if (alerted)

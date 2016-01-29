@@ -69,6 +69,9 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	/**
 	 *
+	 * Create a
+	 * {@link Runnable} event loop that will keep monitoring a {@link LongSupplier} and compare it to a {@link RingBuffer}
+	 *
 	 * @param upstream
 	 * @param stopCondition
 	 * @param postWaitCallback
@@ -387,10 +390,15 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * @param init
-	 * @param delegate
+	 * Wrap a new sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level
+	 * when
+	 * peeking. Mostly invisible cost but the option is left open. Keeping reference of the arbitrary consumer allows
+	 * expanded operational navigation (graph) by finding all target subscribers of a given ring buffer.
 	 *
-	 * @return
+	 * @param init the initial sequence index
+	 * @param delegate the target to proxy
+	 *
+	 * @return a wrapped {@link Sequence}
 	 */
 	public static Sequence wrap(long init, Object delegate) {
 		if (PlatformDependent.TRACEABLE_RING_BUFFER_PROCESSOR) {
@@ -402,13 +410,15 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * @param init
-	 * @param delegate
-	 * @param <E>
+	 * Wrap a sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level when
+	 * peeking. Mostly invisible cost but the option is left open.
 	 *
-	 * @return
+	 * @param init the sequence reference
+	 * @param delegate the object to wrap
+	 *
+	 * @return a wrapped {@link Sequence}
 	 */
-	public static <E> Wrapped<E> wrap(Sequence init, E delegate){
+	public static Sequence wrap(Sequence init, Object delegate){
 		return new Wrapped<>(delegate, init);
     }
 

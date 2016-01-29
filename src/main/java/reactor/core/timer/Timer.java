@@ -178,8 +178,7 @@ public class Timer implements Timeable, Cancellable {
 	}
 
 	/**
-	 *
-	 * @return
+	 * @return a current time millis {@link LongSupplier}
 	 */
 	public static LongSupplier currentTimeMillisResolver(){
 		if (IncrementingTimeResolver.isEnabled()){
@@ -237,7 +236,7 @@ public class Timer implements Timeable, Cancellable {
 	/**
 	 * Schedule a recurring task. The given {@link Subscriber} will receive an ever incrementing integer from 0 once
 	 * every N time units after the given delay. If the {@link Subscription} has not been requested before the timed
-	 * signal, a {@link Exceptions.TimerOverflowException} will be signalled instead.
+	 * signal, a  {@link java.util.concurrent.TimeoutException} will be signalled instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke each period
 	 * @param period the amount of time that should elapse between invocations of the given {@code Subscriber}
@@ -302,7 +301,7 @@ public class Timer implements Timeable, Cancellable {
 
 	/**
 	 * Submit a task for arbitrary execution after the given time delay. If the {@link Subscription} has not been
-	 * requested before the timed signal, a {@link Exceptions.TimerOverflowException} will be signalled
+	 * requested before the timed signal, a {@link java.util.concurrent.TimeoutException} will be signalled
 	 * instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke
