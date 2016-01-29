@@ -25,10 +25,10 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import reactor.core.flow.Loopback;
-import reactor.core.flow.Receiver;
+import reactor.core.flow.MultiProducer;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
-import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -40,6 +40,11 @@ import reactor.core.state.Requestable;
 import reactor.core.state.Timeable;
 
 /**
+ * Navigate and introspect
+ * {@link Loopback}, {@link Receiver}, {@link MultiReceiver}, {@link MultiProducer} and {@link Producer}. The scan
+ * will produce a {@link ReactiveStateUtils.Graph} representation of a data flow, used for monitoring, debugging or
+ * contextual informations.
+ *
  * @author Stephane Maldini
  * @since 2.5
  */
@@ -48,16 +53,16 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create an empty graph
-	 * @return a Graph
+	 * @return a new Graph
 	 */
 	public static Graph createGraph() {
 		return createGraph(false);
 	}
 
 	/**
-	 *
-	 * @param trace
-	 * @return
+	 * Create an empty graph
+	 * @param trace force introspection on components presenting the option {@link Introspectable#TRACE_ONLY}
+	 * @return a new Graph
 	 */
 	public static Graph createGraph(boolean trace) {
 		return new Graph(false, trace);
@@ -65,7 +70,7 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available
-	 * @return a Graph
+	 * @return a new Graph
 	 */
 	public static Graph scan(Object o) {
 		return scan(o, false);
@@ -73,7 +78,7 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available
-	 * @return a Graph
+	 * @return a new Graph
 	 */
 	public static Graph scan(Object o, boolean trace) {
 		if (o == null) {
@@ -120,28 +125,33 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
+	 * Introspect the passed object and return a JSON representation as a String. Indent and line carriages will be
+	 * added to the result.
 	 *
-	 * @param o
-	 * @return
+	 * @param o the candidate object
+	 * @return a JSON result
 	 */
 	public static String prettyPrint(Object o) {
 		return print(o, true);
 	}
 
 	/**
+	 * Introspect the passed object and return a JSON representation as a String.
 	 *
-	 * @param o
-	 * @return
+	 * @param o the candidate object
+	 * @return a JSON result
 	 */
 	public static String print(Object o) {
 		return print(o, false);
 	}
 
 	/**
+	 * Introspect the passed object and return a JSON representation as a String.
 	 *
-	 * @param o
-	 * @param prettyPrint
-	 * @return
+	 * @param o the candidate object
+	 * @param prettyPrint true if indent and line return should be inserted
+	 *
+	 * @return a JSON result
 	 */
 	public static String print(Object o, boolean prettyPrint) {
 		if (o == null) {
@@ -157,18 +167,16 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Receiver}
 	 */
 	public static boolean hasUpstream(Object o) {
 		return reactiveStateCheck(o, Receiver.class) && ((Receiver) o).upstream() != null;
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link MultiReceiver}
 	 */
 	public static boolean hasUpstreams(Object o) {
 		return reactiveStateCheck(o, MultiReceiver.class);
@@ -176,26 +184,24 @@ public enum ReactiveStateUtils {
 
 	/**
 	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Producer}
 	 */
 	public static boolean hasDownstream(Object o) {
 		return reactiveStateCheck(o, Producer.class) && ((Producer) o).downstream() != null;
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link MultiProducer}
 	 */
 	public static boolean hasDownstreams(Object o) {
 		return reactiveStateCheck(o, MultiProducer.class);
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Loopback}
 	 */
 	public static boolean hasFeedbackLoop(Object o) {
 		return reactiveStateCheck(o, Loopback.class);
@@ -203,8 +209,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Introspectable#TRACE_ONLY}
 	 */
 	public static boolean isTraceOnly(Object o) {
 		return reactiveStateCheck(o, Introspectable.class) &&
@@ -212,9 +218,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Completable}
 	 */
 	public static boolean hasSubscription(Object o) {
 		return reactiveStateCheck(o, Completable.class);
@@ -222,8 +227,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Cancellable}
 	 */
 	public static boolean isCancellable(Object o) {
 		return reactiveStateCheck(o, Cancellable.class);
@@ -231,8 +236,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Introspectable#INNER}
 	 */
 	public static boolean isContained(Object o) {
 		return reactiveStateCheck(o, Introspectable.class) &&
@@ -240,9 +245,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Introspectable#LOGGING}
 	 */
 	public static boolean isLogging(Object o) {
 		return reactiveStateCheck(o, Introspectable.class) &&
@@ -250,9 +254,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a capacity if the tested instance is {@link Backpressurable} otherwise {@literal -1}
 	 */
 	public static long getCapacity(Object o) {
 		if (reactiveStateCheck(o, Backpressurable.class)) {
@@ -262,9 +265,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return an error if the tested instance is {@link Failurable} and is failed otherwise {@literal null}
 	 */
 	public static Throwable getFailedState(Object o) {
 		if (reactiveStateCheck(o, Failurable.class)) {
@@ -274,21 +276,19 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a time resolution if the tested instance is {@link Timeable} otherwise {@literal -1}
 	 */
 	public static long getTimedPeriod(Object o) {
 		if (reactiveStateCheck(o, Timeable.class)) {
 			return ((Timeable) o).period();
 		}
-		return -1;
+		return -1L;
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a threshold limit if the tested instance is {@link Prefetchable} otherwise {@literal -1}
 	 */
 	public static long getUpstreamLimit(Object o) {
 		if (reactiveStateCheck(o, Prefetchable.class)) {
@@ -298,9 +298,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return an expected produced metric if the tested instance is {@link Prefetchable} otherwise {@literal -1}
 	 */
 	public static long getExpectedUpstream(Object o) {
 		if (reactiveStateCheck(o, Prefetchable.class)) {
@@ -310,9 +309,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a current requested count if the tested instance is {@link Requestable} otherwise {@literal -1}
 	 */
 	public static long getRequestedDownstream(Object o) {
 		if (reactiveStateCheck(o, Requestable.class)) {
@@ -322,9 +320,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return an assigned name if the tested instance is {@link Introspectable} otherwise {@literal anonymous}
 	 */
 	public static String getName(Object o) {
 		if (o == null) {
@@ -347,9 +344,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a String key if the tested instance is {@link Groupable} otherwise {@literal null}
 	 */
 	public static String getGroup(Object o) {
 		if (o == null) {
@@ -366,9 +362,9 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return an identifier name  produced metric if the tested instance is both
+	 * {@link Groupable} and {@link Introspectable#UNIQUE} otherwise return {@code getName(o).hashCode() + ":" + o.hashCode()}
 	 */
 	public static String getIdOrDefault(Object o) {
 		if (reactiveStateCheck(o, Introspectable.class) &&
@@ -379,9 +375,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Introspectable#UNIQUE}
 	 */
 	public static boolean isUnique(Object o) {
 		return reactiveStateCheck(o, Introspectable.class) &&
@@ -389,9 +384,8 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return true if the tested instance is {@link Introspectable#FACTORY}
 	 */
 	public static boolean isFactory(Object o) {
 		return reactiveStateCheck(o, Introspectable.class) &&
@@ -400,8 +394,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 *
-	 * @param o
-	 * @return
+	 * @param o candidate instance
+	 * @return a waiting count if the tested instance is {@link Backpressurable} otherwise {@literal -1}
 	 */
 	public static long getBuffered(Object o) {
 		if (reactiveStateCheck(o, Backpressurable.class)) {
@@ -437,9 +431,10 @@ public enum ReactiveStateUtils {
 		}
 
 		/**
+		 * Merge this instance with an external graph thus overriding any overlapping local keys.
 		 *
-		 * @param graph
-		 * @return
+		 * @param graph the Graph to append to this instance
+		 * @return this instance eventually augmented by the passed Graph
 		 */
 		public Graph mergeWith(Graph graph) {
 			if (graph == null || (graph.nodes.isEmpty() && graph.edges.isEmpty())) {
@@ -451,6 +446,8 @@ public enum ReactiveStateUtils {
 		}
 
 		/**
+		 * Clear unreferenced nodes from a graph
+		 *
 		 * @return a json array of terminated ids
 		 */
 		public Collection<String> removeTerminatedNodes() {
@@ -507,18 +504,6 @@ public enum ReactiveStateUtils {
 			}
 
 			return removedGraph;
-		}
-
-		/**
-		 *
-		 * @param o
-		 * @return
-		 */
-		public Node removeNode(Object o) {
-			if (o == null) {
-				return null;
-			}
-			return nodes.remove(getIdOrDefault(o));
 		}
 
 		public Collection<Node> getNodes() {
@@ -689,9 +674,8 @@ public enum ReactiveStateUtils {
 		}
 
 		/**
-		 *
-		 * @param timestamp
-		 * @return
+		 * @param timestamp should the json include a generated timestamp
+		 * @return a formated json string including a timestamp
 		 */
 		public String toString(boolean timestamp) {
 			return "{" +
@@ -710,7 +694,7 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
+	 * A logical view representation of an introspected reference from {@link ReactiveStateUtils#scan(Object)}
 	 */
 	public static class Node implements Comparable<Node> {
 
@@ -932,7 +916,7 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
-	 *
+	 * A relationship between 2 concrete or virtual node references
 	 */
 	public static class Edge {
 
@@ -999,33 +983,11 @@ public enum ReactiveStateUtils {
 	}
 
 	/**
+	 * Parse and encode a property as a json map entry.
+	 * @param name the property name
+	 * @param value the raw value to encode
 	 *
-	 * @param symbol
-	 * @param res
-	 * @param indent
-	 * @param comma
-	 */
-	public static void indent(String symbol, StringBuffer res, int indent, boolean comma) {
-		if (symbol.isEmpty()) {
-			return;
-		}
-		for (int i = 0; i < indent; i++) {
-			res.append("\t");
-		}
-		res.append(symbol);
-		if (comma) {
-			res.append(", ");
-		}
-		if (indent > -1) {
-			res.append("\n");
-		}
-	}
-
-	/**
-	 *
-	 * @param name
-	 * @param value
-	 * @return
+	 * @return an encoded json map entry
 	 */
 	public static String property(String name, Object value) {
 		if (value == null || value.equals(-1) || value.equals(-1L)) {
@@ -1046,5 +1008,21 @@ public enum ReactiveStateUtils {
 		return "\"" + name + "\" : " +
 				(String.class.isAssignableFrom(value.getClass()) ? "\"" + value.toString().replaceAll("\"", "\\\"")
 						+ "\"" : value);
+	}
+
+	static void indent(String symbol, StringBuffer res, int indent, boolean comma) {
+		if (symbol.isEmpty()) {
+			return;
+		}
+		for (int i = 0; i < indent; i++) {
+			res.append("\t");
+		}
+		res.append(symbol);
+		if (comma) {
+			res.append(", ");
+		}
+		if (indent > -1) {
+			res.append("\n");
+		}
 	}
 }
