@@ -65,14 +65,14 @@ public interface Fuseable {
 	interface FusionSubscription<T> extends Subscription {
 
 		/**
-		 * Consumers of an Asynchronous FusionSubscription have to signal it to switch to a fused-mode
-		 * so it no longer run its own drain loop but directly signals onNext(null) to
-		 * indicate there is an item available in this queue-view.
+		 * An asynchronously producing FusionSubscription will wait for this signal to switch to a fused-mode
+		 * so it no longer runs its own drain loop but directly signals onNext(null) to
+		 * indicate there is an or n item(s) available in this queue-view. This will evaluate to false result.
 		 * <p>
-		 * Consumers of an Synchronous FusionSubscription will usually consider this method no-op and
+		 * A synchronously producing FusionSubscription will usually consider this method no-op and
 		 * return true to signal immediate availability.
 		 * <p>
-		 * The method has to be called while the parent is in onSubscribe and before any
+		 * On the receiving side, the method has to be called while the parent is in onSubscribe and before any
 		 * other interaction with the Subscription.
 		 *
 		 * @return FALSE if asynchronous or TRUE if immediately ready
