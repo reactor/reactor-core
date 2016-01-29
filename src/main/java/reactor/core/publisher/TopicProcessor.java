@@ -55,6 +55,8 @@ import reactor.fn.Supplier;
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
  * <p>
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topics.png" alt="">
+ * <p>
  * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any
  * onXXXX method. Each subscriber will be assigned a unique thread that will only stop on
