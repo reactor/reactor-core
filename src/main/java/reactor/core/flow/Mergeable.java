@@ -23,9 +23,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 /**
- * A micro API for stream fusion, in particular marks producers that support a {@link FusionSubscription}.
+ * A micro API for stream merge, in particular marks producers that support a {@link MergeSubscription}.
  */
-public interface Fuseable {
+public interface Mergeable {
 
 	/**
 	 * A subscriber variant that can immediately tell if it consumed
@@ -44,7 +44,7 @@ public interface Fuseable {
 	}
 
 	/**
-	 * Contract queue-fusion based optimizations for supporting subscriptions.
+	 * Contract queue-merging based optimizations for supporting subscriptions.
 	 *
 	 * <ul>
 	 *  <li>
@@ -62,29 +62,29 @@ public interface Fuseable {
 	 *
 	 * @param <T> the value type emitted
 	 */
-	interface FusionSubscription<T> extends Subscription {
+	interface MergeSubscription<T> extends Subscription {
 
 		/**
-		 * An asynchronously producing FusionSubscription will wait for this signal to switch to a fused-mode.
+		 * An asynchronously producing {@link MergeSubscription} will wait for this signal to switch to a fused-mode.
 		 * Its consumer must no longer run its own drain loop and will receive onNext(null) signals to
 		 * indicate there is one or maany item(s) available in this {@link #queue queue-view}. This will
 		 * evaluate to false result.
 		 * <p>
-		 * A synchronously producing FusionSubscription will usually consider this method no-op and
+		 * A synchronously producing {@link MergeSubscription} will usually consider this method no-op and
 		 * return true to signal its consumer its immediate availability.
 		 * <p>
 		 * On the receiving side, the method has to be called while the parent is in onSubscribe and before any
 		 * other interaction with the Subscription.
 		 *
-		 * @return FALSE if asynchronous or TRUE if immediately ready
+		 * @return {@code false} if asynchronous or {@code true} if immediately ready
 		 */
-		boolean requestSyncFusion();
+		boolean requestSyncMerge();
 
 		/**
-		 * @return the {@link Queue} view of the produced sequence, it's behavior is driven by the type of fusion:
+		 * @return the {@link Queue} view of the produced sequence, it's behavior is driven by the type of merge:
 		 * sync or async
 		 *
-		 * @see #requestSyncFusion()
+		 * @see #requestSyncMerge()
 		 */
 		Queue<T> queue();
 
@@ -101,12 +101,12 @@ public interface Fuseable {
 	 * emit its items in a pull fashion, thus avoiding the request-accounting
 	 * overhead in many cases.
 	 *
-	 * Implementor note: This can be simplified using Java  8 interface features but this source maintains a
-	 * JDK7 comp
+	 * Implementor note: This can be simplified using Java 8 interface features but this
+	 * source maintains a Java 7+ compatibility.
 	 *
 	 * @param <T> the content value type
 	 */
-	abstract class SynchronousSubscription<T> implements FusionSubscription<T>, Queue<T> {
+	abstract class SynchronousSubscription<T> implements MergeSubscription<T>, Queue<T> {
 		@Override
 		public final boolean offer(T e) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
@@ -163,7 +163,7 @@ public interface Fuseable {
 		}
 
 		@Override
-		public boolean requestSyncFusion() {
+		public boolean requestSyncMerge() {
 			return true;
 		}
 

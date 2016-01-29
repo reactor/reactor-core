@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
+import reactor.core.flow.Mergeable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.state.Cancellable;
@@ -42,7 +42,7 @@ import reactor.core.util.EmptySubscription;
  */
 final class FluxArray<T> 
 extends Flux<T>
-		implements Fuseable {
+		implements Mergeable {
 	final T[] array;
 
 	@SafeVarargs
