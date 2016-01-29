@@ -891,7 +891,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (BackpressureUtils.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
-					queue = f.queue();
+					queue = f;
 					if (f.requestSyncFusion()){
 						sourceMode = SYNC;
 						done = true;

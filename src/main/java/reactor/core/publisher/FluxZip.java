@@ -845,7 +845,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 				if (s instanceof Fuseable.QueueSubscription) {
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
-					queue = f.queue();
+					queue = f;
 					
 					if (f.requestSyncFusion()) {
 						sourceMode = SYNC;

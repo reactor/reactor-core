@@ -62,12 +62,12 @@ public interface Fuseable {
 	 *
 	 * @param <T> the value type emitted
 	 */
-	interface QueueSubscription<T> extends Subscription {
+	interface QueueSubscription<T> extends Queue<T>, Subscription {
 
 		/**
 		 * An asynchronously producing QueueSubscription will wait for this signal to switch to a fused-mode.
 		 * Its consumer must no longer run its own drain loop and will receive onNext(null) signals to
-		 * indicate there is one or maany item(s) available in this {@link #queue queue-view}. This will
+		 * indicate there is one or maany item(s) available in this queue-view. This will
 		 * evaluate to false result.
 		 * <p>
 		 * A synchronously producing QueueSubscription will usually consider this method no-op and
@@ -79,14 +79,6 @@ public interface Fuseable {
 		 * @return FALSE if asynchronous or TRUE if immediately ready
 		 */
 		boolean requestSyncFusion();
-
-		/**
-		 * @return the {@link Queue} view of the produced sequence, it's behavior is driven by the type of fusion:
-		 * sync or async
-		 *
-		 * @see #requestSyncFusion()
-		 */
-		Queue<T> queue();
 
 		/**
 		 * Requests the upstream to drop the current value.
@@ -182,9 +174,5 @@ public interface Fuseable {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
-		@Override
-		public final Queue<T> queue() {
-			return this;
-		}
 	}
 }
