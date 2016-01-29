@@ -65,20 +65,21 @@ public interface Fuseable {
 	interface QueueSubscription<T> extends Queue<T>, Subscription {
 
 		/**
-		 * An asynchronously producing QueueSubscription will wait for this signal to switch to a fused-mode.
-		 * Its consumer must no longer run its own drain loop and will receive onNext(null) signals to
-		 * indicate there is one or maany item(s) available in this queue-view. This will
-		 * evaluate to false result.
+		 * Request a specific fusion mode from this QueueSubscription.
 		 * <p>
-		 * A synchronously producing QueueSubscription will usually consider this method no-op and
-		 * return true to signal its consumer its immediate availability.
+		 * One should request either SYNC, ASYNC or ANY modes (never NONE)
+		 * and the implementor should return NONE, SYNC or ASYNC (never ANY).
 		 * <p>
-		 * On the receiving side, the method has to be called while the F is in onSubscribe and before any
-		 * other interaction with the Subscription.
+		 * For example, if a source supports only ASYNC fusion but
+		 * the intermediate operator supports only SYNC fuseable sources,
+		 * the operator may request SYNC fusion and the source can reject it via
+		 * NONE, thus the operator can return NONE as well to dowstream and the
+		 * fusion doesn't happen.
 		 *
-		 * @return FALSE if asynchronous or TRUE if immediately ready
+		 * @param requestedMode the mode to request
+		 * @return the fusion mode activated
 		 */
-		boolean requestSyncFusion();
+		FusionMode requestFusion(FusionMode requestedMode);
 
 		/**
 		 * Requests the upstream to drop the current value.
@@ -86,6 +87,20 @@ public interface Fuseable {
 		 * This is allows fused intermediate operators to avoid peek/poll pairs.
 		 */
 		void drop();
+	}
+
+	/**
+	 * Indicates what fusion mode the QueueSubscription can support.
+	 */
+	enum FusionMode {
+		/** Indicates the QueueSubscription can't support the requested mode. */
+		NONE,
+		/** Indicates the QueueSubscription can perform sync-fusion. */
+		SYNC,
+		/** Indicates the QueueSubscription can perform only async-fusion. */
+		ASYNC,
+		/** Indicates the QueueSubscription should decide what fusion it performs (input only). */
+		ANY
 	}
 
 	/**
@@ -155,8 +170,8 @@ public interface Fuseable {
 		}
 
 		@Override
-		public boolean requestSyncFusion() {
-			return true;
+		public FusionMode requestFusion(FusionMode requestedMode) {
+			return FusionMode.SYNC;
 		}
 
 		@Override
@@ -173,6 +188,5 @@ public interface Fuseable {
 		public final T element() {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
-
 	}
 }

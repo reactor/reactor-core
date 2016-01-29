@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *	   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
+import reactor.core.flow.Fuseable.FusionMode;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -891,15 +892,19 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (BackpressureUtils.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
-					queue = f;
-					if (f.requestSyncFusion()){
+					FusionMode m = f.requestFusion(FusionMode.ANY);
+					if (m == FusionMode.SYNC){
 						sourceMode = SYNC;
+						queue = f;
 						done = true;
 						parent.drain();
 						return;
-					} else {
+					} else 
+					if (m == FusionMode.ASYNC) {
 						sourceMode = ASYNC;
+						queue = f;
 					}
+					// NONE is just fall-through as the queue will be created on demand
 				}
 				s.request(prefetch);
 			}
