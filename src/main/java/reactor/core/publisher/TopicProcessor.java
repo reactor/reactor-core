@@ -62,7 +62,8 @@ import reactor.fn.Supplier;
  * <p>
  * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any
- * onXXXX method. Each subscriber will be assigned a unique thread that will only stop on
+ * onXXXX method if {@link #share} has not been used. Each subscriber will be assigned a unique thread that will only
+ * stop on
  * terminal event: Complete, Error or Cancel. If Auto-Cancel is enabled, when all
  * subscribers are unregistered, a cancel signal is sent to the upstream Publisher if any.
  * Executor can be customized and will define how many concurrent subscribers are allowed
