@@ -35,7 +35,7 @@ import rx.internal.util.ScalarSynchronousObservable;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class RxJava1ObservableConverter extends PublisherConverter<Observable> {
+public final class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 
 	static final RxJava1ObservableConverter INSTANCE = new RxJava1ObservableConverter();
 
