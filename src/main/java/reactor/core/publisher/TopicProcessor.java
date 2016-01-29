@@ -55,6 +55,9 @@ import reactor.fn.Supplier;
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
  * <p>
+ *  Created from {@link #share}, the {@link TopicProcessor} will authorize concurrent publishing (multi-producer)
+ *  from its receiving side {@link Subscriber#onNext(Object)}.
+ *  Additionally, any of the {@link TopicProcessor} will stop the event loop thread if an error occurs.
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topics.png" alt="">
  * <p>
  * The processor

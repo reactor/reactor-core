@@ -46,14 +46,15 @@ import reactor.core.util.Sequence;
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
  * synchronous (thread-stealing and happen-before interactions) drain loops.
  * <p>
- *     The RingBuffer nature gives this processor a natural ability to replay data to late subscribers that can be
- *     set with {@link #replay}. The default {@link #create} factories will only produce the new elements observed in
+ *     The default {@link #create} factories will only produce the new elements observed in
  *     the
  *     parent sequence after a given {@link Subscriber} is subscribed.
  *
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
  * <p>
+ *     The RingBuffer nature gives this processor a natural ability to replay data to late subscribers that can be
+ *     set with {@link #replay}.
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitterreplay.png" alt="">
  * <p>
  *
