@@ -968,7 +968,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 		}
 
 		@Override
-		public Object upstream() {
+		public Subscription upstream() {
 			return upstreamSubscription;
 		}
 

@@ -31,7 +31,7 @@ import reactor.core.util.Exceptions;
 import reactor.fn.Function;
 
 /**
- * A base processor with an async boundary trait to manage active subscribers (Threads), upstream subscription and
+ * A base processor that expose {@link Flux} API
  * shutdown options.
  *
  * @author Stephane Maldini
@@ -63,14 +63,19 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	//protected static final int DEFAULT_BUFFER_SIZE = 1024;
 
 
-	protected Subscription upstreamSubscription;
+	Subscription upstreamSubscription;
 
 	protected FluxProcessor() {
 	}
 
 	/**
+	 * Trigger onSubscribe with a stateless subscription to signal this subscriber it can start receiving
+	 * onNext, onComplete and onError calls.
+	 * <p>
+	 * Doing so MAY allow direct UNBOUNDED onXXX calls and MAY prevent {@link org.reactivestreams.Publisher} to subscribe this
+	 * subscriber.
 	 *
-	 * @return
+	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
 	 */
 	public FluxProcessor<IN, OUT> start() {
 		onSubscribe(EmptySubscription.INSTANCE);
@@ -78,16 +83,19 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	/**
+	 * Create a {@link SignalEmitter} and attach it via {@link #onSubscribe(Subscription)}.
 	 *
-	 * @return
+	 * @return a new subscribed {@link SignalEmitter}
 	 */
 	public SignalEmitter<IN> startEmitter() {
 		return bindEmitter(true);
 	}
 
 	/**
+	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * set to true.
 	 *
-	 * @return
+	 * @return a new {@link SignalEmitter}
 	 */
 	public SignalEmitter<IN> bindEmitter(boolean autostart) {
 		return SignalEmitter.create(this, autostart);
@@ -148,7 +156,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	@Override
-	public Object upstream() {
+	public Subscription upstream() {
 		return upstreamSubscription;
 	}
 
