@@ -1114,6 +1114,7 @@ public class ProcessorGroup<T> implements Supplier<Processor<T, T>>, Loopback {
 			emitBuffer.get(seq).value = o;
 			emitBuffer.publish(seq);
 
+			//TODO use global credit approach
 			if (RUNNING.getAndIncrement(this) == 0) {
 				service.processor.onNext(this);
 			}
