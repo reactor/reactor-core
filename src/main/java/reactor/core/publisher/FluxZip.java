@@ -842,8 +842,8 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.setOnce(S, this, s)) {
-				if (s instanceof Fuseable.FusionSubscription) {
-					Fuseable.FusionSubscription<T> f = (Fuseable.FusionSubscription<T>) s;
+				if (s instanceof Fuseable.QueueSubscription) {
+					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
 					queue = f.queue();
 					

@@ -23,7 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 /**
- * A micro API for stream fusion, in particular marks producers that support a {@link FusionSubscription}.
+ * A micro API for stream fusion, in particular marks producers that support a {@link QueueSubscription}.
  */
 public interface Fuseable {
 
@@ -62,18 +62,18 @@ public interface Fuseable {
 	 *
 	 * @param <T> the value type emitted
 	 */
-	interface FusionSubscription<T> extends Subscription {
+	interface QueueSubscription<T> extends Subscription {
 
 		/**
-		 * An asynchronously producing FusionSubscription will wait for this signal to switch to a fused-mode.
+		 * An asynchronously producing QueueSubscription will wait for this signal to switch to a fused-mode.
 		 * Its consumer must no longer run its own drain loop and will receive onNext(null) signals to
 		 * indicate there is one or maany item(s) available in this {@link #queue queue-view}. This will
 		 * evaluate to false result.
 		 * <p>
-		 * A synchronously producing FusionSubscription will usually consider this method no-op and
+		 * A synchronously producing QueueSubscription will usually consider this method no-op and
 		 * return true to signal its consumer its immediate availability.
 		 * <p>
-		 * On the receiving side, the method has to be called while the parent is in onSubscribe and before any
+		 * On the receiving side, the method has to be called while the F is in onSubscribe and before any
 		 * other interaction with the Subscription.
 		 *
 		 * @return FALSE if asynchronous or TRUE if immediately ready
@@ -106,7 +106,7 @@ public interface Fuseable {
 	 *
 	 * @param <T> the content value type
 	 */
-	abstract class SynchronousSubscription<T> implements FusionSubscription<T>, Queue<T> {
+	abstract class SynchronousSubscription<T> implements QueueSubscription<T>, Queue<T> {
 		@Override
 		public final boolean offer(T e) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
