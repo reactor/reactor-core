@@ -16,9 +16,9 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import reactor.fn.Supplier;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.util.ScalarSubscription;
 
@@ -29,7 +29,7 @@ import reactor.core.util.ScalarSubscription;
  */
 final class MonoJust<T> 
 extends Mono<T>
-implements Supplier<T>, Receiver {
+		implements Fuseable.ScalarSupplier<T>, Receiver {
 
 	final T value;
 

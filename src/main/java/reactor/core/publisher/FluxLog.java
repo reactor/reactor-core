@@ -66,7 +66,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		source.subscribe(new LoggerBarrier<>(this, newId, subscriber));
 	}
 
-	private final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN> implements Introspectable {
+	final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN> implements Introspectable {
 
 		private final int    options;
 		private final Logger log;

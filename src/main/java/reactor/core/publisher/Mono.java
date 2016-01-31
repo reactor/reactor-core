@@ -24,7 +24,6 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -522,7 +521,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} that completes when this {@link Mono} completes.
+	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
@@ -578,8 +577,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run request, cancel, onNext, onComplete and onError on a supplied
-	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
+	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link ProcessorGroup}.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
@@ -590,13 +588,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * {@code mono.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group a {@link ProcessorGroup} pool
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return an asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public final Mono<T> dispatchOn(ProcessorGroup group) {
-		return new MonoProcessorGroup<>(this, false, ((ProcessorGroup<T>) group));
+	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return new MonoSource<>(new FluxDispatchOn<>(this, scheduler, false, 1, QueueSupplier.get(1)));
 	}
 
 	/**
@@ -1030,13 +1028,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 * <p>
-	 * @param group the {@link ProcessorGroup} to schedule the subscribe/request on.
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a new asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public final Mono<T> publishOn(ProcessorGroup group) {
-		return new MonoProcessorGroup<>(this, true, ((ProcessorGroup<T>) group));
+	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return new MonoSource<>(Flux.publishOn(this, scheduler));
 	}
 
 	/**
@@ -1256,39 +1254,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 //	 Containers
 //	 ==============================================================================================================
 
-	static final class MonoProcessorGroup<I> extends MonoSource<I, I> implements Loopback {
-
-		private final ProcessorGroup<I> processor;
-		private final boolean publishOn;
-
-		public MonoProcessorGroup(Publisher<? extends I> source, boolean publishOn, ProcessorGroup<I> processor) {
-			super(source);
-			this.publishOn = publishOn;
-			this.processor = processor;
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super I> s) {
-			if(publishOn) {
-				processor.publishOn(source)
-				         .subscribe(s);
-			}
-			else{
-				processor.dispatchOn(source)
-				         .subscribe(s);
-			}
-		}
-
-		@Override
-		public Object connectedInput() {
-			return processor;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return processor;
-		}
-	}
 
 	static final class WhereFunction<T> implements Function<T, Mono<T>> {
 

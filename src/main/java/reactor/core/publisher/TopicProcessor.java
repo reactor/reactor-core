@@ -686,7 +686,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 
 	static <E> Publisher<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
-		Publisher<E> bufferIterable = fromIterable(RingBuffer.createSequencedQueue(ringBuffer, start.get()));
+		Publisher<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.get()));
 		if (error != null) {
 			if (t != null) {
 				t.addSuppressed(error);
@@ -770,14 +770,6 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 	@Override
 	public boolean isStarted() {
 		return super.isStarted() || ringBuffer.get() != -1;
-	}
-
-	/**
-	 * Get the remaining capacity for the ring buffer
-	 * @return number of remaining slots
-	 */
-	public long remainingCapacity() {
-		return ringBuffer.remainingCapacity();
 	}
 
 	@Override

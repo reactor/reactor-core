@@ -161,15 +161,15 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * @param buffer
-	 * @param <T>
 	 *
+	 * @param buffer
+	 * @param startSequence
+	 * @param <T>
 	 * @return
 	 */
-	public static <T> Queue<T> createSequencedQueue(RingBuffer<Slot<T>> buffer) {
-		return createSequencedQueue(buffer, -1L);
+	public static <T> Queue<T> nonBlockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
+		return new NonBlockingSPSCQueue<>(buffer, startSequence);
 	}
-
 	/**
 	 *
 	 * @param buffer
@@ -177,8 +177,8 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @param <T>
 	 * @return
 	 */
-	public static <T> Queue<T> createSequencedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
-		return new SPSCQueue<>(buffer, startSequence);
+	public static <T> Queue<T> blockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
+		return new BlockingSPSCQueue<>(buffer, startSequence);
 	}
 
 	/**
@@ -246,16 +246,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 		else {
 			return new NotFunRingBuffer<>(factory, sequencer);
 		}
-	}
-
-	/**
-	 *
-	 * @param buffer
-	 * @param <T>
-	 * @return
-	 */
-	public static <T> Queue<T> createWriteOnlyQueue(RingBuffer<Slot<T>> buffer){
-		return new WriteQueue<>(buffer);
 	}
 
 	/**
@@ -633,12 +623,91 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 }
 
-class WriteQueue<T> implements Queue<T> {
+abstract class SPSCQueue<T> implements Queue<T> {
 
-	final protected RingBuffer<Slot<T>> buffer;
+	final Sequence pollCursor;
+	final RingBuffer<Slot<T>> buffer;
 
-	public WriteQueue(RingBuffer<Slot<T>> buffer) {
+
+	SPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
 		this.buffer = buffer;
+		this.pollCursor = RingBuffer.newSequence(startingSequence);
+		buffer.addGatingSequence(pollCursor);
+		this.pollCursor.set(startingSequence);
+	}
+
+	@Override
+	final public void clear() {
+		pollCursor.set(buffer.getCursor());
+	}
+
+	@Override
+	final public T element() {
+		T e = peek();
+		if (e == null) {
+			throw new NoSuchElementException();
+		}
+		return e;
+	}
+
+	@Override
+	final public boolean isEmpty() {
+		return buffer.getCursor() == pollCursor.get();
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return new Iterator<T>() {
+			@Override
+			public boolean hasNext() {
+				return !SPSCQueue.this.isEmpty();
+			}
+
+			@Override
+			public T next() {
+				return SPSCQueue.this.poll();
+			}
+
+			@Override
+			public void remove() {
+				SPSCQueue.this.remove();
+			}
+		};
+	}
+
+	@Override
+	final public T peek() {
+		long current = buffer.getCursor();
+		long cachedSequence = pollCursor.get() + 1L;
+
+		if (cachedSequence <= current) {
+			return buffer.get(cachedSequence).value;
+		}
+		return null;
+	}
+
+	@Override
+	final public T poll() {
+		long current = buffer.getCursor();
+		long cachedSequence = pollCursor.get() + 1L;
+
+		if (cachedSequence <= current) {
+			T v = buffer.get(cachedSequence).value;
+			if (v != null) {
+				pollCursor.set(cachedSequence);
+			}
+			return v;
+		}
+		return null;
+	}
+
+	@Override
+	final public T remove() {
+		T e = poll();
+		if (e == null) {
+			throw new NoSuchElementException();
+		}
+		return e;
 	}
 
 	@Override
@@ -662,199 +731,42 @@ class WriteQueue<T> implements Queue<T> {
 	}
 
 	@Override
-	public void clear() {
+	final public boolean contains(Object o) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean contains(Object o) {
+	final public boolean containsAll(Collection<?> c) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean containsAll(Collection<?> c) {
+	final public boolean remove(Object o) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public T element() {
+	final public boolean removeAll(Collection<?> c) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public boolean isEmpty() {
-		return buffer.getPending() == 0L;
-	}
-
-	@Override
-	public Iterator<T> iterator() {
+	final public boolean retainAll(Collection<?> c) {
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public final boolean offer(T o) {
-		try {
-			long seq = buffer.tryNext();
-
-			buffer.get(seq).value = o;
-			buffer.publish(seq);
-			return true;
-		}
-		catch (Exceptions.InsufficientCapacityException ice) {
-			return false;
-		}
-	}
-
-	@Override
-	public T peek() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public T poll() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public T remove() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean remove(Object o) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean removeAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean retainAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int size() {
-		return (int) buffer.getPending();
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public T[] toArray() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public <E> E[] toArray(E[] a) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public String toString() {
-		return "WriteQueue{" +
-				"buffer=" + buffer +
-				'}';
-	}
-}
-
-final class SPSCQueue<T> extends WriteQueue<T> {
-
-	final private Sequence pollCursor;
-
-	SPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
-		super(buffer);
-		this.pollCursor = RingBuffer.newSequence(startingSequence);
-		buffer.addGatingSequence(pollCursor);
-		this.pollCursor.set(startingSequence);
-	}
-
-	@Override
-	public void clear() {
-		pollCursor.set(buffer.getCursor());
-	}
-
-	@Override
-	public T element() {
-		T e = peek();
-		if (e == null) {
-			throw new NoSuchElementException();
-		}
-		return e;
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return buffer.getCursor() == pollCursor.get();
-	}
-
-	@Override
-	public Iterator<T> iterator() {
-		return new Iterator<T>() {
-
-			@Override
-			public boolean hasNext() {
-				return !isEmpty();
-			}
-
-			@Override
-			public T next() {
-				return poll();
-			}
-		};
-	}
-
-	@Override
-	public T peek() {
-		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.get() + 1L;
-
-		if (cachedSequence <= current) {
-			return buffer.get(cachedSequence).value;
-		}
-		return null;
-	}
-
-	@Override
-	public T poll() {
-		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.get() + 1L;
-
-		if (cachedSequence <= current) {
-			T v = buffer.get(cachedSequence).value;
-			if (v != null) {
-				pollCursor.set(cachedSequence);
-			}
-			return v;
-		}
-		return null;
-	}
-
-	@Override
-	public T remove() {
-		T e = poll();
-		if (e == null) {
-			throw new NoSuchElementException();
-		}
-		return e;
-	}
-
-	@Override
-	public int size() {
+	final public int size() {
 		return (int) (buffer.getCursor() - pollCursor.get());
 	}
-
 	@Override
 	@SuppressWarnings("unchecked")
-	public T[] toArray() {
+	final public T[] toArray() {
 		return toArray((T[]) new Object[(int) buffer.getCapacity()]);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <E> E[] toArray(E[] a) {
+	final public <E> E[] toArray(E[] a) {
 
 		final long cursor = buffer.getCursor();
 		long s = pollCursor.get() + 1L;
@@ -1030,5 +942,38 @@ final class RequestTask implements Runnable {
 			Exceptions.throwIfFatal(t);
 			errorSubscriber.onError(t);
 		}
+	}
+}
+
+final class NonBlockingSPSCQueue<T> extends SPSCQueue<T>{
+	NonBlockingSPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
+		super(buffer, startingSequence);
+	}
+
+	@Override
+	public final boolean offer(T o) {
+		try {
+			long seq = buffer.tryNext();
+
+			buffer.get(seq).value = o;
+			buffer.publish(seq);
+			return true;
+		}
+		catch (Exceptions.InsufficientCapacityException ice) {
+			return false;
+		}
+	}
+}
+final class BlockingSPSCQueue<T> extends SPSCQueue<T>{
+	BlockingSPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
+		super(buffer, startingSequence);
+	}
+
+	@Override
+	public final boolean offer(T o) {
+			long seq = buffer.next();
+			buffer.get(seq).value = o;
+			buffer.publish(seq);
+			return true;
 	}
 }

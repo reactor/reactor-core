@@ -18,13 +18,13 @@ package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -244,6 +244,34 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Consumer<C> shutdownConsumer) {
 		Assert.notNull(requestConsumer, "A data producer must be provided");
 		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied
+	 * {@link Consumer} {@link Runnable} scheduler e.g. {@link ProcessorGroup#call}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
+	 * fast async event loops.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+	 * <p>
+	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param source the {@link Publisher} to dispatch asynchronously
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param delayError true if errors should be delayed after consuming any available backlog
+	 * @param prefetch the maximum in flight data to produce from the passed source {@link Publisher}
+	 *
+	 * @return a {@link Flux} consuming asynchronously
+	 */
+	public static <T> Flux<T> dispatchOn(Publisher<T> source,
+			Callable<? extends Consumer<Runnable>> scheduler,
+			boolean delayError,
+			int prefetch,
+			Supplier<? extends Queue<T>> queueProvider) {
+		return new FluxDispatchOn<>(source, scheduler, delayError, prefetch, queueProvider);
 	}
 
 	/**
@@ -635,6 +663,30 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Function<Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(source, fallback);
 	}
+
+	/**
+	 * Run subscribe, onSubscribe and request on a supplied
+	 * {@link Consumer} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * <p>
+	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
+	 * It naturally combines with {@link ProcessorGroup#io} which implements work-queue thread dispatching.
+	 *
+	 * <p>
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param source a {@link Publisher} source to publish from the given scheduler
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 *
+	 * @return a {@link Flux} publishing asynchronously
+	 */
+	public static <T> Flux<T> publishOn(Publisher<? extends T> source,
+			Callable<? extends Consumer<Runnable>> scheduler) {
+		return new FluxPublishOn<>(source, scheduler);
+	}
+
 
 	/**
 	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
@@ -1189,8 +1241,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Run request, cancel, onNext, onComplete and onError on a supplied
-	 * {@link ProcessorGroup#dispatchOn} reference {@link org.reactivestreams.Processor}.
+	 * Run onNext, onComplete and onError on a supplied
+	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -1201,13 +1253,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group a {@link ProcessorGroup} pool
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	@SuppressWarnings("unchecked")
-	public final Flux<T> dispatchOn(ProcessorGroup group) {
-		return new FluxProcessorGroup<>(this, false, ((ProcessorGroup<T>) group));
+	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return dispatchOn(this, scheduler, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
 	}
 
 
@@ -1515,7 +1566,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link ProcessorGroup#publishOn} reference {@link org.reactivestreams.Processor}.
+	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
@@ -1526,13 +1577,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param group a {@link ProcessorGroup} pool
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
-	@SuppressWarnings("unchecked")
-	public final Flux<T> publishOn(ProcessorGroup group) {
-		return new FluxProcessorGroup<>(this, true, ((ProcessorGroup<T>) group));
+	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return publishOn(this, scheduler);
 	}
 
 	/**
@@ -1702,40 +1752,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		@Override
 		public void subscribe(Subscriber<? super I> s) {
 			source.subscribe(s);
-		}
-	}
-
-	static final class FluxProcessorGroup<I> extends FluxSource<I, I> implements Loopback {
-
-		private final ProcessorGroup<I> processor;
-		private final boolean publishOn;
-
-		public FluxProcessorGroup(Publisher<? extends I> source, boolean publishOn, ProcessorGroup<I> processor) {
-			super(source);
-			this.processor = processor;
-			this.publishOn = publishOn;
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super I> s) {
-			if(publishOn) {
-				processor.publishOn(source)
-				         .subscribe(s);
-			}
-			else{
-				processor.dispatchOn(source)
-				         .subscribe(s);
-			}
-		}
-
-		@Override
-		public Object connectedInput() {
-			return processor;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return processor;
 		}
 	}
 

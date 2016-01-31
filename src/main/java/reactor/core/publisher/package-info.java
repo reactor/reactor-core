@@ -26,29 +26,14 @@
  * java.util.concurrent.Executor} in use, in addition to the state accessors like
  * {@link reactor.core.state.Backpressurable}.
  * <p>
- * There are 2+2 decisions to make when choosing a {@link org.reactivestreams.Processor} :
+ * The following {@link org.reactivestreams.Processor} are available:
  * <ul>
- *     <li>It is supporting a dynamically created data flow
- *     ({@link reactor.core.publisher.Flux} or {@link reactor.core.publisher.Mono}): <ul>
  *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
- *
- *     {@link reactor.core.publisher.EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
- *         <li>It needs asynchronousity :
- *         <ul>
- *           <li>for slow publishers prefer
- *
- *           {@link reactor.core.publisher.ProcessorGroup#io()} and {@link reactor.core.publisher.ProcessorGroup#publishOn}</li>
- *           <li>for fast publisher prefer
- *
- *           {@link reactor.core.publisher.ProcessorGroup#async} and {@link reactor.core.publisher.ProcessorGroup#dispatchOn}</li>
- *         </ul>
- *        </li>
- *     </ul></li>
- *     <li>It is a demanding data flow : <ul>
+ *           {@link reactor.core.publisher.EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
+ *          </li>
  *         <li>A dedicated pub-sub event buffering executor : {@link reactor.core.publisher.TopicProcessor}</li>
  *         <li>A dedicated  FIFO work queue distribution for slow consumers :
  *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
- *     </ul></li>
  * </ul>
  * <p>
  *

@@ -45,7 +45,7 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
 	}
 
 	@Override
-	public Object upstream() {
+	public Subscription upstream() {
 		return subscription;
 	}
 

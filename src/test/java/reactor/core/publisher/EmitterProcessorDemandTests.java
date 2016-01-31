@@ -52,11 +52,8 @@ public class EmitterProcessorDemandTests {
 	@Test
 	@Ignore
 	public void test() {
-		ProcessorGroup<String> asyncGroup = ProcessorGroup.async("async", 128, 1);
-		FluxProcessor<String, String> publishOn = asyncGroup.publishOn();
+		ProcessorGroup asyncGroup = ProcessorGroup.async("async", 128, 1);
 		FluxProcessor<String, String> emitter = EmitterProcessor.create();
-
-		publishOn.subscribe(emitter);
 
 		CountDownLatch requestReceived = new CountDownLatch(1);
 		AtomicLong demand = new AtomicLong(0);
@@ -74,7 +71,7 @@ public class EmitterProcessorDemandTests {
 			}
 		});
 
-		publisher.subscribe(publishOn);
+		Flux.publishOn(publisher, asyncGroup).subscribe(emitter);
 
 		TestSubscriber<String> subscriber = new TestSubscriber<>();
 		emitter.subscribe(subscriber);
@@ -82,10 +79,10 @@ public class EmitterProcessorDemandTests {
 		int i = 0;
 		for (; ; ) {
 			if (BackpressureUtils.getAndSub(demand, 1) != 0) {
-				publishOn.onNext("" + (i++));
+				emitter.onNext("" + (i++));
 			}
 			else {
-				System.out.println("NO REQUESTED: " + publishOn + " " + emitter);
+				System.out.println("NO REQUESTED: " + emitter);
 				LockSupport.parkNanos(100_000_000);
 			}
 		}

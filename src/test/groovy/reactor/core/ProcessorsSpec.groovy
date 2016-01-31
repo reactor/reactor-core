@@ -22,7 +22,6 @@ import org.reactivestreams.Subscription
 import reactor.core.publisher.ProcessorGroup
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
-import reactor.fn.BiConsumer
 import reactor.fn.Consumer
 import spock.lang.Shared
 import spock.lang.Specification
@@ -164,17 +163,15 @@ class ProcessorsSpec extends Specification {
 	def "Dispatcher executes tasks in correct thread"() {
 
 		given:
-			def sameThread = ProcessorGroup.sync().dataDispatcher()
-			BiConsumer<String, Consumer<String>> diffThread = ProcessorGroup.io("rbWork").dataDispatcher()
+		def sameThread = ProcessorGroup.sync().call()
+		def diffThread = ProcessorGroup.io("rbWork").call()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
-			Consumer<String> consumer = { ev ->
-				taskThread = Thread.currentThread()
-			}
+
 
 		when:
 			"a task is submitted"
-			sameThread.accept('test', consumer)
+		sameThread.accept { taskThread = Thread.currentThread() }
 
 		then:
 			"the task thread should be the current thread"
@@ -183,7 +180,8 @@ class ProcessorsSpec extends Specification {
 		when:
 			"a task is submitted to the thread pool dispatcher"
 			def latch = new CountDownLatch(1)
-			diffThread.accept('test', { String ev -> consumer.accept(ev); latch.countDown() } as Consumer<String>)
+		diffThread.accept { taskThread = Thread.currentThread() }
+		diffThread.accept { taskThread = Thread.currentThread(); latch.countDown() }
 
 			latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
 
@@ -202,7 +200,7 @@ class ProcessorsSpec extends Specification {
 		given:
 			"ring buffer eventBus"
 			def serviceRB = ProcessorGroup.single("rb", 32)
-			def r = serviceRB.dataDispatcher()
+		def r = serviceRB.call()
 			def latch = new CountDownLatch(2)
 
 		when:
@@ -211,13 +209,13 @@ class ProcessorsSpec extends Specification {
 			c = { data ->
 				if (data < 2) {
 					latch.countDown()
-					r.accept(++data, c,)
+				  r.accept { c.accept(++data) }
 				}
 			}
 
 		and:
 			"call the eventBus"
-			r.accept(0, c)
+		r.accept { c.accept(0) }
 
 		then:
 			"a task is submitted to the thread pool dispatcher"
@@ -232,7 +230,7 @@ class ProcessorsSpec extends Specification {
 		given:
 			"a Reactor with a ThreadPoolExecutorDispatcher"
 			def serviceRB = ProcessorGroup.io("rbWork", 32)
-			def r = serviceRB.dataDispatcher()
+		def r = serviceRB.call()
 			long start = System.currentTimeMillis()
 			def hello = ""
 			def latch = new CountDownLatch(1)
@@ -244,7 +242,7 @@ class ProcessorsSpec extends Specification {
 
 		when:
 			"the Dispatcher is shutdown and tasks are awaited"
-			r.accept("Hello World!", c)
+		r.accept { c.accept("Hello World!") }
 			def success = serviceRB.awaitAndShutdown(5, TimeUnit.SECONDS)
 			long end = System.currentTimeMillis()
 		then:
@@ -259,12 +257,12 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			def serviceRB = ProcessorGroup.single("rb", 8)
-			def dispatcher = serviceRB.executor()
+		def dispatcher = serviceRB.call()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
 
 		when:
-			dispatcher.execute({ t2 = Thread.currentThread() })
+		dispatcher.accept({ t2 = Thread.currentThread() })
 			Thread.sleep(500)
 
 		then:
@@ -279,12 +277,12 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			def serviceRBWork = ProcessorGroup.io("rbWork", 1024, 8)
-			def dispatcher = serviceRBWork.executor()
+		def dispatcher = serviceRBWork.call()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
 
 		when:
-			dispatcher.execute({ t2 = Thread.currentThread() })
+		dispatcher.accept({ t2 = Thread.currentThread() })
 			Thread.sleep(500)
 
 		then:
@@ -295,7 +293,7 @@ class ProcessorsSpec extends Specification {
 
 	}
 
-	def "MultiThreadDispatchers support ping pong dispatching"(BiConsumer<String, Consumer<? super String>> d) {
+  def "MultiThreadDispatchers support ping pong dispatching"(Consumer<Runnable> d) {
 		given:
 			def latch = new CountDownLatch(4)
 			def main = Thread.currentThread()
@@ -308,19 +306,19 @@ class ProcessorsSpec extends Specification {
 			Consumer<String> ping = {
 				if (latch.count > 0) {
 					t1 = Thread.currentThread()
-					d.accept("pong", pong)
+				  d.accept { pong.accept("pong") }
 					latch.countDown()
 				}
 			}
 			pong = {
 				if (latch.count > 0) {
 					t2 = Thread.currentThread()
-					d.accept("ping", ping)
+				  d.accept { ping.accept("ping") }
 					latch.countDown()
 				}
 			}
 
-			d.accept("ping", ping)
+		d.accept { ping.accept("ping") }
 
 		then:
 			latch.await(1, TimeUnit.SECONDS)
@@ -331,8 +329,7 @@ class ProcessorsSpec extends Specification {
 		 ProcessorGroup.release(d)
 
 		where:
-			d << [
-					ProcessorGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).dataDispatcher(),
+			d << [ProcessorGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).call(),
 			]
 
 	}

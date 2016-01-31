@@ -19,15 +19,15 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.util.ScalarSubscription;
-import reactor.fn.Supplier;
 
 /**
  * {@see https://github.com/reactor/reactive-streams-commons}
  *
  * @since 2.5
  */
-final class FluxJust<T> extends Flux<T> implements Supplier<T> {
+final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T> {
 
 	final T value;
 

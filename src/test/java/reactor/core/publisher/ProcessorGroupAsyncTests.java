@@ -17,13 +17,12 @@ package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.util.Assert;
-import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 
 
@@ -34,15 +33,26 @@ import reactor.fn.Consumer;
 @org.testng.annotations.Test
 public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
-	private final int           BUFFER_SIZE     = 8;
-	private final AtomicBoolean exceptionThrown = new AtomicBoolean();
-	private final int           N               = 17;
+	private final int             BUFFER_SIZE     = 8;
+	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
+	private final int             N               = 17;
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		return ProcessorGroup.<Long>single("shared-async", bufferSize,
-				Throwable::printStackTrace).get();
+				Throwable::printStackTrace).processor();
 
+	}
+
+	@Override
+	public void required_createPublisher3MustProduceAStreamOfExactly3Elements() throws Throwable {
+		super.required_createPublisher3MustProduceAStreamOfExactly3Elements();
+	}
+
+	@Override
+	public void required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber()
+			throws Throwable {
+		super.required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber();
 	}
 
 	@Override
@@ -67,32 +77,34 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 	}
 
 	@Test
-	public void testDispatch() throws InterruptedException {
-		ProcessorGroup<String> service = ProcessorGroup.single("dispatcher", BUFFER_SIZE, t -> {
-			exceptionThrown.set(true);
+	public void testDispatch() throws Exception {
+		ProcessorGroup service = ProcessorGroup.single("dispatcher", BUFFER_SIZE, t -> {
+			exceptionThrown.set(t);
 			t.printStackTrace();
 		});
 
 		ProcessorGroup.release(
-		  runTest(service.dataDispatcher()),
-		  runTest(service.dataDispatcher())
+		  runTest(service.call(true)),
+		  runTest(service.call(true))
 		);
 	}
 
 
 
-	private BiConsumer<String, Consumer<? super String>> runTest(final BiConsumer<String, Consumer<? super String>>
-	                                                               dispatcher) throws InterruptedException {
+	private Consumer<Runnable> runTest(final Consumer<Runnable>  dispatcher) throws InterruptedException {
 		CountDownLatch tasksCountDown = new CountDownLatch(N);
 
-		dispatcher.accept("Hello", s -> {
+		dispatcher.accept(() -> {
 			for (int i = 0; i < N; i++) {
-				dispatcher.accept("world", s1 -> tasksCountDown.countDown());
+				dispatcher.accept(tasksCountDown::countDown);
 			}
 		});
 
-		boolean check = tasksCountDown.await(5, TimeUnit.SECONDS);
-		Assert.isTrue(!exceptionThrown.get());
+		boolean check = tasksCountDown.await(10, TimeUnit.SECONDS);
+		if(exceptionThrown.get()!= null){
+			exceptionThrown.get().printStackTrace();
+		}
+		Assert.isTrue(exceptionThrown.get() == null);
 		Assert.isTrue(check);
 
 		return dispatcher;

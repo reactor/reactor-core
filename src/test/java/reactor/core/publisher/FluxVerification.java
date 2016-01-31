@@ -43,13 +43,17 @@ public class FluxVerification extends PublisherVerification<Long> {
 		return Flux.<Long, AtomicLong>create(s -> {
 			long cursor = s.context()
 			               .getAndIncrement();
-			if(cursor < elements) {
+			if(cursor < elements && cursor < elements) {
 				s.onNext(cursor);
+			}
+			else if(cursor == elements){
+				s.onComplete();
 			}
 
 		}, s -> new AtomicLong(0L), null)
 
 				.map(data -> data * 10)
+				.map( data -> data / 10)
 				.log("log-test");
 	}
 

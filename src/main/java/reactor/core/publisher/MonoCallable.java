@@ -22,7 +22,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.Exceptions;
-import reactor.fn.Supplier;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -38,7 +37,7 @@ import reactor.fn.Supplier;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Receiver, Supplier<T> {
+		implements Receiver {
 
 	final Callable<? extends T> callable;
 

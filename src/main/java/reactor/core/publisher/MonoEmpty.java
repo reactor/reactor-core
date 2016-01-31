@@ -15,10 +15,9 @@
  */
 package reactor.core.publisher;
 
-import reactor.fn.Supplier;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.state.Completable;
 import reactor.core.util.EmptySubscription;
 
@@ -35,7 +34,7 @@ import reactor.core.util.EmptySubscription;
  */
 final class MonoEmpty 
 extends Mono<Object>
-implements Supplier<Object>, Completable {
+		implements Fuseable.ScalarSupplier<Object>, Completable {
 
 	private static final Publisher<Object> INSTANCE = new MonoEmpty();
 

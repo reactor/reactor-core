@@ -21,6 +21,7 @@ import java.util.Queue;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.fn.Supplier;
 
 /**
  * A micro API for stream fusion, in particular marks producers that support a {@link QueueSubscription}.
@@ -188,5 +189,15 @@ public interface Fuseable {
 		public final T element() {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
+	}
+
+	/**
+	 * Marker interface indicating that the target can return a value or null
+	 * immediately and thus a viable target for assembly-time optimizations.
+	 *
+	 * @param <T> the value type returned
+	 */
+	interface ScalarSupplier<T> extends Supplier<T> {
+
 	}
 }

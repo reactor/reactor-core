@@ -22,7 +22,6 @@ import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
-import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 
 /**
@@ -33,7 +32,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.<Long>io("shared-work", bufferSize, 2, Throwable::printStackTrace).get();
+		return ProcessorGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace).processor();
 	}
 
 	@Override
@@ -51,8 +50,8 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		ProcessorGroup<String> serviceRB = ProcessorGroup.async("rbWork", 32, 1);
-		BiConsumer<String, Consumer<? super String>>  r = serviceRB.dataDispatcher();
+		ProcessorGroup serviceRB = ProcessorGroup.async("rbWork", 32, 1);
+		Consumer<Runnable>  r = serviceRB.call();
 
 		long start = System.currentTimeMillis();
 		CountDownLatch latch = new CountDownLatch(1);
@@ -66,7 +65,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 				Exceptions.fail(ie);
 			}
 		};
-		r.accept("Hello World!", c);
+		r.accept(() -> c.accept("Hello World!"));
 
 		boolean success = serviceRB.awaitAndShutdown(3, TimeUnit.SECONDS);
 		long end = System.currentTimeMillis();

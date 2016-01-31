@@ -28,19 +28,39 @@ import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.fn.Consumer;
 import reactor.fn.Function;
 
 /**
- * A base processor that expose {@link Flux} API
- * shutdown options.
+ * A base processor that expose {@link Flux} API, {@link Processor} and generic {@link Function} or {@link Runnable}
+ * scheduling contract.
+ *
+ * The scheduling contract allows for interoperability with {@link Flux#dispatchOn)} and {@link Flux#publishOn} :
+ * {@code
+ *  flux.dispatchOn(ProcessorGroup.io()) ou
+ *  mono.publishOn(TopicProcessor.create())
+ *  stream.dispatchOn(WorkQueueProcessor.create())
+ *  promise.publishOn( task -> { Future<T> f = executorService.submit(task); return () -> f.cancel(); } )
+ * }
  *
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Receiver {
+		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN> {
+
+	protected static final Runnable NOOP_CANCEL = new Runnable() {
+		@Override
+		public void run() {
+
+		}
+	};
 
 	/**
+	 * Create a {@link FluxProcessor} from a receiving {@link Subscriber} and a mapped {@link Publisher}.
+	 *
+	 *
+	 *
 	 * @param <IN>
 	 * @param <OUT>
 	 * @return
@@ -146,6 +166,16 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	public void subscribe(Subscriber<? super OUT> s) {
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
+		}
+	}
+
+	@Override
+	public void accept(IN runnable) {
+		if(runnable == null){
+			onComplete();
+		}
+		else {
+			onNext(runnable);
 		}
 	}
 

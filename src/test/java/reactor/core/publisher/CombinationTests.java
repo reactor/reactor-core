@@ -80,9 +80,11 @@ public class CombinationTests {
 	public void tesSubmitSession() throws Exception {
 		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
-		processor.subscribeWith(ProcessorGroup.io().get())
+		CountDownLatch latch = new CountDownLatch(1);
+		processor.subscribeWith(ProcessorGroup.io().processor())
 		         .subscribe(Subscribers.create(s -> {
 			         try {
+				         System.out.println("test" + Thread.currentThread());
 				         Thread.sleep(1000);
 			         }
 			         catch (InterruptedException ie) {
@@ -90,7 +92,10 @@ public class CombinationTests {
 			         }
 			         s.request(1L);
 			         return null;
-		         }, (d, s) -> count.incrementAndGet()));
+		         }, (d, s) -> {
+			         count.incrementAndGet();
+			         latch.countDown();
+		         }));
 
 		SignalEmitter<Integer> session = processor.startEmitter();
 		long emission = session.submit(1);
@@ -104,8 +109,9 @@ public class CombinationTests {
 		}
 		session.finish();
 
+		latch.await(5, TimeUnit.SECONDS);
 		Assert.isTrue(count.get() == 1, "latch : " + count);
-		Assert.isTrue(emission >= 1, "time : " + emission);
+		Assert.isTrue(emission >= 0, "time : " + emission);
 	}
 
 	@Test
@@ -118,7 +124,7 @@ public class CombinationTests {
 
 		for (int i = 0; i < subs; i++) {
 			processor.subscribeWith(ProcessorGroup.single()
-			                       .get())
+			                       .processor())
 			         .subscribe(Subscribers.create(s -> {
 				         s.request(1L);
 				         return null;
@@ -267,7 +273,7 @@ public class CombinationTests {
 	public void sampleZipTest3() throws Exception {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
-		Processor<SensorData, SensorData> sensorDataProcessor = ProcessorGroup.<SensorData>single().get();
+		Processor<SensorData, SensorData> sensorDataProcessor = ProcessorGroup.single().processor();
 
 		sensorDataProcessor.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null,

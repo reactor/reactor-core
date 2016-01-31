@@ -26,7 +26,7 @@ public class ProcessorGroupSyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.<Long>sync().get();
+		return ProcessorGroup.<Long>sync().processor();
 	}
 
 	@Override
