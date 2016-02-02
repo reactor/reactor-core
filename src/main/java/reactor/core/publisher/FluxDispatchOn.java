@@ -26,8 +26,17 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Fuseable.FusionMode;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.publisher.FluxPublishOn.ScheduledEmptySubscriptionEager;
 import reactor.core.publisher.FluxPublishOn.ScheduledSubscriptionEagerCancel;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Failurable;
+import reactor.core.state.Prefetchable;
+import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -44,7 +53,7 @@ import reactor.fn.Supplier;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxDispatchOn<T> extends FluxSource<T, T> {
+final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Callable<? extends Consumer<Runnable>> schedulerFactory;
 	
@@ -111,9 +120,23 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 		}
 		source.subscribe(new DispatchOnSubscriber<>(s, scheduler, delayError, prefetch, queueSupplier));
 	}
-	
+
+	@Override
+	public Object connectedInput() {
+		return null;
+	}
+
+	@Override
+	public Object connectedOutput() {
+		return schedulerFactory;
+	}
+
+
+
 	static final class DispatchOnSubscriber<T>
-	implements Subscriber<T>, Subscription, Runnable {
+	implements Subscriber<T>, Subscription, Runnable,
+			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Failurable,
+			   Requestable, Completable {
 		
 		final Subscriber<? super T> actual;
 		
@@ -280,7 +303,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				queue.clear();
 			}
 		}
-		
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
 		void trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
@@ -497,10 +525,71 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 			
 			return false;
 		}
+
+		@Override
+		public long getCapacity() {
+			return prefetch;
+		}
+
+		@Override
+		public long getPending() {
+			return queue != null ? queue.size() : -1L;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !cancelled && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return null;
+		}
+
+		@Override
+		public Object connectedOutput() {
+			return scheduler;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return produced;
+		}
+
+		@Override
+		public long limit() {
+			return limit;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
 	}
 
 	static final class DispatchOnConditionalSubscriber<T>
-	implements Subscriber<T>, Subscription, Runnable {
+	implements Subscriber<T>, Subscription, Runnable,
+			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Failurable, Completable, Requestable {
 		
 		final Fuseable.ConditionalSubscriber<? super T> actual;
 		
@@ -849,7 +938,72 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				runAsync();
 			}
 		}
-		
+
+		@Override
+		public long getCapacity() {
+			return prefetch;
+		}
+
+		@Override
+		public long getPending() {
+			return queue != null ? queue.size() : -1;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !cancelled && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return null;
+		}
+
+		@Override
+		public Object connectedOutput() {
+			return scheduler;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return produced;
+		}
+
+		@Override
+		public long limit() {
+			return limit;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
 				s.cancel();

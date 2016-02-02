@@ -239,6 +239,11 @@ extends Flux<T>
 		public void drop() {
 			index++;
 		}
+		
+		@Override
+		public int size() {
+			return array.length - index;
+		}
 	}
 
 }

@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.EmptySubscription;
@@ -40,7 +42,7 @@ import reactor.fn.Supplier;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> {
+final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Callable<? extends Consumer<Runnable>> schedulerFactory;
 	
@@ -90,9 +92,19 @@ final class FluxPublishOn<T> extends FluxSource<T, T> {
 		
 		scheduler.accept(new SourceSubscribeTask<>(parent, source));
 	}
-	
+
+	@Override
+	public Object connectedInput() {
+		return schedulerFactory;
+	}
+
+	@Override
+	public Object connectedOutput() {
+		return null;
+	}
+
 	static final class PublishOnClassic<T>
-	extends DeferredSubscription implements Subscriber<T> {
+	extends DeferredSubscription implements Subscriber<T>, Producer, Loopback {
 		final Subscriber<? super T> actual;
 		
 		final Consumer<Runnable> scheduler;
@@ -141,24 +153,40 @@ final class FluxPublishOn<T> extends FluxSource<T, T> {
 			super.request(n);
 		}
 
-		static final class RequestTask implements Runnable {
+		@Override
+		public Object downstream() {
+			return actual;
+		}
 
-			final long n;
-			final PublishOnClassic<?> parent;
+		@Override
+		public Object connectedOutput() {
+			return scheduler;
+		}
 
-			public RequestTask(long n, PublishOnClassic<?> parent) {
-				this.n = n;
-				this.parent = parent;
-			}
+		@Override
+		public Object connectedInput() {
+			return null;
+		}
+	}
 
-			@Override
-			public void run() {
-				parent.requestInner(n);
-			}
+	static final class RequestTask implements Runnable {
+
+		final long n;
+		final PublishOnClassic<?> parent;
+
+		public RequestTask(long n, PublishOnClassic<?> parent) {
+			this.n = n;
+			this.parent = parent;
+		}
+
+		@Override
+		public void run() {
+			parent.requestInner(n);
 		}
 	}
 	
-	static final class ScheduledSubscriptionEagerCancel<T> implements Subscription, Runnable {
+	static final class ScheduledSubscriptionEagerCancel<T>
+			implements Subscription, Runnable, Producer, Loopback {
 
 		final Subscriber<? super T> actual;
 		
@@ -198,9 +226,24 @@ final class FluxPublishOn<T> extends FluxSource<T, T> {
 			scheduler.accept(null);
 			actual.onComplete();
 		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return scheduler;
+		}
+
+		@Override
+		public Object connectedOutput() {
+			return value;
+		}
 	}
 
-	static final class ScheduledEmptySubscriptionEager implements Subscription, Runnable {
+	static final class ScheduledEmptySubscriptionEager implements Subscription, Runnable, Producer, Loopback {
 		final Subscriber<?> actual;
 
 		final Consumer<Runnable> scheduler;
@@ -209,21 +252,36 @@ final class FluxPublishOn<T> extends FluxSource<T, T> {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			BackpressureUtils.validate(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			scheduler.accept(null);
 		}
-		
+
 		@Override
 		public void run() {
 			scheduler.accept(null);
 			actual.onComplete();
+		}
+
+		@Override
+		public Object connectedInput() {
+			return scheduler;
+		}
+
+		@Override
+		public Object connectedOutput() {
+			return null;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
 		}
 	}
 

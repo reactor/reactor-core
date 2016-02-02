@@ -72,6 +72,8 @@ import reactor.fn.tuple.Tuple6;
  */
 public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable {
 
+	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
+
 //	 ==============================================================================================================
 //	 Static Generators
 //	 ==============================================================================================================
@@ -254,7 +256,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return MonoSource.wrap(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
+		return MonoSource.wrap(new FluxPeek<>(MonoEmpty.<Void>instance(), null, null, null, runnable, null, null,
+				null));
 	}
 
 	/**
@@ -286,6 +289,20 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public static <T> Mono<T> just(T data) {
 		return new MonoJust<>(data);
+	}
+
+	/**
+	 * Return a {@link Mono} that will never signal any data, error or completion signal.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
+	 * <p>
+	 * @param <T> the {@link Subscriber} type target
+	 *
+	 * @return a never completing {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Mono<T> never() {
+		return (Mono<T>)NEVER;
 	}
 
 	/**
@@ -596,7 +613,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return MonoSource.wrap(new FluxDispatchOn<>(this, scheduler, false, 1, QueueSupplier.get(1)));
+		return MonoSource.wrap(new FluxDispatchOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
 	}
 
 	/**

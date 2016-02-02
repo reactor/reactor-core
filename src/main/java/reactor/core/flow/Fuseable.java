@@ -121,11 +121,6 @@ public interface Fuseable {
 		}
 
 		@Override
-		public final int size() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
 		public final boolean contains(Object o) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
