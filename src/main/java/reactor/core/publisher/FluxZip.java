@@ -27,7 +27,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.flow.Fuseable.FusionMode;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -897,16 +896,16 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 				if (s instanceof Fuseable.QueueSubscription) {
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
-					FusionMode m = f.requestFusion(FusionMode.ANY);
+					int m = f.requestFusion(Fuseable.ANY);
 					
-					if (m == FusionMode.SYNC) {
+					if (m == Fuseable.SYNC) {
 						sourceMode = SYNC;
 						queue = f;
 						done = true;
 						parent.drain();
 						return;
 					} else 
-					if (m == FusionMode.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
 					} else {

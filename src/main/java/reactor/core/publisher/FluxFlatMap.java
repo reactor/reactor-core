@@ -27,7 +27,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.flow.Fuseable.FusionMode;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -907,15 +906,15 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (BackpressureUtils.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
-					FusionMode m = f.requestFusion(FusionMode.ANY);
-					if (m == FusionMode.SYNC){
+					int m = f.requestFusion(Fuseable.ANY);
+					if (m == Fuseable.SYNC){
 						sourceMode = SYNC;
 						queue = f;
 						done = true;
 						parent.drain();
 						return;
 					} else 
-					if (m == FusionMode.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
 					}
