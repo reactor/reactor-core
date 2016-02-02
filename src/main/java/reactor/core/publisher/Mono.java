@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -30,6 +31,7 @@ import reactor.core.state.Introspectable;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.util.Assert;
+import reactor.core.util.ExecutorUtils;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -577,7 +579,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link ProcessorGroup}.
+	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link ProcessorGroup} or  {@link ExecutorUtils#schedulerFromExecutor(ExecutorService)}.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
@@ -596,6 +598,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
 		return new MonoSource<>(new FluxDispatchOn<>(this, scheduler, false, 1, QueueSupplier.get(1)));
 	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios:
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
+	 * <p>
+	 * {@code mono.dispatchOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param executorService the {@link ExecutorService} to use
+	 *
+	 * @return a {@link Mono} consuming asynchronously
+	 */
+	public final Mono<T> dispatchOn(ExecutorService executorService) {
+		return dispatchOn(ExecutorUtils.schedulerFromExecutor(executorService));
+	}
+
 
 	/**
 	 * Triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
@@ -1020,8 +1041,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run the requests to this Publisher {@link Mono} on a given processor thread from the given {@link
-	 * ProcessorGroup}
+	 * Run the requests to this Publisher {@link Mono} on a given scheduler thread like {@link ProcessorGroup} or {@link ExecutorUtils#schedulerFromExecutor(ExecutorService)}.
 	 * <p>
 	 * {@code mono.publishOn(ProcessorGroup.io()).subscribe(Subscribers.unbounded()) }
 	 *
@@ -1032,9 +1052,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new asynchronous {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
 		return new MonoSource<>(Flux.publishOn(this, scheduler));
+	}
+
+	/**
+	 * Subscribe and request given {@link ExecutorService} thread
+	 * <p>
+	 * {@code mono.publishOn(Executors.newCachedThreadPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
+	 * <p>
+	 * @param executorService the {@link ExecutorService} in use
+	 *
+	 * @return a new asynchronous {@link Mono}
+	 */
+	public final Mono<T> publishOn(ExecutorService executorService) {
+		return publishOn(ExecutorUtils.schedulerFromExecutor(executorService));
 	}
 
 	/**

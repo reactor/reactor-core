@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -34,6 +35,7 @@ import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.util.Assert;
+import reactor.core.util.ExecutorUtils;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -666,7 +668,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * {@link Consumer} {@link Runnable} scheduler like {@link ProcessorGroup} or {@link ExecutorUtils#schedulerFromExecutor(ExecutorService)}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
@@ -1242,7 +1244,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup} or {@link ExecutorUtils#schedulerFromExecutor(ExecutorService)}..
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -1259,6 +1261,24 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 */
 	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
 		return dispatchOn(this, scheduler, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios:
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+	 * <p>
+	 * {@code flux.dispatchOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param executorService the {@link ExecutorService} to use
+	 *
+	 * @return a {@link Flux} consuming asynchronously
+	 */
+	public final Flux<T> dispatchOn(ExecutorService executorService) {
+		return dispatchOn(ExecutorUtils.schedulerFromExecutor(executorService));
 	}
 
 
@@ -1583,6 +1603,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 */
 	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
 		return publishOn(this, scheduler);
+	}
+
+
+	/**
+	 * Subscribe and request given from a given {@link ExecutorService} thread
+	 * <p>
+	 * {@code mono.publishOn(Executors.newCachedThreadPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * @param executorService the {@link ExecutorService} in use
+	 *
+	 * @return a new asynchronous {@link Flux}
+	 */
+	public final Flux<T> publishOn(ExecutorService executorService) {
+		return publishOn(ExecutorUtils.schedulerFromExecutor(executorService));
 	}
 
 	/**

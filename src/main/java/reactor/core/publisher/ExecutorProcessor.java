@@ -121,9 +121,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	protected void doError(Throwable throwable) {
-
-	}
+	abstract void doError(Throwable throwable);
 
 	@Override
 	public final void onError(Throwable t) {

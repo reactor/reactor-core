@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -41,13 +40,11 @@ import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.BiConsumer;
 import reactor.fn.Consumer;
 import reactor.fn.Supplier;
 
 /**
- * A Processor Group is a
- * {@link Processor} {@link Supplier} eventually mutualizing one or more internal {@link Processor}.
+ * A Processor Group offers {@link Processor} {@link Supplier} and {@link Consumer} {@link Callable} generators eventually mutualizing one or more internal {@link Processor}.
  * <p> Its purpose is to save some threading and event loop resources by creating a level of indirection between
  * the number of threads and active publisher/subscriber. This indirection requires an input identity
  * {@link Processor} of {@link Runnable} that will callback {@link Runnable#run()} on scheduling. The {@link #create}
@@ -66,16 +63,14 @@ import reactor.fn.Supplier;
  * in these situations unlike {@link WorkQueueProcessor} which exclusively distribute to its subscribers.
  *
  *
- * <p> {@link ProcessorGroup} can generate unbounded proxies such as:
+ * <p> {@link ProcessorGroup} can generate proxies such as:
  * <ul>
- *     <li>a {@link BiConsumer} that schedules the data argument over the  {@link Consumer} task argument.</li>
- *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
- *     <li>a {@link Consumer} that schedules  {@link Consumer} task argument.</li>
- *     <li>an {@link Executor} that runs an arbitrary {@link Runnable} task. </li>
+ *     <li>{@link Processor} that schedule OnNext, OnError, OnComplete on the processor group threads</li>
+ *     <li>that schedules  {@link Runnable} task argument.</li>
  * </ul>
  * <p> {@link ProcessorGroup} maintains a reference count on how many artefacts have been built. Therefore it will
  * automatically shutdown the internal async resource after all references have been released. Each reference
- * (consumer, executor or processor) can be used in combination with {@link ProcessorGroup#release(Object...)} to
+ * (consumer or processor) can be used in combination with {@link ProcessorGroup#release(Object...)} to
  * cleanly unregister and eventually shutdown when no more references use that {@link ProcessorGroup}.
  *
  * @author Anatoly Kadyshev
