@@ -657,22 +657,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 
 	@Override
 	public Iterator<T> iterator() {
-		return new Iterator<T>() {
-			@Override
-			public boolean hasNext() {
-				return !SPSCQueue.this.isEmpty();
-			}
-
-			@Override
-			public T next() {
-				return SPSCQueue.this.poll();
-			}
-
-			@Override
-			public void remove() {
-				SPSCQueue.this.remove();
-			}
-		};
+		return new QueueSupplier.QueueIterator<>(this);
 	}
 
 	@Override

@@ -15,9 +15,11 @@
  */
 package reactor.core.queue;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.util.PlatformDependent;
 import reactor.fn.Supplier;
@@ -30,11 +32,12 @@ import reactor.fn.Supplier;
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false);
-	static final Supplier ABQ_SUPPLIER             = new QueueSupplier<>(1, false);
+	static final Supplier ONE_SUPPLIER             = new QueueSupplier<>(1, false);
 	static final Supplier XSRB_SUPPLIER            = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false);
 	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false);
 	static final Supplier WAITING_XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true);
 	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true);
+	static final Supplier WAITING_ONE_SUPPLIER     = new QueueSupplier<>(1, true);
 
 	final long    batchSize;
 	final boolean waiting;
@@ -63,7 +66,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return (Supplier<Queue<T>>) CLQ_SUPPLIER;
 		}
 		if (batchSize == 1 && !waiting) {
-			return (Supplier<Queue<T>>) ABQ_SUPPLIER;
+			return (Supplier<Queue<T>>) ONE_SUPPLIER;
 		}
 		return new QueueSupplier<>(batchSize, waiting);
 	}
@@ -75,12 +78,25 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> one() {
-		return (Supplier<Queue<T>>)ABQ_SUPPLIER;
+		return (Supplier<Queue<T>>) ONE_SUPPLIER;
 	}
 
 	/**
 	 *
 	 * @param <T> the reified {@link Queue} generic type
+	 * @return a bounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> one(boolean waiting) {
+		if (!waiting) {
+			return (Supplier<Queue<T>>) ONE_SUPPLIER;
+		}
+		return WAITING_ONE_SUPPLIER;
+	}
+
+	/**
+	 * @param <T> the reified {@link Queue} generic type
+	 *
 	 * @return a bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
@@ -151,14 +167,151 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		if(batchSize > 10_000_000){
 			return new ConcurrentLinkedQueue<>();
 		}
-		else if(batchSize == 1 && !waiting){
-			return new ArrayBlockingQueue<>(1);
+		else if (batchSize == 1) {
+			return new OneQueue<>(waiting);
 		}
 		else if(waiting) {
 			return RingBuffer.blockingBoundedQueue(RingBuffer.<T>createSingleProducer((int) batchSize), -1L);
 		}
 		else{
 			return RingBuffer.nonBlockingBoundedQueue(RingBuffer.<T>createSingleProducer((int) batchSize), -1L);
+		}
+	}
+
+	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
+
+		final boolean waiting;
+
+		OneQueue(boolean waiting) {
+			this.waiting = waiting;
+		}
+
+		@Override
+		public boolean add(T t) {
+
+			for (; ; ) {
+				if (compareAndSet(null, t)) {
+					return true;
+				}
+			}
+		}
+
+		@Override
+		public boolean offer(T t) {
+			return compareAndSet(null, t);
+		}
+
+		@Override
+		public T remove() {
+			return getAndSet(null);
+		}
+
+		@Override
+		public T poll() {
+			return getAndSet(null);
+		}
+
+		@Override
+		public T element() {
+			return get();
+		}
+
+		@Override
+		public T peek() {
+			return get();
+		}
+
+		@Override
+		public int size() {
+			return get() == null ? 0 : 1;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return get() == null;
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return get() == o;
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return new QueueIterator<>(this);
+		}
+
+		@Override
+		public Object[] toArray() {
+			T t = get();
+			if (t == null) {
+				return new Object[0];
+			}
+			return new Object[]{t};
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public <T1> T1[] toArray(T1[] a) {
+			if (a.length > 0) {
+				a[0] = (T1)get();
+				return a;
+			}
+			return (T1[])toArray();
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			return false;
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			return false;
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+			set(null);
+		}
+	}
+
+	static class QueueIterator<T> implements Iterator<T> {
+
+		final Queue<T> queue;
+
+		public QueueIterator(Queue<T> queue) {
+			this.queue = queue;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return !queue.isEmpty();
+		}
+
+		@Override
+		public T next() {
+			return queue.poll();
+		}
+
+		@Override
+		public void remove() {
+			queue.remove();
 		}
 	}
 }
