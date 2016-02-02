@@ -159,7 +159,7 @@ public enum ReactiveStateUtils {
 		}
 		Node n = new Node(getName(o), getIdOrDefault(o), o, null);
 		if (prettyPrint) {
-			return n.toPrettyString();
+			return n.toJSON();
 		}
 		else {
 			return n.toString();
@@ -851,14 +851,14 @@ public enum ReactiveStateUtils {
 
 		@Override
 		public String toString() {
-			return toPrettyString(-1);
+			return toJSON(-1);
 		}
 
-		public String toPrettyString() {
-			return toPrettyString(1);
+		public String toJSON() {
+			return toJSON(1);
 		}
 
-		public String toPrettyString(int indent) {
+		public String toJSON(int indent) {
 			int i = indent;
 
 			StringBuffer res = new StringBuffer();
@@ -878,6 +878,7 @@ public enum ReactiveStateUtils {
 				indent(property("reference", "true"), res, i, true);
 			}
 			else {
+				Boolean cancelled = isCancelled(); //force volatile access first
 				if (getFailedState() != null) {
 					indent(property("failed", getFailedState().getMessage()), res, i, true);
 				}
@@ -901,7 +902,7 @@ public enum ReactiveStateUtils {
 				indent(property("requestedDownstream", getRequestedDownstream()), res, i, true);
 				indent(property("active", isActive()), res, i, true);
 				indent(property("terminated", isTerminated()), res, i, true);
-				indent(property("cancelled", isCancelled()), res, i, false);
+				indent(property("cancelled", cancelled), res, i, false);
 			}
 
 			indent("}", res, indent != -1 ? 0 : -1, false);

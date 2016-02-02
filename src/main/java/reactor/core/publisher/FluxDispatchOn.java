@@ -306,7 +306,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long requestedFromDownstream() {
-			return requested;
+			return queue == null ? requested : (requested - queue.size());
 		}
 
 		void trySchedule() {
@@ -568,7 +568,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long expectedFromUpstream() {
-			return produced;
+			return queue == null ? prefetch : (prefetch - queue.size());
 		}
 
 		@Override
@@ -981,7 +981,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long expectedFromUpstream() {
-			return produced;
+			return queue == null ? prefetch : (prefetch - queue.size());
 		}
 
 		@Override
@@ -1001,7 +1001,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long requestedFromDownstream() {
-			return requested;
+			return queue == null ? requested : (requested - queue.size());
 		}
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
