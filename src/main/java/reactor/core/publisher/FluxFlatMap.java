@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *	   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -585,7 +585,22 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 								}
 								
 								if (e == r) {
-									if (d && q.isEmpty()) {
+									d = inner.done;
+									boolean empty;
+									
+									try {
+										empty = q.isEmpty();
+									} catch (Throwable ex) {
+										Exceptions.throwIfFatal(ex);
+										inner.cancel();
+										if (!Exceptions.addThrowable(ERROR, this, ex)) {
+											Exceptions.onErrorDropped(ex);
+										}
+										empty = true;
+										d = true;
+									}
+									
+									if (d && empty) {
 										remove(inner);
 										again = true;
 										replenishMain++;

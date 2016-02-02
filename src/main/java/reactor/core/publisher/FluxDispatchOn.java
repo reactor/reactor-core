@@ -301,7 +301,17 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				long r = requested;
 				
 				while (e != r) {
-					T v = q.poll();
+					T v;
+					
+					try {
+						v = q.poll();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						scheduler.accept(null);
+						
+						a.onError(ex);
+						return;
+					}
 
 					if (cancelled) {
 						scheduler.accept(null);
@@ -323,7 +333,20 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 						scheduler.accept(null);
 						return;
 					}
-					if (q.isEmpty()) {
+					
+					boolean empty;
+					
+					try {
+						empty = q.isEmpty();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						scheduler.accept(null);
+						
+						a.onError(ex);
+						return;
+					}
+					
+					if (empty) {
 						scheduler.accept(null);
 						a.onComplete();
 						return;
@@ -357,7 +380,21 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				
 				while (e != r) {
 					boolean d = done;
-					T v = q.poll();
+					T v;
+					
+					try {
+						v = q.poll();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+
+						s.cancel();
+						scheduler.accept(null);
+						q.clear();
+						
+						a.onError(ex);
+						return;
+					}
+					
 					boolean empty = v == null;
 					
 					if (checkTerminated(d, empty, a)) {
@@ -381,7 +418,22 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				}
 				
 				if (e == r) {
-					if (checkTerminated(done, q.isEmpty(), a)) {
+					boolean d = done;
+					boolean empty;
+					try {
+						empty = q.isEmpty();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+
+						s.cancel();
+						scheduler.accept(null);
+						q.clear();
+						
+						a.onError(ex);
+						return;
+					}
+
+					if (checkTerminated(d, empty, a)) {
 						return;
 					}
 				}
@@ -639,7 +691,16 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				long r = requested;
 				
 				while (e != r) {
-					T v = q.poll();
+					T v;
+					try {
+						v = q.poll();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						scheduler.accept(null);
+						
+						a.onError(ex);
+						return;
+					}
 
 					if (cancelled) {
 						scheduler.accept(null);
@@ -661,7 +722,20 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 						scheduler.accept(null);
 						return;
 					}
-					if (q.isEmpty()) {
+					
+					boolean empty;
+					
+					try {
+						empty = q.isEmpty();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						scheduler.accept(null);
+						
+						a.onError(ex);
+						return;
+					}
+					
+					if (empty) {
 						scheduler.accept(null);
 						a.onComplete();
 						return;
@@ -696,7 +770,19 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				
 				while (emitted != r) {
 					boolean d = done;
-					T v = q.poll();
+					T v;
+					try {
+						v = q.poll();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+
+						s.cancel();
+						scheduler.accept(null);
+						q.clear();
+						
+						a.onError(ex);
+						return;
+					}
 					boolean empty = v == null;
 					
 					if (checkTerminated(d, empty, a)) {
@@ -720,7 +806,22 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> {
 				}
 				
 				if (emitted == r) {
-					if (checkTerminated(done, q.isEmpty(), a)) {
+					boolean d = done;
+					boolean empty;
+					try {
+						empty = q.isEmpty();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+
+						s.cancel();
+						scheduler.accept(null);
+						q.clear();
+						
+						a.onError(ex);
+						return;
+					}
+
+					if (checkTerminated(d, empty, a)) {
 						return;
 					}
 				}

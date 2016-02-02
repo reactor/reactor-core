@@ -669,7 +669,26 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 
 						boolean d = inner.done;
 						Queue<T> q = inner.queue;
-						boolean f = q == null || q.isEmpty();
+						boolean f;
+						
+						if (q != null) {
+							try {
+								f = q.isEmpty();
+							} catch (Throwable ex) {
+								Exceptions.throwIfFatal(ex);
+								
+								cancelAll();
+								
+								Exceptions.addThrowable(ERROR, this, ex);
+								ex = Exceptions.terminate(ERROR, this);
+								
+								a.onError(ex);
+								
+								return;
+							}
+						} else {
+							f = true;
+						}
 
 						if (d && f) {
 							done = true;
@@ -696,7 +715,20 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 
 					for (int j = 0; j < n; j++) {
 						ZipInner<T> inner = qs[j];
-						values[j] = inner.queue.poll();
+						try {
+							values[j] = inner.queue.poll();
+						} catch (Throwable ex) {
+							Exceptions.throwIfFatal(ex);
+							
+							cancelAll();
+							
+							Exceptions.addThrowable(ERROR, this, ex);
+							ex = Exceptions.terminate(ERROR, this);
+							
+							a.onError(ex);
+							
+							return;
+						}
 					}
 					
 					R v;
@@ -756,7 +788,26 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 
 						boolean d = inner.done;
 						Queue<T> q = inner.queue;
-						boolean f = q == null || q.isEmpty();
+						boolean f;
+						
+						if (q != null) {
+							try {
+								f = q.isEmpty();
+							} catch (Throwable ex) {
+								Exceptions.throwIfFatal(ex);
+								
+								cancelAll();
+								
+								Exceptions.addThrowable(ERROR, this, ex);
+								ex = Exceptions.terminate(ERROR, this);
+								
+								a.onError(ex);
+								
+								return;
+							}
+						} else {
+							f = true;
+						}
 						if (d && f) {
 							done = true;
 							break;

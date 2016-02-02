@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -273,6 +274,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			boolean delayError,
 			int prefetch,
 			Supplier<? extends Queue<T>> queueProvider) {
+		if (source instanceof Fuseable.ScalarSupplier) {
+			@SuppressWarnings("unchecked")
+			T value = ((Fuseable.ScalarSupplier<T>)source).get();
+			return new FluxPublishOnValue<>(value, scheduler, true);
+		}
+
 		return new FluxDispatchOn<>(source, scheduler, delayError, prefetch, queueProvider);
 	}
 
