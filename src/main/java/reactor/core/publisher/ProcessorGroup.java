@@ -44,13 +44,18 @@ import reactor.fn.Consumer;
 import reactor.fn.Supplier;
 
 /**
- * A Processor Group offers {@link Processor} {@link Supplier} and {@link Consumer} {@link Callable} generators eventually mutualizing one or more internal {@link Processor}.
+ * A Processor Group offers {@link Processor} {@link Supplier} and {@link Consumer} {@link Callable} generators
+ *  eventually mutualizing one or more internal {@link Processor}.
  * <p> Its purpose is to save some threading and event loop resources by creating a level of indirection between
- * the number of threads and active publisher/subscriber. This indirection requires an input identity
- * {@link Processor} of {@link Runnable} that will callback {@link Runnable#run()} on scheduling. The {@link #create}
+ * the number of threads and active publisher/subscriber akin to a {@link java.util.concurrent.ExecutorService} with
+ * event-loop support ({@link TopicProcessor} {@link WorkQueueProcessor}).
+ *
+ *
+ * This indirection requires an input identity
+ * {@link Processor} of {@link Runnable} that will callback {@link Runnable#run()} on {@link Subscriber#onNext}. The {@link #create}
  * factories allow arbitrary group creation.
  * <p>
- *    The {@link ProcessorGroup} offers ready-to-use factories :
+ *    In addition to {@link #create}, {@link ProcessorGroup} offers ready-to-use factories :
  *    <ul>
  *        <li>{@link #async} : Optimized for fast {@link Runnable} executions </li>
  *        <li>{@link #io} : Optimized for slow {@link Runnable} executions </li>
@@ -63,7 +68,7 @@ import reactor.fn.Supplier;
  * in these situations unlike {@link WorkQueueProcessor} which exclusively distribute to its subscribers.
  *
  *
- * <p> {@link ProcessorGroup} can generate proxies such as:
+ * <p> Eventually, {@link ProcessorGroup} can generate typed proxies such as:
  * <ul>
  *     <li>{@link Processor} that schedule OnNext, OnError, OnComplete on the processor group threads</li>
  *     <li>that schedules  {@link Runnable} task argument.</li>
@@ -602,32 +607,54 @@ public class ProcessorGroup
 		return call();
 	}
 
+	/**
+	 * Create a {@link Processor} dispatching {@link Subscriber#onNext(Object)},
+	 * {@link Subscriber#onError(Throwable)} and {@link Subscriber#onComplete()} asynchronously using
+	 * this {@link ProcessorGroup}. This will increment the reference count of this {@link ProcessorGroup} and
+	 * further condition its shutdown (when the processor is terminated).
+	 *
+	 * The returned {@link FluxProcessor} offers {@link Flux} API and will only support at most one {@link Subscriber}.
+	 */
 	@Override
 	public FluxProcessor<Runnable, Runnable> get() {
 		return createBarrier();
 	}
 
 	/**
+	 * Create a {@link Processor} dispatching {@link Subscriber#onNext(Object)},
+	 * {@link Subscriber#onError(Throwable)} and {@link Subscriber#onComplete()} asynchronously using
+	 * this {@link ProcessorGroup}. This will increment the reference count of this {@link ProcessorGroup} and
+	 * further condition its shutdown (when the processor is terminated).
 	 *
-	 * @param <T>
-	 * @return
+	 * The returned {@link FluxProcessor} offers {@link Flux} API and will only support at most one {@link Subscriber}.
+	 *
+	 * @param <T> The {@link Processor} reified type
+	 * @return a new {@link FluxProcessor} reference
 	 */
 	public <T> FluxProcessor<T, T> processor() {
 		return createBarrier();
 	}
 
 	/**
-	 * @return
+	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * processor doesn't implement.
+	 *
+	 * The method will only return after shutdown has been confirmed, waiting undefinitely so.
+	 *
+	 * @return true if successfully shutdown
 	 */
 	public final boolean awaitAndShutdown() {
 		return awaitAndShutdown(-1, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * @param timeout
-	 * @param timeUnit
+	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * processor doesn't implement
+	 * {@link ExecutorProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
+	 * @param timeout the time un given unit to wait for
+	 * @param timeUnit the unit
 	 *
-	 * @return
+	 * @return true if successfully shutdown
 	 */
 	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
 		if (processor == null) {
@@ -640,7 +667,7 @@ public class ProcessorGroup
 	}
 
 	/**
-	 *
+	 * Non-blocking forced shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
 	 */
 	public void forceShutdown() {
 		if (processor == null) {
@@ -658,25 +685,16 @@ public class ProcessorGroup
 		if (processor == null) {
 			return false;
 		}
-		if (processor instanceof ExecutorProcessor) {
-			return ((ExecutorProcessor) processor).isTerminated();
-		}
-		return false;
+		return processor instanceof ExecutorProcessor && ((ExecutorProcessor) processor).isTerminated();
 	}
 
 	@Override
 	public boolean isStarted() {
-		if (processor == null) {
-			return true;
-		}
-		if (processor instanceof ExecutorProcessor) {
-			return ((ExecutorProcessor) processor).isStarted();
-		}
-		return true;
+		return processor == null || !(processor instanceof ExecutorProcessor) || ((ExecutorProcessor) processor).isStarted();
 	}
 
 	/**
-	 *
+	 * Non-blocking shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
 	 */
 	public void shutdown() {
 		if (processor == null) {
