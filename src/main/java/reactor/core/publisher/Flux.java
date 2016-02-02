@@ -80,7 +80,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 //	 ==============================================================================================================
 
 	static final IdentityFunction IDENTITY_FUNCTION      = new IdentityFunction();
-	static final Flux<?>          EMPTY                  = Mono.empty().flux();
+	static final Flux<?>          EMPTY                  = from(Mono.empty());
 
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
@@ -370,7 +370,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 				return just(t);
 			}
 		}
-		return new FluxSource<>(source);
+		return FluxSource.wrap(source);
 	}
 
 	/**

@@ -90,7 +90,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <T> Mono<T> any(Mono<? extends T>... monos) {
-		return new MonoSource<>(new FluxAmb<>(monos));
+		return MonoSource.wrap(new FluxAmb<>(monos));
 	}
 
 	/**
@@ -105,7 +105,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> any(Iterable<? extends Mono<? extends T>> monos) {
-		return new MonoSource<>(new FluxAmb<>(monos));
+		return MonoSource.wrap(new FluxAmb<>(monos));
 	}
 
 	/**
@@ -254,7 +254,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return new MonoSource<>(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
+		return MonoSource.wrap(new FluxPeek<>(empty(), null, null, null, runnable, null, null, null));
 	}
 
 	/**
@@ -445,7 +445,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"varargs", "unchecked"})
 	private static <T, V> Mono<V> when(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return new MonoSource<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 	/**
@@ -483,7 +483,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public static <T, V> Mono<V> when(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return new MonoSource<>(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 //	 ==============================================================================================================
@@ -544,7 +544,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return new MonoSource<>(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
+		return MonoSource.wrap(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
 			@Override
 			public Publisher<? extends V> apply(Throwable throwable) {
 				return Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable));
@@ -575,7 +575,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-		return new MonoSource<>(new FluxSwitchIfEmpty<>(this, just(defaultV)));
+		return MonoSource.wrap(new FluxSwitchIfEmpty<>(this, just(defaultV)));
 	}
 
 	/**
@@ -596,7 +596,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return new MonoSource<>(new FluxDispatchOn<>(this, scheduler, false, 1, QueueSupplier.get(1)));
+		return MonoSource.wrap(new FluxDispatchOn<>(this, scheduler, false, 1, QueueSupplier.get(1)));
 	}
 
 	/**
@@ -650,7 +650,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
-		return new MonoSource<>(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
+		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
 	}
 
 	/**
@@ -684,7 +684,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
-		return new MonoSource<>(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
 	}
 
 	/**
@@ -698,7 +698,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-		return new MonoSource<>(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
+		return MonoSource.wrap(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
 	}
 
 	/**
@@ -784,7 +784,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
 	public final Flux<T> flux() {
-		return new FluxSource<>(this);
+		return FluxSource.wrap(this);
 	}
 
 	/**
@@ -940,7 +940,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> log(String category, Level level, int options) {
-		return new MonoSource<>(new FluxLog<>(this, category, level, options));
+		return MonoSource.wrap(new FluxLog<>(this, category, level, options));
 	}
 
 	/**
@@ -955,7 +955,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
-		return new MonoSource<>(new FluxMap<>(this, mapper));
+		return MonoSource.wrap(new FluxMap<>(this, mapper));
 	}
 
 	/**
@@ -1001,7 +1001,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#onErrorResumeWith
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
-		return new MonoSource<>(new FluxResume<>(this, fallback));
+		return MonoSource.wrap(new FluxResume<>(this, fallback));
 	}
 
 	/**
@@ -1016,7 +1016,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return new MonoSource<>(new FluxSwitchIfEmpty<>(this, alternate));
+		return MonoSource.wrap(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**
@@ -1053,7 +1053,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new asynchronous {@link Mono}
 	 */
 	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return new MonoSource<>(Flux.publishOn(this, scheduler));
+		return MonoSource.wrap(Flux.publishOn(this, scheduler));
 	}
 
 	/**
@@ -1095,7 +1095,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} containing the merged values
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
-		return new MonoSource<>(flatMap(transformer));
+		return MonoSource.wrap(flatMap(transformer));
 	}
 
 	/**

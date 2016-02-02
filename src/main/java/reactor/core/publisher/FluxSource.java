@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 
@@ -30,7 +31,21 @@ public class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiv
 
 	protected final Publisher<? extends I> source;
 
-	public FluxSource(Publisher<? extends I> source) {
+	/**
+	 * Unchecked wrap of {@link Publisher} as {@link Flux}, supporting {@link Fuseable} sources
+	 *
+	 * @param source the {@link Publisher} to wrap 
+	 * @param <I> input upstream type
+	 * @return a wrapped {@link Flux}
+	 */
+	public static <I> Flux<I> wrap(Publisher<? extends I> source){
+		if(source instanceof Fuseable){
+			return new FuseableFluxSource<>(source);
+		}
+		return new FluxSource<>(source);
+	}
+	
+	protected FluxSource(Publisher<? extends I> source) {
 		this.source = source;
 	}
 
@@ -65,5 +80,11 @@ public class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiv
 	@Override
 	public final Publisher<? extends I> upstream() {
 		return source;
+	}
+
+	static final class FuseableFluxSource<I> extends FluxSource<I, I> implements Fuseable{
+		public FuseableFluxSource(Publisher<? extends I> source) {
+			super(source);
+		}
 	}
 }
