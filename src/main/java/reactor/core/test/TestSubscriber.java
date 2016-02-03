@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscriptionSubscriber;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
+import reactor.core.util.DeferredSubscription;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.fn.Consumer;
@@ -64,7 +64,7 @@ import reactor.fn.Supplier;
  * @author Brian Clozel
  * @since 2.5
  */
-public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
+public class TestSubscriber<T> extends DeferredSubscription implements Subscriber<T> {
 
 	/**
 	 * Default timeout in seconds for waiting next values to be received
@@ -153,7 +153,7 @@ public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
 	 * Create a new {@link TestSubscriber} that requests an unbounded number of values
 	 */
 	public TestSubscriber() {
-		 this(EmptySubscriber.instance(), Long.MAX_VALUE);
+		 this(Long.MAX_VALUE);
 	}
 
 	/**
@@ -162,25 +162,10 @@ public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
 	 * with {@code request(long n)} method).
 	 */
 	public TestSubscriber(long n) {
-		super(EmptySubscriber.instance(), n);
-	}
-
-	/**
-	 * Create a new {@link TestSubscriber} that requests an unbounded number of values
-	 * @param delegate The subscriber to delegate to
-	 */
-	public TestSubscriber(Subscriber<? super T> delegate) {
-		this(delegate, Long.MAX_VALUE);
-	}
-
-	/**
-	 * Create a new {@link TestSubscriber} that request {@code n} values
-	 * @param delegate The subscriber to delegate to
-	 * @param n Number of values to request (can be 0 if you want to request values later
-	 * with {@code request(long n)} method).
-	 */
-	public TestSubscriber(Subscriber<? super T> delegate, long n) {
-		super(delegate, n);
+		if (n < 0) {
+			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
+		}
+		setInitialRequest(n);
 	}
 
 //	 ==============================================================================================================
@@ -630,20 +615,17 @@ public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
 			   }
 			}
 		}
-		subscriber.onNext(t);
 	}
 
 	@Override
 	public void onError(Throwable t) {
 		errors.add(t);
-		subscriber.onError(t);
 		cdl.countDown();
 	}
 
 	@Override
 	public void onComplete() {
 		completionCount++;
-		subscriber.onComplete();
 		cdl.countDown();
 	}
 
@@ -664,36 +646,6 @@ public class TestSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
 		}
 		return o + " (" + o.getClass()
 		  .getSimpleName() + ")";
-	}
-
-	private enum EmptySubscriber implements Subscriber<Object> {
-
-		INSTANCE;
-
-		@SuppressWarnings("unchecked")
-		public static <T> Subscriber<T> instance() {
-			return (Subscriber<T>) INSTANCE;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onNext(Object t) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onComplete() {
-			// deliberately no op
-		}
 	}
 
 }
