@@ -95,6 +95,8 @@ public class ProcessorGroup
 	                                                            .availableProcessors(), 4);
 
 	/**
+	 *
+	 *
 	 * @param name
 	 * @param bufferSize
 
@@ -611,7 +613,7 @@ public class ProcessorGroup
 	 * Create a {@link Processor} dispatching {@link Subscriber#onNext(Object)},
 	 * {@link Subscriber#onError(Throwable)} and {@link Subscriber#onComplete()} asynchronously using
 	 * this {@link ProcessorGroup}. This will increment the reference count of this {@link ProcessorGroup} and
-	 * further condition its shutdown (when the processor is terminated).
+	 * will further condition its shutdown (when the processor is terminated).
 	 *
 	 * The returned {@link FluxProcessor} offers {@link Flux} API and will only support at most one {@link Subscriber}.
 	 */
