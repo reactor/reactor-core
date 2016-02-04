@@ -82,7 +82,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	                                                            .availableProcessors(), 4);
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -99,7 +99,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -118,7 +118,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -138,7 +138,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -160,7 +160,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -186,7 +186,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -214,7 +214,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -245,7 +245,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
@@ -309,7 +309,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -325,7 +325,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -343,7 +343,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -362,7 +362,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -382,7 +382,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -403,7 +403,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -426,7 +426,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -459,7 +459,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
@@ -512,48 +512,89 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single() {
 		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
-	 * @param name
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name) {
 		return single(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name, int bufferSize) {
 		return single(name, bufferSize,null, null, false, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param autoShutdown
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name, int bufferSize, boolean autoShutdown) {
 		return single(name, bufferSize, null, null, autoShutdown, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name, int bufferSize, Consumer<Throwable> errorC,
 			Runnable shutdownC) {
@@ -561,10 +602,22 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name, int bufferSize,
 			Consumer<Throwable> errorC,
@@ -604,6 +657,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		return SYNC_SERVICE;
 	}
 
+	/**
+	 * Execute the given runnable or decrement scheduler reference if {@literal null} is accepted
+	 *
+	 * @param runnable the task to run or null signal
+	 */
 	@Override
 	public void accept(Runnable runnable) {
 		if (runnable == null) {
@@ -617,6 +675,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		}
 	}
 
+	/**
+	 * Return a scheduler reference to this {@link SchedulerGroup}, incrementing use count by 1
+	 *
+	 * @return a new scheduler reference
+	 */
 	@Override
 	public Consumer<Runnable> call() throws Exception {
 		if (scheduler == null) {
@@ -627,9 +690,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
+	 * Return a scheduler reference to this {@link SchedulerGroup}, incrementing use count by 1
 	 *
-	 * @param tailRecurse
-	 * @return
+	 * @param tailRecurse true if the scheduler should be reentrant
+	 *
+	 * @return a new scheduler reference
 	 * @throws Exception
 	 */
 	public Consumer<Runnable> call(boolean tailRecurse) throws Exception {
