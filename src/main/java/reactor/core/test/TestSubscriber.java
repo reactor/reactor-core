@@ -422,7 +422,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 				T t1 = actual.next();
 				T t2 = expected.next();
 				if (!Objects.equals(t1, t2)) {
-					throw new AssertionError("The " + i + " th elements differ: expected = " + valueAndClass(t2) + ", actual = "
+					throw new AssertionError("The element with index " + i + " does not match: expected = " + valueAndClass(t2) + ", actual = "
 					  + valueAndClass(
 					  t1), null);
 				}
