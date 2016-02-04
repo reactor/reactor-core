@@ -685,13 +685,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param source a {@link Publisher} source to publish from the given scheduler
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
 	public static <T> Flux<T> publishOn(Publisher<? extends T> source,
-			Callable<? extends Consumer<Runnable>> scheduler) {
-		return new FluxPublishOn<>(source, scheduler);
+			Callable<? extends Consumer<Runnable>> schedulers) {
+		return new FluxPublishOn<>(source, schedulers);
 	}
 
 
@@ -1249,7 +1249,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Function} {@link Runnable} scheduler like {@link SchedulerGroup}.
+	 * {@link Consumer} {@link Runnable} scheduler factory like {@link SchedulerGroup}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -1260,12 +1260,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return dispatchOn(this, scheduler, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
+	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> schedulers) {
+		return dispatchOn(this, schedulers, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
 	}
 
 	/**
@@ -1572,7 +1572,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Function} {@link Runnable} scheduler like {@link SchedulerGroup}.
+	 * {@link Consumer} {@link Runnable} factory like {@link SchedulerGroup}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
@@ -1583,12 +1583,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
-	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return publishOn(this, scheduler);
+	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> schedulers) {
+		return publishOn(this, schedulers);
 	}
 
 	/**

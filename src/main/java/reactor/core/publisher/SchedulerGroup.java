@@ -81,244 +81,6 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 	 * @return
 	 */
-	public static SchedulerGroup io() {
-		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
-	}
-
-	/**
-	 * @param name
-
-	 * @return
-	 */
-	public static SchedulerGroup io(String name) {
-		return io(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
-	}
-
-	/**
-	 * Create a {}
-	 *
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
-	 */
-	public static SchedulerGroup io(String name, int bufferSize) {
-		return io(name, bufferSize, DEFAULT_POOL_SIZE);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-
-	 * @return
-	 */
-	public static SchedulerGroup io(String name, int bufferSize, int concurrency) {
-		return io(name, bufferSize, concurrency, null, null, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-
-	 * @return
-	 */
-	public static SchedulerGroup io(String name,
-			int bufferSize, int concurrency, Consumer<Throwable> uncaughtExceptionHandler) {
-		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, null, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-
-	 * @return
-	 */
-	public static SchedulerGroup io(String name, int bufferSize,
-			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
-		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup io(final String name,
-			final int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler, boolean autoShutdown) {
-		return io(name,
-				bufferSize,
-				concurrency,
-				uncaughtExceptionHandler,
-				shutdownHandler,
-				autoShutdown,
-				DEFAULT_WAIT_STRATEGY.get());
-	}
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-	 * @param waitStrategy
-
-	 * @return
-	 */
-	public static SchedulerGroup io(final String name,
-			final int bufferSize,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown,
-			WaitStrategy waitStrategy) {
-
-		return create(WorkQueueProcessor.<Runnable>share(name, bufferSize, waitStrategy, false),
-				concurrency,
-				uncaughtExceptionHandler,
-				shutdownHandler,
-				autoShutdown);
-	}
-
-	/**
-
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup sync() {
-		return SYNC_SERVICE;
-	}
-
-	/**
-	 * @param p
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p) {
-		return create(p, null, null, true);
-	}
-
-	/**
-	 * @param p
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p, int parallelSchedulers) {
-		return create(p, parallelSchedulers, null, null, true);
-	}
-
-	/**
-	 * @param p
-	 * @param parallelSchedulers
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> p, int parallelSchedulers) {
-		return create(p, parallelSchedulers, null, null, true);
-	}
-
-	/**
-	 * @param p
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p, boolean autoShutdown) {
-		return create(p, null, null, autoShutdown);
-	}
-
-	/**
-	 * @param p
-	 * @param uncaughtExceptionHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			boolean autoShutdown) {
-		return create(p, uncaughtExceptionHandler, null, autoShutdown);
-	}
-
-	/**
-	 * @param p
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(final Consumer<Runnable> p,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return create(p, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-	}
-
-	/**
-	 * @param schedulerFactory
-	 * @param parallelSchedulers
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory,
-			int parallelSchedulers,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		if (schedulerFactory != null && parallelSchedulers > 1) {
-			return new PooledSchedulerGroup(schedulerFactory, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-		}
-		else {
-			return new SchedulerGroup(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler,
-					autoShutdown);
-		}
-	}
-
-	/**
-	 * @param p
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup create(final Consumer<Runnable> p,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return new SchedulerGroup(new Callable<Consumer<Runnable>>() {
-			@Override
-			public Consumer<Runnable> call() throws Exception {
-				return p;
-			}
-		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-	}
-
-	/**
-
-	 * @return
-	 */
 	public static SchedulerGroup async() {
 		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
@@ -481,6 +243,291 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		}, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
 
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io() {
+		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(String name) {
+		return io(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(String name, int bufferSize) {
+		return io(name, bufferSize, DEFAULT_POOL_SIZE);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(String name, int bufferSize, int concurrency) {
+		return io(name, bufferSize, concurrency, null, null, true);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(String name,
+			int bufferSize, int concurrency, Consumer<Throwable> uncaughtExceptionHandler) {
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, null, true);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(String name, int bufferSize,
+			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(final String name,
+			final int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler, boolean autoShutdown) {
+		return io(name,
+				bufferSize,
+				concurrency,
+				uncaughtExceptionHandler,
+				shutdownHandler,
+				autoShutdown,
+				DEFAULT_WAIT_STRATEGY.get());
+	}
+
+	/**
+	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 *
+	 * <p>
+	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * compete to execute the
+	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
+	 * to mitigate consuming rate difference.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 */
+	public static SchedulerGroup io(final String name,
+			final int bufferSize,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown,
+			WaitStrategy waitStrategy) {
+
+		return create(WorkQueueProcessor.<Runnable>share(name, bufferSize, waitStrategy, false),
+				concurrency,
+				uncaughtExceptionHandler,
+				shutdownHandler,
+				autoShutdown);
+	}
+
+	/**
+
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static SchedulerGroup sync() {
+		return SYNC_SERVICE;
+	}
+
+	/**
+	 * @param p
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Consumer<Runnable> p) {
+		return create(p, null, null, true);
+	}
+
+	/**
+	 * @param p
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Consumer<Runnable> p, int parallelSchedulers) {
+		return create(p, parallelSchedulers, null, null, true);
+	}
+
+	/**
+	 * @param p
+	 * @param parallelSchedulers
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> p, int parallelSchedulers) {
+		return create(p, parallelSchedulers, null, null, true);
+	}
+
+	/**
+	 * @param p
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Consumer<Runnable> p, boolean autoShutdown) {
+		return create(p, null, null, autoShutdown);
+	}
+
+	/**
+	 * @param p
+	 * @param uncaughtExceptionHandler
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Consumer<Runnable> p,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			boolean autoShutdown) {
+		return create(p, uncaughtExceptionHandler, null, autoShutdown);
+	}
+
+	/**
+	 * @param p
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	public static SchedulerGroup create(final Consumer<Runnable> p,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return create(p, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
+
+	/**
+	 * @param schedulerFactory
+	 * @param parallelSchedulers
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory,
+			int parallelSchedulers,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		if (schedulerFactory != null && parallelSchedulers > 1) {
+			return new PooledSchedulerGroup(schedulerFactory, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+		}
+		else {
+			return new SchedulerGroup(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler,
+					autoShutdown);
+		}
+	}
+
+	/**
+	 * @param p
+	 * @param concurrency
+	 * @param uncaughtExceptionHandler
+	 * @param shutdownHandler
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static SchedulerGroup create(final Consumer<Runnable> p,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return new SchedulerGroup(new Callable<Consumer<Runnable>>() {
+			@Override
+			public Consumer<Runnable> call() throws Exception {
+				return p;
+			}
+		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
 
 	/**
 

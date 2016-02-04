@@ -620,13 +620,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * {@code mono.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return an asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return MonoSource.wrap(new FluxDispatchOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
+	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> schedulers) {
+		return MonoSource.wrap(new FluxDispatchOn(this, schedulers, false, 1, QueueSupplier.<T>one()));
 	}
 
 
@@ -1060,12 +1060,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 * <p>
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a new asynchronous {@link Mono}
 	 */
-	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return MonoSource.wrap(Flux.publishOn(this, scheduler));
+	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> schedulers) {
+		return MonoSource.wrap(Flux.publishOn(this, schedulers));
 	}
 
 	/**
