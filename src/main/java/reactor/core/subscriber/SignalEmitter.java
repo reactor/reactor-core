@@ -84,17 +84,18 @@ public class SignalEmitter<E>
 		}
 	};
 
-	private final Subscriber<? super E> actual;
+	final Subscriber<? super E> actual;
+	final boolean               blockOnNext;
 
 	@SuppressWarnings("unused")
-	private volatile long                                  requested = 0L;
+	volatile     long                                  requested = 0L;
 	@SuppressWarnings("rawtypes")
-	static final     AtomicLongFieldUpdater<SignalEmitter> REQUESTED =
+	static final AtomicLongFieldUpdater<SignalEmitter> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(SignalEmitter.class, "requested");
 
-	private Throwable uncaughtException;
+	Throwable uncaughtException;
 
-	private volatile boolean cancelled;
+	volatile boolean cancelled;
 
 	/**
 	 *
@@ -130,15 +131,33 @@ public class SignalEmitter<E>
 	 * @return a new {@link SignalEmitter}
 	 */
 	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber, boolean autostart) {
-		SignalEmitter<E> sub = new SignalEmitter<>(subscriber);
+		SignalEmitter<E> sub = new SignalEmitter<>(subscriber, false);
 		if (autostart) {
 			sub.start();
 		}
 		return sub;
 	}
 
-	protected SignalEmitter(Subscriber<? super E> actual) {
+	/**
+	 * Create a {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link
+	 * org.reactivestreams.Processor}.
+	 * <p>
+	 * . The {@link Subscriber#onNext(Object)} will be blocking if overrun (under capacity).
+	 *
+	 * @param subscriber the decorated {@link Subscriber}
+	 * @param <E> the reified {@link Subscriber} type
+	 *
+	 * @return a new {@link SignalEmitter}
+	 */
+	public static <E> SignalEmitter<E> blocking(Subscriber<? super E> subscriber) {
+		SignalEmitter<E> sub = new SignalEmitter<>(subscriber, true);
+		sub.start();
+		return sub;
+	}
+
+	protected SignalEmitter(Subscriber<? super E> actual, boolean blockOnNext) {
 		this.actual = actual;
+		this.blockOnNext = blockOnNext;
 	}
 
 	/**
@@ -430,7 +449,23 @@ public class SignalEmitter<E>
 			return;
 		}
 		if(emission.isBackpressured()){
-			Exceptions.failWithOverflow();
+			if(blockOnNext){
+				while ((emission = emit(e)) == Emission.BACKPRESSURED) {
+					LockSupport.parkNanos(1L);
+				}
+				if(emission.isCancelled()){
+					Exceptions.onNextDropped(e);
+				}
+				if(emission.isOk()){
+					return;
+				}
+				else {
+					Exceptions.failWithOverflow();
+				}
+			}
+			else {
+				Exceptions.failWithOverflow();
+			}
 		}
 		if(emission.isFailed()){
 			if(uncaughtException != null) {

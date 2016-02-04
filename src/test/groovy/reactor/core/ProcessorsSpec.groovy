@@ -19,7 +19,7 @@ package reactor.core
 
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import reactor.core.publisher.ProcessorGroup
+import reactor.core.publisher.SchedulerGroup
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
 import reactor.fn.Consumer
@@ -163,8 +163,8 @@ class ProcessorsSpec extends Specification {
 	def "Dispatcher executes tasks in correct thread"() {
 
 		given:
-		def sameThread = ProcessorGroup.sync().call()
-		def diffThread = ProcessorGroup.io("rbWork").call()
+		def sameThread = SchedulerGroup.sync().call()
+		def diffThread = SchedulerGroup.io("rbWork").call()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
 
@@ -192,14 +192,14 @@ class ProcessorsSpec extends Specification {
 
 
 		cleanup:
-			ProcessorGroup.release(diffThread)
+			SchedulerGroup.release(diffThread)
 	}
 
 	def "Dispatcher thread can be reused"() {
 
 		given:
 			"ring buffer eventBus"
-			def serviceRB = ProcessorGroup.single("rb", 32)
+			def serviceRB = SchedulerGroup.single("rb", 32)
 		def r = serviceRB.call()
 			def latch = new CountDownLatch(2)
 
@@ -222,14 +222,14 @@ class ProcessorsSpec extends Specification {
 			latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
 
 		cleanup:
-			ProcessorGroup.release(r)
+			SchedulerGroup.release(r)
 	}
 
 	def "Dispatchers can be shutdown awaiting tasks to complete"() {
 
 		given:
 			"a Reactor with a ThreadPoolExecutorDispatcher"
-			def serviceRB = ProcessorGroup.io("rbWork", 32)
+			def serviceRB = SchedulerGroup.io("rbWork", 32)
 		def r = serviceRB.call()
 			long start = System.currentTimeMillis()
 			def hello = ""
@@ -256,7 +256,7 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = ProcessorGroup.single("rb", 8)
+			def serviceRB = SchedulerGroup.single("rb", 8)
 		def dispatcher = serviceRB.call()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -269,14 +269,14 @@ class ProcessorsSpec extends Specification {
 			t1 != t2
 
 		cleanup:
-			ProcessorGroup.release(dispatcher)
+			SchedulerGroup.release(dispatcher)
 
 	}
 
 	def "WorkQueueDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRBWork = ProcessorGroup.io("rbWork", 1024, 8)
+			def serviceRBWork = SchedulerGroup.io("rbWork", 1024, 8)
 		def dispatcher = serviceRBWork.call()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -289,7 +289,7 @@ class ProcessorsSpec extends Specification {
 			t1 != t2
 
 		cleanup:
-			ProcessorGroup.release(dispatcher)
+			SchedulerGroup.release(dispatcher)
 
 	}
 
@@ -326,10 +326,10 @@ class ProcessorsSpec extends Specification {
 			main != t2
 
 		cleanup:
-		 ProcessorGroup.release(d)
+		 SchedulerGroup.release(d)
 
 		where:
-			d << [ProcessorGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).call(),
+			d << [SchedulerGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).call(),
 			]
 
 	}

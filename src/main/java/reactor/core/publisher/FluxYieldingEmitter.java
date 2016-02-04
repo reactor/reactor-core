@@ -63,7 +63,7 @@ final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
 				AtomicIntegerFieldUpdater.newUpdater(YieldingSignalEmitter.class, "running");
 
 		public YieldingSignalEmitter(Consumer<? super SignalEmitter<T>> onSubscribe, Subscriber<? super T> actual) {
-			super(actual);
+			super(actual, false);
 			this.onSubscribe = onSubscribe;
 		}
 

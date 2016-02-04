@@ -78,11 +78,10 @@ public class CombinationTests {
 
 	@Test
 	public void tesSubmitSession() throws Exception {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> processor = FluxProcessor.async(SchedulerGroup.io());
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
-		processor.subscribeWith(ProcessorGroup.io().processor())
-		         .subscribe(Subscribers.create(s -> {
+		processor.subscribe(Subscribers.create(s -> {
 			         try {
 				         System.out.println("test" + Thread.currentThread());
 				         Thread.sleep(1000);
@@ -116,16 +115,14 @@ public class CombinationTests {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+		FluxProcessor<Integer, Integer> processor = FluxProcessor.async(SchedulerGroup.single());
 
 		int n = 100_000;
 		int subs = 4;
 		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
 
 		for (int i = 0; i < subs; i++) {
-			processor.subscribeWith(ProcessorGroup.single()
-			                       .processor())
-			         .subscribe(Subscribers.create(s -> {
+			processor.subscribe(Subscribers.create(s -> {
 				         s.request(1L);
 				         return null;
 			         }, (d, s) -> {
@@ -273,7 +270,7 @@ public class CombinationTests {
 	public void sampleZipTest3() throws Exception {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
-		Processor<SensorData, SensorData> sensorDataProcessor = ProcessorGroup.single().processor();
+		Processor<SensorData, SensorData> sensorDataProcessor = FluxProcessor.async(SchedulerGroup.single());
 
 		sensorDataProcessor.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null,

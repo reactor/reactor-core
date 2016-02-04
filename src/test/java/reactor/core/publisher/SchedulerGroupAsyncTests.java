@@ -31,7 +31,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
+public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	private final int             BUFFER_SIZE     = 8;
 	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
@@ -39,8 +39,7 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.<Long>single("shared-async", bufferSize,
-				Throwable::printStackTrace).processor();
+		return FluxProcessor.async(SchedulerGroup.<Long>single("shared-async", bufferSize, Throwable::printStackTrace));
 
 	}
 
@@ -68,7 +67,7 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public void required_spec109_mustIssueOnSubscribeForNonNullSubscriber() throws Throwable {
-		throw new SkipException("ProcessorGroup only supports subscribe if eventually onSubscribed");
+		throw new SkipException("SchedulerGroup only supports subscribe if eventually onSubscribed");
 	}
 
 	@Override
@@ -78,12 +77,12 @@ public class ProcessorGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Test
 	public void testDispatch() throws Exception {
-		ProcessorGroup service = ProcessorGroup.single("dispatcher", BUFFER_SIZE, t -> {
+		SchedulerGroup service = SchedulerGroup.single("dispatcher", BUFFER_SIZE, t -> {
 			exceptionThrown.set(t);
 			t.printStackTrace();
 		});
 
-		ProcessorGroup.release(
+		SchedulerGroup.release(
 		  runTest(service.call(true)),
 		  runTest(service.call(true))
 		);

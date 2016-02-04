@@ -31,16 +31,17 @@ import reactor.fn.Supplier;
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
-	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false);
-	static final Supplier ONE_SUPPLIER             = new QueueSupplier<>(1, false);
-	static final Supplier XSRB_SUPPLIER            = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false);
-	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false);
-	static final Supplier WAITING_XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true);
-	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true);
-	static final Supplier WAITING_ONE_SUPPLIER     = new QueueSupplier<>(1, true);
+	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false, true);
+	static final Supplier ONE_SUPPLIER             = new QueueSupplier<>(1, false, true);
+	static final Supplier XSRB_SUPPLIER            = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false, false);
+	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);
+	static final Supplier WAITING_XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true, false);
+	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true, false);
+	static final Supplier WAITING_ONE_SUPPLIER     = new QueueSupplier<>(1, true, true);
 
 	final long    batchSize;
 	final boolean waiting;
+	final boolean multiproducer;
 
 
 	/**
@@ -50,25 +51,26 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	public static <T> Supplier<Queue<T>> get(long batchSize) {
-		return get(batchSize, false);
+		return get(batchSize, false, false);
 	}
 
 	/**
 	 * @param batchSize the bounded or unbounded (long.max) queue size
 	 * @param waiting if true {@link Queue#offer(Object)} will be spinning if under capacity
+	 * @param multiproducer if true {@link Queue#offer(Object)} will support concurrent calls
 	 * @param <T> the reified {@link Queue} generic type
 	 *
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> get(long batchSize, boolean waiting) {
+	public static <T> Supplier<Queue<T>> get(long batchSize, boolean waiting, boolean multiproducer) {
 		if (batchSize > 10_000_000) {
 			return (Supplier<Queue<T>>) CLQ_SUPPLIER;
 		}
 		if (batchSize == 1 && !waiting) {
 			return (Supplier<Queue<T>>) ONE_SUPPLIER;
 		}
-		return new QueueSupplier<>(batchSize, waiting);
+		return new QueueSupplier<>(batchSize, waiting, multiproducer);
 	}
 	
 	/**
@@ -156,9 +158,10 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 	}
 
-	QueueSupplier(long batchSize, boolean waiting) {
+	QueueSupplier(long batchSize, boolean waiting, boolean multiproducer) {
 		this.batchSize = batchSize;
 		this.waiting = waiting;
+		this.multiproducer = multiproducer;
 	}
 
 	@Override
@@ -171,10 +174,15 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return new OneQueue<>(waiting);
 		}
 		else if(waiting) {
-			return RingBuffer.blockingBoundedQueue(RingBuffer.<T>createSingleProducer((int) batchSize), -1L);
+			return RingBuffer.blockingBoundedQueue(
+					multiproducer ? RingBuffer.<T>createSingleProducer((int) batchSize) :
+							RingBuffer .<T>createMultiProducer((int) batchSize),
+					-1L);
 		}
 		else{
-			return RingBuffer.nonBlockingBoundedQueue(RingBuffer.<T>createSingleProducer((int) batchSize), -1L);
+			return RingBuffer.nonBlockingBoundedQueue(
+					RingBuffer.<T>createSingleProducer((int) batchSize),
+					-1L);
 		}
 	}
 

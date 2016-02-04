@@ -16,7 +16,8 @@
 
 package reactor.core
 
-import reactor.core.publisher.ProcessorGroup
+import reactor.core.publisher.FluxProcessor
+import reactor.core.publisher.SchedulerGroup
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
@@ -67,7 +68,7 @@ class ReactiveStateSpec extends Specification {
 	def sub1 = unbounded()
 	def sub2 = unbounded()
 	def sub3 = unbounded()
-	def group = ProcessorGroup.single().get()
+	def group = FluxProcessor.async(SchedulerGroup.single())
 	proc1.log(" test").subscribe(sub1)
 	group.subscribe(sub2)
 	proc1.log(" test").subscribe(sub3)

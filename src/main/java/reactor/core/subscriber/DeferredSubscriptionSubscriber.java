@@ -17,7 +17,7 @@ import reactor.core.util.DeferredSubscription;
  */
 public class DeferredSubscriptionSubscriber<I, O>
 		extends DeferredSubscription
-implements Subscription, Subscriber<I>, Producer {
+implements Subscriber<I>, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 

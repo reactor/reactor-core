@@ -52,7 +52,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	@Ignore
 	public void test() {
-		ProcessorGroup asyncGroup = ProcessorGroup.async("async", 128, 1);
+		SchedulerGroup asyncGroup = SchedulerGroup.async("async", 128, 1);
 		FluxProcessor<String, String> emitter = EmitterProcessor.create();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);

@@ -28,11 +28,11 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
+public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace).processor();
+		return FluxProcessor.async(SchedulerGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace));
 	}
 
 	@Override
@@ -50,7 +50,7 @@ public class ProcessorGroupWorkTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		ProcessorGroup serviceRB = ProcessorGroup.async("rbWork", 32, 1);
+		SchedulerGroup serviceRB = SchedulerGroup.async("rbWork", 32, 1);
 		Consumer<Runnable>  r = serviceRB.call();
 
 		long start = System.currentTimeMillis();

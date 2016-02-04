@@ -198,7 +198,7 @@ Environment env = Environment.initialize();
 Assert.isTrue(Environment.get() == env);
 
 //Find a dispatcher named "shared"
-Dispatcher d  = Environment.dispatcher("shared");
+Dispatcher d  = Environment.async("shared");
 
 //get the Timer bound to this environment
 Timer timer = Environment.timer();
@@ -316,7 +316,7 @@ Concurrent dispatch
 Doesn't support ordering
 
 |*Synchronous*
-|dispatcher("sync") or SynchronousDispatcher.
+|async("sync") or SynchronousDispatcher.
 INSTANCE
 |Runs on the current thread.
 a|Upstream and Consumer executions are colocated

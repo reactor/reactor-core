@@ -22,11 +22,11 @@ import org.testng.SkipException;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class ProcessorGroupSyncTests extends AbstractProcessorVerification {
+public class SchedulerGroupSyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return ProcessorGroup.<Long>sync().processor();
+		return FluxProcessor.async(SchedulerGroup.<Long>sync());
 	}
 
 	@Override

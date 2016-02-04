@@ -109,6 +109,21 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
+	 * each {@link Subscriber} downstream.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer1.png" alt="">
+	 * <p>
+	 * @param supplier a {@link Mono} factory
+	 *
+	 * @return a new {@link Mono} factory
+	 */
+	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
+		return new MonoDefer<>(supplier);
+	}
+
+	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
@@ -594,13 +609,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link ProcessorGroup}.
+	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
 	 * <p> <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
+	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 *
 	 * {@code mono.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
@@ -1038,9 +1053,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run the requests to this Publisher {@link Mono} on a given scheduler thread like {@link ProcessorGroup}.
+	 * Run the requests to this Publisher {@link Mono} on a given scheduler thread like {@link SchedulerGroup}.
 	 * <p>
-	 * {@code mono.publishOn(ProcessorGroup.io()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.publishOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">

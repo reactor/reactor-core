@@ -249,11 +249,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler e.g. {@link ProcessorGroup#call}.
+	 * {@link Consumer} {@link Runnable} scheduler e.g. {@link SchedulerGroup#call}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
+	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
@@ -673,13 +673,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * {@link Consumer} {@link Runnable} scheduler like {@link SchedulerGroup}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link ProcessorGroup#io} which implements work-queue thread dispatching.
+	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
 	 *
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
@@ -1249,11 +1249,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * {@link Function} {@link Runnable} scheduler like {@link SchedulerGroup}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link ProcessorGroup#single} and {@link ProcessorGroup#async} which implement
+	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
@@ -1572,13 +1572,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Function} {@link Runnable} scheduler like {@link ProcessorGroup}.
+	 * {@link Function} {@link Runnable} scheduler like {@link SchedulerGroup}.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link ProcessorGroup#io} which implements work-queue thread dispatching.
+	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
 	 *
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }

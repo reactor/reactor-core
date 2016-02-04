@@ -58,6 +58,22 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 		super(new TestEnvironment(500, true));
 	}
 
+	@Override
+	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException() throws Throwable {
+		throw new SkipException("Need RS review");
+	}
+
+	@Override
+	public void required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber()
+			throws Throwable {
+		throw new SkipException("Need RS review");
+	}
+
+	@Override
+	public void required_spec309_requestZeroMustSignalIllegalArgumentException() throws Throwable {
+		throw new SkipException("Need RS review");
+	}
+
 	@BeforeClass
 	public void setup() {
 		Timer.global();

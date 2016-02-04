@@ -37,7 +37,7 @@ import reactor.fn.Function;
  *
  * The scheduling contract allows for interoperability with {@link Flux#dispatchOn)} and {@link Flux#publishOn} :
  * {@code
- *  flux.dispatchOn(ProcessorGroup.io()) ou
+ *  flux.dispatchOn(SchedulerGroup.io()) ou
  *  mono.publishOn(TopicProcessor.create())
  *  stream.dispatchOn(WorkQueueProcessor.create())
  *  promise.publishOn( task -> { Future<T> f = executorService.submit(task); return () -> f.cancel(); } )
@@ -49,12 +49,14 @@ import reactor.fn.Function;
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN> {
 
-	protected static final Runnable NOOP_CANCEL = new Runnable() {
-		@Override
-		public void run() {
-
-		}
-	};
+	/**
+	 * @param <IN>
+	 * @return
+	 */
+	public static <IN> FluxProcessor<IN, IN> async(final SchedulerGroup group) {
+		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
+		return create(emitter, emitter.dispatchOn(group));
+	}
 
 	/**
 	 * Create a {@link FluxProcessor} from a receiving {@link Subscriber} and a mapped {@link Publisher}.
@@ -70,6 +72,16 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			final Function<E, ? extends Publisher<OUT>> processor) {
 		return new DelegateProcessor<>(processor.apply(input), input);
 	}
+	/**
+	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * set to true.
+	 *
+	 * @return a new {@link SignalEmitter}
+	 */
+	public static <IN> FluxProcessor<IN, IN> blocking() {
+		FluxPassthrough<IN> passthrough = new FluxPassthrough<>();
+		return create(SignalEmitter.blocking(passthrough), passthrough);
+	}
 
 	/**
 	 * @param <IN>
@@ -79,9 +91,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	public static <IN, OUT> FluxProcessor<IN, OUT> create(final Subscriber<IN> upstream, final Publisher<OUT> downstream) {
 		return new DelegateProcessor<>(downstream, upstream);
 	}
-
-	//protected static final int DEFAULT_BUFFER_SIZE = 1024;
-
 
 	Subscription upstreamSubscription;
 
