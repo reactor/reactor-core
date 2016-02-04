@@ -40,7 +40,8 @@ import reactor.fn.Supplier;
 
 /**
  * "Scheduling" in Reactor via
- * {@link Flux#dispatchOn}, {@link Mono#publishOn} or {@link FluxProcessor#async} requires
+ *
+ * {@link Flux#dispatchOn dispatchOn}, {@link Mono#publishOn publishOn} or {@link FluxProcessor}.{@link FluxProcessor#async async} requires
  * {@link Consumer} of {@link Runnable}. Unlike {@link java.util.concurrent.Executor} which apparently has the same
  * signature, these {@link Consumer} allow {@literal null} argument and should treat them as terminal signal to dispose
  * any used resources.
@@ -51,7 +52,7 @@ import reactor.fn.Supplier;
  *  {@link SchedulerGroup} maintains a reference count on how many scheduler have been generated. Therefore it will
  * automatically shutdown the required resources after all references have been released, e.g. when all {@link Flux}
  * using
- * {@link Flux#dispatchOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
+ * {@link Flux#dispatchOn dispatchOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
  * by setting the factories {@literal autoshutdown} to false.
  * <p>
  *   {@link SchedulerGroup} offers ready-to-use pool configurations :
@@ -59,7 +60,7 @@ import reactor.fn.Supplier;
  *        <li>{@link #async} : Optimized for fast {@link Runnable} executions </li>
  *        <li>{@link #io} : Optimized for slow {@link Runnable} executions </li>
  *        <li>{@link #single} : Optimized for low-latency {@link Runnable} executions </li>
- *        <li>{@link #create} : Arbitrary group creation. </li>
+ *        <li>{@link #create create} : Arbitrary group creation. </li>
  *    </ul>
  *
  * @author Stephane Maldini
