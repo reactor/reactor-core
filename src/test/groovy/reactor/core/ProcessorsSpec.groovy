@@ -329,7 +329,7 @@ class ProcessorsSpec extends Specification {
 		 SchedulerGroup.release(d)
 
 		where:
-			d << [SchedulerGroup.create(WorkQueueProcessor.create("rbWork", 1024), 4).call(),
+			d << [SchedulerGroup.io("rbWork", 1024, 4).call(),
 			]
 
 	}

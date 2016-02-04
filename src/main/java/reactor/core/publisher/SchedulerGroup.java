@@ -86,7 +86,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
@@ -103,7 +103,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
@@ -122,7 +122,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
@@ -156,7 +156,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name, int bufferSize, int parallelSchedulers) {
-		return async(name, bufferSize, parallelSchedulers, null);
+		return async(name, bufferSize, parallelSchedulers, null, null, false);
 	}
 
 	/**
@@ -174,15 +174,15 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link TopicProcessor}
-	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
 			int parallelSchedulers,
-			Consumer<Throwable> uncaughtExceptionHandler) {
-		return async(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, null);
+			boolean autoShutdown) {
+		return async(name, bufferSize, parallelSchedulers, null, null, autoShutdown);
 	}
 
 	/**
@@ -274,7 +274,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			boolean autoShutdown,
 			final Supplier<? extends WaitStrategy> waitStrategy) {
 
-		return SchedulerGroup.create(new Callable<Consumer<Runnable>>() {
+		return fromProcessor(new Callable<Consumer<Runnable>>() {
 			int i = 1;
 			@Override
 			public Consumer<Runnable> call() throws Exception {
@@ -283,6 +283,30 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			}
 		}, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
+
+
+	/**
+	 * @param scheduler
+	 * @param parallelSchedulers
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> scheduler, int parallelSchedulers) {
+		return create(scheduler, parallelSchedulers, true);
+	}
+
+	/**
+	 * @param scheduler
+	 * @param parallelSchedulers
+
+	 * @return
+	 */
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> scheduler,
+			int parallelSchedulers,
+			boolean autoShutdown) {
+		return new SchedulerGroup(scheduler, parallelSchedulers, null, null, autoShutdown);
+	}
+
 
 	/**
 	 * The purpose of an IO factory is to give a sensible default scheduler factory for "slow" tasks
@@ -325,8 +349,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
@@ -342,10 +366,10 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
-	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
+	 * compete to execute the  
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
@@ -362,21 +386,20 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
 	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
-	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name,
-			int bufferSize, int concurrency, Consumer<Throwable> uncaughtExceptionHandler) {
-		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, null, true);
+	public static SchedulerGroup io(String name, int bufferSize, int concurrency, boolean autoShutdown) {
+		return io(name, bufferSize, concurrency, null, null, autoShutdown);
 	}
 
 	/**
@@ -384,10 +407,10 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
 	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
@@ -407,10 +430,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * and "blocking" IO (e.g. blocking http call, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that 
+	 * will
 	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
@@ -441,8 +465,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
-	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
-	 * to mitigate consuming rate difference.
+	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
+	 * mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
@@ -462,7 +486,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-		return create(WorkQueueProcessor.<Runnable>share(name, bufferSize, waitStrategy, false),
+
+		return fromProcessor(WorkQueueProcessor.<Runnable>share(name, bufferSize, waitStrategy, false),
 				concurrency,
 				uncaughtExceptionHandler,
 				shutdownHandler,
@@ -470,125 +495,20 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-
-	 * @return
+	 * Signal terminal signal {@literal null} to the passed {@link Consumer} {@link Runnable} schedulers
+	 *
+	 * @param schedulers the schedulers to shutdown
 	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup sync() {
-		return SYNC_SERVICE;
-	}
-
-	/**
-	 * @param p
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p) {
-		return create(p, null, null, true);
-	}
-
-	/**
-	 * @param p
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p, int parallelSchedulers) {
-		return create(p, parallelSchedulers, null, null, true);
-	}
-
-	/**
-	 * @param p
-	 * @param parallelSchedulers
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> p, int parallelSchedulers) {
-		return create(p, parallelSchedulers, null, null, true);
-	}
-
-	/**
-	 * @param p
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p, boolean autoShutdown) {
-		return create(p, null, null, autoShutdown);
-	}
-
-	/**
-	 * @param p
-	 * @param uncaughtExceptionHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(Consumer<Runnable> p,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			boolean autoShutdown) {
-		return create(p, uncaughtExceptionHandler, null, autoShutdown);
-	}
-
-	/**
-	 * @param p
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	public static SchedulerGroup create(final Consumer<Runnable> p,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return create(p, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-	}
-
-	/**
-	 * @param schedulerFactory
-	 * @param parallelSchedulers
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory,
-			int parallelSchedulers,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		if (schedulerFactory != null && parallelSchedulers > 1) {
-			return new PooledSchedulerGroup(schedulerFactory, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	@SafeVarargs
+	@SuppressWarnings("varargs")
+	public static void release(Consumer<Runnable>... schedulers) {
+		if (schedulers == null) {
+			return;
 		}
-		else {
-			return new SchedulerGroup(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler,
-					autoShutdown);
+
+		for (Consumer<Runnable> sharedProcessorReference : schedulers) {
+			sharedProcessorReference.accept(null);
 		}
-	}
-
-	/**
-	 * @param p
-	 * @param concurrency
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup create(final Consumer<Runnable> p,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return new SchedulerGroup(new Callable<Consumer<Runnable>>() {
-			@Override
-			public Consumer<Runnable> call() throws Exception {
-				return p;
-			}
-		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 	}
 
 	/**
@@ -615,17 +535,18 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return
 	 */
 	public static SchedulerGroup single(String name, int bufferSize) {
-		return single(name, bufferSize, null);
+		return single(name, bufferSize,null, null, false, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
 	 * @param name
 	 * @param bufferSize
+	 * @param autoShutdown
 
 	 * @return
 	 */
-	public static SchedulerGroup single(String name, int bufferSize, Consumer<Throwable> errorC) {
-		return single(name, bufferSize, errorC, null);
+	public static SchedulerGroup single(String name, int bufferSize, boolean autoShutdown) {
+		return single(name, bufferSize, null, null, autoShutdown, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
@@ -636,7 +557,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 */
 	public static SchedulerGroup single(String name, int bufferSize, Consumer<Throwable> errorC,
 			Runnable shutdownC) {
-		return single(name, bufferSize, errorC, shutdownC, SINGLE_WAIT_STRATEGY);
+		return single(name, bufferSize, errorC, shutdownC, false, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
@@ -645,26 +566,42 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 	 * @return
 	 */
-	public static SchedulerGroup single(String name, int bufferSize, Consumer<Throwable> errorC,
-			Runnable shutdownC, Supplier<? extends WaitStrategy> waitStrategy) {
-		return async(name, bufferSize, 1, errorC, shutdownC, true, waitStrategy);
+	public static SchedulerGroup single(String name, int bufferSize,
+			Consumer<Throwable> errorC,
+			Runnable shutdownC,  boolean autoShutdown, Supplier<? extends WaitStrategy> waitStrategy) {
+		return async(name, bufferSize, 1, errorC, shutdownC, autoShutdown, waitStrategy);
 	}
 
 	/**
-	 * Signal terminal signal {@literal null} to the passed {@link Consumer} {@link Runnable} schedulers
-	 *
-	 * @param schedulers the schedulers to shutdown
-	 */
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	public static void release(Consumer<Runnable>... schedulers) {
-		if (schedulers == null) {
-			return;
-		}
+	 * @param scheduler
 
-		for (Consumer<Runnable> sharedProcessorReference : schedulers) {
-			sharedProcessorReference.accept(null);
-		}
+	 * @return
+	 */
+	public static SchedulerGroup single(Consumer<Runnable> scheduler) {
+		return single(scheduler, true);
+	}
+
+	/**
+	 * @param scheduler
+	 * @param autoShutdown
+
+	 * @return
+	 */
+	public static SchedulerGroup single(final Consumer<Runnable> scheduler, boolean autoShutdown) {
+		return create(new Callable<Consumer<Runnable>>() {
+			@Override
+			public Consumer<Runnable> call() throws Exception {
+				return scheduler;
+			}
+		}, 1, autoShutdown);
+	}
+
+	/**
+	 * @return A passthrough {@link SchedulerGroup} which uses no resources and runs immiately its tasks.
+	 */
+	@SuppressWarnings("unchecked")
+	public static SchedulerGroup sync() {
+		return SYNC_SERVICE;
 	}
 
 	@Override
@@ -780,6 +717,35 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	/* INTERNAL */
 
 	@SuppressWarnings("unchecked")
+	static SchedulerGroup fromProcessor(final Consumer<Runnable> scheduler,
+			int concurrency,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return new SchedulerGroup(new Callable<Consumer<Runnable>>() {
+			@Override
+			public Consumer<Runnable> call() throws Exception {
+				return scheduler;
+			}
+		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+	}
+
+	@SuppressWarnings("unchecked")
+	static SchedulerGroup fromProcessor(Callable<? extends Consumer<Runnable>> schedulerFactory,
+			int parallelSchedulers,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		if (schedulerFactory != null && parallelSchedulers > 1) {
+			return new PooledSchedulerGroup(schedulerFactory, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+		}
+		else {
+			return new SchedulerGroup(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler,
+					autoShutdown);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
 	static final SchedulerGroup SYNC_SERVICE = new SchedulerGroup(null, -1, null, null, false);
 
 	static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
@@ -870,7 +836,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 		volatile int index = 0;
 
-		public PooledSchedulerGroup(Callable<? extends Consumer<Runnable>> processor,
+		public PooledSchedulerGroup(Callable<? extends Consumer<Runnable>> schedulerFactory,
 				int parallelSchedulers,
 				Consumer<Throwable> uncaughtExceptionHandler,
 				Runnable shutdownHandler,
@@ -881,7 +847,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 			for (int i = 0; i < parallelSchedulers; i++) {
 				schedulerGroups[i] =
-						new InnerSchedulerGroup(processor, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+						new InnerSchedulerGroup(schedulerFactory, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 			}
 		}
 
@@ -950,11 +916,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 		private class InnerSchedulerGroup extends SchedulerGroup implements Introspectable {
 
-			public InnerSchedulerGroup(Callable<? extends Consumer<Runnable>> processor,
+			public InnerSchedulerGroup(Callable<? extends Consumer<Runnable>> schedulerFactory,
 					Consumer<Throwable> uncaughtExceptionHandler,
 					Runnable shutdownHandler,
 					boolean autoShutdown) {
-				super(processor, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+				super(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
 			}
 
 			@Override
