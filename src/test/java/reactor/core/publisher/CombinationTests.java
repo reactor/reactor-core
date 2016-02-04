@@ -29,6 +29,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
+import reactor.core.test.TestSubscriber;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.ReactiveStateUtils;
@@ -373,4 +374,41 @@ public class CombinationTests {
 					'}';
 		}
 	}
+
+	TestSubscriber<Long> ts;
+	EmitterProcessor<Long> emitter1;
+	EmitterProcessor<Long> emitter2;
+
+	@Before
+	public void anotherBefore() {
+		ts = new TestSubscriber<Long>();
+		emitter1 = EmitterProcessor.replay();
+		emitter2 = EmitterProcessor.replay();
+		emitter1.start();
+		emitter2.start();
+	}
+
+	private void emitValues() {
+		emitter1.onNext(1L);
+		emitter2.onNext(2L);
+		emitter1.onNext(3L);
+		emitter2.onNext(4L);
+		emitter1.onComplete();
+		emitter2.onComplete();
+	}
+
+	@Test
+	public void mergeWithInterleave() {
+		Flux.merge(emitter1, emitter2).subscribe(ts);
+		emitValues();
+		ts.assertValues(1L, 2L, 3L, 4L).assertComplete();
+	}
+
+	@Test
+	public void mergeWithNoInterleave() {
+		Flux.concat(emitter1.log("test1"), emitter2.log("test2")).log().subscribe(ts);
+		emitValues();
+		ts.assertValues(1L, 3L, 2L, 4L).assertComplete();
+	}
+
 }

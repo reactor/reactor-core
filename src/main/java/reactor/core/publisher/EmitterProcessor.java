@@ -724,7 +724,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 								cursor - Math.min(parent.replay, cursor % ringBuffer.getCapacity())));
 					}
 					else {
-						startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence()));
+						startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence() + 1L));
 					}
 				}
 
