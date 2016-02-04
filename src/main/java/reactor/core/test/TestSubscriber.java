@@ -101,7 +101,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
 	 * not before the specified timeout, throws an {@link AssertionError} with the specified
-	 * error message.
+	 * error message supplier.
 	 * @throws AssertionError
 	 */
 	public static void await(long timeoutInSeconds, Supplier<String> errorMessageSupplier,
@@ -497,13 +497,19 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
 		await(valuesTimeout,
-				String.format("%d out of %d next values received within %d secs", valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout),
+				new Supplier<String>() {
+					@Override
+					public String get() {
+						return String.format("%d out of %d next values received within %d secs",
+						valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout);
+					}
+				},
 				new Supplier<Boolean>() {
-			@Override
-			public Boolean get() {
-				return valueCount == (nextValueAssertedCount + expectedValueCount);
-			}
-		});
+					@Override
+					public Boolean get() {
+						return valueCount == (nextValueAssertedCount + expectedValueCount);
+					}
+				});
 		List<T> nextValuesSnapshot;
 		List<T> empty = new ArrayList<>();
 		for(;;){
@@ -558,13 +564,19 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 */
 	public final TestSubscriber<T> awaitAndAssertValueCount(final long n) {
 		await(valuesTimeout,
-				String.format("%d out of %d next values received within %d secs", valueCount - nextValueAssertedCount, n, valuesTimeout),
+				new Supplier<String>() {
+					@Override
+					public String get() {
+						return String.format("%d out of %d next values received within %d secs",
+						valueCount - nextValueAssertedCount, n, valuesTimeout);
+					}
+				},
 				new Supplier<Boolean>() {
-			@Override
-			public Boolean get() {
-				return valueCount == (nextValueAssertedCount + n);
-			}
-		});
+					@Override
+					public Boolean get() {
+						return valueCount == (nextValueAssertedCount + n);
+					}
+				});
 		nextValueAssertedCount += n;
 		return this;
 	}
