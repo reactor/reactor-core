@@ -163,10 +163,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			this.delayError = delayError;
 			this.maxConcurrency = maxConcurrency;
 			this.mainQueueSupplier = mainQueueSupplier;
-			int pf = Math.min(maxConcurrency, prefetch);
-			this.prefetch = pf;
+			this.prefetch = prefetch;
 			this.innerQueueSupplier = innerQueueSupplier;
-			this.limit = pf - (pf >> 2);
+			this.limit = prefetch - (prefetch >> 2);
 			SUBSCRIBERS.lazySet(this, EMPTY);
 		}
 
