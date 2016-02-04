@@ -63,6 +63,10 @@ import reactor.fn.Supplier;
  *        <li>{@link #create create} : Arbitrary group creation. </li>
  *    </ul>
  *
+ * <p>
+ * By default the {@link SchedulerGroup} are not guaranteed reentrant and such support is obtained via
+ * {@link SchedulerGroup#call(boolean)} or {@link FluxProcessor#async(SchedulerGroup)}.
+ * 
  * @author Stephane Maldini
  */
 public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Runnable>, Loopback,
@@ -78,48 +82,99 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	                                                            .availableProcessors(), 4);
 
 	/**
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async() {
 		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
-	 * @param name
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name) {
 		return async(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name, int bufferSize) {
 		return async(name, bufferSize, null);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link TopicProcessor}
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name, int bufferSize, int parallelSchedulers) {
 		return async(name, bufferSize, parallelSchedulers, null);
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
@@ -128,11 +183,23 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link TopicProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
@@ -142,12 +209,22 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
@@ -157,12 +234,24 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link TopicProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
@@ -173,13 +262,23 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(String name,
 			int bufferSize,
@@ -190,20 +289,25 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
 	 *
-	 * Non-Blocking "Asynchronous" Dedicated Pub-Sub (1 Thread by Sub)
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
 	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link TopicProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 	 *
-	 */
-
-	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-
-	 * @return
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(final String name,
 			final int bufferSize,
@@ -216,14 +320,26 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param name
-	 * @param bufferSize
-	 * @param uncaughtExceptionHandler
-	 * @param shutdownHandler
-	 * @param autoShutdown
-	 * @param waitprovider
-
-	 * @return
+	 * The purpose of an Async factory is to give a sensible default scheduler factory for "fast" or
+	 *  "non-blocking" tasks.
+	 *
+	 * <p>
+	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
+	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
+	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * flows.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link TopicProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async(final String name,
 			final int bufferSize,
@@ -231,13 +347,13 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
 			boolean autoShutdown,
-			final Supplier<? extends WaitStrategy> waitprovider) {
+			final Supplier<? extends WaitStrategy> waitStrategy) {
 
 		return SchedulerGroup.create(new Callable<Consumer<Runnable>>() {
 			int i = 1;
 			@Override
 			public Consumer<Runnable> call() throws Exception {
-				return TopicProcessor.share(name+(parallelSchedulers > 1 ? "-"+(i++) : ""), bufferSize, waitprovider
+				return TopicProcessor.share(name+(parallelSchedulers > 1 ? "-"+(i++) : ""), bufferSize, waitStrategy
 						.get(), false);
 			}
 		}, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
@@ -288,6 +404,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -306,6 +423,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
+	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -324,6 +443,9 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
+	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -343,6 +465,10 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
+	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -362,6 +488,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
+	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -389,6 +520,12 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
+	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
+	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
