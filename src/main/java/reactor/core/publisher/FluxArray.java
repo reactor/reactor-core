@@ -199,13 +199,14 @@ extends Flux<T>
 
 		@Override
 		public T poll() {
-			int i = index++;
+			int i = index;
 			T[] a = array;
-			if (i < a.length) {
+			if (i != a.length) {
 				T t = a[i];
 				if (t == null) {
 					throw new NullPointerException();
 				}
+				index = i + 1;
 				return t;
 			}
 			return null;
