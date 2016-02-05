@@ -4,8 +4,8 @@
 
 [![Build Status](https://drone.io/github.com/reactor/reactor-core/status.png)](https://drone.io/github.com/reactor/reactor-core/latest)
 
-Non-Blocking Reactive Foundation for the JVM.
-
+Non-Blocking [Reactive](http://reactive-streams.org) Foundation for the JVM with lite [Reactive Extensions]
+(http://reactivex.io) API and efficient message-passing support.
 
 ## Getting it
 
@@ -37,6 +37,23 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ## Processors
 
+### Sync Pub-Sub : EmitterProcessor
+
+```java
+```
+
+### Async Pub-Sub : TopicProcessor
+
+```java
+```
+
+### Async Distributed : WorkQueueProcessor
+
+```java
+```
+
+### TopicProcessor
+
 ```java
 ```
 
@@ -51,13 +68,19 @@ Hint: it's not porn.
 ```java
 ```
 
-## The backpressure thing
+## The Backpressure Thing
 
 ```java
 ```
+
+## What's more in it ?
+
+"Operator Fusion",
 
 ## Reference
 http://next.projectreactor.io/core/docs/reference/
 
 ## Javadoc
 http://next.projectreactor.io/core/docs/api/
+
+Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)
