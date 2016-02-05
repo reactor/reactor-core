@@ -83,5 +83,10 @@ http://next.projectreactor.io/core/docs/reference/
 ## Javadoc
 http://next.projectreactor.io/core/docs/api/
 
-Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)
-Sponsored by [Pivotal](http://pivotal.io)
+
+
+_Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)_
+
+_Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)
+
+_Sponsored by [Pivotal](http://pivotal.io)_
