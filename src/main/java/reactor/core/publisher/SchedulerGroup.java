@@ -676,6 +676,37 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
+	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * processor doesn't implement.
+	 *
+	 * The method will only return after shutdown has been confirmed, waiting undefinitely so.
+	 *
+	 * @return true if successfully shutdown
+	 */
+	public final boolean awaitAndShutdown() {
+		return awaitAndShutdown(-1, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * processor doesn't implement
+	 * {@link ExecutorProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
+	 * @param timeout the time un given unit to wait for
+	 * @param timeUnit the unit
+	 *
+	 * @return true if successfully shutdown
+	 */
+	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
+		if (scheduler == null) {
+			return true;
+		}
+		else if (scheduler instanceof ExecutorProcessor) {
+			return ((ExecutorProcessor) scheduler).awaitAndShutdown(timeout, timeUnit);
+		}
+		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement ExecutorProcessor");
+	}
+
+	/**
 	 * Return a scheduler reference to this {@link SchedulerGroup}, incrementing use count by 1
 	 *
 	 * @return a new scheduler reference
@@ -707,37 +738,6 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			return processor.start();
 		}
 		return call();
-	}
-
-	/**
-	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
-	 * processor doesn't implement.
-	 *
-	 * The method will only return after shutdown has been confirmed, waiting undefinitely so.
-	 *
-	 * @return true if successfully shutdown
-	 */
-	public final boolean awaitAndShutdown() {
-		return awaitAndShutdown(-1, TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
-	 * processor doesn't implement
-	 * {@link ExecutorProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
-	 * @param timeout the time un given unit to wait for
-	 * @param timeUnit the unit
-	 *
-	 * @return true if successfully shutdown
-	 */
-	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
-		if (scheduler == null) {
-			return true;
-		}
-		else if (scheduler instanceof ExecutorProcessor) {
-			return ((ExecutorProcessor) scheduler).awaitAndShutdown(timeout, timeUnit);
-		}
-		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement ExecutorProcessor");
 	}
 
 	/**
