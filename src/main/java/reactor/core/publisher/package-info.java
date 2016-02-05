@@ -20,13 +20,14 @@
  * implementations
  *
  * <h2>Flux</h2>
+ * A typed N-elements or zero sequence {@link org.reactivestreams.Publisher} with core reactive extensions.
+ *
  * <h2>Mono</h2>
+ * A typed one-element at most sequence {@link org.reactivestreams.Publisher} with core reactive extensions.
+ *
  * <h2>Processors</h2>
- * Reactor offers a few management API via the subclassed {@link reactor.core.publisher.ExecutorProcessor} for the underlying {@link
- * java.util.concurrent.Executor} in use, in addition to the state accessors like
- * {@link reactor.core.state.Backpressurable}.
- * <p>
- * The following {@link org.reactivestreams.Processor} are available:
+ * The following
+ * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.FluxProcessor} are available and }:
  * <ul>
  *         <li>It is a synchronous/non-opinionated pub-sub replaying event emitter :
  *           {@link reactor.core.publisher.EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
@@ -34,8 +35,27 @@
  *         <li>A dedicated pub-sub event buffering executor : {@link reactor.core.publisher.TopicProcessor}</li>
  *         <li>A dedicated  FIFO work queue distribution for slow consumers :
  *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
+ *         <li>{@link reactor.core.publisher.FluxProcessor} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
  * </ul>
+ * Reactor offers a few management API via the subclassed {@link reactor.core.publisher.ExecutorProcessor} for the underlying {@link
+ * java.util.concurrent.Executor} in use, in addition to the state accessors like
+ * {@link reactor.core.state.Backpressurable}.
  * <p>
+ ** <h2>Schedulers</h2>
+ * Scheduling in Reactor is a couple of general concepts shared by reactive operators "dispatchOn" and "publishOn".
+ * <ul>
+ *     <li>Scheduler: a
+ *     {@link reactor.fn.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
+ *     terminal signal used for cleanup logic</li>
+ *     <li>Scheduler Factory: a {@link java.util.concurrent.Callable} generating schedulers. A major implementation
+ *     of it is {@link reactor.core.publisher.SchedulerGroup}, a reference-counting scheduler generator that release
+ *     resources automatically after scheduler terminaisons.
+ *     </li>
+ * </ul>
+ * The key difference between asynchronous processors and schedulers is their natural ability to be shared where
+ * {@link org.reactivestreams.Processor} are bound to a single logical producer by {@link org.reactivestreams.Subscription}.
+ * Thus, when no dedicated threading is required (hot or critical data pipeline), it is recommended to consider
+ * schedulers + dispatchOn/publishOn over processors.
  *
  * @author Stephane Maldini
  */
