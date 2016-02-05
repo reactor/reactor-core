@@ -21,7 +21,7 @@ include::20to25.adoc[]
 include::core.adoc[]
 //include::core-publisher.adoc[]
 //include::core-subscriber.adoc[]
-//include::core-processor.adoc[]
+include::core-processor.adoc[]
 //include::core-timer.adoc[]
 
 //[[reactor-samples]]
