@@ -12,6 +12,9 @@ Non-Blocking Reactive Foundation for the JVM.
 
 ## Processors
 
+### Hot Publishing
+Hint: it's not porn.
+
 ## Schedulers
 
 ## The backpressure thing
