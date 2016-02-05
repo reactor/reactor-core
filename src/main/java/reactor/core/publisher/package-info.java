@@ -55,12 +55,10 @@
  *     resources automatically after scheduler terminaisons.
  *     </li>
  * </ul>
- * <pre>
  * The key difference between asynchronous processors and schedulers is their natural ability to be shared where
  * {@link org.reactivestreams.Processor} are bound to a single logical producer by {@link org.reactivestreams.Subscription}.
  * Thus, when no dedicated threading is required (hot or critical data pipeline), it is recommended to consider
  * schedulers + dispatchOn/publishOn over processors.
- *</pre>
  * @author Stephane Maldini
  */
 package reactor.core.publisher;

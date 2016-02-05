@@ -17,5 +17,6 @@
 /**
  * Core components of the Reactor framework supporting Reactive Stream programming model.
  *
+ * * <img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/reactor-core-architecture.png" alt="">
  */
 package reactor.core;
