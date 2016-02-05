@@ -9,12 +9,8 @@ Non-Blocking Reactive Foundation for the JVM.
 
 ## Getting it
 
-Gradle :
+With Gradle :
 ```groovy
-    ext {
-      reactorCoreVersion = '2.5.0.BUILD-SNAPSHOT'
-    }
-
     repositories {
       //maven { url 'http://repo.spring.io/libs-release' }
       //maven { url 'http://repo.spring.io/libs-milestone' }
@@ -23,8 +19,7 @@ Gradle :
     }
 
     dependencies {
-      // Reactor Core
-      compile "io.projectreactor:reactor-core:reactorCoreVersion"
+      compile "io.projectreactor:reactor-core:2.5.0.BUILD-SNAPSHOT"
     }
 ```
 
