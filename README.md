@@ -75,7 +75,7 @@ Hint: it's not porn.
 
 ## What's more in it ?
 
-"Operator Fusion",
+"Operator Fusion" (flow optimizers), health state observers, micro-toolkit for custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 ## Reference
 http://next.projectreactor.io/core/docs/reference/
