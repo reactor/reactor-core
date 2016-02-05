@@ -6,20 +6,60 @@
 
 Non-Blocking Reactive Foundation for the JVM.
 
+
+## Getting it
+
+Gradle :
+```groovy
+    ext {
+      reactorCoreVersion = '2.5.0.BUILD-SNAPSHOT'
+    }
+
+    repositories {
+      //maven { url 'http://repo.spring.io/libs-release' }
+      //maven { url 'http://repo.spring.io/libs-milestone' }
+      maven { url 'http://repo.spring.io/libs-snapshot' }
+      mavenCentral()
+    }
+
+    dependencies {
+      // Reactor Core
+      compile "io.projectreactor:reactor-core:reactorCoreVersion"
+    }
+```
+
 ## Flux
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
+
+```java
+```
 
 ## Mono
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
+```java
+```
+
 ## Processors
+
+```java
+```
 
 ### Hot Publishing
 Hint: it's not porn.
 
+```java
+```
+
 ## Schedulers
 
+```java
+```
+
 ## The backpressure thing
+
+```java
+```
 
 ## Reference
 http://next.projectreactor.io/core/docs/reference/
