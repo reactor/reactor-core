@@ -27,6 +27,13 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
 ```java
+Flux.fromIterable(getSomeList())
+    .mergeWith(Flux.interval(1))
+    .map(d -> d * 2)
+    .zipWith(Flux.just(1, 2, 3))
+    .onErrorResumeWith(errorHandler::fallback)
+  )
+  .subscribe(Subscribers.consumer(System.out::println);
 ```
 
 ## Mono
