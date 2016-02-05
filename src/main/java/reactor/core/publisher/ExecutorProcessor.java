@@ -37,6 +37,10 @@ import reactor.core.util.ExecutorUtils;
 public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements Completable, Cancellable, Failurable, Groupable {
 
+	protected static final int SHUTDOWN = 1;
+
+	protected static final int FORCED_SHUTDOWN = 2;
+
 	protected final ExecutorService executor;
 
 	volatile boolean cancelled;
@@ -114,7 +118,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@Override
 	public final void onComplete() {
-		if (TERMINATED.compareAndSet(this, 0, 1)) {
+		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			upstreamSubscription = null;
 			ExecutorUtils.shutdownIfSingleUse(executor);
 			doComplete();
@@ -126,7 +130,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	@Override
 	public final void onError(Throwable t) {
 		super.onError(t);
-		if (TERMINATED.compareAndSet(this, 0, 1)) {
+		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			error = t;
 			upstreamSubscription = null;
 			ExecutorUtils.shutdownIfSingleUse(executor);
@@ -158,7 +162,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	@Override
 	protected void cancel(Subscription subscription) {
 		cancelled = true;
-		if(TERMINATED.compareAndSet(this, 0, 1)) {
+		if(TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			ExecutorUtils.shutdownIfSingleUse(executor);
 		}
 	}
@@ -168,8 +172,10 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	 * have not yet been executed.
 	 */
 	public void forceShutdown() {
-		if (executor.isShutdown()) return;
-		executor.shutdownNow();
+		int t = terminated;
+		if(t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
+			executor.shutdownNow();
+		}
 	}
 
 
@@ -213,7 +219,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@Override
 	public boolean isTerminated() {
-		return terminated == 1;
+		return terminated > 0;
 	}
 
 	/**

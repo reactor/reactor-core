@@ -854,12 +854,17 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 					if(!running.get()){
 						return;
 					}
-					if(processor.terminated == 1 && processor.ringBuffer.get() == -1L) {
-						if (processor.error != null) {
-							subscriber.onError(processor.error);
+					if(processor.terminated == SHUTDOWN) {
+						if (processor.ringBuffer.get() == -1L) {
+							if (processor.error != null) {
+								subscriber.onError(processor.error);
+								return;
+							}
+							subscriber.onComplete();
 							return;
 						}
-						subscriber.onComplete();
+					}
+					else if (processor.terminated == FORCED_SHUTDOWN) {
 						return;
 					}
 				}
@@ -903,7 +908,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 							break;
 						}
 						else {
-							if(processor.terminated == 1) {
+							if(processor.terminated == SHUTDOWN) {
 								if (processor.error != null) {
 									subscriber.onError(processor.error);
 									break;
@@ -912,9 +917,17 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 									subscriber.onComplete();
 									break;
 								}
+
+								LockSupport.parkNanos(1L);
+							} else if (processor.terminated == FORCED_SHUTDOWN) {
+								break;
 							}
 							processor.barrier.clearAlert();
 						}
+					}
+					catch (final InterruptedException ex) {
+						Thread.currentThread().interrupt();
+						break;
 					}
 					catch (final Throwable ex) {
 						Exceptions.throwIfFatal(ex);
