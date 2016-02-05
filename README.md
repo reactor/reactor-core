@@ -84,3 +84,4 @@ http://next.projectreactor.io/core/docs/reference/
 http://next.projectreactor.io/core/docs/api/
 
 Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)
+Sponsored by [Pivotal](http://pivotal.io)
