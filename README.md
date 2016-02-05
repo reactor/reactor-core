@@ -4,7 +4,7 @@
 
 [![Build Status](https://drone.io/github.com/reactor/reactor-core/status.png)](https://drone.io/github.com/reactor/reactor-core/latest)
 
-Non-Blocking [Reactive](http://reactive-streams.org) Foundation for the JVM with lite [Reactive Extensions]
+Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a lite [Reactive Extensions]
 (http://reactivex.io) API and efficient message-passing support.
 
 ## Getting it
