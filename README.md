@@ -32,14 +32,18 @@ Flux.fromIterable(getSomeList())
     .map(d -> d * 2)
     .zipWith(Flux.just(1, 2, 3))
     .onErrorResumeWith(errorHandler::fallback)
-  )
-  .subscribe(Subscribers.consumer(System.out::println);
+    .subscribe(Subscribers.consumer(System.out::println);
 ```
 
 ## Mono
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
 ```java
+Mono.fromCallable(System::currentTimeMillis)
+    .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
+    .or(Mono.delay(3))
+    .otherwiseIfEmpty(Mono.just(errorHandler::fallback)
+    .subscribe(Subscribers.consumer(System.out::println);
 ```
 
 ## Processors
