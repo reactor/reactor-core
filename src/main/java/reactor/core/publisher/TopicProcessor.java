@@ -740,7 +740,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 								minimum.get() :
 								ringBuffer.getMinimumGatingSequence(minimum);
 					}
-				}, readWait, this, ringBuffer)).start();
+				}, readWait, this, (int)ringBuffer.getCapacity())).start();
 	}
 
 	@Override

@@ -633,7 +633,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 			public long get() {
 				return ringBuffer.getMinimumGatingSequence();
 			}
-		}, readWait, this, ringBuffer)).start();
+		}, readWait, this, (int)ringBuffer.getCapacity())).start();
 	}
 
 	@Override

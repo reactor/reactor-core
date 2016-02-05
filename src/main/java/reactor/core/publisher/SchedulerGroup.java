@@ -65,7 +65,7 @@ import reactor.fn.Supplier;
  *
  * <p>
  * By default the {@link SchedulerGroup} are not guaranteed reentrant and such support is obtained via
- * {@link SchedulerGroup#call(boolean)} or {@link FluxProcessor#async(SchedulerGroup)}.
+ * {@link SchedulerGroup#call(boolean)} or {@link FluxProcessor#async(Callable)}.
  * 
  * @author Stephane Maldini
  */
@@ -286,25 +286,48 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 
 	/**
-	 * @param scheduler
+	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed scheduler
+	 * factory {@link Callable#call()} once each.
+	 * <p>
+	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a scheduler factory
+	 * itself.
+	 * If reference count returns to 0 it will automatically call
+	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * <p>
+	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
+	 *
+	 * @param schedulerFactory
 	 * @param parallelSchedulers
-
-	 * @return
+	 *
+	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> scheduler, int parallelSchedulers) {
-		return create(scheduler, parallelSchedulers, true);
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory, int
+			parallelSchedulers) {
+		return create(schedulerFactory, parallelSchedulers, true);
 	}
 
 	/**
-	 * @param scheduler
+	 *
+	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed scheduler
+	 * factory {@link Callable#call()} once each.
+	 * <p>
+	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a scheduler factory
+	 * itself.
+	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
+	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * <p>
+	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
+	 *
+	 * @param schedulerFactory
 	 * @param parallelSchedulers
+	 * @param autoShutdown
 
-	 * @return
+	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> scheduler,
+	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory,
 			int parallelSchedulers,
 			boolean autoShutdown) {
-		return new SchedulerGroup(scheduler, parallelSchedulers, null, null, autoShutdown);
+		return new SchedulerGroup(schedulerFactory, parallelSchedulers, null, null, autoShutdown);
 	}
 
 
@@ -626,19 +649,32 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * @param scheduler
-
-	 * @return
+	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Consumer} scheduler.
+	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
+	 * When reference count returns to 0 it will automatically call
+	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * <p>
+	 * Note: If the scheduler is a {@link Processor} it will be subscribed once.
+	 *
+	 * @param scheduler the {@link Runnable} {@link Consumer} to decorate
+	 * @return a new {@link SchedulerGroup}
 	 */
 	public static SchedulerGroup single(Consumer<Runnable> scheduler) {
 		return single(scheduler, true);
 	}
 
 	/**
-	 * @param scheduler
-	 * @param autoShutdown
-
-	 * @return
+	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Consumer} scheduler.
+	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
+	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
+	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * <p>
+	 * Note: If the scheduler is a {@link Processor} it will be subscribed once.
+	 *
+	 * @param scheduler the {@link Runnable} {@link Consumer} to decorate
+	 * @param autoShutdown true to automatically shutdown the inner scheduler
+	 *
+	 * @return a new {@link SchedulerGroup}
 	 */
 	public static SchedulerGroup single(final Consumer<Runnable> scheduler, boolean autoShutdown) {
 		return create(new Callable<Consumer<Runnable>>() {

@@ -72,14 +72,15 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * Create a
 	 * {@link Runnable} event loop that will keep monitoring a {@link LongSupplier} and compare it to a {@link RingBuffer}
 	 *
-	 * @param upstream
-	 * @param stopCondition
-	 * @param postWaitCallback
-	 * @param readCount
-	 * @param waitStrategy
-	 * @param errorSubscriber
-	 * @param ringbuffer
-	 * @return
+	 * @param upstream the {@link Subscription} to request/cancel on
+	 * @param stopCondition {@link Runnable} evaluated in the spin loop that may throw
+	 * @param postWaitCallback a {@link Consumer} notified with the latest sequence read
+	 * @param readCount a {@link LongSupplier} a sequence cursor to wait on
+	 * @param waitStrategy a {@link WaitStrategy} to trade off cpu cycle for latency
+	 * @param errorSubscriber an error subscriber if request/cancel fails
+	 * @param prefetch the target prefetch size
+	 *
+	 * @return a {@link Runnable} loop to execute to start the requesting loop
 	 */
 	public static Runnable createRequestTask(Subscription upstream,
 			Runnable stopCondition,
@@ -87,14 +88,14 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			LongSupplier readCount,
 			WaitStrategy waitStrategy,
 			Subscriber<?> errorSubscriber,
-			RingBuffer ringbuffer) {
+			int prefetch) {
 		return new RequestTask(upstream,
 				stopCondition,
 				postWaitCallback,
 				readCount,
 				waitStrategy,
 				errorSubscriber,
-				ringbuffer);
+				prefetch);
 	}
 
 	/**
@@ -161,21 +162,29 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
+	 * Create a {@link Queue} view over the given {@link RingBuffer} of {@link Slot}.
+	 * The read cursor will be added to the gating sequences and will be incremented on polling.
+	 * Offer will return false if the {@link RingBuffer#tryNext()} does not succeed.
 	 *
-	 * @param buffer
-	 * @param startSequence
-	 * @param <T>
-	 * @return
+	 * @param buffer the {@link RingBuffer} repository
+	 * @param startSequence the starting sequence to track in the {@link Queue}
+	 * @param <T> the {@link Slot} data content type
+	 *
+	 * @return a non blocking {@link Queue} view of the given {@link RingBuffer}
 	 */
 	public static <T> Queue<T> nonBlockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
 		return new NonBlockingSPSCQueue<>(buffer, startSequence);
 	}
 	/**
+	 * Create a {@link Queue} view over the given {@link RingBuffer} of {@link Slot}.
+	 * The read cursor will be added to the gating sequences and will be incremented on polling.
+	 * Offer will spin on {@link RingBuffer#next()} if the ringbuffer is overrun.
 	 *
-	 * @param buffer
-	 * @param startSequence
-	 * @param <T>
-	 * @return
+	 * @param buffer the {@link RingBuffer} repository
+	 * @param startSequence the starting sequence to track in the {@link Queue}
+	 * @param <T> the {@link Slot} data content type
+	 *
+	 * @return a non blocking {@link Queue} view of the given {@link RingBuffer}
 	 */
 	public static <T> Queue<T> blockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
 		return new BlockingSPSCQueue<>(buffer, startSequence);
@@ -286,9 +295,9 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
+	 * @param x the int to test
 	 *
-	 * @param x
-	 * @return
+	 * @return true if x is a power of 2
 	 */
 	public static boolean isPowerOfTwo(final int x) {
 		return Integer.bitCount(x) == 1;
@@ -310,9 +319,9 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * @param init
+	 * @param init the initial value
 	 *
-	 * @return
+	 * @return a safe or unsafe sequence set to the passed init value
 	 */
 	public static Sequence newSequence(long init) {
 		if (PlatformDependent.hasUnsafe()) {
@@ -324,10 +333,11 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
     }
 
 	/**
+	 * Signal a new {@link Slot} value to a {@link RingBuffer} typed with them.
 	 *
-	 * @param value
-	 * @param ringBuffer
-	 * @param <E>
+	 * @param value the data to store
+	 * @param ringBuffer the target {@link RingBuffer} of {@link Slot}
+	 * @param <E> the {@link Slot} reified type
 	 */
 	public static <E> void onNext(E value, RingBuffer<Slot<E>> ringBuffer) {
 		final long seqId = ringBuffer.next();
@@ -337,13 +347,18 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * @param pendingRequest
-	 * @param barrier
-	 * @param isRunning
-	 * @param nextSequence
-	 * @param waiter
+	 * Spin CPU until the request {@link LongSupplier} is populated at least once by a strict positive value.
+	 * To relieve the spin loop, the read sequence itself will be used against so it will wake up only when a signal
+	 * is emitted upstream or other stopping condition including terminal signals thrown by the
+	 * {@link RingBufferReceiver} waiting barrier.
 	 *
-	 * @return
+	 * @param pendingRequest the {@link LongSupplier} request to observe
+	 * @param barrier {@link RingBufferReceiver} to wait on
+	 * @param isRunning {@link AtomicBoolean} calling loop running state
+	 * @param nextSequence {@link LongSupplier} ring buffer read cursor
+	 * @param waiter an optional extra spin observer for the wait strategy in {@link RingBufferReceiver}
+	 *
+	 * @return true if a request has been received, false in any other case.
 	 */
 	public static boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
 			RingBufferReceiver barrier,
@@ -490,7 +505,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	/**
 	 *
-	 * @return
+	 * @return the current list of read cursors
 	 */
 	public Sequence[] getSequenceReceivers() {
 		return getSequencer().getGatingSequences();
@@ -601,8 +616,8 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 *     ringBuffer.publish(sequence);
 	 * }
 	 * </pre>
-	 * <p>This method will not block if there is not space available in the ring buffer, instead it will throw an {@link
-	 * Exceptions.InsufficientCapacityException}.
+	 * <p>This method will not block if there is not space available in the ring buffer, instead it will throw a {@link
+	 * RuntimeException}.
 	 *
 	 * @return The next sequence to publish to.
 	 *
@@ -877,7 +892,7 @@ final class RequestTask implements Runnable {
 
 	final Subscriber<?> errorSubscriber;
 
-	final RingBuffer<?> ringBuffer;
+	final int prefetch;
 
 	public RequestTask(Subscription upstream,
 			Runnable stopCondition,
@@ -885,19 +900,19 @@ final class RequestTask implements Runnable {
 			LongSupplier readCount,
 			WaitStrategy waitStrategy,
 			Subscriber<?> errorSubscriber,
-			RingBuffer r) {
+			int prefetch) {
 		this.waitStrategy = waitStrategy;
 		this.readCount = readCount;
 		this.postWaitCallback = postWaitCallback;
 		this.errorSubscriber = errorSubscriber;
 		this.upstream = upstream;
 		this.spinObserver = stopCondition;
-		this.ringBuffer = r;
+		this.prefetch = prefetch;
 	}
 
 	@Override
 	public void run() {
-		final long bufferSize = ringBuffer.getCapacity();
+		final long bufferSize = prefetch;
 		final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
 		long cursor = -1;
 		try {

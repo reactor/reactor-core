@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.Callable;
+
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -32,16 +34,10 @@ import reactor.fn.Consumer;
 import reactor.fn.Function;
 
 /**
- * A base processor that expose {@link Flux} API, {@link Processor} and generic {@link Function} or {@link Runnable}
- * scheduling contract.
+ * A base processor that expose {@link Flux} API, {@link Processor} and generic {@link Consumer} for {@link Runnable}
+ * {@link SchedulerGroup scheduling contract}.
  *
- * The scheduling contract allows for interoperability with {@link Flux#dispatchOn)} and {@link Flux#publishOn} :
- * {@code
- *  flux.dispatchOn(SchedulerGroup.io()) ou
- *  mono.publishOn(TopicProcessor.create())
- *  stream.dispatchOn(WorkQueueProcessor.create())
- *  promise.publishOn( task -> { Future<T> f = executorService.submit(task); return () -> f.cancel(); } )
- * }
+ * Factories available allow arbitrary {@link FluxProcessor} creation from blackboxed and external reactive components.
  *
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
@@ -50,33 +46,71 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN> {
 
 	/**
-	 * @param <IN>
-	 * @return
+	 * Create an asynchronously {@link Flux#dispatchOn(Callable) dispatched} {@link FluxProcessor} multicast/topic
+	 * relay.
+	 * Like {@link Flux#dispatchOn(Callable)} the scheduler resources will be cleaned accordingly to the {@link Runnable} {@literal null} protocol.
+	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
+	 * mandatory.
+	 *
+	 * @param <IN> The relayed data type
+	 *
+	 * @return a new asynchronous {@link FluxProcessor}
 	 */
-	public static <IN> FluxProcessor<IN, IN> async(final SchedulerGroup group) {
+	public static <IN> FluxProcessor<IN, IN> async(final Callable<? extends Consumer<Runnable>> schedulerFactory) {
 		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
-		return create(emitter, emitter.dispatchOn(group));
+		return create(emitter, emitter.dispatchOn(schedulerFactory));
 	}
 
 	/**
-	 * Create a {@link FluxProcessor} from a receiving {@link Subscriber} and a mapped {@link Publisher}.
+	 * Blackbox a given
+	 * {@link Subscriber} receiving type with a transforming function returning the producing side {@link Publisher}.
 	 *
+	 * {@code
+	 *   Processor<String, String> asyncLowerCase =
+	 *      FluxProcessor.blackbox(TopicProcessor.create(), input -> input.map(String::toLowerCase));
+	 * }
 	 *
+	 * @param input an input {@link Subscriber}
+	 * @param  blackboxFunction the
+	 * {@link Function} given the input subscriber to compose on and return {@link Publisher}
+	 * @param <IN> the reified received type
+	 * @param <OUT> the reified produced type
 	 *
-	 * @param <IN>
-	 * @param <OUT>
-	 * @return
+	 * @return a blackboxed chain as {@link FluxProcessor}
 	 */
 	public static <IN, OUT, E extends Subscriber<IN>> FluxProcessor<IN, OUT> blackbox(
 			final E input,
-			final Function<E, ? extends Publisher<OUT>> processor) {
-		return new DelegateProcessor<>(processor.apply(input), input);
+			final Function<E, ? extends Publisher<OUT>> blackboxFunction) {
+		return create(input, blackboxFunction.apply(input));
 	}
+
 	/**
-	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
-	 * set to true.
+	 * Blackbox an arbitrary {@link Flux} operation chain into a {@link FluxProcessor} that can be subscribed once
+	 * only.
+	 * <p>
+	 * {@code Processor<String, Integer> stringToInt = FluxProcessor.blackbox(input ->
+	 * input.filter(String::isEmpty).map(Integer::parseString)); }
 	 *
-	 * @return a new {@link SignalEmitter}
+	 * @param blackboxFunction the {@link Function} given a {@link Flux} to compose on and return {@link Publisher}
+	 * @param <IN> the reified received type
+	 * @param <OUT> the reified produced type
+	 *
+	 * @return a blackboxed chain as {@link FluxProcessor}
+	 */
+	public static <IN, OUT> FluxProcessor<IN, OUT> blackbox(final Function<Flux<IN>, ? extends Publisher<OUT>> blackboxFunction) {
+		FluxPassthrough<IN> passthrough = new FluxPassthrough<>();
+		return create(passthrough, blackboxFunction.apply(passthrough));
+	}
+
+	/**
+	 * Create a passthrough {@link FluxProcessor} relay blocking when overrun.
+	 * <p>
+	 * It will use a deferred blocking {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)}.
+	 * Multiple producer can share the returned reference IF and only IF they don't publish concurrently. In this
+	 * very case, implementor must take care of using a multiproducer capable receiver downstream e.g.
+	 * {@link TopicProcessor#share()} or {@link WorkQueueProcessor#share()}.
+	 *
+	 * @return a new {@link FluxProcessor}
 	 */
 	public static <IN> FluxProcessor<IN, IN> blocking() {
 		FluxPassthrough<IN> passthrough = new FluxPassthrough<>();
@@ -84,9 +118,14 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	/**
-	 * @param <IN>
-	 * @param <OUT>
-	 * @return
+	 * Transform a receiving {@link Subscriber} and a producing {@link Publisher} in a logical {@link FluxProcessor}.
+	 * The link between the passed upstream and returned downstream will not be created automatically, e.g. not
+	 * subscribed together. A {@link Processor} might choose to have orthogonal sequence input and output.
+	 *
+	 * @param <IN> the receiving type
+	 * @param <OUT> the producing type
+	 *
+	 * @return a new blackboxed {@link FluxProcessor}
 	 */
 	public static <IN, OUT> FluxProcessor<IN, OUT> create(final Subscriber<IN> upstream, final Publisher<OUT> downstream) {
 		return new DelegateProcessor<>(downstream, upstream);
