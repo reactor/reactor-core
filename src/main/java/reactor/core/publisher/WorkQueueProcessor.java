@@ -596,6 +596,11 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 	}
 
 	@Override
+	public Flux<E> drain() {
+		return TopicProcessor.coldSource(ringBuffer, null, error, workSequence);
+	}
+
+	@Override
 	public void onNext(E o) {
 		super.onNext(o);
 		RingBuffer.onNext(o, ringBuffer);

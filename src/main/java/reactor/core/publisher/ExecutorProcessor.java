@@ -39,26 +39,20 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	protected static final int SHUTDOWN = 1;
 
-	protected static final int FORCED_SHUTDOWN = 2;
-
+	protected static final int                                          FORCED_SHUTDOWN  = 2;
+	protected static final AtomicIntegerFieldUpdater<ExecutorProcessor> SUBSCRIBER_COUNT =
+			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "subscriberCount");
+	protected final static AtomicIntegerFieldUpdater<ExecutorProcessor> TERMINATED       =
+			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "terminated");
 	protected final ExecutorService executor;
-
-	volatile boolean cancelled;
-	volatile int     terminated;
-	volatile Throwable error;
-
-	protected final ClassLoader contextClassLoader;
-	protected final String name;
-	protected final boolean autoCancel;
-
+	protected final ClassLoader     contextClassLoader;
+	protected final String          name;
+	protected final boolean         autoCancel;
+	volatile        boolean         cancelled;
+	volatile        int             terminated;
+	volatile        Throwable       error;
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
-	protected static final AtomicIntegerFieldUpdater<ExecutorProcessor> SUBSCRIBER_COUNT =
-			AtomicIntegerFieldUpdater
-					.newUpdater(ExecutorProcessor.class, "subscriberCount");
-
-	protected final static AtomicIntegerFieldUpdater<ExecutorProcessor> TERMINATED =
-			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "terminated");
 
 	protected ExecutorProcessor(String name, ExecutorService executor,
 			boolean autoCancel) {
@@ -75,69 +69,14 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	@Override
-	public int getMode() {
-		return UNIQUE;
-	}
-
-	@Override
-	public Object key() {
-		return contextClassLoader.hashCode();
-	}
-
-	@Override
-	public String getName() {
-		return "/Processors/"+name;
-	}
-
 	/**
-	 * @return a snapshot number of available onNext before starving the resource
+	 * Determine whether this {@code Processor} can be used.
+	 *
+	 * @return {@literal true} if this {@code Resource} is alive and can be used, {@literal false} otherwise.
 	 */
-	public long getAvailableCapacity() {
-		return getCapacity();
+	public boolean alive() {
+		return 0 == terminated;
 	}
-
-	protected boolean incrementSubscribers() {
-		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
-	}
-
-	@Override
-	protected void doOnSubscribe(Subscription s) {
-		if (s != EmptySubscription.INSTANCE) {
-			requestTask(s);
-		}
-	}
-
-	protected void requestTask(final Subscription s) {
-		//implementation might run a specific request task for the given subscription
-	}
-
-	protected void doComplete() {
-
-	}
-
-	@Override
-	public final void onComplete() {
-		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
-			upstreamSubscription = null;
-			ExecutorUtils.shutdownIfSingleUse(executor);
-			doComplete();
-		}
-	}
-
-	abstract void doError(Throwable throwable);
-
-	@Override
-	public final void onError(Throwable t) {
-		super.onError(t);
-		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
-			error = t;
-			upstreamSubscription = null;
-			ExecutorUtils.shutdownIfSingleUse(executor);
-			doError(t);
-		}
-	}
-
 
 	/**
 	 * Block until all submitted tasks have completed, then do a normal {@link #shutdown()}.
@@ -159,57 +98,61 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	@Override
-	protected void cancel(Subscription subscription) {
-		cancelled = true;
-		if(TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
-			ExecutorUtils.shutdownIfSingleUse(executor);
-		}
+	/**
+	 * Drain is a hot replication of the current buffer delivered if supported. Since it is hot there might be no
+	 * guarantee to see a end if the buffer keeps replenishing due to concurrent producing.
+	 *
+	 * @return a {@link Flux} sequence possibly unbounded of incoming buffered values or empty if not supported.
+	 */
+	public Flux<IN> drain(){
+		return Flux.empty();
 	}
 
 	/**
-	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that
-	 * have not yet been executed.
+	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that have
+	 * not yet been executed.
 	 */
-	public void forceShutdown() {
+	public Flux<IN> forceShutdown() {
 		int t = terminated;
-		if(t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
+		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();
 		}
-	}
-
-
-	/**
-	 * Determine whether this {@code Processor} can be used.
-	 *
-	 * @return {@literal true} if this {@code Resource} is alive and can be used, {@literal false} otherwise.
-	 */
-	public boolean alive() {
-		return 0 == terminated;
+		return drain();
 	}
 
 	/**
-	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work,
-	 * it will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
+	 * @return a snapshot number of available onNext before starving the resource
 	 */
-	public void shutdown() {
-		try {
-			onComplete();
-			executor.shutdown();
-		} catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			onError(t);
-		}
+	public long getAvailableCapacity() {
+		return getCapacity();
 	}
 
-	/**
-	 * @return true if the attached Subscribers will read exclusive sequences (akin to work-queue pattern)
-	 */
-	public abstract boolean isWork();
+	@Override
+	public final Throwable getError() {
+		return error;
+	}
+
+	@Override
+	public int getMode() {
+		return UNIQUE;
+	}
+
+	@Override
+	public String getName() {
+		return "/Processors/" + name;
+	}
 
 	@Override
 	public boolean isCancelled() {
 		return cancelled;
+	}
+
+	/**
+	 * @return true if the classLoader marker is detected in the current thread
+	 */
+	public final boolean isInContext() {
+		return Thread.currentThread()
+		             .getContextClassLoader() == contextClassLoader;
 	}
 
 	@Override
@@ -223,22 +166,55 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	/**
-	 * @return true if the classLoader marker is detected in the current thread
+	 * @return true if the attached Subscribers will read exclusive sequences (akin to work-queue pattern)
 	 */
-	public final boolean isInContext() {
-		return Thread.currentThread().getContextClassLoader() == contextClassLoader;
+	public abstract boolean isWork();
+
+	@Override
+	public Object key() {
+		return contextClassLoader.hashCode();
 	}
 
-	protected final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
+	@Override
+	public final void onComplete() {
+		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
+			upstreamSubscription = null;
+			ExecutorUtils.shutdownIfSingleUse(executor);
+			doComplete();
+		}
+	}
+
+	@Override
+	public final void onError(Throwable t) {
+		super.onError(t);
+		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
+			error = t;
+			upstreamSubscription = null;
+			ExecutorUtils.shutdownIfSingleUse(executor);
+			doError(t);
+		}
+	}
+
+	/**
+	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
+	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
+	 */
+	public void shutdown() {
 		try {
-			Thread.currentThread()
-			      .setContextClassLoader(contextClassLoader);
-			subscriber.onSubscribe(subscription);
-			return true;
+			onComplete();
+			executor.shutdown();
 		}
 		catch (Throwable t) {
-			EmptySubscription.error(subscriber, t);
-			return false;
+			Exceptions.throwIfFatal(t);
+			onError(t);
+		}
+	}
+
+	@Override
+	protected void cancel(Subscription subscription) {
+		cancelled = true;
+		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
+			ExecutorUtils.shutdownIfSingleUse(executor);
 		}
 	}
 
@@ -255,8 +231,37 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		return subs;
 	}
 
-	@Override
-	public final Throwable getError() {
-		return error;
+	protected void doComplete() {
+
 	}
+
+	@Override
+	protected void doOnSubscribe(Subscription s) {
+		if (s != EmptySubscription.INSTANCE) {
+			requestTask(s);
+		}
+	}
+
+	protected boolean incrementSubscribers() {
+		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
+	}
+
+	protected void requestTask(final Subscription s) {
+		//implementation might run a specific request task for the given subscription
+	}
+
+	protected final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
+		try {
+			Thread.currentThread()
+			      .setContextClassLoader(contextClassLoader);
+			subscriber.onSubscribe(subscription);
+			return true;
+		}
+		catch (Throwable t) {
+			EmptySubscription.error(subscriber, t);
+			return false;
+		}
+	}
+
+	abstract void doError(Throwable throwable);
 }

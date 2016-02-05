@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
@@ -100,7 +99,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 	/**
 	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
-	 * @param name
+	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -667,6 +666,11 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 	}
 
 	@Override
+	public Flux<E> drain() {
+		return coldSource(ringBuffer, null, error, minimum);
+	}
+
+	@Override
 	public void onNext(E o) {
 		super.onNext(o);
 		RingBuffer.onNext(o, ringBuffer);
@@ -684,9 +688,9 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 		barrier.signal();
 	}
 
-	static <E> Publisher<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
+	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
-		Publisher<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.get()));
+		Flux<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.get()));
 		if (error != null) {
 			if (t != null) {
 				t.addSuppressed(error);

@@ -16,8 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +42,6 @@ import reactor.fn.Supplier;
 
 /**
  * "Scheduling" in Reactor via
- *
  * {@link Flux#dispatchOn dispatchOn}, {@link Mono#publishOn publishOn} or {@link FluxProcessor}.{@link FluxProcessor#async async} requires
  * {@link Consumer} of {@link Runnable}. Unlike {@link java.util.concurrent.Executor} which apparently has the same
  * signature, these {@link Consumer} allow {@literal null} argument and should treat them as terminal signal to dispose
@@ -778,14 +779,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 	/**
 	 * Non-blocking forced shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
+	 * @return the current pending tasks if supported or throw an unchecked {@link UnsupportedOperationException}.
 	 */
-	public void forceShutdown() {
+	public Flux<Runnable> forceShutdown() {
 		if (scheduler == null) {
-			return;
+			return Flux.empty();
 		}
 		else if (scheduler instanceof ExecutorProcessor) {
-			((ExecutorProcessor) scheduler).forceShutdown();
-			return;
+			return ((ExecutorProcessor<Runnable, Runnable>) scheduler).forceShutdown();
 		}
 		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement ExecutorProcessor");
 	}
@@ -981,10 +982,12 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		}
 
 		@Override
-		public void forceShutdown() {
+		public Flux<Runnable> forceShutdown() {
+			List<Flux<Runnable>> finish = new ArrayList<>(schedulerGroups.length);
 			for (SchedulerGroup schedulerGroup : schedulerGroups) {
-				schedulerGroup.forceShutdown();
+				finish.add(schedulerGroup.forceShutdown());
 			}
+			return Flux.merge(finish);
 		}
 
 		@Override

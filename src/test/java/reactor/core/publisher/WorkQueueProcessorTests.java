@@ -20,8 +20,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Test;
 import org.reactivestreams.Processor;
 import reactor.core.subscriber.Subscribers;
+import reactor.core.test.TestSubscriber;
 import reactor.core.util.Assert;
 
 /**
@@ -48,10 +50,22 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		super.required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError();
 	}
 
+	@Test
+	public void drainTest() throws Exception {
+		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		sink.onNext(1);
+		sink.onNext(2);
+		sink.onNext(3);
+
+		new TestSubscriber<Integer>().bindTo(sink.forceShutdown())
+		                             .assertComplete()
+		                             .assertValues(1, 2, 3);
+	}
+
 	@Override
 	public void simpleTest() throws Exception {
-		final FluxProcessor<Integer, Integer> sink = TopicProcessor.create("topic");
-		final FluxProcessor<Integer, Integer> processor = WorkQueueProcessor.create("queue");
+		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		final WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create("queue");
 
 		int elems = 1_000_000;
 		CountDownLatch latch = new CountDownLatch(elems);
