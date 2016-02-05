@@ -7,10 +7,10 @@
 Non-Blocking Reactive Foundation for the JVM.
 
 ## Flux
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](next.projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
 ## Mono
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](next.projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
 ## Processors
 
