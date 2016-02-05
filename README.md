@@ -24,15 +24,20 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```
 
 ## Flux
+
+A Reactive Streams Publisher with basic Rx operators. S
+tatic factories on Flux allow for quick source creation whereas instance methods allows operational building, materialized when _Publisher#subscribe()_ is eventually called.
+
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
+Flux in action :
 ```java
 Flux.fromIterable(getSomeList())
     .mergeWith(Flux.interval(1))
     .map(d -> d * 2)
     .zipWith(Flux.just(1, 2, 3))
     .onErrorResumeWith(errorHandler::fallback)
-    .subscribe(Subscribers.consumer(System.out::println);
+    .subscribe(Subscribers.consumer(System.out::println));
 ```
 
 ## Mono
@@ -43,7 +48,7 @@ Mono.fromCallable(System::currentTimeMillis)
     .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
     .or(Mono.delay(3))
     .otherwiseIfEmpty(Mono.just(errorHandler::fallback)
-    .subscribe(Subscribers.consumer(System.out::println);
+    .subscribe(Subscribers.consumer(System.out::println));
 ```
 
 ## Processors
