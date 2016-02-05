@@ -9,7 +9,7 @@ Non-Blocking Reactive Foundation for the JVM.
 
 ## Getting it
 
-With Gradle :
+With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
     repositories {
       //maven { url 'http://repo.spring.io/libs-release' }
