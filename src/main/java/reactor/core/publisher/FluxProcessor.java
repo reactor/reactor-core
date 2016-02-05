@@ -65,10 +65,12 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Blackbox a given
 	 * {@link Subscriber} receiving type with a transforming function returning the producing side {@link Publisher}.
 	 *
+	 * <pre>
 	 * {@code
 	 *   Processor<String, String> asyncLowerCase =
 	 *      FluxProcessor.blackbox(TopicProcessor.create(), input -> input.map(String::toLowerCase));
 	 * }
+	 *</pre>
 	 *
 	 * @param input an input {@link Subscriber}
 	 * @param  blackboxFunction the
@@ -88,8 +90,12 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Blackbox an arbitrary {@link Flux} operation chain into a {@link FluxProcessor} that can be subscribed once
 	 * only.
 	 * <p>
-	 * {@code Processor<String, Integer> stringToInt = FluxProcessor.blackbox(input ->
-	 * input.filter(String::isEmpty).map(Integer::parseString)); }
+	 * <pre>
+	 * {@code
+	 *  Processor<String, Integer> stringToInt =
+	 *      FluxProcessor.blackbox(input -> input.filter(String::isEmpty).map(Integer::parseString));
+	 * }
+	 *</pre>
 	 *
 	 * @param blackboxFunction the {@link Function} given a {@link Flux} to compose on and return {@link Publisher}
 	 * @param <IN> the reified received type
