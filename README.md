@@ -52,11 +52,6 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```java
 ```
 
-### TopicProcessor
-
-```java
-```
-
 ### Hot Publishing
 Hint: it's not porn.
 
