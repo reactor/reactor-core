@@ -24,13 +24,13 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```
 
 ## Flux
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
+[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
 ```java
 ```
 
 ## Mono
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://next.projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
+[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
 ```java
 ```
@@ -73,10 +73,10 @@ Hint: it's not porn.
 "Operator Fusion" (flow optimizers), health state observers, micro-toolkit for custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 ## Reference
-http://next.projectreactor.io/core/docs/reference/
+http://projectreactor.io/core/docs/reference/
 
 ## Javadoc
-http://next.projectreactor.io/core/docs/api/
+http://projectreactor.io/core/docs/api/
 
 -------------------------------------
 _Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)_
