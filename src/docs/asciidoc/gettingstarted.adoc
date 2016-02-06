@@ -85,8 +85,7 @@ The project started in 2012, with a long internal incubation time. Reactor 1.x a
 
 Parallel to that work we also decided to re-align some of our Event-Driven and Task Coordination API to the increasingly popular and documented <<gettingstarted.adoc/#rx,Reactive Extensions>>.
 
-Reactor Core is sponsored by http://pivotal.io[Pivotal] where the two core committers are employed. Since Pivotal is
-also the home of the Spring Framework and many of our colleagues are core committers to the various Spring efforts, we both provide integration support from Reactor to Spring as well as support some important functionality of the Spring Framework like the STOMP broker relay in _spring-messaging_. That said, we don't force anyone to adopt Spring just to use Reactor. We remain an embeddable toolkit "for the Reactive masses". In fact one of the goals of Reactor is to stay un-opinionated in the ways you solve asynchronous and functional problems.
+Reactor Core is sponsored by http://pivotal.io[Pivotal]
 
 Reactor Core is http://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 licensed] and available on https://github.com/reactor/reactor[GitHub].
 
