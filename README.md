@@ -73,6 +73,10 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
             .publishOn(io)
     )
     .subscribe();
+
+async.forceShutdown()
+     .subscribe(Runnable::run);
+io.shutdown();
 ```
 
 ## Processors
