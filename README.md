@@ -141,9 +141,11 @@ processor
     .subscribe();
 
 SignalEmitter<String> sink = processor.startEmitter();
+
 Emission status = sink.emit("Non blocking and returning emission status");
 long latency = sink.submit("Blocking until emitted and returning latency");
 sink.onNext("Fail if overrun");
+
 sink.finish();
 
 ```
