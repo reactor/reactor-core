@@ -108,7 +108,9 @@ emitter.onNext(2);
 emitter.subscribe(Subscriber.consume(System.out::println));
 emitter.onNext(3); //output : 3
 emitter.onComplete();
-
+```
+Replay capacity in action:
+```java
 EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
 replayer.start();
 replayer.onNext(1);
