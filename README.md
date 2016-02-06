@@ -104,6 +104,7 @@ Flux.yield(sink -> {
         }
         sink.finish();
     })
+    .zipWith(Mono.delay(3))
     .doOnNext(System.out::println)
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe();
