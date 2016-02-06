@@ -85,12 +85,15 @@ Hint: it's not porn.
 Create and Reuse scheduling resources over multiple Subscribers, with adapated strategies :
 
 ```java
+SchedulerGroup async = SchedulerGroup.async();
+SchedulerGroup io = SchedulerGroup.io();
+
 Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
-    .dispatchOn(SchedulerGroup.async())
+    .dispatchOn(async)
     .log("foo.bar")
     .flatMap(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
-            .publishOn(SchedulerGroup.io())
+            .publishOn(io)
     )
     .subscribe();
 ```
