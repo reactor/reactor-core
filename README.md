@@ -92,6 +92,22 @@ async.forceShutdown()
      
 io.shutdown();
 ```
+### Hot Publishing : SignalEmitter
+To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create(Subscriber), the common FluxProcessor.startEmitter() or Flux.yield(emitter -> {}) :
+
+```java
+Flux.yield(sink -> {
+        Emission status = sink.emit("Non blocking and returning emission status");
+        long latency = sink.submit("Blocking until emitted and returning latency");
+        sink.onNext("Throw if overrun");
+
+        sink.finish();
+    })
+    .doOnNext(System.out::println)
+    .doOnComplete(() -> System.out.println("completed!"))
+    .subscribe();
+
+```
 
 ## Processors
 
@@ -149,24 +165,7 @@ queue.onNext(3); //output : ...3
 queue.onComplete();
 ```
 
-### Hot Publishing : SignalEmitter
-Usually, Processors do not support onNext call if onSubscribe has not been invoked before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create(), the common FluxProcessor.startEmitter() or Flux.yield(emitter -> {}) :
 
-```java
-EmitterProcessor<String> processor = EmitterProcessor.create();
-processor
-    .doOnNext(System.out::println)
-    .subscribe();
-
-SignalEmitter<String> sink = processor.startEmitter();
-
-Emission status = sink.emit("Non blocking and returning emission status");
-long latency = sink.submit("Blocking until emitted and returning latency");
-sink.onNext("Throw if overrun");
-
-sink.finish();
-
-```
 
 ## The Backpressure Thing
 
