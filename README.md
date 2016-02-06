@@ -150,7 +150,7 @@ queue.onComplete();
 ```
 
 ### Hot Publishing : SignalEmitter
-Usually, Processors do not support onNext call if onSubscribe has not been invoked before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create() or the common FluxProcessor.startEmitter():
+Usually, Processors do not support onNext call if onSubscribe has not been invoked before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create(), the common FluxProcessor.startEmitter() or Flux.yield(emitter -> {}) :
 
 ```java
 EmitterProcessor<String> processor = EmitterProcessor.create();
