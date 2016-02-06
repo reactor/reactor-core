@@ -27,7 +27,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 A Reactive Streams Publisher with basic Rx operators. 
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
-- Instance methods allows operational building, materialized when _Flux#subscribe()_ is eventually called.
+- Instance methods allows operational building, materialized on each _Flux#subscribe()_ eventually called.
 
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
@@ -44,7 +44,7 @@ Flux.fromIterable(getSomeList())
 ## Mono
 A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropriate operators. 
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
-- Instance methods allows operational building, materialized when _Mono#subscribe()_ is eventually called.
+- Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
@@ -92,7 +92,7 @@ Hint: it's not porn.
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, micro-toolkit for custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 ## Reference
 http://projectreactor.io/core/docs/reference/
