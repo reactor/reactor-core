@@ -116,7 +116,7 @@ replayer.onComplete();
 
 ### Async Pub-Sub : TopicProcessor
 
-An asynchronous signal broadcaster dedicating a thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also support multi-producing and emission without onSubscribe.
+An asynchronous signal broadcaster dedicating a thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
@@ -130,7 +130,7 @@ topic.onComplete();
 
 ### Async Distributed : WorkQueueProcessor
 
-Similar to TopicProcessor regarding thread per subscriber but this time exclusively distribute the input sequence to the next available Subscriber. WorkQueueProcessor is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
+Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. WorkQueueProcessor is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
@@ -143,7 +143,7 @@ queue.onComplete();
 ```
 
 ### Hot Publishing : SignalEmitter
-Usually, Processors do not support onNext call if onSubscribe has not been called before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create() or the common FluxProcessor.startEmitter():
+Usually, Processors do not support onNext call if onSubscribe has not been invoked before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create() or the common FluxProcessor.startEmitter():
 
 ```java
 EmitterProcessor<String> processor = EmitterProcessor.create();
