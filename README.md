@@ -102,7 +102,6 @@ Flux.yield(sink -> {
         while(sink.hasRequested()){
             Emission status = sink.emit("Non blocking and returning emission status");
             long latency = sink.submit("Blocking until emitted and returning latency");
-            sink.onNext("Throw if overrun");
         }
         sink.finish();
     })
