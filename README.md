@@ -59,11 +59,11 @@ Mono.fromCallable(System::currentTimeMillis)
 
 ## Processors
 
-A Reactive Stream Processor is a stateful asynchronous boundary that can support 1 or N Subscribers. In Reactor, the main processor implementations are message relays using "thread stealing" (EmitterProcessor) or dedicated threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffer, that are optimized for low latency message passing.
+The 3 main processor implementations are message relays using "thread stealing" (EmitterProcessor) or dedicated threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffers, that are optimized for low latency message passing.
 
 ### Sync Pub-Sub : EmitterProcessor
 
-A signal broadcaster that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer. Since it uses a RingBuffer, it can offer an history capability for late Subscribers.
+A signal broadcaster that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
@@ -85,12 +85,28 @@ replayer.onComplete();
 
 ### Async Pub-Sub : TopicProcessor
 
+An asynchronous signal broadcaster dedicating a thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also support multi-producing and emission without onSubscribe.
+
 ```java
+TopicProcessor<Integer> topic = TopicProcessor.create();
+topic.subscribe(Subscriber.consume(System.out::println));
+topic.onNext(1); //output : ...1
+topic.onNext(2); //output : ...2
+topic.subscribe(Subscriber.consume(System.out::println)); //output : ...1, 2
+topic.onNext(3); //output : ...3 ...3
+topic.onComplete();
 ```
 
 ### Async Distributed : WorkQueueProcessor
 
 ```java
+WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
+queue.subscribe(Subscriber.consume(System.out::println));
+queue.subscribe(Subscriber.consume(System.out::println));
+queue.onNext(1); //output : ...1
+queue.onNext(2); //output : .... ...2
+queue.onNext(3); //output : ...3 
+queue.onComplete();
 ```
 
 ### Hot Publishing : SignalEmitter
