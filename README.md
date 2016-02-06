@@ -130,6 +130,8 @@ topic.onComplete();
 
 ### Async Distributed : WorkQueueProcessor
 
+Similar to TopicProcessor regarding thread per subscriber but this time exclusively distribute the input sequence to the next available Subscriber. WorkQueueProcessor is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
+
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
 queue.subscribe(Subscriber.consume(System.out::println));
