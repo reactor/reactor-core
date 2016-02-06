@@ -25,8 +25,9 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ## Flux
 
-A Reactive Streams Publisher with basic Rx operators. S
-tatic factories on Flux allow for quick source creation whereas instance methods allows operational building, materialized when _Publisher#subscribe()_ is eventually called.
+A Reactive Streams Publisher with basic Rx operators. 
+- Static factories on Flux allow for source generation from arbitrary callbacks types.
+- Instance methods allows operational building, materialized when _Flux#subscribe()_ is eventually called.
 
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
@@ -41,8 +42,13 @@ Flux.fromIterable(getSomeList())
 ```
 
 ## Mono
+A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropriate operators. 
+- Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
+- Instance methods allows operational building, materialized when _Mono#subscribe()_ is eventually called.
+
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 
+Mono in action :
 ```java
 Mono.fromCallable(System::currentTimeMillis)
     .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
