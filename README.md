@@ -174,7 +174,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+"Operator Fusion" (flow optimizers), health state observers, TestSubscriber, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 ## Reference
 http://projectreactor.io/core/docs/reference/
