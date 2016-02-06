@@ -8,8 +8,8 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 (http://reactivex.io) API and efficient message-passing support.
 
 ## Getting it
-- snapshot : *2.5.0.BUILD-SNAPSHOT*  ( Java 7+ required )
-- milestone : *2.5.0.M1*  ( Java 7+ required )
+- Snapshot : **2.5.0.BUILD-SNAPSHOT**  ( Java 7+ required )
+- Milestone : **2.5.0.M1**  ( Java 7+ required )
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
