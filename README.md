@@ -57,9 +57,27 @@ Mono.fromCallable(System::currentTimeMillis)
     .subscribe(Subscribers.consumer(System.out::println));
 ```
 
+## Schedulers
+
+Create and Reuse scheduling resources over multiple Subscribers, with adapated strategies :
+
+```java
+SchedulerGroup async = SchedulerGroup.async();
+SchedulerGroup io = SchedulerGroup.io();
+
+Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
+    .dispatchOn(async)
+    .log("foo.bar")
+    .flatMap(time ->
+        Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
+            .publishOn(io)
+    )
+    .subscribe();
+```
+
 ## Processors
 
-The 3 main processor implementations are message relays using "thread stealing" (EmitterProcessor) or dedicated threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffers, that are optimized for low latency message passing.
+The 3 main processor implementations are message relays using 0 (EmitterProcessor) or N threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffers, that are optimized for low latency message passing.
 
 ### Sync Pub-Sub : EmitterProcessor
 
@@ -124,24 +142,6 @@ long latency = sink.submit("Blocking until emitted and returning latency");
 sink.onNext("Fail if overrun");
 sink.finish();
 
-```
-
-## Schedulers
-
-Create and Reuse scheduling resources over multiple Subscribers, with adapated strategies :
-
-```java
-SchedulerGroup async = SchedulerGroup.async();
-SchedulerGroup io = SchedulerGroup.io();
-
-Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
-    .dispatchOn(async)
-    .log("foo.bar")
-    .flatMap(time ->
-        Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
-            .publishOn(io)
-    )
-    .subscribe();
 ```
 
 ## The Backpressure Thing
