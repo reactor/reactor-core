@@ -59,7 +59,7 @@ Mono.fromCallable(System::currentTimeMillis)
 
 ## Schedulers
 
-Create and Reuse scheduling resources over multiple Subscribers, with adapated strategies :
+Create and Reuse scheduling resources over multiple Subscribers with adapted concurrency strategy for producing flows (publishOn) or receiving flows (dispatchOn) :
 
 ```java
 SchedulerGroup async = SchedulerGroup.async();
