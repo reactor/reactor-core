@@ -74,10 +74,21 @@ Mono.fromCallable(System::currentTimeMillis)
 ```java
 ```
 
-### Hot Publishing
-Hint: it's not porn.
+### Hot Publishing : SignalEmitter
+Usually, Processors do not support onNext call if onSubscribe has not been called before OR if there is a mismatching demand (onNext without demand). To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create() or the common FluxProcessor.startEmitter():
 
 ```java
+EmitterProcessor<String> processor = EmitterProcessor.create();
+processor
+    .doOnNext(System.out::println)
+    .subscribe();
+
+SignalEmitter<String> emitter = processor.startEmitter();
+emitter.emit("Non blocking and returning emission status");
+emitter.submit("Blocking until emitted");
+emitter.onNext("Fail if overrun");
+emitter.finish();
+
 ```
 
 ## Schedulers
