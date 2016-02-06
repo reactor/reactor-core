@@ -97,7 +97,7 @@ To bridge a Subscriber or Processor into an outside context that is taking care 
 
 ```java
 Flux.yield(sink -> {
-        if(sink.hasRequested()){
+        while(sink.hasRequested()){
             Emission status = sink.emit("Non blocking and returning emission status");
             long latency = sink.submit("Blocking until emitted and returning latency");
             sink.onNext("Throw if overrun");
