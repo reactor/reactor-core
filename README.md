@@ -92,7 +92,7 @@ async.forceShutdown()
      
 io.shutdown();
 ```
-### Hot Publishing : SignalEmitter
+## Hot Publishing : SignalEmitter
 To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create(Subscriber), the common FluxProcessor.startEmitter() or Flux.yield(emitter -> {}) :
 
 ```java
@@ -119,22 +119,22 @@ A signal broadcaster that will safely handle asynchronous boundaries between N S
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
-emitter.start();
-emitter.onNext(1);
-emitter.onNext(2);
+SignalEmitter<Integer> sink = emitter.startEmitter();
+sink.submit(1);
+sink.submit(2);
 emitter.subscribe(Subscriber.consume(System.out::println));
-emitter.onNext(3); //output : 3
-emitter.onComplete();
+sink.submit(3); //output : 3
+sink.finish();
 ```
 Replay capacity in action:
 ```java
 EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
-replayer.start();
-replayer.onNext(1);
-replayer.onNext(2);
+SignalEmitter<Integer> sink = replayer.startEmitter();
+sink.onNext(1);
+sink.onNext(2);
 replayer.subscribe(Subscriber.consume(System.out::println)); //output 1, 2
-replayer.onNext(3); //output : 3
-replayer.onComplete();
+sink.onNext(3); //output : 3
+sink.finish();
 ```
 
 ### Async Pub-Sub : TopicProcessor
@@ -164,8 +164,6 @@ queue.onNext(2); //output : .... ...2
 queue.onNext(3); //output : ...3 
 queue.onComplete();
 ```
-
-
 
 ## The Backpressure Thing
 
