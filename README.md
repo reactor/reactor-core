@@ -131,10 +131,10 @@ Replay capacity in action:
 ```java
 EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
 SignalEmitter<Integer> sink = replayer.startEmitter();
-sink.onNext(1);
-sink.onNext(2);
+sink.submit(1);
+sink.submit(2);
 replayer.subscribe(Subscriber.consume(System.out::println)); //output 1, 2
-sink.onNext(3); //output : 3
+sink.submit(3); //output : 3
 sink.finish();
 ```
 
