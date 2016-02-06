@@ -91,7 +91,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> FluxProcessor<E, E> create(int bufferSize) {
+	public static <E> EmitterProcessor<E> create(int bufferSize) {
 		return create(bufferSize, Integer.MAX_VALUE);
 	}
 
