@@ -35,9 +35,11 @@ Flux in action :
 ```java
 Flux.fromIterable(getSomeList())
     .mergeWith(Flux.interval(1))
+    .doOnNext(serviceA::someObserver)
     .map(d -> d * 2)
     .zipWith(Flux.just(1, 2, 3))
     .onErrorResumeWith(errorHandler::fallback)
+    .doAfterTerminate(serviceM::incrementTerminate)
     .subscribe(Subscribers.consumer(System.out::println));
 ```
 
@@ -53,6 +55,7 @@ Mono in action :
 Mono.fromCallable(System::currentTimeMillis)
     .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
     .or(Mono.delay(3))
+    .doOnSuccess(r -> serviceM.incrementSuccess())
     .otherwiseIfEmpty(Mono.just(errorHandler::fallback)
     .subscribe(Subscribers.consumer(System.out::println));
 ```
