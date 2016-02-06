@@ -105,7 +105,7 @@ public enum Subscribers{
 	}
 
 	/**
-	 * Create a {@link Subscriber} that will will automatically request Long.MAX_VALUE onSubscribe.
+	 * Create a {@link Subscriber} that will automatically request Long.MAX_VALUE onSubscribe.
 	 *
 	 * @param <T> The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed

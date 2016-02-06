@@ -30,9 +30,9 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.BlockingIterable;
+import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
-import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
@@ -1623,9 +1623,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
 	 * <p>
+	 *
+	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
-	public final void subscribe() {
-		subscribe(Subscribers.unbounded());
+	public final Runnable subscribe() {
+		ConsumerSubscriber<T> s = new ConsumerSubscriber<>();
+		subscribe(s);
+		return s;
 	}
 
 	/**

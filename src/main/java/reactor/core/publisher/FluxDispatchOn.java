@@ -171,10 +171,6 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		int sourceMode;
 		
-		static final int NORMAL = 0;
-		static final int SYNC = 1;
-		static final int ASYNC = 2;
-		
 		long produced;
 		
 		public DispatchOnSubscriber(
@@ -203,11 +199,11 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
-					
-					int m = f.requestFusion(Fuseable.ANY);
+
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
 					if (m == Fuseable.SYNC) {
-						sourceMode = SYNC;
+						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
 						
@@ -215,7 +211,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						return;
 					} else
 					if (m == Fuseable.ASYNC) {
-						sourceMode = ASYNC;
+						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					} else {
 						try {
@@ -254,7 +250,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == ASYNC) {
+			if (sourceMode == Fuseable.ASYNC) {
 				trySchedule();
 				return;
 			}
@@ -303,39 +299,34 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 		}
 
-		@Override
-		public long requestedFromDownstream() {
-			return queue == null ? requested : (requested - queue.size());
-		}
-
 		void trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 			scheduler.accept(this);
 		}
-		
+
 		void runSync() {
 			int missed = 1;
-			
+
 			final Subscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
 			long e = produced;
 
 			for (;;) {
-				
+
 				long r = requested;
-				
+
 				while (e != r) {
 					T v;
-					
+
 					try {
 						v = q.poll();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						scheduler.accept(null);
-						
+
 						a.onError(ex);
 						return;
 					}
@@ -349,30 +340,30 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						a.onComplete();
 						return;
 					}
-					
+
 					a.onNext(v);
-					
+
 					e++;
 				}
-				
+
 				if (e == r) {
 					if (cancelled) {
 						scheduler.accept(null);
 						return;
 					}
-					
+
 					boolean empty;
-					
+
 					try {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						scheduler.accept(null);
-						
+
 						a.onError(ex);
 						return;
 					}
-					
+
 					if (empty) {
 						scheduler.accept(null);
 						a.onComplete();
@@ -392,23 +383,23 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				}
 			}
 		}
-		
+
 		void runAsync() {
 			int missed = 1;
-			
+
 			final Subscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
 			long e = produced;
 
 			for (;;) {
-				
+
 				long r = requested;
-				
+
 				while (e != r) {
 					boolean d = done;
 					T v;
-					
+
 					try {
 						v = q.poll();
 					} catch (Throwable ex) {
@@ -417,23 +408,23 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						s.cancel();
 						scheduler.accept(null);
 						q.clear();
-						
+
 						a.onError(ex);
 						return;
 					}
-					
+
 					boolean empty = v == null;
-					
+
 					if (checkTerminated(d, empty, a)) {
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					a.onNext(v);
-					
+
 					e++;
 					if (e == limit) {
 						if (r != Long.MAX_VALUE) {
@@ -443,7 +434,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						e = 0L;
 					}
 				}
-				
+
 				if (e == r) {
 					boolean d = done;
 					boolean empty;
@@ -455,7 +446,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						s.cancel();
 						scheduler.accept(null);
 						q.clear();
-						
+
 						a.onError(ex);
 						return;
 					}
@@ -464,7 +455,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						return;
 					}
 				}
-				
+
 				int w = wip;
 				if (missed == w) {
 					produced = e;
@@ -477,16 +468,16 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				}
 			}
 		}
-		
+
 		@Override
 		public void run() {
-			if (sourceMode == SYNC) {
+			if (sourceMode == Fuseable.SYNC) {
 				runSync();
 			} else {
 				runAsync();
 			}
 		}
-		
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
 				s.cancel();
@@ -513,7 +504,8 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						queue.clear();
 						a.onError(e);
 						return true;
-					} else 
+					}
+					else
 					if (empty) {
 						scheduler.accept(null);
 						a.onComplete();
@@ -521,8 +513,13 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 					}
 				}
 			}
-			
+
 			return false;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return queue == null ? prefetch : (prefetch - queue.size());
 		}
 
 		@Override
@@ -567,7 +564,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long expectedFromUpstream() {
-			return queue == null ? prefetch : (prefetch - queue.size());
+			return queue == null ? requested : (requested - queue.size());
 		}
 
 		@Override
@@ -624,10 +621,6 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		int sourceMode;
 		
-		static final int NORMAL = 0;
-		static final int SYNC = 1;
-		static final int ASYNC = 2;
-
 		long produced;
 		
 		long consumed;
@@ -658,11 +651,11 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
-					
-					int m = f.requestFusion(Fuseable.ANY);
+
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
 					if (m == Fuseable.SYNC) {
-						sourceMode = SYNC;
+						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
 						
@@ -670,7 +663,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						return;
 					} else
 					if (m == Fuseable.ASYNC) {
-						sourceMode = ASYNC;
+						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					} else {
 						try {
@@ -709,7 +702,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == ASYNC) {
+			if (sourceMode == Fuseable.ASYNC) {
 				trySchedule();
 				return;
 			}
@@ -931,7 +924,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		@Override
 		public void run() {
-			if (sourceMode == SYNC) {
+			if (sourceMode == Fuseable.SYNC) {
 				runSync();
 			} else {
 				runAsync();

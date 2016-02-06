@@ -29,13 +29,15 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver, Completable, Backpressurable {
+public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver, Runnable, Completable,
+                                                                        Backpressurable {
 
-	private final Consumer<? super T>         consumer;
-	private final Consumer<? super Throwable> errorConsumer;
-	private final Runnable              completeConsumer;
+	final Consumer<? super T>         consumer;
+	final Consumer<? super Throwable> errorConsumer;
+	final Runnable              completeConsumer;
 
-	private Subscription subscription;
+	Subscription subscription;
+	volatile Object barrier;
 
 	/**
 	 * Create a {@link Subscriber} to request  Long.MAX_VALUE onSubscribe.
@@ -76,6 +78,9 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver
 	public final void onSubscribe(Subscription s) {
 		if (BackpressureUtils.validate(subscription, s)) {
 			this.subscription = s;
+			if(consumer == null && errorConsumer == null && completeConsumer == null){
+				barrier = new Object();
+			}
 			try {
 				doSubscribe(s);
 			}
@@ -204,5 +209,11 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver
 	@Override
 	public boolean isTerminated() {
 		return false;
+	}
+
+	@Override
+	public void run() {
+		Object notifyBarrier = barrier;
+		cancel();
 	}
 }
