@@ -90,7 +90,7 @@ io.shutdown();
 
 ## Processors
 
-The 3 main processor implementations are message relays using 0 (EmitterProcessor) or N threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffers, that are optimized for low latency message passing.
+The 3 main processor implementations are message relays using 0 (EmitterProcessor) or N threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffer.
 
 ### Pub-Sub : EmitterProcessor
 
@@ -163,8 +163,7 @@ sink.finish();
 
 ## The Backpressure Thing
 
-```java
-```
+Most of this cool stuff uses bounded ring buffer implementation under the hood to mitigate signal processing difference between producers and consumers. Now, the operators and processors or any standard reactive stream component working on the sequence will be instructed to flow in when these buffers have free room AND only then. This means that we make sure we both have a deterministic capacity model (bounded buffer) and we never block (request more data on write capacity). Yup, it's not rocket science after all, the boring part is already being worked by us in collaboration with [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons) on going research effort.
 
 ## What's more in it ?
 
