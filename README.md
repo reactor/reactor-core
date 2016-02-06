@@ -86,6 +86,7 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
     )
     .subscribe();
 
+//... a little later
 async.forceShutdown()
      .subscribe(Runnable::run);
      
