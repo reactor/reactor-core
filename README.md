@@ -83,7 +83,7 @@ io.shutdown();
 
 The 3 main processor implementations are message relays using 0 (EmitterProcessor) or N threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffers, that are optimized for low latency message passing.
 
-### Sync Pub-Sub : EmitterProcessor
+### Pub-Sub : EmitterProcessor
 
 A signal broadcaster that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
@@ -144,7 +144,7 @@ SignalEmitter<String> sink = processor.startEmitter();
 
 Emission status = sink.emit("Non blocking and returning emission status");
 long latency = sink.submit("Blocking until emitted and returning latency");
-sink.onNext("Fail if overrun");
+sink.onNext("Throw if overrun");
 
 sink.finish();
 
