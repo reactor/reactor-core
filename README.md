@@ -55,6 +55,11 @@ Mono.fromCallable(System::currentTimeMillis)
     .or(Mono.delay(3))
     .otherwiseIfEmpty(Mono.just(errorHandler::fallback)
     .subscribe(Subscribers.consumer(System.out::println));
+    
+Tuple2<Long, Long> nowAndLater = Mono.when(
+                                        Mono.just(System.currentTimeMillis()),
+                                        Mono.delay(1).map(i -> System.currentTimeMillis()))
+                                    .get();
 ```
 
 ## Schedulers
