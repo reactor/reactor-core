@@ -59,9 +59,28 @@ Mono.fromCallable(System::currentTimeMillis)
 
 ## Processors
 
+A Reactive Stream Processor is a stateful asynchronous boundary that can support 1 or N Subscribers. In Reactor, the main processor implementations are message relays using "thread stealing" (EmitterProcessor) or dedicated threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffer, that are optimized for low latency message passing.
+
 ### Sync Pub-Sub : EmitterProcessor
 
+A signal broadcaster that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer. Since it uses a RingBuffer, it can offer an history capability for late Subscribers.
+
 ```java
+EmitterProcessor<Integer> emitter = EmitterProcessor.create();
+emitter.start();
+emitter.onNext(1);
+emitter.onNext(2);
+emitter.subscribe(Subscriber.consume(System.out::println));
+emitter.onNext(3); //output : 3
+emitter.onComplete();
+
+EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
+replayer.start();
+replayer.onNext(1);
+replayer.onNext(2);
+replayer.subscribe(Subscriber.consume(System.out::println)); //output 1, 2
+replayer.onNext(3); //output : 3
+replayer.onComplete();
 ```
 
 ### Async Pub-Sub : TopicProcessor
@@ -83,11 +102,11 @@ processor
     .doOnNext(System.out::println)
     .subscribe();
 
-SignalEmitter<String> emitter = processor.startEmitter();
-emitter.emit("Non blocking and returning emission status");
-emitter.submit("Blocking until emitted");
-emitter.onNext("Fail if overrun");
-emitter.finish();
+SignalEmitter<String> sink = processor.startEmitter();
+Emission status = sink.emit("Non blocking and returning emission status");
+long latency = sink.submit("Blocking until emitted and returning latency");
+sink.onNext("Fail if overrun");
+sink.finish();
 
 ```
 
