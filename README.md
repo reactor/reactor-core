@@ -82,7 +82,17 @@ Hint: it's not porn.
 
 ## Schedulers
 
+Create and Reuse scheduling resources over multiple Subscribers, with adapated strategies :
+
 ```java
+Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
+    .dispatchOn(SchedulerGroup.async())
+    .log("foo.bar")
+    .flatMap(time ->
+        Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
+            .publishOn(SchedulerGroup.io())
+    )
+    .subscribe();
 ```
 
 ## The Backpressure Thing
