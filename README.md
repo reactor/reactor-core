@@ -33,7 +33,7 @@ A Reactive Streams Publisher with basic Rx operators.
 
 Flux in action :
 ```java
-Flux.fromIterable(getSomeList())
+Flux.fromIterable(getSomeLongList())
     .mergeWith(Flux.interval(1))
     .doOnNext(serviceA::someObserver)
     .map(d -> d * 2)
