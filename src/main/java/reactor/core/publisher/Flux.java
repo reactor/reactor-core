@@ -49,8 +49,6 @@ import reactor.fn.tuple.Tuple3;
 import reactor.fn.tuple.Tuple4;
 import reactor.fn.tuple.Tuple5;
 import reactor.fn.tuple.Tuple6;
-import reactor.fn.tuple.Tuple7;
-import reactor.fn.tuple.Tuple8;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes
@@ -760,33 +758,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 *
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <V> The produced output after transformation by the combinator
-	 *
-	 * @return a zipped {@link Flux}
-	 */
-	public static <T1, T2, T3, V> Flux<V> zip(Publisher<? extends T1> source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Function<Tuple3<T1, T2, T3>, ? extends V> combinator) {
-		return zip(Tuple.fn3(combinator), source1, source2, source3);
-	}
-
-	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
@@ -804,36 +775,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3) {
 		return zip(Tuple.<T1, T2, T3>fn3(), source1, source2, source3);
-	}
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 *
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <V> The produced output after transformation by the combinator
-	 *
-	 * @return a {@link Flux} based on the produced value
-	 */
-	public static <T1, T2, T3, T4, V> Flux<V> zip(Publisher<? extends T1> source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Publisher<? extends T4> source4,
-			Function<Tuple4<T1, T2, T3, T4>, V> combinator) {
-		return zip(Tuple.fn4(combinator), source1, source2, source3, source4);
 	}
 
 	/**
@@ -860,37 +801,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <V> The produced output after transformation by the combinator
-	 *
-	 * @return a {@link Flux} based on the produced value
-	 */
-	public static <T1, T2, T3, T4, T5, V> Flux<V> zip(Publisher<? extends T1> source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Publisher<? extends T4> source4,
-			Publisher<? extends T5> source5,
-			Function<Tuple5<T1, T2, T3, T4, T5>, V> combinator) {
-		return zip(Tuple.fn5(combinator), source1, source2, source3, source4, source5);
-	}
-
-	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
@@ -913,41 +823,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5) {
 		return zip(Tuple.<T1, T2, T3, T4, T5>fn5(), source1, source2, source3, source4, source5);
-	}
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param source5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param source6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <V> The produced output after transformation by the combinator
-	 *
-	 * @return a {@link Flux} based on the produced value
-	 */
-	public static <T1, T2, T3, T4, T5, T6, V> Flux<V> zip(Publisher<? extends T1> source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Publisher<? extends T4> source4,
-			Publisher<? extends T5> source5,
-			Publisher<? extends T6> source6,
-			Function<Tuple6<T1, T2, T3, T4, T5, T6>, V> combinator) {
-		return zip(Tuple.fn6(combinator), source1, source2, source3, source4, source5, source6);
 	}
 
 	/**
@@ -977,86 +852,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6) {
 		return zip(Tuple.<T1, T2, T3, T4, T5, T6>fn6(), source1, source2, source3, source4, source5, source6);
-	}
-
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param source5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param source6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param source7 The seventh upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
-	 * @param <V> combined type
-	 */
-	public static <T1, T2, T3, T4, T5, T6, T7, V> Flux<V> zip(Publisher<? extends T1>
-			source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Publisher<? extends T4> source4,
-			Publisher<? extends T5> source5,
-			Publisher<? extends T6> source6,
-			Publisher<? extends T7> source7,
-			Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, V> combinator) {
-		return zip(Tuple.fn7(combinator), source1, source2, source3, source4, source5, source6, source7);
-	}
-
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator function of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
-	 * <p>
-	 * @param source1 The first upstream {@link Publisher} to subscribe to.
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param source3 The third upstream {@link Publisher} to subscribe to.
-	 * @param source4 The fourth upstream {@link Publisher} to subscribe to.
-	 * @param source5 The fifth upstream {@link Publisher} to subscribe to.
-	 * @param source6 The sixth upstream {@link Publisher} to subscribe to.
-	 * @param source7 The seventh upstream {@link Publisher} to subscribe to.
-	 * @param source8 The eigth upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
-	 * @param <T1> type of the value from source1
-	 * @param <T2> type of the value from source2
-	 * @param <T3> type of the value from source3
-	 * @param <T4> type of the value from source4
-	 * @param <T5> type of the value from source5
-	 * @param <T6> type of the value from source6
-	 * @param <T7> type of the value from source7
-	 * @param <T8> type of the value from source8
-	 * @param <V> combined type
-	 */
-	public static <T1, T2, T3, T4, T5, T6, T7, T8, V> Flux<V> zip(Publisher<? extends
-			T1>
-			source1,
-			Publisher<? extends T2> source2,
-			Publisher<? extends T3> source3,
-			Publisher<? extends T4> source4,
-			Publisher<? extends T5> source5,
-			Publisher<? extends T6> source6,
-			Publisher<? extends T7> source7,
-			Publisher<? extends T8> source8,
-			Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, V> combinator) {
-		return zip(Tuple.fn8(combinator), source1, source2, source3, source4, source5, source6, source7, source8);
 	}
 
 	/**
