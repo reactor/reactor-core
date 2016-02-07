@@ -116,6 +116,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		static final AtomicLongFieldUpdater<PublishOnPipeline> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(PublishOnPipeline.class, "requested");
 
+		volatile int wip;
+
+		static final AtomicIntegerFieldUpdater<PublishOnPipeline> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnPipeline.class, "wip");
+
 		public PublishOnPipeline(Subscriber<? super T> actual, Consumer<Runnable> scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
@@ -146,7 +151,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				if(BackpressureUtils.addAndGet(REQUESTED, this, n) == 0L){
+				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				if(WIP.getAndIncrement(this) == 0){
 					scheduler.accept(this);
 				}
 			}
@@ -154,14 +160,21 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public void run() {
-			long r = requested;
+			long r;
+			int missed = 1;
 			for(;;){
-				if(r != 0) {
+				r = REQUESTED.getAndSet(this, 0L);
+
+				if(r != 0L) {
 					super.request(r);
 				}
 
-				r = REQUESTED.getAndSet(this, 0L);
-				if(r == 0) {
+				if(r == Long.MAX_VALUE){
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if(missed == 0){
 					break;
 				}
 			}
