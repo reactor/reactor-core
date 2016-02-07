@@ -124,7 +124,7 @@ EmitterProcessor<Integer> emitter = EmitterProcessor.create();
 SignalEmitter<Integer> sink = emitter.startEmitter();
 sink.submit(1);
 sink.submit(2);
-emitter.subscribe(Subscriber.consume(System.out::println));
+emitter.subscribe(Subscribers.consumer(System.out::println));
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -134,7 +134,7 @@ EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
 SignalEmitter<Integer> sink = replayer.startEmitter();
 sink.submit(1);
 sink.submit(2);
-replayer.subscribe(Subscriber.consume(System.out::println)); //output 1, 2
+replayer.subscribe(Subscribers.consumer(System.out::println)); //output 1, 2
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -145,10 +145,10 @@ An asynchronous signal broadcaster dedicating a thread per subscriber and maxing
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
-topic.subscribe(Subscriber.consume(System.out::println));
+topic.subscribe(Subscribers.consumer(System.out::println));
 topic.onNext(1); //output : ...1
 topic.onNext(2); //output : ...2
-topic.subscribe(Subscriber.consume(System.out::println)); //output : ...1, 2
+topic.subscribe(Subscribers.consumer(System.out::println)); //output : ...1, 2
 topic.onNext(3); //output : ...3 ...3
 topic.onComplete();
 ```
@@ -159,8 +159,8 @@ Similar to TopicProcessor regarding thread per subscriber but this time exclusiv
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
-queue.subscribe(Subscriber.consume(System.out::println));
-queue.subscribe(Subscriber.consume(System.out::println));
+queue.subscribe(Subscribers.consumer(System.out::println));
+queue.subscribe(Subscribers.consumer(System.out::println));
 queue.onNext(1); //output : ...1
 queue.onNext(2); //output : .... ...2
 queue.onNext(3); //output : ...3 
