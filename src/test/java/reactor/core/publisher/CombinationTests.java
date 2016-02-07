@@ -405,7 +405,7 @@ public class CombinationTests {
 	}
 
 	@Test
-	public void mergeWithNoInterleave() {
+	public void mergeWithNoInterleave() throws Exception{
 		Flux.concat(emitter1.log("test1"), emitter2.log("test2")).log().subscribe(ts);
 		emitValues();
 		ts.assertValues(1L, 3L, 2L, 4L).assertComplete();
