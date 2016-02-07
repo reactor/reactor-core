@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -86,8 +87,9 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 			return;
 		}
-		
-		PublishOnClassic<T> parent = new PublishOnClassic<>(s, scheduler);
+
+		PublishOnPipeline<T> parent = new PublishOnPipeline<>(s, scheduler);
+		//FluxPublishOnPipeline<T> parent = new FluxPublishOnPipeline<>(s, scheduler);
 		s.onSubscribe(parent);
 		
 		scheduler.accept(new SourceSubscribeTask<>(parent, source));
@@ -103,43 +105,65 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		return null;
 	}
 
-	static final class PublishOnClassic<T>
-	extends DeferredSubscription implements Subscriber<T>, Producer, Loopback {
+	static final class PublishOnPipeline<T>
+			extends DeferredSubscription implements Subscriber<T>, Producer, Loopback, Runnable {
 		final Subscriber<? super T> actual;
-		
+
 		final Consumer<Runnable> scheduler;
 
-		public PublishOnClassic(Subscriber<? super T> actual, Consumer<Runnable> scheduler) {
+		volatile long requested;
+
+		static final AtomicLongFieldUpdater<PublishOnPipeline> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(PublishOnPipeline.class, "requested");
+
+		public PublishOnPipeline(Subscriber<? super T> actual, Consumer<Runnable> scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			set(s);
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			actual.onNext(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			scheduler.accept(null);
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			scheduler.accept(null);
 			actual.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				scheduler.accept(new RequestTask(n, this));
+				if(BackpressureUtils.addAndGet(REQUESTED, this, n) == 0L){
+					scheduler.accept(this);
+				}
+			}
+		}
+
+		@Override
+		public void run() {
+			long r = requested;
+			for(;;){
+				if(r != 0) {
+					super.request(r);
+				}
+
+				r = REQUESTED.getAndSet(this, 0L);
+				if(r == 0) {
+					break;
+				}
 			}
 		}
 
@@ -147,10 +171,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		public void cancel() {
 			super.cancel();
 			scheduler.accept(null);
-		}
-		
-		void requestInner(long n) {
-			super.request(n);
 		}
 
 		@Override
@@ -169,22 +189,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		}
 	}
 
-	static final class RequestTask implements Runnable {
-
-		final long n;
-		final PublishOnClassic<?> parent;
-
-		public RequestTask(long n, PublishOnClassic<?> parent) {
-			this.n = n;
-			this.parent = parent;
-		}
-
-		@Override
-		public void run() {
-			parent.requestInner(n);
-		}
-	}
-	
 	static final class ScheduledSubscriptionEagerCancel<T>
 			implements Subscription, Runnable, Producer, Loopback {
 
