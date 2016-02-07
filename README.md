@@ -14,14 +14,13 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
     repositories {
-      //maven { url 'http://repo.spring.io/libs-release' }
-      //maven { url 'http://repo.spring.io/libs-milestone' }
-      maven { url 'http://repo.spring.io/libs-snapshot' }
+      //maven { url 'http://repo.spring.io/snapshot' }
+      maven { url 'http://repo.spring.io/milestone' }
       mavenCentral()
     }
 
     dependencies {
-      compile "io.projectreactor:reactor-core:2.5.0.BUILD-SNAPSHOT"
+      compile "io.projectreactor:reactor-core:2.5.0.M1"
     }
 ```
 
