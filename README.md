@@ -141,7 +141,7 @@ sink.finish();
 
 ### Async Pub-Sub : TopicProcessor
 
-An asynchronous signal broadcaster dedicating a thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
+An asynchronous signal broadcaster dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
