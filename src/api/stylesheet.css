@@ -15,6 +15,10 @@ body {
     margin:0;
 }
 
+a.indexContainer {
+    color:#34302d;
+}
+
 a:link, a:visited {
     text-decoration:none;
     color:#6db33f;
