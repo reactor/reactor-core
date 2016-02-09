@@ -179,12 +179,6 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 "Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/core/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
-### More features ?
-
-- Level up to the extended scope of [Reactor Stream](http://github.com/reactor/reactor-stream) API.
-- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IO](http://github.com/reactor/reactor-io).
-- [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
-
 -------------------------------------
 ## Reference
 http://projectreactor.io/core/docs/reference/
@@ -194,6 +188,11 @@ http://projectreactor.io/core/docs/api/
 
 ## Getting started with Flux and Mono
 https://github.com/reactor/lite-rx-api-hands-on
+
+## Beyond Reactor Core
+- Complete with more Reactive Extensions from [Reactor Stream](http://github.com/reactor/reactor-stream) API.
+- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IO](http://github.com/reactor/reactor-io).
+- [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
 
 -------------------------------------
 _Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)_
