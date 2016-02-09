@@ -67,6 +67,22 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		if (batchSize > 10_000_000) {
 			return (Supplier<Queue<T>>) CLQ_SUPPLIER;
 		}
+		if (batchSize == PlatformDependent.XS_BUFFER_SIZE) {
+			if(waiting) {
+				return (Supplier<Queue<T>>) WAITING_XSRB_SUPPLIER;
+			}
+			else{
+				return (Supplier<Queue<T>>) XSRB_SUPPLIER;
+			}
+		}
+		if (batchSize == PlatformDependent.SMALL_BUFFER_SIZE) {
+			if(waiting) {
+				return (Supplier<Queue<T>>) WAITING_SMALLRB_SUPPLIER;
+			}
+			else{
+				return (Supplier<Queue<T>>) SMALLRB_SUPPLIER;
+			}
+		}
 		if (batchSize == 1 && !waiting) {
 			return (Supplier<Queue<T>>) ONE_SUPPLIER;
 		}

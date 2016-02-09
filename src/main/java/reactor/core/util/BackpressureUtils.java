@@ -434,10 +434,16 @@ public enum BackpressureUtils {
 	}
 
 	/**
-	 * Throw {@link reactor.core.util.Exceptions.DuplicateOnSubscribeException}
+	 * Log or Throw {@link reactor.core.util.Exceptions.DuplicateOnSubscribeException}
 	 */
 	public static void reportSubscriptionSet() {
-		throw Exceptions.duplicateOnSubscribeException();
+		if(!PlatformDependent.TRACE_CANCEL) {
+			Logger.getLogger(BackpressureUtils.class)
+			      .trace("Duplicate Subscription has been detected");
+		}
+		else {
+			throw Exceptions.duplicateOnSubscribeException();
+		}
 	}
 
 	/**

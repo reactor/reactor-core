@@ -888,12 +888,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
 			final Function<? super Object[], ? extends O> combinator) {
 
+		return zip(sources, PlatformDependent.XS_BUFFER_SIZE, combinator);
+	}
+
+	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+	 * produced by the passed combinator function of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 *
+	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
+	 *
+	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param prefetch the inner source request size
+	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+	 * to signal downstream
+	 * @param <O> the combined produced type
+	 *
+	 * @return a zipped {@link Flux}
+	 */
+	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
+			int prefetch,
+			final Function<? super Object[], ? extends O> combinator) {
+
 		if (sources == null) {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.xs(),
-				PlatformDependent.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
 	}
 
 	/**
@@ -914,13 +935,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	@SuppressWarnings("varargs")
 	public static <I, O> Flux<O> zip(
 			final Function<? super Object[], ? extends O> combinator, Publisher<? extends I>... sources) {
+		return zip(combinator, PlatformDependent.XS_BUFFER_SIZE, sources);
+	}
+	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+	 * produced by the passed combinator function of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
+	 * <p>
+	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the
+	 * value to signal downstream
+	 * @param prefetch individual source request size
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param <O> the combined produced type
+	 *
+	 * @return a zipped {@link Flux}
+	 */
+	@SafeVarargs
+	@SuppressWarnings("varargs")
+	public static <I, O> Flux<O> zip(
+			final Function<? super Object[], ? extends O> combinator, int prefetch, Publisher<? extends I>... sources) {
 
 		if (sources == null) {
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.xs(),
-				PlatformDependent.XS_BUFFER_SIZE);
+		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
 	}
 
 //	 ==============================================================================================================

@@ -93,7 +93,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * <pre>
 	 * {@code
 	 *  Processor<String, Integer> stringToInt =
-	 *      FluxProcessor.blackbox(input -> input.filter(String::isEmpty).map(Integer::parseString));
+	 *      FluxProcessor.blackbox(input -> input.map(Integer::parseString));
 	 * }
 	 *</pre>
 	 *
