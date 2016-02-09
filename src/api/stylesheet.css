@@ -15,7 +15,7 @@ body {
     margin:0;
 }
 
-a.indexContainer {
+.indexContainer a:link, a:visited{
     color:#34302d;
 }
 
