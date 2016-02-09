@@ -15,14 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.test.TestSubscriber;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -73,7 +73,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		// Waiting till publisher sends Complete into the processor
 		Thread.sleep(1000);
 
-		TestSubscriber<String> subscriber = TestSubscriber.createWithTimeoutSecs(1);
+		TestSubscriber<String> subscriber = TestSubscriber.generateTimeoutSecs(1);
 		processor.subscribe(subscriber);
 
 		subscriber.assertComplete();
