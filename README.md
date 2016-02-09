@@ -72,7 +72,7 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-Create and Reuse scheduling resources over multiple Subscribers with adapted concurrency strategy for producing flows (publishOn) or receiving flows (dispatchOn) :
+[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/reactor/core/publisher/SchedulerGroup.html) over multiple Subscribers with adapted concurrency strategy for producing flows (publishOn) or receiving flows (dispatchOn) :
 
 ```java
 SchedulerGroup async = SchedulerGroup.async();
@@ -94,7 +94,7 @@ async.forceShutdown()
 io.shutdown();
 ```
 ## Hot Publishing : SignalEmitter
-To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use SignalEmitter.create(Subscriber), the common FluxProcessor.startEmitter() or Flux.yield(emitter -> {}) :
+To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.startEmitter()](http://projectreactor.io/core/docs/api/reactor/core/publisher/FluxProcessor.html) or Flux.yield(emitter -> {}) :
 
 ```java
 Flux.yield(sink -> {
@@ -173,7 +173,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, TestSubscriber, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+"Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/reactor/core/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 ## More operators ?
 
