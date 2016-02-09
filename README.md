@@ -181,7 +181,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ### More operators ?
 
-Level up to expanded sequence operational scope with [Reactor Stream](http://github.com/reactor/reactor-stream).
+Level up to the extended scope of [Reactor Stream](http://github.com/reactor/reactor-stream) API.
 
 ### Crossing IO boundaries ?
 
