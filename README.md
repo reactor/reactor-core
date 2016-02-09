@@ -113,11 +113,11 @@ Flux.yield(sink -> {
 
 ## Processors
 
-The 3 main processor implementations are message relays using 0 (EmitterProcessor) or N threads (TopicProcessor and WorkQueueProcessor). They also use bounded and replayable buffers, aka RingBuffer.
+The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/core/docs/api/reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/core/docs/api/reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/core/docs/api/reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded and replayable buffers, aka RingBuffer.
 
 ### Pub-Sub : EmitterProcessor
 
-A signal broadcaster that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
+[A signal broadcaster](http://projectreactor.io/core/docs/api/reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
@@ -141,7 +141,7 @@ sink.finish();
 
 ### Async Pub-Sub : TopicProcessor
 
-An asynchronous signal broadcaster dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
+[An asynchronous signal broadcaster](http://projectreactor.io/core/docs/api/reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
@@ -155,7 +155,7 @@ topic.onComplete();
 
 ### Async Distributed : WorkQueueProcessor
 
-Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. WorkQueueProcessor is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
+Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](http://projectreactor.io/core/docs/api/reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
@@ -174,6 +174,10 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 ## What's more in it ?
 
 "Operator Fusion" (flow optimizers), health state observers, TestSubscriber, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+
+## More operators ?
+
+Level up to expanded sequence operational scope with [Reactor Stream](http://github.com/reactor/reactor-stream).
 
 ## Reference
 http://projectreactor.io/core/docs/reference/
