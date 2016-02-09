@@ -24,6 +24,10 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 ```
 
+## Start
+
+New to Reactive Programming or Bored of reading already ? Try the [Introduction to Reactor Rx Lite hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
+
 ## Flux
 
 A Reactive Streams Publisher with basic Rx operators. 
@@ -184,6 +188,9 @@ http://projectreactor.io/core/docs/reference/
 
 ## Javadoc
 http://projectreactor.io/core/docs/api/
+
+## Getting started with Flux and Mono
+https://github.com/reactor/lite-rx-api-hands-on
 
 -------------------------------------
 _Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)_
