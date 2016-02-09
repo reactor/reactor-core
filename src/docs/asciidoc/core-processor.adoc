@@ -60,7 +60,7 @@ To create a `TopicProcessor`, you use static `create` helper methods.
 [source,java]
 ----
 Processor<Integer, Integer> p = TopicProcessor.create("test", 32); // <1>
-Stream<Integer> s = Streams.from(p); // <2>
+Stream<Integer> s = Stream.from(p); // <2>
 
 s.consume(i -> System.out.println(Thread.currentThread() + " data=" + i)); // <3>
 s.consume(i -> System.out.println(Thread.currentThread() + " data=" + i)); // <4>
