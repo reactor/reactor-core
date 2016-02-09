@@ -4,14 +4,12 @@ Overall document style
 @import url('resources/fonts/dejavu.css');
 */
 
-@import url(https://fonts.googleapis.com/css?family=Montserrat:400,700|Karla:400,700);
-
-
 body {
     background-color:#ffffff;
     color:#353833;
     font-family: 'Source Sans Pro', sans-serif;
-    font-size:14px;
+    font-size:15px;
+    line-height: 22px;
     margin:0;
 }
 
@@ -95,10 +93,10 @@ Document title and Copyright styles
 }
 .aboutLanguage {
     float:right;
-    padding:0px 21px;
-    font-size:11px;
+    font-size:13px;
     z-index:200;
-    margin-top:-9px;
+    padding: 5px 21px;
+    color: rgba(255,255,255,.6);
 }
 .legalCopy {
     margin-left:.5em;
@@ -130,8 +128,9 @@ Navigation bar styles
 }
 h1.bar {
     line-height: 30px;
-    padding-top: 0;
-    padding-bottom: 0;
+    padding: 5px 8px;
+    text-transform: uppercase;
+    font-size: 12Px;
 }
 .topNav {
     background-color: #34302d;
@@ -140,8 +139,8 @@ h1.bar {
     padding:0;
     width:100%;
     clear:right;
-    height:2.8em;
     padding-top:10px;
+    padding-bottom:10px;
     overflow:hidden;
     font-size:12px;
 }
@@ -153,19 +152,18 @@ h1.bar {
     padding:0;
     width:100%;
     clear:right;
-    height:2.8em;
     padding-top:10px;
+    padding-bottom:10px;
     overflow:hidden;
     font-size:12px;
 }
 .subNav {
     background-color:#423e3c;
-    float:left;
-    width:100%;
     overflow:hidden;
     font-size:12px;
     color: white;
     font-weight: bold;
+    padding: 0 10px;
 }
 .subNav div {
     clear:left;
@@ -176,7 +174,7 @@ h1.bar {
 ul.navList, ul.subNavList {
     float:left;
     margin:0 25px 0 0;
-    padding:0;
+    padding:0 15px;
 }
 ul.navList li{
     list-style:none;
@@ -195,7 +193,7 @@ ul.subNavList li{
 }
 .topNav a:hover, .bottomNav a:hover {
     text-decoration:none;
-    color:#bb7a2a;
+    color:#6db33f;
     text-transform:uppercase;
 }
 .navBarCell1Rev {
@@ -215,7 +213,7 @@ Page header and footer styles
 */
 .header, .footer {
     clear:both;
-    margin:0 20px;
+    margin:0 40px;
     padding:5px 0 0 0;
 }
 .indexHeader {
@@ -231,6 +229,11 @@ Page header and footer styles
 .title {
     color:#34302d;
     margin:10px 0;
+
+}
+
+.header h1.title {
+    padding-top: 20px;
 }
 .subTitle {
     margin:5px 0 0 0;
@@ -250,14 +253,14 @@ Page header and footer styles
 Heading styles
 */
 div.details ul.blockList ul.blockList ul.blockList li.blockList h4, div.details ul.blockList ul.blockList ul.blockListLast li.blockList h4 {
-    background-color:#f1f1f1;
-    border:1px solid #d0d9e0;
+    background-color:#EEE;
+    /*border:1px solid #d0d9e0;*/
     margin:0 0 6px -8px;
     padding:7px 5px;
 }
 ul.blockList ul.blockList ul.blockList li.blockList h3 {
     background-color:#f1f1f1;
-    border:1px solid #d0d9e0;
+    /*border:1px solid #d0d9e0;*/
     margin:0 0 6px -8px;
     padding:7px 5px;
 }
@@ -273,7 +276,7 @@ Page layout container styles
 */
 .contentContainer, .sourceContainer, .classUseContainer, .serializedFormContainer, .constantValuesContainer {
     clear:both;
-    padding:10px 20px;
+    padding:10px 40px;
     position:relative;
 }
 .indexContainer {
@@ -284,6 +287,7 @@ Page layout container styles
 .indexContainer h2 {
     font-size:13px;
     padding:0 0 3px 0;
+    margin: 0;
 }
 .indexContainer ul {
     margin:0;
@@ -293,15 +297,22 @@ Page layout container styles
     list-style:none;
     padding-top:2px;
 }
+.indexContainer ul li a {
+    color: #353833;
+    font-size: 14px;
+}
+.indexContainer ul li a:hover {
+    color: #6db33f;
+}
 .contentContainer .description dl dt, .contentContainer .details dl dt, .serializedFormContainer dl dt {
-    font-size:12px;
+    font-size:14px;
     font-weight:bold;
     margin:10px 0 0 0;
     color:#4E4E4E;
 }
 .contentContainer .description dl dd, .contentContainer .details dl dd, .serializedFormContainer dl dd {
     margin:5px 0 10px 0px;
-    font-size:14px;
+    font-size:15px;
     font-family: 'Source Sans Pro', sans-serif;
 }
 .serializedFormContainer dl.nameValue dt {
@@ -417,7 +428,6 @@ Table styles
     float:left;
     background-color:#6db33f;
     border: none;
-    height:16px;
     color: white;
 }
 .memberSummary caption span.activeTableTab span {
@@ -429,20 +439,22 @@ Table styles
     display:inline-block;
     float:left;
     background-color:#6db33f;
-    height:16px;
     color: white;
+    font-size: 13px;
 }
 .memberSummary caption span.tableTab span {
     white-space:nowrap;
-    padding-top:5px;
-    padding-left:12px;
-    padding-right:12px;
+    padding: 5px 12px;
     margin-right:3px;
     display:inline-block;
     float:left;
-    background-color:#423e3c;
-    height:16px;
+    background-color:#e0e0e0;
 }
+.memberSummary caption span.tableTab span a {
+    color: #353833;
+    font-size: 13px;
+}
+
 .memberSummary caption span.tableTab, .memberSummary caption span.activeTableTab {
     padding-top:0px;
     padding-left:0px;
@@ -525,7 +537,7 @@ td.colOne a:link, td.colOne a:active, td.colOne a:visited, td.colOne a:hover, td
     background-color:#FFFFFF;
 }
 .rowColor {
-    background-color:#EEEEEF;
+    background-color:#F1F1F1;
 }
 /*
 Content styles
@@ -546,7 +558,7 @@ ul.blockList ul.blockList ul.blockList li.blockList h3 {
 }
 
 div.block {
-    font-size:14px;
+    font-size:15px;
     font-family:'Source Sans Pro', sans-serif;
 }
 
@@ -591,4 +603,15 @@ div.block div.block span.interfaceName {
 
 div.contentContainer ul.blockList li.blockList h2{
     padding-bottom:0px;
+}
+
+hr {
+    display: block;
+    -webkit-margin-before: 0.5em;
+    -webkit-margin-after: 0.5em;
+    -webkit-margin-start: auto;
+    -webkit-margin-end: auto;
+    border-style: inset;
+    border-width: 0;
+    border-bottom: 1px solid #d0d9e0;
 }
