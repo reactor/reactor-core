@@ -15,7 +15,7 @@ body {
     margin:0;
 }
 
-.indexContainer a:link, a:visited{
+.indexContainer ul li a:link, .indexContainer ul li a:visited{
     color:#34302d;
 }
 
