@@ -187,6 +187,10 @@ Level up to the extended scope of [Reactor Stream](http://github.com/reactor/rea
 
 Everything to jump outside the JVM with the non-blocking drivers from [Reactor IO](http://github.com/reactor/reactor-io).
 
+### More features ?
+
+[Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_, _Pipes_  and a handful of extra reactive modules.
+
 ## Reference
 http://projectreactor.io/core/docs/reference/
 
