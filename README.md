@@ -24,9 +24,9 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 ```
 
-## Start
+## Getting Started
 
-New to Reactive Programming or Bored of reading already ? Try the [Introduction to Reactor Rx Lite hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
+New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Rx Lite hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
 
 ## Flux
 
