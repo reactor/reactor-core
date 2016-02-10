@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core.publisher.scenarios;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,10 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.SchedulerGroup;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.BackpressureUtils;
 

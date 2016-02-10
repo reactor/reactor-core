@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core.publisher.tck;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Assert;

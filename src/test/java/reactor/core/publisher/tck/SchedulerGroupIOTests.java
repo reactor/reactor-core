@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
+package reactor.core.publisher.tck;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.SchedulerGroup;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.fn.Consumer;

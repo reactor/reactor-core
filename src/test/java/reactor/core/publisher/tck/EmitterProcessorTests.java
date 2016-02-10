@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
+package reactor.core.publisher.tck;
 
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Processor;
 import org.testng.annotations.AfterClass;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.FluxProcessor;
 
 /**
  * @author Stephane Maldini

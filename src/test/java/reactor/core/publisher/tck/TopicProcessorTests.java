@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
+package reactor.core.publisher.tck;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +22,10 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.publisher.ExecutorProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.TopicProcessor;
 import reactor.core.test.TestSubscriber;
 
 import static org.junit.Assert.assertFalse;

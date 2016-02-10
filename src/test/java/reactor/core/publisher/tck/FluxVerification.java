@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core.publisher.tck;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Stephane Maldini

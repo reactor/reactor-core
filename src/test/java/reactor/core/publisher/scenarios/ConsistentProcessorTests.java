@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
+package reactor.core.publisher.scenarios;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +33,8 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.timer.Timer;
 
 import static org.hamcrest.Matchers.is;

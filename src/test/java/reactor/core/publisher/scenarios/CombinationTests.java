@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core.publisher.scenarios;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +27,12 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.SchedulerGroup;
+import reactor.core.publisher.TopicProcessor;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
@@ -375,7 +381,7 @@ public class CombinationTests {
 		}
 	}
 
-	TestSubscriber<Long> ts;
+	TestSubscriber<Long>   ts;
 	EmitterProcessor<Long> emitter1;
 	EmitterProcessor<Long> emitter2;
 
