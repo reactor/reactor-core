@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.Objects;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
@@ -52,7 +54,7 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 	}
 
 	protected MonoSource(Publisher<? extends I> source) {
-		this.source = source;
+		this.source = Objects.requireNonNull(source);
 	}
 
 	/**

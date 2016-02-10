@@ -13,23 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
+package reactor.core.converter;
+
+import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
+import org.testng.SkipException;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import reactor.core.converter.DependencyUtils;
-import rx.Single;
+import reactor.core.timer.Timer;
 
 /**
  * @author Stephane Maldini
  */
 @Test
-public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
+public class Jdk9PublisherTests extends PublisherVerification<Long> {
 
-	public RxJavaSinglePublisherTests() {
+	public Jdk9PublisherTests() {
 		super(new TestEnvironment(500, true), 1000);
+	}
+
+	@BeforeTest
+	public void before(){
+		Timer.global();
 	}
 
 	@org.junit.Test
@@ -45,12 +54,24 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return (Publisher<Long>)DependencyUtils.convertToPublisher(Single.just(0));
+		if(!DependencyUtils.hasFlowPublisher()){
+			throw new SkipException("no jdk 9 classes found");
+		}
+
+		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
+		Timer.global().schedule(pub::submit, 50, TimeUnit.MILLISECONDS);
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return (Publisher<Long>) DependencyUtils.convertToPublisher(Single.error(new Exception("single-test")));
+		if(!DependencyUtils.hasFlowPublisher()){
+			throw new SkipException("no jdk 9 classes found");
+		}
+
+		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
+		pub.closeExceptionally(new Exception("jdk9-test"));
+		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 }

@@ -51,7 +51,7 @@ import reactor.fn.Supplier;
  * {@code
  * TestSubscriber<String> ts = new TestSubscriber<>();
  * Publisher<String> publisher = new FooPublisher<>();
- * ts.bindTo(publisher).assertValue("ABC", "DEF").assertComplete();
+ * ts.bindTo(publisher).assertValues("ABC", "DEF").assertComplete();
  * }
  * </pre>
  *
