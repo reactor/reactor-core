@@ -1096,12 +1096,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> schedulers) {
-		return dispatchOn(this, schedulers, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
+	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return dispatchOn(this, scheduler, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
 	}
 
 	/**
