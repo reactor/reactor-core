@@ -92,11 +92,19 @@ Document title and Copyright styles
     overflow:hidden;
 }
 .aboutLanguage {
-    float:right;
+    /*float:right;
     font-size:13px;
     z-index:200;
     padding: 5px 21px;
-    color: rgba(255,255,255,.6);
+    color: rgba(255,255,255,.6);*/
+    position: absolute;
+    right: 2px;
+    top: 10px;
+    background: url(http://projectreactor.io/assets/img/logo-2x.png) no-repeat 0 -30px;
+    background-size: 189px 60px;
+    height: 40px;
+    width: 44px;
+    text-indent: -6000em;
 }
 .legalCopy {
     margin-left:.5em;
@@ -133,6 +141,7 @@ h1.bar {
     font-size: 12Px;
 }
 .topNav {
+    position: relative;
     background-color: #34302d;
     color:#FFFFFF;
     float:left;
@@ -145,6 +154,7 @@ h1.bar {
     font-size:12px;
 }
 .bottomNav {
+    position: relative;
     margin-top:10px;
     background-color:#34302d;
     color:#FFFFFF;
