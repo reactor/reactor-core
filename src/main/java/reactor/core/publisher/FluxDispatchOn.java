@@ -113,6 +113,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		}
 		
 		if (s instanceof Fuseable.ConditionalSubscriber) {
+			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super T> cs = (Fuseable.ConditionalSubscriber<? super T>) s;
 			source.subscribe(new DispatchOnConditionalSubscriber<>(cs, scheduler, delayError, prefetch, queueSupplier));
 			return;
@@ -564,7 +565,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public long expectedFromUpstream() {
-			return queue == null ? requested : (requested - queue.size());
+			return queue == null ? prefetch : (prefetch - queue.size());
 		}
 
 		@Override

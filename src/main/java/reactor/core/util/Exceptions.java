@@ -241,7 +241,9 @@ public enum Exceptions {
 	 * @param t the dropping data
 	 */
 	public static <T> void onNextDropped(T t) {
-		failWithCancel();
+		if(t != null) {
+			failWithCancel();
+		}
 	}
 
 	/**
