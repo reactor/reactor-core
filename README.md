@@ -8,8 +8,9 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 (http://reactivex.io) API and efficient message-passing support.
 
 ## Getting it
-- Snapshot : **2.5.0.BUILD-SNAPSHOT**  ( Java 7+ required )
-- Latest Release : ![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg) ( Java 7+ required )
+- 2.5 requires Java 7 or + to run
+- Latest Release : ![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)
+- Snapshot : **2.5.0.BUILD-SNAPSHOT**
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
