@@ -9,7 +9,7 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 
 ## Getting it
 - Snapshot : **2.5.0.BUILD-SNAPSHOT**  ( Java 7+ required )
-- Latest Release : [![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg)] **2.5.0.M1**  ( Java 7+ required )
+- Latest Release : ![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg) ( Java 7+ required )
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy
