@@ -9,7 +9,8 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 
 ## Getting it
 - 2.5 requires Java 7 or + to run
-- Latest Release : [![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core)
+[![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core)
+
 - Snapshot : **2.5.0.BUILD-SNAPSHOT**
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
@@ -22,6 +23,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
     dependencies {
       compile "io.projectreactor:reactor-core:2.5.0.M1"
+      //compile "io.projectreactor:reactor-core:2.5.0.BUILD-SNAPSHOT"
     }
 ```
 
