@@ -116,7 +116,7 @@ Flux.yield(sink -> {
 
 ```
 
-## Processors
+## Hot Publishing : Processors
 
 The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded and replayable buffers, aka RingBuffer.
 
