@@ -22,7 +22,7 @@ configure(rootProject) {
 		group = "Reactor Core Javadoc"
 
 		description = "Generates aggregated Javadoc API documentation."
-		title = "${rootProject.name} ${version} API"
+		title = "Reactor Core ${version} API"
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			compileTestJava.options.compilerArgs += "-parameters"
@@ -33,7 +33,7 @@ configure(rootProject) {
 
 		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
 		options.author = true
-		options.header = rootProject.name
+		options.header = "Reactor Core"
 		options.overview = "src/api/overview.html"
 		options.stylesheetFile = file("src/api/stylesheet.css")
 		options.links(rootProject.ext.javadocLinks)
