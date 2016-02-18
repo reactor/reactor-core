@@ -565,13 +565,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} will emit at most one result in the
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
 	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 * <p>
-	 * @return a new {@link Mono}
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return MonoSource.wrap(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
