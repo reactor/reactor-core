@@ -878,6 +878,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
 	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
+	 *
 	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
 	 * to signal downstream
@@ -897,6 +900,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 *
 	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
 	 *
 	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param prefetch the inner source request size
