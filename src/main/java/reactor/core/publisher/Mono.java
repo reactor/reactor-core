@@ -232,7 +232,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return the next item emitted as a {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Mono<T> from(Publisher<? extends T> source) {
+	public static <T> Mono<T> from(Publisher<T> source) {
 		if (source == null) {
 			return empty();
 		}
