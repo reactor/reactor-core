@@ -424,7 +424,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 
 
 	/**
-	 * Create a {@link Publisher} reacting on requests with the passed {@link BiConsumer}. The argument {@code
+	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}. The argument {@code
 	 * contextFactory} is executed once by new subscriber to generate a context shared by every request calls. The
 	 * argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel, onComplete,
 	 * onError).
@@ -683,13 +683,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param source a {@link Publisher} source to publish from the given scheduler
-	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulerFactory a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
 	public static <T> Flux<T> publishOn(Publisher<? extends T> source,
-			Callable<? extends Consumer<Runnable>> schedulers) {
-		return new FluxPublishOn<>(source, schedulers);
+			Callable<? extends Consumer<Runnable>> schedulerFactory) {
+		return new FluxPublishOn<>(source, schedulerFactory);
 	}
 
 
@@ -769,6 +769,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T1> type of the value from source1
 	 * @param <T2> type of the value from source2
 	 * @param <T3> type of the value from source3
+	 *
+	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
@@ -791,6 +793,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T2> type of the value from source2
 	 * @param <T3> type of the value from source3
 	 * @param <T4> type of the value from source4
+	 *
+	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4> Flux<Tuple4<T1, T2, T3, T4>> zip(Publisher<? extends T1> source1,
@@ -815,6 +819,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T3> type of the value from source3
 	 * @param <T4> type of the value from source4
 	 * @param <T5> type of the value from source5
+	 *
+	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5> Flux<Tuple5<T1, T2, T3, T4, T5>> zip(Publisher<? extends T1> source1,
@@ -843,6 +849,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @param <T4> type of the value from source4
 	 * @param <T5> type of the value from source5
 	 * @param <T6> type of the value from source6
+	 *
+	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5, T6> Flux<Tuple6<T1, T2, T3, T4, T5, T6>> zip(Publisher<? extends T1> source1,
@@ -1425,21 +1433,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param schedulers a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param schedulerFactory a checked factory for {@link Consumer} of {@link Runnable}
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
-	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> schedulers) {
-		return publishOn(this, schedulers);
+	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> schedulerFactory) {
+		return publishOn(this, schedulerFactory);
 	}
 
 	/**
 	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
-	 *
-	 * @param fallback the alternate {@link Publisher}
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
 	 * <p>
+	 *
+	 * @param fallback the alternate {@link Publisher}
+	 *
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
