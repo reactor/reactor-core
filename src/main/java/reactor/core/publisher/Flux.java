@@ -314,8 +314,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * The backpressure will apply using the provided bufferSize which will actively consume each sequence (and the
 	 * main one) and replenish its request cycle on a threshold free capacity.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
-	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
 	 * @param source the source to flatten
 	 * @param mapper the function to transform the upstream sequence into N sub-sequences
 	 * @param concurrency the maximum alive transformations at a given time
