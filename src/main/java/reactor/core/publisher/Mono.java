@@ -993,7 +993,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param other the racing other {@link Mono} to compete with for the result
 	 *
-	 * @return a new Mono
+	 * @return a new {@link Mono}
 	 * @see #any
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
@@ -1008,7 +1008,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param fallback the function to map an alternative {@link Mono}
 	 *
-	 * @return a new {@link Mono}
+	 * @return an alternating {@link Mono} on source onError
 	 *
 	 * @see Flux#onErrorResumeWith
 	 */
@@ -1024,7 +1024,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param alternate the alternate mono if this mono is empty
 	 *
-	 * @return a new {@link Mono}
+	 * @return an alternating {@link Mono} on source onComplete without elements
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {

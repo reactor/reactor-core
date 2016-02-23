@@ -1451,7 +1451,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @param fallback the alternate {@link Publisher}
 	 *
-	 * @return a new {@link Flux}
+	 * @return an alternating {@link Flux} on source onError
 	 */
 	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
 		return onErrorResumeWith(FluxResume.create(fallback));
@@ -1464,7 +1464,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * <p>
 	 * @param alternate the alternate publisher if this sequence is empty
 	 *
-	 * @return a new {@link Flux}
+	 * @return an alternating {@link Flux} on source onComplete without elements
 	 */
 	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
 		return new FluxSwitchIfEmpty<>(this, alternate);
