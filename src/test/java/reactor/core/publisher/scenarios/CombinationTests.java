@@ -77,7 +77,7 @@ public class CombinationTests {
 	public void testMerge1ToN() throws Exception {
 		final int n = 1000;
 
-		Stream<Integer> stream = Flux.merge(Flux.map(Flux.just(1), i -> Streams.range(0, n)));
+		Fluxion<Integer> stream = Flux.merge(Flux.map(Flux.just(1), i -> Fluxion.range(0, n)));
 
 		final CountDownLatch latch = new CountDownLatch(n);
 		awaitLatch(stream.consume(integer -> latch.countDown()), latch);
