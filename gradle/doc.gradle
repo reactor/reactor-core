@@ -22,7 +22,7 @@ configure(rootProject) {
 		group = "Reactor Core Javadoc"
 
 		description = "Generates aggregated Javadoc API documentation."
-		title = "Reactor Core ${version} API"
+		title = "Reactor Core 2.5.0.M1 API"
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			compileTestJava.options.compilerArgs += "-parameters"
