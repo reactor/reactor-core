@@ -150,6 +150,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * subscriber.
 	 *
 	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
+	 *
+	 * @return this {@link FluxProcessor}
 	 */
 	public FluxProcessor<IN, OUT> start() {
 		onSubscribe(EmptySubscription.INSTANCE);
