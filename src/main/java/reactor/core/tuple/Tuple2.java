@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.fn.tuple;
+package reactor.core.tuple;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -22,35 +22,31 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds six values
+ * A tuple that holds two values
  *
  * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
- * @param <T4> The type of the fourth value held by this tuple
- * @param <T5> The type of the fifth value held by this tuple
- * @param <T6> The type of the sixth value held by this tuple
+ * @param <T2> The type of the second balue held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
+public class Tuple2<T1, T2> extends Tuple1<T1> {
 
-	private static final long serialVersionUID = -4214053259792235250L;
+	private static final long serialVersionUID = -565933838909569191L;
 
-	public final T6 t6;
+	public final T2 t2;
 
-	Tuple6(int size, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6) {
-		super(size, t1, t2, t3, t4, t5);
-		this.t6 = t6;
+	Tuple2(int size, T1 t1, T2 t2) {
+		super(size, t1);
+		this.t2 = t2;
 	}
 
 	/**
-	 * Type-safe way to get the sixth object of this {@link Tuple}.
+	 * Type-safe way to get the second object of this {@link Tuple}.
 	 *
-	 * @return The sixth object
+	 * @return The second object
 	 */
-	public T6 getT6() {
-		return t6;
+	public T2 getT2() {
+		return t2;
 	}
 
 	@Nullable
@@ -61,14 +57,6 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 				return t1;
 			case 1:
 				return t2;
-			case 2:
-				return t3;
-			case 3:
-				return t4;
-			case 4:
-				return t5;
-			case 5:
-				return t6;
 			default:
 				return null;
 		}
@@ -76,37 +64,37 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 
 	@Override
 	public Object[] toArray() {
-		return new Object[]{t1, t2, t3, t4, t5, t6};
+		return new Object[]{t1, t2};
 	}
 
 	@Nonnull
 	@Override
 	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3, t4, t5, t6).iterator();
+		return Arrays.asList(t1, t2).iterator();
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof Tuple6)) return false;
+		if (!(o instanceof Tuple2)) return false;
 		if (!super.equals(o)) return false;
 
-		Tuple6 tuple6 = (Tuple6) o;
+		Tuple2 tuple2 = (Tuple2) o;
 
-		return t6 != null ? t6.equals(tuple6.t6) : tuple6.t6 == null;
+		return t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t6 != null ? t6.hashCode() : 0);
+		result = 31 * result + (t2 != null ? t2.hashCode() : 0);
 		return result;
 	}
 
 	@Override
 	public String toString() {
 		return super.toString() +
-		  (t6 != null ? "," + t6.toString() : "");
+		  (t2 != null ? "," + t2.toString() : "");
 	}
 }

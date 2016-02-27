@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.fn.tuple;
+package reactor.core.tuple;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -22,37 +22,34 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds eight values
+ * A tuple that holds five values
  *
  * @param <T1> The type of the first value held by this tuple
  * @param <T2> The type of the second value held by this tuple
  * @param <T3> The type of the third value held by this tuple
  * @param <T4> The type of the fourth value held by this tuple
  * @param <T5> The type of the fifth value held by this tuple
- * @param <T6> The type of the sixth value held by this tuple
- * @param <T7> The type of the seventh value held by this tuple
- * @param <T8> The type of the eighth value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple7<T1, T2, T3, T4, T5, T6, T7> {
+public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 
-	private static final long serialVersionUID = 3070436338779769189L;
+	private static final long serialVersionUID = -5866370282498275773L;
 
-	public final T8 t8;
+	public final T5 t5;
 
-	Tuple8(int size, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
-		super(size, t1, t2, t3, t4, t5, t6, t7);
-		this.t8 = t8;
+	Tuple5(int size, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
+		super(size, t1, t2, t3, t4);
+		this.t5 = t5;
 	}
 
 	/**
-	 * Type-safe way to get the eighth object of this {@link Tuple}.
+	 * Type-safe way to get the fifth object of this {@link Tuple}.
 	 *
-	 * @return The eighth object
+	 * @return The fifth object
 	 */
-	public T8 getT8() {
-		return t8;
+	public T5 getT5() {
+		return t5;
 	}
 
 	@Nullable
@@ -69,12 +66,6 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple7<T1, T2, T3, T
 				return t4;
 			case 4:
 				return t5;
-			case 5:
-				return t6;
-			case 6:
-				return t7;
-			case 7:
-				return t8;
 			default:
 				return null;
 		}
@@ -82,37 +73,38 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple7<T1, T2, T3, T
 
 	@Override
 	public Object[] toArray() {
-		return new Object[]{t1, t2, t3, t4, t5, t6, t7, t8};
+		return new Object[]{t1, t2, t3, t4, t5};
 	}
 
 	@Nonnull
 	@Override
 	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3, t4, t5, t6, t7, t8).iterator();
+		return Arrays.asList(t1, t2, t3, t4, t5).iterator();
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof Tuple8)) return false;
+		if (!(o instanceof Tuple5)) return false;
 		if (!super.equals(o)) return false;
 
-		Tuple8 tuple8 = (Tuple8) o;
+		Tuple5 tuple5 = (Tuple5) o;
 
-		return t8 != null ? t8.equals(tuple8.t8) : tuple8.t8 == null;
+		return t5 != null ? t5.equals(tuple5.t5) : tuple5.t5 == null;
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t8 != null ? t8.hashCode() : 0);
+		result = 31 * result + (t5 != null ? t5.hashCode() : 0);
 		return result;
 	}
+
 
 	@Override
 	public String toString() {
 		return super.toString() +
-		  (t8 != null ? "," + t8.toString() : "");
+		  (t5 != null ? "," + t5.toString() : "");
 	}
 }

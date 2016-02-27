@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.fn.tuple;
+package reactor.core.tuple;
 
 import java.io.Serializable;
 import java.util.Arrays;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.fn.tuple;
+package reactor.core.tuple;
 
 import java.util.Arrays;
 import java.util.Iterator;

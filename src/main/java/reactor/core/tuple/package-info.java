@@ -15,6 +15,6 @@
  */
 
 /**
- * {@link reactor.fn.tuple.Tuple Tuples} provide a type-safe way to specify multiple parameters.
+ * {@link reactor.core.tuple.Tuple Tuples} provide a type-safe way to specify multiple parameters.
  */
-package reactor.fn.tuple;
+package reactor.core.tuple;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.fn.tuple;
+package reactor.core.tuple;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -22,85 +22,70 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds four values
+ * A tuple that holds a single value
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
- * @param <T4> The type of the fourth value held by this tuple
+ * @param <T1> The type held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
+public class Tuple1<T1> extends Tuple {
 
-	private static final long serialVersionUID = 8075447176142642390L;
+	private static final long serialVersionUID = -1467756857377152573L;
 
-	public final T4 t4;
+	public final T1 t1;
 
-	Tuple4(int size, T1 t1, T2 t2, T3 t3, T4 t4) {
-		super(size, t1, t2, t3);
-		this.t4 = t4;
+	Tuple1(int size, T1 t1) {
+		super(size);
+		this.t1 = t1;
 	}
 
 	/**
-	 * Type-safe way to get the fourth object of this {@link Tuple}.
+	 * Type-safe way to get the first object of this {@link Tuple}.
 	 *
-	 * @return The fourth object
+	 * @return The first object
 	 */
-	public T4 getT4() {
-		return t4;
+	public T1 getT1() {
+		return t1;
 	}
 
 	@Nullable
 	@Override
 	public Object get(int index) {
-		switch (index) {
-			case 0:
-				return t1;
-			case 1:
-				return t2;
-			case 2:
-				return t3;
-			case 3:
-				return t4;
-			default:
-				return null;
-		}
+		return index == 0 ? t1 : null;
 	}
 
 	@Override
 	public Object[] toArray() {
-		return new Object[]{t1, t2, t3, t4};
+		return new Object[]{t1};
 	}
 
 	@Nonnull
 	@Override
 	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3, t4).iterator();
+		return Arrays.asList(t1).iterator();
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof Tuple4)) return false;
+		if (!(o instanceof Tuple1)) return false;
 		if (!super.equals(o)) return false;
 
-		Tuple4 tuple4 = (Tuple4) o;
+		Tuple1 tuple1 = (Tuple1) o;
 
-		return t4 != null ? t4.equals(tuple4.t4) : tuple4.t4 == null;
+		return t1 != null ? t1.equals(tuple1.t1) : tuple1.t1 == null;
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t4 != null ? t4.hashCode() : 0);
+		result = 31 * result + (t1 != null ? t1.hashCode() : 0);
 		return result;
 	}
 
 	@Override
 	public String toString() {
-		return super.toString() +
-		  (t4 != null ? "," + t4.toString() : "");
+		return t1 != null ? t1.toString() : "";
 	}
 }

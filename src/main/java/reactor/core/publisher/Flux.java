@@ -43,12 +43,12 @@ import reactor.fn.BiFunction;
 import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.fn.Supplier;
-import reactor.fn.tuple.Tuple;
-import reactor.fn.tuple.Tuple2;
-import reactor.fn.tuple.Tuple3;
-import reactor.fn.tuple.Tuple4;
-import reactor.fn.tuple.Tuple5;
-import reactor.fn.tuple.Tuple6;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
+import reactor.core.tuple.Tuple3;
+import reactor.core.tuple.Tuple4;
+import reactor.core.tuple.Tuple5;
+import reactor.core.tuple.Tuple6;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes
