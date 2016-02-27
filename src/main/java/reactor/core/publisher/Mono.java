@@ -1132,12 +1132,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final <T1, T2> Mono<Tuple2<T1, T2>> then(
 			final Function<? super T, ? extends Mono<? extends T1>> fn1,
 			final Function<? super T, ? extends Mono<? extends T2>> fn2) {
-		return then(new Function<T, Mono<? extends Tuple2<T1, T2>>>() {
-			@Override
-			public Mono<? extends Tuple2<T1, T2>> apply(T o) {
-				return when(fn1.apply(o), fn2.apply(o));
-			}
-		});
+		return then(o -> when(fn1.apply(o), fn2.apply(o)));
 	}
 
 	/**
@@ -1160,12 +1155,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			final Function<? super T, ? extends Mono<? extends T1>> fn1,
 			final Function<? super T, ? extends Mono<? extends T2>> fn2,
 			final Function<? super T, ? extends Mono<? extends T3>> fn3) {
-		return then(new Function<T, Mono<? extends Tuple3<T1, T2, T3>>>() {
-			@Override
-			public Mono<? extends Tuple3<T1, T2, T3>> apply(T o) {
-				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o));
-			}
-		});
+		return then(o -> when(fn1.apply(o), fn2.apply(o), fn3.apply(o)));
 	}
 
 	/**
@@ -1193,12 +1183,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			final Function<? super T, ? extends Mono<? extends T2>> fn2,
 			final Function<? super T, ? extends Mono<? extends T3>> fn3,
 			final Function<? super T, ? extends Mono<? extends T4>> fn4) {
-		return then(new Function<T, Mono<? extends Tuple4<T1, T2, T3, T4>>>() {
-			@Override
-			public Mono<? extends Tuple4<T1, T2, T3, T4>> apply(T o) {
-				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o));
-			}
-		});
+		return then(o -> when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o)));
 	}
 
 	/**
@@ -1228,12 +1213,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			final Function<? super T, ? extends Mono<? extends T3>> fn3,
 			final Function<? super T, ? extends Mono<? extends T4>> fn4,
 			final Function<? super T, ? extends Mono<? extends T5>> fn5) {
-		return then(new Function<T, Mono<? extends Tuple5<T1, T2, T3, T4, T5>>>() {
-			@Override
-			public Mono<? extends Tuple5<T1, T2, T3, T4, T5>> apply(T o) {
-				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o));
-			}
-		});
+		return then(o -> when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o)));
 	}
 
 	/**
@@ -1266,12 +1246,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			final Function<? super T, ? extends Mono<? extends T4>> fn4,
 			final Function<? super T, ? extends Mono<? extends T5>> fn5,
 			final Function<? super T, ? extends Mono<? extends T6>> fn6) {
-		return then(new Function<T, Mono<? extends Tuple6<T1, T2, T3, T4, T5, T6>>>() {
-			@Override
-			public Mono<? extends Tuple6<T1, T2, T3, T4, T5, T6>> apply(T o) {
-				return when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o), fn6.apply(o));
-			}
-		});
+		return then(o -> when(fn1.apply(o), fn2.apply(o), fn3.apply(o), fn4.apply(o), fn5.apply(o), fn6.apply(o)));
 	}
 
 	/**

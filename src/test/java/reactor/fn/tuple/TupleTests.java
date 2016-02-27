@@ -16,9 +16,9 @@
 
 package reactor.core.tuple;
 
-import org.junit.Test;
-
 import java.util.Arrays;
+
+import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -51,7 +51,6 @@ public class TupleTests {
 		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
 
 		assertThat("Tuple3 is also a Tuple2", Tuple2.class.isInstance(t3));
-		assertThat("Tuple3 is also a Tuple1", Tuple1.class.isInstance(t3));
 	}
 
 	@Test
