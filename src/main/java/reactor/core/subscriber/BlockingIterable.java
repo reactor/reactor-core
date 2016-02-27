@@ -246,11 +246,6 @@ public final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpre
 			signalConsumer();
 		}
 		
-		@Override // otherwise default method which isn't available in Java 7
-		public void remove() {
-			throw new UnsupportedOperationException("remove");
-		}
-
 		@Override
 		public Object upstream() {
 			return s;

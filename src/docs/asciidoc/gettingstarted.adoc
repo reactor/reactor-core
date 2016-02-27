@@ -91,7 +91,7 @@ Reactor Core is http://www.apache.org/licenses/LICENSE-2.0.html[Apache 2.0 licen
 
 === Requirements
 
-* Reactor needs at minimum Java 7 to execute.
+* Reactor needs at minimum Java 8 to execute.
 ** But the full expressive potential of functional composition happens with Java 8 Lambdas.
 ** As a fallback have a look at Spring, Clojure or Groovy extensions.
 * Reactor runs at full capacity when the JVM supports *Unsafe* access

@@ -10,7 +10,7 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 ## Getting it
 [![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core)
 
-**2.5 requires Java 7 or + to run**.
+**2.5 requires Java 8 or + to run**.
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
 ```groovy

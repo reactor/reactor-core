@@ -115,9 +115,6 @@ public interface Fuseable {
 	 * emit its items in a pull fashion, thus avoiding the request-accounting
 	 * overhead in many cases.
 	 *
-	 * Implementor note: This can be simplified using Java  8 interface features but this source maintains a
-	 * JDK7 comp
-	 *
 	 * @param <T> the content value type
 	 */
 	abstract class SynchronousSubscription<T> implements QueueSubscription<T>, Queue<T> {
