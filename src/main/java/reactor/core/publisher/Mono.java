@@ -1260,7 +1260,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link CompletableFuture}
 	 */
 	public final CompletableFuture<T> toCompletableFuture() {
-		return subscribeWith(new CompletableFutureSubscriber<>());
+		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
 	/**

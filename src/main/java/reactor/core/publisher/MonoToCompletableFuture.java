@@ -26,7 +26,7 @@ import reactor.core.util.Exceptions;
 /**
  * @author Stephane Maldini
  */
-final class CompletableFutureSubscriber<T> extends CompletableFuture<T> implements Subscriber<T> {
+final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements Subscriber<T> {
 
 	final AtomicReference<Subscription> ref = new AtomicReference<>();
 

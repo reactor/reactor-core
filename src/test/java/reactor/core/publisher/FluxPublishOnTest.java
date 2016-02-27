@@ -62,7 +62,7 @@ public class FluxPublishOnTest {
 		
 		ts.request(500);
 
-		Thread.sleep(250);
+		Thread.sleep(1000);
 
 		ts.assertValueCount(500)
 		.assertNoError()
