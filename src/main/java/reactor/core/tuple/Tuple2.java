@@ -83,13 +83,15 @@ public class Tuple2<T1, T2> extends Tuple {
 
 		Tuple2 tuple2 = (Tuple2) o;
 
-		return t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
+		return t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null &&
+				t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
+		result = 31 * result + (t1 != null ? t1.hashCode() : 0);
 		result = 31 * result + (t2 != null ? t2.hashCode() : 0);
 		return result;
 	}
