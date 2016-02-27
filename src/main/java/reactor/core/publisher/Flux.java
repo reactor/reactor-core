@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -1443,30 +1444,30 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
-	 * <p>
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
 	 *
-	 * @param fallback the alternate {@link Publisher}
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
 	 *
-	 * @return an alternating {@link Flux} on source onError
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
-		return onErrorResumeWith(FluxResume.create(fallback));
+	public Stream<T> stream() {
+		return stream(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
+		);
 	}
 
 	/**
-	 * Provide an alternative if this sequence is completed without any data
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
-	 * <p>
-	 * @param alternate the alternate publisher if this sequence is empty
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
 	 *
-	 * @return an alternating {@link Flux} on source onComplete without elements
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
+	 *
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
-		return new FluxSwitchIfEmpty<>(this, alternate);
+	public Stream<T> stream(long batchSize) {
+		final Supplier<Queue<T>> provider;
+		provider = QueueSupplier.get(batchSize);
+		return new BlockingIterable<>(this, batchSize, provider).stream();
 	}
 
 	/**
@@ -1502,6 +1503,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
+	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
+	 * <p>
+	 *
+	 * @param fallback the alternate {@link Publisher}
+	 *
+	 * @return an alternating {@link Flux} on source onError
+	 */
+	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
+		return onErrorResumeWith(FluxResume.create(fallback));
+	}
+
+	/**
+	 * Provide an alternative if this sequence is completed without any data
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
+	 * <p>
+	 * @param alternate the alternate publisher if this sequence is empty
+	 *
+	 * @return an alternating {@link Flux} on source onComplete without elements
+	 */
+	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
+		return new FluxSwitchIfEmpty<>(this, alternate);
+	}
+
+	/**
 	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
 	 *
 	 * <p>
@@ -1533,7 +1561,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
-	 * <p>
 	 *
 	 * @return a blocking {@link Iterable}
 	 */

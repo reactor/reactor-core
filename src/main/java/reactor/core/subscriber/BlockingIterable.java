@@ -19,11 +19,15 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -66,6 +70,18 @@ public final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpre
 		source.subscribe(it);
 		
 		return it;
+	}
+
+	/**
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 */
+	public Stream<T> stream() {
+		BlockingIterable.SubscriberIterator<T> it = createIterator();
+		source.subscribe(it);
+
+		Spliterator<T> sp = Spliterators.spliteratorUnknownSize(it, 0);
+
+		return StreamSupport.stream(sp, false).onClose(it);
 	}
 	
 	SubscriberIterator<T> createIterator() {
