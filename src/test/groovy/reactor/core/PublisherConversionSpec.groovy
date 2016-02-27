@@ -16,7 +16,6 @@
 
 package reactor.core
 
-import reactor.core.converter.CompletableFutureConverter
 import reactor.core.converter.DependencyUtils
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -104,19 +103,9 @@ class PublisherConversionSpec extends Specification {
 			.assertComplete()
 
 
-	when: "Iterable publisher of 1000 to completable future"
-	pub = fromIterable(1..1000)
-	obs = CompletableFutureConverter.from(pub)
-	def vList = obs.get()
-
-	then: "queues values correct"
-	vList[0] == 1
-	vList[1] == 2
-	vList[999] == 1000
-
 	when: "Iterable publisher of 1 to completable future"
-	def newPub = Flux.just(1)
-	obs = CompletableFutureConverter.fromSingle(newPub)
+	def newPub = Mono.just(1)
+	obs = newPub.toCompletableFuture()
 	def v = obs.get()
 
 	then: "queues values correct"

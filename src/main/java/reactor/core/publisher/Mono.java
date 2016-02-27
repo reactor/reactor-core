@@ -1275,6 +1275,20 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform this {@link Mono} into a {@link CompletableFuture} completing on onNext or onComplete and failing on
+	 * onError.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tocompletablefuture.png" alt="">
+	 * <p>
+	 *
+	 * @return a {@link CompletableFuture}
+	 */
+	public final CompletableFuture<T> toCompletableFuture() {
+		return subscribeWith(new CompletableFutureSubscriber<>());
+	}
+
+	/**
 	 * Subscribe the {@link Mono} with the givne {@link Subscriber} and return it.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe
