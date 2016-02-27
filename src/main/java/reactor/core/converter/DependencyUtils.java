@@ -26,7 +26,7 @@ import org.reactivestreams.Publisher;
  */
 public final class DependencyUtils {
 
-	static private final boolean HAS_REACTOR_FLUXION;
+	static private final boolean HAS_REACTOR_STREAM;
 	static private final boolean HAS_REACTOR_CODEC;
 	static private final boolean HAS_REACTOR_NET;
 	static private final boolean HAS_REACTOR_BUS;
@@ -130,7 +130,7 @@ public final class DependencyUtils {
 		else {
 			FLOW_PUBLISHER_CONVERTER = null;
 		}
-		HAS_REACTOR_FLUXION = (detected & REACTOR_STREAM) == REACTOR_STREAM;
+		HAS_REACTOR_STREAM = (detected & REACTOR_STREAM) == REACTOR_STREAM;
 		HAS_REACTOR_CODEC = (detected & REACTOR_CODEC) == REACTOR_CODEC;
 		HAS_REACTOR_BUS = (detected & REACTOR_BUS) == REACTOR_BUS;
 		HAS_REACTOR_NET = (detected & REACTOR_NET) == REACTOR_NET;
@@ -153,8 +153,8 @@ public final class DependencyUtils {
 		return FLOW_PUBLISHER_CONVERTER != null;
 	}
 
-	public static boolean hasReactorFluxion() {
-		return HAS_REACTOR_FLUXION;
+	public static boolean hasReactorStream() {
+		return HAS_REACTOR_STREAM;
 	}
 
 	public static boolean hasReactorCodec() {
