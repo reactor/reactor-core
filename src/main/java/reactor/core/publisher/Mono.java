@@ -472,7 +472,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
 	private static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return when(Function.identity(), monos);
+		return when(array -> (T[])array, monos);
 	}
 
 	/**
@@ -510,7 +510,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return when(Function.identity(), monos);
+		return when(array -> (T[])array, monos);
 	}
 
 	/**
