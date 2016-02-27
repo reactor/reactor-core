@@ -51,8 +51,6 @@ public class Tuple implements Iterable, Serializable, Function {
 	}
 
 	/**
-	 * Create a {@link Tuple1} with the given object.
-	 *
 	 * @return An empty tuple
 	 */
 	public static Tuple empty() {
@@ -69,10 +67,8 @@ public class Tuple implements Iterable, Serializable, Function {
 	public static Tuple of(Object[] list) {
 		if(list == null) return empty();
 		switch (list.length){
-			case 0:
-				return empty();
 			case 1:
-				return of(list[0]);
+				return of(list[0], null);
 			case 2:
 				return of(list[0], list[1]);
 			case 3:
@@ -98,17 +94,6 @@ public class Tuple implements Iterable, Serializable, Function {
 	@SuppressWarnings("rawtypes")
 	public static TupleN of(List<?> list) {
 		return new TupleN(list.toArray());
-	}
-
-	/**
-	 * Create a {@link Tuple1} with the given object.
-	 *
-	 * @param t1   The first value in the tuple.
-	 * @param <T1> The type of the first value.
-	 * @return The new {@link Tuple1}.
-	 */
-	public static <T1> Tuple1<T1> of(T1 t1) {
-		return new Tuple1<T1>(1, t1);
 	}
 
 	/**

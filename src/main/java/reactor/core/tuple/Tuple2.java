@@ -29,14 +29,16 @@ import javax.annotation.Nullable;
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class Tuple2<T1, T2> extends Tuple1<T1> {
+public class Tuple2<T1, T2> extends Tuple {
 
 	private static final long serialVersionUID = -565933838909569191L;
 
+	public final T1 t1;
 	public final T2 t2;
 
 	Tuple2(int size, T1 t1, T2 t2) {
-		super(size, t1);
+		super(size);
+		this.t1 = t1;
 		this.t2 = t2;
 	}
 
