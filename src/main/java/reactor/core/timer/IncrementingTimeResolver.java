@@ -19,13 +19,13 @@ package reactor.core.timer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.LongSupplier;
 
 import reactor.core.queue.RingBuffer;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.LongSupplier;
 
 /**
  * @author Stephane Maldini
@@ -50,7 +50,7 @@ final class IncrementingTimeResolver {
 
 	public static long approxCurrentTimeMillis() {
 		INSTANCE.getTimer();
-		return now.get();
+		return now.getAsLong();
 	}
 
 	public static boolean isEnabled(){
@@ -119,7 +119,7 @@ final class IncrementingTimeResolver {
 	    }
 
 	    @Override
-	    public long get() {
+	    public long getAsLong() {
 	        if (initialValueRead.get()) {
 	            return current;
 	        } else {

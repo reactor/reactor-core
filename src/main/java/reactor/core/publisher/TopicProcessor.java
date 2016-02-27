@@ -23,6 +23,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -44,9 +47,6 @@ import reactor.core.util.ExecutorUtils;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.Consumer;
-import reactor.fn.LongSupplier;
-import reactor.fn.Supplier;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
@@ -635,7 +635,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 		//if only active subscriber, replay missed data
 		if (incrementSubscribers()) {
 
-			signalProcessor.sequence.set(minimum.get());
+			signalProcessor.sequence.set(minimum.getAsLong());
 			ringBuffer.addGatingSequence(signalProcessor.sequence);
 			//set eventProcessor sequence to minimum index (replay)
 		}
@@ -690,7 +690,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
-		Flux<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.get()));
+		Flux<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.getAsLong()));
 		if (error != null) {
 			if (t != null) {
 				t.addSuppressed(error);
@@ -739,9 +739,9 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 					}
 				}, new LongSupplier() {
 					@Override
-					public long get() {
+					public long getAsLong() {
 						return SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
-								minimum.get() :
+								minimum.getAsLong() :
 								ringBuffer.getMinimumGatingSequence(minimum);
 					}
 				}, readWait, this, (int)ringBuffer.getCapacity())).start();
@@ -773,7 +773,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 
 	@Override
 	public boolean isStarted() {
-		return super.isStarted() || ringBuffer.get() != -1;
+		return super.isStarted() || ringBuffer.getAsLong() != -1;
 	}
 
 	@Override
@@ -859,7 +859,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 						return;
 					}
 					if(processor.terminated == SHUTDOWN) {
-						if (processor.ringBuffer.get() == -1L) {
+						if (processor.ringBuffer.getAsLong() == -1L) {
 							if (processor.error != null) {
 								subscriber.onError(processor.error);
 								return;
@@ -874,8 +874,8 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 				}
 
 				Slot<T> event = null;
-				long nextSequence = sequence.get() + 1L;
-				final boolean unbounded = pendingRequest.get() == Long.MAX_VALUE;
+				long nextSequence = sequence.getAsLong() + 1L;
+				final boolean unbounded = pendingRequest.getAsLong() == Long.MAX_VALUE;
 
 				while (true) {
 					try {
@@ -917,7 +917,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 									subscriber.onError(processor.error);
 									break;
 								}
-								if(nextSequence > processor.ringBuffer.get()) {
+								if(nextSequence > processor.ringBuffer.getAsLong()) {
 									subscriber.onComplete();
 									break;
 								}
@@ -956,7 +956,7 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 
 		@Override
 		public boolean isStarted() {
-			return sequence.get() != -1L;
+			return sequence.getAsLong() != -1L;
 		}
 
 		@Override
@@ -966,12 +966,12 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 
 		@Override
 		public long requestedFromDownstream() {
-			return pendingRequest.get();
+			return pendingRequest.getAsLong();
 		}
 
 		@Override
 		public long getPending() {
-			return processor.ringBuffer.getCursor() - sequence.get();
+			return processor.ringBuffer.getCursor() - sequence.getAsLong();
 		}
 
 		@Override

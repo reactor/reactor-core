@@ -15,10 +15,11 @@
  */
 package reactor.core.queue;
 
+import java.util.function.LongSupplier;
+
 import reactor.core.util.Exceptions;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.LongSupplier;
 
 /**
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
@@ -89,7 +90,7 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
          */
     public long getCursor()
     {
-        return cursorSequence.get();
+        return cursorSequence.getAsLong();
     }
 
     /**
@@ -141,8 +142,8 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
     }
 
     @Override
-    public long get() {
-        return cursorSequence.get();
+    public long getAsLong() {
+        return cursorSequence.getAsLong();
     }
 
     @Override

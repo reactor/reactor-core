@@ -69,12 +69,12 @@ final class MultiProducerSequencer extends RingBufferProducer
      */
     @Override
     public boolean hasAvailableCapacity(final int requiredCapacity) {
-        return hasAvailableCapacity(gatingSequences, requiredCapacity, cursor.get());
+        return hasAvailableCapacity(gatingSequences, requiredCapacity, cursor.getAsLong());
     }
 
     private boolean hasAvailableCapacity(Sequence[] gatingSequences, final int requiredCapacity, long cursorValue) {
         long wrapPoint = (cursorValue + requiredCapacity) - bufferSize;
-        long cachedGatingSequence = gatingSequenceCache.get();
+        long cachedGatingSequence = gatingSequenceCache.getAsLong();
 
         if (wrapPoint > cachedGatingSequence || cachedGatingSequence > cursorValue) {
             long minSequence = RingBuffer.getMinimumSequence(gatingSequences, cursorValue);
@@ -122,11 +122,11 @@ final class MultiProducerSequencer extends RingBufferProducer
 
         do
         {
-            current = cursor.get();
+            current = cursor.getAsLong();
             next = current + n;
 
             long wrapPoint = next - bufferSize;
-            long cachedGatingSequence = gatingSequenceCache.get();
+            long cachedGatingSequence = gatingSequenceCache.getAsLong();
 
             if (wrapPoint > cachedGatingSequence || cachedGatingSequence > current)
             {
@@ -178,7 +178,7 @@ final class MultiProducerSequencer extends RingBufferProducer
 
         do
         {
-            current = cursor.get();
+            current = cursor.getAsLong();
             next = current + n;
 
             if (!hasAvailableCapacity(gatingSequences, n, current))
@@ -205,16 +205,16 @@ final class MultiProducerSequencer extends RingBufferProducer
     @Override
     public long getPending()
     {
-        long consumed = RingBuffer.getMinimumSequence(gatingSequences, cursor.get());
-        long produced = cursor.get();
+        long consumed = RingBuffer.getMinimumSequence(gatingSequences, cursor.getAsLong());
+        long produced = cursor.getAsLong();
         return produced - consumed;
     }
 
 
     @Override
     public long cachedRemainingCapacity() {
-        long consumed = gatingSequenceCache.get();
-        long produced = cursor.get();
+        long consumed = gatingSequenceCache.getAsLong();
+        long produced = cursor.getAsLong();
         return getBufferSize() - (produced - consumed);
     }
 

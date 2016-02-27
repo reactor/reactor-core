@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
@@ -37,8 +39,6 @@ import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.Consumer;
-import reactor.fn.Supplier;
 
 /**
  * "Scheduling" in Reactor via

@@ -15,7 +15,7 @@
  */
 package reactor.core.util;
 
-import reactor.fn.LongSupplier;
+import java.util.function.LongSupplier;
 
 /**
  * <p>Concurrent sequence class used for tracking the progress of
@@ -34,7 +34,7 @@ public interface Sequence extends LongSupplier
      *
      * @return The current value of the sequence.
      */
-    long get();
+    long getAsLong();
 
     /**
      * Perform an ordered write of this sequence.  The intent is

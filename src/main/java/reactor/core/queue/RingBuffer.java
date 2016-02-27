@@ -22,6 +22,9 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -32,9 +35,6 @@ import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.Consumer;
-import reactor.fn.LongSupplier;
-import reactor.fn.Supplier;
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
@@ -267,7 +267,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 */
 	public static long getMinimumSequence(final Sequence[] sequences, long minimum) {
 		for (int i = 0, n = sequences.length; i < n; i++) {
-			long value = sequences[i].get();
+			long value = sequences[i].getAsLong();
 			minimum = Math.min(minimum, value);
 		}
 
@@ -286,7 +286,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	public static long getMinimumSequence(Sequence excludeSequence, final Sequence[] sequences, long minimum) {
 		for (int i = 0, n = sequences.length; i < n; i++) {
 			if (excludeSequence == null || sequences[i] != excludeSequence) {
-				long value = sequences[i].get();
+				long value = sequences[i].getAsLong();
 				minimum = Math.min(minimum, value);
 			}
 		}
@@ -367,9 +367,9 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			Runnable waiter) {
 		try {
 			long waitedSequence;
-			while (pendingRequest.get() <= 0L) {
+			while (pendingRequest.getAsLong() <= 0L) {
 				//pause until first request
-				waitedSequence = nextSequence.get() + 1;
+				waitedSequence = nextSequence.getAsLong() + 1;
 				if (waiter != null) {
 					waiter.run();
 					barrier.waitFor(waitedSequence, waiter);
@@ -471,7 +471,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	abstract public E get(long sequence);
 
 	@Override
-	public long get() {
+	public long getAsLong() {
 		return getCursor();
 	}
 
@@ -600,7 +600,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	@Override
 	public String toString() {
-		return "RingBuffer{pending:" + getPending() + ", size:" + getCapacity() + ", cursor:" + get() + ", " +
+		return "RingBuffer{pending:" + getPending() + ", size:" + getCapacity() + ", cursor:" + getAsLong() + ", " +
 				"min:" + getMinimumGatingSequence() + ", subscribers:" + getSequencer().gatingSequences.length + "}";
 	}
 
@@ -667,7 +667,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 
 	@Override
 	final public boolean isEmpty() {
-		return buffer.getCursor() == pollCursor.get();
+		return buffer.getCursor() == pollCursor.getAsLong();
 	}
 
 	@Override
@@ -678,7 +678,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	@Override
 	final public T peek() {
 		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.get() + 1L;
+		long cachedSequence = pollCursor.getAsLong() + 1L;
 
 		if (cachedSequence <= current) {
 			return buffer.get(cachedSequence).value;
@@ -689,7 +689,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	@Override
 	final public T poll() {
 		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.get() + 1L;
+		long cachedSequence = pollCursor.getAsLong() + 1L;
 
 		if (cachedSequence <= current) {
 			T v = buffer.get(cachedSequence).value;
@@ -756,7 +756,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	}
 
 	final public int size() {
-		return (int) (buffer.getCursor() - pollCursor.get());
+		return (int) (buffer.getCursor() - pollCursor.getAsLong());
 	}
 	@Override
 	@SuppressWarnings("unchecked")
@@ -769,7 +769,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	final public <E> E[] toArray(E[] a) {
 
 		final long cursor = buffer.getCursor();
-		long s = pollCursor.get() + 1L;
+		long s = pollCursor.getAsLong() + 1L;
 		final E[] array;
 		final int n = (int) (cursor - s);
 
@@ -812,8 +812,8 @@ final class Wrapped<E> implements Sequence, Introspectable, Producer {
 	}
 
 	@Override
-	public long get() {
-		return sequence.get();
+	public long getAsLong() {
+		return sequence.getAsLong();
 	}
 
 	@Override

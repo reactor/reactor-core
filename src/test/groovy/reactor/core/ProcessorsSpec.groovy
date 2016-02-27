@@ -22,7 +22,6 @@ import org.reactivestreams.Subscription
 import reactor.core.publisher.SchedulerGroup
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
-import reactor.fn.Consumer
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -30,6 +29,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 /**
  * @author Stephane Maldini

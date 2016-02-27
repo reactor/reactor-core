@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -23,7 +24,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.util.Exceptions;
-import reactor.fn.Function;
 
 /**
  * Resumes the failed main sequence with another sequence returned by

@@ -21,8 +21,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
-
-import reactor.fn.LongSupplier;
+import java.util.function.LongSupplier;
 
 /**
  * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
@@ -180,12 +179,12 @@ public abstract class WaitStrategy
                 throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
-            if ((availableSequence = cursorSequence.get()) < sequence)
+            if ((availableSequence = cursorSequence.getAsLong()) < sequence)
             {
                 lock.lock();
                 try
                 {
-                    while ((availableSequence = cursorSequence.get()) < sequence)
+                    while ((availableSequence = cursorSequence.getAsLong()) < sequence)
                     {
                         barrier.run();
                         processorNotifyCondition.await();
@@ -197,7 +196,7 @@ public abstract class WaitStrategy
                 }
             }
 
-            while ((availableSequence = cursorSequence.get()) < sequence)
+            while ((availableSequence = cursorSequence.getAsLong()) < sequence)
             {
                 barrier.run();
             }
@@ -215,7 +214,7 @@ public abstract class WaitStrategy
         {
             long availableSequence;
 
-            while ((availableSequence = cursor.get()) < sequence)
+            while ((availableSequence = cursor.getAsLong()) < sequence)
             {
                 barrier.run();
             }
@@ -252,7 +251,7 @@ public abstract class WaitStrategy
                 throws Exceptions.AlertException, InterruptedException
         {
             long availableSequence;
-            if ((availableSequence = cursorSequence.get()) < sequence)
+            if ((availableSequence = cursorSequence.getAsLong()) < sequence)
             {
                 lock.lock();
 
@@ -262,7 +261,7 @@ public abstract class WaitStrategy
                     {
                         signalNeeded.getAndSet(true);
 
-                        if ((availableSequence = cursorSequence.get()) >= sequence)
+                        if ((availableSequence = cursorSequence.getAsLong()) >= sequence)
                         {
                             break;
                         }
@@ -270,7 +269,7 @@ public abstract class WaitStrategy
                         barrier.run();
                         processorNotifyCondition.await();
                     }
-                    while ((availableSequence = cursorSequence.get()) < sequence);
+                    while ((availableSequence = cursorSequence.getAsLong()) < sequence);
                 }
                 finally
                 {
@@ -278,7 +277,7 @@ public abstract class WaitStrategy
                 }
             }
 
-            while ((availableSequence = cursorSequence.get()) < sequence)
+            while ((availableSequence = cursorSequence.getAsLong()) < sequence)
             {
                 barrier.run();
             }
@@ -320,7 +319,7 @@ public abstract class WaitStrategy
 
             do
             {
-                if ((availableSequence = cursor.get()) >= sequence)
+                if ((availableSequence = cursor.getAsLong()) >= sequence)
                 {
                     return availableSequence;
                 }
@@ -394,7 +393,7 @@ public abstract class WaitStrategy
             long availableSequence;
             int counter = retries;
 
-            while ((availableSequence = cursor.get()) < sequence)
+            while ((availableSequence = cursor.getAsLong()) < sequence)
             {
                 counter = applyWaitMethod(barrier, counter);
             }
@@ -431,7 +430,7 @@ public abstract class WaitStrategy
             long availableSequence;
             int counter = SPIN_TRIES;
 
-            while ((availableSequence = cursor.get()) < sequence)
+            while ((availableSequence = cursor.getAsLong()) < sequence)
             {
                 counter = applyWaitMethod(barrier, counter);
             }

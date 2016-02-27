@@ -463,7 +463,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						boolean unbounded = _r == Long.MAX_VALUE;
 						T oo;
 
-						long cursor = innerSequence.get();
+						long cursor = innerSequence.getAsLong();
 						while (_r != 0L) {
 							cursor++;
 							if (q.getCursor() >= cursor) {
@@ -521,7 +521,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void checkTerminal(EmitterSubscriber<T> is, Sequence innerSequence, long r) {
 		Throwable e = error;
-		if ((e != null && r == 0) || innerSequence == null || innerSequence.get() >= emitBuffer.getCursor()) {
+		if ((e != null && r == 0) || innerSequence == null || innerSequence.getAsLong() >= emitBuffer.getCursor()) {
 			removeInner(is, EMPTY);
 			if (!is.done) {
 				if (e == null) {
@@ -739,8 +739,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public long getPending() {
-			return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor
-					.get();
+			return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor.getAsLong();
 		}
 
 		@Override

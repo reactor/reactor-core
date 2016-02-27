@@ -17,6 +17,7 @@ package reactor.core.publisher.tck;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
@@ -24,7 +25,6 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
-import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini

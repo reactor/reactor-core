@@ -16,10 +16,10 @@
 package reactor.core.queue;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.LongSupplier;
 
 import reactor.core.state.Introspectable;
 import reactor.core.util.Sequence;
-import reactor.fn.LongSupplier;
 
 /**
  * <p>Concurrent sequence class used for tracking the progress of
@@ -46,7 +46,7 @@ final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence,
     }
 
     @Override
-    public long get()
+    public long getAsLong()
     {
         return value;
     }
@@ -83,7 +83,7 @@ final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence,
 
         do
         {
-            currentValue = get();
+            currentValue = getAsLong();
             newValue = currentValue + increment;
         }
         while (!compareAndSet(currentValue, newValue));
@@ -94,7 +94,7 @@ final class AtomicSequence extends RhsPadding implements LongSupplier, Sequence,
     @Override
     public String toString()
     {
-        return Long.toString(get());
+        return Long.toString(getAsLong());
     }
 
     @Override

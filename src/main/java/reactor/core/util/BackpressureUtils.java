@@ -245,7 +245,7 @@ public enum BackpressureUtils {
 	public static long getAndAdd(Sequence sequence, long toAdd) {
 		long u, r;
 		do {
-			r = sequence.get();
+			r = sequence.getAsLong();
 			if (r == Long.MAX_VALUE) {
 				return Long.MAX_VALUE;
 			}
@@ -309,7 +309,7 @@ public enum BackpressureUtils {
 	public static long getAndSub(Sequence sequence, long toSub) {
 		long r, u;
 		do {
-			r = sequence.get();
+			r = sequence.getAsLong();
 			if (r == 0 || r == Long.MAX_VALUE) {
 				return r;
 			}

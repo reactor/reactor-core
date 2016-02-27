@@ -62,7 +62,7 @@ abstract class RingBufferProducer {
 	 * @return current cursor value
 	 */
 	public final long getCursor() {
-		return cursor.get();
+		return cursor.getAsLong();
 	}
 
 	/**
@@ -121,7 +121,7 @@ abstract class RingBufferProducer {
 	 * no sequences have been added.
 	 */
 	public long getMinimumSequence(Sequence excludeSequence) {
-		return RingBuffer.getMinimumSequence(excludeSequence, gatingSequences, cursor.get());
+		return RingBuffer.getMinimumSequence(excludeSequence, gatingSequences, cursor.getAsLong());
 	}
 
 	/**

@@ -22,12 +22,12 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.state.Pausable;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.Consumer;
 
 /**
  * @author @masterav10

@@ -15,10 +15,11 @@
  */
 package reactor.core.queue;
 
+import java.util.function.LongSupplier;
+
 import reactor.core.state.Introspectable;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
-import reactor.fn.LongSupplier;
 import sun.misc.Unsafe;
 
 class LhsPadding
@@ -73,7 +74,7 @@ final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier,
     }
 
     @Override
-    public long get()
+    public long getAsLong()
     {
         return value;
     }
@@ -110,7 +111,7 @@ final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier,
 
         do
         {
-            currentValue = get();
+            currentValue = getAsLong();
             newValue = currentValue + increment;
         }
         while (!compareAndSet(currentValue, newValue));
@@ -121,7 +122,7 @@ final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier,
     @Override
     public String toString()
     {
-        return Long.toString(get());
+        return Long.toString(getAsLong());
     }
 
     @Override

@@ -16,9 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.fn.Function;
 
 /**
  * @author Stephane Maldini

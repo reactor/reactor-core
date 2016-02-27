@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
@@ -41,8 +43,6 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.LongSupplier;
-import reactor.fn.Supplier;
 
 /**
  * Hash Wheel Timer, as per the paper: <p> Hashed and hierarchical timing wheels: http://www.cs.columbia.edu/~nahum/w6998/papers/ton97-timing-wheels.pdf
@@ -153,7 +153,7 @@ class HashWheelTimer extends Timer {
 		this.loop = ExecutorUtils.newNamedFactory(name).newThread(new Runnable() {
 			@Override
 			public void run() {
-				long deadline = timeMillisResolver.get();
+				long deadline = timeMillisResolver.getAsLong();
 
 				Runnable noop = new Runnable() {
 					@Override

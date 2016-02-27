@@ -31,7 +31,6 @@ public final class DependencyUtils {
 	static private final boolean HAS_REACTOR_NET;
 	static private final boolean HAS_REACTOR_BUS;
 
-	static private final CompletableFutureConverter COMPLETABLE_FUTURE_CONVERTER;
 	static private final FlowPublisherConverter     FLOW_PUBLISHER_CONVERTER;
 	static private final RxJava1ObservableConverter RX_JAVA_1_OBSERVABLE_CONVERTER;
 	static private final RxJava1SingleConverter     RX_JAVA_1_SINGLE_CONVERTER;
@@ -44,7 +43,6 @@ public final class DependencyUtils {
 		final int RXJAVA_1_SINGLE = 0b000010;
 		final int RXJAVA_1_COMPLETABLE = 0b000100;
 		final int REACTOR_STREAM = 0b001000;
-		final int COMPLETABLE_FUTURE = 0b010000;
 		final int FLOW_PUBLISHER = 0b100000;
 		final int REACTOR_CODEC = 0b1000000;
 		final int REACTOR_BUS = 0b10000000;
@@ -60,15 +58,6 @@ public final class DependencyUtils {
 			hasRxjava1Completable = true;*/
 		}
 		catch (ClassNotFoundException cnfe) {
-			//IGNORE
-		}
-		try {
-			Class.forName("java.util.concurrent.CompletableFuture");
-			detected |= COMPLETABLE_FUTURE;
-			Class.forName("java.util.concurrent.Flow");
-			detected |= FLOW_PUBLISHER;
-		}
-		catch (SecurityException | ClassNotFoundException cnfe) {
 			//IGNORE
 		}
 		try {
@@ -118,12 +107,6 @@ public final class DependencyUtils {
 		else {
 			//TBD
 		}
-		if ((detected & COMPLETABLE_FUTURE) == COMPLETABLE_FUTURE) {
-			COMPLETABLE_FUTURE_CONVERTER = CompletableFutureConverter.INSTANCE;
-		}
-		else {
-			COMPLETABLE_FUTURE_CONVERTER = null;
-		}
 		if ((detected & FLOW_PUBLISHER) == FLOW_PUBLISHER) {
 			FLOW_PUBLISHER_CONVERTER = FlowPublisherConverter.INSTANCE;
 		}
@@ -143,10 +126,6 @@ public final class DependencyUtils {
 
 	public static boolean hasRxJava1Single() {
 		return RX_JAVA_1_SINGLE_CONVERTER != null;
-	}
-
-	public static boolean hasCompletableFuture() {
-		return COMPLETABLE_FUTURE_CONVERTER != null;
 	}
 
 	public static boolean hasFlowPublisher() {
@@ -182,10 +161,6 @@ public final class DependencyUtils {
 			}
 		}
 
-		if (hasCompletableFuture() && COMPLETABLE_FUTURE_CONVERTER.test(source)) {
-			return COMPLETABLE_FUTURE_CONVERTER.apply(source);
-		}
-
 		if (hasFlowPublisher() && FLOW_PUBLISHER_CONVERTER.test(source)) {
 			return FLOW_PUBLISHER_CONVERTER.apply(source);
 		}
@@ -200,22 +175,16 @@ public final class DependencyUtils {
 		if (hasRxJava1()) {
 			if (hasRxJava1Single() && RX_JAVA_1_SINGLE_CONVERTER.get()
 			                                                    .isAssignableFrom(to)) {
-				return (T) RX_JAVA_1_SINGLE_CONVERTER.apply(source, to);
+				return (T) RX_JAVA_1_SINGLE_CONVERTER.convertTo(source, to);
 			}
 			else if (RX_JAVA_1_OBSERVABLE_CONVERTER.get()
 			                            .isAssignableFrom(to)) {
-				return (T) RX_JAVA_1_OBSERVABLE_CONVERTER.apply(source, to);
+				return (T) RX_JAVA_1_OBSERVABLE_CONVERTER.convertTo(source, to);
 			}
 		}
-
-		if (hasCompletableFuture() && COMPLETABLE_FUTURE_CONVERTER.get()
-		                                                              .isAssignableFrom(to)) {
-			return (T) COMPLETABLE_FUTURE_CONVERTER.apply(source, to);
-		}
-
 		if (hasFlowPublisher() && FLOW_PUBLISHER_CONVERTER.get()
 		                                         .isAssignableFrom(to)) {
-			return (T) FLOW_PUBLISHER_CONVERTER.apply(source, to);
+			return (T) FLOW_PUBLISHER_CONVERTER.convertTo(source, to);
 		}
 		throw new UnsupportedOperationException("Cannot convert " + source.getClass() + " source to " + to.getClass() + " type");
 	}

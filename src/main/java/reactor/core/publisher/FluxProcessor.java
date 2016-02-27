@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
@@ -30,8 +32,6 @@ import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.fn.Consumer;
-import reactor.fn.Function;
 
 /**
  * A base processor that expose {@link Flux} API, {@link Processor} and generic {@link Consumer} for {@link Runnable}

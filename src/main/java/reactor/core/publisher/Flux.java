@@ -20,6 +20,11 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
@@ -34,21 +39,16 @@ import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.timer.Timer;
-import reactor.core.util.Assert;
-import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
-import reactor.fn.BiConsumer;
-import reactor.fn.BiFunction;
-import reactor.fn.Consumer;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+import reactor.core.util.Assert;
+import reactor.core.util.Logger;
+import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that emits 0 to N elements, and then completes

@@ -18,10 +18,10 @@ package reactor.core.flow;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.fn.Supplier;
 
 /**
  * A micro API for stream fusion, in particular marks producers that support a {@link QueueSubscription}.

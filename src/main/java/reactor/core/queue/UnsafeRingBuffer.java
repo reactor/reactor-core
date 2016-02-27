@@ -15,10 +15,11 @@
  */
 package reactor.core.queue;
 
+import java.util.function.Supplier;
+
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
-import reactor.fn.Supplier;
 import sun.misc.Unsafe;
 
 abstract class RingBufferPad<E> extends RingBuffer<E>

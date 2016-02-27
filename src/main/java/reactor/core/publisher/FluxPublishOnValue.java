@@ -17,11 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.fn.Consumer;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.

@@ -17,14 +17,14 @@ package reactor.core.util;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
 
 public final class ScalarSubscription<T> implements Subscription, Producer, Receiver {
 

@@ -16,6 +16,8 @@
 
 package reactor.core.subscriber;
 
+import java.util.function.Consumer;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
@@ -23,7 +25,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini

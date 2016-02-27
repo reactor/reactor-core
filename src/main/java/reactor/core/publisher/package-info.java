@@ -48,7 +48,7 @@
  * "{@link reactor.core.publisher.Flux#publishOn publishOn}".
  * <ul>
  *     <li>Scheduler: a
- *     {@link reactor.fn.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
+ *     {@link java.util.function.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
  *     terminal signal used for cleanup logic</li>
  *     <li>Scheduler Factory: a {@link java.util.concurrent.Callable} generating schedulers. A major implementation
  *     of it is {@link reactor.core.publisher.SchedulerGroup}, a reference-counting scheduler generator that release

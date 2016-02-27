@@ -21,11 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
 
 /**
  * A {@literal Tuple} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
@@ -34,7 +32,7 @@ import reactor.fn.Function;
  * @author Stephane Maldini
  */
 @SuppressWarnings({"rawtypes"})
-public class Tuple implements Iterable, Serializable, Function, BiFunction {
+public class Tuple implements Iterable, Serializable, Function {
 
 	static final long     serialVersionUID = 8777121294502020843L;
 	static final Object[] emptyArray       = new Object[0];
@@ -573,11 +571,6 @@ public class Tuple implements Iterable, Serializable, Function, BiFunction {
 	@SuppressWarnings("unchecked")
 	public Tuple apply(Object o) {
 		return of((Object[])o);
-	}
-
-	@Override
-	public Object apply(Object o, Object o2) {
-		return of(o, o2);
 	}
 
 	@Override

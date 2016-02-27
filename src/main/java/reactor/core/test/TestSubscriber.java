@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -34,8 +36,6 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
-import reactor.fn.Consumer;
-import reactor.fn.Supplier;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows

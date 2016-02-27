@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -45,8 +47,6 @@ import reactor.core.util.ExecutorUtils;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.LongSupplier;
-import reactor.fn.Supplier;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
@@ -576,7 +576,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 			incrementSubscribers();
 
 			//bind eventProcessor sequence to observe the ringBuffer
-			signalProcessor.sequence.set(workSequence.get());
+			signalProcessor.sequence.set(workSequence.getAsLong());
 			ringBuffer.addGatingSequence(signalProcessor.sequence);
 
 			//start the subscriber thread
@@ -635,7 +635,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 			}
 		}, null, new LongSupplier() {
 			@Override
-			public long get() {
+			public long getAsLong() {
 				return ringBuffer.getMinimumGatingSequence();
 			}
 		}, readWait, this, (int)ringBuffer.getCapacity())).start();
@@ -649,7 +649,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 
 	@Override
 	public boolean isStarted() {
-		return super.isStarted() || ringBuffer.get() != -1;
+		return super.isStarted() || ringBuffer.getAsLong() != -1;
 	}
 
 	@Override
@@ -735,7 +735,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 			@Override
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
-						replay(pendingRequest.get() == Long.MAX_VALUE)) {
+						replay(pendingRequest.getAsLong() == Long.MAX_VALUE)) {
 					throw Exceptions.AlertException.INSTANCE;
 				}
 			}
@@ -763,9 +763,8 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 		}
 
 		public boolean isRunning() {
-			return running.get() && (processor.terminated == 0 || processor.error == null && processor.ringBuffer.get
-					() >
-					sequence.get());
+			return running.get() && (processor.terminated == 0 || processor.error == null &&
+					processor.ringBuffer.getAsLong() > sequence.getAsLong());
 		}
 
 
@@ -788,7 +787,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 
 				boolean processedSequence = true;
 				long cachedAvailableSequence = Long.MIN_VALUE;
-				long nextSequence = sequence.get();
+				long nextSequence = sequence.getAsLong();
 				Slot<T> event = null;
 
 				if (!RingBuffer.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
@@ -796,7 +795,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 					if(!running.get()){
 						return;
 					}
-					if(processor.terminated == 1 && processor.ringBuffer.get() == -1L) {
+					if(processor.terminated == 1 && processor.ringBuffer.getAsLong() == -1L) {
 						if (processor.error != null) {
 							subscriber.onError(processor.error);
 							return;
@@ -806,7 +805,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 					}
 				}
 
-				final boolean unbounded = pendingRequest.get() == Long.MAX_VALUE;
+				final boolean unbounded = pendingRequest.getAsLong() == Long.MAX_VALUE;
 
 				if (replay(unbounded)) {
 					running.set(false);
@@ -823,8 +822,8 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 						if (processedSequence) {
 							processedSequence = false;
 							do {
-								nextSequence = processor.workSequence.get() + 1L;
-								while ((!unbounded && pendingRequest.get() == 0L)) {
+								nextSequence = processor.workSequence.getAsLong() + 1L;
+								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
 									if (!isRunning()) {
 										throw Exceptions.AlertException.INSTANCE;
 									}
@@ -924,7 +923,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 				processor.ringBuffer.removeGatingSequence(sequence);
 				/*if(processor.decrementSubscribers() == 0){
 					long r = processor.ringBuffer.getCursor();
-					long w = processor.workSequence.get();
+					long w = processor.workSequence.getAsLong();
 					if ( w > r ){
 						processor.workSequence.compareAndSet(w, r);
 					}
@@ -951,7 +950,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 							return true;
 						}
 
-						long cursor = processor.retrySequence.get() + 1;
+						long cursor = processor.retrySequence.getAsLong() + 1;
 
 						if (q.getCursor() >= cursor) {
 							signal = q.get(cursor);
@@ -1008,7 +1007,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 
 		@Override
 		public long requestedFromDownstream() {
-			return pendingRequest.get();
+			return pendingRequest.getAsLong();
 		}
 
 		@Override
@@ -1018,7 +1017,7 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 
 		@Override
 		public boolean isStarted() {
-			return sequence.get() != -1L;
+			return sequence.getAsLong() != -1L;
 		}
 
 		@Override

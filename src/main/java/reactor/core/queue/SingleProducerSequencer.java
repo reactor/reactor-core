@@ -230,7 +230,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     @Override
     public boolean isAvailable(long sequence)
     {
-        return sequence <= cursor.get();
+        return sequence <= cursor.getAsLong();
     }
 
     @Override

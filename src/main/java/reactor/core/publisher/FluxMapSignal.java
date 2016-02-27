@@ -15,6 +15,9 @@
  */
 package reactor.core.publisher;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -23,8 +26,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.

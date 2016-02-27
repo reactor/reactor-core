@@ -20,9 +20,9 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import reactor.core.util.PlatformDependent;
-import reactor.fn.Supplier;
 
 /**
  * Provide a queue adapted for a given capacity

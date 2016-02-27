@@ -19,20 +19,13 @@ package reactor.core.converter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.fn.BiConsumer;
-import reactor.fn.Consumer;
 
 /**
  * Convert a Java 8+ {@link CompletableFuture} to/from a Reactive Streams {@link Publisher}.
@@ -41,7 +34,7 @@ import reactor.fn.Consumer;
  * @author Stephane Maldini
  * @since 2.5
  */
-public final class CompletableFutureConverter extends PublisherConverter<CompletableFuture> {
+public final class CompletableFutureConverter{
 
 	static final CompletableFutureConverter INSTANCE = new CompletableFutureConverter();
 
@@ -55,13 +48,23 @@ public final class CompletableFutureConverter extends PublisherConverter<Complet
 		return INSTANCE.fromSinglePublisher(o);
 	}
 
-	@SuppressWarnings("unchecked")
-	static public <T> Mono<T> from(CompletableFuture<T> o) {
-		return INSTANCE.toPublisher(o);
+	<T> CompletableFuture<T> completableFuture(final AtomicReference<Subscription> ref) {
+		return new CompletableFuture<T>() {
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				boolean cancelled = super.cancel(mayInterruptIfRunning);
+				if (cancelled) {
+					Subscription s = ref.getAndSet(null);
+					if (s != null) {
+						s.cancel();
+					}
+				}
+				return cancelled;
+			}
+		};
 	}
 
-	@Override
-	public CompletableFuture fromPublisher(Publisher<?> pub) {
+	CompletableFuture fromPublisher(Publisher<?> pub) {
 		final AtomicReference<Subscription> ref = new AtomicReference<>();
 		final CompletableFuture<List<Object>> future = completableFuture(ref);
 
@@ -104,23 +107,7 @@ public final class CompletableFutureConverter extends PublisherConverter<Complet
 		return future;
 	}
 
-	private <T> CompletableFuture<T> completableFuture(final AtomicReference<Subscription> ref) {
-		return new CompletableFuture<T>() {
-			@Override
-			public boolean cancel(boolean mayInterruptIfRunning) {
-				boolean cancelled = super.cancel(mayInterruptIfRunning);
-				if (cancelled) {
-					Subscription s = ref.getAndSet(null);
-					if (s != null) {
-						s.cancel();
-					}
-				}
-				return cancelled;
-			}
-		};
-	}
-
-	public CompletableFuture fromSinglePublisher(Publisher<?> pub) {
+	CompletableFuture fromSinglePublisher(Publisher<?> pub) {
 		final AtomicReference<Subscription> ref = new AtomicReference<>();
 		final CompletableFuture<Object> future = completableFuture(ref);
 
@@ -165,80 +152,4 @@ public final class CompletableFutureConverter extends PublisherConverter<Complet
 		return future;
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public Mono toPublisher(Object future) {
-		return new MonoCompletableFuture<>((CompletableFuture<?>) future);
-	}
-
-	@Override
-	public Class<CompletableFuture> get() {
-		return CompletableFuture.class;
-	}
-
-	private static class MonoCompletableFuture<T> extends Mono<T>
-			implements Consumer<Void>, BiConsumer<Long, SubscriberWithContext<T, Void>> {
-
-		private final CompletableFuture<? extends T> future;
-		private final Publisher<? extends T>         futurePublisher;
-
-		@SuppressWarnings("unused")
-		private volatile long requested;
-		private static final AtomicLongFieldUpdater<MonoCompletableFuture> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(MonoCompletableFuture.class, "requested");
-
-		public MonoCompletableFuture(CompletableFuture<? extends T> future) {
-			this.future = future;
-			this.futurePublisher = Flux.generate(this, null, this);
-		}
-
-		@Override
-		public void accept(Long n, final SubscriberWithContext<T, Void> sub) {
-			if (!BackpressureUtils.checkRequest(n, sub)) {
-				return;
-			}
-
-			if (BackpressureUtils.getAndAdd(REQUESTED, MonoCompletableFuture.this, n) > 0) {
-				return;
-			}
-
-			future.whenComplete(new java.util.function.BiConsumer<T, Throwable>() {
-				@Override
-				public void accept(T result, Throwable error) {
-					if (error != null) {
-						sub.onError(error);
-					}
-					else {
-						sub.onNext(result);
-						sub.onComplete();
-					}
-				}
-			});
-		}
-
-		@Override
-		public void accept(Void aVoid) {
-			if (!future.isDone()) {
-				future.cancel(true);
-			}
-		}
-
-		@Override
-		public void subscribe(final Subscriber<? super T> subscriber) {
-			try {
-				if (future.isDone()) {
-					Mono.just(future.get()).subscribe(subscriber);
-				}
-				else if (future.isCancelled()) {
-					EmptySubscription.error(subscriber, Exceptions.CancelException.INSTANCE);
-				}
-				else {
-					futurePublisher.subscribe(subscriber);
-				}
-			}
-			catch (Throwable throwable) {
-				EmptySubscription.error(subscriber, throwable);
-			}
-		}
-	}
 }

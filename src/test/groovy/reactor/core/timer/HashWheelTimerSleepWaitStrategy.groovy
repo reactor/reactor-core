@@ -16,11 +16,11 @@
 package reactor.core.timer
 
 import reactor.core.util.WaitStrategy
-import reactor.fn.Consumer
 import spock.lang.Specification
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 /**
  * @author Oleksandr Petrov

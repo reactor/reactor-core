@@ -16,11 +16,11 @@
 
 package reactor.core.converter;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import org.reactivestreams.Publisher;
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
-import reactor.fn.Predicate;
-import reactor.fn.Supplier;
 
 /**
  * Base class for Reactive Streams {@link Publisher} converters.
@@ -29,15 +29,21 @@ import reactor.fn.Supplier;
  * @since 2.5
  */
 abstract class PublisherConverter<TYPE>
-		implements Function<Object, Publisher<?>>, BiFunction<Publisher<?>, Class<?>, TYPE>, Predicate<Object>,
+		implements Function<Object, Publisher<?>>, Predicate<Object>,
 		           Supplier<Class<TYPE>> {
 
 	abstract protected Publisher<?> toPublisher(Object o);
 
 	abstract protected TYPE fromPublisher(Publisher<?> source);
 
-	@Override
-	public final TYPE apply(Publisher<?> source, Class<?> to) {
+	/**
+	 * Try converting a source {@link Publisher} to the target {@link Class} if supported
+	 * @param source the {@link Publisher} to convert
+	 * @param to the target type {@link Class}
+	 *
+	 * @return the converted typed or an {@link IllegalArgumentException} if failed
+	 */
+	public final TYPE convertTo(Publisher<?> source, Class<?> to) {
 		if (get().isAssignableFrom(to)) {
 			TYPE t = fromPublisher(source);
 

@@ -15,10 +15,10 @@
  */
 package reactor.core.queue;
 
+import java.util.function.Supplier;
 
 import reactor.core.util.Exceptions;
 import reactor.core.util.Sequence;
-import reactor.fn.Supplier;
 
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {

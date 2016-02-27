@@ -2,11 +2,11 @@ package reactor.core.test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.fn.Consumer;
 
 /**
  * @author Anatoly Kadyshev

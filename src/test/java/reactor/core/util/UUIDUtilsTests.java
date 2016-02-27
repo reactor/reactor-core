@@ -21,10 +21,10 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import reactor.fn.Supplier;
 
 /**
  * @author Andy Wilkinson

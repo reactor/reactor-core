@@ -17,12 +17,12 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.EmptySubscription;
-import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini

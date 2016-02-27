@@ -18,7 +18,13 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
@@ -29,21 +35,16 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.timer.Timer;
-import reactor.core.util.Assert;
-import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
-import reactor.fn.BiConsumer;
-import reactor.fn.Consumer;
-import reactor.fn.Function;
-import reactor.fn.Predicate;
-import reactor.fn.Supplier;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+import reactor.core.util.Assert;
+import reactor.core.util.Logger;
+import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -255,6 +256,22 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public static <T> Mono<T> fromCallable(Callable<? extends T> supplier) {
 		return new MonoCallable<>(supplier);
+	}
+
+
+	/**
+	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/completablefuture.png" alt="">
+	 * <p>
+	 * @param completableFuture {@link CompletableFuture} that will produce the value
+	 * @param <T> type of the expected value
+	 *
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCompletableFuture(CompletableFuture<? extends T> completableFuture) {
+		return new MonoCompletableFuture<>(completableFuture);
 	}
 
 	/**

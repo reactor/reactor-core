@@ -18,6 +18,7 @@ package reactor.core.publisher.tck;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
@@ -25,7 +26,6 @@ import org.testng.SkipException;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.util.Assert;
-import reactor.fn.Consumer;
 
 
 /**

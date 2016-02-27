@@ -17,6 +17,8 @@
 package reactor.core.timer;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -24,10 +26,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Pausable;
 import reactor.core.state.Timeable;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.Exceptions;
 import reactor.core.util.WaitStrategy;
-import reactor.fn.Consumer;
-import reactor.fn.LongSupplier;
 
 /**
  * @author Stephane Maldini
@@ -191,7 +190,7 @@ public class Timer implements Timeable, Cancellable {
 
 	final static private LongSupplier SYSTEM_NOW = new LongSupplier() {
 		@Override
-		public long get() {
+		public long getAsLong() {
 			return System.currentTimeMillis();
 		}
 	};

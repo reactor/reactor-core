@@ -16,6 +16,9 @@
 package reactor.core.subscriber;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
@@ -23,9 +26,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.fn.BiConsumer;
-import reactor.fn.Consumer;
-import reactor.fn.Function;
 
 /**
  * @author Stephane Maldini

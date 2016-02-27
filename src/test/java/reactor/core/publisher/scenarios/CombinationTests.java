@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +40,6 @@ import reactor.core.test.TestSubscriber;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.ReactiveStateUtils;
-import reactor.fn.Consumer;
 
 /**
  * @author Stephane Maldini

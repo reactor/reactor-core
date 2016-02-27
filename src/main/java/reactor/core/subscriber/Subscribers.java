@@ -15,11 +15,12 @@
  */
 package reactor.core.subscriber;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.fn.BiConsumer;
-import reactor.fn.Consumer;
-import reactor.fn.Function;
 
 /**
  * A Reactive Streams {@link Subscriber} factory which callbacks on start, onNext, onError and shutdown
