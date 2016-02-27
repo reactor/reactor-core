@@ -472,7 +472,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
 	private static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return when(Flux.IDENTITY_FUNCTION, monos);
+		return when(Function.identity(), monos);
 	}
 
 	/**
@@ -510,7 +510,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return when(Flux.IDENTITY_FUNCTION, monos);
+		return when(Function.identity(), monos);
 	}
 
 	/**
@@ -798,7 +798,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.IDENTITY_FUNCTION,
+				Function.identity(),
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
 				QueueSupplier.<R>small(),

@@ -77,7 +77,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 //	 Static Generators
 //	 ==============================================================================================================
 
-	static final IdentityFunction IDENTITY_FUNCTION      = new IdentityFunction();
 	static final Flux<?>          EMPTY                  = from(Mono.empty());
 
 	/**
@@ -135,7 +134,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	public static <I> Flux<I> concat(Publisher<? extends Publisher<? extends I>> sources) {
 		return new FluxFlatMap<>(
 				sources,
-				IDENTITY_FUNCTION,
+				Function.identity(),
 				false,
 				1,
 				QueueSupplier.<I>one(),
@@ -596,7 +595,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
 		return new FluxFlatMap<>(
 				source,
-				IDENTITY_FUNCTION,
+				Function.identity(),
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
 				QueueSupplier.<T>small(),
@@ -1254,7 +1253,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.IDENTITY_FUNCTION,
+				Function.identity(),
 				false,
 				PlatformDependent.SMALL_BUFFER_SIZE,
 				QueueSupplier.<R>small(),
@@ -1617,16 +1616,4 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 			source.subscribe(s);
 		}
 	}
-
-	/**
-	 * i -> i
-	 */
-	static final class IdentityFunction implements Function {
-
-		@Override
-		public Object apply(Object o) {
-			return o;
-		}
-	}
-
 }
