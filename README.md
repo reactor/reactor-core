@@ -1,4 +1,4 @@
-# reactor-core
+# Reactor Core
 
 [![Join the chat at https://gitter.im/reactor/reactor](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/reactor/reactor?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -191,7 +191,7 @@ http://projectreactor.io/core/docs/api/
 https://github.com/reactor/lite-rx-api-hands-on
 
 ## Beyond Reactor Core
-- Complete with more Reactive Extensions from [Reactor Fluxion](http://github.com/reactor/reactor-fluxion) API.
+- Complete with more Reactive Extensions from [Fluxion](http://github.com/reactor/reactor-stream) API.
 - Everything to jump outside the JVM with the non-blocking drivers from [Reactor IO](http://github.com/reactor/reactor-io).
 - [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
 

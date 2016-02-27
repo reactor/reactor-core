@@ -63,7 +63,7 @@ import reactor.fn.tuple.Tuple6;
  *
  * <p>If it is known that the underlying {@link Publisher} will emit 0 or 1 element, {@link Mono} should be used
  * instead.
- * <p>Additional {@link Publisher} operations can be found in {@link reactor.rx.Fluxion Reactor Fluxion} project.
+ * <p>Additional {@link Publisher} operations can be found in {@link reactor.rx.Fluxion}.
  *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
