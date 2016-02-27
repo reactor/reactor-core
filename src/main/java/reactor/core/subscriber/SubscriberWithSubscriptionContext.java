@@ -30,7 +30,8 @@ import reactor.core.util.Exceptions;
 /**
  * @author Stephane Maldini
  */
-final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> implements Backpressurable, Receiver {
+final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>,
+                                                                                         Backpressurable, Receiver {
 
 	protected final Function<? super Subscription, C>                 subscriptionHandler;
 	protected final BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer;
@@ -107,7 +108,7 @@ final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> im
 
 	@Override
 	public void onNext(T t) {
-		super.onNext(t);
+		BaseSubscriber.super.onNext(t);
 
 		if (dataConsumer != null) {
 			try {
@@ -124,7 +125,7 @@ final class SubscriberWithSubscriptionContext<T, C> extends BaseSubscriber<T> im
 
 	@Override
 	public void onError(Throwable t) {
-		super.onError(t);
+		BaseSubscriber.super.onError(t);
 
 		if (errorConsumer != null) {
 			errorConsumer.accept(t, subscriptionWithContext != null ? subscriptionWithContext.context() : null);

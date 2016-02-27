@@ -22,12 +22,12 @@ import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * Convenience subscriber base class that checks for input errors and provide a self-subscription operation.
+ * Convenience subscriber default interface that checks for input errors and provide a self-subscription operation.
  *
  * @author Stephane Maldini
  * @since 2.5
  */
-public class BaseSubscriber<T> implements Subscriber<T> {
+public interface BaseSubscriber<T> extends Subscriber<T> {
 
 	/**
 	 * Trigger onSubscribe with a stateless subscription to signal this subscriber it can start receiving
@@ -38,7 +38,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	 *
 	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
 	 */
-	public BaseSubscriber<T> start() {
+	default BaseSubscriber<T> start() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
 	}
@@ -48,7 +48,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	 *
 	 * @return a new subscribed {@link SignalEmitter}
 	 */
-	public SignalEmitter<T> startEmitter() {
+	default SignalEmitter<T> startEmitter() {
 		return bindEmitter(true);
 	}
 
@@ -58,18 +58,18 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	 *
 	 * @return a new {@link SignalEmitter}
 	 */
-	public SignalEmitter<T> bindEmitter(boolean autostart) {
+	default SignalEmitter<T> bindEmitter(boolean autostart) {
 		return SignalEmitter.create(this, autostart);
 	}
 
 	@Override
-	public void onSubscribe(Subscription s) {
+	default void onSubscribe(Subscription s) {
 		BackpressureUtils.validate(null, s);
 		//To validate with BackpressureUtils.validate(current, s)
 	}
 
 	@Override
-	public void onNext(T t) {
+	default void onNext(T t) {
 		if (t == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -77,7 +77,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	}
 
 	@Override
-	public void onError(Throwable t) {
+	default void onError(Throwable t) {
 		if (t == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -85,7 +85,7 @@ public class BaseSubscriber<T> implements Subscriber<T> {
 	}
 
 	@Override
-	public void onComplete() {
+	default void onComplete() {
 
 	}
 }

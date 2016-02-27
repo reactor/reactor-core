@@ -33,8 +33,8 @@ import reactor.core.util.ReactiveStateUtils;
  * @author Stephane Maldini
  * @since 2.0.4
  */
-public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
-		implements Subscription, Backpressurable, Completable, Receiver, Producer {
+public class SubscriberBarrier<I, O>
+		implements BaseSubscriber<I>, Subscription, Backpressurable, Completable, Receiver, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -80,7 +80,7 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
 
 	@Override
 	public final void onNext(I i) {
-		super.onNext(i);
+		BaseSubscriber.super.onNext(i);
 		try {
 			doNext(i);
 		} catch (Exceptions.CancelException c) {
@@ -102,7 +102,7 @@ public class SubscriberBarrier<I, O> extends BaseSubscriber<I>
 
 	@Override
 	public final void onError(Throwable t) {
-		super.onError(t);
+		BaseSubscriber.super.onError(t);
 		doError(t);
 	}
 

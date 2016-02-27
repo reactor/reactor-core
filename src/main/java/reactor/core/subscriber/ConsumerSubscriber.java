@@ -30,7 +30,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver, Runnable, Completable,
+public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runnable, Completable,
                                                                         Backpressurable {
 
 	final Consumer<? super T>         consumer;
@@ -124,7 +124,7 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver
 
 	@Override
 	public final void onError(Throwable t) {
-		super.onError(t);
+		BaseSubscriber.super.onError(t);
 		doError(t);
 		subscription = null;
 	}
@@ -144,7 +144,7 @@ public class ConsumerSubscriber<T> extends BaseSubscriber<T> implements Receiver
 
 	@Override
 	public final void onNext(T x) {
-		super.onNext(x);
+		BaseSubscriber.super.onNext(x);
 
 		try {
 			doNext(x);
