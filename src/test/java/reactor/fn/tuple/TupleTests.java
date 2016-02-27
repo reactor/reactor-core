@@ -30,14 +30,6 @@ import static org.hamcrest.Matchers.not;
 public class TupleTests {
 
 	@Test
-	public void tupleHoldsArbitraryValues() {
-		Tuple t = Tuple.of("Hello World!");
-
-		assertThat("value is stored as an Object", t.get(0), is((Object) "Hello World!"));
-		assertThat("value is a String", String.class.isInstance(t.get(0)));
-	}
-
-	@Test
 	public void tupleProvidesTypeSafeMethods() {
 		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
 

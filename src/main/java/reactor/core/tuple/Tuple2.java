@@ -43,6 +43,15 @@ public class Tuple2<T1, T2> extends Tuple {
 	}
 
 	/**
+	 * Type-safe way to get the fist object of this {@link Tuple}.
+	 *
+	 * @return The second object
+	 */
+	public T1 getT1() {
+		return t1;
+	}
+
+	/**
 	 * Type-safe way to get the second object of this {@link Tuple}.
 	 *
 	 * @return The second object
