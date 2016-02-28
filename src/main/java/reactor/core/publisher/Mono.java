@@ -335,7 +335,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> justOrEmpty(Optional<? extends T> data) {
-		return data.isPresent() ? just(data.get()) : empty();
+		return data != null && data.isPresent() ? just(data.get()) : empty();
 	}
 
 	/**
