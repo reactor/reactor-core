@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -319,6 +320,22 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public static <T> Mono<T> just(T data) {
 		return new MonoJust<>(data);
+	}
+
+	/**
+	 * Create a new {@link Mono} that emits the specified item if {@link Optional#isPresent()} otherwise only emits
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justorempty.png" alt="">
+	 * <p>
+	 * @param data the {@link Optional} item to onNext or onComplete if not present
+	 * @param <T> the type of the produced item
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <T> Mono<T> justOrEmpty(Optional<? extends T> data) {
+		return data.isPresent() ? just(data.get()) : empty();
 	}
 
 	/**
