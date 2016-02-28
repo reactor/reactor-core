@@ -104,10 +104,6 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 		return TRACE_ONLY;
 	}
 
-	@Override
-	public String getName() {
-		return GlobalTimer.class.getSimpleName();
-	}
 
 	/**
 	 * Read if the context timer has been set

@@ -96,10 +96,6 @@ public class SubscriptionWithContext<C> implements Subscription, Receiver, Intro
 		return TRACE_ONLY;
 	}
 
-	@Override
-	public String getName() {
-		return SubscriptionWithContext.class.getSimpleName();
-	}
 
 	public boolean isCancelled() {
 		return terminated == 1;

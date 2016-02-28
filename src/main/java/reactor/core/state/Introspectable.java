@@ -51,11 +51,15 @@ public interface Introspectable {
 	 *
 	 * @return the current reactive modes
 	 */
-	int getMode();
+	default int getMode() {
+		return 0;
+	}
 
 	/**
 	 * @return the current assigned name or identifier (if {@link #getMode} includes {@link #UNIQUE} option.
 	 */
-	String getName();
+	default String getName() {
+		return getClass().getSimpleName();
+	}
 
 }
