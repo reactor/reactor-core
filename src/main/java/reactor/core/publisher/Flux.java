@@ -1447,7 +1447,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
@@ -1460,7 +1460,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */

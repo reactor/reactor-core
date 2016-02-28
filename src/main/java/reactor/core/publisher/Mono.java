@@ -263,7 +263,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/completablefuture.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcompletablefuture.png" alt="">
 	 * <p>
 	 * @param completableFuture {@link CompletableFuture} that will produce the value
 	 * @param <T> type of the expected value
