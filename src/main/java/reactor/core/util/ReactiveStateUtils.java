@@ -33,7 +33,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Failurable;
-import reactor.core.state.Groupable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
@@ -345,14 +344,14 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * @param o candidate instance
-	 * @return a String key if the tested instance is {@link Groupable} otherwise {@literal null}
+	 * @return a String key if the tested instance is {@link Introspectable} otherwise {@literal null}
 	 */
 	public static String getGroup(Object o) {
 		if (o == null) {
 			return null;
 		}
 
-		Object key = Groupable.class.isAssignableFrom(o.getClass()) ? (((Groupable) o).key()) : null;
+		Object key = Introspectable.class.isAssignableFrom(o.getClass()) ? (((Introspectable) o).key()) : null;
 
 		if (key == null) {
 			return null;
@@ -363,13 +362,13 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * @param o candidate instance
-	 * @return an identifier name  produced metric if the tested instance is both
-	 * {@link Groupable} and {@link Introspectable#UNIQUE} otherwise return {@code getName(o).hashCode() + ":" + o.hashCode()}
+	 * @return an identifier name  produced metric if the tested instance is {@link Introspectable#UNIQUE} otherwise return {@code getName(o).hashCode() + ":" + o.hashCode()}
 	 */
 	public static String getIdOrDefault(Object o) {
 		if (reactiveStateCheck(o, Introspectable.class) &&
 				(((Introspectable)o).getMode() & Introspectable.UNIQUE) == Introspectable.UNIQUE) {
-			return  o instanceof Groupable ? ((Groupable)o).key().toString() : ((Introspectable) o).getName();
+			return  ((Introspectable)o).key() != null ? ((Introspectable)o).key().toString() : ((Introspectable) o)
+					.getName();
 		}
 		return getName(o).hashCode() + ":" + o.hashCode();
 	}

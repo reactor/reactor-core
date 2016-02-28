@@ -62,4 +62,10 @@ public interface Introspectable {
 		return getClass().getSimpleName();
 	}
 
+	/**
+	 * @return defined identifier or null if not available
+	 */
+	default Object key() {
+		return null;
+	}
 }
