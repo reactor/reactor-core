@@ -122,11 +122,6 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 	}
 
 	@Override
-	public Object connectedInput() {
-		return null;
-	}
-
-	@Override
 	public Object connectedOutput() {
 		return schedulerFactory;
 	}

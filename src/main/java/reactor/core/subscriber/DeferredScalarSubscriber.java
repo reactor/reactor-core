@@ -163,11 +163,6 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 	}
 
 	@Override
-	public Object connectedInput() {
-		return null;
-	}
-
-	@Override
 	public Object connectedOutput() {
 		return value;
 	}

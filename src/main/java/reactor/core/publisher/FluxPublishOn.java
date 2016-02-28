@@ -100,11 +100,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		return schedulerFactory;
 	}
 
-	@Override
-	public Object connectedOutput() {
-		return null;
-	}
-
 	static final class PublishOnPipeline<T>
 			extends DeferredSubscription implements Subscriber<T>, Producer, Loopback, Runnable {
 		final Subscriber<? super T> actual;
@@ -289,11 +284,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public Object connectedInput() {
 			return scheduler;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return null;
 		}
 
 		@Override
