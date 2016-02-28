@@ -339,6 +339,22 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Create a new {@link Mono} that emits the specified item if non null otherwise only emits
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/justorempty.png" alt="">
+	 * <p>
+	 * @param data the item to onNext or onComplete if null
+	 * @param <T> the type of the produced item
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <T> Mono<T> justOrEmpty(T data) {
+		return data != null ? just(data) : empty();
+	}
+
+	/**
 	 * Return a {@link Mono} that will never signal any data, error or completion signal.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
