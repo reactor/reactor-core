@@ -434,7 +434,7 @@ public enum BackpressureUtils {
 	}
 
 	/**
-	 * Log or Throw {@link reactor.core.util.Exceptions.DuplicateOnSubscribeException}
+	 * Log or Throw {@link IllegalStateException}
 	 */
 	public static void reportSubscriptionSet() {
 		if(!PlatformDependent.TRACE_CANCEL) {
@@ -447,7 +447,7 @@ public enum BackpressureUtils {
 	}
 
 	/**
-	 * Throw {@link reactor.core.util.Exceptions.NullOrNegativeRequestException}
+	 * Throw {@link IllegalArgumentException}
 	 * @param n the demand to evaluate
 	 */
 	public static void reportBadRequest(long n) {

@@ -109,11 +109,9 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 			if (n == 0 || isUnsubscribed()) {
 				return; // ignore in RxJava
 			}
-			try {
-				BackpressureUtils.checkRequest(n);
-			}
-			catch (Exceptions.NullOrNegativeRequestException c) {
-				subscriber.onError(c);
+			if (n <= 0L) {
+				subscriber.onError(Exceptions.nullOrNegativeRequestException(n));
+				return;
 			}
 
 			Subscription subscription = this.subscription;

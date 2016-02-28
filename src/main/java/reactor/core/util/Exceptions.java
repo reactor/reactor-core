@@ -17,6 +17,7 @@ package reactor.core.util;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
@@ -120,17 +121,17 @@ public enum Exceptions {
 	}
 
 	/**
-	 * @return a new {@link ArgumentIsNullException} with a cause message abiding to reactive stream specification.
+	 * @return a new {@link NullPointerException} with a cause message abiding to reactive stream specification.
 	 */
-	public static ArgumentIsNullException argumentIsNullException() {
-		return new ArgumentIsNullException();
+	public static NullPointerException argumentIsNullException() {
+		return new NullPointerException("Spec 2.13: Signal/argument cannot be null");
 	}
 
 	/**
-	 * @return a new {@link DuplicateOnSubscribeException} with a cause message abiding to reactive stream specification.
+	 * @return a new {@link IllegalStateException} with a cause message abiding to reactive stream specification.
 	 */
-	public static DuplicateOnSubscribeException duplicateOnSubscribeException() {
-		return new DuplicateOnSubscribeException();
+	public static IllegalStateException duplicateOnSubscribeException() {
+		return new IllegalStateException("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once (based on object equality)");
 	}
 
 	/**
@@ -208,10 +209,11 @@ public enum Exceptions {
 
 	/**
 	 * @param elements the invalid requested demand
-	 * @return a new {@link NullOrNegativeRequestException} with a cause message abiding to reactive stream specification.
+	 * @return a new {@link IllegalArgumentException} with a cause message abiding to reactive stream specification.
 	 */
-	public static NullOrNegativeRequestException nullOrNegativeRequestException(long elements) {
-		return new NullOrNegativeRequestException(elements);
+	public static IllegalArgumentException nullOrNegativeRequestException(long elements) {
+		return new IllegalArgumentException("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
+				elements);
 	}
 
 	/**
@@ -309,6 +311,14 @@ public enum Exceptions {
 	}
 
 	/**
+	 * @return a cached or new
+	 * {@link TimeoutException} depending on whether {@link PlatformDependent#TRACE_TIMEROVERLOW} has been set.
+	 */
+	public static TimeoutException timeOverflow() {
+		return TimerOverflowException.get();
+	}
+
+	/**
 	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
 	 *
 	 * @param t the exception to wrap
@@ -344,58 +354,6 @@ public enum Exceptions {
 		return new UpstreamException(t);
 	}
 
-	public static final class TimerOverflowException extends java.util.concurrent.TimeoutException {
-
-		public static final TimerOverflowException INSTANCE = new TimerOverflowException();
-
-		public static TimerOverflowException get() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
-		}
-
-		private TimerOverflowException() {
-			super("The subscriber has not requested for the timer signals, consider Fluxion#onBackpressureDrop or any" +
-					"unbounded subscriber");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
-		}
-	}
-
-	/**
-	 *
-	 */
-	public static final class NullOrNegativeRequestException extends IllegalArgumentException {
-
-		NullOrNegativeRequestException(long elements) {
-			super("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
-			  elements);
-		}
-	}
-
-	/**
-	 *
-	 */
-	public static final class ArgumentIsNullException extends NullPointerException {
-
-		ArgumentIsNullException() {
-			super("Spec 2.13: Signal/argument cannot be null");
-		}
-	}
-
-	/**
-	 *
-	 */
-	public static final class DuplicateOnSubscribeException extends IllegalStateException {
-
-		DuplicateOnSubscribeException() {
-			super("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once" +
-			" " +
-			  "(based on object equality)");
-		}
-	}
-
 	/**
 	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
 	 */
@@ -404,26 +362,26 @@ public enum Exceptions {
 		public ReactiveException(Throwable cause) {
 			super(cause);
 		}
+
 		public ReactiveException(String message) {
 			super(message);
 		}
-
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
 		}
 
 	}
+
 	/**
 	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
 	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
 	 * dealing with boundaries (queues, combinations and async).
 	 */
 	public static class UpstreamException extends ReactiveException {
-
 		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
-		private static final long serialVersionUID = 2491425277432776142L;
 
+		private static final long serialVersionUID = 2491425277432776142L;
 		public static UpstreamException instance() {
 			return INSTANCE;
 		}
@@ -437,16 +395,17 @@ public enum Exceptions {
 		}
 
 	}
+
 	/**
 	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 */
 	public static class DownstreamException extends ReactiveException {
-
 		private static final long serialVersionUID = 2491425227432776143L;
 
 		public DownstreamException(Throwable cause) {
 			super(cause);
 		}
+
 	}
 	/**
 	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
@@ -455,7 +414,6 @@ public enum Exceptions {
 	 */
 	@SuppressWarnings("serial")
 	public static final class AlertException extends RuntimeException {
-
 		/** Pre-allocated exception to avoid garbage generation */
 		public static final AlertException INSTANCE = new AlertException();
 
@@ -485,8 +443,8 @@ public enum Exceptions {
 	public static final class CancelException extends UpstreamException {
 
 		public static final CancelException INSTANCE = new CancelException();
-		private static final long serialVersionUID = 2491425227432776144L;
 
+		private static final long serialVersionUID = 2491425227432776144L;
 		private CancelException() {
 			super("The subscriber has denied dispatching");
 		}
@@ -552,8 +510,8 @@ public enum Exceptions {
 			}
 			return value.getClass().getName() + ".class : " + value;
 		}
-		private final Object value;
 
+		private final Object value;
 		/**
 		 * Create a {@code CauseValue} error and include in its error message a string representation of
 		 * the item that was intended to be emitted at the time the error was handled.
@@ -574,5 +532,24 @@ public enum Exceptions {
 			return value;
 		}
 
+	}
+
+	static final class TimerOverflowException extends TimeoutException {
+
+		public static final TimerOverflowException INSTANCE = new TimerOverflowException();
+
+		public static TimerOverflowException get() {
+			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
+		}
+
+		private TimerOverflowException() {
+			super("The subscriber has not requested for the timer signals, consider Fluxion#onBackpressureDrop or any" +
+					"unbounded subscriber");
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return PlatformDependent.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
+		}
 	}
 }

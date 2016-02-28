@@ -474,7 +474,7 @@ class HashWheelTimer extends Timer {
 			}
 			else {
 				cancel();
-				delegate.onError(Exceptions.TimerOverflowException.get());
+				delegate.onError(Exceptions.timeOverflow());
 			}
 		}
 
@@ -518,7 +518,7 @@ class HashWheelTimer extends Timer {
 				}
 			}
 			else if (STATUS.get(this) == STATUS_READY) {
-				delegate.onError(Exceptions.TimerOverflowException.get());
+				delegate.onError(Exceptions.timeOverflow());
 			}
 		}
 
