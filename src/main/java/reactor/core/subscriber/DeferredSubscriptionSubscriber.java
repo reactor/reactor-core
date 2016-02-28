@@ -30,21 +30,6 @@ implements Subscriber<I>, Producer {
 		this.subscriber = Objects.requireNonNull(subscriber, "subscriber");
 	}
 
-	/**
-	 * Constructs a SingleSubscriptionArbiter with the specified initial request amount.
-	 *
-	 * @param subscriber the actual subscriber
-	 * @param initialRequest
-	 * @throws IllegalArgumentException if initialRequest is negative
-	 */
-	public DeferredSubscriptionSubscriber(Subscriber<? super O> subscriber, long initialRequest) {
-		if (initialRequest < 0) {
-			throw new IllegalArgumentException("initialRequest >= required but it was " + initialRequest);
-		}
-		this.subscriber = Objects.requireNonNull(subscriber, "subscriber");
-		setInitialRequest(initialRequest);
-	}
-
 	@Override
 	public final Subscriber<? super O> downstream() {
 		return subscriber;

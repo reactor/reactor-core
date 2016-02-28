@@ -298,7 +298,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
 	 *
 	 * @param schedulerFactory
-	 * @param parallelSchedulers
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link Runnable} {@link Subscriber}
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
@@ -320,8 +321,9 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
 	 *
 	 * @param schedulerFactory
-	 * @param parallelSchedulers
-	 * @param autoShutdown
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
+	 * {@link Runnable} {@link Subscriber}
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 
 	 * @return a new {@link SchedulerGroup}
 	 */
