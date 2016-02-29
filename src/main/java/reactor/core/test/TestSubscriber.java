@@ -16,6 +16,7 @@
 
 package reactor.core.test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -67,9 +68,9 @@ import reactor.core.util.ReactiveStateUtils;
 public class TestSubscriber<T> extends DeferredSubscription implements Subscriber<T> {
 
 	/**
-	 * Default timeout in seconds for waiting next values to be received
+	 * Default timeout for waiting next values to be received
 	 */
-	public static final long DEFAULT_VALUES_TIMEOUT = 3;
+	public static final Duration DEFAULT_VALUES_TIMEOUT = Duration.ofSeconds(3);
 
 
 	private final CountDownLatch cdl = new CountDownLatch(1);
@@ -89,7 +90,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	final List<Throwable> errors = new LinkedList<>();
 
-	private long valuesTimeout = DEFAULT_VALUES_TIMEOUT;
+	private Duration valuesTimeout = DEFAULT_VALUES_TIMEOUT;
 
 	private boolean valuesStorage = true;
 
@@ -104,14 +105,14 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * error message supplier.
 	 * @throws AssertionError
 	 */
-	public static void await(long timeoutInSeconds, Supplier<String> errorMessageSupplier,
+	public static void await(Duration timeout, Supplier<String> errorMessageSupplier,
 			Supplier<Boolean> conditionSupplier) {
 
 		Assert.notNull(errorMessageSupplier);
 		Assert.notNull(conditionSupplier);
-		Assert.isTrue(timeoutInSeconds > 0);
+		Assert.notNull(timeout);
 
-		long timeoutNs = TimeUnit.SECONDS.toNanos(timeoutInSeconds);
+		long timeoutNs = timeout.toNanos();
 		long startTime = System.nanoTime();
 		do {
 			if (conditionSupplier.get()) {
@@ -135,8 +136,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * error message.
 	 * @throws AssertionError
 	 */
-	public static void await(long timeoutInSeconds, final String errorMessage, Supplier<Boolean> resultSupplier) {
-		await(timeoutInSeconds, new Supplier<String>() {
+	public static void await(Duration timeout, final String errorMessage, Supplier<Boolean> resultSupplier) {
+		await(timeout, new Supplier<String>() {
 			@Override
 			public String get() {
 				return errorMessage;
@@ -176,8 +177,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Configure the timeout in seconds for waiting next values to be received (3 seconds
 	 * by default).
 	 */
-	public final TestSubscriber<T> configureValuesTimeout(long timeoutInSeconds) {
-		this.valuesTimeout = timeoutInSeconds;
+	public final TestSubscriber<T> configureValuesTimeout(Duration timeout) {
+		this.valuesTimeout = timeout;
 		return this;
 	}
 
@@ -460,24 +461,14 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Blocking method that waits until a complete successfully or error signal is received
 	 * or until a timeout occurs.
-	 * @param timeoutInSec The timeout value in seconds
-	 */
-	public final TestSubscriber<T> await(long timeoutInSec) {
-		return await(timeoutInSec, TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Blocking method that waits until a complete successfully or error signal is received
-	 * or until a timeout occurs.
 	 * @param timeout The timeout value
-	 * @param unit Time unit of the timeout
 	 */
-	public final TestSubscriber<T> await(long timeout, TimeUnit unit) {
+	public final TestSubscriber<T> await(Duration timeout) {
 		if (cdl.getCount() == 0) {
 			return this;
 		}
 		try {
-			if (!cdl.await(timeout, unit)) {
+			if (!cdl.await(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
 				throw new AssertionError("No complete or error signal before timeout");
 			}
 			return this;
@@ -500,8 +491,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 				new Supplier<String>() {
 					@Override
 					public String get() {
-						return String.format("%d out of %d next values received within %d secs",
-						valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout);
+						return String.format("%d out of %d next values received within %d ms",
+						valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout.toMillis());
 					}
 				},
 				new Supplier<Boolean>() {
@@ -567,8 +558,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 				new Supplier<String>() {
 					@Override
 					public String get() {
-						return String.format("%d out of %d next values received within %d secs",
-						valueCount - nextValueAssertedCount, n, valuesTimeout);
+						return String.format("%d out of %d next values received within %d",
+						valueCount - nextValueAssertedCount, n, valuesTimeout.toMillis());
 					}
 				},
 				new Supplier<Boolean>() {

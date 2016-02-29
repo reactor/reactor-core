@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.TimeUnit;
-
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Timeable;
 import reactor.core.timer.Timer;
@@ -30,20 +28,18 @@ final class FluxInterval extends Flux<Long> implements Timeable {
 
 	final Timer    parent;
 	final long     period;
-	final TimeUnit unit;
 	final long     delay;
 
-	public FluxInterval(Timer timer, long period, TimeUnit unit, long milliseconds) {
+	public FluxInterval(Timer timer, long period, long delay) {
 		this.parent = timer;
 		this.period = period;
-		this.unit = unit;
-		this.delay = milliseconds;
+		this.delay = delay;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super Long> s) {
 		try {
-			s.onSubscribe(parent.interval(s, period, unit, delay));
+			s.onSubscribe(parent.interval(s, period, delay));
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);

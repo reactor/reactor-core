@@ -16,7 +16,6 @@
 
 package reactor.core.timer;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -213,21 +212,18 @@ public class Timer implements Timeable, Cancellable {
 	 * after the given delay.
 	 *
 	 * @param consumer            the {@code Consumer} to invoke each period
-	 * @param period              the amount of time that should elapse between invocations of the given {@code
-	 * Consumer}
-	 * @param timeUnit            the unit of time the {@code period} is to be measured in
-	 * @param delayInMilliseconds a number of milliseconds in which to delay any execution of the given {@code
-	 * Consumer}
+	 * @param period              the duration in milliseconds that should elapse between
+	 * invocations of the given {@code Consumer}
+	 * @param delay               a duration in which to delay any execution of the given
+	 * {@code Consumer}
 	 * @return a {@link Pausable} that can be used to {@link
 	 * Pausable#cancel() cancel}, {@link Pausable#pause() pause} or
 	 * {@link Pausable#resume() resume} the given task.
 	 */
 	public Pausable schedule(Consumer<? super Long> consumer,
-	                  long period,
-	                  TimeUnit timeUnit,
-	                  long delayInMilliseconds){
+	                  long period, long delay) {
 		Subscriber<? super Long> s = Subscribers.consumer(consumer);
-		Pausable p = interval(s, period, timeUnit, delayInMilliseconds);
+		Pausable p = interval(s, period, delay);
 		s.onSubscribe(p);
 		return p;
 	}
@@ -238,17 +234,15 @@ public class Timer implements Timeable, Cancellable {
 	 * signal, a  {@link java.util.concurrent.TimeoutException} will be signalled instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke each period
-	 * @param period the amount of time that should elapse between invocations of the given {@code Subscriber}
-	 * @param timeUnit the unit of time the {@code period} is to be measured in
-	 * @param delayInMilliseconds a number of milliseconds in which to delay any execution of the given {@code
-	 * Subscriber}
+	 * @param period the duration in milliseconds that should elapse between invocations
+	 * of the given {@code Subscriber}
+	 * @param delay a duration in milliseconds in which to delay any execution of the
+	 * given {@code Subscriber}
 	 *
 	 * @return a {@link Subscription} that can be passed onSubscribe
 	 */
 	public Pausable interval(Subscriber<? super Long> subscriber,
-			long period,
-			TimeUnit timeUnit,
-			long delayInMilliseconds) {
+			long period, long delay) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -258,31 +252,28 @@ public class Timer implements Timeable, Cancellable {
 	 * every N time units.
 	 *
 	 * @param consumer the {@code Consumer} to invoke each period
-	 * @param period   the amount of time that should elapse between invocations of the given {@code Consumer}
-	 * @param timeUnit the unit of time the {@code period} is to be measured in
+	 * @param period   the duration that should elapse between invocations of the given {@code Consumer}
 	 * @return a {@link Pausable} that can be used to {@link
 	 * Pausable#cancel() cancel}, {@link Pausable#pause() pause} or
 	 * {@link Pausable#resume() resume} the given task.
-	 * @see #schedule(Consumer, long, TimeUnit, long)
+	 * @see #schedule(Consumer, long, long)
 	 */
-	public Pausable schedule(Consumer<? super Long> consumer, long period,
-	                  TimeUnit timeUnit){
-		return schedule(consumer, period, timeUnit, 0);
+	public Pausable schedule(Consumer<? super Long> consumer, long period) {
+		return schedule(consumer, period, 0);
 	}
 
 	/**
 	 * Submit a task for arbitrary execution after the given time delay.
 	 *
 	 * @param consumer the {@code Consumer} to invoke
-	 * @param delay    the amount of time that should elapse before invocations of the given {@code Consumer}
-	 * @param timeUnit the unit of time the {@code delay} is to be measured in
+	 * @param delay    the duration that should elapse before invocations of the given {@code Consumer}
 	 * @return a {@link Pausable} that can be used to {@link
 	 * Pausable#cancel() cancel}, {@link Pausable#pause() pause} or
 	 * {@link Pausable#resume() resume} the given task.
 	 */
-	public Pausable submit(Consumer<? super Long> consumer, long delay, TimeUnit timeUnit) {
+	public Pausable submit(Consumer<? super Long> consumer, long delay) {
 		Subscriber<? super Long> s = Subscribers.consumer(consumer);
-		Pausable p = single(Subscribers.consumer(consumer), delay, timeUnit);
+		Pausable p = single(Subscribers.consumer(consumer), delay);
 		s.onSubscribe(p);
 		return p;
 	}
@@ -295,7 +286,7 @@ public class Timer implements Timeable, Cancellable {
 	 * @return {@literal this}
 	 */
 	public Pausable submit(Consumer<? super Long> consumer) {
-		return submit(consumer, resolution, TimeUnit.MILLISECONDS);
+		return submit(consumer, resolution);
 	}
 
 	/**
@@ -304,11 +295,11 @@ public class Timer implements Timeable, Cancellable {
 	 * instead.
 	 *
 	 * @param subscriber the {@code Subscriber} to invoke
-	 * @param delay    the amount of time that should elapse before invocations of the given {@code Subscriber}
-	 * @param timeUnit the unit of time the {@code delay} is to be measured in
+	 * @param delay    the duration in milliseconds that should elapse before invocations
+	 * of the given {@code Subscriber}
 	 * @return a {@link Subscription} that can be passed onSubscribe
 	 */
-	public Pausable single(Subscriber<? super Long> subscriber, long delay, TimeUnit timeUnit) {
+	public Pausable single(Subscriber<? super Long> subscriber, long delay) {
 		throw new UnsupportedOperationException();
 	}
 

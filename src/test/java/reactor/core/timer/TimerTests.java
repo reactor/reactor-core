@@ -51,7 +51,7 @@ public class TimerTests {
 				sysTime.set(System.nanoTime());
 			}
 			count.getAndIncrement();
-		}, 100, TimeUnit.MILLISECONDS, 500);
+		}, 100, 500);
 
 		phaser.awaitAdvance(0);
 
@@ -107,7 +107,7 @@ public class TimerTests {
                                timesCalled.incrementAndGet();
                                latch.countDown();
                            }
-                       }, 1, TimeUnit.SECONDS);
+                       }, 1000);
 
         timeTravellingSupplier.set(iterations * 1000L);
 

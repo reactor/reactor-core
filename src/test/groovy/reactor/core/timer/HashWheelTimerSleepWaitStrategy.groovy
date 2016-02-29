@@ -43,7 +43,6 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 			timer.schedule(
 					{ Long now -> latch.countDown() } as Consumer<Long>,
 					period,
-					TimeUnit.MILLISECONDS,
 					period
 			)
 
@@ -75,8 +74,7 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 						elapsed = System.currentTimeMillis() - start
 						latch.countDown()
 					} as Consumer<Long>,
-					delay,
-					TimeUnit.MILLISECONDS
+					delay
 			)
 
 		then:

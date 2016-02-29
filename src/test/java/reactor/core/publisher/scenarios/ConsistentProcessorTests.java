@@ -220,7 +220,7 @@ public class ConsistentProcessorTests {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			Timer.global().submit(time -> finish(s), 5, TimeUnit.SECONDS);
+			Timer.global().submit(time -> finish(s), 5000);
 			s.request(Long.MAX_VALUE);
 		}
 

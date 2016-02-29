@@ -1,6 +1,7 @@
 package reactor.core.test;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
@@ -185,7 +186,7 @@ public class TestSubscriberTests {
 	public void awaitAndAssertValueCountFailure() {
 		TestSubscriber<Long> subscriber = new TestSubscriber<>();
 		Flux.just(1L).log().subscribe(subscriber);
-		subscriber.configureValuesTimeout(1).awaitAndAssertValueCount(2);
+		subscriber.configureValuesTimeout(Duration.ofSeconds(1)).awaitAndAssertValueCount(2);
 	}
 
 }

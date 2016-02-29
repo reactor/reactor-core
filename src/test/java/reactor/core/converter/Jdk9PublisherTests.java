@@ -16,7 +16,6 @@
 package reactor.core.converter;
 
 import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
@@ -59,7 +58,7 @@ public class Jdk9PublisherTests extends PublisherVerification<Long> {
 		}
 
 		SubmissionPublisher<Long> pub = new SubmissionPublisher<>();
-		Timer.global().schedule(pub::submit, 50, TimeUnit.MILLISECONDS);
+		Timer.global().schedule(pub::submit, 50);
 		return (Publisher<Long>) DependencyUtils.convertToPublisher(pub);
 	}
 

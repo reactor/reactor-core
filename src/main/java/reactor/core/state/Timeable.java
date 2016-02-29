@@ -22,9 +22,9 @@ package reactor.core.state;
 public interface Timeable {
 
 	/**
-	 * Can represent a period in milliseconds
+	 * Can represent a period duration
 	 *
-	 * @return a time resolution for a periodic execution
+	 * @return a duration in milliseconds for a periodic execution
 	 */
 	long period();
 }
