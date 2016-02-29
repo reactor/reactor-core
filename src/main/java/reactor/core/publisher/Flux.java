@@ -1038,7 +1038,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 *
 	 * @return a bounded {@link Flux}
 	 */
-	public final Flux<T> capacity(long capacity) {
+	public final Flux<T> useCapacity(long capacity) {
 		return new FluxBounded<>(this, capacity);
 	}
 
