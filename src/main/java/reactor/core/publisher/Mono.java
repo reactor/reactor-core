@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -747,6 +748,20 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+	}
+
+	/**
+	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each request
+	 *
+	 * @return an observed  {@link Mono}
+	 */
+	public final Mono<T> doOnRequest(final LongConsumer consumer) {
+		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, consumer, null));
 	}
 
 	/**

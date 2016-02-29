@@ -24,6 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -912,7 +913,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipp.png" alt="">
 	 *
 	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 * @param prefetch the inner source request size
@@ -958,7 +959,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * produced by the passed combinator function of the
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipp.png" alt="">
 	 * <p>
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the
 	 * value to signal downstream
@@ -1183,6 +1184,20 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		return new FluxPeek<>(this, null, onNext, null, null, null, null, null);
+	}
+
+	/**
+	 * Attach a {@link LongConsumer} to this {@link Flux} that will observe any request to this {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each request
+	 *
+	 * @return an observed  {@link Flux}
+	 */
+	public final Flux<T> doOnRequest(final LongConsumer consumer) {
+		return new FluxPeek<>(this, null, null, null, null, null, consumer, null);
 	}
 
 	/**
