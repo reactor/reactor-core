@@ -303,8 +303,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 				else {
 					long r = is.requested;
-					is.unbounded = r == Long.MAX_VALUE;
-					Sequence poll = is.unbounded && replay == -1 ? null : is.pollCursor;
+					is.unbounded = r == Long.MAX_VALUE && replay == -1 ;
+					Sequence poll = is.unbounded ? null : is.pollCursor;
 
 					//no tracking and remaining demand positive
 					if (r > 0L && poll == null) {
@@ -521,8 +521,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void checkTerminal(EmitterSubscriber<T> is, Sequence innerSequence, long r) {
 		Throwable e = error;
-		if ((e != null && r == 0) || innerSequence == null || is.unbounded || innerSequence.getAsLong() >= emitBuffer.getCursor
-				()) {
+		if ((e != null && r == 0) || innerSequence == null || is.unbounded || innerSequence.getAsLong() >= emitBuffer.getCursor()) {
 			removeInner(is, EMPTY);
 			if (!is.done) {
 				if (e == null) {
