@@ -617,6 +617,25 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
+	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
+	 *
+	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 */
+	public static SchedulerGroup single(String name, int bufferSize, WaitStrategy waitStrategy) {
+		return single(name, bufferSize, null, null, false, () -> waitStrategy);
+	}
+
+	/**
+	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 *
+	 * <p>
+	 * It uses a single
+	 * {@link TopicProcessor} subscribed once by a subscriber executing its partition of {@link Runnable} tasks.
+	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
+	 * mitigated.
+	 *
+	 * @param name Group name derived for thread identification
+	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
 	 *
