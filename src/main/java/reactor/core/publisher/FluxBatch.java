@@ -16,13 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.state.Failurable;
 import reactor.core.state.Pausable;
+import reactor.core.state.Requestable;
 import reactor.core.subscriber.SerializedSubscriber;
-import reactor.core.subscriber.SubscriberWithDemand;
+import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.timer.Timer;
 import reactor.core.util.BackpressureUtils;
 
@@ -75,7 +80,117 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 	}
 
-	static protected abstract class BatchAction<T, V> extends SubscriberWithDemand<T, V> {
+	static protected abstract class BatchAction<T, V> extends SubscriberBarrier<T, V>
+			implements Requestable, Failurable {
+
+		protected final static int NOT_TERMINATED = 0;
+		protected final static int TERMINATED_WITH_SUCCESS = 1;
+		protected final static int TERMINATED_WITH_ERROR = 2;
+		protected final static int TERMINATED_WITH_CANCEL = 3;
+
+		@SuppressWarnings("unused")
+		private volatile       int                                             terminated = NOT_TERMINATED;
+		@SuppressWarnings("rawtypes")
+		protected static final AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
+				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "terminated");
+
+		@SuppressWarnings("unused")
+		private volatile       long                                         requested = 0L;
+		@SuppressWarnings("rawtypes")
+		protected static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(BatchAction.class, "requested");
+
+
+		@Override
+		public boolean isTerminated() {
+			return terminated != NOT_TERMINATED;
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with success ?
+		 */
+		public final boolean isCompleted() {
+			return terminated == TERMINATED_WITH_SUCCESS;
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with an error ?
+		 */
+		public final boolean isFailed() {
+			return terminated == TERMINATED_WITH_ERROR;
+		}
+
+		/**
+		 * @return has this {@link Subscriber} been cancelled
+		 */
+		public final boolean isCancelled() {
+			return terminated == TERMINATED_WITH_CANCEL;
+		}
+
+		@Override
+		public final long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		protected void doRequest(long n) {
+			doRequested(BackpressureUtils.getAndAdd(REQUESTED, this, n), n);
+		}
+
+		protected final void requestMore(long n){
+			Subscription s = this.subscription;
+			if (s != null) {
+				s.request(n);
+			}
+		}
+
+		@Override
+		protected void doComplete() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_SUCCESS)) {
+				checkedComplete();
+				doTerminate();
+			}
+		}
+
+		@Override
+		protected void doError(Throwable throwable) {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+				checkedError(throwable);
+				doTerminate();
+			}
+		}
+
+		protected void checkedError(Throwable throwable){
+			subscriber.onError(throwable);
+		}
+
+		@Override
+		protected void doCancel() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
+				checkedCancel();
+				doTerminate();
+			}
+		}
+
+		protected void checkedCancel(){
+			super.doCancel();
+		}
+
+		protected void doTerminate(){
+			//TBD
+		}
+
+		@Override
+		public Throwable getError() {
+			return isFailed() ? FAILED_SATE : null;
+		}
+
+		private static final Exception FAILED_SATE = new RuntimeException("Failed Subscriber"){
+			@Override
+			public synchronized Throwable fillInStackTrace() {
+				return null;
+			}
+		};
 
 		protected final boolean        next;
 		protected final boolean        flush;
@@ -129,7 +244,6 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			this.batchSize = batchSize;
 		}
 
-		@Override
 		protected void doRequested(long before, long n) {
 			if (isTerminated()) {
 				return;
@@ -195,7 +309,6 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		@Override
 		protected void checkedComplete() {
 			try {
 				flushCallback(null);
