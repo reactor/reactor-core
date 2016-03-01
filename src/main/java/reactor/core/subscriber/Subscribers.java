@@ -53,12 +53,9 @@ public enum Subscribers{
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public static <T> Subscriber<T> create(final Consumer<? super Subscription> subscriptionHandler) {
-		return create(new Function<Subscription, Void>() {
-			@Override
-			public Void apply(Subscription subscription) {
-				subscriptionHandler.accept(subscription);
-				return null;
-			}
+		return create((Function<Subscription, Void>) subscription -> {
+			subscriptionHandler.accept(subscription);
+			return null;
 		}, null, null, null);
 	}
 
@@ -260,49 +257,10 @@ public enum Subscribers{
 		return new SubscriberWithSubscriptionContext<T, C>(dataConsumer, subscriptionHandler, errorConsumer, completeConsumer);
 	}
 
-	/**
-	 * Return an empty subscriber.
-	 */
-	public static <T> Subscriber<T> empty() {
-		return EmptySubscriber.instance();
-	}
 
-	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = new Function<Subscription, Void>() {
-		@Override
-		public Void apply(Subscription subscription) {
-			subscription.request(Long.MAX_VALUE);
-			return null;
-		}
+	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = subscription -> {
+		subscription.request(Long.MAX_VALUE);
+		return null;
 	};
 
-
-	private enum EmptySubscriber implements Subscriber<Object> {
-
-		INSTANCE;
-
-		@SuppressWarnings("unchecked")
-		public static <T> Subscriber<T> instance() {
-			return (Subscriber<T>) INSTANCE;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onNext(Object t) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			// deliberately no op
-		}
-
-		@Override
-		public void onComplete() {
-			// deliberately no op
-		}
-	}
 }

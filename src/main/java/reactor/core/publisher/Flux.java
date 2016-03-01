@@ -1707,8 +1707,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> stream() {
-		return stream(this instanceof Backpressurable ? this.getCapacity() : Long.MAX_VALUE
-		);
+		return stream(getCapacity() == -1L ? Long.MAX_VALUE : getCapacity());
 	}
 
 	/**
@@ -1794,8 +1793,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(this instanceof Backpressurable ? this.getCapacity() : Long.MAX_VALUE
-		);
+		return toIterable(getCapacity() == -1L ? Long.MAX_VALUE : getCapacity());
 	}
 
 	/**
