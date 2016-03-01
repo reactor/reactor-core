@@ -18,7 +18,6 @@ package reactor.core.queue;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -151,6 +150,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	/**
 	 *
 	 * @param <T> the reified {@link Queue} generic type
+	 * @return an unbounded {@link Queue} {@link Supplier}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
+		return  () -> new SpscArrayQueue<>(linkSize);
+	}
+
+	/**
+	 *
+	 * @param <T> the reified {@link Queue} generic type
 	 * @return a bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
@@ -184,7 +193,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	public Queue<T> get() {
 
 		if(batchSize > 10_000_000){
-			return new ConcurrentLinkedQueue<>();
+			return new SpscLinkedArrayQueue<>(PlatformDependent.SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
 			return new OneQueue<>(waiting);
@@ -196,9 +205,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 					-1L);
 		}
 		else{
-			return RingBuffer.nonBlockingBoundedQueue(
-					RingBuffer.<T>createSingleProducer((int) batchSize),
-					-1L);
+			return new SpscArrayQueue<>((int)batchSize);
 		}
 	}
 
