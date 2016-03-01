@@ -118,7 +118,7 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 				throw ce;
 			}
 			catch (Throwable error) {
-				onError(Exceptions.addValueAsLastCause(error, t));
+				onError(error);
 			}
 		}
 	}

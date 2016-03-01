@@ -156,7 +156,7 @@ public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runna
 				subscription = null;
 				s.cancel();
 			}
-			doError(Exceptions.addValueAsLastCause(t, x));
+			doError(t);
 		}
 	}
 

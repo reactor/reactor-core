@@ -92,7 +92,7 @@ public class SubscriberWithContext<T, C> implements Subscriber<T>, Completable, 
 			subscriber.onNext(t);
 		} catch (Throwable throwable) {
 			Exceptions.throwIfFatal(throwable);
-			subscriber.onError(Exceptions.addValueAsLastCause(throwable, t));
+			subscriber.onError(throwable);
 		}
 	}
 

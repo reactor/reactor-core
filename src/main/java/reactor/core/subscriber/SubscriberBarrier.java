@@ -91,7 +91,7 @@ public class SubscriberBarrier<I, O>
 				subscription.cancel();
 			}
 			Exceptions.throwIfFatal(throwable);
-			doOnSubscriberError(Exceptions.addValueAsLastCause(Exceptions.unwrap(throwable), i));
+			doOnSubscriberError(Exceptions.unwrap(throwable));
 		}
 	}
 
