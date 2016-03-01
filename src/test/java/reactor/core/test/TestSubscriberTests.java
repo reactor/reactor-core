@@ -138,9 +138,9 @@ public class TestSubscriberTests {
 	public void awaitAndAssertValues() {
 		TestSubscriber<String> ts = new TestSubscriber<>(1);
 		Flux.just("1", "2").log().subscribe(ts);
-		ts.awaitAndAssertValues("1");
+		ts.awaitAndAssertNextValues("1");
 		ts.request(1);
-		ts.awaitAndAssertValues("2");
+		ts.awaitAndAssertNextValues("2");
 	}
 
 	@Test
@@ -153,9 +153,9 @@ public class TestSubscriberTests {
 			}
 		};
 		Flux.just(1L, 2L).log().subscribe(ts);
-		ts.awaitAndAssertValuesWith(greaterThanZero);
+		ts.awaitAndAssertNextValuesWith(greaterThanZero);
 		ts.request(1);
-		ts.awaitAndAssertValuesWith(greaterThanZero);
+		ts.awaitAndAssertNextValuesWith(greaterThanZero);
 	}
 
 	@Test(expected = AssertionError.class)
@@ -168,25 +168,25 @@ public class TestSubscriberTests {
 				Assert.assertTrue(aLong < 10L);
 			}
 		};
-		ts.awaitAndAssertValuesWith(lowerThanTen);
+		ts.awaitAndAssertNextValuesWith(lowerThanTen);
 		ts.request(1);
-		ts.awaitAndAssertValuesWith(lowerThanTen);
+		ts.awaitAndAssertNextValuesWith(lowerThanTen);
 	}
 
 	@Test
 	public void awaitAndAssertValueCount() {
 		TestSubscriber<Long> ts = new TestSubscriber<>(1);
 		Flux.just(1L, 2L).log().subscribe(ts);
-		ts.awaitAndAssertValueCount(1);
+		ts.awaitAndAssertNextValueCount(1);
 		ts.request(1);
-		ts.awaitAndAssertValueCount(1);
+		ts.awaitAndAssertNextValueCount(1);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void awaitAndAssertValueCountFailure() {
 		TestSubscriber<Long> subscriber = new TestSubscriber<>();
 		Flux.just(1L).log().subscribe(subscriber);
-		subscriber.configureValuesTimeout(Duration.ofSeconds(1)).awaitAndAssertValueCount(2);
+		subscriber.configureValuesTimeout(Duration.ofSeconds(1)).awaitAndAssertNextValueCount(2);
 	}
 
 }

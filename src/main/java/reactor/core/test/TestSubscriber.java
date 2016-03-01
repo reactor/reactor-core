@@ -484,7 +484,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * exception (like an {@link AssertionError}) if the value is not valid.
 	 */
 	@SafeVarargs
-	public final TestSubscriber<T> awaitAndAssertValuesWith(Consumer<T>... expectations) {
+	public final TestSubscriber<T> awaitAndAssertNextValuesWith(Consumer<T>... expectations) {
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
 		await(valuesTimeout,
@@ -526,15 +526,15 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Blocking method that waits until {@code n} next values have been received
 	 * (n is the number of values provided) to assert them.
-	 * @param expectedValues the values to assert
+	 * @param values the values to assert
 	 */
 	@SafeVarargs
 	@SuppressWarnings("unchecked")
-	public final TestSubscriber<T> awaitAndAssertValues(T... expectedValues) {
-		final int expectedNum = expectedValues.length;
+	public final TestSubscriber<T> awaitAndAssertNextValues(T... values) {
+		final int expectedNum = values.length;
 		final List<Consumer<T>> expectations = new ArrayList<>();
 		for (int i = 0; i < expectedNum; i++) {
-			final T expectedValue = expectedValues[i];
+			final T expectedValue = values[i];
 			expectations.add(new Consumer<T>() {
 				@Override
 				public void accept(T actualValue) {
@@ -545,7 +545,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 				}
 			});
 		}
-		awaitAndAssertValuesWith(expectations.toArray((Consumer<T>[])new Consumer[0]));
+		awaitAndAssertNextValuesWith(expectations.toArray((Consumer<T>[])new Consumer[0]));
 		return this;
 	}
 
@@ -553,7 +553,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Blocking method that waits until {@code n} next values have been received.
 	 * @param n the value count to assert
 	 */
-	public final TestSubscriber<T> awaitAndAssertValueCount(final long n) {
+	public final TestSubscriber<T> awaitAndAssertNextValueCount(final long n) {
 		await(valuesTimeout,
 				new Supplier<String>() {
 					@Override

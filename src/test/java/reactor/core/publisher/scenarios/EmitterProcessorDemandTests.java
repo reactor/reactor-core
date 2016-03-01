@@ -159,7 +159,7 @@ public class EmitterProcessorDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		subscriber.awaitAndAssertValues("1");
+		subscriber.awaitAndAssertNextValues("1");
 	}
 
 	@Test
@@ -173,7 +173,7 @@ public class EmitterProcessorDemandTests {
 		    .subscribe(processor);
 
 
-		subscriber.awaitAndAssertValues("1");
+		subscriber.awaitAndAssertNextValues("1");
 	}
 
 	@Test
@@ -190,10 +190,10 @@ public class EmitterProcessorDemandTests {
 		processor.log("after-2").subscribe(second);
 
 		second.request(1);
-		second.awaitAndAssertValues("1");
+		second.awaitAndAssertNextValues("1");
 
 		first.request(3);
-		first.awaitAndAssertValues("1", "2", "3");
+		first.awaitAndAssertNextValues("1", "2", "3");
 	}
 
 	@Test
@@ -206,12 +206,12 @@ public class EmitterProcessorDemandTests {
 		TestSubscriber<String> first = new TestSubscriber<>(1);
 		processor.subscribe(first);
 
-		first.awaitAndAssertValues("1");
+		first.awaitAndAssertNextValues("1");
 
 		TestSubscriber<String> second = new TestSubscriber<>(3);
 		processor.subscribe(second);
 
-		second.awaitAndAssertValues("2", "3", "4");
+		second.awaitAndAssertNextValues("2", "3", "4");
 	}
 
 	static class MyThread extends Thread {

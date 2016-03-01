@@ -45,7 +45,7 @@ class PublisherConversionSpec extends Specification {
 	pub.subscribe(queue)
 
 	then: "queues values correct"
-	queue.awaitAndAssertValues(*(1..1000))
+	queue.awaitAndAssertNextValues(*(1..1000))
 			.assertComplete()
 
 
@@ -73,7 +73,7 @@ class PublisherConversionSpec extends Specification {
 	pub.subscribe(queue)
 
 	then: "queues values correct"
-	queue.awaitAndAssertValues(1)
+	queue.awaitAndAssertNextValues(1)
 			.assertComplete()
 
 
@@ -99,7 +99,7 @@ class PublisherConversionSpec extends Specification {
 	pub.subscribe(queue)
 
 	then: "queues values correct"
-	queue.awaitAndAssertValues([1])
+	queue.awaitAndAssertNextValues([1])
 			.assertComplete()
 
 

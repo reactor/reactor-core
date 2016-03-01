@@ -41,7 +41,7 @@ class PublishersSpec extends Specification {
 	pub.onErrorReturn(100000).subscribe(s)
 
 	then: "queues values correct"
-	s.awaitAndAssertValues(1, 2, 100000)
+	s.awaitAndAssertNextValues(1, 2, 100000)
 			.assertComplete()
   }
 
@@ -60,7 +60,7 @@ class PublishersSpec extends Specification {
 	pub.switchOnError(fromIterable(9999..10002)).subscribe(s)
 
 	then: "queues values correct"
-	s.awaitAndAssertValues(1, 2, 9999, 10000, 10001, 10002)
+	s.awaitAndAssertNextValues(1, 2, 9999, 10000, 10001, 10002)
 			.assertComplete()
   }
 
