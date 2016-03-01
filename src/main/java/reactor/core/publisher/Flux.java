@@ -1681,7 +1681,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Aggregate the values from this {@link Fluxion} sequence into an object of the same type than the
+	 * Aggregate the values from this {@link Flux} sequence into an object of the same type than the
 	 * emitted items. The left/right {@link BiFunction} arguments are the N-1 and N item, ignoring sequence
 	 * with 0 or 1 element only.
 	 *
@@ -1690,7 +1690,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param aggregator the aggregating {@link BiFunction}
 	 *
-	 * @return a reduced {@link Fluxion}
+	 * @return a reduced {@link Flux}
 	 *
 	 * @since 1.1, 2.0, 2.5
 	 */
@@ -1702,7 +1702,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Accumulate the values from this {@link Fluxion} sequence into an object matching an initial value type.
+	 * Accumulate the values from this {@link Flux} sequence into an object matching an initial value type.
 	 * The arguments are the N-1 or {@literal initial} value and N current item .
 	 *
 	 * <p>
@@ -1712,7 +1712,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param initial the initial left argument to pass to the reducing {@link BiFunction}
 	 * @param <A> the type of the initial and reduced object
 	 *
-	 * @return a reduced {@link Fluxion}
+	 * @return a reduced {@link Flux}
 	 * @since 1.1, 2.0, 2.5
 	 */
 	public final <A> Mono<A> reduce(final A initial, BiFunction<A, ? super T, A> accumulator) {
@@ -1720,7 +1720,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Accumulate the values from this {@link Fluxion} sequence into an object matching an initial value type.
+	 * Accumulate the values from this {@link Flux} sequence into an object matching an initial value type.
 	 * The arguments are the N-1 or {@literal initial} value and N current item .
 	 *
 	 * <p>
@@ -1730,7 +1730,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param initial the initial left argument supplied on subscription to the reducing {@link BiFunction}
 	 * @param <A> the type of the initial and reduced object
 	 *
-	 * @return a reduced {@link Fluxion}
+	 * @return a reduced {@link Flux}
 	 *
 	 * @since 1.1, 2.0, 2.5
 	 */

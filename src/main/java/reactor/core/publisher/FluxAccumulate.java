@@ -32,7 +32,7 @@ import reactor.core.util.Exceptions;
  * Accumulates the source values with an accumulator function and
  * returns the intermediate results of this function.
  * <p>
- * Unlike {@link FluxionScan}, this operator doesn't take an initial value
+ * Unlike {@link reactor.core.publisher.FluxScan}, this operator doesn't take an initial value
  * but treats the first source value as initial value.
  * <br>
  * The accumulation works as follows:

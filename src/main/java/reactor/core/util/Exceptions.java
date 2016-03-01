@@ -395,7 +395,7 @@ public enum Exceptions {
 		}
 
 		private TimerOverflowException() {
-			super("The subscriber has not requested for the timer signals, consider Fluxion#onBackpressureDrop or any" +
+			super("The subscriber has not requested for the timer signals, consider Flux#onBackpressureDrop or any" +
 					"unbounded subscriber");
 		}
 

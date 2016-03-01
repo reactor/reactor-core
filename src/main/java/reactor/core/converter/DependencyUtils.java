@@ -26,7 +26,6 @@ import org.reactivestreams.Publisher;
  */
 public final class DependencyUtils {
 
-	static private final boolean HAS_REACTOR_STREAM;
 	static private final boolean HAS_REACTOR_CODEC;
 	static private final boolean HAS_REACTOR_NET;
 	static private final boolean HAS_REACTOR_BUS;
@@ -42,7 +41,6 @@ public final class DependencyUtils {
 		final int RXJAVA_1_OBSERVABLE = 0b000001;
 		final int RXJAVA_1_SINGLE = 0b000010;
 		final int RXJAVA_1_COMPLETABLE = 0b000100;
-		final int REACTOR_STREAM = 0b001000;
 		final int FLOW_PUBLISHER = 0b100000;
 		final int REACTOR_CODEC = 0b1000000;
 		final int REACTOR_BUS = 0b10000000;
@@ -56,13 +54,6 @@ public final class DependencyUtils {
 			detected |= RXJAVA_1_SINGLE;
 			/*Class.forName("rx.Completable");
 			hasRxjava1Completable = true;*/
-		}
-		catch (ClassNotFoundException cnfe) {
-			//IGNORE
-		}
-		try {
-			Class.forName("reactor.rx.Fluxion");
-			detected |= REACTOR_STREAM;
 		}
 		catch (ClassNotFoundException cnfe) {
 			//IGNORE
@@ -113,7 +104,6 @@ public final class DependencyUtils {
 		else {
 			FLOW_PUBLISHER_CONVERTER = null;
 		}
-		HAS_REACTOR_STREAM = (detected & REACTOR_STREAM) == REACTOR_STREAM;
 		HAS_REACTOR_CODEC = (detected & REACTOR_CODEC) == REACTOR_CODEC;
 		HAS_REACTOR_BUS = (detected & REACTOR_BUS) == REACTOR_BUS;
 		HAS_REACTOR_NET = (detected & REACTOR_NET) == REACTOR_NET;
