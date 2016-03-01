@@ -51,11 +51,6 @@ final class FluxConcatIterable<T>
 	}
 
 	@Override
-	public long upstreamCount() {
-		return -1L;
-	}
-
-	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
 		Iterator<? extends Publisher<? extends T>> it;

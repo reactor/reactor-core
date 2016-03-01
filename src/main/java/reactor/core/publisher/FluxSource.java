@@ -29,7 +29,7 @@ import reactor.core.state.Backpressurable;
  * @param <I> Upstream type
  * @param <O> Downstream type
  */
-public class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiver {
+public class FluxSource<I, O> extends Flux<O> implements Receiver {
 
 	protected final Publisher<? extends I> source;
 
@@ -55,12 +55,7 @@ public class FluxSource<I, O> extends Flux<O> implements Backpressurable, Receiv
 	public long getCapacity() {
 		return Backpressurable.class.isAssignableFrom(source.getClass()) ?
 				((Backpressurable) source).getCapacity() :
-				Long.MAX_VALUE;
-	}
-
-	@Override
-	public long getPending() {
-		return -1L;
+				-1L;
 	}
 
 	/**

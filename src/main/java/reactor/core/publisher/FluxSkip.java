@@ -139,11 +139,6 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public long getPending() {
-			return -1L;
-		}
-
-		@Override
 		public Object upstream() {
 			return s;
 		}

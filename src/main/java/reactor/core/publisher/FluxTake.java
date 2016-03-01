@@ -199,11 +199,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public long getPending() {
-			return -1L;
-		}
-
-		@Override
 		public long limit() {
 			return 0;
 		}

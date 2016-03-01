@@ -31,6 +31,8 @@ public interface MultiProducer {
 	/**
 	 * @return the number of downstream receivers
 	 */
-	long downstreamCount();
+	default long downstreamCount() {
+		return -1L;
+	}
 
 }

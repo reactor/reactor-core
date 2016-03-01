@@ -33,5 +33,7 @@ public interface MultiReceiver {
 	/**
 	 * @return the number of upstreams
 	 */
-	long upstreamCount();
+	default long upstreamCount() {
+		return -1L;
+	}
 }

@@ -127,11 +127,6 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public long getPending() {
-		return -1L;
-	}
-
-	@Override
 	public long getCapacity() {
 		return prefetch;
 	}

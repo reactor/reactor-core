@@ -409,23 +409,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 
 	/**
-	 * Create a {@link Flux} that emits the items contained in the provided {@link Tuple}.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromtuple.png" alt="">
-	 * <p> <p>
-	 *
-	 * @param tuple the {@link Tuple} to read data from
-	 *
-	 * @return a new {@link Flux}
-	 */
-	public static Flux<Object> fromTuple(Tuple tuple) {
-		return fromArray(tuple.toArray());
-	}
-
-
-
-	/**
 	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}. The argument {@code
 	 * contextFactory} is executed once by new subscriber to generate a context shared by every request calls. The
 	 * argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel, onComplete,

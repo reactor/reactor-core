@@ -950,11 +950,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		                 .replace(Mono.class.getSimpleName(), "");
 	}
 
-	@Override
-	public long getPending() {
-		return -1L;
-	}
-
 	/**
 	 * Create a {@link Mono} intercepting all source signals with the returned Subscriber that might choose to pass them
 	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.

@@ -247,11 +247,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	@Override
-	public long getPending() {
-		return -1L;
-	}
-
-	@Override
 	public int getMode() {
 		return 0;
 	}
