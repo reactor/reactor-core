@@ -233,13 +233,13 @@ public class SignalEmitter<E>
 			}
 			else{
 				IllegalStateException ise = new IllegalStateException("Session has been cancelled previously");
-				Exceptions.addCause(ise, error);
+				ise.addSuppressed(error);
 				throw ise;
 			}
 		}
 		else {
 			IllegalStateException ise = new IllegalStateException("Session already failed");
-			Exceptions.addCause(ise, error);
+			ise.addSuppressed(error);
 			throw ise;
 		}
 	}
