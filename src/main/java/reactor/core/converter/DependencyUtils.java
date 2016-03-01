@@ -132,10 +132,6 @@ public final class DependencyUtils {
 		return FLOW_PUBLISHER_CONVERTER != null;
 	}
 
-	public static boolean hasReactorStream() {
-		return HAS_REACTOR_STREAM;
-	}
-
 	public static boolean hasReactorCodec() {
 		return HAS_REACTOR_CODEC;
 	}

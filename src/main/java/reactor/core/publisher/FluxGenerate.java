@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiConsumer;
@@ -207,68 +206,6 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 		}
 
 	}
-
-		/**
-		 * Simple Publisher implementations
-		 */
-		static final class IterableSequencer<T> implements Function<Subscriber<? super T>, Iterator<? extends T>>,
-		                                                   Consumer<SubscriberWithContext<T, Iterator<? extends T>>>,
-		                                                   Introspectable, Receiver {
-
-			private final Iterable<? extends T> defaultValues;
-
-			public IterableSequencer(Iterable<? extends T> defaultValues) {
-				this.defaultValues = defaultValues;
-			}
-
-			@Override
-			public Iterator<? extends T> apply(Subscriber<? super T> subscriber) {
-				if (defaultValues == null) {
-					throw PrematureCompleteException.INSTANCE;
-				}
-				Iterator<? extends T> it = defaultValues.iterator();
-				if (!it.hasNext()) {
-					throw PrematureCompleteException.INSTANCE;
-				}
-				return it;
-			}
-
-			@Override
-			public final void accept(SubscriberWithContext<T, Iterator<? extends T>> subscriber) {
-				final Iterator<? extends T> iterator = subscriber.context();
-				if (iterator.hasNext()) {
-					subscriber.onNext(iterator.next());
-					//peek next
-					if (!iterator.hasNext()) {
-						subscriber.onComplete();
-					}
-				}
-				else {
-					subscriber.onComplete();
-				}
-			}
-
-			@Override
-			public int getMode() {
-				return TRACE_ONLY;
-			}
-
-			@Override
-			public String getName() {
-				return IterableSequencer.class.getSimpleName();
-			}
-
-			@Override
-			public Object upstream() {
-				return defaultValues;
-			}
-
-			@Override
-			public String toString() {
-				return "{iterable : " + defaultValues + " }";
-			}
-
-		}
 
 	private final static class SubscriberProxy<T, C> extends SubscriberWithContext<T, C>
 			implements Subscription, Receiver, Completable, Introspectable {

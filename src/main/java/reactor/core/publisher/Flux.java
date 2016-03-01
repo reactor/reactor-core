@@ -404,8 +404,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
-		FluxGenerate.IterableSequencer<T> iterablePublisher = new FluxGenerate.IterableSequencer<>(it);
-		return create(iterablePublisher, iterablePublisher);
+		return new FluxIterable<>(it);
 	}
 
 
