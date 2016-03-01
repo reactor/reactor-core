@@ -13,29 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package reactor.core.state;
+package reactor.core.publisher;
 
 /**
- * A storing component
+ * Represents a sequence of events with an associated key.
+ *
+ * @param <K> the key type
+ * @param <V> the value type
  */
-public interface Backpressurable {
+public abstract class GroupedFlux<K, V> extends Flux<V> {
 
 	/**
-	 * Return defined element capacity
-	 *
-	 * @return long capacity
+	 * Return defined identifier
+	 * @return defined identifier
 	 */
-	default long getCapacity() {
-		return -1L;
-	}
-
-	/**
-	 * Return current used space in buffer
-	 *
-	 * @return long capacity
-	 */
-	default long getPending() {
-		return -1L;
-	}
+	@Override
+	public abstract K key();
 }

@@ -73,7 +73,7 @@ import reactor.core.util.ReactiveStateUtils;
  * @see Mono
  * @since 2.5
  */
-public abstract class Flux<T> implements Publisher<T>, Introspectable {
+public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpressurable{
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -1310,18 +1310,69 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 		);
 	}
 
-	@Override
-	public String getName() {
-		return getClass().getSimpleName()
-		                 .replace(Flux.class.getSimpleName(), "");
+	/**
+	 * Get the current timer available if any or try returning the shared Environment one (which may cause an error if
+	 * no Environment has been globally initialized)
+	 *
+	 * @return any available timer
+	 */
+	public Timer getTimer() {
+		return Timer.globalOrNull();
 	}
+
 
 	@Override
 	public int getMode() {
 		return FACTORY;
 	}
 
+	@Override
+	public String getName() {
+		return getClass().getSimpleName()
+		                 .replace(Flux.class.getSimpleName(), "");
+	}
 
+
+	/**
+	 * Re-route this sequence into dynamically created {@link Flux} for each unique key evaluated by the given
+	 * key mapper.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
+	 *
+	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
+	 *
+	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
+	 *
+	 * @since 2.0
+	 */
+	@SuppressWarnings("unchecked")
+	public final <K> Flux<GroupedFlux<K, T>> groupBy(final Function<? super T, ? extends K> keyMapper) {
+		return groupBy(keyMapper, Function.identity());
+	}
+
+	/**
+	 * Re-route this sequence into dynamically created {@link Flux} for each unique key evaluated by the given
+	 * key mapper. It will use the given value mapper to extract the element to route.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
+	 *
+	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
+	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
+	 *
+	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
+	 *
+	 * @since 2.5
+	 */
+	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends V> valueMapper) {
+		return new FluxGroupBy<>(this, keyMapper, valueMapper,
+				QueueSupplier.<GroupedFlux<K, V>>small(),
+				QueueSupplier.<V>unbounded(),
+				PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+	
 	/**
 	 * Hides the identities of this {@link Flux} and its {@link Subscription}
 	 * as well.
@@ -1656,7 +1707,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> stream() {
-		return stream(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
+		return stream(this instanceof Backpressurable ? this.getCapacity() : Long.MAX_VALUE
 		);
 	}
 
@@ -1743,7 +1794,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(this instanceof Backpressurable ? ((Backpressurable) this).getCapacity() : Long.MAX_VALUE
+		return toIterable(this instanceof Backpressurable ? this.getCapacity() : Long.MAX_VALUE
 		);
 	}
 

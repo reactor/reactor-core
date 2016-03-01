@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.function.Consumer;
@@ -21,8 +22,12 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Fuseable.ConditionalSubscriber;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
+import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
+import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
@@ -40,9 +45,10 @@ import reactor.core.util.Exceptions;
 
 /**
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ *
  * @since 2.5
  */
-final class FluxPeek<T> extends FluxSource<T, T> {
+final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publisher.FluxPeekHelper<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -58,10 +64,14 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-						 Consumer<? super T> onNextCall, Consumer<? super Throwable> onErrorCall, Runnable
-						   onCompleteCall,
-						 Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
+	public FluxPeek(Publisher<? extends T> source,
+			Consumer<? super Subscription> onSubscribeCall,
+			Consumer<? super T> onNextCall,
+			Consumer<? super Throwable> onErrorCall,
+			Runnable onCompleteCall,
+			Runnable onAfterTerminateCall,
+			LongConsumer onRequestCall,
+			Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
@@ -73,7 +83,16 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
+		if (source instanceof Fuseable) {
+			source.subscribe(new PeekFuseableSubscriber<>(s, this));
+			return;
+		}
+		if (s instanceof ConditionalSubscriber) {
+			source.subscribe(new PeekConditionalSubscriber<>((ConditionalSubscriber<? super T>) s, this));
+			return;
+		}
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
@@ -81,20 +100,21 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		final Subscriber<? super T> actual;
 
-		final FluxPeek<T> parent;
+		final FluxPeekHelper<T> parent;
 
 		Subscription s;
 
-		public PeekSubscriber(Subscriber<? super T> actual, FluxPeek<T> parent) {
+		public PeekSubscriber(Subscriber<? super T> actual, FluxPeekHelper<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
 
 		@Override
 		public void request(long n) {
-			if(parent.onRequestCall != null) {
+			if (parent.onRequestCall() != null) {
 				try {
-					parent.onRequestCall.accept(n);
+					parent.onRequestCall()
+					      .accept(n);
 				}
 				catch (Throwable e) {
 					cancel();
@@ -107,9 +127,10 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		@Override
 		public void cancel() {
-			if(parent.onCancelCall != null) {
+			if (parent.onCancelCall() != null) {
 				try {
-					parent.onCancelCall.run();
+					parent.onCancelCall()
+					      .run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
@@ -123,13 +144,15 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if(parent.onSubscribeCall != null) {
+			if (parent.onSubscribeCall() != null) {
 				try {
-					parent.onSubscribeCall.accept(s);
+					parent.onSubscribeCall()
+					      .accept(s);
 				}
 				catch (Throwable e) {
+					s.cancel();
+					actual.onSubscribe(EmptySubscription.INSTANCE);
 					onError(e);
-					EmptySubscription.error(actual, Exceptions.unwrap(e));
 					return;
 				}
 			}
@@ -139,9 +162,10 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if(parent.onNextCall != null) {
+			if (parent.onNextCall() != null) {
 				try {
-					parent.onNextCall.accept(t);
+					parent.onNextCall()
+					      .accept(t);
 				}
 				catch (Throwable e) {
 					cancel();
@@ -155,23 +179,26 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			if(parent.onErrorCall != null) {
+			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall.accept(t);
+				parent.onErrorCall()
+				      .accept(t);
 			}
 
 			actual.onError(t);
 
-			if(parent.onAfterTerminateCall != null) {
+			if (parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall.run();
+					parent.onAfterTerminateCall()
+					      .run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
 					e.addSuppressed(Exceptions.unwrap(t));
-					if(parent.onErrorCall != null) {
-						parent.onErrorCall.accept(_e);
+					if (parent.onErrorCall() != null) {
+						parent.onErrorCall()
+						      .accept(_e);
 					}
 					actual.onError(_e);
 				}
@@ -180,9 +207,10 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onComplete() {
-			if(parent.onCompleteCall != null) {
+			if (parent.onCompleteCall() != null) {
 				try {
-					parent.onCompleteCall.run();
+					parent.onCompleteCall()
+					      .run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
@@ -193,15 +221,17 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 
 			actual.onComplete();
 
-			if(parent.onAfterTerminateCall != null) {
+			if (parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall.run();
+					parent.onAfterTerminateCall()
+					      .run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
-					if(parent.onErrorCall != null) {
-						parent.onErrorCall.accept(_e);
+					if (parent.onErrorCall() != null) {
+						parent.onErrorCall()
+						      .accept(_e);
 					}
 					actual.onError(_e);
 				}
@@ -217,5 +247,40 @@ final class FluxPeek<T> extends FluxSource<T, T> {
 		public Object upstream() {
 			return s;
 		}
+	}
+
+	@Override
+	public Consumer<? super Subscription> onSubscribeCall() {
+		return onSubscribeCall;
+	}
+
+	@Override
+	public Consumer<? super T> onNextCall() {
+		return onNextCall;
+	}
+
+	@Override
+	public Consumer<? super Throwable> onErrorCall() {
+		return onErrorCall;
+	}
+
+	@Override
+	public Runnable onCompleteCall() {
+		return onCompleteCall;
+	}
+
+	@Override
+	public Runnable onAfterTerminateCall() {
+		return onAfterTerminateCall;
+	}
+
+	@Override
+	public LongConsumer onRequestCall() {
+		return onRequestCall;
+	}
+
+	@Override
+	public Runnable onCancelCall() {
+		return onCancelCall;
 	}
 }

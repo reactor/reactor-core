@@ -16,83 +16,82 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
+import reactor.core.flow.Fuseable.ConditionalSubscriber;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
+import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
+import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
- * Maps the values of the source publisher one-on-one via a mapper function.
+ * Filters out values that make a filter function return false.
  *
- * @param <T> the source value type
- * @param <R> the result value type
+ * @param <T> the value type
  */
 
 /**
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxMap<T, R> extends FluxSource<T, R> {
+final class FluxFilter<T> extends FluxSource<T, T> {
 
-	final Function<? super T, ? extends R> mapper;
+	final Predicate<? super T> predicate;
 
-	/**
-	 * Constructs a StreamMap instance with the given source and mapper.
-	 *
-	 * @param source the source Publisher instance
-	 * @param mapper the mapper function
-	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
-	 */
-	public FluxMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public FluxFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
-		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
+	public Predicate<? super T> predicate() {
+		return predicate;
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable) {
-			source.subscribe(new MapFuseableSubscriber<>(s, mapper));
+			if (s instanceof ConditionalSubscriber) {
+				source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+						predicate));
+				return;
+			}
+			source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
 			return;
 		}
-		if (s instanceof Fuseable.ConditionalSubscriber) {
-			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
-			source.subscribe(new MapConditionalSubscriber<>(cs, mapper));
+		if (s instanceof ConditionalSubscriber) {
+			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
 			return;
 		}
-		source.subscribe(new MapSubscriber<>(s, mapper));
+		source.subscribe(new FilterSubscriber<>(s, predicate));
 	}
 
-	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
-		final Subscriber<? super R>			actual;
-		final Function<? super T, ? extends R> mapper;
+	static final class FilterSubscriber<T> 
+	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
+		final Subscriber<? super T> actual;
 
-		boolean done;
+		final Predicate<? super T> predicate;
 
 		Subscription s;
 
-		public MapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		boolean done;
+
+		public FilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
-			this.mapper = mapper;
+			this.predicate = predicate;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
-
 				actual.onSubscribe(this);
 			}
 		}
@@ -104,25 +103,47 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			R v;
+			boolean b;
 
 			try {
-				v = mapper.apply(t);
+				b = predicate.test(t);
 			} catch (Throwable e) {
-				done = true;
 				s.cancel();
-				actual.onError(e);
+
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
 				return;
 			}
+			if (b) {
+				actual.onNext(t);
+			} else {
+				s.request(1);
+			}
+		}
 
-			if (v == null) {
-				done = true;
-				s.cancel();
-				actual.onError(new NullPointerException("The mapper returned a null value."));
-				return;
+		@Override
+		public boolean tryOnNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return false;
 			}
 
-			actual.onNext(v);
+			boolean b;
+
+			try {
+				b = predicate.test(t);
+			} catch (Throwable e) {
+				s.cancel();
+
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+				return false;
+			}
+			if (b) {
+				actual.onNext(t);
+				return true;
+			}
+			return false;
 		}
 
 		@Override
@@ -131,9 +152,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				Exceptions.onErrorDropped(t);
 				return;
 			}
-
 			done = true;
-
 			actual.onError(t);
 		}
 
@@ -143,7 +162,6 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			done = true;
-
 			actual.onComplete();
 		}
 
@@ -164,7 +182,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public Object connectedInput() {
-			return mapper;
+			return predicate;
 		}
 
 		@Override
@@ -183,24 +201,25 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	static final class MapConditionalSubscriber<T, R> implements Fuseable.ConditionalSubscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
-		final Fuseable.ConditionalSubscriber<? super R> actual;
-		final Function<? super T, ? extends R> mapper;
+	static final class FilterConditionalSubscriber<T> 
+	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
+		final ConditionalSubscriber<? super T> actual;
 
-		boolean done;
+		final Predicate<? super T> predicate;
 
 		Subscription s;
 
-		public MapConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		boolean done;
+
+		public FilterConditionalSubscriber(ConditionalSubscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
-			this.mapper = mapper;
+			this.predicate = predicate;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
-
 				actual.onSubscribe(this);
 			}
 		}
@@ -212,53 +231,46 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			R v;
+			boolean b;
 
 			try {
-				v = mapper.apply(t);
+				b = predicate.test(t);
 			} catch (Throwable e) {
-				done = true;
 				s.cancel();
-				actual.onError(e);
+
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
 				return;
 			}
-
-			if (v == null) {
-				done = true;
-				s.cancel();
-				actual.onError(new NullPointerException("The mapper returned a null value."));
-				return;
+			if (b) {
+				actual.onNext(t);
+			} else {
+				s.request(1);
 			}
-
-			actual.onNext(v);
 		}
 
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
 				Exceptions.onNextDropped(t);
-				return true;
+				return false;
 			}
 
-			R v;
+			boolean b;
 
 			try {
-				v = mapper.apply(t);
+				b = predicate.test(t);
 			} catch (Throwable e) {
-				done = true;
 				s.cancel();
-				actual.onError(e);
-				return true;
-			}
 
-			if (v == null) {
-				done = true;
-				s.cancel();
-				actual.onError(new NullPointerException("The mapper returned a null value."));
-				return true;
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+				return false;
 			}
-
-			return actual.tryOnNext(v);
+			if (b) {
+				return actual.tryOnNext(t);
+			}
+			return false;
 		}
 
 		@Override
@@ -267,9 +279,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				Exceptions.onErrorDropped(t);
 				return;
 			}
-
 			done = true;
-
 			actual.onError(t);
 		}
 
@@ -279,7 +289,6 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			done = true;
-
 			actual.onComplete();
 		}
 
@@ -300,7 +309,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public Object connectedInput() {
-			return mapper;
+			return predicate;
 		}
 
 		@Override

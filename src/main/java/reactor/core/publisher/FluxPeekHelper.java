@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package reactor.core.publisher;
 
-package reactor.core.state;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+
+import org.reactivestreams.Subscription;
 
 /**
- * A storing component
+ * Set of methods that return various publisher state peeking callbacks.
+ *
+ * @param <T> the value type of the sequence
  */
-public interface Backpressurable {
+interface FluxPeekHelper<T> {
 
-	/**
-	 * Return defined element capacity
-	 *
-	 * @return long capacity
-	 */
-	default long getCapacity() {
-		return -1L;
-	}
+	Consumer<? super Subscription> onSubscribeCall();
 
-	/**
-	 * Return current used space in buffer
-	 *
-	 * @return long capacity
-	 */
-	default long getPending() {
-		return -1L;
-	}
+	Consumer<? super T> onNextCall();
+
+	Consumer<? super Throwable> onErrorCall();
+
+	Runnable onCompleteCall();
+
+	Runnable onAfterTerminateCall();
+
+	LongConsumer onRequestCall();
+
+	Runnable onCancelCall();
 }

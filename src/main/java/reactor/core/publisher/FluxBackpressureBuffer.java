@@ -15,9 +15,26 @@
  */
 package reactor.core.publisher;
 
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
+import reactor.core.queue.QueueSupplier;
+
 /**
  * @author Stephane Maldini
  */
-enum SignalType {
-	NEXT, ERROR, COMPLETE, SUBSCRIPTION
+final class FluxBackpressureBuffer<O> extends FluxSource<O, O> implements Fuseable {
+
+	public FluxBackpressureBuffer(Publisher<? extends O> source) {
+		super(source);
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super O> s) {
+		Processor<O, O> emitter = new UnicastProcessor<O>(QueueSupplier.<O>unbounded().get());
+		emitter.subscribe(s);
+		source.subscribe(emitter);
+	}
+
 }

@@ -32,7 +32,7 @@ import reactor.core.util.PlatformDependent;
  */
 final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 
-	volatile SignalType   endState;
+	volatile Signal.Type   endState;
 	volatile I            value;
 	volatile Throwable    error;
 	volatile Subscription s;
@@ -45,7 +45,7 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 
 		try {
 			for (; ; ) {
-				SignalType endState = this.endState;
+				Signal.Type endState = this.endState;
 				if (endState != null) {
 					switch (endState) {
 						case NEXT:
@@ -110,7 +110,7 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 			Exceptions.onNextDropped(i);
 		}
 		value = i;
-		endState = SignalType.NEXT;
+		endState = Signal.Type.NEXT;
 	}
 
 	@Override
@@ -119,7 +119,7 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 			Exceptions.onErrorDropped(t);
 		}
 		error = t;
-		endState = SignalType.ERROR;
+		endState = Signal.Type.ERROR;
 	}
 
 	@Override
@@ -127,7 +127,7 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 		if (endState != null) {
 			return;
 		}
-		endState = SignalType.COMPLETE;
+		endState = Signal.Type.COMPLETE;
 	}
 
 	@Override

@@ -16,23 +16,49 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
-
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.util.ScalarSubscription;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Completable;
+import reactor.core.util.Exceptions;
 
 /**
- * {@see https://github.com/reactor/reactive-streams-commons}
+ * A Stream that emits only one value and then complete.
+ * <p>
+ * Since the fluxion retains the value in a final field, any {@link this#subscribe(Subscriber)} will
+ * replay the value. This is a "Cold" fluxion.
+ * <p>
+ * Create such fluxion with the provided factory, E.g.:
+ * <pre>
+ * {@code
+ * Streams.just(1).consume(
+ *    log::info,
+ *    log::error,
+ *    (-> log.info("complete"))
+ * )
+ * }
+ * </pre>
+ * Will log:
+ * <pre>
+ * {@code
+ * 1
+ * complete
+ * }
+ * </pre>
  *
- * @since 2.5
+ * @author Stephane Maldini
  */
-final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T> {
+final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, Loopback {
+
+	final public static FluxJust<?> EMPTY = new FluxJust<>(null);
 
 	final T value;
 
+	@SuppressWarnings("unchecked")
 	public FluxJust(T value) {
-		this.value = Objects.requireNonNull(value, "value");
+		this.value = value;
 	}
 
 	@Override
@@ -41,8 +67,68 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		s.onSubscribe(new ScalarSubscription<>(s, value));
+	public void subscribe(final Subscriber<? super T> subscriber) {
+		try {
+			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
+		}
+		catch (Throwable throwable) {
+			Exceptions.throwIfFatal(throwable);
+			subscriber.onError(throwable);
+		}
 	}
 
+	@Override
+	public Object connectedOutput() {
+		return value;
+	}
+
+	@Override
+	public String toString() {
+		return "singleValue=" + value;
+	}
+
+	static final class WeakScalarSubscription<T> implements Subscription, Receiver, Completable {
+
+		boolean terminado;
+		final T                     value;
+		final Subscriber<? super T> subscriber;
+
+		public WeakScalarSubscription(T value, Subscriber<? super T> subscriber) {
+			this.value = value;
+			this.subscriber = subscriber;
+		}
+
+		@Override
+		public void request(long elements) {
+			if (terminado) {
+				return;
+			}
+
+			terminado = true;
+			if (value != null) {
+				subscriber.onNext(value);
+			}
+			subscriber.onComplete();
+		}
+
+		@Override
+		public void cancel() {
+			terminado = true;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return !terminado;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return terminado;
+		}
+
+		@Override
+		public Object upstream() {
+			return value;
+		}
+	}
 }
