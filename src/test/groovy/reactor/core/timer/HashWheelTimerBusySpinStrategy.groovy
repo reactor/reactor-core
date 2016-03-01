@@ -43,7 +43,6 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 			timer.schedule(
 					{ Long now -> latch.countDown() } as Consumer<Long>,
 					period,
-					TimeUnit.MILLISECONDS,
 					period
 			)
 
@@ -79,8 +78,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 						elapsed = System.currentTimeMillis() - start
 						latch.countDown()
 					} as Consumer<Long>,
-					delay,
-					TimeUnit.MILLISECONDS
+					delay
 			)
 
 		then:

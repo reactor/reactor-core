@@ -82,7 +82,7 @@ public enum PlatformDependent {
 	/**
 	 *
 	 */
-	public static final  long    DEFAULT_TIMEOUT                 =
+	public static final long     DEFAULT_TIMEOUT                 =
 			Long.parseLong(System.getProperty("reactor.await.defaultTimeout", "30000"));
 	/**
 	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream

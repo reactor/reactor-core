@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -41,7 +41,7 @@ public class FluxPublishOnTest {
 
 		FluxArrayTest.range(1, 1000).publishOn(SchedulerGroup.io()).subscribe(ts);
 		
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertValueCount(1000)
 		.assertNoError()
@@ -70,7 +70,7 @@ public class FluxPublishOnTest {
 
 		ts.request(500);
 
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertValueCount(1000)
 		.assertNoError()
@@ -83,7 +83,7 @@ public class FluxPublishOnTest {
 		
 		Flux.just(1).publishOn(SchedulerGroup.io()).subscribe(ts);
 		
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertValues(1)
 		.assertNoError()
@@ -104,7 +104,7 @@ public class FluxPublishOnTest {
 		
 		ts.request(500);
 
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertValues(1)
 		.assertNoError()
@@ -117,7 +117,7 @@ public class FluxPublishOnTest {
 		
 		Flux.<Integer>empty().publishOn(SchedulerGroup.io()).subscribe(ts);
 		
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertNoValues()
 		.assertNoError()
@@ -130,7 +130,7 @@ public class FluxPublishOnTest {
 		
 		Flux.<Integer>empty().publishOn(SchedulerGroup.io()).subscribe(ts);
 		
-		ts.await(5, TimeUnit.SECONDS);
+		ts.await(Duration.ofSeconds(5));
 		
 		ts.assertNoValues()
 		.assertNoError()

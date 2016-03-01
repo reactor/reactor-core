@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.TimeUnit;
-
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Timeable;
 import reactor.core.timer.Timer;
@@ -29,19 +27,17 @@ import reactor.core.util.Exceptions;
 final class MonoTimer extends Mono<Long> implements Timeable {
 
 	final Timer    parent;
-	final TimeUnit unit;
 	final long     delay;
 
-	public MonoTimer(Timer timer, long delay, TimeUnit unit) {
+	public MonoTimer(Timer timer, long delay) {
 		this.parent = timer;
 		this.delay = delay;
-		this.unit = unit;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super Long> s) {
 		try {
-			s.onSubscribe(parent.single(s, delay, unit));
+			s.onSubscribe(parent.single(s, delay));
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);

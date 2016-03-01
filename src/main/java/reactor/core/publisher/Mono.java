@@ -16,11 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -127,18 +127,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 * <p>
-	 * @param duration in seconds
+	 * @param duration the duration in milliseconds of the delay
 	 *
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration) {
-		return delay(duration, TimeUnit.SECONDS);
+		return delay(duration, Timer.global());
 	}
 
 	/**
@@ -148,33 +148,46 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 * <p>
-	 * @param duration in unit of time
-	 * @param unit the time unit
+	 * @param duration the duration of the delay
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(long duration, TimeUnit unit) {
-		return delay(duration, unit, Timer.global());
+	public static Mono<Long> delay(Duration duration) {
+		return delay(duration.toMillis());
 	}
 
 	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} seconds and complete.
+	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 * <p>
-	 * @param duration in unit of time
-	 * @param unit the time unit
+	 * @param duration the duration in milliseconds of the delay
 	 * @param timer the timer
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(long duration, TimeUnit unit, Timer timer) {
-		long timespan = TimeUnit.MILLISECONDS.convert(duration, unit);
-		Assert.isTrue(timespan >= timer.period(), "The delay " + duration + "ms cannot be less than the timer resolution" +
-				"" + timer.period() + "ms");
-		return new MonoTimer(timer, duration, unit);
+	public static Mono<Long> delay(long duration, Timer timer) {
+		Assert.isTrue(duration >= timer.period(), "The delay " + duration + " cannot be less than the timer resolution " +
+				"" + timer.period());
+		return new MonoTimer(timer, duration);
+	}
+
+	/**
+	 * Create a Mono which delays an onNext signal of {@code duration} and complete.
+	 * If the demand cannot be produced in time, an onError will be signalled instead.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
+	 * <p>
+	 * @param duration the duration of the delay
+	 * @param timer the timer
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public static Mono<Long> delay(Duration duration, Timer timer) {
+		return delay(duration.toMillis(), timer);
 	}
 
 	/**
@@ -876,7 +889,29 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T get() {
-		return get(PlatformDependent.DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+		return get(PlatformDependent.DEFAULT_TIMEOUT);
+	}
+
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.util.Exceptions.CancelException}
+	 *
+	 * @return T the result
+	 */
+	public T get(long timeout) {
+		MonoResult<T> result = new MonoResult<>();
+		subscribe(result);
+		return result.await(timeout);
 	}
 
 	/**
@@ -892,14 +927,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 *
 	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.util.Exceptions.CancelException}
-	 * @param unit unit of time
 	 *
 	 * @return T the result
 	 */
-	public T get(long timeout, TimeUnit unit) {
-		MonoResult<T> result = new MonoResult<>();
-		subscribe(result);
-		return result.await(timeout, unit);
+	public T get(Duration timeout) {
+		return get(timeout.toMillis());
 	}
 
 	@Override

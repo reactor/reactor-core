@@ -16,10 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -454,55 +454,67 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N seconds on
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
 	 * <p>
-	 * @param seconds The number of seconds to wait before the next increment
+	 * @param period The number of milliseconds to wait before the next increment
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long seconds) {
-		return interval(seconds, TimeUnit.SECONDS);
+	public static Flux<Long> interval(long period) {
+		return interval(period, Timer.global());
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every period on
 	 * the global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
 	 * <p>
-	 * @param period The the time relative to given unit to wait before the next increment
-	 * @param unit The unit of time
-	 *
+	 * @param period The duration to wait before the next increment
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long period, TimeUnit unit) {
-		return interval(period, unit, Timer.global());
+	public static Flux<Long> interval(Duration period) {
+		return interval(period.toMillis());
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
 	 * <p>
-	 * @param period The the time relative to given unit to wait before the next increment
-	 * @param unit The unit of time
+	 * @param period The duration in milliseconds to wait before the next increment
 	 * @param timer a {@link Timer} instance
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long period, TimeUnit unit, Timer timer) {
-		long timespan = TimeUnit.MILLISECONDS.convert(period, unit);
-		Assert.isTrue(timespan >= timer.period(), "The delay " + period + "ms cannot be less than the timer resolution" +
-				"" + timer.period() + "ms");
+	public static Flux<Long> interval(long period, Timer timer) {
+		Assert.isTrue(period >= timer.period(), "The period " + period + " cannot be less than the timer resolution " +
+				"" + timer.period());
 
-		return new FluxInterval(timer, period, unit, period);
+		return new FluxInterval(timer, period, period);
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every period on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
+	 * <p>
+	 * @param period The duration to wait before the next increment
+	 * @param timer a {@link Timer} instance
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(Duration period, Timer timer) {
+		return interval(period.toMillis(), timer);
 	}
 
 

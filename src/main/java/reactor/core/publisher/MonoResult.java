@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
@@ -40,8 +40,8 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 	static final AtomicReferenceFieldUpdater<MonoResult, Subscription> SUBSCRIPTION =
 			PlatformDependent.newAtomicReferenceFieldUpdater(MonoResult.class, "s");
 
-	public I await(long timeout, TimeUnit unit) {
-		long delay = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(timeout, unit);
+	public I await(long timeout) {
+		long delay = System.currentTimeMillis() + timeout;
 
 		try {
 			for (; ; ) {
@@ -78,6 +78,11 @@ final class MonoResult<I> implements Subscriber<I>, Receiver, Completable {
 				s.cancel();
 			}
 		}
+	}
+
+	public I await(Duration timeout) {
+		return await(timeout.toMillis());
+
 	}
 
 	@Override

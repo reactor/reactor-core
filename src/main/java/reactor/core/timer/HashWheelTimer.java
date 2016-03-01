@@ -16,6 +16,7 @@
 
 package reactor.core.timer;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -23,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -227,16 +227,13 @@ class HashWheelTimer extends Timer {
 
 	@Override
 	public HashWheelSubscription interval(Subscriber<? super Long> consumer,
-			long period,
-			TimeUnit timeUnit,
-			long delayInMilliseconds) {
-		long ms = TimeUnit.MILLISECONDS.convert(period, timeUnit);
-		return schedule(ms, delayInMilliseconds == -1 ? ms : delayInMilliseconds, consumer);
+			long period, long delay) {
+		return schedule(period, delay, consumer);
 	}
 
 	@Override
-	public HashWheelSubscription single(Subscriber<? super Long> subscriber, long delay, TimeUnit timeUnit) {
-		return schedule(0, TimeUnit.MILLISECONDS.convert(delay, timeUnit), subscriber);
+	public HashWheelSubscription single(Subscriber<? super Long> subscriber, long period) {
+		return schedule(0, period, subscriber);
 	}
 
 	@SuppressWarnings("unchecked")
