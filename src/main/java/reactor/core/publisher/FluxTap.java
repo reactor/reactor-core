@@ -139,8 +139,8 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 		}
 	}
 
-	static final class TapFuseable<O> extends Fuseable.SynchronousSubscription<O>
-			implements Subscriber<O>, Receiver, Producer {
+	static final class TapFuseable<O>
+			implements Subscriber<O>, Receiver, Producer, Fuseable.SynchronousSubscription<O> {
 		final Subscriber<? super O> actual;
 		final FluxTap<O>            parent;
 
