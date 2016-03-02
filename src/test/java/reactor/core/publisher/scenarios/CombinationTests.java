@@ -16,6 +16,7 @@
 
 package reactor.core.publisher.scenarios;
 
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -48,8 +49,8 @@ public class CombinationTests {
 
 	private static final Logger LOG = Logger.getLogger(CombinationTests.class);
 
-	private Processor<SensorData, SensorData> sensorEven;
-	private Processor<SensorData, SensorData> sensorOdd;
+	private FluxProcessor<SensorData, SensorData> sensorEven;
+	private FluxProcessor<SensorData, SensorData> sensorOdd;
 
 	@Before
 	public void before() {
@@ -158,7 +159,7 @@ public class CombinationTests {
 		Assert.isTrue(waited, "latch : " + latch.getCount());
 	}
 
-	public Publisher<SensorData> sensorOdd() {
+	public Flux<SensorData> sensorOdd() {
 		if (sensorOdd == null) {
 			// this is the stream we publish odd-numbered events to
 			this.sensorOdd = FluxProcessor.blackbox(TopicProcessor.create("odd"), p -> p.log("odd"));
@@ -170,7 +171,7 @@ public class CombinationTests {
 		return sensorOdd;
 	}
 
-	public Publisher<SensorData> sensorEven() {
+	public Flux<SensorData> sensorEven() {
 		if (sensorEven == null) {
 			// this is the stream we publish even-numbered events to
 			this.sensorEven = FluxProcessor.blackbox(TopicProcessor.create("even"), p -> p.log("even"));
@@ -415,6 +416,25 @@ public class CombinationTests {
 		Flux.concat(emitter1.log("test1"), emitter2.log("test2")).log().subscribe(ts);
 		emitValues();
 		ts.assertValues(1L, 3L, 2L, 4L).assertComplete();
+	}
+
+
+
+	@Test
+	public void sampleCombineLatestTest() throws Exception {
+		int elements = 40;
+		CountDownLatch latch = new CountDownLatch(elements / 2 - 2);
+
+		Runnable tail = Flux.combineLatest(
+				sensorOdd().cache().delay(Duration.ofMillis(100)),
+				sensorEven().cache().delay(Duration.ofMillis(200)),
+				this::computeMin)
+		                                      .log("combineLatest")
+		                                      .consume(i -> latch.countDown(), null, latch::countDown);
+
+		generateData(elements);
+
+		awaitLatch(null, latch);
 	}
 
 }

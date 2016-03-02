@@ -290,7 +290,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 
-
 	/**
 	 * Build a {@link Mono} that will only emit the result of the future and then complete.
 	 * The future will be polled for an unbounded amount of time on request().
@@ -1255,7 +1254,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
 			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
 					skip.andThen(flux -> flux.zipWith(Flux.range(1, maxRepeat), (a, b) -> b)
-					                         .cast(Long.class))
+					                         .map(a -> (long)a))
 					    .andThen(repeatFactory)));
 		}
 		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
