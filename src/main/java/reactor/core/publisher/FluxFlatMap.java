@@ -551,11 +551,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 			for (;;) {
 
+				boolean d = done;
+
 				FlatMapInner<R>[] as = subscribers;
 
 				int n = as.length;
 
-				boolean d = done;
 				Queue<R> sq = scalarQueue;
 
 				if (checkTerminated(d, n == 0 && (sq == null || sq.isEmpty()), a)) {

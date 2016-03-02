@@ -1243,7 +1243,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @param maxRepeat the maximum repeat number of time (infinite if {@code Integer.MAX_VALUE})
 	 * @param repeatFactory the
-	 * {@link Function} providing a {@link Flux} signalling the current number of repeat on onComplete and returning a {@link Publisher} companion.
+	 * {@link Function} providing a {@link Flux} signalling the current repeat index from 0 on onComplete and returning a {@link Publisher} companion.
 	 *
 	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
@@ -1253,11 +1253,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		if (maxRepeat != Integer.MAX_VALUE) {
 			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
 			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
-					skip.andThen(flux -> flux.zipWith(Flux.range(1, maxRepeat), (a, b) -> b)
+					skip.andThen(flux -> flux.zipWith(Flux.range(0, maxRepeat), (a, b) -> b)
 					                         .map(a -> (long)a))
 					    .andThen(repeatFactory)));
 		}
-		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
+		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L).scan(0L, (v, acc) -> acc++);
 		return MonoSource.wrap(new FluxRepeatWhen<T>(this, skip.andThen(repeatFactory)));
 	}
 
