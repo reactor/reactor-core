@@ -17,7 +17,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
@@ -240,7 +246,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T, C> Flux<T> create(final Consumer<SubscriberWithContext<T, C>> requestConsumer,
+	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
 		Assert.notNull(requestConsumer, "A data producer must be provided");
@@ -1135,6 +1141,42 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		);
 	}
 
+
+	/**
+	 * Cast the current {@link Flux} produced type into a target produced type.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast.png" alt="">
+	 *
+	 * @param <E> the {@link Flux} output type
+	 *
+	 * @return a casted {@link Flux}
+	 *
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E> Flux<E> cast(Class<E> stream) {
+		return (Flux<E>) this;
+	}
+
+	/**
+	 * Collect the {@link Flux} sequence with the given collector and supplied container on subscribe.
+	 * The collected result will be emitted when this sequence completes.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collect.png" alt="">
+
+	 *
+	 * @param <E> the {@link Flux} collected container type
+	 *
+	 * @return a Mono sequence of the collected value on complete
+	 *
+	 * @since 2.5
+	 */
+	public final <E> Mono<E> collect(Supplier<E> containerSupplier, BiConsumer<E, ? super T> collector) {
+		return new MonoCollect<>(this, containerSupplier, collector);
+	}
+
 	/**
 	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
 	 * <p>
@@ -1266,7 +1308,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<T> doOnRequest(final LongConsumer consumer) {
+	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		return new FluxPeek<>(this, null, null, null, null, null, consumer, null);
 	}
 
@@ -1382,10 +1424,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 *
-	 * @since 2.0
+	 *
 	 */
 	@SuppressWarnings("unchecked")
-	public final <K> Flux<GroupedFlux<K, T>> groupBy(final Function<? super T, ? extends K> keyMapper) {
+	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
 		return groupBy(keyMapper, Function.identity());
 	}
 
@@ -1550,7 +1592,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @since 2.5
 	 */
-	public final ConnectableFlux<T> multicast(final Processor<? super T, ? extends T> processor) {
+	public final ConnectableFlux<T> multicast(Processor<? super T, ? extends T> processor) {
 		return multicast(() -> processor);
 	}
 
@@ -1605,7 +1647,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @since 2.5
 	 */
-	public final <U> ConnectableFlux<U> multicast(final Processor<? super T, ? extends T>
+	public final <U> ConnectableFlux<U> multicast(Processor<? super T, ? extends T>
 			processor, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
 		return multicast(() -> processor, selector);
 	}
@@ -1675,7 +1717,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<T> onErrorReturn(final T fallbackValue) {
+	public final Flux<T> onErrorReturn(T fallbackValue) {
 		return switchOnError(just(fallbackValue));
 	}
 
@@ -1750,7 +1792,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @since 1.1, 2.0, 2.5
 	 */
-	public final Mono<T> reduce(final BiFunction<T, T, T> aggregator) {
+	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
 		if(this instanceof Supplier){
 			return MonoSource.wrap(this);
 		}
@@ -1771,7 +1813,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a reduced {@link Flux}
 	 * @since 1.1, 2.0, 2.5
 	 */
-	public final <A> Mono<A> reduce(final A initial, BiFunction<A, ? super T, A> accumulator) {
+	public final <A> Mono<A> reduce(A initial, BiFunction<A, ? super T, A> accumulator) {
 		return reduceWith(() -> initial, accumulator);
 	}
 
@@ -1790,7 +1832,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @since 1.1, 2.0, 2.5
 	 */
-	public final <A> Mono<A> reduceWith(final Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
+	public final <A> Mono<A> reduceWith(Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
 		return new MonoReduce<>(this, initial, accumulator);
 	}
 
@@ -1862,7 +1904,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return an alternating {@link Flux} on source onError
 	 */
-	public final Flux<T> switchOnError(final Publisher<? extends T> fallback) {
+	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {
 		return onErrorResumeWith(FluxResume.create(fallback));
 	}
 
@@ -1913,7 +1955,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<T> toIterable(final long batchSize, Supplier<Queue<T>> queueProvider) {
+	public final Iterable<T> toIterable(long batchSize, Supplier<Queue<T>> queueProvider) {
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
 			provider = QueueSupplier.get(batchSize);
@@ -1925,6 +1967,155 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Accumulate this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
+	 *
+	 * @return a {@link Mono} of all values from this {@link Flux}
+	 *
+	 *, 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<List<T>> toList() {
+		return collect((Supplier<List<T>>) LIST_SUPPLIER, List<T>::add);
+	}
+
+	/**
+	 * Convert all this
+	 * {@link Flux} sequence into a hashed map where the key is extracted by the given {@link Function} and the
+	 * value will be the most recent emitted item for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final <K> Mono<Map<K, T>> toMap(Function<? super T, ? extends K> keyExtractor) {
+		return toMap(keyExtractor, Function.identity());
+	}
+
+	/**
+	 * Convert all this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * the most recent extracted item for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	public final <K, V> Mono<Map<K, V>> toMap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
+		return toMap(keyExtractor, valueExtractor, HashMap::new);
+	}
+
+	/**
+	 * Convert all this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
+	 * be the most recent extracted item for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	public final <K, V> Mono<Map<K, V>> toMap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
+			Supplier<Map<K, V>> mapSupplier) {
+		Objects.requireNonNull(keyExtractor, "Key extractor is null");
+		Objects.requireNonNull(valueExtractor, "Value extractor is null");
+		Objects.requireNonNull(mapSupplier, "Map supplier is null");
+		return collect(mapSupplier, (m, d) -> m.put(keyExtractor.apply(d), valueExtractor.apply(d)));
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * all the emitted item for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final <K> Mono<Map<K, Collection<T>>> toMultimap(Function<? super T, ? extends K> keyExtractor) {
+		return toMultimap(keyExtractor, Function.identity());
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * all the extracted items for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
+		return toMultimap(keyExtractor, valueExtractor, HashMap::new);
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
+	 * be all the extracted items for this key.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
+			Supplier<Map<K, Collection<V>>> mapSupplier) {
+		Objects.requireNonNull(keyExtractor, "Key extractor is null");
+		Objects.requireNonNull(valueExtractor, "Value extractor is null");
+		Objects.requireNonNull(mapSupplier, "Map supplier is null");
+		return collect(mapSupplier, (m, d) -> {
+			K key = keyExtractor.apply(d);
+			Collection<V> values = m.get(key);
+			if(values == null){
+				values = new ArrayList<>();
+				m.put(key, values);
+			}
+			values.add(valueExtractor.apply(d));
+		});
+	}
+
+	/**
 	 * Hint {@link Subscriber} to this {@link Flux} a preferred available capacity should be used.
 	 * {@link #toIterable()} can for instance use introspect this value to supply an appropriate queueing strategy.
 	 *
@@ -1932,7 +2123,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a bounded {@link Flux}
 	 */
-	public Flux<T> useCapacity(final long capacity) {
+	public Flux<T> useCapacity(long capacity) {
 		if (capacity == getCapacity()) {
 			return this;
 		}
@@ -1946,7 +2137,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a configured fluxion
 	 */
-	public Flux<T> useName(final String name) {
+	public Flux<T> useName(String name) {
 		return FluxConfig.withName(this, name);
 
 	}
@@ -1958,7 +2149,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a configured fluxion
 	 */
-	public Flux<T> useTimer(final Timer timer) {
+	public Flux<T> useTimer(Timer timer) {
 		return FluxConfig.withTimer(this, timer);
 
 	}
@@ -1976,9 +2167,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
 	 *
-	 * @since 2.0
+	 *
 	 */
-	public final Flux<Flux<T>> window(final int maxSize) {
+	public final Flux<Flux<T>> window(int maxSize) {
 		return new FluxWindow<>(this, maxSize, QueueSupplier.<T>get(maxSize));
 	}
 
@@ -2007,7 +2198,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets every skip count
 	 */
-	public final Flux<Flux<T>> window(final int maxSize, final int skip) {
+	public final Flux<Flux<T>> window(int maxSize, int skip) {
 		return new FluxWindow<>(this,
 				maxSize,
 				skip,
@@ -2026,7 +2217,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher}
 	 */
-	public final Flux<Flux<T>> window(final Publisher<?> boundary) {
+	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return new FluxWindowBoundary<>(this,
 				boundary,
 				QueueSupplier.<T>unbounded(PlatformDependent.XS_BUFFER_SIZE),
@@ -2057,7 +2248,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
 	 * a selected {@link Publisher} emits
 	 */
-	public final <U, V> Flux<Flux<T>> window(final Publisher<U> bucketOpening,
+	public final <U, V> Flux<Flux<T>> window(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
 
 		long c = getCapacity();
@@ -2087,7 +2278,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 *
-	 * @since 2.0
+	 *
 	 */
 	public final Flux<Flux<T>> window(long timespan) {
 		Timer t = getTimer();
@@ -2105,7 +2296,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 *
-	 * @since 2.0
+	 *
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
 		return window(timespan.toMillis());
@@ -2136,7 +2327,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
 	 *
 	 */
-	public final Flux<Flux<T>> window(final long timespan, final long timeshift) {
+	public final Flux<Flux<T>> window(long timespan, long timeshift) {
 		if (timeshift == timespan) {
 			return window(timespan);
 		}
@@ -2173,7 +2364,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
 	 *
 	 */
-	public final Flux<Flux<T>> window(final Duration timespan, final Duration timeshift) {
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
 		return window(timespan.toMillis(), timeshift.toMillis());
 	}
 
@@ -2190,9 +2381,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 *
-	 * @since 2.0
+	 *
 	 */
-	public final Flux<Flux<T>> window(final int maxSize, final Duration timespan) {
+	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
 		return new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), getTimer());
 	}
 
@@ -2233,9 +2424,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.0
+	 *
 	 */
-	public final <T2, V> Flux<V> zipWith(final Publisher<? extends T2> source2,
+	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		return FluxSource.wrap(Flux.zip(this, source2, combinator));
 	}
@@ -2256,11 +2447,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.0
+	 *
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T2, V> Flux<V> zipWith(final Publisher<? extends T2> source2,
-			int prefetch, final BiFunction<? super T, ? super T2, ? extends V> combinator) {
+	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
+			int prefetch, BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		return zip(objects -> combinator.apply((T)objects[0], (T2)objects[1]), prefetch, this, source2);
 	}
 
@@ -2278,7 +2469,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T2> Flux<Tuple2<T, T2>> zipWith(final Publisher<? extends T2> source2) {
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
 		return FluxSource.wrap(Flux.<T, T2, Tuple2<T, T2>>zip(this, source2, TUPLE2_BIFUNCTION));
 	}
 
@@ -2297,7 +2488,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T2> Flux<Tuple2<T, T2>> zipWith(final Publisher<? extends T2> source2, int prefetch) {
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
 		return zip(Tuple.fn2(), prefetch, this, source2);
 	}
 
@@ -2338,4 +2529,5 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
+	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
 }
