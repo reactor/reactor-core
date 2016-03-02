@@ -637,12 +637,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return MonoSource.wrap(after().flatMap(null, new Function<Throwable, Publisher<? extends V>>() {
-			@Override
-			public Publisher<? extends V> apply(Throwable throwable) {
-				return Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable));
-			}
-		}, sourceSupplier));
+		return MonoSource.wrap(after().flatMap(null,
+				throwable -> Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable)),
+				sourceSupplier));
+	}
+
+	/**
+	 * Turn this {@link Mono} into a hot source and cache last emitted signals for further {@link Subscriber}.
+	 * Completion and Error will also be replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache1.png"
+	 * alt="">
+	 *
+	 * @return a replaying {@link Mono}
+	 */
+	public final Mono<T> cache() {
+		return MonoSource.wrap(Flux.from(this)
+		                           .publish()
+		                           .autoConnect());
 	}
 
 	/**
@@ -1155,23 +1168,52 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Repeatedly subscribe to this {@link Mono} when a companion sequence signals a number of emitted elements in
-	 * response to the fluxion completion signal.
+	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
+	 * number of emitted elements.
 	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
 	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen1.png" alt="">
 	 *
-	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling an exclusive number of
-	 * emitted elements on onComplete and returning a {@link Publisher} companion.
+	 * @param repeatFactory the
+	 * {@link Function} providing a {@link Flux} signalling the current number of repeat on onComplete and returning a {@link Publisher} companion.
 	 *
 	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
 	 *
 	 */
-	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRepeatWhen<T>(this, whenFactory);
+	public final Mono<T> repeatUntilNext(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+		return repeatUntilNext(Integer.MAX_VALUE, repeatFactory);
+	}
+
+	/**
+	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
+	 * number of emitted elements.
+	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
+	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen1.png" alt="">
+	 *
+	 * @param maxRepeat the maximum repeat number of time (infinite if {@code Integer.MAX_VALUE})
+	 * @param repeatFactory the
+	 * {@link Function} providing a {@link Flux} signalling the current number of repeat on onComplete and returning a {@link Publisher} companion.
+	 *
+	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
+	 * onNext signal
+	 *
+	 */
+	public final Mono<T> repeatUntilNext(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+		if (maxRepeat != Integer.MAX_VALUE) {
+			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
+			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
+					skip.andThen(flux -> flux.zipWith(Flux.range(1, maxRepeat), (a, b) -> b)
+					                         .cast(Long.class))
+					    .andThen(repeatFactory)));
+		}
+		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
+		return MonoSource.wrap(new FluxRepeatWhen<T>(this, skip.andThen(repeatFactory)));
 	}
 
 	/**

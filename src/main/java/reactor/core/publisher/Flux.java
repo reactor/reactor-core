@@ -375,7 +375,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
 		return new FluxIterable<>(it);
 	}
+	
 
+	/**
+	 * Create a {@link Flux} that emits the items contained in the provided {@link Stream}.
+	 * A new iterator will be created for each subscriber.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromstream.png" alt="">
+	 * <p>
+	 * @param s the {@link Stream} to read data from
+	 * @param <T> the {@link Stream} type to fluxion
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public static <T> Flux<T> fromStream(Stream<? extends T> s) {
+		return new FluxStream<>(s);
+	}
 
 	/**
 	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}. The argument {@code
@@ -1234,6 +1249,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Counts the number of values in this {@link Flux}.
+	 * The count will be emitted when onComplete is observed.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/count.png" alt="">
+	 *
+	 * @return a new {@link Mono} of {@link Long} count
+	 */
+	public final Mono<Long> count() {
+		return new MonoCount<>(this);
+	}
+	
+	/**
 	 * Introspect this {@link Flux} graph
 	 *
 	 * @return {@link ReactiveStateUtils} {@literal Graph} representation of the operational flow
@@ -2007,7 +2035,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
-	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the fluxion.
+	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/materialize.png" alt="">
@@ -2484,7 +2512,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Repeatedly subscribe to this {@link Flux} when a companion sequence signals a number of emitted elements in
-	 * response to the fluxion completion signal.
+	 * response to the flux completion signal.
 	 * <p>If the companion sequence signals when this {@link Flux} is active, the repeat
 	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
 	 *
@@ -2856,7 +2884,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> skip(Duration timespan) {
 		if(!timespan.isZero()) {
 			Timer timer = getTimer();
-			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the fluxion");
+			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the flux");
 			return skipUntil(Mono.delay(timespan, timer));
 		}
 		else{
@@ -3086,7 +3114,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> take(Duration timespan) {
 		if (!timespan.isZero()) {
 			Timer timer = getTimer();
-			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the fluxion");
+			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the flux");
 			return takeUntil(Mono.delay(timespan, timer));
 		}
 		else {
@@ -3512,7 +3540,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param name arbitrary {@link Flux} name
 	 *
-	 * @return a configured fluxion
+	 * @return a configured flux
 	 */
 	public Flux<T> useName(String name) {
 		return FluxConfig.withName(this, name);
@@ -3524,7 +3552,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param timer the timer
 	 *
-	 * @return a configured fluxion
+	 * @return a configured flux
 	 */
 	public Flux<T> useTimer(Timer timer) {
 		return FluxConfig.withTimer(this, timer);
