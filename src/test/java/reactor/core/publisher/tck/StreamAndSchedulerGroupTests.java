@@ -68,7 +68,19 @@ public class StreamAndSchedulerGroupTests extends AbstractStreamVerification {
 				.dispatchOn(sharedGroup)
 				.doOnError(Throwable.class, Throwable::printStackTrace)
 		);
-	}/*
+	}
+
+	@Override
+	public void required_spec309_requestZeroMustSignalIllegalArgumentException() throws Throwable {
+		throw new SkipException("optional");
+	}
+
+	@Override
+	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException() throws Throwable {
+		throw new SkipException("optional");
+	}
+
+	/*
 
 	@Override
 	public void required_exerciseWhiteboxHappyPath() throws Throwable {

@@ -40,6 +40,11 @@ public class EmitterProcessorTests extends AbstractProcessorVerification {
 		super.required_spec109_subscribeThrowNPEOnNullSubscriber();
 	}
 
+	@Override
+	public boolean skipStochasticTests() {
+		return true;
+	}
+
 	@AfterClass
 	@Override
 	public void tearDown() throws InterruptedException{
