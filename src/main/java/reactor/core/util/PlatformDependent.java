@@ -232,12 +232,7 @@ public enum PlatformDependent {
 			if (System.getSecurityManager() == null) {
 				return ClassLoader.getSystemClassLoader();
 			} else {
-				return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-					@Override
-					public ClassLoader run() {
-						return ClassLoader.getSystemClassLoader();
-					}
-				});
+				return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
 			}
 		}
 
