@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -286,6 +287,51 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public static <T> Mono<T> fromCompletableFuture(CompletableFuture<? extends T> completableFuture) {
 		return new MonoCompletableFuture<>(completableFuture);
+	}
+
+
+
+	/**
+	 * Build a {@link Mono} that will only emit the result of the future and then complete.
+	 * The future will be polled for an unbounded amount of time on request().
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
+	 *
+	 * @param future the future to poll value from
+	 * @return a new {@link Mono}
+	 */
+	public static <T> Mono<T> fromFuture(Future<? extends T> future) {
+		return new MonoFuture<T>(future);
+	}
+
+	/**
+	 * Build a {@link Mono} that will only emit the result of the future and then complete.
+	 * The future will be polled for a given amount of time on request() then onError if failed to return.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
+	 *
+	 * @param future the future to poll value from
+	 * @param timeout the timeout in milliseconds
+	 * @return a new {@link Mono}
+	 */
+	public static <T> Mono<T> fromFuture(Future<? extends T> future, long timeout) {
+		return new MonoFuture<>(future, timeout);
+	}
+
+	/**
+	 * Build a {@link Mono} that will only emit the result of the future and then complete.
+	 * The future will be polled for a given amount of time on request() then onError if failed to return.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
+	 *
+	 * @param future the future to poll value from
+	 * @return a new {@link Mono}
+	 */
+	public static <T> Mono<T> fromFuture(Future<? extends T> future, Duration duration) {
+		return fromFuture(future, duration.toMillis());
 	}
 
 	/**

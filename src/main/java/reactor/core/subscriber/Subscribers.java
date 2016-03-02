@@ -19,6 +19,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -43,6 +44,44 @@ import org.reactivestreams.Subscription;
  */
 public enum Subscribers{
 	;
+
+	/**
+	 *
+	 * Create a bounded {@link ConsumerSubscriber} that will keep a maximum in-flight items running.
+	 * The prefetch strategy works with a first request N, then when 25% of N is left to be received on
+	 * onNext, request N x 0.75.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
+	 *
+	 * @param prefetch the in-flight capacity used to request source {@link Publisher}
+	 * @param callback an onNext {@link Consumer} callback
+	 * @param <T> the consumed sequence type
+	 * @return a bounded {@link ConsumerSubscriber}
+	 */
+	public static <T> ConsumerSubscriber<T> bounded(int prefetch, Consumer<? super T> callback){
+		return bounded(prefetch, callback, null, null);
+	}
+
+	/**
+	 * Create a bounded {@link ConsumerSubscriber} that will keep a maximum in-flight items running.
+	 * The prefetch strategy works with a first request N, then when 25% of N is left to be received on
+	 * onNext, request N x 0.75.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
+	 *
+	 * @param prefetch the in-flight capacity used to request source {@link Publisher}
+	 * @param callback an onNext {@link Consumer} callback
+	 * @param errorCallback an onError {@link Consumer} callback
+	 * @param completeCallback an onComplete {@link Consumer} callback
+	 * @param <T> the consumed sequence type
+	 * @return a bounded {@link ConsumerSubscriber}
+	 */
+	public static <T> ConsumerSubscriber<T> bounded(int prefetch, Consumer<? super T> callback,
+			Consumer<? super Throwable> errorCallback, Runnable completeCallback){
+		return new BoundedSubscriber<>(prefetch, callback, errorCallback, completeCallback);
+	}
 
 	/**
 	 * Create a {@link Subscriber} reacting onSubscribe with the passed {@link Consumer}
@@ -166,12 +205,8 @@ public enum Subscribers{
 		return create(
 				UNBOUNDED_REQUEST_FUNCTION,
 				dataConsumer,
-				errorConsumer != null ? new BiConsumer<Throwable, Void>() {
-					@Override
-					public void accept(Throwable throwable, Void aVoid) {
-						errorConsumer.accept(throwable);
-					}
-				} : null,
+				errorConsumer != null ?
+						(BiConsumer<Throwable, Void>) (throwable, aVoid) -> errorConsumer.accept(throwable) : null,
 				completeConsumer
 		);
 	}
@@ -199,7 +234,7 @@ public enum Subscribers{
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
-			Consumer<Throwable> errorConsumer) {
+			Consumer<? super Throwable> errorConsumer) {
 		return consumer(dataConsumer, errorConsumer, null);
 	}
 
@@ -219,7 +254,7 @@ public enum Subscribers{
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
-			final Consumer<Throwable> errorConsumer,
+			final Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		return new ConsumerSubscriber<>(
 				dataConsumer,
