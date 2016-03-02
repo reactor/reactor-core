@@ -699,7 +699,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> cache() {
 		return MonoSource.wrap(Flux.from(this)
-		                           .publish()
+		                           .multicast(EmitterProcessor.replay(1))
 		                           .autoConnect());
 	}
 
