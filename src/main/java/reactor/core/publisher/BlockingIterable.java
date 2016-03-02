@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -46,7 +46,7 @@ import reactor.core.util.CancelledSubscription;
  *
  * @param <T> the value type
  */
-public final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurable {
+final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurable {
 
 	final Publisher<? extends T> source;
 	
