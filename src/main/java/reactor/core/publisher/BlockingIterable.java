@@ -76,7 +76,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> stream() {
-		BlockingIterable.SubscriberIterator<T> it = createIterator();
+		SubscriberIterator<T> it = createIterator();
 		source.subscribe(it);
 
 		Spliterator<T> sp = Spliterators.spliteratorUnknownSize(it, 0);
