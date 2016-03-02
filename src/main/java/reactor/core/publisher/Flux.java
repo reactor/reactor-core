@@ -393,7 +393,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <T> The type of the data sequence
 	 * @param <C> The type of contextual information to be read by the requestConsumer
 	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, C> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
@@ -403,6 +403,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				contextFactory,
 				shutdownConsumer);
 	}
+
+	/**
+	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
+	 *
+	 * @param requestConsumer A {@link BiConsumer} with left argument request and right argument target subscriber
+	 * @param <T>             The type of the data sequence
+	 * @return a Reactive {@link Flux} publisher ready to be subscribed
+	 *
+	 */
+	public static <T> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, Void>> requestConsumer) {
+		if (requestConsumer == null) throw new IllegalArgumentException("Supplier must be provided");
+		return generate(requestConsumer, null, null);
+	}
+
 
 	/**
 	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
