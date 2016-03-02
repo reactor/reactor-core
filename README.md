@@ -4,8 +4,8 @@
 
 [![Build Status](https://drone.io/github.com/reactor/reactor-core/status.png)](https://drone.io/github.com/reactor/reactor-core/latest)
 
-Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a lite [Reactive Extensions]
-(http://reactivex.io) API and efficient message-passing support.
+Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions]
+(http://reactivex.io) inspired API and efficient message-passing support.
 
 ## Getting it
 [![Reactor Core](https://maven-badges.herokuapp.com/maven-central/io.projectreactor/reactor-core/badge.svg?style=plastic)](http://mvnrepository.com/artifact/io.projectreactor/reactor-core)
@@ -27,7 +27,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ## Getting Started
 
-New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Rx Lite hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
+New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Core hands-on](https://github
+.com/reactor/lite-rx-api-hands-on) !
 
 ## Flux
 

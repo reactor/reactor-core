@@ -3734,23 +3734,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxTakeLast<>(this, n);
 	}
 
-
-	/**
-	 * Relay values until a predicate returns {@literal TRUE}, indicating the sequence should stop
-	 * (checked after each value has been delivered).
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntilp.png" alt="">
-	 *
-	 * @param stopPredicate the {@link Predicate} invoked each onNext returning {@literal TRUE} to terminate
-	 *
-	 * @return an eventually limited {@link Flux}
-	 *
-	 */
-	public final Flux<T> takeUntil(Predicate<? super T> stopPredicate) {
-		return new FluxTakeUntilPredicate<>(this, stopPredicate);
-	}
-
 	/**
 	 * Relay values from this {@link Flux} until the given {@link Publisher} emits.
 	 *
