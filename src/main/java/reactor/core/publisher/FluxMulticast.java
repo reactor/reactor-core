@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -328,71 +326,6 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 			int m = s.requestFusion(requestedMode);
 			sourceMode = m;
 			return m;
-		}
-
-		@Override
-		public boolean add(T t) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean offer(T t) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public T remove() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public T element() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean contains(Object o) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public Iterator<T> iterator() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public Object[] toArray() {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public <T1> T1[] toArray(T1[] a) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean remove(Object o) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean containsAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean addAll(Collection<? extends T> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean removeAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
-		}
-
-		@Override
-		public boolean retainAll(Collection<?> c) {
-			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
 		@Override

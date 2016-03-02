@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -1363,30 +1362,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> where(final Predicate<? super T> tester) {
-		return then(new WhereFunction<>(tester));
+		return MonoSource.wrap(new FluxFilter<>(this, tester));
 	}
 
-//	 ==============================================================================================================
-//	 Containers
-//	 ==============================================================================================================
-
-
-	static final class WhereFunction<T> implements Function<T, Mono<T>> {
-
-		private final Predicate<? super T> test;
-
-		public WhereFunction(Predicate<? super T> test) {
-			this.test = Objects.requireNonNull(test, "Where predicate is null");
-		}
-
-		@Override
-		public Mono<T> apply(T t) {
-			if(test.test(t)) {
-				return just(t);
-			}
-			else{
-				return empty();
-			}
-		}
-	}
 }
