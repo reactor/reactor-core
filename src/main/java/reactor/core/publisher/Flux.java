@@ -18,13 +18,16 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -3971,6 +3974,39 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> toList() {
 		return collect((Supplier<List<T>>) LIST_SUPPLIER, List<T>::add);
+	}
+
+	/**
+	 * Accumulate and sort this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
+	 *
+	 * @return a {@link Mono} of all sorted values from this {@link Flux}
+	 *
+	 */
+	public final Mono<List<T>> toSortedList() {
+		return toSortedList(null);
+	}
+
+	/**
+	 * Accumulate and sort using the given comparator this
+	 * {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
+	 *
+	 * @param comparator a {@link Comparator} to sort the items of this sequences
+	 *
+	 * @return a {@link Mono} of all sorted values from this {@link Flux}
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
+		return collect(() -> new PriorityQueue<>(comparator), PriorityQueue::add).map(queue ->
+				Arrays.asList((T[]) queue.toArray()));
 	}
 
 	/**
