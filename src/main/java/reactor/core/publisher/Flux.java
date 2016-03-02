@@ -17,21 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
@@ -47,12 +35,7 @@ import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.timer.Timer;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
+import reactor.core.tuple.*;
 import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -1151,8 +1134,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <E> the {@link Flux} output type
 	 *
 	 * @return a casted {@link Flux}
-	 *
-	 *
 	 */
 	@SuppressWarnings("unchecked")
 	public final <E> Flux<E> cast(Class<E> stream) {
@@ -1171,7 +1152,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a Mono sequence of the collected value on complete
 	 *
-	 * @since 2.5
 	 */
 	public final <E> Mono<E> collect(Supplier<E> containerSupplier, BiConsumer<E, ? super T> collector) {
 		return new MonoCollect<>(this, containerSupplier, collector);
@@ -1423,8 +1403,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
-	 *
-	 *
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
@@ -1443,7 +1421,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 *
-	 * @since 2.5
 	 */
 	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends V> valueMapper) {
@@ -1590,7 +1567,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
 	 *
-	 * @since 2.5
 	 */
 	public final ConnectableFlux<T> multicast(Processor<? super T, ? extends T> processor) {
 		return multicast(() -> processor);
@@ -1615,7 +1591,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
 	 *
-	 * @since 2.5
 	 */
 	public final ConnectableFlux<T> multicast(
 			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
@@ -1645,7 +1620,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
 	 *
-	 * @since 2.5
 	 */
 	public final <U> ConnectableFlux<U> multicast(Processor<? super T, ? extends T>
 			processor, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
@@ -1675,7 +1649,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
 	 *
-	 * @since 2.5
 	 */
 	public final <U> ConnectableFlux<U> multicast(Supplier<? extends Processor<? super T, ? extends T>>
 			processorSupplier, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
@@ -1895,6 +1868,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Provide an alternative if this sequence is completed without any data
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
+	 * <p>
+	 * @param alternate the alternate publisher if this sequence is empty
+	 *
+	 * @return an alternating {@link Flux} on source onComplete without elements
+	 */
+	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
+		return new FluxSwitchIfEmpty<>(this, alternate);
+	}
+
+	/**
 	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
@@ -1908,17 +1894,259 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return onErrorResumeWith(FluxResume.create(fallback));
 	}
 
+
+
 	/**
-	 * Provide an alternative if this sequence is completed without any data
+	 * Take only the first N values from this {@link Flux}.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/take.png" alt="">
 	 * <p>
-	 * @param alternate the alternate publisher if this sequence is empty
+	 * If N is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an error or
+	 * signals its first value (which is not not relayed though).
 	 *
-	 * @return an alternating {@link Flux} on source onComplete without elements
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/take0.png" alt="">
+	 * @param n the number of items to emit from this {@link Flux}
+	 *
+	 * @return a size limited {@link Flux}
 	 */
-	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
-		return new FluxSwitchIfEmpty<>(this, alternate);
+	public final Flux<T> take(long n) {
+		return new FluxTake<T>(this, n);
+	}
+
+	/**
+	 * Relay values from this {@link Flux} until the given time period elapses.
+	 * <p>
+	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
+	 * error or
+	 * signals its first value (which is not not relayed though).
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/taketime.png" alt="">
+	 *
+	 * @param timespan the time window of items to emit from this {@link Flux}
+	 *
+	 * @return a time limited {@link Flux}
+	 */
+	public final Flux<T> take(Duration timespan) {
+		if (!timespan.isZero()) {
+			Timer timer = getTimer();
+			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the fluxion");
+			return takeUntil(Mono.delay(timespan, timer));
+		}
+		else {
+			return take(0);
+		}
+	}
+
+	/**
+	 * Emit the last N values this {@link Flux} emitted before its completion.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takelast.png" alt="">
+	 *
+	 * @param n the number of items from this {@link Flux} to retain and emit on onComplete
+	 *
+	 * @return a terminating {@link Flux} sub-sequence
+	 *
+	 */
+	public final Flux<T> takeLast(int n) {
+		return new FluxTakeLast<>(this, n);
+	}
+
+
+	/**
+	 * Relay values until a predicate returns {@literal TRUE}, indicating the sequence should stop
+	 * (checked after each value has been delivered).
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntilp.png" alt="">
+	 *
+	 * @param stopPredicate the {@link Predicate} invoked each onNext returning {@literal TRUE} to terminate
+	 *
+	 * @return an eventually limited {@link Flux}
+	 *
+	 */
+	public final Flux<T> takeUntil(Predicate<? super T> stopPredicate) {
+		return new FluxTakeUntilPredicate<>(this, stopPredicate);
+	}
+
+	/**
+	 * Relay values from this {@link Flux} until the given {@link Publisher} emits.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntil.png" alt="">
+	 *
+	 * @param other the {@link Publisher} to signal when to stop replaying signal from this {@link Flux}
+	 *
+	 * @return an eventually limited {@link Flux}
+	 *
+	 */
+	public final Flux<T> takeUntil(Publisher<?> other) {
+		return new FluxTakeUntil<>(this, other);
+	}
+
+	/**
+	 * Relay values while a predicate returns
+	 * {@literal FALSE} for the values (checked before each value is delivered).
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takewhile.png" alt="">
+	 *
+	 * @param continuePredicate the {@link Predicate} invoked each onNext returning {@literal FALSE} to terminate
+	 *
+	 * @return an eventually limited {@link Flux}
+	 */
+	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
+		return new FluxTakeWhile<T>(this, continuePredicate);
+	}
+
+	/**
+	 * Create a {@link FluxTap} that maintains a reference to the last value seen by this {@link Flux}. The {@link FluxTap} is
+	 * continually updated when new values pass through the {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tap.png" alt="">
+	 *
+	 * @return a peekable {@link FluxTap}
+	 */
+	public final FluxTap<T> tap() {
+		return FluxTap.tap(this);
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case a per-item period in milliseconds fires
+	 * before the next item arrives from this {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 *
+	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
+	 *
+	 * @return a per-item expirable {@link Flux}
+	 *
+	 * @since 1.1, 2.0
+	 */
+	public final Flux<T> timeout(long timeout) {
+		return timeout(Duration.ofMillis(timeout), null);
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} in case a per-item period fires before the
+	 * next item arrives from this {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 *
+	 * @param timeout the timeout between two signals from this {@link Flux}
+	 *
+	 * @return a per-item expirable {@link Flux}
+	 *
+	 * @since 1.1, 2.0
+	 */
+	public final Flux<T> timeout(Duration timeout) {
+		return timeout(timeout, null);
+	}
+
+	/**
+	 * Switch to a fallback {@link Publisher} in case a per-item period
+	 * fires before the next item arrives from this {@link Flux}.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback.png" alt="">
+	 *
+	 * @param timeout the timeout between two signals from this {@link Flux}
+	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 *
+	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
+		final Timer timer = getTimer();
+		Assert.state(timer != null, "Cannot use default timer as no environment has been provided to this " + "Stream");
+
+		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseJust(0L);
+		final Function<T, Publisher<Long>> rest = o -> _timer;
+
+		if(fallback == null) {
+			return timeout(_timer, rest);
+		}
+		return timeout(_timer, rest, fallback);
+	}
+
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} in case a first item from this {@link Flux} has
+	 * not been emitted before the given {@link Publisher} emits.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfirst.png" alt="">
+	 *
+	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 *
+	 * @return an expirable {@link Flux} if the first item does not come before a {@link Publisher} signal
+	 *
+	 */
+	public final <U> Flux<T> timeout(Publisher<U> firstTimeout) {
+		return timeout(firstTimeout, t -> {
+			return never();
+		});
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} in case a first item from this {@link Flux} has
+	 * not been emitted before the given {@link Publisher} emits. The following items will be individually timed via
+	 * the factory provided {@link Publisher}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutall.png" alt="">
+	 *
+	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 * @param nextTimeoutFactory the timeout {@link Publisher} factory for each next item
+	 *
+	 * @return a first then per-item expirable {@link Flux}
+	 *
+	 */
+	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory) {
+		return new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory);
+	}
+
+	/**
+	 * Switch to a fallback {@link Publisher} in case a first item from this {@link Flux} has
+	 * not been emitted before the given {@link Publisher} emits. The following items will be individually timed via
+	 * the factory provided {@link Publisher}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutallfallback.png" alt="">
+	 *
+	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 * @param nextTimeoutFactory the timeout {@link Publisher} factory for each next item
+	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 *
+	 * @return a first then per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 *
+	 */
+	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory, Publisher<? extends T>
+			fallback) {
+		return new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory, fallback);
+	}
+
+	/**
+	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
+	 * millis and T2 {@link <T>} associated data for each item from this {@link Flux}
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
+	 *
+	 * @return a timestamped {@link Flux}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Flux<Tuple2<Long, T>> timestamp() {
+		return map(TIMESTAMP_OPERATOR);
 	}
 
 	/**
@@ -1994,7 +2222,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, T>> toMap(Function<? super T, ? extends K> keyExtractor) {
@@ -2013,11 +2240,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	public final <K, V> Mono<Map<K, V>> toMap(Function<? super T, ? extends K> keyExtractor,
 			Function<? super T, ? extends V> valueExtractor) {
-		return toMap(keyExtractor, valueExtractor, HashMap::new);
+		return toMap(keyExtractor, valueExtractor, () -> new HashMap<>());
 	}
 
 	/**
@@ -2033,7 +2259,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	public final <K, V> Mono<Map<K, V>> toMap(
 			final Function<? super T, ? extends K> keyExtractor,
@@ -2056,7 +2281,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, Collection<T>>> toMultimap(Function<? super T, ? extends K> keyExtractor) {
@@ -2075,7 +2299,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(Function<? super T, ? extends K> keyExtractor,
 			Function<? super T, ? extends V> valueExtractor) {
@@ -2095,7 +2318,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(
 			final Function<? super T, ? extends K> keyExtractor,
@@ -2166,8 +2388,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param maxSize the maximum routed items before emitting onComplete per {@link Flux} bucket
 	 *
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
-	 *
-	 *
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
 		return new FluxWindow<>(this, maxSize, QueueSupplier.<T>get(maxSize));
@@ -2277,8 +2497,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 *
-	 *
 	 */
 	public final Flux<Flux<T>> window(long timespan) {
 		Timer t = getTimer();
@@ -2295,8 +2513,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param timespan the duration to delimit {@link Flux} windows
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 *
-	 *
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
 		return window(timespan.toMillis());
@@ -2380,8 +2596,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 *
-	 *
 	 */
 	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
 		return new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), getTimer());
@@ -2423,8 +2637,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
-	 *
-	 *
 	 */
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
@@ -2446,8 +2658,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
-	 *
-	 *
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
@@ -2466,7 +2676,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
@@ -2485,7 +2694,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
@@ -2502,7 +2710,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
@@ -2521,7 +2728,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 *
-	 * @since 2.5
 	 */
 	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
 			BiFunction<? super T, ? super T2, ? extends V> zipper) {
@@ -2530,4 +2736,5 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
 	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
+	static final Function        TIMESTAMP_OPERATOR      = o -> Tuple.of(System.currentTimeMillis(), o);
 }
