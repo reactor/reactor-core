@@ -238,40 +238,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler e.g. {@link SchedulerGroup#call}.
-	 *
-	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
-	 * fast async event loops.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
-	 * <p>
-	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param source the {@link Publisher} to dispatch asynchronously
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
-	 * @param delayError true if errors should be delayed after consuming any available backlog
-	 * @param prefetch the maximum in flight data to produce from the passed source {@link Publisher}
-	 *
-	 * @return a {@link Flux} consuming asynchronously
-	 */
-	public static <T> Flux<T> dispatchOn(Publisher<T> source,
-			Callable<? extends Consumer<Runnable>> scheduler,
-			boolean delayError,
-			int prefetch,
-			Supplier<? extends Queue<T>> queueProvider) {
-		if (source instanceof Fuseable.ScalarSupplier) {
-			@SuppressWarnings("unchecked")
-			T value = ((Fuseable.ScalarSupplier<T>)source).get();
-			return new FluxPublishOnValue<>(value, scheduler, true);
-		}
-
-		return new FluxDispatchOn<>(source, scheduler, delayError, prefetch, queueProvider);
-	}
-
-	/**
 	 * Create a {@link Flux} that completes without emitting any item.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/empty.png" alt="">
@@ -297,6 +263,20 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static <T> Flux<T> error(Throwable error) {
 		return Mono.<T>error(error).flux();
+	}
+
+	/**
+	 * Build a {@link Flux} that will only emit an error signal to any new subscriber.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/errorrequest.png" alt="">
+	 *
+	 * @param whenRequested if true, will onError on the first request instead of subscribe().
+	 *
+	 * @return a new failed {@link Flux}
+	 */
+	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
+		return new FluxError<O>(throwable, whenRequested);
 	}
 
 	/**
@@ -611,28 +591,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static <T> Flux<T> log(Publisher<T> source, String category, Level level, int options) {
 		return new FluxLog<>(source, category, level, options);
-	}
-
-	/**
-	 * Create a {@link Flux} that will transform all signals into a target type. OnError will be transformed into
-	 * completion signal after its mapping callback has been applied.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mapsignal.png" alt="">
-	 * <p>
-	 * @param source the source {@link Publisher} to map
-	 * @param mapperOnNext the {@link Function} to call on next data and returning the target transformed data
-	 * @param mapperOnError the {@link Function} to call on error signal and returning the target transformed data
-	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning the target transformed data
-	 * @param <T> the input publisher type
-	 * @param <V> the output {@link Publisher} type target
-	 *
-	 * @return a new {@link Flux}
-	 */
-	public static <T, V> Flux<V> mapSignal(Publisher<T> source,
-			Function<? super T, ? extends V> mapperOnNext,
-			Function<Throwable, ? extends V> mapperOnError,
-			Supplier<? extends V> mapperOnComplete) {
-		return new FluxMapSignal<>(source, mapperOnNext, mapperOnError, mapperOnComplete);
 	}
 
 	/**
@@ -1134,8 +1092,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new MonoCollect<>(this, containerSupplier, collector);
 	}
 
-
-
 	/**
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
@@ -1400,7 +1356,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} consuming asynchronously
 	 */
 	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
-		return dispatchOn(this, scheduler, true, PlatformDependent.XS_BUFFER_SIZE, QueueSupplier.<T>xs());
+		if (this instanceof Fuseable.ScalarSupplier) {
+			@SuppressWarnings("unchecked")
+			T value = ((Fuseable.ScalarSupplier<T>)this).get();
+			return new FluxPublishOnValue<>(value, scheduler, true);
+		}
+
+		return new FluxDispatchOn<>(this, scheduler, true, PlatformDependent.SMALL_BUFFER_SIZE, QueueSupplier.<T>small());
 	}
 
 
@@ -1538,6 +1500,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return an observed  {@link Flux}
 	 *
 	 */
+	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Flux<T> doOnError(Class<E> exceptionType,
 			final Consumer<E> onError) {
 		return doOnError( t -> { if(exceptionType.isAssignableFrom(t.getClass())){
@@ -2377,7 +2340,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} publishing asynchronously
 	 */
 	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> schedulerFactory) {
-		return publishOn(this, schedulerFactory);
+		if (this instanceof Fuseable.ScalarSupplier) {
+			@SuppressWarnings("unchecked")
+			T value = ((Fuseable.ScalarSupplier<T>)this).get();
+			return new FluxPublishOnValue<>(value, schedulerFactory, true);
+		}
+		return new FluxPublishOn<>(this, schedulerFactory);
 	}
 
 	/**

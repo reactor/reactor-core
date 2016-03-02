@@ -1156,7 +1156,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new asynchronous {@link Mono}
 	 */
 	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> schedulers) {
-		return MonoSource.wrap(Flux.publishOn(this, schedulers));
+		return MonoSource.wrap(new FluxPublishOn<>(this, schedulers));
 	}
 
 	/**

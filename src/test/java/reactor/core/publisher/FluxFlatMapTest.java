@@ -286,8 +286,8 @@ public class FluxFlatMapTest {
 	@Test
 	public void testMaxConcurrency1() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
-		
-		Flux.flatMap(FluxArrayTest.range(1, 1_000_000), Flux::just, 1, 32, false).subscribe(ts);
+
+		FluxArrayTest.range(1, 1_000_000).flatMap(Flux::just, 1, 32).subscribe(ts);
 		
 		ts.assertValueCount(1_000_000)
 		.assertNoError()
@@ -305,7 +305,7 @@ public class FluxFlatMapTest {
 		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
 
-		Flux.flatMap(source, v -> v == 1 ? source1 : source2, 1, 32, false).subscribe(ts);
+		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
 
 		source1.start();
 		source2.start();

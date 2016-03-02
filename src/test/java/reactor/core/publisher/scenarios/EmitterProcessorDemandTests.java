@@ -75,7 +75,7 @@ public class EmitterProcessorDemandTests {
 			}
 		});
 
-		Flux.publishOn(publisher, asyncGroup).subscribe(emitter);
+		Flux.from(publisher).publishOn(asyncGroup).subscribe(emitter);
 
 		TestSubscriber<String> subscriber = new TestSubscriber<>();
 		emitter.subscribe(subscriber);
