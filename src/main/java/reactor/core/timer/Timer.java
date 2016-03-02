@@ -25,6 +25,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Pausable;
 import reactor.core.state.Timeable;
 import reactor.core.subscriber.Subscribers;
+import reactor.core.util.Exceptions;
 import reactor.core.util.WaitStrategy;
 
 /**
@@ -175,24 +176,8 @@ public class Timer implements Timeable, Cancellable {
 		GlobalTimer.unregister();
 	}
 
-	/**
-	 * @return a current time millis {@link LongSupplier}
-	 */
-	public static LongSupplier currentTimeMillisResolver(){
-		if (IncrementingTimeResolver.isEnabled()){
-			return IncrementingTimeResolver.now;
-		}
-		else{
-			return SYSTEM_NOW;
-		}
-	}
 
-	final static private LongSupplier SYSTEM_NOW = new LongSupplier() {
-		@Override
-		public long getAsLong() {
-			return System.currentTimeMillis();
-		}
-	};
+	final static LongSupplier SYSTEM_NOW = System::currentTimeMillis;
 
 
 //	 ==============================================================================================================
@@ -328,4 +313,12 @@ public class Timer implements Timeable, Cancellable {
 		return resolution;
 	}
 
+	static void checkResolution(long time, long resolution) {
+		if (time % resolution != 0) {
+			Exceptions.failUpstream(new IllegalArgumentException(
+					"Period must be a multiple of Timer resolution (e.g. period % resolution == 0 ). " +
+							"Resolution for this Timer is: " + resolution + "ms"
+			));
+		}
+	}
 }

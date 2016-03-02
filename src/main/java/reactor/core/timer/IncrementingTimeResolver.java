@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.LongSupplier;
 
 import reactor.core.queue.RingBuffer;
-import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
@@ -89,15 +88,6 @@ final class IncrementingTimeResolver {
 			}
 		}
 		return timer;
-	}
-
-	public static void checkResolution(long time, long resolution) {
-		if (time % resolution != 0) {
-			Exceptions.failUpstream(new IllegalArgumentException(
-			  "Period must be a multiple of Timer resolution (e.g. period % resolution == 0 ). " +
-				"Resolution for this Timer is: " + resolution + "ms"
-			));
-		}
 	}
 
 	/**
