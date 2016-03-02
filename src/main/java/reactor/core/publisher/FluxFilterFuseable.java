@@ -66,8 +66,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	}
 
 	static final class FilterFuseableSubscriber<T> 
-	extends SynchronousSubscription<T>
-	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
+	implements Receiver, Producer, Loopback, Completable, SynchronousSubscription<T>, ConditionalSubscriber<T> {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -310,8 +309,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	}
 
 	static final class FilterFuseableConditionalSubscriber<T> 
-	extends SynchronousSubscription<T>
-	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
+	implements Receiver, Producer, Loopback, Completable, SynchronousSubscription<T>, ConditionalSubscriber<T> {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;

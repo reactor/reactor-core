@@ -78,8 +78,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	}
 
 	static final class MapFuseableSubscriber<T, R> 
-	extends SynchronousSubscription<R>
-	implements Subscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
+	implements Subscriber<T>, Completable, Receiver, Producer, Loopback, SynchronousSubscription<R> {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -261,8 +260,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	}
 
 	static final class MapFuseableConditionalSubscriber<T, R> 
-	extends SynchronousSubscription<R>
-	implements ConditionalSubscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
+	implements ConditionalSubscriber<T>, Completable, Receiver, Producer, Loopback, SynchronousSubscription<R> {
 		final ConditionalSubscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 

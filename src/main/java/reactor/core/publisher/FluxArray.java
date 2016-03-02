@@ -60,8 +60,7 @@ extends Flux<T>
 	}
 
 	static final class ArraySubscription<T>
-			extends SynchronousSubscription<T>
-	  implements Producer, Requestable, Cancellable, MultiReceiver {
+	  implements Producer, Requestable, Cancellable, MultiReceiver, SynchronousSubscription<T> {
 		final Subscriber<? super T> actual;
 
 		final T[] array;

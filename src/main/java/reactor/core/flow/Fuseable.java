@@ -183,10 +183,10 @@ public interface Fuseable {
 	 *
 	 * @param <T> the content value type
 	 */
-	abstract class SynchronousSubscription<T> implements QueueSubscription<T>, Queue<T> {
+	interface SynchronousSubscription<T> extends QueueSubscription<T>, Queue<T> {
 
 		@Override
-		public int requestFusion(int requestedMode) {
+		default int requestFusion(int requestedMode) {
 			return Fuseable.SYNC;
 		}
 
