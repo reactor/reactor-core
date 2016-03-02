@@ -699,12 +699,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup}
 	 */
 	public static SchedulerGroup single(final Consumer<Runnable> scheduler, boolean autoShutdown) {
-		return create(new Callable<Consumer<Runnable>>() {
-			@Override
-			public Consumer<Runnable> call() throws Exception {
-				return scheduler;
-			}
-		}, 1, autoShutdown);
+		return create(() -> scheduler, 1, autoShutdown);
 	}
 
 	/**
@@ -871,19 +866,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	@SuppressWarnings("unchecked")
 	static final SchedulerGroup SYNC_SERVICE = new SchedulerGroup(null, -1, null, null, false);
 
-	static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
-		@Override
-		public WaitStrategy get() {
-			return WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
-		}
-	};
+	static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY =
+			() -> WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
 
-	static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY = new Supplier<WaitStrategy>() {
-		@Override
-		public WaitStrategy get() {
-			return WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
-		}
-	};
+	static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY =
+			() -> WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
 
 	static final TaskSubscriber NOOP_TASK_SUBSCRIBER = new TaskSubscriber(null, null);
 
