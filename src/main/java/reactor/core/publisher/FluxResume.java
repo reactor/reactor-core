@@ -40,29 +40,6 @@ final class FluxResume<T> extends FluxSource<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-// FIXME this causes ambiguity error because javac can't distinguish between different lambda arities:
-//
-//	new FluxResume(source, e -> other) tries to match the (Publisher, Publisher) constructor and fails
-//
-//	public FluxResume(Publisher<? extends T> source,
-//			Publisher<? extends T> next) {
-//		this(source, create(next));
-//	}
-//
-	static <T> Function<Throwable, Publisher<? extends T>> create(final Publisher<? extends T> next) {
-		Objects.requireNonNull(next, "next");
-		return new Function<Throwable, Publisher<? extends T>>() {
-			@Override
-			public Publisher<? extends T> apply(Throwable e) {
-				return next;
-			}
-		};
-	}
-	
-	public static <T> FluxResume<T> create(Publisher<? extends T> source, Publisher<? extends T> other) {
-		return new FluxResume<>(source, create(other));
-	}
-	
 	public FluxResume(Publisher<? extends T> source,
 						   Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
 		super(source);

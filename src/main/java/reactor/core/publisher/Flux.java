@@ -1341,6 +1341,26 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		);
 	}
 
+
+	/**
+	 * Evaluate each accepted value against the given {@link Predicate}. If the predicate test succeeds, the value is
+	 * passed into the new {@link Flux}. If the predicate test fails, the value is ignored and a request of 1 is
+	 * emitted.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/filter.png" alt="">
+	 *
+	 * @param p the {@link Predicate} to test values against
+	 *
+	 * @return a new {@link Flux} containing only values that pass the predicate test
+	 */
+	public final Flux<T> filter(Predicate<? super T> p) {
+		if (this instanceof Fuseable) {
+			return new FluxFilterFuseable<>(this, p);
+		}
+		return new FluxFilter<>(this, p);
+	}
+
 	/**
 	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
@@ -1763,7 +1783,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a reduced {@link Flux}
 	 *
-	 * @since 1.1, 2.0, 2.5
+	 *
 	 */
 	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
 		if(this instanceof Supplier){
@@ -1784,7 +1804,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <A> the type of the initial and reduced object
 	 *
 	 * @return a reduced {@link Flux}
-	 * @since 1.1, 2.0, 2.5
+	 *
 	 */
 	public final <A> Mono<A> reduce(A initial, BiFunction<A, ? super T, A> accumulator) {
 		return reduceWith(() -> initial, accumulator);
@@ -1803,10 +1823,537 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a reduced {@link Flux}
 	 *
-	 * @since 1.1, 2.0, 2.5
 	 */
 	public final <A> Mono<A> reduceWith(Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
 		return new MonoReduce<>(this, initial, accumulator);
+	}
+
+	/**
+	 * Repeatedly subscribe to the source completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeat.png" alt="">
+	 *
+	 * @return an indefinitively repeated {@link Flux} on onComplete
+	 */
+	public final Flux<T> repeat() {
+		return repeat(ALWAYS_BOOLEAN_SUPPLIER);
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatb.png" alt="">
+	 *
+	 * @param predicate the boolean to evaluate on onComplete.
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete
+	 *
+	 */
+	public final Flux<T> repeat(BooleanSupplier predicate) {
+		return repeatWhen(v -> v.filter(t -> predicate.getAsBoolean()));
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatn.png" alt="">
+	 *
+	 * @param numRepeat the number of times to re-subscribe on onComplete
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified
+	 *
+	 */
+	public final Flux<T> repeat(long numRepeat) {
+		return new FluxRepeat<T>(this, numRepeat);
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
+	 * subscription. A specified maximum of repeat will limit the number of re-subscribe.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatnb.png" alt="">
+	 *
+	 * @param numRepeat the number of times to re-subscribe on complete
+	 * @param predicate the boolean to evaluate on onComplete
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified OR matching
+	 * predicate
+	 *
+	 */
+	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
+		return repeat(countingBooleanSupplier(predicate, numRepeat));
+	}
+
+	/**
+	 * Repeatedly subscribe to this {@link Flux} when a companion sequence signals a number of emitted elements in
+	 * response to the fluxion completion signal.
+	 * <p>If the companion sequence signals when this {@link Flux} is active, the repeat
+	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen.png" alt="">
+	 *
+	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling an exclusive number of
+	 * emitted elements on onComplete and returning a {@link Publisher} companion.
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete when the companion {@link Publisher} produces an
+	 * onNext signal
+	 *
+	 */
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
+		return new FluxRepeatWhen<T>(this, whenFactory);
+	}
+
+	/**
+	 * Re-subscribes to this {@link Flux} sequence if it signals any error
+	 * either indefinitely.
+	 * <p>
+	 * The times == Long.MAX_VALUE is treated as infinite retry.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retry.png" alt="">
+	 *
+	 * @return a re-subscribing {@link Flux} on onError
+	 */
+	public final Flux<T> retry() {
+		return retry(Long.MAX_VALUE);
+	}
+
+	/**
+	 * Re-subscribes to this {@link Flux} sequence if it signals any error
+	 * either indefinitely or a fixed number of times.
+	 * <p>
+	 * The times == Long.MAX_VALUE is treated as infinite retry.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryn.png" alt="">
+	 *
+	 * @param numRetries the number of times to tolerate an error
+	 *
+	 * @return a re-subscribing {@link Flux} on onError up to the specified number of retries.
+	 *
+	 */
+	public final Flux<T> retry(long numRetries) {
+		return new FluxRetry<T>(this, numRetries);
+	}
+
+	/**
+	 * Re-subscribes to this {@link Flux} sequence if it signals any error
+	 * and the given {@link Predicate} matches otherwise push the error downstream.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryb.png" alt="">
+	 *
+	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+	 *
+	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
+	 */
+	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
+		return retryWhen(v -> v.filter(retryMatcher));
+	}
+
+	/**
+	 * Re-subscribes to this {@link Flux} sequence up to the specified number of retries if it signals any
+	 * error and the given {@link Predicate} matches otherwise push the error downstream.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrynb.png" alt="">
+	 *
+	 * @param numRetries the number of times to tolerate an error
+	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+	 *
+	 * @return a re-subscribing {@link Flux} on onError up to the specified number of retries and if the predicate
+	 * matches.
+	 *
+	 */
+	public final Flux<T> retry(long numRetries, Predicate<Throwable> retryMatcher) {
+		return retry(countingPredicate(retryMatcher, numRetries));
+	}
+
+	/**
+	 * Retries this {@link Flux} when a companion sequence signals
+	 * an item in response to this {@link Flux} error signal
+	 * <p>
+	 * <p>If the companion sequence signals when the {@link Flux} is active, the retry
+	 * attempt is suppressed and any terminal signal will terminate the {@link Flux} source with the same signal
+	 * immediately.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrywhen.png" alt="">
+	 *
+	 * @param whenFactory the
+	 * {@link Function} providing a {@link Flux} signalling any error from the source sequence and returning a {@link Publisher} companion.
+	 *
+	 * @return a re-subscribing {@link Flux} on onError when the companion {@link Publisher} produces an
+	 * onNext signal
+	 */
+	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
+		return new FluxRetryWhen<T>(this, whenFactory);
+	}
+
+	/**
+	 * Emit latest value for every given period of ti,e.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sampletimespan.png" alt="">
+	 *
+	 * @param timespan the period in second to emit the latest observed item
+	 *
+	 * @return a sampled {@link Flux} by last item over a period of time
+	 */
+	public final Flux<T> sample(long timespan) {
+		return sample(Duration.ofSeconds(timespan));
+	}
+
+	/**
+	 * Emit latest value for every given period of time.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sampletimespan.png" alt="">
+	 *
+	 * @param timespan the duration to emit the latest observed item
+	 *
+	 * @return a sampled {@link Flux} by last item over a period of time
+	 */
+	public final Flux<T> sample(Duration timespan) {
+		return sample(interval(timespan));
+	}
+
+	/**
+	 * Sample this {@link Flux} and emit its latest value whenever the sampler {@link Publisher}
+	 * signals a value.
+	 * <p>
+	 * Termination of either {@link Publisher} will result in termination for the {@link Subscriber}
+	 * as well.
+	 * <p>
+	 * Both {@link Publisher} will run in unbounded mode because the backpressure
+	 * would interfere with the sampling precision.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sample.png" alt="">
+	 *
+	 * @param sampler the sampler {@link Publisher}
+	 *
+	 * @return a sampled {@link Flux} by last item observed when the sampler {@link Publisher} signals
+	 */
+	public final <U> Flux<T> sample(Publisher<U> sampler) {
+		return new FluxSample<>(this, sampler);
+	}
+
+	/**
+	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/samplefirsttimespan.png" alt="">
+	 *
+	 * @param timespan the period in seconds to exclude others values from this sequence
+	 *
+	 * @return a sampled {@link Flux} by first item over a period of time
+	 */
+	public final Flux<T> sampleFirst(long timespan) {
+		return sampleFirst(Duration.ofSeconds(timespan));
+	}
+
+	/**
+	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/samplefirsttimespan.png" alt="">
+	 *
+	 * @param timespan the duration to exclude others values from this sequence
+	 *
+	 * @return a sampled {@link Flux} by first item over a period of time
+	 */
+	public final Flux<T> sampleFirst(Duration timespan) {
+		return sampleFirst(t -> {
+			return Mono.delay(timespan);
+		});
+	}
+
+	/**
+	 * Take a value from this {@link Flux} then use the duration provided by a
+	 * generated Publisher to skip other values until that sampler {@link Publisher} signals.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/samplefirst.png" alt="">
+	 *
+	 * @param samplerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop excluding
+	 * others values from this sequence
+	 * @param <U> the companion reified type
+	 *
+	 * @return a sampled {@link Flux} by last item observed when the sampler signals
+	 */
+	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
+		return new FluxThrottleFirst<>(this, samplerFactory);
+	}
+
+
+	/**
+	 * Emit the last value from this {@link Flux} only if there were no new values emitted
+	 * during the time window provided by a publisher for that particular last value.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sampletimeout.png" alt="">
+	 *
+	 * @param throttlerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop checking
+	 * others values from this sequence and emit the selecting item
+	 * @param <U> the companion reified type
+	 *
+	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
+	 */
+	@SuppressWarnings("unchecked")
+	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
+		return new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.unbounded(PlatformDependent
+				.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Emit the last value from this {@link Flux} only if there were no newer values emitted
+	 * during the time window provided by a publisher for that particular last value. 
+	 * <p>The provided {@literal maxConcurrency} will keep a bounded maximum of concurrent timeouts and drop any new 
+	 * items until at least one timeout terminates.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sampletimeoutm.png" alt="">
+	 *
+	 * @param throttlerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop checking
+	 * others values from this sequence and emit the selecting item
+	 * @param <U> the throttling type
+	 *
+	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
+	 */
+	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory, long
+			maxConcurrency) {
+		if(maxConcurrency == Long.MAX_VALUE){
+			return sampleTimeout(throttlerFactory);
+		}
+		return new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.get(maxConcurrency));
+	}
+
+	/**
+	 * Accumulate this {@link Flux} values with an accumulator {@link BiFunction} and
+	 * returns the intermediate results of this function.
+	 * <p>
+	 * Unlike {@link #scan(Object, BiFunction)}, this operator doesn't take an initial value
+	 * but treats the first {@link Flux} value as initial value.
+	 * <br>
+	 * The accumulation works as follows:
+	 * <pre><code>
+	 * result[0] = accumulator(source[0], source[1])
+	 * result[1] = accumulator(result[0], source[2])
+	 * result[2] = accumulator(result[1], source[3])
+	 * ...
+	 * </code></pre>
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/accumulate.png" alt="">
+	 *
+	 * @param accumulator the accumulating {@link BiFunction}
+	 *
+	 * @return an accumulating {@link Flux}
+	 *
+	 */
+	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
+		return new FluxAccumulate<>(this, accumulator);
+	}
+
+	/**
+	 * Aggregate this {@link Flux} values with the help of an accumulator {@link BiFunction}
+	 * and emits the intermediate results.
+	 * <p>
+	 * The accumulation works as follows:
+	 * <pre><code>
+	 * result[0] = initialValue;
+	 * result[1] = accumulator(result[0], source[0])
+	 * result[2] = accumulator(result[1], source[1])
+	 * result[3] = accumulator(result[2], source[2])
+	 * ...
+	 * </code></pre>
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/scan.png" alt="">
+	 *
+	 * @param initial the initial argument to pass to the reduce function
+	 * @param accumulator the accumulating {@link BiFunction}
+	 * @param <A> the accumulated type
+	 *
+	 * @return an accumulating {@link Flux} starting with initial state
+	 *
+	 */
+	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
+		return new FluxScan<>(this, initial, accumulator);
+	}
+
+	/**
+	 * Expect and emit a single item from this {@link Flux} source or signal
+	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/single.png" alt="">
+	 *
+	 * @return a {@link Mono} with the eventual single item or an error signal
+	 */
+	public final Mono<T> single() {
+		return new MonoSingle<>(this);
+	}
+
+	/**
+	 *
+	 * Expect and emit a single item from this {@link Flux} source or signal
+	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
+	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
+	 *
+	 * @return a {@link Mono} with the eventual single item or a supplied default value
+	 */
+	public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+		return new MonoSingle<>(this, defaultSupplier);
+	}
+
+	/**
+	 * Expect and emit a zero or single item from this {@link Flux} source or
+	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleorempty.png" alt="">
+	 *
+	 * @return a {@link Mono} with the eventual single item or no item
+	 */
+	public final Mono<T> singleOrEmpty() {
+		return new MonoSingle<>(this, MonoSingle.<T>completeOnEmptySequence());
+	}
+
+	/**
+	 * Skip next the specified number of elements from this {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skip.png" alt="">
+	 *
+	 * @param skipped the number of times to drop
+	 *
+	 * @return a dropping {@link Flux} until the specified skipped number of elements
+	 */
+	public final Flux<T> skip(long skipped) {
+		if (skipped > 0) {
+			return new FluxSkip<>(this, skipped);
+		}
+		else {
+			return this;
+		}
+	}
+
+	/**
+	 * Skip elements from this {@link Flux} for the given time period.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skiptime.png" alt="">
+	 *
+	 * @param timespan the time window to exclude next signals
+	 *
+	 * @return a dropping {@link Flux} until the end of the given timespan
+	 */
+	public final Flux<T> skip(Duration timespan) {
+		if(!timespan.isZero()) {
+			Timer timer = getTimer();
+			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the fluxion");
+			return skipUntil(Mono.delay(timespan, timer));
+		}
+		else{
+			return this;
+		}
+	}
+
+	/**
+	 * Skip the last specified number of elements from this {@link Flux}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skiplast.png" alt="">
+	 *
+	 * @param n the number of elements to ignore before completion
+	 *
+	 * @return a dropping {@link Flux} for the specified skipped number of elements before termination
+	 *
+	 */
+	public final Flux<T> skipLast(int n) {
+		return new FluxSkipLast<>(this, n);
+	}
+
+	/**
+	 * Skip values from this {@link Flux} until a specified {@link Publisher} signals
+	 * an onNext or onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skipuntil.png" alt="">
+	 *
+	 * @param other the {@link Publisher} companion to coordinate with to stop skipping
+	 *
+	 * @return a dropping {@link Flux} until the other {@link Publisher} emits
+	 *
+	 */
+	public final Flux<T> skipUntil(Publisher<?> other) {
+		return new FluxSkipUntil<>(this, other);
+	}
+
+	/**
+	 * Skips values from this {@link Flux} while a {@link Predicate} returns true for the value.
+	 *
+	 * <p>
+	 * <img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skipwhile.png" alt="">
+	 *
+	 * @param skipPredicate the {@link Predicate} evaluating to true to keep skipping.
+	 *
+	 * @return a dropping {@link Flux} while the {@link Predicate} matches
+	 */
+	public final Flux<T> skipWhile(Predicate<? super T> skipPredicate) {
+		return new FluxSkipWhile<>(this, skipPredicate);
+	}
+
+	/**
+	 * Prepend the given {@link Iterable} before this {@link Flux} sequence.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithi.png" alt="">
+	 *
+	 * @return a prefixed {@link Flux} with given {@link Iterable}
+	 */
+	public final Flux<T> startWith(Iterable<T> iterable) {
+		return startWith(fromIterable(iterable));
+	}
+
+	/**
+	 * Prepend the given values before this {@link Flux} sequence.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithv.png" alt="">
+	 *
+	 * @return a prefixed {@link Flux} with given values
+	 */
+	@SafeVarargs
+	@SuppressWarnings("varargs")
+	public final Flux<T> startWith(T... values) {
+		return startWith(just(values));
+	}
+
+	/**
+	 * Prepend the given {@link Publisher} sequence before this {@link Flux} sequence.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwith.png" alt="">
+	 *
+	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
+	 */
+	public final Flux<T> startWith(Publisher<? extends T> publisher) {
+		if (publisher == null) {
+			return this;
+		}
+		return concat(publisher, this);
 	}
 
 	/**
@@ -1868,6 +2415,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever this {@link Flux} produces an item.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchmap.png" alt="">
+	 *
+	 * @param fn the transformation function
+	 * @param <V> the type of the return value of the transformation function
+	 *
+	 * @return an alternating {@link Flux} on source onNext
+	 *
+	 */
+	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
+		return new FluxSwitchMap<>(this, fn, QueueSupplier.xs(), PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
 	 * Provide an alternative if this sequence is completed without any data
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchifempty.png" alt="">
@@ -1891,10 +2454,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return an alternating {@link Flux} on source onError
 	 */
 	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {
-		return onErrorResumeWith(FluxResume.create(fallback));
+		return onErrorResumeWith(t -> fallback);
 	}
-
-
 
 	/**
 	 * Take only the first N values from this {@link Flux}.
@@ -2302,7 +2863,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(Function<? super T, ? extends K> keyExtractor,
 			Function<? super T, ? extends V> valueExtractor) {
-		return toMultimap(keyExtractor, valueExtractor, HashMap::new);
+		return toMultimap(keyExtractor, valueExtractor, () -> new HashMap<>());
 	}
 
 	/**
@@ -2737,4 +3298,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
 	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
 	static final Function        TIMESTAMP_OPERATOR      = o -> Tuple.of(System.currentTimeMillis(), o);
+	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
+
+	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
+		if (max <= 0) {
+			return predicate;
+		}
+		return new BooleanSupplier() {
+			long n;
+
+			@Override
+			public boolean getAsBoolean() {
+				return n++ < max && predicate.getAsBoolean();
+			}
+		};
+	}
+
+	static <O> Predicate<O> countingPredicate(Predicate<O> predicate, long max) {
+		if (max == 0) {
+			return predicate;
+		}
+		return new Predicate<O>() {
+			long n;
+
+			@Override
+			public boolean test(O o) {
+				return n++ < max && predicate.test(o);
+			}
+		};
+	}
 }
