@@ -1251,13 +1251,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> repeatUntilNext(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		if (maxRepeat != Integer.MAX_VALUE) {
-			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L);
+			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> { return v != 0L; });
 			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
 					skip.andThen(flux -> flux.zipWith(Flux.range(0, maxRepeat), (a, b) -> b)
 					                         .map(a -> (long)a))
 					    .andThen(repeatFactory)));
 		}
-		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> v != 0L).scan(0L, (v, acc) -> acc++);
+		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeUntil(v -> { return v != 0L; }).scan(0L, (v, acc) -> acc++);
 		return MonoSource.wrap(new FluxRepeatWhen<T>(this, skip.andThen(repeatFactory)));
 	}
 
