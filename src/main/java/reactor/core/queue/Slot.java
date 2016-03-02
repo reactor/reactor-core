@@ -17,20 +17,13 @@ package reactor.core.queue;
 
 import java.io.Serializable;
 
-import reactor.core.state.Recyclable;
-
 /**
  * A simple reusable data container.
  * @param <T>
  */
-public final class Slot<T> implements Recyclable, Serializable {
+public final class Slot<T> implements Serializable {
 
 	private static final long serialVersionUID = 5172014386416785095L;
 
 	public T value = null;
-
-	@Override
-	public void recycle() {
-		value = null;
-	}
 }

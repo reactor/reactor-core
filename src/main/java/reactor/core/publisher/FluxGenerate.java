@@ -71,10 +71,6 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 			final C context = contextFactory != null ? contextFactory.apply(subscriber) : null;
 			subscriber.onSubscribe(createSubscription(subscriber, context));
 		}
-		catch (PrematureCompleteException pce) {
-			subscriber.onSubscribe(EmptySubscription.INSTANCE);
-			subscriber.onComplete();
-		}
 		catch (Throwable throwable) {
 			EmptySubscription.error(subscriber, throwable);
 		}
@@ -313,18 +309,5 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 			return source.toString();
 		}
 
-	}
-
-	static final class PrematureCompleteException extends RuntimeException {
-
-		static public final PrematureCompleteException INSTANCE = new PrematureCompleteException();
-
-		private PrematureCompleteException() {
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return this;
-		}
 	}
 }

@@ -43,16 +43,12 @@ final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
 			session.start();
 
 		}
-		catch (FluxGenerate.PrematureCompleteException pce) {
-			subscriber.onSubscribe(EmptySubscription.INSTANCE);
-			subscriber.onComplete();
-		}
 		catch (Throwable throwable) {
 			EmptySubscription.error(subscriber, throwable);
 		}
 	}
 
-	private static class YieldingSignalEmitter<T> extends SignalEmitter<T> {
+	static final class YieldingSignalEmitter<T> extends SignalEmitter<T> {
 
 		final Consumer<? super SignalEmitter<T>> onSubscribe;
 
