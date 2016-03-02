@@ -1237,6 +1237,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * number of emitted elements.
 	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
 	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 * <p>Emits an {@link IllegalStateException} if the max repeat is exceeded and different from {@code Integer.MAX_VALUE}.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen1.png" alt="">
@@ -1253,7 +1254,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		if (maxRepeat != Integer.MAX_VALUE) {
 			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeWhile(v -> v == 0L);
 			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
-					skip.andThen(flux -> flux.zipWith(Flux.range(0, maxRepeat), (a, b) -> b)
+					skip.andThen(flux -> flux.zipWith(Flux.range(0, maxRepeat)
+					                                      .concatWith(Flux.error(new IllegalStateException(
+							                                      "Exceeded maximum number of retries"), true)),
+							1,
+							(a, b) -> b)
 					                         .map(a -> (long)a))
 					    .andThen(repeatFactory)));
 		}
