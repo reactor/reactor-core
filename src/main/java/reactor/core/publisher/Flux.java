@@ -479,7 +479,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		Assert.isTrue(period >= timer.period(), "The period " + period + " cannot be less than the timer resolution " +
 				"" + timer.period());
 
-		return new FluxInterval(timer, period, period);
+		return new FluxInterval(period, period, timer);
 	}
 
 	/**
@@ -499,6 +499,75 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * a global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/intervald.png" alt="">
+	 *
+	 * @param delay  the delay in milliseconds to wait before emitting 0l
+	 * @param period the period in milliseconds before each following increment
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(long delay, long period) {
+		return interval(delay, period, Timer.globalOrNew());
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * a global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/intervald.png" alt="">
+	 *
+	 * @param delay  the delay to wait before emitting 0l
+	 * @param period the period before each following increment
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(Duration delay, Duration period) {
+		return interval(delay.toMillis(), period.toMillis());
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/intervald.png" alt="">
+	 *
+	 * @param delay  the timespan in milliseconds to wait before emitting 0l
+	 * @param period the period in milliseconds before each following increment
+	 * @param timer  the {@link Timer} to schedule on
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(long delay, long period, Timer timer) {
+		return new FluxInterval(delay, period, timer);
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/intervald.png" alt="">
+	 *
+	 * @param delay  the timespan to wait before emitting 0l
+	 * @param period the period before each following increment
+	 * @param timer  the {@link Timer} to schedule on
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(Duration delay, Duration period, Timer timer) {
+		return new FluxInterval(delay.toMillis(), period.toMillis(), timer);
+	}
 	/**
 	 * Create a new {@link Flux} that emits the specified items and then complete.
 	 * <p>
@@ -1869,20 +1938,284 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 		return FluxConfig.withCapacity(this, capacity);
 	}
-	
+
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <R> type of the value from source2
+	 * Configure an arbitrary name for later introspection.
 	 *
-	 * @return a zipped {@link Flux}
+	 * @param name arbitrary {@link Flux} name
+	 *
+	 * @return a configured fluxion
 	 */
-	public final <R> Flux<Tuple2<T, R>> zipWith(Publisher<? extends R> source2) {
-		return zip(this, source2);
+	public Flux<T> useName(final String name) {
+		return FluxConfig.withName(this, name);
+
+	}
+
+	/**
+	 * Configure a {@link Timer} that can be used by timed operators downstream.
+	 *
+	 * @param timer the timer
+	 *
+	 * @return a configured fluxion
+	 */
+	public Flux<T> useTimer(final Timer timer) {
+		return FluxConfig.withTimer(this, timer);
+
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize}
+	 * count and starting from
+	 * the first item.
+	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param maxSize the maximum routed items before emitting onComplete per {@link Flux} bucket
+	 *
+	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
+	 *
+	 * @since 2.0
+	 */
+	public final Flux<Flux<T>> window(final int maxSize) {
+		return new FluxWindow<>(this, maxSize, QueueSupplier.<T>get(maxSize));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code skip}
+	 * count,
+	 * starting from
+	 * the first item.
+	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 *
+	 * <p>
+	 * When skip > maxSize : dropping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When maxSize < skip : overlapping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When skip == maxSize : exact windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param maxSize the maximum routed items per {@link Flux}
+	 * @param skip the number of items to count before emitting a new bucket {@link Flux}
+	 *
+	 * @return a windowing {@link Flux} of sized {@link Flux} buckets every skip count
+	 */
+	public final Flux<Flux<T>> window(final int maxSize, final int skip) {
+		return new FluxWindow<>(this,
+				maxSize,
+				skip,
+				QueueSupplier.<T>xs(),
+				QueueSupplier.<UnicastProcessor<T>>xs());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows
+	 * where the window boundary is signalled by another {@link Publisher}
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowboundary.png" alt="">
+	 *
+	 * @param boundary a {@link Publisher} to emit any item for a split signal and complete to terminate
+	 *
+	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher}
+	 */
+	public final Flux<Flux<T>> window(final Publisher<?> boundary) {
+		return new FluxWindowBoundary<>(this,
+				boundary,
+				QueueSupplier.<T>unbounded(PlatformDependent.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into potentially overlapping windows controlled by items of a
+	 * start {@link Publisher} and end {@link Publisher} derived from the start values.
+	 *
+	 * <p>
+	 * When Open signal is strictly not overlapping Close signal : dropping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowopenclose.png" alt="">
+	 * <p>
+	 * When Open signal is strictly more frequent than Close signal : overlapping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowopencloseover.png" alt="">
+	 * <p>
+	 * When Open signal is exactly coordinated with Close signal : exact windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowboundary.png" alt="">
+	 *
+	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
+	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
+	 * emits to complete the window
+	 *
+	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
+	 * a selected {@link Publisher} emits
+	 */
+	public final <U, V> Flux<Flux<T>> window(final Publisher<U> bucketOpening,
+			final Function<? super U, ? extends Publisher<V>> closeSelector) {
+
+		long c = getCapacity();
+		c = c == -1L ? Long.MAX_VALUE : c;
+		/*if(c > 1 && c < 10_000_000){
+			return new StreamWindowBeginEnd<>(this,
+					bucketOpening,
+					boundarySupplier,
+					QueueSupplier.get(c),
+					(int)c);
+		}*/
+
+		return new FluxWindowStartEnd<>(this,
+				bucketOpening,
+				closeSelector,
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
+				QueueSupplier.<T>unbounded(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowtimespan.png" alt="">
+	 *
+	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
+	 *
+	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 *
+	 * @since 2.0
+	 */
+	public final Flux<Flux<T>> window(long timespan) {
+		Timer t = getTimer();
+		if(t == null) t = Timer.global();
+		return window(interval(timespan, t));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowtimespan.png" alt="">
+	 *
+	 * @param timespan the duration to delimit {@link Flux} windows
+	 *
+	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 *
+	 * @since 2.0
+	 */
+	public final Flux<Flux<T>> window(Duration timespan) {
+		return window(timespan.toMillis());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
+	 * period, starting from the first item.
+	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elpased.
+	 *
+	 * <p>
+	 * When timeshift > timespan : dropping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When timeshift == timespan : exact windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param timespan the maximum {@link Flux} window duration in milliseconds
+	 * @param timeshift the period of time in milliseconds to create new {@link Flux} windows
+	 *
+	 * @return a windowing
+	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
+	 *
+	 */
+	public final Flux<Flux<T>> window(final long timespan, final long timeshift) {
+		if (timeshift == timespan) {
+			return window(timespan);
+		}
+
+		Timer t = getTimer();
+		if(t == null) t = Timer.global();
+		final Timer timer = t;
+
+		return window(interval(0L, timeshift, timer), aLong -> Mono.delay(timespan, timer));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
+	 * period, starting from the first item.
+	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elpased.
+	 *
+	 * <p>
+	 * When timeshift > timespan : dropping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When timeshift == timespan : exact windows
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param timespan the maximum {@link Flux} window duration
+	 * @param timeshift the period of time to create new {@link Flux} windows
+	 *
+	 * @return a windowing
+	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
+	 *
+	 */
+	public final Flux<Flux<T>> window(final Duration timespan, final Duration timeshift) {
+		return window(timespan.toMillis(), timeshift.toMillis());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
+	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
+	 * timespan occurs and the number of items has not be counted.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
+	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 *
+	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 *
+	 * @since 2.0
+	 */
+	public final Flux<Flux<T>> window(final int maxSize, final Duration timespan) {
+		return new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), getTimer());
+	}
+
+	/**
+	 * Combine values from this {@link Flux} with values from another
+	 * {@link Publisher} through a {@link BiFunction} and emits the result.
+	 * <p>
+	 * The operator will drop values from this {@link Flux} until the other
+	 * {@link Publisher} produces any value.
+	 * <p>
+	 * If the other {@link Publisher} completes without any value, the sequence is completed.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/withlatestfrom.png" alt="">
+	 *
+	 * @param other the {@link Publisher} to combine with
+	 * @param <U> the other {@link Publisher} sequence type
+	 *
+	 * @return a combined {@link Flux} gated by another {@link Publisher}
+	 */
+	public final <U, R> Flux<R> withLatestFrom(Publisher<? extends U> other, BiFunction<? super T, ? super U, ?
+			extends R > resultSelector){
+		return new FluxWithLatestFrom<>(this, other, resultSelector);
 	}
 
 	/**
@@ -1895,14 +2228,114 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param source2 The second upstream {@link Publisher} to subscribe to.
 	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
 	 * to signal downstream
-	 * @param <R> type of the value from source2
+	 * @param <T2> type of the value from source2
 	 * @param <V> The produced output after transformation by the combinator
 	 *
 	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.0
 	 */
-	public final <R, V> Flux<V> zipWith(Publisher<? extends R> source2,
-			final BiFunction<? super T, ? super R, ? extends V> combinator) {
-		return zip(this, source2, combinator);
-
+	public final <T2, V> Flux<V> zipWith(final Publisher<? extends T2> source2,
+			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
+		return FluxSource.wrap(Flux.zip(this, source2, combinator));
 	}
+
+	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
+	 * produced by the passed combinator from the most recent items emitted by each source until any of them
+	 * completes. Errors will immediately be forwarded.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipp.png" alt="">
+	 * <p>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
+	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
+	 * to signal downstream
+	 * @param <T2> type of the value from source2
+	 * @param <V> The produced output after transformation by the combinator
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.0
+	 */
+	@SuppressWarnings("unchecked")
+	public final <T2, V> Flux<V> zipWith(final Publisher<? extends T2> source2,
+			int prefetch, final BiFunction<? super T, ? super T2, ? extends V> combinator) {
+		return zip(objects -> combinator.apply((T)objects[0], (T2)objects[1]), prefetch, this, source2);
+	}
+
+	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
+	 * <p>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(final Publisher<? extends T2> source2) {
+		return FluxSource.wrap(Flux.<T, T2, Tuple2<T, T2>>zip(this, source2, TUPLE2_BIFUNCTION));
+	}
+
+	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipp.png" alt="">
+	 * <p>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(final Publisher<? extends T2> source2, int prefetch) {
+		return zip(Tuple.fn2(), prefetch, this, source2);
+	}
+
+	/**
+	 * Pairwise combines as {@link Tuple2} elements of this {@link Flux} and an {@link Iterable} sequence.
+	 *
+	 * @param iterable the {@link Iterable} to pair with
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipwithiterable.png" alt="">
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	@SuppressWarnings("unchecked")
+	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
+		return new FluxZipIterable<>(this, iterable, (BiFunction<T, T2, Tuple2<T, T2>>)TUPLE2_BIFUNCTION);
+	}
+
+	/**
+	 * Pairwise combines elements of this
+	 * {@link Flux} and an {@link Iterable} sequence using the given zipper {@link BiFunction}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipwithiterable.png" alt="">
+	 *
+	 * @param iterable the {@link Iterable} to pair with
+	 * @param zipper the {@link BiFunction} combinator
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 * @since 2.5
+	 */
+	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
+			BiFunction<? super T, ? super T2, ? extends V> zipper) {
+		return new FluxZipIterable<>(this, iterable, zipper);
+	}
+
+	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
 }

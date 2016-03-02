@@ -160,7 +160,6 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 */
 	public boolean hasValue() {
 		return isOnNext() && value != null;
-// isn't "null" a valid item?
 	}
 
 	/**

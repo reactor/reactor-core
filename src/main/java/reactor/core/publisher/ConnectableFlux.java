@@ -88,12 +88,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 */
 	public final Runnable connect() {
 		final Runnable[] out = { null };
-		connect(new Consumer<Runnable>() {
-			@Override
-			public void accept(Runnable r) {
-				out[0] = r;
-			}
-		});
+		connect(r -> out[0] = r);
 		return out[0];
 	}
 
@@ -138,10 +133,5 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 		return new FluxRefCount<>(this, minSubscribers);
 	}
 
-	static final Consumer<Runnable> NOOP_DISCONNECT = new Consumer<Runnable>() {
-		@Override
-		public void accept(Runnable runnable) {
-
-		}
-	};
+	static final Consumer<Runnable> NOOP_DISCONNECT = runnable -> {};
 }

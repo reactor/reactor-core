@@ -26,20 +26,20 @@ import reactor.core.util.Exceptions;
  */
 final class FluxInterval extends Flux<Long> implements Timeable {
 
-	final Timer    parent;
-	final long     period;
-	final long     delay;
+	final private long     delay;
+	final private long     period;
+	final private Timer    timer;
 
-	public FluxInterval(Timer timer, long period, long delay) {
-		this.parent = timer;
+	public FluxInterval(long delay, long period, Timer timer) {
+		this.delay = delay >= 0L ? delay : -1L;
 		this.period = period;
-		this.delay = delay;
+		this.timer = timer;
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Long> s) {
+	public void subscribe(final Subscriber<? super Long> s) {
 		try {
-			s.onSubscribe(parent.interval(s, period, delay));
+			s.onSubscribe(timer.interval(s, period, delay));
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);
