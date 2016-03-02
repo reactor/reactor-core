@@ -1043,19 +1043,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> ambWith(Publisher<? extends T> other) {
 		return amb(this, other);
 	}
-
-	/**
-	 * Hint {@link Subscriber} to this {@link Flux} a preferred available capacity should be used.
-	 * {@link #toIterable()} can for instance use introspect this value to supply an appropriate queueing strategy.
-	 *
-	 * @param capacity the maximum capacity (in flight onNext) the return {@link Publisher} should expose
-	 *
-	 * @return a bounded {@link Flux}
-	 */
-	public final Flux<T> useCapacity(long capacity) {
-		return new FluxBounded<>(this, capacity);
-	}
-
+	
 	/**
 	 * Like {@link #flatMap(Function)}, but concatenate emissions instead of merging (no interleave).
 	 *
@@ -1869,6 +1857,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Hint {@link Subscriber} to this {@link Flux} a preferred available capacity should be used.
+	 * {@link #toIterable()} can for instance use introspect this value to supply an appropriate queueing strategy.
+	 *
+	 * @param capacity the maximum capacity (in flight onNext) the return {@link Publisher} should expose
+	 *
+	 * @return a bounded {@link Flux}
+	 */
+	public Flux<T> useCapacity(final long capacity) {
+		if (capacity == getCapacity()) {
+			return this;
+		}
+		return FluxConfig.withCapacity(this, capacity);
+	}
+	
+	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 * <p>
@@ -1902,38 +1905,5 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			final BiFunction<? super T, ? super R, ? extends V> combinator) {
 		return zip(this, source2, combinator);
 
-	}
-
-//	 ==============================================================================================================
-//	 Containers
-//	 ==============================================================================================================
-	/**
-	 * Decorate a {@link Flux} with a capacity for downstream accessors
-	 *
-	 * @param <I>
-	 */
-	final static class FluxBounded<I> extends FluxSource<I, I> {
-
-		final private long capacity;
-
-		public FluxBounded(Publisher<I> source, long capacity) {
-			super(source);
-			this.capacity = capacity;
-		}
-
-		@Override
-		public long getCapacity() {
-			return capacity;
-		}
-
-		@Override
-		public String getName() {
-			return "Bounded";
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super I> s) {
-			source.subscribe(s);
-		}
 	}
 }

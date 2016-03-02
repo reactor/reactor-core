@@ -104,7 +104,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 *
 	 * @throws IllegalArgumentException if <tt>bufferSize</tt> is less than 1 or not a power of 2
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createMultiProducer(int bufferSize) {
@@ -116,7 +116,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @throws IllegalArgumentException if <tt>bufferSize</tt> is less than 1 or not a power of 2
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory, int bufferSize) {
 		return createMultiProducer(factory, bufferSize, WaitStrategy.busySpin());
@@ -128,7 +128,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @param waitStrategy used to determine how to wait for new elements to become available.
 	 *
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
 			int bufferSize,
@@ -142,20 +142,20 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * @param bufferSize number of elements to create within the ring buffer.
 	 * @param waitStrategy used to determine how to wait for new elements to become available.
 	 *
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
 			int bufferSize,
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
 		if (PlatformDependent.hasUnsafe() && isPowerOfTwo(bufferSize)) {
-			MultiProducerSequencer sequencer = new MultiProducerSequencer(bufferSize, waitStrategy, spinObserver);
+			MultiProducer sequencer = new MultiProducer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<E>(factory, sequencer);
 		}
 		else {
-			NotFunMultiProducerSequencer sequencer =
-					new NotFunMultiProducerSequencer(bufferSize, waitStrategy, spinObserver);
+			NotFunMultiProducer sequencer =
+					new NotFunMultiProducer(bufferSize, waitStrategy, spinObserver);
 
 			return new NotFunRingBuffer<E>(factory, sequencer);
 		}
@@ -193,7 +193,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	/**
 	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
 	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize) {
@@ -203,7 +203,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	/**
 	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
 	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	@SuppressWarnings("unchecked")
 	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize, Runnable spinObserver) {
@@ -214,7 +214,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	 * Create a new single producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 */
 	public static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory, int bufferSize) {
 		return createSingleProducer(factory, bufferSize, WaitStrategy.busySpin());
@@ -478,7 +478,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	/**
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@link
 	 * RingBufferProducer} that is being used.
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 * @see SingleProducerSequencer
 	 */
 	abstract public long getCursor();
@@ -498,7 +498,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	/**
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@link
 	 * RingBufferProducer} that is being used.
-	 * @see MultiProducerSequencer
+	 * @see MultiProducer
 	 * @see SingleProducerSequencer
 	 */
 	abstract public Sequence getSequence();

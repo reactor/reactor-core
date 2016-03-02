@@ -31,7 +31,7 @@ import sun.misc.Unsafe;
  * to {@link RingBufferProducer#next()}, to determine the highest available sequence that can be read, then
  * {@link RingBufferProducer#getHighestPublishedSequence(long, long)} should be used.
  */
-final class MultiProducerSequencer extends RingBufferProducer
+final class MultiProducer extends RingBufferProducer
 {
     private static final Unsafe UNSAFE = PlatformDependent.getUnsafe();
     private static final long   BASE   = UNSAFE.arrayBaseOffset(int[].class);
@@ -51,7 +51,7 @@ final class MultiProducerSequencer extends RingBufferProducer
      * @param bufferSize the size of the buffer that this will sequence over.
      * @param waitStrategy for those waiting on sequences.
      */
-    MultiProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+    MultiProducer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
         super(bufferSize, waitStrategy, spinObserver);
 
         if (!RingBuffer.isPowerOfTwo(bufferSize)) {

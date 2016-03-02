@@ -29,7 +29,7 @@ import reactor.core.util.WaitStrategy;
  * to {@link RingBufferProducer#next()}, to determine the highest available sequence that can be read, then
  * {@link RingBufferProducer#getHighestPublishedSequence(long, long)} should be used.
  */
-final class NotFunMultiProducerSequencer extends RingBufferProducer
+final class NotFunMultiProducer extends RingBufferProducer
 {
     private final Sequence gatingSequenceCache = new AtomicSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
@@ -45,7 +45,7 @@ final class NotFunMultiProducerSequencer extends RingBufferProducer
      * @param bufferSize the size of the buffer that this will sequence over.
      * @param waitStrategy for those waiting on sequences.
      */
-    NotFunMultiProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+    NotFunMultiProducer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
         super(bufferSize, waitStrategy, spinObserver);
         availableBuffer = new int[bufferSize];
         indexMask = bufferSize - 1;

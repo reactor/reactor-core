@@ -69,19 +69,11 @@ class HashWheelTimer extends Timer {
 	private final LongSupplier                           timeMillisResolver;
 	private final AtomicBoolean started = new AtomicBoolean();
 
+	@SuppressWarnings("unused")
 	volatile long  subscriptions;
 
 	static final AtomicLongFieldUpdater<HashWheelTimer>    SUBSCRIPTIONS =
 			AtomicLongFieldUpdater.newUpdater(HashWheelTimer.class, "subscriptions");
-
-	/**
-	 * Create a new {@code HashWheelTimer} using the given timer resolution. All times will rounded up to the closest
-	 * multiple of this resolution.
-	 * @param resolution         the resolution of this timer, in milliseconds
-	 */
-	public HashWheelTimer(int resolution) {
-		this(resolution, DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping());
-	}
 
 	/**
 	 * Create a new {@code HashWheelTimer} using the given timer {@code res} and {@code wheelSize}. All times will
@@ -132,12 +124,7 @@ class HashWheelTimer extends Timer {
 		this.timeMillisResolver = timeResolver;
 		this.waitStrategy = strategy;
 
-		this.wheel = RingBuffer.createSingleProducer(new Supplier<Set<HashWheelSubscription>>() {
-			@Override
-			public Set<HashWheelSubscription> get() {
-				return new ConcurrentSkipListSet<>();
-			}
-		}, wheelSize);
+		this.wheel = RingBuffer.createSingleProducer((Supplier<Set<HashWheelSubscription>>) ConcurrentSkipListSet::new, wheelSize);
 
 		if (exec == null) {
 			this.executor =
