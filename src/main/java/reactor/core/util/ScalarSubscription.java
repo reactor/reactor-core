@@ -17,87 +17,13 @@ package reactor.core.util;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 
 public final class ScalarSubscription<T> implements Subscription, Producer, Receiver {
-
-	/**
-	 * Checks if the source is a Supplier and if the mapper's publisher output is also
-	 * a supplier, thus avoiding subscribing to any of them.
-	 *
-	 * @param source the source publisher
-	 * @param s the end consumer
-	 * @param mapper the mapper function
-	 * @return true if the optimization worked
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T, R> boolean trySubscribeScalarMap(
-			Publisher<? extends T> source,
-			Subscriber<? super R> s,
-			Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		if (source instanceof Supplier) {
-			T t;
-
-			try {
-				t = ((Supplier<? extends T>)source).get();
-			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				EmptySubscription.error(s, Exceptions.unwrap(e));
-				return true;
-			}
-
-			if (t == null) {
-				EmptySubscription.complete(s);
-				return true;
-			}
-
-			Publisher<? extends R> p;
-
-			try {
-				p = mapper.apply(t);
-			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				EmptySubscription.error(s, Exceptions.unwrap(e));
-				return true;
-			}
-
-			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The mapper returned a null Publisher"));
-				return true;
-			}
-
-			if (p instanceof Supplier) {
-				R v;
-
-				try {
-					v = ((Supplier<R>)p).get();
-				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					EmptySubscription.error(s, Exceptions.unwrap(e));
-					return true;
-				}
-
-				if (v != null) {
-					s.onSubscribe(new ScalarSubscription<>(s, v));
-				} else {
-					EmptySubscription.complete(s);
-				}
-			} else {
-				p.subscribe(s);
-			}
-
-			return true;
-		}
-
-		return false;
-	}
 
 	final Subscriber<? super T> actual;
 

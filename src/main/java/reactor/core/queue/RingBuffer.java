@@ -44,12 +44,7 @@ import reactor.core.util.WaitStrategy;
 public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	@SuppressWarnings("raw")
-	public static final Supplier EMITTED = new Supplier() {
-		@Override
-		public Slot get() {
-			return new Slot<>();
-		}
-	};
+	public static final Supplier EMITTED = Slot::new;
 	/**
 	 * Set to -1 as sequence starting point
 	 */
@@ -429,17 +424,10 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	/**
 	 * Add the specified gating sequence to this instance of the Disruptor.  It will safely and atomically be added to
-	 * the list of gating sequences and not RESET to the current ringbuffer cursor unlike addGatingSequences.
+	 * the list of gating sequences and not RESET to the current ringbuffer cursor.
 	 * @param gatingSequence The sequences to add.
 	 */
 	abstract public void addGatingSequence(Sequence gatingSequence);
-
-	/**
-	 * Add the specified gating sequences to this instance of the Disruptor.  They will safely and atomically added to
-	 * the list of gating sequences.
-	 * @param gatingSequences The sequences to add.
-	 */
-	abstract public void addGatingSequences(Sequence... gatingSequences);
 
 	/**
 	 * Get the cached remaining capacity for this ringBuffer.

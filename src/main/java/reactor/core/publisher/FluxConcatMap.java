@@ -30,7 +30,6 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ScalarSubscription;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
@@ -83,7 +82,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		
-		if (ScalarSubscription.trySubscribeScalarMap(source, s, mapper)) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper)) {
 			return;
 		}
 		

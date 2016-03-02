@@ -30,7 +30,7 @@ import reactor.core.util.PlatformDependent;
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
-	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false, true);
+	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false, false);
 	static final Supplier ONE_SUPPLIER             = new QueueSupplier<>(1, false, true);
 	static final Supplier XSRB_SUPPLIER            = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false, false);
 	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);

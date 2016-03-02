@@ -41,6 +41,7 @@ import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ScalarSubscription;
 
@@ -87,10 +88,81 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		this.innerQueueSupplier = Objects.requireNonNull(innerQueueSupplier, "innerQueueSupplier");
 	}
 
+	/**
+	 * Checks if the source is a Supplier and if the mapper's publisher output is also
+	 * a supplier, thus avoiding subscribing to any of them.
+	 *
+	 * @param source the source publisher
+	 * @param s the end consumer
+	 * @param mapper the mapper function
+	 * @return true if the optimization worked
+	 */
+	@SuppressWarnings("unchecked")
+	static <T, R> boolean trySubscribeScalarMap(
+			Publisher<? extends T> source,
+			Subscriber<? super R> s,
+			Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		if (source instanceof Supplier) {
+			T t;
+
+			try {
+				t = ((Supplier<? extends T>)source).get();
+			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				EmptySubscription.error(s, Exceptions.unwrap(e));
+				return true;
+			}
+
+			if (t == null) {
+				EmptySubscription.complete(s);
+				return true;
+			}
+
+			Publisher<? extends R> p;
+
+			try {
+				p = mapper.apply(t);
+			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				EmptySubscription.error(s, Exceptions.unwrap(e));
+				return true;
+			}
+
+			if (p == null) {
+				EmptySubscription.error(s, new NullPointerException("The mapper returned a null Publisher"));
+				return true;
+			}
+
+			if (p instanceof Supplier) {
+				R v;
+
+				try {
+					v = ((Supplier<R>)p).get();
+				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					EmptySubscription.error(s, Exceptions.unwrap(e));
+					return true;
+				}
+
+				if (v != null) {
+					s.onSubscribe(new ScalarSubscription<>(s, v));
+				} else {
+					EmptySubscription.complete(s);
+				}
+			} else {
+				p.subscribe(s);
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
-		if (ScalarSubscription.trySubscribeScalarMap(source, s, mapper)) {
+		if (trySubscribeScalarMap(source, s, mapper)) {
 			return;
 		}
 

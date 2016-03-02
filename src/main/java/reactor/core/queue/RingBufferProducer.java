@@ -87,16 +87,6 @@ abstract class RingBufferProducer {
 	 * Add the specified gating sequences to this instance of the Disruptor.  They will
 	 * safely and atomically added to the list of gating sequences.
 	 *
-	 * @param gatingSequences The sequences to add.
-	 */
-	public final void addGatingSequences(Sequence... gatingSequences) {
-		SequenceGroups.addSequences(this, SEQUENCE_UPDATER, this, gatingSequences);
-	}
-
-	/**
-	 * Add the specified gating sequences to this instance of the Disruptor.  They will
-	 * safely and atomically added to the list of gating sequences.
-	 *
 	 * @param gatingSequence The sequences to add.
 	 */
 	public final void addGatingSequence(Sequence gatingSequence) {
