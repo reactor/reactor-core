@@ -2783,7 +2783,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/next.png" alt="">
 	 * <p>
-	 * If the sequence emits more than 1 data, emit {@link ArrayIndexOutOfBoundsException}.
 	 *
 	 * @return a new {@link Mono}
 	 */
