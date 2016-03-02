@@ -1135,12 +1135,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#onErrorReturn
 	 */
 	public final Mono<T> otherwiseJust(final T fallback) {
-		return otherwise(new Function<Throwable, Mono<? extends T>>() {
-			@Override
-			public Mono<? extends T> apply(Throwable throwable) {
-				return just(fallback);
-			}
-		});
+		return otherwise(throwable -> just(fallback));
 	}
 
 	/**
@@ -1157,6 +1152,26 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> publishOn(Callable<? extends Consumer<Runnable>> schedulers) {
 		return MonoSource.wrap(new FluxPublishOn<>(this, schedulers));
+	}
+
+	/**
+	 * Repeatedly subscribe to this {@link Mono} when a companion sequence signals a number of emitted elements in
+	 * response to the fluxion completion signal.
+	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
+	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen1.png" alt="">
+	 *
+	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling an exclusive number of
+	 * emitted elements on onComplete and returning a {@link Publisher} companion.
+	 *
+	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
+	 * onNext signal
+	 *
+	 */
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
+		return new FluxRepeatWhen<T>(this, whenFactory);
 	}
 
 	/**
