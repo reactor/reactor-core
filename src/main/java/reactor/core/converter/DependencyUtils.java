@@ -17,6 +17,7 @@
 package reactor.core.converter;
 
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 /**
  * Utility class related to the various composition libraries supported.
@@ -48,7 +49,7 @@ public final class DependencyUtils {
 
 		int detected = 0;
 		try {
-			Class.forName("rx.Observable");
+			Flux.class.getClassLoader().loadClass("rx.Observable");
 			detected = RXJAVA_1_OBSERVABLE;
 			Class.forName("rx.Single");
 			detected |= RXJAVA_1_SINGLE;
@@ -59,21 +60,21 @@ public final class DependencyUtils {
 			//IGNORE
 		}
 		try {
-			Class.forName("reactor.io.codec.Codec");
+			Flux.class.getClassLoader().loadClass("reactor.io.codec.Codec");
 			detected |= REACTOR_CODEC;
 		}
 		catch (ClassNotFoundException cnfe) {
 			//IGNORE
 		}
 		try {
-			Class.forName("reactor.io.net.ReactiveChannel");
+			Flux.class.getClassLoader().loadClass("reactor.io.net.ReactiveChannel");
 			detected |= REACTOR_NET;
 		}
 		catch (ClassNotFoundException cnfe) {
 			//IGNORE
 		}
 		try {
-			Class.forName("reactor.bus.registry.Registry");
+			Flux.class.getClassLoader().loadClass("reactor.bus.registry.Registry");
 			detected |= REACTOR_BUS;
 		}
 		catch (ClassNotFoundException cnfe) {
