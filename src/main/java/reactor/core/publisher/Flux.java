@@ -2346,7 +2346,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish() {
-		return publish(PlatformDependent.SMALL_BUFFER_SIZE);
+		return publish(getCapacity() != 1L ?
+				(int)Math.max(getCapacity(), Integer.MAX_VALUE) :
+				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
