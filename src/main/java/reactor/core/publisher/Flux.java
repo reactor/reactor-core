@@ -2660,6 +2660,67 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Make this
+	 * {@link Flux} subscribed N concurrency times for each child {@link Subscriber}. In effect, if this {@link Flux}
+	 * is a cold replayable source, duplicate sequences will be emitted to the passed {@link GroupedFlux} partition
+	 * . If this {@link Flux} is a hot sequence, {@link GroupedFlux} partitions might observe different values, e
+	 * .g. subscribing to a {@link reactor.core.publisher.WorkQueueProcessor}.
+	 * <p>Each partition is merged back using {@link #flatMap flatMap} and the result sequence might be interleaved.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multiplex.png" alt="">
+	 *
+	 * @param fn the indexed via
+	 * {@link GroupedFlux#key()} sequence transformation to be merged in the returned {@link Flux}
+	 * @param <V> the type of the return value of the transformation function
+	 *
+	 * @return a merged {@link Flux} produced from N concurrency transformed sequences
+	 *
+	 */
+	public final <V> Flux<V> multiplex(int concurrency,
+			final Function<GroupedFlux<Integer, T>, Publisher<V>> fn) {
+		Assert.isTrue(concurrency > 0, "Must subscribe once at least, concurrency set to " + concurrency);
+
+		Publisher<V> pub;
+		final List<Publisher<? extends V>> publisherList = new ArrayList<>(concurrency);
+
+		for (int i = 0; i < concurrency; i++) {
+			final int index = i;
+			pub = fn.apply(new GroupedFlux<Integer, T>() {
+
+				@Override
+				public Integer key() {
+					return index;
+				}
+
+				@Override
+				public long getCapacity() {
+					return Flux.this.getCapacity();
+				}
+
+				@Override
+				public Timer getTimer() {
+					return Flux.this.getTimer();
+				}
+
+				@Override
+				public void subscribe(Subscriber<? super T> s) {
+					Flux.this.subscribe(s);
+				}
+			});
+
+			if (concurrency == 1) {
+				return from(pub);
+			}
+			else {
+				publisherList.add(pub);
+			}
+		}
+
+		return Flux.merge(publisherList);
+	}
+	
+	/**
 	 * Prepare a
 	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
 	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
