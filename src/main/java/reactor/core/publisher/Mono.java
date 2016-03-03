@@ -1449,6 +1449,57 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 *
+	 * @return an expirable {@link Mono}
+	 */
+	public final Mono<T> timeout(long timeout) {
+		return timeout(Duration.ofMillis(timeout), null);
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} in case an item doesn't arrive before the given period.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 *
+	 * @return an expirable {@link Mono}
+	 */
+	public final Mono<T> timeout(Duration timeout) {
+		return timeout(timeout, null);
+	}
+
+	/**
+	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 *
+	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 */
+	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
+		final Mono<Long> _timer = Mono.delay(timeout).otherwiseJust(0L);
+		final Function<T, Publisher<Long>> rest = o -> _timer;
+
+		if(fallback == null) {
+			return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest));
+		}
+		return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest, fallback));
+	}
+
+	/**
 	 * Transform this {@link Mono} into a {@link CompletableFuture} completing on onNext or onComplete and failing on
 	 * onError.
 	 *

@@ -3871,8 +3871,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
 	 *
 	 * @return a per-item expirable {@link Flux}
-	 *
-	 * @since 1.1, 2.0
 	 */
 	public final Flux<T> timeout(long timeout) {
 		return timeout(Duration.ofMillis(timeout), null);
@@ -3888,8 +3886,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param timeout the timeout between two signals from this {@link Flux}
 	 *
 	 * @return a per-item expirable {@link Flux}
-	 *
-	 * @since 1.1, 2.0
 	 */
 	public final Flux<T> timeout(Duration timeout) {
 		return timeout(timeout, null);
@@ -3909,7 +3905,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
 		final Timer timer = getTimer();
 		Assert.state(timer != null, "Cannot use default timer as no environment has been provided to this " + "Stream");
