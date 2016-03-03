@@ -701,7 +701,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier, boolean runOnError) {
 		return MonoSource.wrap(after().flatMap(null,
-				throwable -> !runOnError ? null : Flux.concat(sourceSupplier.get(), Mono.<V>error(throwable)),
+				!runOnError ? null : throwable -> Flux.concat(sourceSupplier.get(), Mono
+						.<V>error(throwable)),
 				sourceSupplier));
 	}
 

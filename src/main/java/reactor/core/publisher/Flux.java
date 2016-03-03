@@ -1337,7 +1337,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier, boolean runOnError) {
-		return flatMap(null, throwable -> !runOnError ? null :
+		return flatMap(null, !runOnError ? null : throwable ->
 				concat(afterSupplier.get(), Flux.<V>error(throwable)),
 				afterSupplier);
 	}
