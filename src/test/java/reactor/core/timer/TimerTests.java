@@ -60,7 +60,7 @@ public class TimerTests {
 		Thread.sleep(1000);
 		HashWheelTimer.IntervalSubscription registration = (HashWheelTimer.IntervalSubscription) pausable;
 		Assert.assertTrue(registration.isPaused());
-		Assert.assertTrue(time < TimeUnit.MILLISECONDS.toNanos(100));
+		Assert.assertTrue(time < TimeUnit.MILLISECONDS.toNanos(200));
 		Assert.assertEquals(tasks, count.get());
 		timer.cancel();
 	}
