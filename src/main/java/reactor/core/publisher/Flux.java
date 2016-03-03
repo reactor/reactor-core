@@ -62,6 +62,7 @@ import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
 import reactor.core.util.Assert;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -945,6 +946,24 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxRange(start, count);
 	}
 
+
+	/**
+	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
+	 * The {@link Flux} will complete once both the publishers source and the last switched to {@link Publisher} have
+	 * completed.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png" alt="">
+	 *
+	 * @param <T> the produced type
+	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 */
+	public static <T> FluxProcessor<Publisher<? extends T>, T> switchOnNext() {
+		Processor<Publisher<? extends T>, Publisher<? extends T>> emitter = EmitterProcessor.replay();
+		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.create(emitter, switchOnNext(emitter));
+		return p;
+	}
+	
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}. The {@link
 	 * Flux} will complete once both the publishers source and the last switched to {@link Publisher} have completed.
