@@ -1302,6 +1302,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		MonoProcessor<T> s;
 		if(this instanceof MonoProcessor){
 			s = (MonoProcessor<T>)this;
+			if(s.checkStarted()){
+				return s;
+			}
 		}
 		else{
 			s = new MonoProcessor<>(this);

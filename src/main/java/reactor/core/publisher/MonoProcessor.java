@@ -198,7 +198,7 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final boolean isStarted() {
-		return state > STATE_READY && !isTerminated();
+		return state > STATE_READY && subscription != null && !isTerminated();
 	}
 
 	/**
@@ -244,6 +244,15 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
+				if(processor == null){
+					if (RuntimeException.class.isInstance(error)) {
+						throw (RuntimeException) error;
+					}
+					else {
+						Exceptions.onErrorDropped(error);
+						return;
+					}
+				}
 				break;
 			}
 			state = this.state;
@@ -386,6 +395,20 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	final boolean isPending() {
 		return !isTerminated() && !isCancelled();
+	}
+
+	final boolean checkStarted(){
+		int state = this.state;
+		if(state == STATE_ERROR){
+			if (RuntimeException.class.isInstance(error)) {
+				throw (RuntimeException) error;
+			}
+			else {
+				Exceptions.onErrorDropped(error);
+				return false;
+			}
+		}
+		return state > STATE_READY && subscription != null && state > STATE_POST_SUBSCRIBED;
 	}
 
 	@SuppressWarnings("unchecked")
