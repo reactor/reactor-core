@@ -25,7 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.subscriber.SerializedSubscriber;
+
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;

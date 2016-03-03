@@ -24,7 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.subscriber.SerializedSubscriber;
+
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;

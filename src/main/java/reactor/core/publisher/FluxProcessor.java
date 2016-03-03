@@ -27,7 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
-import reactor.core.subscriber.SerializedSubscriber;
+
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;

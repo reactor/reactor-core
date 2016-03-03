@@ -38,7 +38,7 @@ import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.subscriber.SerializedSubscriber;
+
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;

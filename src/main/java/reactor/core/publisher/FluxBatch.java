@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.state.Failurable;
 import reactor.core.state.Pausable;
 import reactor.core.state.Requestable;
-import reactor.core.subscriber.SerializedSubscriber;
+
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.timer.Timer;
 import reactor.core.util.BackpressureUtils;
