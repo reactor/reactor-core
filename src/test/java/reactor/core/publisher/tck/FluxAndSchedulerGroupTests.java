@@ -33,7 +33,7 @@ import reactor.core.publisher.SchedulerGroup;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class StreamAndSchedulerGroupTests extends AbstractStreamVerification {
+public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 
 	static SchedulerGroup sharedGroup;
 
@@ -172,7 +172,7 @@ public class StreamAndSchedulerGroupTests extends AbstractStreamVerification {
 	}
 
 	/*public static void main(String... args) throws Exception {
-		AbstractStreamVerification s = new StreamAndSchedulerGroupTests();
+		AbstractFluxVerification s = new FluxAndSchedulerGroupTests();
 		Processor p = s.createProcessor(256);
 		SignalEmitter sess = SignalEmitter.create(p);
 		p.subscribe(Subscribers.unbounded());

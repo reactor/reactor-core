@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -26,6 +28,14 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Introspectable;
+import reactor.core.state.Prefetchable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -110,7 +120,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		return size;
 	}
 
-	static final class WindowExactSubscriber<T> implements Subscriber<T>, Subscription, Runnable {
+	static final class WindowExactSubscriber<T> implements Subscriber<T>, Subscription, Runnable, Producer,
+	                                                       Prefetchable, MultiProducer, Receiver, Completable {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -256,9 +267,50 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				s.cancel();
 			}
 		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public Iterator<?> downstreams() {
+			return Arrays.asList(window).iterator();
+		}
+
+		@Override
+		public long downstreamCount() {
+			return window != null ? 1L : 0L;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return size - index;
+		}
+
+		@Override
+		public long limit() {
+			return size;
+		}
 	}
 	
-	static final class WindowSkipSubscriber<T> implements Subscriber<T>, Subscription, Runnable {
+	static final class WindowSkipSubscriber<T> implements Subscriber<T>, Subscription, Runnable, MultiProducer,
+	                                                      Producer, Receiver, Completable, Backpressurable {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -424,10 +476,52 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				s.cancel();
 			}
 		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public Iterator<?> downstreams() {
+			return Arrays.asList(window).iterator();
+		}
+
+		@Override
+		public long downstreamCount() {
+			return window != null ? 1L : 0L;
+		}
+
+		@Override
+		public long getCapacity() {
+			return size;
+		}
+
+		@Override
+		public long getPending() {
+			return skip + size - index;
+		}
 	}
 
-	static final class WindowOverlapSubscriber<T> implements Subscriber<T>, Subscription, Runnable {
-		
+	static final class WindowOverlapSubscriber<T>
+			implements Subscriber<T>, Subscription, Runnable, Producer, Receiver, MultiProducer,
+			           Completable, Cancellable, Introspectable, Backpressurable, Prefetchable {
+
 		final Subscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
@@ -595,7 +689,67 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			done = true;
 			drain();
 		}
-		
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done && !cancelled;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return (size + skip) - produced;
+		}
+
+		@Override
+		public long limit() {
+			return skip;
+		}
+
+		@Override
+		public Iterator<?> downstreams() {
+			return Arrays.asList(windows.toArray()).iterator();
+		}
+
+		@Override
+		public long downstreamCount() {
+			return windows.size();
+		}
+
+		@Override
+		public long getCapacity() {
+			return size;
+		}
+
+		@Override
+		public long getPending() {
+			return size - produced ;
+		}
+
 		void drain() {
 			if (DW.getAndIncrement(this) != 0) {
 				return;

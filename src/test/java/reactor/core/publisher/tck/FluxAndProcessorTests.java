@@ -32,7 +32,7 @@ import reactor.core.publisher.Flux;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class StreamAndProcessorTests extends AbstractStreamVerification {
+public class FluxAndProcessorTests extends AbstractFluxVerification {
 
 	final AtomicLong cumulated = new AtomicLong(0);
 

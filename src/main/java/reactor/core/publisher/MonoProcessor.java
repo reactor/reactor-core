@@ -27,9 +27,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.timer.Timer;
+import reactor.core.state.Prefetchable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -50,7 +49,7 @@ import reactor.core.util.ScalarSubscription;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Subscription, Cancellable, Receiver, Producer {
+		implements Processor<O, O>, Subscription, Cancellable, Receiver, Producer, Prefetchable {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -63,36 +62,14 @@ public final class MonoProcessor<O> extends Mono<O>
 	public static <T> MonoProcessor<T> create() {
 		return new MonoProcessor<>(null);
 	}
-
-	final static NoopProcessor NOOP_PROCESSOR = new NoopProcessor();
-
-	final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
-			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
-	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
-			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
-	final static AtomicIntegerFieldUpdater<MonoProcessor>              REQUESTED =
-			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "requested");
-	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
-
-	final static int       STATE_CANCELLED         = -1;
-	final static int       STATE_READY             = 0;
-	final static int       STATE_SUBSCRIBED        = 1;
-	final static int       STATE_POST_SUBSCRIBED   = 2;
-	final static int       STATE_SUCCESS_VALUE     = 3;
-	final static int       STATE_COMPLETE_NO_VALUE = 4;
-	final static int       STATE_ERROR             = 5;
-
 	final Publisher<? extends O> source;
 	Subscription subscription;
-
 	volatile Processor<O, O> processor;
 	volatile O               value;
 	volatile Throwable       error;
 	volatile int             state;
 	volatile int             wip;
 	volatile int             requested;
-
 	MonoProcessor(Publisher<? extends O> source) {
 		this.source = source;
 	}
@@ -117,6 +94,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final Subscriber downstream() {
 		return processor;
+	}
+
+	@Override
+	public long expectedFromUpstream() {
+		return !isPending() ? 0L : (requested != 0L ? 1L : 0L);
 	}
 
 	/**
@@ -184,6 +166,26 @@ public final class MonoProcessor<O> extends Mono<O>
 		return error;
 	}
 
+	@Override
+	public int getMode() {
+		return 0;
+	}
+
+	@Override
+	public String getName() {
+		return "MonoProcessor";
+	}
+
+	@Override
+	public long getPending() {
+		return isPending() ? 0L : 1L;
+	}
+
+	@Override
+	public boolean isCancelled() {
+		return state == STATE_CANCELLED;
+	}
+
 	/**
 	 * Indicates whether this {@code MonoProcessor} has been completed with an error.
 	 *
@@ -224,13 +226,13 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final void onComplete() {
-		onNext(null);
+	public long limit() {
+		return 1;
 	}
 
 	@Override
-	public boolean isCancelled() {
-		return state == STATE_CANCELLED;
+	public final void onComplete() {
+		onNext(null);
 	}
 
 	@Override
@@ -350,8 +352,8 @@ public final class MonoProcessor<O> extends Mono<O>
 		try {
 			BackpressureUtils.checkRequest(n);
 			Subscription s = subscription;
-			if(!REQUESTED.compareAndSet(this, 0, 1) &&
-				s != null && REQUESTED.compareAndSet(this, 1, 2)){
+			if (!REQUESTED.compareAndSet(this, 0, 1) &&
+					s != null && REQUESTED.compareAndSet(this, 1, 2)) {
 				s.request(1L);
 			}
 		}
@@ -398,6 +400,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
+	@Override
+	public final Object upstream() {
+		return subscription;
+	}
+
 	@SuppressWarnings("unchecked")
 	final void drainLoop() {
 		int missed = 1;
@@ -425,7 +432,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 			Subscription subscription = this.subscription;
 
-			if(subscription != null) {
+			if (subscription != null) {
 				if (state == STATE_CANCELLED && PROCESSOR.getAndSet(this, NOOP_PROCESSOR) != NOOP_PROCESSOR) {
 					this.subscription = null;
 					subscription.cancel();
@@ -451,30 +458,15 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	@Override
-	public int getMode() {
-		return 0;
-	}
-
-	@Override
-	public final Object upstream() {
-		return subscription;
-	}
-
 	final static class NoopProcessor implements Processor, Introspectable {
 
 		@Override
-		public void subscribe(Subscriber s) {
-
+		public int getMode() {
+			return TRACE_ONLY;
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-
-		}
-
-		@Override
-		public void onNext(Object o) {
+		public void onComplete() {
 
 		}
 
@@ -484,13 +476,34 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 
 		@Override
-		public void onComplete() {
+		public void onNext(Object o) {
 
 		}
 
 		@Override
-		public int getMode() {
-			return TRACE_ONLY;
+		public void onSubscribe(Subscription s) {
+
+		}
+
+		@Override
+		public void subscribe(Subscriber s) {
+
 		}
 	}
+	final static NoopProcessor NOOP_PROCESSOR = new NoopProcessor();
+	final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
+			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
+	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
+			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
+	final static AtomicIntegerFieldUpdater<MonoProcessor>              REQUESTED =
+			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "requested");
+	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
+			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
+	final static int       STATE_CANCELLED         = -1;
+	final static int       STATE_READY             = 0;
+	final static int       STATE_SUBSCRIBED        = 1;
+	final static int       STATE_POST_SUBSCRIBED   = 2;
+	final static int       STATE_SUCCESS_VALUE     = 3;
+	final static int       STATE_COMPLETE_NO_VALUE = 4;
+	final static int       STATE_ERROR             = 5;
 }

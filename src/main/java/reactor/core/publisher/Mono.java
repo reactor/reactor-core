@@ -72,7 +72,7 @@ import reactor.core.util.ReactiveStateUtils;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable, Supplier<T>,
+public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable,
                                          Completable {
 
 	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
@@ -964,7 +964,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return T the result
 	 */
-	@Override
 	public T get() {
 		return get(PlatformDependent.DEFAULT_TIMEOUT);
 	}
@@ -986,9 +985,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T get(long timeout) {
-		MonoResult<T> result = new MonoResult<>();
+		MonoProcessor<T> result = new MonoProcessor<T>(this);
 		subscribe(result);
-		return result.await(timeout);
+		return result.get(timeout);
 	}
 
 	/**

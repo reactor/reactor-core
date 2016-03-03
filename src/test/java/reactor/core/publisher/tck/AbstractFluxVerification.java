@@ -49,14 +49,14 @@ import reactor.core.publisher.Flux;
 /**
  * @author Stephane Maldini
  */
-public abstract class AbstractStreamVerification extends org.reactivestreams.tck.IdentityProcessorVerification<Integer> {
+public abstract class AbstractFluxVerification extends org.reactivestreams.tck.IdentityProcessorVerification<Integer> {
 
 
 	private final Map<Thread, AtomicLong> counters = new ConcurrentHashMap<>();
 
 	protected final int batch = 1024;
 
-	public AbstractStreamVerification() {
+	public AbstractFluxVerification() {
 		super(new TestEnvironment(1000, true));
 	}
 

@@ -336,7 +336,7 @@ public enum ReactiveStateUtils {
 				o.toString() : o.getClass()
 				                .getSimpleName()): name;
 
-		name = name.replaceAll("Mono|Flux|Stream|Subscriber","");
+		name = name.replaceAll("Flux|Subscriber","");
 
 		return name.isEmpty() ? "anonymous" : name;
 	}
