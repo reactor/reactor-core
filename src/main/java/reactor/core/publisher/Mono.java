@@ -1255,6 +1255,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return repeatWhenEmpty(Integer.MAX_VALUE, repeatFactory);
 	}
 
+
 	/**
 	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
 	 * number of emitted elements.
@@ -1287,6 +1288,92 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeWhile(v -> v == 0L).scan(0L, (v, acc) -> acc++);
 		return MonoSource.wrap(new FluxRepeatWhen<T>(this, skip.andThen(repeatFactory)));
+	}
+
+
+	/**
+	 * Re-subscribes to this {@link Mono} sequence if it signals any error
+	 * either indefinitely.
+	 * <p>
+	 * The times == Long.MAX_VALUE is treated as infinite retry.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retry.png" alt="">
+	 *
+	 * @return a re-subscribing {@link Mono} on onError
+	 */
+	public final Mono<T> retry() {
+		return retry(Long.MAX_VALUE);
+	}
+
+	/**
+	 * Re-subscribes to this {@link Mono} sequence if it signals any error
+	 * either indefinitely or a fixed number of times.
+	 * <p>
+	 * The times == Long.MAX_VALUE is treated as infinite retry.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryn.png" alt="">
+	 *
+	 * @param numRetries the number of times to tolerate an error
+	 *
+	 * @return a re-subscribing {@link Mono} on onError up to the specified number of retries.
+	 *
+	 */
+	public final Mono<T> retry(long numRetries) {
+		return MonoSource.wrap(new FluxRetry<T>(this, numRetries));
+	}
+
+	/**
+	 * Re-subscribes to this {@link Mono} sequence if it signals any error
+	 * and the given {@link Predicate} matches otherwise push the error downstream.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryb.png" alt="">
+	 *
+	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+	 *
+	 * @return a re-subscribing {@link Mono} on onError if the predicates matches.
+	 */
+	public final Mono<T> retry(Predicate<Throwable> retryMatcher) {
+		return retryWhen(v -> v.filter(retryMatcher));
+	}
+
+	/**
+	 * Re-subscribes to this {@link Mono} sequence up to the specified number of retries if it signals any
+	 * error and the given {@link Predicate} matches otherwise push the error downstream.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrynb.png" alt="">
+	 *
+	 * @param numRetries the number of times to tolerate an error
+	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
+	 *
+	 * @return a re-subscribing {@link Mono} on onError up to the specified number of retries and if the predicate
+	 * matches.
+	 *
+	 */
+	public final Mono<T> retry(long numRetries, Predicate<Throwable> retryMatcher) {
+		return retry(Flux.countingPredicate(retryMatcher, numRetries));
+	}
+
+	/**
+	 * Retries this {@link Mono} when a companion sequence signals
+	 * an item in response to this {@link Mono} error signal
+	 * <p>If the companion sequence signals when the {@link Mono} is active, the retry
+	 * attempt is suppressed and any terminal signal will terminate the {@link Mono} source with the same signal
+	 * immediately.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrywhen.png" alt="">
+	 *
+	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling any error from the source sequence and returning a {@link Publisher} companion.
+	 *
+	 * @return a re-subscribing {@link Mono} on onError when the companion {@link Publisher} produces an
+	 * onNext signal
+	 */
+	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
+		return MonoSource.wrap(new FluxRetryWhen<T>(this, whenFactory));
 	}
 
 	/**
