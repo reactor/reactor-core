@@ -986,7 +986,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public T get(long timeout) {
 		MonoProcessor<T> result = new MonoProcessor<T>(this);
-		result.request(1L);
 		subscribe(result);
 		return result.get(timeout);
 	}
@@ -1297,7 +1296,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final MonoProcessor<T> subscribe() {
 		MonoProcessor<T> s = new MonoProcessor<>(this);
-		s.request(1L);
 		subscribe(s);
 		return s;
 	}

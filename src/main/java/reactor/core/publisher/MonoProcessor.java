@@ -115,7 +115,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public O get(long timeout) {
 		try {
-			request(1);
 			if (!isPending()) {
 				return peek();
 			}
@@ -306,7 +305,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	public final void onSubscribe(Subscription subscription) {
 		if (BackpressureUtils.validate(this.subscription, subscription)) {
 			this.subscription = subscription;
-			if (STATE.compareAndSet(this, STATE_READY, STATE_SUBSCRIBED) && REQUESTED.getAndSet(this, 2) != 2){
+			if (STATE.compareAndSet(this, STATE_READY, STATE_SUBSCRIBED)){
 				subscription.request(1L);
 			}
 
@@ -325,7 +324,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
 	 */
 	public O peek() {
-		request(1);
 		int endState = this.state;
 
 		if (endState == STATE_SUCCESS_VALUE) {
@@ -350,10 +348,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		try {
 			BackpressureUtils.checkRequest(n);
 			Subscription s = subscription;
-			if (!REQUESTED.compareAndSet(this, 0, 1) &&
-					s != null && REQUESTED.compareAndSet(this, 1, 2)) {
-				s.request(1L);
-			}
+			s.request(Long.MAX_VALUE);
 		}
 		catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
@@ -441,10 +436,6 @@ public final class MonoProcessor<O> extends Mono<O>
 					subscription.cancel();
 					return;
 				}
-
-				if (REQUESTED.get(this) == 1 && REQUESTED.compareAndSet(this, 1, 2)) {
-					subscription.request(1L);
-				}
 			}
 
 			if (state == STATE_SUBSCRIBED && STATE.compareAndSet(this, STATE_SUBSCRIBED, STATE_POST_SUBSCRIBED)) {
@@ -498,8 +489,6 @@ public final class MonoProcessor<O> extends Mono<O>
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
-	final static AtomicIntegerFieldUpdater<MonoProcessor>              REQUESTED =
-			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "requested");
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
 			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
 	final static int       STATE_CANCELLED         = -1;
