@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.io.Serializable;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.util.SignalKind;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -33,45 +32,10 @@ import org.reactivestreams.Subscription;
  */
 public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>>, Serializable {
 
-	enum Type {
-		/**
-		 * Only happens once, a subscribe signal is the handshake between a new subscriber and a producer.
-		 * <p>
-		 * see {@link Flux#subscribe(Subscriber)}
-		 */
-		SUBSCRIBE,
 
-		/**
-		 * Can happen N times where N is a possibly unbounded number. The signal will trigger core logic on all
-		 * {@link Subscriber} attached to a {@link Flux}.
-		 * <p>
-		 * see {@link Subscriber#onNext(Object)}
-		 */
-		NEXT,
+	private static final Signal<Void> ON_COMPLETE = new Signal<>(SignalKind.onComplete, null, null, null);
 
-		/**
-		 * Only happens once, a complete signal is used to confirm the successful end of the data sequence flowing in a
-		 * {@link Flux}. The signal releases batching operations such as {@link Flux#buffer
-		 * ()},
-		 * {@link Flux#window} or {@link Flux#reduce(java.util.function.BiFunction)}
-		 * <p>
-		 * see {@link Subscriber#onComplete()}
-		 */
-		COMPLETE,
-
-		/**
-		 * Only happens once, a complete signal is used to confirm the error end of the data sequence flowing in a
-		 * {@link Flux}. However, the signal can be recovered using various operations such as {@link
-		 * Flux#onErrorResumeWith(Function)} , {@link Flux#switchOnError(Publisher)} or {@link Flux#retry}
-		 * <p>
-		 * see {@link Subscriber#onError(Throwable cause)}
-		 */
-		ERROR
-	}
-
-	private static final Signal<Void> ON_COMPLETE = new Signal<>(Type.COMPLETE, null, null, null);
-
-	private final Type      type;
+	private final SignalKind      type;
 	private final Throwable throwable;
 
 	private final T value;
@@ -85,7 +49,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
-		return new Signal<T>(Type.NEXT, t, null, null);
+		return new Signal<T>(SignalKind.onNext, t, null, null);
 	}
 
 	/**
@@ -95,7 +59,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
-		return new Signal<T>(Type.ERROR, null, e, null);
+		return new Signal<T>(SignalKind.onError, null, e, null);
 	}
 
 	/**
@@ -116,10 +80,10 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Signal<T> subscribe(Subscription subscription) {
-		return new Signal<T>(Type.SUBSCRIBE, null, null, subscription);
+		return new Signal<T>(SignalKind.onSubscribe, null, null, subscription);
 	}
 
-	private Signal(Type type, T value, Throwable e, Subscription subscription) {
+	private Signal(SignalKind type, T value, Throwable e, Subscription subscription) {
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
@@ -176,7 +140,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 *
 	 * @return the type of the signal
 	 */
-	public Type getType() {
+	public SignalKind getType() {
 		return type;
 	}
 
@@ -186,7 +150,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onError} event
 	 */
 	public boolean isOnError() {
-		return getType() == Type.ERROR;
+		return getType() == SignalKind.onError;
 	}
 
 	/**
@@ -195,7 +159,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnComplete() {
-		return getType() == Type.COMPLETE;
+		return getType() == SignalKind.onComplete;
 	}
 
 	/**
@@ -204,7 +168,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnSubscribe() {
-		return getType() == Type.SUBSCRIBE;
+		return getType() == SignalKind.onSubscribe;
 	}
 
 	/**
@@ -213,7 +177,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onNext} event
 	 */
 	public boolean isOnNext() {
-		return getType() == Type.NEXT;
+		return getType() == SignalKind.onNext;
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.util.Logger;
+import reactor.core.util.SignalKind;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them
@@ -116,7 +117,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doOnSubscribe(Subscription subscription) {
 			if ((options & Logger.ON_SUBSCRIBE) == Logger.ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(Logger.SignalKind.onSubscribe, this.subscription, this);
+				log(SignalKind.onSubscribe, this.subscription, this);
 			}
 			subscriber.onSubscribe(this);
 		}
@@ -124,7 +125,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doNext(IN in) {
 			if ((options & Logger.ON_NEXT) == Logger.ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-				log(Logger.SignalKind.onNext, in, this);
+				log(SignalKind.onNext, in, this);
 			}
 			subscriber.onNext(in);
 		}
@@ -132,7 +133,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doError(Throwable throwable) {
 			if ((options & Logger.ON_ERROR) == Logger.ON_ERROR && log.isErrorEnabled()) {
-				log.error(concatId() + " " + LOG_TEMPLATE, Logger.SignalKind.onError, throwable, this);
+				log.error(concatId() + " " + LOG_TEMPLATE, SignalKind.onError, throwable, this);
 				log.error(concatId(), throwable);
 			}
 			subscriber.onError(throwable);
@@ -146,7 +147,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doComplete() {
 			if ((options & Logger.ON_COMPLETE) == Logger.ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(Logger.SignalKind.onComplete, "", this);
+				log(SignalKind.onComplete, "", this);
 			}
 			subscriber.onComplete();
 		}
@@ -154,7 +155,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doRequest(long n) {
 			if ((options & Logger.REQUEST) == Logger.REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
-				log(Logger.SignalKind.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
+				log(SignalKind.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
 			}
 			super.doRequest(n);
 		}
@@ -162,7 +163,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doCancel() {
 			if ((options & Logger.CANCEL) == Logger.CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
-				log(Logger.SignalKind.cancel, "", this);
+				log(SignalKind.cancel, "", this);
 			}
 			super.doCancel();
 		}

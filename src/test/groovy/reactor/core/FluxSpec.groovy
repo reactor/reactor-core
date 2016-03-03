@@ -2091,8 +2091,8 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=NEXT, value=Three}', 'Signal{type=NEXT, value=Two}', 'Signal{type=NEXT, value=One}',
-					'Signal{type=COMPLETE}', 'complete']
+			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onNext, value=Two}', 'Signal{type=onNext, value=One}',
+					'Signal{type=onComplete}', 'complete']
 
 		when:
 			'A source flux emits next signals followed by complete'
@@ -2111,7 +2111,8 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=NEXT, value=Three}', 'Signal{type=ERROR, throwable=java.lang.Exception}', 'complete']
+			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onError, throwable=java.lang.Exception}',
+					'complete']
 	}
 
 	def 'Streams can be dematerialized'() {

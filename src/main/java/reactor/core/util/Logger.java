@@ -127,11 +127,6 @@ public abstract class Logger {
 		return null;
 	}
 
-	/**
-	 * Logging scope enumeration combined with {@link #format(String, Object...)}
-	 */
-	public enum SignalKind {request, onSubscribe, onNext, onError, onComplete, cancel, graph}
-
 	interface LoggerFactory {
 		
 		GlobalExtension globalExtension = new GlobalExtension();

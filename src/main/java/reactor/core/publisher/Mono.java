@@ -750,6 +750,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * A "phantom-operator" working only if this
+	 * {@link Mono} is a emits onNext, onError or onComplete {@link Signal}. The relative {@link Subscriber}
+	 * callback will be invoked, error {@link Signal} will trigger onError and complete {@link Signal} will trigger
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize.png" alt="">
+	 *
+	 * @return a dematerialized {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <X> Mono<X> dematerialize() {
+		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
+		return MonoSource.wrap(new FluxDematerialize<>(thiz));
+	}
+
+	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
 	 *
 	 * <p>
@@ -803,6 +820,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, null, null, null, null, onCancel));
+		}
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
 	}
 
@@ -837,6 +857,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, onError, null, null, null, null));
+		}
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
 	}
 
@@ -851,6 +874,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return an observed  {@link Mono}
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, null, null, null, consumer, null));
+		}
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, consumer, null));
 	}
 
@@ -865,6 +891,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null));
+		}
 		return MonoSource.wrap(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
 	}
 
@@ -1139,7 +1168,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxMapFuseable<>(this, mapper));
+		}
 		return MonoSource.wrap(new FluxMap<>(this, mapper));
+	}
+
+	/**
+	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
+	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
+	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/materialize.png" alt="">
+	 *
+	 * @return a {@link Mono} of materialized {@link Signal}
+	 */
+	public final Mono<Signal<T>> materialize() {
+		return MonoSource.wrap(new FluxMaterialize<>(this));
 	}
 
 	/**
@@ -1639,6 +1685,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> where(final Predicate<? super T> tester) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxFilterFuseable<>(this, tester));
+		}
 		return MonoSource.wrap(new FluxFilter<>(this, tester));
 	}
 
