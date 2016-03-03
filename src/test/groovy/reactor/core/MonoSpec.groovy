@@ -122,8 +122,8 @@ class MonoSpec extends Specification {
 	promise.doOnError { ex = it }.subscribe()
 
 	then: "no error is thrown"
+	thrown Exception
 	ex in Exception
-	notThrown Exception
   }
 
   def "An onError consumer can be added to an already-fulfilled promise"() {
@@ -149,7 +149,7 @@ class MonoSpec extends Specification {
 	promise.onError failure
 
 	then: "the consumer is invoked with the rejecting value"
-	acceptedValue == failure
+	thrown Exception
   }
 
   def "A promise can only listen to terminal states"() {
@@ -174,7 +174,7 @@ class MonoSpec extends Specification {
 	promise.onError new Exception()
 
 	then: "the promise is invoked with the rejecting value"
-	after.isTerminated()
+	thrown(Exception)
 	after.isError()
 	after.getError().class == Exception
   }
@@ -192,6 +192,7 @@ class MonoSpec extends Specification {
 	println promise.debug()
 
 	then: "the consumer is invoked with the rejecting value"
+	thrown(Exception)
 	acceptedValue == failure
   }
 
@@ -291,6 +292,7 @@ class MonoSpec extends Specification {
 
 	then: "the consumer is called"
 	value == e
+	thrown(Exception)
   }
 
   def "An onSuccess consumer registered via then is called when the promise is already fulfilled"() {
@@ -317,6 +319,7 @@ class MonoSpec extends Specification {
 	mapped.request(1)
 
 	then: "the mapped promise is rejected"
+	thrown(Exception)
 	mapped.error
   }
 
@@ -330,6 +333,7 @@ class MonoSpec extends Specification {
 	promise.map { throw e }.subscribe(mapped)
 
 	then: "the mapped promise is rejected"
+	thrown(Exception)
 	mapped.error
   }
 
@@ -412,6 +416,7 @@ class MonoSpec extends Specification {
 	promise1.onError new Exception()
 
 	then: "the combined promise is rejected"
+	thrown(Exception)
 	combined.error
   }
 
