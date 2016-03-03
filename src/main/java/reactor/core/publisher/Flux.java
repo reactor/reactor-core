@@ -1355,7 +1355,27 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier) {
-		return flatMap(null, throwable -> concat(afterSupplier.get(), Flux.<V>error(throwable)), afterSupplier);
+		return after(afterSupplier, false);
+	}
+
+	/**
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
+	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
+	 * alt="">
+	 *
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
+	 * @param runOnError runs a supplied {@link Publisher} on error as well as on complete
+	 * @param <V> the supplied produced type
+	 *
+	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier, boolean runOnError) {
+		return flatMap(null, throwable -> !runOnError ? null :
+				concat(afterSupplier.get(), Flux.<V>error(throwable)),
+				afterSupplier);
 	}
 
 	/**
