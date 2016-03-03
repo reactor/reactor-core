@@ -797,6 +797,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * Non-blocking forced shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
 	 * @return the current pending tasks if supported or throw an unchecked {@link UnsupportedOperationException}.
 	 */
+	@SuppressWarnings("unchecked")
 	public Flux<Runnable> forceShutdown() {
 		if (scheduler == null) {
 			return Flux.empty();

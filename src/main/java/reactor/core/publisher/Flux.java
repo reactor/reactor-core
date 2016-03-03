@@ -383,6 +383,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	@SafeVarargs
+	@SuppressWarnings("varargs")
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return new FluxConcatArray<>(sources);
 	}

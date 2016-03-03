@@ -18,10 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
@@ -36,6 +38,7 @@ import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
+import reactor.core.subscriber.SerializedSubscriber;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -163,6 +166,44 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 */
 	public static <E> EmitterProcessor<E> replay(int historySize, int concurrency, boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
+	}
+
+	/**
+	 * Create a {@link EmitterProcessor} from hot-cold {@link EmitterProcessor#replay EmitterProcessor}  that will not 
+	 * propagate 
+	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber}
+	 * (buffer and history size of 1).
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png" alt="">
+	 *
+	 * @param <T>  the relayed type
+	 *
+	 * @return a non interruptable last item cached pub-sub {@link EmitterProcessor}
+	 */
+	public static <T> EmitterProcessor<T> replayLast() {
+		return replayLastOrDefault(null);
+	}
+
+	/**
+	 * Create a {@link EmitterProcessor} from hot-cold {@link EmitterProcessor#replay EmitterProcessor}  that will not 
+	 * propagate 
+	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber} (buffer and history size of 1).
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png" alt="">
+	 *
+	 * @param value a default value to start the sequence with
+	 * @param <T> the relayed type
+	 *
+	 * @return a non interruptable last item cached pub-sub {@link EmitterProcessor}
+	 */
+	public static <T> EmitterProcessor<T> replayLastOrDefault(T value) {
+		EmitterProcessor<T> b = replay(1);
+		if(value != null){
+			b.onNext(value);
+		}
+		return b;
 	}
 
 	final int maxConcurrency;

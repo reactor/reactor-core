@@ -679,7 +679,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Mono} to emit from after termination
+	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
@@ -694,7 +694,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Mono} to emit from after termination
+	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
 	 * @param runOnError runs a supplied {@link Publisher} on error as well as on complete
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
