@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -39,7 +39,7 @@ import reactor.core.util.BackpressureUtils;
  *
  * @param <T> the value type
  */
-public final class SerializedSubscriber<T>
+final class SerializedSubscriber<T>
 		implements Subscriber<T>, Subscription, Receiver,
 		           Completable, Producer, Cancellable, Introspectable, Backpressurable,
 		           Failurable {
