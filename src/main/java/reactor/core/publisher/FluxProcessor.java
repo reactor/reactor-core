@@ -28,6 +28,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 
+import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
@@ -44,7 +45,7 @@ import reactor.core.util.Exceptions;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN> {
+		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN>, BaseSubscriber<IN> {
 
 	/**
 	 * Create an asynchronously {@link Flux#dispatchOn(Callable) dispatched} {@link FluxProcessor} multicast/topic
@@ -160,41 +161,11 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	protected FluxProcessor() {
 	}
 
-	/**
-	 * Trigger onSubscribe with a stateless subscription to signal this subscriber it can start receiving
-	 * onNext, onComplete and onError calls.
-	 * <p>
-	 * Doing so MAY allow direct UNBOUNDED onXXX calls and MAY prevent {@link org.reactivestreams.Publisher} to subscribe this
-	 * subscriber.
-	 *
-	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
-	 *
-	 * @return this {@link FluxProcessor}
-	 */
+	@Override
 	public FluxProcessor<IN, OUT> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
 	}
-
-	/**
-	 * Create a {@link SignalEmitter} and attach it via {@link #onSubscribe(Subscription)}.
-	 *
-	 * @return a new subscribed {@link SignalEmitter}
-	 */
-	public SignalEmitter<IN> startEmitter() {
-		return bindEmitter(true);
-	}
-
-	/**
-	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
-	 * set to true.
-	 *
-	 * @return a new {@link SignalEmitter}
-	 */
-	public SignalEmitter<IN> bindEmitter(boolean autostart) {
-		return SignalEmitter.create(this, autostart);
-	}
-
 
 	@Override
 	public void onSubscribe(final Subscription s) {
@@ -209,22 +180,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 				onError(t);
 			}
 		}
-	}
-
-	@Override
-	public void onNext(IN t) {
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
-
-	}
-
-	@Override
-	public void onError(Throwable t) {
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
-		Exceptions.throwIfFatal(t);
 	}
 
 	protected void doOnSubscribe(Subscription s) {

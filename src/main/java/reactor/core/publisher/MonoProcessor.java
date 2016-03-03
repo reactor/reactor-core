@@ -118,6 +118,9 @@ public final class MonoProcessor<O> extends Mono<O>
 			if (!isPending()) {
 				return peek();
 			}
+			else if(subscription == null) {
+				getOrStart();
+			}
 
 			long delay = System.currentTimeMillis() + timeout;
 
@@ -368,21 +371,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			EmptySubscription.error(subscriber, error);
 			return;
 		}
-		Processor<O, O> out = processor;
-		if (out == null) {
-			out = EmitterProcessor.replayLastOrDefault(value);
-			if (PROCESSOR.compareAndSet(this, null, out)) {
-				if (source != null) {
-					source.subscribe(this);
-				}
-				else{
-					onSubscribe(EmptySubscription.INSTANCE);
-				}
-			}
-			else {
-				out = (Processor<O, O>) PROCESSOR.get(this);
-			}
-		}
+		Processor<O, O> out = getOrStart();
 		out.subscribe(subscriber);
 		if (WIP.getAndIncrement(this) == 0) {
 			drainLoop();
@@ -446,6 +435,26 @@ public final class MonoProcessor<O> extends Mono<O>
 				break;
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	Processor<O, O> getOrStart(){
+		Processor<O, O> out = processor;
+		if (out == null) {
+			out = EmitterProcessor.replayLastOrDefault(value);
+			if (PROCESSOR.compareAndSet(this, null, out)) {
+				if (source != null) {
+					source.subscribe(this);
+				}
+				else{
+					onSubscribe(EmptySubscription.INSTANCE);
+				}
+			}
+			else {
+				out = (Processor<O, O>) PROCESSOR.get(this);
+			}
+		}
+		return out;
 	}
 
 	final static class NoopProcessor implements Processor, Introspectable {

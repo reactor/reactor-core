@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
@@ -985,6 +986,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T get(long timeout) {
+		if(this instanceof Supplier){
+			return get();
+		}
 		MonoProcessor<T> result = new MonoProcessor<T>(this);
 		subscribe(result);
 		return result.get(timeout);
@@ -1295,7 +1299,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
 	public final MonoProcessor<T> subscribe() {
-		MonoProcessor<T> s = new MonoProcessor<>(this);
+		MonoProcessor<T> s;
+		if(this instanceof MonoProcessor){
+			s = (MonoProcessor<T>)this;
+		}
+		else{
+			s = new MonoProcessor<>(this);
+		}
 		subscribe(s);
 		return s;
 	}

@@ -491,6 +491,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		Assert.notNull(requestConsumer, "A data producer must be provided");
 		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
 	}
+	
+	/**
+	 * Supply a {@link Publisher} everytime subscribe is called on the returned flux. The passed {@link Supplier}
+	 * will be invoked and it's up to the developer to choose to return a new instance of a {@link Publisher} or reuse
+	 * one effecitvely behaving like {@link #from(Publisher)}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer.png" alt="">
+	 *
+	 * @param supplier the {@link Publisher} {@link Supplier} to call on subscribe
+	 * @param <T>      the type of values passing through the {@link Flux}
+	 *
+	 * @return a deferred {@link Flux}
+	 */
+	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
+		return new FluxDefer<>(supplier);
+	}
 
 	/**
 	 * Create a {@link Flux} that completes without emitting any item.
@@ -3061,6 +3078,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
+
 	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
 	 * subscribers in a backpressure-aware manner. This will effectively turn any type of sequence into a hot sequence.
@@ -3076,6 +3094,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
 		return new FluxPublish<>(this, prefetch, QueueSupplier.<T>get(prefetch));
+	}
+
+	/**
+	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the first observed item to
+	 * subscribers in a backpressure-aware manner.
+	 * This will effectively turn any type of sequence into a hot sequence when the first {@link Subscriber} subscribes.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishnext.png" alt="">
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> publishNext() {
+		return new MonoProcessor<>(this);
 	}
 
 
