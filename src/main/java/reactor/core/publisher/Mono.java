@@ -1247,8 +1247,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onNext signal
 	 *
 	 */
-	public final Mono<T> repeatUntilNext(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
-		return repeatUntilNext(Integer.MAX_VALUE, repeatFactory);
+	public final Mono<T> repeatWhenEmpty(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+		return repeatWhenEmpty(Integer.MAX_VALUE, repeatFactory);
 	}
 
 	/**
@@ -1269,7 +1269,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onNext signal
 	 *
 	 */
-	public final Mono<T> repeatUntilNext(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		if (maxRepeat != Integer.MAX_VALUE) {
 			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeWhile(v -> v == 0L);
 			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
