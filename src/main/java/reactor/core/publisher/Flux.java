@@ -4136,7 +4136,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
 	 *
 	 * @return a {@link Mono} of all sorted values from this {@link Flux}
 	 *
@@ -4160,8 +4160,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
-		return collect(() -> new PriorityQueue<>(comparator), PriorityQueue::add).map(queue ->
-				Arrays.asList((T[]) queue.toArray()));
+		return collect(() -> new PriorityQueue<>(comparator), PriorityQueue::add).map(q -> {
+			PriorityQueue<T> temp = new PriorityQueue<T>( q );
+			List<T> res = new ArrayList<T>(q.size());
+
+			while ( !temp.isEmpty() ) {
+				res.add(temp.remove());
+			}
+			return res;
+		});
 	}
 
 	/**

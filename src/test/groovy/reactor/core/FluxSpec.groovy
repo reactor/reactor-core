@@ -46,7 +46,7 @@ class FluxSpec extends Specification {
 
 	void setupSpec() {
 		Timer.global()
-		asyncGroup = SchedulerGroup.async("fluxion-spec", 128, 4, null, null, false)
+		asyncGroup = SchedulerGroup.async("flux-spec", 128, 4, null, null, false)
 	}
 
 	def cleanupSpec() {
@@ -150,7 +150,7 @@ class FluxSpec extends Specification {
 			def stream = Flux.just('test')
 
 		when:
-			'the complete signal is observed and fluxion is retrieved'
+			'the complete signal is observed and flux is retrieved'
 			def tap = stream.after()
 
 		then:
@@ -158,7 +158,7 @@ class FluxSpec extends Specification {
 			!tap.get()
 
 		when:
-			'the error signal is observed and fluxion is retrieved'
+			'the error signal is observed and flux is retrieved'
 			stream = Flux.error(new Exception())
 			stream.after().get()
 
@@ -173,7 +173,7 @@ class FluxSpec extends Specification {
 			def stream = Flux.just('test')
 
 		when:
-			'the complete signal is observed and fluxion is retrieved'
+			'the complete signal is observed and flux is retrieved'
 			def value = null
 
 			def tap = stream.doAfterTerminate {
@@ -196,7 +196,7 @@ class FluxSpec extends Specification {
 			Flux stream = Flux.just('test', 'test2', 'test3')
 
 		when:
-			'the fluxion is retrieved'
+			'the flux is retrieved'
 			def value = stream.map { it + '-ok' }.toList()
 
 			println value.debug()
@@ -212,11 +212,11 @@ class FluxSpec extends Specification {
 			def stream = Flux.just('test', 'test2', 'test3').log().dispatchOn(asyncGroup)
 
 		when:
-			'the fluxion is retrieved'
+			'the flux is retrieved'
 			stream = stream.map { it + '-ok' }.log()
 
 			def queue = stream.toIterable().iterator()
-			//	println fluxion.debug()
+			//	println flux.debug()
 
 			def res
 			def result = []
@@ -418,7 +418,7 @@ class FluxSpec extends Specification {
 
 
 		when:
-			'checking always true predicate on empty fluxion and collecting the result'
+			'checking always true predicate on empty flux and collecting the result'
 			tap = Flux.empty().exists { true }.get();
 
 		then:
@@ -463,7 +463,7 @@ class FluxSpec extends Specification {
 			stream = stream.doOnComplete { signals << 'complete' }
 
 		and:
-			'the fluxion is consumed'
+			'the flux is consumed'
 			stream.consume { values << it }
 
 		then:
@@ -484,7 +484,7 @@ class FluxSpec extends Specification {
 			stream = stream.defaultIfEmpty('test').doOnComplete { values << 'complete' }
 
 		and:
-			'the fluxion is consumed'
+			'the flux is consumed'
 			stream.consume { values << it }
 
 		then:
@@ -654,7 +654,7 @@ class FluxSpec extends Specification {
 			println source1.debug()
 
 		then:
-			'the values are all collected from source1 fluxion'
+			'the values are all collected from source1 flux'
 			tap.get() == [1, 2, 3]
 	}
 
@@ -678,7 +678,7 @@ class FluxSpec extends Specification {
 			println tap.debug()
 
 		then:
-			'the values are all collected from source1 fluxion'
+			'the values are all collected from source1 flux'
 			tap.get() == 3
 
 		when:
@@ -689,7 +689,7 @@ class FluxSpec extends Specification {
 			println tap.debug()
 
 		then:
-			'the values are all collected from source1 fluxion'
+			'the values are all collected from source1 flux'
 			tap.get() == 9
 	}
 
@@ -705,7 +705,7 @@ class FluxSpec extends Specification {
 			def tap = zippedFlux.log().toList()
 
 		then:
-			'the values are all collected from source1 fluxion'
+			'the values are all collected from source1 flux'
 			tap.get() == [[1, 2], [3, 4], [5, 6]]
 
 		when:
@@ -717,7 +717,7 @@ class FluxSpec extends Specification {
 
 
 		then:
-			'the values are all collected from source1 fluxion'
+			'the values are all collected from source1 flux'
 			tap.get() == [[1, 2], [3, 2], [5, 2], [7, 2], [9, 2]]
 	}
 
@@ -739,7 +739,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == [1, 2, 3, 4, 5, 6, 7, 9, 'done']
 
 	}
@@ -778,7 +778,7 @@ class FluxSpec extends Specification {
 			println mergedFlux.debug()
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == ['1a2a3a', '1a2b3a', '1a2b3b', '1a2b3c', '1a2b3d', 'done']
 
 	}
@@ -800,7 +800,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == [1, 2, 3, 4, 5, 'done']
 
 		when:
@@ -812,7 +812,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == [1, 2, 3, 4, 5, 'done']
 
 		when:
@@ -824,7 +824,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == [1, 2, 3, 4, 5, 'done']
 
 	}
@@ -845,7 +845,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			'the values are all collected from source1 and source2 fluxion'
+			'the values are all collected from source1 and source2 flux'
 			res == [1, 2, 2, 3, 3, 4, 'done']
 	}
 
@@ -1223,7 +1223,7 @@ class FluxSpec extends Specification {
 
 	def 'Collect will accumulate a list of accepted values and pass it to a consumer'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			Flux reduced = source.buffer(2)
 			def value = reduced.publishNext()
@@ -1242,7 +1242,7 @@ class FluxSpec extends Specification {
 
 	def 'Collect will accumulate multiple lists of accepted values and pass it to a consumer'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def numbers = Flux.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
 
 		when:
@@ -1276,7 +1276,7 @@ class FluxSpec extends Specification {
 
 	def 'Collect will accumulate multiple lists of accepted values and pass it to a consumer on bucket close'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def numbers = EmitterProcessor.<Integer> create().connect()
 
 		when:
@@ -1327,7 +1327,7 @@ class FluxSpec extends Specification {
 
 	def 'Window will reroute multiple stream of accepted values and pass it to a consumer'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def numbers = Flux.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
 
 		when:
@@ -1362,7 +1362,7 @@ class FluxSpec extends Specification {
 
 	def 'Re route will accumulate multiple lists of accepted values and pass it to a consumer on bucket close'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def numbers = EmitterProcessor.<Integer> create().connect()
 
 		when:
@@ -1413,7 +1413,7 @@ class FluxSpec extends Specification {
 
 	def 'Window will re-route N elements to a fresh nested stream'() {
 		given:
-			'a source and a collected window fluxion'
+			'a source and a collected window flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def value = null
 
@@ -1454,7 +1454,7 @@ class FluxSpec extends Specification {
 
 	def 'Window will re-route N elements over time to a fresh nested stream'() {
 		given:
-			'a source and a collected window fluxion'
+			'a source and a collected window flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def promise = MonoProcessor.create()
 
@@ -1497,7 +1497,7 @@ class FluxSpec extends Specification {
 
 	def 'GroupBy will re-route N elements to a nested stream based on the mapped key'() {
 		given:
-			'a source and a grouped by ID fluxion'
+			'a source and a grouped by ID flux'
 			def source = EmitterProcessor.<SimplePojo> create().connect()
 			def result = [:]
 
@@ -1537,7 +1537,7 @@ class FluxSpec extends Specification {
 
 	def 'GroupBy will re-route N elements to a nested stream based on hashcode'() {
 		given:
-			'a source and a grouped by ID fluxion'
+			'a source and a grouped by ID flux'
 			def source = EmitterProcessor.<SimplePojo> create().connect()
 			def result = [:]
 			def latch = new CountDownLatch(6)
@@ -1580,7 +1580,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Stream from publisher'() {
 		given:
-			'a source fluxion with a given publisher'
+			'a source flux with a given publisher'
 			def s = Flux.<String> yield {
 				it.onNext('test1')
 				it.onNext('test2')
@@ -1600,7 +1600,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Stream from publisher factory'() {
 		given:
-			'a source fluxion with a given publisher'
+			'a source flux with a given publisher'
 			def s = Flux.generate(
 					{ long n, SubscriberWithContext<String, Void> sub ->
 						(1..3).each {
@@ -1627,7 +1627,7 @@ class FluxSpec extends Specification {
 
 	def 'Defer Stream from publisher'() {
 		given:
-			'a source fluxion with a given publisher factory'
+			'a source flux with a given publisher factory'
 			def i = 0
 			def res = []
 			def s = Flux.<Integer> defer {
@@ -1648,7 +1648,7 @@ class FluxSpec extends Specification {
 
 	def 'Wrap Stream from publisher'() {
 		given:
-			'a source fluxion with a given publisher factory'
+			'a source flux with a given publisher factory'
 			def terminated = false
 			def s = Flux.<Integer> from {
 				it.onSubscribe(new Subscription() {
@@ -1678,7 +1678,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Stream from Timer'() {
 		given:
-			'a source fluxion with a given globalTimer'
+			'a source flux with a given globalTimer'
 
 			def res = 0l
 			def c = Mono.delay(1000)
@@ -1710,7 +1710,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Stream from range'() {
 		given:
-			'a source fluxion with a given range'
+			'a source flux with a given range'
 			def s = Flux.range(1, 10)
 
 		when:
@@ -1724,7 +1724,7 @@ class FluxSpec extends Specification {
 
 	def 'Counting Stream from range'() {
 		given:
-			'a source fluxion with a given range'
+			'a source flux with a given range'
 			def s = Flux.range(1, 10)
 
 		when:
@@ -1738,7 +1738,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Empty Streams from publisher'() {
 		given:
-			'a source fluxion pre-completed'
+			'a source flux pre-completed'
 			def s = Flux.empty()
 
 		when:
@@ -1762,7 +1762,7 @@ class FluxSpec extends Specification {
 
 	def 'Caching Stream from publisher'() {
 		given:
-			'a slow source fluxion'
+			'a slow source flux'
 			def s = Flux.<Integer> yield {
 				it.submit 1
 				sleep 200
@@ -1805,7 +1805,7 @@ class FluxSpec extends Specification {
 
 	def 'Creating Mono from future'() {
 		given:
-			'a source fluxion pre-completed'
+			'a source flux pre-completed'
 			def executorService = Executors.newSingleThreadExecutor()
 
 			def future = executorService.submit({
@@ -1861,7 +1861,7 @@ class FluxSpec extends Specification {
 
 	def 'Throttle will accumulate a list of accepted values and pass it to a consumer on the specified period'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(2).log().delay(Duration.ofMillis(300))
 			def value = reduced.tap()
@@ -1892,7 +1892,7 @@ class FluxSpec extends Specification {
 
 	def 'Throttle will generate demand every specified period'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def random = new Random()
 			def source = Flux.yield {
 				it.submit random.nextInt()
@@ -1916,7 +1916,7 @@ class FluxSpec extends Specification {
 
 	def 'Collect with Timeout will accumulate a list of accepted values and pass it to a consumer'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(5, Duration.ofMillis(600))
 			def value = reduced.tap()
@@ -1978,7 +1978,7 @@ class FluxSpec extends Specification {
 			println error
 
 		then:
-			'last value known is 5 and fluxion is in error state'
+			'last value known is 5 and flux is in error state'
 			error in TimeoutException
 			value.get() == -5
 	}
@@ -2008,14 +2008,14 @@ class FluxSpec extends Specification {
 			println value.debug()
 
 		then:
-			'last value known is 10 as the fluxion has used its fallback'
+			'last value known is 10 as the flux has used its fallback'
 			!error
 			value.get() == 10
 	}
 
 	def 'Errors can have a fallback'() {
 		when:
-			'A source fluxion emits next signals followed by an error'
+			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.emit('Three')
@@ -2026,7 +2026,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'A fallback fluxion will emit values and complete'
+			'A fallback flux will emit values and complete'
 			def myFallback = Flux.yield { aSubscriber ->
 				aSubscriber.emit('0')
 				aSubscriber.emit('1')
@@ -2036,7 +2036,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'fallback fluxion is assigned to source fluxion on any error'
+			'fallback flux is assigned to source flux on any error'
 			myFlux.switchOnError(myFallback).consume(
 					{ println(it); res << it },                          // onNext
 					{ println("Error: " + it.message) }, // onError
@@ -2050,7 +2050,7 @@ class FluxSpec extends Specification {
 
 	def 'Errors can have a fallback return value'() {
 		when:
-			'A source fluxion emits next signals followed by an error'
+			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.onNext('Three')
@@ -2073,7 +2073,7 @@ class FluxSpec extends Specification {
 
 	def 'Streams can be materialized'() {
 		when:
-			'A source fluxion emits next signals followed by complete'
+			'A source flux emits next signals followed by complete'
 			List res = []
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.emit('Three')
@@ -2083,7 +2083,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'A materialized fluxion is consumed'
+			'A materialized flux is consumed'
 			myFlux.materialize().consume(
 					{ println(it); res << it.toString() },                          // onNext
 					{ it.printStackTrace() },                          // onError
@@ -2095,7 +2095,7 @@ class FluxSpec extends Specification {
 					'Signal{type=COMPLETE}', 'complete']
 
 		when:
-			'A source fluxion emits next signals followed by complete'
+			'A source flux emits next signals followed by complete'
 			res = []
 			myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.emit('Three')
@@ -2103,7 +2103,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'A materialized fluxion is consumed'
+			'A materialized flux is consumed'
 			myFlux.materialize().consume(
 					{ println(it); res << it.toString() },                          // onNext
 					{ it.printStackTrace() },                          // onError
@@ -2116,7 +2116,7 @@ class FluxSpec extends Specification {
 
 	def 'Streams can be dematerialized'() {
 		when:
-			'A source fluxion emits next signals followed by complete'
+			'A source flux emits next signals followed by complete'
 			def res = []
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.onNext(Signal.next(1))
@@ -2126,7 +2126,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'A dematerialized fluxion is consumed'
+			'A dematerialized flux is consumed'
 			myFlux.dematerialize().consume(
 					{ println(it); res << it },                          // onNext
 					{ it.printStackTrace() },                          // onError
@@ -2140,7 +2140,7 @@ class FluxSpec extends Specification {
 
 	def 'Streams can be switched'() {
 		when:
-			'A source fluxion emits next signals followed by an error'
+			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.onNext('Three')
@@ -2149,7 +2149,7 @@ class FluxSpec extends Specification {
 			}
 
 		and:
-			'Another fluxion will emit values and complete'
+			'Another flux will emit values and complete'
 			def myFallback = Flux.yield { aSubscriber ->
 				aSubscriber.onNext('0')
 				aSubscriber.onNext('1')
@@ -2172,7 +2172,7 @@ class FluxSpec extends Specification {
 
 	def 'Streams can be switched dynamically'() {
 		when:
-			'A source fluxion emits next signals followed by an error'
+			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.<Integer> yield { aSubscriber ->
 				aSubscriber.onNext(1)
@@ -2275,7 +2275,7 @@ class FluxSpec extends Specification {
 
 	def 'A Flux can be throttled'() {
 		given:
-			'a source and a throttled fluxion'
+			'a source and a throttled flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			long avgTime = 150l
 
@@ -2307,7 +2307,7 @@ class FluxSpec extends Specification {
 
 	def 'time-slices of average'() {
 		given:
-			'a source and a throttled fluxion'
+			'a source and a throttled flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def latch = new CountDownLatch(1)
 			long avgTime = 150l
@@ -2341,7 +2341,7 @@ class FluxSpec extends Specification {
 
 	def 'Collect will accumulate values from multiple threads'() {
 		given:
-			'a source and a collected fluxion'
+			'a source and a collected flux'
 			def sum = new AtomicInteger()
 			int length = 1000
 			int batchSize = 333
@@ -2378,7 +2378,7 @@ class FluxSpec extends Specification {
 			def stream = Flux.just('test')
 
 		when:
-			'the fluxion is retrieved and a consumer is dynamically added'
+			'the flux is retrieved and a consumer is dynamically added'
 			def value = null
 
 			stream.nest().consume { theFlux ->
@@ -2398,7 +2398,7 @@ class FluxSpec extends Specification {
 			def stream = Flux.fromIterable(['test', 'test2', 'test3'])
 
 		when:
-			'the fluxion triggers an error for the 2 first elements and is using retry(2) to ignore them'
+			'the flux triggers an error for the 2 first elements and is using retry(2) to ignore them'
 			def i = 0
 			stream = stream
 					.log('beforeObserve')
@@ -2415,12 +2415,12 @@ class FluxSpec extends Specification {
 			println stream.debug()
 
 		then:
-			'3 values are passed since it is a cold fluxion resubscribed 2 times and finally managed to get the 3 values'
+			'3 values are passed since it is a cold flux resubscribed 2 times and finally managed to get the 3 values'
 			value.peek() == 3
 
 
 		when:
-			'the fluxion triggers an error for the 2 first elements and is using retry(matcher) to ignore them'
+			'the flux triggers an error for the 2 first elements and is using retry(matcher) to ignore them'
 			i = 0
 			stream = Flux.fromIterable(['test', 'test2', 'test3'])
 			value = stream.doOnNext {
@@ -2432,7 +2432,7 @@ class FluxSpec extends Specification {
 			}.log().count().get()
 
 		then:
-			'3 values are passed since it is a cold fluxion resubscribed 1 time'
+			'3 values are passed since it is a cold flux resubscribed 1 time'
 			value == 3L
 	}
 
@@ -2474,7 +2474,7 @@ class FluxSpec extends Specification {
 			println stream.debug()
 
 		then:
-			'9 values are passed since it is a cold fluxion resubscribed 2 times and finally managed to get the 9 values'
+			'9 values are passed since it is a cold flux resubscribed 2 times and finally managed to get the 9 values'
 			value == 6L
 
 	}
@@ -2529,7 +2529,7 @@ class FluxSpec extends Specification {
 			def timestamp = System.currentTimeMillis()
 
 		when:
-			'timestamp operation is added and the fluxion is retrieved'
+			'timestamp operation is added and the flux is retrieved'
 			def value = stream.timestamp().next().get()
 
 		then:
@@ -2545,7 +2545,7 @@ class FluxSpec extends Specification {
 			long timestamp = System.currentTimeMillis()
 
 		when:
-			'elapsed operation is added and the fluxion is retrieved'
+			'elapsed operation is added and the flux is retrieved'
 			def value = stream.doOnNext {
 				sleep(1000)
 			}.elapsed().next().get()
@@ -2561,11 +2561,11 @@ class FluxSpec extends Specification {
 	def 'A Flux can be sorted'() {
 		given:
 			'a composable with an initial value and a relative time'
-			def stream = Flux.fromIterable([43, 32122, 422, 321, 43, 443311])
+			Flux<Integer> stream = Flux.fromIterable([43, 32122, 422, 321, 43, 443311])
 
 		when:
-			'sorted operation is added and the fluxion is retrieved'
-			def value = stream.toSortedList().get()
+			'sorted operation is added and the flux is retrieved'
+			def value = stream.log().toSortedList().cache().subscribe().get()
 
 		then:
 			'it is available'
@@ -2576,7 +2576,7 @@ class FluxSpec extends Specification {
 			stream = Flux.fromIterable([1, 2, 3, 4])
 
 		and:
-			'revese sorted operation is added and the fluxion is retrieved'
+			'revese sorted operation is added and the flux is retrieved'
 			value = stream
 					.toSortedList({ a, b -> b <=> a } as Comparator<Integer>)
 					.get()
@@ -2650,10 +2650,10 @@ class FluxSpec extends Specification {
 
 		when:
 			'skip until test2 is seen'
-			stream = EmitterProcessor.create().connect()
+			stream = EmitterProcessor.replay().connect()
 			def value2 = stream.skipWhile {
 				'test1' == it
-			}.buffer().publishNext()
+			}.log("test").buffer().publishNext()
 
 			stream.subscribe()
 
@@ -2691,7 +2691,7 @@ class FluxSpec extends Specification {
 			string = 'Test\nEnd\n'
 			def data3 = Buffer.wrap(string)
 
-		when: "data fluxion is decoded"
+		when: "data flux is decoded"
 			def res = Streams.just(data1, data2, data3)
 					.decode(codec)
 					.toList()
