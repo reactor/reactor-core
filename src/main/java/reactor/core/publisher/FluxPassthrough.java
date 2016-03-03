@@ -33,7 +33,7 @@ import reactor.core.util.EmptySubscription;
  *
  * @param <I> the relayed input value type
  */
-final class FluxPassthrough<I> extends Flux<I> implements Subscriber<I>, Producer, Receiver {
+final class FluxPassthrough<I> extends Flux<I> implements Subscriber<I>, Producer, Receiver, Subscription {
 
 	Subscriber<? super I> subscriber;
 	Subscription          s;
@@ -105,7 +105,7 @@ final class FluxPassthrough<I> extends Flux<I> implements Subscriber<I>, Produce
 				if(STATE.compareAndSet(this, st, st == READY ? HAS_SUBSCRIBER : SUBSCRIBED)) {
 					this.subscriber = sub;
 					if(st == HAS_SUBSCRIPTION){
-						sub.onSubscribe(this.s);
+						sub.onSubscribe(this);
 					}
 					break;
 				}
@@ -121,5 +121,19 @@ final class FluxPassthrough<I> extends Flux<I> implements Subscriber<I>, Produce
 	@Override
 	public Subscription upstream() {
 		return s;
+	}
+
+	@Override
+	public void request(long n) {
+		this.s.request(n);
+	}
+
+	@Override
+	public void cancel() {
+		if(STATE.compareAndSet(this, SUBSCRIBED, HAS_SUBSCRIPTION) ||
+				STATE.compareAndSet(this, HAS_SUBSCRIBER, READY)) {
+			subscriber = null;
+			this.s.cancel();
+		}
 	}
 }

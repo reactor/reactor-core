@@ -1294,8 +1294,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
-	public final Runnable subscribe() {
-		ConsumerSubscriber<T> s = new ConsumerSubscriber<>();
+	public final MonoProcessor<T> subscribe() {
+		MonoProcessor<T> s = new MonoProcessor<>(this);
+		s.request(1L);
 		subscribe(s);
 		return s;
 	}

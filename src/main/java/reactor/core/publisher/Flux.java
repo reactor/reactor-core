@@ -938,7 +938,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param mergedPublishers The {@link Publisher} of switching {@link Publisher} to subscribe to.
 	 * @param <T> the produced type
 	 *
-	 * @return a {@link FluxProcessor} accepting publishers and producing T , 2.5
+	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers) {
