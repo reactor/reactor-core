@@ -36,7 +36,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
@@ -529,7 +528,7 @@ implements Fuseable, Backpressurable  {
 	
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
 	implements Fuseable, QueueSubscription<V>,
-			   Producer, Receiver, Failurable, Completable, Prefetchable, Cancellable, Requestable, Backpressurable {
+			   Producer, Receiver, Completable, Prefetchable, Cancellable, Requestable, Backpressurable {
 		final K key;
 		
 		final int limit;

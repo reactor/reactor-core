@@ -28,7 +28,6 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.timer.Timer;
 import reactor.core.util.BackpressureUtils;
@@ -51,7 +50,7 @@ import reactor.core.util.ScalarSubscription;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Subscription, Failurable, Completable, Cancellable, Receiver, Producer {
+		implements Processor<O, O>, Subscription, Cancellable, Receiver, Producer {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit

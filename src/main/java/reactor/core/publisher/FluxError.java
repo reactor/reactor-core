@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.state.Failurable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 
@@ -36,16 +35,11 @@ import reactor.core.util.EmptySubscription;
  * @since 2.5
  */
 final class FluxError<T>
-		extends Flux<T>
-		implements Failurable {
+		extends Flux<T> {
 
 	final Supplier<? extends Throwable> supplier;
 	
 	final boolean whenRequested;
-
-	public FluxError(Throwable error) {
-		this(create(error), false);
-	}
 
 	public FluxError(Throwable error, boolean whenRequested) {
 		this(create(error), whenRequested);
@@ -53,18 +47,8 @@ final class FluxError<T>
 
 	static Supplier<Throwable> create(final Throwable error) {
 		Objects.requireNonNull(error);
-		return new Supplier<Throwable>() {
-			@Override
-			public Throwable get() {
-				return error;
-			}
-		};
+		return () -> error;
 	}
-
-	public FluxError(Supplier<? extends Throwable> supplier) {
-		this(supplier, false);
-	}
-
 	
 	public FluxError(Supplier<? extends Throwable> supplier, boolean whenRequested) {
 		this.supplier = Objects.requireNonNull(supplier);

@@ -55,17 +55,29 @@ public interface Introspectable {
 		return 0;
 	}
 
+
 	/**
-	 * @return the current assigned name or identifier (if {@link #getMode} includes {@link #UNIQUE} option.
+	 * The name of the component
+	 * @return the name of the component
 	 */
 	default String getName() {
 		return getClass().getSimpleName();
 	}
 
+
 	/**
+	 * Defined identifier or null if not available
 	 * @return defined identifier or null if not available
 	 */
 	default Object key() {
+		return null;
+	}
+
+	/**
+	 * Current error if any, default to null
+	 * @return Current error if any, default to null
+	 */
+	default Throwable getError(){
 		return null;
 	}
 }

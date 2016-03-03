@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
@@ -34,7 +33,7 @@ import reactor.core.util.ExecutorUtils;
  * @author Stephane Maldini
  */
 public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Completable, Cancellable, Failurable {
+		implements Completable, Cancellable {
 
 	protected static final int SHUTDOWN = 1;
 

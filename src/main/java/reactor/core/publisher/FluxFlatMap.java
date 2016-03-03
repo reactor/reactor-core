@@ -35,7 +35,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
@@ -172,7 +171,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 	static final class FlatMapMain<T, R>
 			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable, Completable, Producer,
-			           Cancellable, Backpressurable, Failurable {
+			           Cancellable, Backpressurable, Introspectable {
 
 		final Subscriber<? super R> actual;
 

@@ -23,7 +23,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.util.BackpressureUtils;
 
@@ -41,8 +40,7 @@ import reactor.core.util.BackpressureUtils;
  */
 final class SerializedSubscriber<T>
 		implements Subscriber<T>, Subscription, Receiver,
-		           Completable, Producer, Cancellable, Introspectable, Backpressurable,
-		           Failurable {
+		           Completable, Producer, Cancellable, Introspectable, Backpressurable {
 
 	final Subscriber<? super T> actual;
 

@@ -35,7 +35,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
@@ -495,7 +494,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 	}
 	
 	static final class ZipCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable, Backpressurable, Completable, Requestable,
-																Failurable {
+	                                                   Introspectable {
 
 		final Subscriber<? super R> actual;
 		

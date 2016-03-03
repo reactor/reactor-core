@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.state.Failurable;
 import reactor.core.state.Pausable;
 import reactor.core.state.Requestable;
 
@@ -81,7 +80,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 	}
 
 	static protected abstract class BatchAction<T, V> extends SubscriberBarrier<T, V>
-			implements Requestable, Failurable {
+			implements Requestable {
 
 		protected final static int NOT_TERMINATED = 0;
 		protected final static int TERMINATED_WITH_SUCCESS = 1;

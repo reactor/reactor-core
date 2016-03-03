@@ -32,7 +32,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
@@ -265,11 +264,11 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * @param o candidate instance
-	 * @return an error if the tested instance is {@link Failurable} and is failed otherwise {@literal null}
+	 * @return an error if the tested instance is {@link Introspectable} and is failed otherwise {@literal null}
 	 */
 	public static Throwable getFailedState(Object o) {
-		if (reactiveStateCheck(o, Failurable.class)) {
-			return ((Failurable) o).getError();
+		if (reactiveStateCheck(o, Introspectable.class)) {
+			return ((Introspectable) o).getError();
 		}
 		return null;
 	}

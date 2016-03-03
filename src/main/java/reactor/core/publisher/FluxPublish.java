@@ -35,7 +35,6 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
@@ -142,7 +141,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 	}
 	
 	static final class State<T> implements Subscriber<T>, Runnable, Receiver, MultiProducer, Backpressurable,
-										   Completable, Cancellable, Failurable {
+										   Completable, Cancellable, Introspectable {
 
 		final int prefetch;
 		

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
@@ -34,7 +33,6 @@ import reactor.core.queue.Slot;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
@@ -65,7 +63,7 @@ import reactor.core.util.Sequence;
  * @since 2.5
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>
-		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable, Failurable {
+		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait

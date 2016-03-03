@@ -29,7 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
-import reactor.core.state.Failurable;
+import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
@@ -51,7 +51,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 public class SignalEmitter<E>
-		implements Producer, Subscriber<E>, Subscription, Backpressurable, Failurable, Cancellable, Requestable,
+		implements Producer, Subscriber<E>, Subscription, Backpressurable, Introspectable, Cancellable, Requestable,
 		           Consumer<E>,
 		           Closeable {
 

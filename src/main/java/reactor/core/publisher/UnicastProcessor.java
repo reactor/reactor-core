@@ -29,7 +29,6 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 
@@ -44,7 +43,7 @@ import reactor.core.util.BackpressureUtils;
  */
 final class UnicastProcessor<T>
 		extends Flux<T>
-		implements Processor<T, T>, Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver, Failurable,
+		implements Processor<T, T>, Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver,
 		           Completable, Cancellable, Requestable {
 
 	final Queue<T> queue;

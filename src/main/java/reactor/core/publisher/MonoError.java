@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.state.Failurable;
 import reactor.core.util.EmptySubscription;
 
 /**
@@ -33,8 +32,7 @@ import reactor.core.util.EmptySubscription;
  * @since 2.5
  */
 final class MonoError<T> 
-extends Mono<T>
-		implements Failurable {
+extends Mono<T> {
 
 	final Supplier<? extends Throwable> supplier;
 
@@ -44,12 +42,7 @@ extends Mono<T>
 
 	static Supplier<Throwable> create(final Throwable error) {
 		Objects.requireNonNull(error);
-		return new Supplier<Throwable>() {
-			@Override
-			public Throwable get() {
-				return error;
-			}
-		};
+		return () -> error;
 	}
 
 	public MonoError(Supplier<? extends Throwable> supplier) {
@@ -76,5 +69,10 @@ extends Mono<T>
 		}
 
 		EmptySubscription.error(s, e);
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return true;
 	}
 }

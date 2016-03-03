@@ -35,7 +35,7 @@ import reactor.core.publisher.FluxPublishOn.ScheduledSubscriptionEagerCancel;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
+import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
@@ -130,8 +130,8 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 	static final class DispatchOnSubscriber<T>
 	implements Subscriber<T>, Subscription, Runnable,
-			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Failurable,
-			   Requestable, Completable {
+	           Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable,
+	           Requestable, Completable {
 		
 		final Subscriber<? super T> actual;
 		
@@ -581,7 +581,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 	static final class DispatchOnConditionalSubscriber<T>
 	implements Subscriber<T>, Subscription, Runnable,
-			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Failurable, Completable, Requestable {
+			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable, Completable, Requestable {
 		
 		final Fuseable.ConditionalSubscriber<? super T> actual;
 		

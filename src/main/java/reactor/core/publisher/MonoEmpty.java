@@ -65,11 +65,6 @@ extends Mono<Object>
 	}
 
 	@Override
-	public boolean isStarted() {
-		return false;
-	}
-
-	@Override
 	public boolean isTerminated() {
 		return true;
 	}

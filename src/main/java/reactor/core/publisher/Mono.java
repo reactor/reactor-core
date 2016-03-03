@@ -34,6 +34,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
+import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.timer.Timer;
@@ -71,7 +72,8 @@ import reactor.core.util.ReactiveStateUtils;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable {
+public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable, Supplier<T>,
+                                         Completable {
 
 	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
 
@@ -962,6 +964,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return T the result
 	 */
+	@Override
 	public T get() {
 		return get(PlatformDependent.DEFAULT_TIMEOUT);
 	}

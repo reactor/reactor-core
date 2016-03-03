@@ -26,7 +26,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
-import reactor.core.state.Failurable;
+import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 
@@ -53,8 +53,8 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 	}
 
 	static final class LatestSubscriber<T>
-			implements Subscriber<T>, Subscription, Cancellable, Failurable, Completable, Producer,
-					   Requestable, Receiver {
+			implements Subscriber<T>, Subscription, Cancellable, Introspectable, Completable, Producer,
+			           Requestable, Receiver {
 
 		final Subscriber<? super T> actual;
 
