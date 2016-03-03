@@ -36,6 +36,7 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
+import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
@@ -107,7 +108,7 @@ implements Fuseable, Backpressurable  {
 	
 	static final class GroupByMain<T, K, V> implements Subscriber<T>,
 	                                                   QueueSubscription<GroupedFlux<K, V>>, MultiProducer, Backpressurable, Producer, Requestable,
-	                                                   Failurable, Cancellable, Completable, Receiver {
+	                                                   Cancellable, Completable, Receiver, Introspectable {
 
 		final Function<? super T, ? extends K> keySelector;
 		
