@@ -343,7 +343,7 @@ public class FluxFlatMapTest {
 		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
 		
-		Flux.flatMap(source, v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32, false).subscribe(ts);
+		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32, false).subscribe(ts);
 
 		source1.start();
 		source2.start();

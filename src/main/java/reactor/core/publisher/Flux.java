@@ -493,43 +493,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Consume the passed
-	 * {@link Publisher} source and transform its sequence of T into a N sequences of V via the given {@link Function}.
-	 * The produced sequences {@link Publisher} will be merged back in the returned {@link Flux}.
-	 * The backpressure will apply using the provided bufferSize which will actively consume each sequence (and the
-	 * main one) and replenish its request cycle on a threshold free capacity.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
-	 *
-	 * @param source the source to flatten
-	 * @param mapper the function to transform the upstream sequence into N sub-sequences
-	 * @param concurrency the maximum alive transformations at a given time
-	 * @param bufferSize the bounded capacity for each individual merged sequence
-	 * @param delayError Consume all pending sequence backlogs before replaying any captured error
-	 * @param <T> the source type
-	 * @param <V> the produced merged type
-	 *
-	 * @return a new merged {@link Flux}
-	 */
-	public static <T, V> Flux<V> flatMap(
-			Publisher<? extends T> source,
-			Function<? super T, ? extends Publisher<? extends V>> mapper,
-			int concurrency,
-			int bufferSize,
-			boolean delayError) {
-
-		return new FluxFlatMap<>(
-				source,
-				mapper,
-				delayError,
-				concurrency,
-				QueueSupplier.<V>get(concurrency),
-				bufferSize,
-				QueueSupplier.<V>get(bufferSize)
-		);
-	}
-
-	/**
 	 * Expose the specified {@link Publisher} with the {@link Flux} API.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/from.png" alt="">
@@ -2407,16 +2370,40 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency, int prefetch) {
+		return flatMap(mapper, concurrency, prefetch, false);
+	}
+
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
+	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
+	 * control how many merged {@link Publisher} can happen in parallel. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Publisher}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param concurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param <V> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
+			concurrency, int prefetch, boolean delayError) {
 		return new FluxFlatMap<>(
 				this,
 				mapper,
-				false,
+				delayError,
 				concurrency,
 				QueueSupplier.<V>get(concurrency),
 				prefetch,
 				QueueSupplier.<V>get(prefetch)
 		);
 	}
+
 	/**
 	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
