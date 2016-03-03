@@ -134,6 +134,7 @@ public final class MonoProcessor<O> extends Mono<O>
 						return null;
 				}
 				if (delay < System.currentTimeMillis()) {
+					cancel();
 					Exceptions.failWithCancel();
 				}
 				Thread.sleep(1);
