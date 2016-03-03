@@ -37,7 +37,7 @@ public class FluxAutoConnectTest {
 	@Test
 	public void connectImmediately() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 		
 		AtomicReference<Runnable> cancel = new AtomicReference<>();
 		
@@ -53,7 +53,7 @@ public class FluxAutoConnectTest {
 	@Test
 	public void connectAfterMany() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 		
 		AtomicReference<Runnable> cancel = new AtomicReference<>();
 		

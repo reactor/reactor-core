@@ -313,7 +313,7 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 
 		ConnectableFlux<Integer> p = e.publish();
 		
@@ -338,7 +338,7 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 
 		ConnectableFlux<Integer> p = e.publish();
 		
@@ -360,7 +360,7 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 
 		ConnectableFlux<Integer> p = e.publish();
 		

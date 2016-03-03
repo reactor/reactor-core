@@ -38,7 +38,7 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 *
 	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
 	 */
-	default BaseSubscriber<T> start() {
+	default BaseSubscriber<T> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
 	}

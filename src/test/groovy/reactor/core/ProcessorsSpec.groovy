@@ -91,7 +91,7 @@ class ProcessorsSpec extends Specification {
 			//bc.subscribe(bc2)
 			//bc2.subscribe(sub('spec1', latch))
 			bc.subscribe(sub('spec1', latch))
-			bc.start()
+			bc.connect()
 
 		when:
 			"call the processor"
@@ -110,7 +110,7 @@ class ProcessorsSpec extends Specification {
 			latch = new CountDownLatch(elems)
 			bc = TopicProcessor.<String> create(executorService)
 			bc.subscribe(sub('spec2', latch))
-			bc.start()
+			bc.connect()
 
 			elems.times {
 				bc.onNext 'hello ' + it

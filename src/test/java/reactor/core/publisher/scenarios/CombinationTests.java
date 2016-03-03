@@ -391,8 +391,8 @@ public class CombinationTests {
 		ts = new TestSubscriber<Long>();
 		emitter1 = EmitterProcessor.replay();
 		emitter2 = EmitterProcessor.replay();
-		emitter1.start();
-		emitter2.start();
+		emitter1.connect();
+		emitter2.connect();
 	}
 
 	private void emitValues() {

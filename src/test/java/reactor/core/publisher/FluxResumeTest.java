@@ -117,7 +117,7 @@ public class FluxResumeTest {
 	public void someFirst() {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 
-		tp.start();
+		tp.connect();
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
@@ -139,7 +139,7 @@ public class FluxResumeTest {
 	public void someFirstBackpressured() {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 
-		tp.start();
+		tp.connect();
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>(10);
 

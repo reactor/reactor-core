@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
@@ -52,13 +54,11 @@ import reactor.core.util.Exceptions;
  */
 final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, Loopback {
 
-	final public static FluxJust<?> EMPTY = new FluxJust<>(null);
-
 	final T value;
 
 	@SuppressWarnings("unchecked")
 	public FluxJust(T value) {
-		this.value = value;
+		this.value = Objects.requireNonNull(value, "value");
 	}
 
 	@Override
@@ -80,11 +80,6 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, L
 	@Override
 	public Object connectedOutput() {
 		return value;
-	}
-
-	@Override
-	public String toString() {
-		return "singleValue=" + value;
 	}
 
 	static final class WeakScalarSubscription<T> implements Subscription, Receiver, Completable {

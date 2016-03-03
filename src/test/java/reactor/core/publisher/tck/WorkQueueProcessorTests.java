@@ -91,7 +91,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		}));
 
 		sink.subscribe(processor);
-		sink.start();
+		sink.connect();
 		for(int i = 0; i < elems; i++){
 
 			sink.onNext(i);

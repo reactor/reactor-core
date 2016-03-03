@@ -788,7 +788,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			}
 			FluxProcessor<Runnable, Runnable> processor = FluxProcessor.async(this);
 			processor.subscribe(NOOP_TASK_SUBSCRIBER);
-			return processor.start();
+			return processor.connect();
 		}
 		return call();
 	}

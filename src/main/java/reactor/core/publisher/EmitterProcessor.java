@@ -294,6 +294,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public EmitterProcessor<T> connect() {
+		onSubscribe(EmptySubscription.INSTANCE);
+		return this;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
 		super.onNext(t);

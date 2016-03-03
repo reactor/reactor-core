@@ -33,7 +33,7 @@ public class FluxRefCountTest {
 	@Test
 	public void normal() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 
 		Flux<Integer> p = e.publish().refCount();
 		
@@ -74,7 +74,7 @@ public class FluxRefCountTest {
 	@Test
 	public void normalTwoSubscribers() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.start();
+		e.connect();
 
 		Flux<Integer> p = e.publish().refCount(2);
 		

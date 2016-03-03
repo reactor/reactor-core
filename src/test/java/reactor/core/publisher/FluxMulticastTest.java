@@ -307,7 +307,7 @@ public class FluxMulticastTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.replay();
-		sp.start();
+		sp.connect();
 		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
 		
 		p.subscribe(ts);
@@ -332,7 +332,7 @@ public class FluxMulticastTest {
 
 		FluxProcessor<Integer, Integer> sp = EmitterProcessor.create();
 
-		sp.start();
+		sp.connect();
 
 		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
 
@@ -364,7 +364,7 @@ public class FluxMulticastTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
 		FluxProcessor<Integer, Integer> sp = EmitterProcessor.<Integer>create();
-		sp.start();
+		sp.connect();
 		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
 		
 		p.subscribe(ts);
@@ -384,7 +384,7 @@ public class FluxMulticastTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
-		sp.start();
+		sp.connect();
 		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
 		
 		p.subscribe(ts);

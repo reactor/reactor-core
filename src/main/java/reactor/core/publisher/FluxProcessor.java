@@ -171,7 +171,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return this {@link FluxProcessor}
 	 */
-	public FluxProcessor<IN, OUT> start() {
+	public FluxProcessor<IN, OUT> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
 	}
