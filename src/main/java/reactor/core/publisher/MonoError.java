@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.util.EmptySubscription;
+import reactor.core.util.Exceptions;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -52,6 +53,12 @@ extends Mono<T> {
 	@Override
 	public Throwable getError() {
 		return supplier.get();
+	}
+
+	@Override
+	public T get() {
+		Exceptions.fail(getError());
+		return null;
 	}
 
 	@Override

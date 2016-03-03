@@ -192,16 +192,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state == STATE_ERROR;
 	}
 
-	/**
-	 * Indicates whether this {@code MonoProcessor} has yet to be completed with a value or an error.
-	 *
-	 * @return {@code true} if this {@code MonoProcessor} is still pending, {@code false} otherwise.
-	 *
-	 * @see #isTerminated()
-	 */
-	public final boolean isPending() {
-		return !isTerminated() && !isCancelled();
-	}
 
 	@Override
 	public final boolean isStarted() {
@@ -347,8 +337,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	public final void request(long n) {
 		try {
 			BackpressureUtils.checkRequest(n);
-			Subscription s = subscription;
-			s.request(Long.MAX_VALUE);
 		}
 		catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
@@ -387,6 +375,9 @@ public final class MonoProcessor<O> extends Mono<O>
 				if (source != null) {
 					source.subscribe(this);
 				}
+				else{
+					onSubscribe(EmptySubscription.INSTANCE);
+				}
 			}
 			else {
 				out = (Processor<O, O>) PROCESSOR.get(this);
@@ -401,6 +392,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final Object upstream() {
 		return subscription;
+	}
+
+
+	final boolean isPending() {
+		return !isTerminated() && !isCancelled();
 	}
 
 	@SuppressWarnings("unchecked")
