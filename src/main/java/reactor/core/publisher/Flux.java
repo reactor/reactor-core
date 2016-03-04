@@ -2397,7 +2397,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<Tuple2<Long, T>> elapsed() {
 		return new FluxElapsed(this);
 	}

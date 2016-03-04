@@ -2384,7 +2384,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is available'
-			value == 'test'
+			value == stream
 	}
 
 	def 'A Flux can re-subscribe its oldest parent on error signals'() {

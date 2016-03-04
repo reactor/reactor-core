@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SchedulerGroup;
+import reactor.core.tuple.Tuple2;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,12 +69,14 @@ public class MonoTests {
 
 	@Test
 	public void promiseDelays() throws Exception {
-		String h = Mono.delay(3000)
-		               .log("time1")
-		               .map(d -> "Spring wins")
-		               .or(Mono.delay(2000).log("time2").map(d -> "Spring Reactive"))
-		               .then(t -> Mono.just(t+ " world"))
-		               .get();
-		assertThat("Alternate mono not seen", h, is("Spring Reactive world"));
+		Tuple2<Long, String> h = Mono.delay(3000)
+		                             .log("time1")
+		                             .map(d -> "Spring wins")
+		                             .or(Mono.delay(2000).log("time2").map(d -> "Spring Reactive"))
+		                             .then(t -> Mono.just(t+ " world"))
+		                             .elapsed()
+		                             .get();
+		assertThat("Alternate mono not seen", h.getT2(), is("Spring Reactive world"));
+		System.out.println(h.getT1());
 	}
 }
