@@ -4855,10 +4855,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	final int getPrefetchOrDefault(int defaultPrefetch){
 		long c = getCapacity();
-		if(c == -1L){
+		if(c < 0L){
 			return defaultPrefetch;
 		}
-		return Math.min((int)c, Integer.MAX_VALUE);
+		if(c >= Integer.MAX_VALUE){
+			return Integer.MAX_VALUE;
+		}
+		return (int)c;
 	}
 
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
