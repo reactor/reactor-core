@@ -1179,7 +1179,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new completable {@link Mono}.
 	 */
-	public final Mono<T> ignoreElements() {
+	public final Mono<T> ignoreElement() {
 		return ignoreElements(this);
 	}
 
