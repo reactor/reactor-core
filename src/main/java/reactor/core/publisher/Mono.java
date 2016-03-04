@@ -710,6 +710,21 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Cast the current {@link Mono} produced type into a target produced type.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast.png" alt="">
+	 *
+	 * @param <E> the {@link Mono} output type
+	 *
+	 * @return a casted {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E> Mono<E> cast(Class<E> stream) {
+		return (Mono<E>) this;
+	}
+
+	/**
 	 * Turn this {@link Mono} into a hot source and cache last emitted signals for further {@link Subscriber}.
 	 * Completion and Error will also be replayed.
 	 * <p>
@@ -1656,12 +1671,47 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
 		final Mono<Long> _timer = Mono.delay(timeout).otherwiseJust(0L);
-		final Function<T, Publisher<Long>> rest = o -> _timer;
+		final Function<T, Publisher<Long>> rest = o -> never();
 
 		if(fallback == null) {
 			return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest));
 		}
 		return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest, fallback));
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} in case the item from this {@link Mono} has
+	 * not been emitted before the given {@link Publisher} emits.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfirst.png" alt="">
+	 *
+	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 *
+	 * @return an expirable {@link Mono} if the first item does not come before a {@link Publisher} signal
+	 *
+	 */
+	public final <U> Mono<T> timeout(Publisher<U> firstTimeout) {
+		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never()));
+	}
+
+	/**
+	 * Switch to a fallback {@link Publisher} in case the  item from this {@link Mono} has
+	 * not been emitted before the given {@link Publisher} emits. The following items will be individually timed via
+	 * the factory provided {@link Publisher}.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutallfallback.png" alt="">
+	 *
+	 * @param firstTimeout the timeout
+	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
+	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 *
+	 * @return a first then per-item expirable {@link Mono} with a fallback {@link Publisher}
+	 *
+	 */
+	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Publisher<? extends T> fallback) {
+		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never(), fallback));
 	}
 
 	/**
