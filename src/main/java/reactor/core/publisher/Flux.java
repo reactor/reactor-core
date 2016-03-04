@@ -3688,7 +3688,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Skips values from this {@link Flux} while a {@link Predicate} returns true for the value.
 	 *
 	 * <p>
-	 * <img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skipwhile.png" alt="">
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skipwhile.png" alt="">
 	 *
 	 * @param skipPredicate the {@link Predicate} evaluating to true to keep skipping.
 	 *
