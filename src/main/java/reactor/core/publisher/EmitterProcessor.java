@@ -173,7 +173,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * (buffer and history size of 1).
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png" alt="">
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png" alt="">
 	 *
 	 * @param <T>  the relayed type
 	 *
@@ -189,7 +189,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber} (buffer and history size of 1).
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png" alt="">
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png" alt="">
 	 *
 	 * @param value a default value to start the sequence with
 	 * @param <T> the relayed type
