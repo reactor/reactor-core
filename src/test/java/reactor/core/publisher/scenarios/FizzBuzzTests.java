@@ -85,8 +85,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 		// .createSubscriber()
 		TopicProcessor<String> ring = TopicProcessor.create("test", 1024);
 
-		//this line works
-//        Broadcaster<String> ring = Broadcaster.create(Environment.get());
+//        EmitterProcessor<String> ring = EmitterProcessor.create();
 
 
 		Flux<String> stream2 = ring

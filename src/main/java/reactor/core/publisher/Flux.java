@@ -3783,7 +3783,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	/**
 	 *
 	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
-	 * emitter (e.g. reactor FluxProcessor Broadcaster and Promise or rxjava Subject).
+	 * emitter (e.g. {@link FluxProcessor} or {@link MonoProcessor}).
 	 *
 	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
