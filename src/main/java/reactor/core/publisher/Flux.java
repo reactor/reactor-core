@@ -408,7 +408,26 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources) {
-		return from(Flux.concat(sources));
+		return concat(sources, PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param prefetch the inner source request size
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 */
+	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
+		return new FluxConcatMap<>(sources, Function.identity(),
+				QueueSupplier.get(prefetch), prefetch,
+				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
 
 	/**
@@ -1405,7 +1424,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			                    @Override
 			                    @SuppressWarnings("unchecked")
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
-				                    return Flux.zip(Tuple.fnAny((Function<Tuple, V>)combinator), publishers.toArray(new Publisher[publishers
+				                    return zip(Tuple.fnAny((Function<Tuple, V>)combinator), publishers.toArray(new Publisher[publishers
 						                    .size()]));
 			                    }
 		                    });
@@ -2039,7 +2058,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> defaultIfEmpty(T defaultV) {
-		return new FluxSwitchIfEmpty<>(this, just(defaultV));
+		return new FluxDefaultIfEmpty<>(this, defaultV);
 	}
 
 
@@ -2620,13 +2639,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
-		int concurrency = getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE);
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				Function.identity(),
 				false,
-				concurrency,
-				QueueSupplier.<R>get(concurrency),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<R>xs()
 		);
@@ -4741,7 +4759,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
-		return FluxSource.wrap(Flux.zip(this, source2, combinator));
+		return zip(this, source2, combinator);
 	}
 
 	/**
@@ -4780,7 +4798,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
-		return FluxSource.wrap(Flux.<T, T2, Tuple2<T, T2>>zip(this, source2, TUPLE2_BIFUNCTION));
+		return Flux.<T, T2, Tuple2<T, T2>>zip(this, source2, TUPLE2_BIFUNCTION);
 	}
 
 	/**
@@ -4840,10 +4858,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if(c == -1L){
 			return defaultPrefetch;
 		}
-		if(c >= Integer.MAX_VALUE){
-			return Integer.MAX_VALUE;
-		}
-		return (int)c;
+		return Math.min((int)c, Integer.MAX_VALUE);
 	}
 
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;

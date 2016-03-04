@@ -761,7 +761,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-		return MonoSource.wrap(new FluxSwitchIfEmpty<>(this, just(defaultV)));
+		return MonoSource.wrap(new FluxDefaultIfEmpty<T>(this, defaultV));
 	}
 
 
@@ -998,7 +998,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
-		return MonoSource.wrap(new FluxElapsed(this));
+		return MonoSource.wrap(new FluxElapsed<>(this));
 	}
 
 	/**
@@ -1069,7 +1069,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				Function.identity(),
 				false,
-				PlatformDependent.XS_BUFFER_SIZE,
+				Integer.MAX_VALUE,
 				QueueSupplier.<R>xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<R>xs()

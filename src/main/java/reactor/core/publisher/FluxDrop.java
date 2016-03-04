@@ -41,11 +41,8 @@ import reactor.core.util.Exceptions;
  */
 final class FluxDrop<T> extends FluxSource<T, T> {
 
-	static final Consumer<Object> NOOP = new Consumer<Object>() {
-		@Override
-		public void accept(Object t) {
+	static final Consumer<Object> NOOP = t -> {
 
-		}
 	};
 
 	final Consumer<? super T> onDrop;
@@ -64,6 +61,11 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new DropSubscriber<>(s, onDrop));
+	}
+
+	@Override
+	public long getCapacity() {
+		return -1L;
 	}
 
 	static final class DropSubscriber<T>

@@ -85,11 +85,6 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 	}
 
-	@Override
-	public long getCapacity() {
-		return size;
-	}
-
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
 	  implements Subscriber<T>, Subscription, Receiver, Producer, Loopback, Completable, Backpressurable {
 

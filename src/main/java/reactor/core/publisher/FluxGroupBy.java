@@ -105,6 +105,11 @@ implements Fuseable, Backpressurable  {
 		
 		source.subscribe(new GroupByMain<>(s, q, groupQueueSupplier, prefetch, keySelector, valueSelector));
 	}
+
+	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
 	
 	static final class GroupByMain<T, K, V> implements Subscriber<T>,
 	                                                   QueueSubscription<GroupedFlux<K, V>>, MultiProducer, Backpressurable, Producer, Requestable,

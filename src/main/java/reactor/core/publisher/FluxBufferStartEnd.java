@@ -263,17 +263,6 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			return false;
 		}
 		
-		void removeEndSubscription(Subscription s) {
-			synchronized (starter) {
-				Set<Subscription> set = endSubscriptions;
-				
-				if (set != null) {
-					set.remove(s);
-					return;
-				}
-			}
-		}
-		
 		@Override
 		public void cancel() {
 			if (!cancelled) {
@@ -284,22 +273,6 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				cancelStart();
 				
 				cancelEnds();
-			}
-		}
-		
-		boolean emit(C b) {
-			long r = requested;
-			if (r != 0L) {
-				actual.onNext(b);
-				if (r != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
-				return true;
-			} else {
-				
-				actual.onError(new IllegalStateException("Could not emit buffer due to lack of requests"));
-				
-				return false;
 			}
 		}
 		

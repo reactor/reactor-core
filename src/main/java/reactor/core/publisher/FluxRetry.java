@@ -38,16 +38,17 @@ final class FluxRetry<T> extends FluxSource<T, T> {
 
 	final long times;
 
-	public FluxRetry(Publisher<? extends T> source) {
-		this(source, Long.MAX_VALUE);
-	}
-
 	public FluxRetry(Publisher<? extends T> source, long times) {
 		super(source);
 		if (times < 0L) {
 			throw new IllegalArgumentException("times >= 0 required");
 		}
 		this.times = times;
+	}
+
+	@Override
+	public long getCapacity() {
+		return -1L;
 	}
 
 	@Override

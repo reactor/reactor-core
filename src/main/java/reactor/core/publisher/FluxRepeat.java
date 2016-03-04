@@ -39,10 +39,6 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 
 	final long times;
 
-	public FluxRepeat(Publisher<? extends T> source) {
-		this(source, Long.MAX_VALUE);
-	}
-
 	public FluxRepeat(Publisher<? extends T> source, long times) {
 		super(source);
 		if (times < 0L) {
@@ -65,6 +61,11 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 		if (!parent.isCancelled()) {
 			parent.onComplete();
 		}
+	}
+
+	@Override
+	public long getCapacity() {
+		return -1L;
 	}
 
 	static final class RepeatSubscriber<T>

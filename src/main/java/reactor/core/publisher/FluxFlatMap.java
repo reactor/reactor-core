@@ -159,6 +159,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
+	public long getCapacity() {
+		return -1L;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
 		if (trySubscribeScalarMap(source, s, mapper)) {

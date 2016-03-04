@@ -52,6 +52,11 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 		source.subscribe(new LatestSubscriber<>(s));
 	}
 
+	@Override
+	public long getCapacity() {
+		return Long.MAX_VALUE;
+	}
+
 	static final class LatestSubscriber<T>
 			implements Subscriber<T>, Subscription, Cancellable, Introspectable, Completable, Producer,
 			           Requestable, Receiver {

@@ -91,6 +91,11 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 	}
 
+	@Override
+	public long getCapacity() {
+		return -1L;
+	}
+
 	static final class RepeatWhenMainSubscriber<T> extends MultiSubscriptionSubscriber<T, T> {
 
 		final DeferredSubscription otherArbiter;

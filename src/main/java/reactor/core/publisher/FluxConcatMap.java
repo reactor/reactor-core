@@ -99,7 +99,12 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 		source.subscribe(parent);
 	}
-	
+
+	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
+
 	static final class ConcatMapImmediate<T, R> implements Subscriber<T>, StreamConcatMapSupport<R>, Subscription {
 
 		final Subscriber<? super R> actual;

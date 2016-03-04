@@ -61,6 +61,11 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 	}
 
 	@Override
+	public long getCapacity() {
+		return -1L;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		Subscriber<R> serial = Subscribers.serialize(s);
 

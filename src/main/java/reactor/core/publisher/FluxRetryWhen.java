@@ -55,6 +55,11 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 	}
 
 	@Override
+	public long getCapacity() {
+		return -1L;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();

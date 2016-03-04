@@ -126,7 +126,10 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		return schedulerFactory;
 	}
 
-
+	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
 
 	static final class DispatchOnSubscriber<T>
 	implements Subscriber<T>, Subscription, Runnable,

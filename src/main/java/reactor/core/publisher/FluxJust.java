@@ -67,6 +67,11 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, L
 	}
 
 	@Override
+	public long getCapacity() {
+		return 1L;
+	}
+
+	@Override
 	public void subscribe(final Subscriber<? super T> subscriber) {
 		try {
 			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));

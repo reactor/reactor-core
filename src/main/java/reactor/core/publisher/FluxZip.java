@@ -91,7 +91,11 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
 	}
-	
+
+	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
 	
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
