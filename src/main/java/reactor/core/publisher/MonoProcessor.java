@@ -308,7 +308,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (BackpressureUtils.validate(this.subscription, subscription)) {
 			this.subscription = subscription;
 			if (STATE.compareAndSet(this, STATE_READY, STATE_SUBSCRIBED)){
-				subscription.request(1L);
+				subscription.request(Long.MAX_VALUE);
 			}
 
 			if (WIP.getAndIncrement(this) == 0) {

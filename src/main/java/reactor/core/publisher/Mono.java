@@ -850,6 +850,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> dispatchOn(Callable<? extends Consumer<Runnable>> schedulers) {
+		if (this instanceof Fuseable.ScalarSupplier) {
+			T value = get();
+			return  MonoSource.wrap(new FluxPublishOnValue<>(value, schedulers, true));
+		}
 		return MonoSource.wrap(new FluxDispatchOn(this, schedulers, false, 1, QueueSupplier.<T>one()));
 	}
 

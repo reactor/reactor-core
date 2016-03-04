@@ -914,15 +914,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
-	@SuppressWarnings({"unchecked", "varargs"})
+	@SuppressWarnings("varargs")
 	public static <I> Flux<I> merge(Publisher<? extends I>... sources) {
+		return merge(PlatformDependent.XS_BUFFER_SIZE, sources);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
+	 * sequence.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param prefetch the inner source request size
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	@SafeVarargs
+	@SuppressWarnings({"unchecked", "varargs"})
+	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
 		if (sources == null || sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return merge(fromArray(sources));
+		return merge(fromArray(sources), prefetch);
 	}
 
 	/**
@@ -1695,12 +1713,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (timespan.equals(timeshift)) {
 			return buffer(timespan, timer);
 		}
-		return buffer(interval(Duration.ZERO, timeshift, timer), new Function<Long, Publisher<Long>>() {
-			@Override
-			public Publisher<Long> apply(Long aLong) {
-				return Mono.delay(timespan, timer);
-			}
-		});
+		return buffer(interval(Duration.ZERO, timeshift, timer), aLong -> Mono.delay(timespan, timer));
 	}
 
 	/**
