@@ -764,6 +764,57 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return MonoSource.wrap(new FluxSwitchIfEmpty<>(this, just(defaultV)));
 	}
 
+
+	/**
+	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
+	 * period elapses.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription.png" alt="">
+	 *
+	 * @param delay period in seconds before subscribing this {@link Mono}
+	 *
+	 * @return a delayed {@link Mono}
+	 *
+	 */
+	public final Mono<T> delaySubscription(long delay) {
+		return delaySubscription(Duration.ofSeconds(delay));
+	}
+
+	/**
+	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
+	 * period elapses.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription.png" alt="">
+	 *
+	 * @param delay duration before subscribing this {@link Mono}
+	 *
+	 * @return a delayed {@link Mono}
+	 *
+	 */
+	public final Mono<T> delaySubscription(Duration delay) {
+		return delaySubscription(Mono.delay(delay));
+	}
+
+	/**
+	 * Delay the subscription to this {@link Mono} until another {@link Publisher}
+	 * signals a value or completes.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp.png" alt="">
+	 *
+	 * @param subscriptionDelay a
+	 * {@link Publisher} to signal by next or complete this {@link Mono#subscribe(Subscriber)}
+	 * @param <U> the other source type
+	 *
+	 * @return a delayed {@link Mono}
+	 *
+	 */
+	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
+		return MonoSource.wrap(new FluxDelaySubscription<>(this, subscriptionDelay));
+	}
+
 	/**
 	 * A "phantom-operator" working only if this
 	 * {@link Mono} is a emits onNext, onError or onComplete {@link Signal}. The relative {@link Subscriber}
@@ -933,6 +984,21 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Map this {@link Mono} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
+	 * {@link <T>} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * next signal.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/elapsed.png" alt="">
+	 *
+	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<Tuple2<Long, T>> elapsed() {
+		return MonoSource.wrap(new FluxElapsed(this));
+	}
+
+	/**
 	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 *
@@ -1093,6 +1159,32 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Emit a single boolean true if this {@link Mono} has an element.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/haselements.png" alt="">
+	 *
+	 * @return a new {@link Mono} with <code>true</code> if a value is emitted and <code>false</code>
+	 * otherwise
+	 */
+	public final Mono<Boolean> hasElement() {
+		return new MonoHasElements<>(this);
+	}
+
+	/**
+	 * Ignores onNext signal (dropping it) and only reacts on termination.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignoreelements.png" alt="">
+	 * <p>
+	 *
+	 * @return a new completable {@link Mono}.
+	 */
+	public final Mono<T> ignoreElements() {
+		return ignoreElements(this);
+	}
+
+	/**
 	 * Create a {@link Mono} intercepting all source signals with the returned Subscriber that might choose to pass them
 	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
 	 *
@@ -1234,6 +1326,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		return Flux.merge(this, other);
+	}
+
+	/**
+	 * Emit the current instance of the {@link Mono}.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/nest.png" alt="">
+	 *
+	 * @return a new {@link Mono} whose value will be the current {@link Mono}
+	 */
+	public final Mono<Mono<T>> nest() {
+		return just(this);
 	}
 
 	/**
@@ -1713,6 +1817,21 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Publisher<? extends T> fallback) {
 		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never(), fallback));
 	}
+
+	/**
+	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
+	 * millis and T2 {@link <T>} associated data for the eventual item from this {@link Mono}
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
+	 *
+	 * @return a timestamped {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<Tuple2<Long, T>> timestamp() {
+		return map(Flux.TIMESTAMP_OPERATOR);
+	}
+
 
 	/**
 	 * Transform this {@link Mono} into a {@link CompletableFuture} completing on onNext or onComplete and failing on

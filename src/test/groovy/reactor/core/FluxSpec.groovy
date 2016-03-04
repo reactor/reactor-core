@@ -2380,13 +2380,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the flux is retrieved and a consumer is dynamically added'
-			def value = null
-
-			stream.nest().consume { theFlux ->
-				theFlux.consume {
-					value = it
-				}
-			}
+			def value = stream.nest().get()
 
 		then:
 			'it is available'

@@ -3028,10 +3028,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/nest.png" alt="">
 	 *
-	 * @return a new {@link Flux} whose only value will be the current {@link Flux}
+	 * @return a new {@link Mono} whose value will be the current {@link Flux}
 	 */
-	public final Flux<Flux<T>> nest() {
-		return just(this);
+	public final Mono<Flux<T>> nest() {
+		return Mono.just(this);
 	}
 	
 	/**
