@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 
@@ -58,7 +59,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		Subscriber<T> serial = new SerializedSubscriber<>(s);
+		Subscriber<T> serial = Subscribers.serialize(s);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);
 

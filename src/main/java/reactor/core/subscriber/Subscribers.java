@@ -293,6 +293,22 @@ public enum Subscribers{
 	}
 
 
+	/**
+	 * Safely gate a {@link Subscriber} by a serializing {@link Subscriber}.
+	 * Serialization uses thread-stealing and a potentially unbounded queue that might starve a calling thread if
+	 * races are too important and
+	 * {@link Subscriber} is slower.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 *
+	 * @param <T> the relayed type
+	 * @return a serializing {@link Subscriber}
+	 */
+	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {
+		return new SerializedSubscriber<>(subscriber);
+	}
+
 	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = subscription -> {
 		subscription.request(Long.MAX_VALUE);
 		return null;

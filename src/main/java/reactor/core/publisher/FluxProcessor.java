@@ -27,9 +27,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
-
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
@@ -140,7 +140,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	/**
-	 * Create a {@link FluxProcessor} from hot {@link EmitterProcessor#create EmitterProcessor}  safely gated by {@link SerializedSubscriber}.
+	 * Create a {@link FluxProcessor} from hot {@link EmitterProcessor#create EmitterProcessor}  safely gated by a serializing {@link Subscriber}.
 	 * It will not propagate cancel upstream if {@link Subscription} has been set. Serialization uses thread-stealing
 	 * and a potentially unbounded queue that might starve a calling thread if races are too important and
 	 * {@link Subscriber} is slower.
@@ -153,7 +153,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 */
 	public static <T> FluxProcessor<T, T> serialize() {
 		Processor<T, T> processor = EmitterProcessor.create();
-		return new DelegateProcessor<>(processor, SerializedSubscriber.create(processor));
+		return new DelegateProcessor<>(processor, Subscribers.serialize(processor));
 	}
 
 	Subscription upstreamSubscription;

@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
@@ -61,7 +62,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		SerializedSubscriber<R> serial = new SerializedSubscriber<>(s);
+		Subscriber<R> serial = Subscribers.serialize(s);
 
 		WithLatestFromSubscriber<T, U, R> main = new WithLatestFromSubscriber<>(serial, combiner);
 

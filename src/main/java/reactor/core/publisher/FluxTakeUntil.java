@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
@@ -100,7 +101,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class TakeUntilMainSubscriber<T> implements Subscriber<T>, Subscription {
-		final SerializedSubscriber<T> actual;
+		final Subscriber<T> actual;
 
 		volatile Subscription main;
 		@SuppressWarnings("rawtypes")
@@ -113,7 +114,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "other");
 
 		public TakeUntilMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = new SerializedSubscriber<>(actual);
+			this.actual = Subscribers.serialize(actual);
 		}
 
 		void setOther(Subscription s) {

@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
@@ -108,7 +109,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 	static final class SkipUntilMainSubscriber<T>
 	  implements Subscriber<T>, Subscription {
 
-		final SerializedSubscriber<T> actual;
+		final Subscriber<T> actual;
 
 		volatile Subscription main;
 		@SuppressWarnings("rawtypes")
@@ -123,7 +124,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 		volatile boolean gate;
 
 		public SkipUntilMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = new SerializedSubscriber<>(actual);
+			this.actual = Subscribers.serialize(actual);
 		}
 
 		void setOther(Subscription s) {

@@ -26,6 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
@@ -72,7 +73,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		SerializedSubscriber<T> serial = new SerializedSubscriber<>(s);
+		Subscriber<T> serial = Subscribers.serialize(s);
 
 		TimeoutMainSubscriber<T, V> main = new TimeoutMainSubscriber<>(serial, itemTimeout, other);
 

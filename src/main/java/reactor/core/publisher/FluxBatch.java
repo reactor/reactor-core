@@ -28,6 +28,7 @@ import reactor.core.state.Pausable;
 import reactor.core.state.Requestable;
 
 import reactor.core.subscriber.SubscriberBarrier;
+import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.util.BackpressureUtils;
 
@@ -73,7 +74,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 	protected final Subscriber<? super V> prepareSub(Subscriber<? super V> actual) {
 		if (timer != null) {
-			return SerializedSubscriber.create(actual);
+			return Subscribers.serialize(actual);
 		}
 		else {
 			return actual;
