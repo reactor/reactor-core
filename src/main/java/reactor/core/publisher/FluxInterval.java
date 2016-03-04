@@ -51,4 +51,9 @@ final class FluxInterval extends Flux<Long> implements Timeable {
 	public long period() {
 		return delay;
 	}
+
+	@Override
+	public long getCapacity() {
+		return Long.MAX_VALUE;
+	}
 }

@@ -398,4 +398,10 @@ final class UnicastProcessor<T>
 	public long requestedFromDownstream() {
 		return requested;
 	}
+
+	@Override
+	public long getCapacity() {
+		return Long.MAX_VALUE;
+	}
+
 }

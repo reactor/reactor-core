@@ -24,12 +24,12 @@ import reactor.core.util.Exceptions;
 /**
  * @author Stephane Maldini
  */
-final class MonoTimer extends Mono<Long> implements Timeable {
+final class MonoDelay extends Mono<Long> implements Timeable {
 
 	final Timer    parent;
 	final long     delay;
 
-	public MonoTimer(Timer timer, long delay) {
+	public MonoDelay(Timer timer, long delay) {
 		this.parent = timer;
 		this.delay = delay;
 	}
@@ -49,4 +49,5 @@ final class MonoTimer extends Mono<Long> implements Timeable {
 	public long period() {
 		return delay;
 	}
+
 }

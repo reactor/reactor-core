@@ -37,7 +37,6 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.ConsumerSubscriber;
 import reactor.core.timer.Timer;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
@@ -174,7 +173,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static Mono<Long> delay(long duration, Timer timer) {
 		Assert.isTrue(duration >= timer.period(), "The delay " + duration + " cannot be less than the timer resolution " +
 				"" + timer.period());
-		return new MonoTimer(timer, duration);
+		return new MonoDelay(timer, duration);
 	}
 
 	/**
