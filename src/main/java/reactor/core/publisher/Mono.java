@@ -931,14 +931,32 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		return flatMap(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
+	 * merging them into a single {@link Flux}, so that they may interleave.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
+	 * <p>
+	 * @param mapper the
+	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
+	 * @param prefetch the inner source request size
+	 * @param <R> the merged sequence type
+	 *
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
+	 */
+	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper, int prefetch) {
 		return new FluxFlatMap<>(
 				this,
 				mapper,
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.<R>small(),
-				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>xs()
+				QueueSupplier.<R>one(),
+				prefetch,
+				QueueSupplier.<R>get(prefetch)
 		);
 	}
 
@@ -967,8 +985,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				Function.identity(),
 				false,
-				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>small(),
+				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.<R>xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<R>xs()
 		);

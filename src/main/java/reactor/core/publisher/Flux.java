@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -62,7 +61,6 @@ import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
 import reactor.core.util.Assert;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -846,16 +844,46 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
+		return merge(source, PlatformDependent.SMALL_BUFFER_SIZE, PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into an interleaved merged sequence.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param source a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency) {
+		return merge(source, concurrency, PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into an interleaved merged sequence.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param source a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return new FluxFlatMap<>(
 				source,
 				Function.identity(),
 				false,
-				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<T>small(),
-				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<T>xs()
+				concurrency,
+				QueueSupplier.<T>get(concurrency),
+				prefetch,
+				QueueSupplier.<T>get(prefetch)
 		);
 	}
 
@@ -976,12 +1004,29 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers) {
+		return switchOnNext(mergedPublishers, PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}. The {@link
+	 * Flux} will complete once both the publishers source and the last switched to {@link Publisher} have completed.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png"
+	 * alt="">
+	 *
+	 * @param mergedPublishers The {@link Publisher} of switching {@link Publisher} to subscribe to.
+	 * @param prefetch the inner source request size
+	 * @param <T> the produced type
+	 *
+	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return new FluxSwitchMap<>(mergedPublishers,
 				Function.identity(),
-				QueueSupplier.xs(),
-				PlatformDependent.XS_BUFFER_SIZE);
+				QueueSupplier.get(prefetch),
+				prefetch);
 	}
 
 	/**
@@ -1735,7 +1780,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache() {
-		return cache(PlatformDependent.SMALL_BUFFER_SIZE);
+		return cache(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
 	}
 
 	/**
@@ -1801,7 +1846,25 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a concatenated {@link Flux}
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, Publisher<? extends V>> mapper) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>xs(), PlatformDependent.XS_BUFFER_SIZE,
+		return concatMap(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
+	 * ordering and concatenate emissions instead of merging (no interleave).
+	 * Errors will immediately short circuit current concat backlog.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
+	 *
+	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
+	 * @param prefetch the inner source produced demand
+	 * @param <V> the produced concatenated type
+	 *
+	 * @return a concatenated {@link Flux}
+	 */
+	public final <V> Flux<V> concatMap(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
+		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
 
@@ -1822,7 +1885,28 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>xs(), PlatformDependent.XS_BUFFER_SIZE,
+		return concatMapDelayError(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
+	 * ordering and concatenate emissions instead of merging (no interleave).
+	 *
+	 * Errors will be delayed after the current concat backlog.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
+	 *
+	 *
+	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
+	 * @param prefetch the inner source produced demand
+	 * @param <V> the produced concatenated type
+	 *
+	 * @return a concatenated {@link Flux}
+	 *
+	 */
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
+		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END);
 	}
 
@@ -2064,13 +2148,35 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} consuming asynchronously
 	 */
 	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
+		return dispatchOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied
+	 * {@link Consumer} {@link Runnable} scheduler factory like {@link SchedulerGroup}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
+	 * fast async event loops.
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+	 * <p>
+	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param prefetch the asynchronous boundary capacity
+	 *
+	 * @return a {@link Flux} consuming asynchronously
+	 */
+	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
 			return new FluxPublishOnValue<>(value, scheduler, true);
 		}
 
-		return new FluxDispatchOn<>(this, scheduler, true, PlatformDependent.SMALL_BUFFER_SIZE, QueueSupplier.<T>small());
+		return new FluxDispatchOn<>(this, scheduler, true, prefetch, QueueSupplier.<T>get(prefetch));
 	}
 
 
@@ -2406,7 +2512,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return flatMap(mapper, PlatformDependent.SMALL_BUFFER_SIZE, PlatformDependent.XS_BUFFER_SIZE);
+		return flatMap(mapper, getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE), PlatformDependent
+				.XS_BUFFER_SIZE);
 	}
 
 
@@ -2501,12 +2608,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
+		int concurrency = getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE);
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				Function.identity(),
 				false,
-				PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.<R>small(),
+				concurrency,
+				QueueSupplier.<R>get(concurrency),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.<R>xs()
 		);
@@ -3093,9 +3201,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish() {
-		return publish(getCapacity() != 1L ?
-				(int)Math.max(getCapacity(), Integer.MAX_VALUE) :
-				PlatformDependent.SMALL_BUFFER_SIZE);
+		return publish(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
 	}
 
 
@@ -3748,18 +3854,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> stream() {
-		return stream(getCapacity() == -1L ? Long.MAX_VALUE : getCapacity());
+		return stream(getPrefetchOrDefault(Integer.MAX_VALUE));
 	}
 
 	/**
 	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
 	 *
+	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
 	 * <p>
 	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public Stream<T> stream(long batchSize) {
+	public Stream<T> stream(int batchSize) {
 		final Supplier<Queue<T>> provider;
 		provider = QueueSupplier.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
@@ -3810,7 +3917,25 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
-		return new FluxSwitchMap<>(this, fn, QueueSupplier.xs(), PlatformDependent.XS_BUFFER_SIZE);
+		return switchMap(fn, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever this {@link Flux} produces an item.
+	 *
+	 * <p>
+	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchmap.png" alt="">
+	 *
+	 * @param fn the transformation function
+	 * @param prefetch the produced demand for inner sources
+	 *
+	 * @param <V> the type of the return value of the transformation function
+	 *
+	 * @return an alternating {@link Flux} on source onNext
+	 *
+	 */
+	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
+		return new FluxSwitchMap<>(this, fn, QueueSupplier.get(prefetch), prefetch);
 	}
 
 	/**
@@ -4081,11 +4206,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(getCapacity() == -1L ? Long.MAX_VALUE : getCapacity());
+		return toIterable(getPrefetchOrDefault(Integer.MAX_VALUE));
 	}
 
 	/**
 	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 *
+	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
 	 *
 	 * <p>
 	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
@@ -4694,6 +4821,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
 			BiFunction<? super T, ? super T2, ? extends V> zipper) {
 		return new FluxZipIterable<>(this, iterable, zipper);
+	}
+
+	final int getPrefetchOrDefault(int defaultPrefetch){
+		long c = getCapacity();
+		if(c == -1L){
+			return defaultPrefetch;
+		}
+		if(c >= Integer.MAX_VALUE){
+			return Integer.MAX_VALUE;
+		}
+		return (int)c;
 	}
 
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
