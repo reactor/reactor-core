@@ -34,6 +34,7 @@ public final class DependencyUtils {
 	static private final FlowPublisherConverter     FLOW_PUBLISHER_CONVERTER;
 	static private final RxJava1ObservableConverter RX_JAVA_1_OBSERVABLE_CONVERTER;
 	static private final RxJava1SingleConverter     RX_JAVA_1_SINGLE_CONVERTER;
+	static final RxJava1CompletableConverter RX_JAVA_1_COMPLETABLE_CONVERTER;
 
 	private DependencyUtils() {
 	}
@@ -94,10 +95,10 @@ public final class DependencyUtils {
 			RX_JAVA_1_SINGLE_CONVERTER = null;
 		}
 		if ((detected & RXJAVA_1_COMPLETABLE) == RXJAVA_1_COMPLETABLE) {
-			//TBD
+			RX_JAVA_1_COMPLETABLE_CONVERTER = RxJava1CompletableConverter.INSTANCE;
 		}
 		else {
-			//TBD
+			RX_JAVA_1_COMPLETABLE_CONVERTER = null;
 		}
 		if ((detected & FLOW_PUBLISHER) == FLOW_PUBLISHER) {
 			FLOW_PUBLISHER_CONVERTER = FlowPublisherConverter.INSTANCE;
@@ -145,6 +146,8 @@ public final class DependencyUtils {
 			}
 			else if (RX_JAVA_1_OBSERVABLE_CONVERTER.test(source)) {
 				return RX_JAVA_1_OBSERVABLE_CONVERTER.apply(source);
+			} else if(RX_JAVA_1_COMPLETABLE_CONVERTER.test(source)){
+				return RX_JAVA_1_COMPLETABLE_CONVERTER.apply(source);
 			}
 		}
 
