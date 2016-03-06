@@ -17,6 +17,11 @@ body {
     color:#34302d;
 }
 
+
+.marble {
+    width: 500px;
+}
+
 a:link, a:visited {
     text-decoration:none;
     color:#6db33f;
