@@ -146,7 +146,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * {@link Subscriber} is slower.
 	 *
 	 * <p>
-	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
 	 * @return a serializing {@link FluxProcessor}

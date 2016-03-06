@@ -19,6 +19,10 @@ code {
     color: #6D180B;
 }
 
+.marble {
+    width: 500px;
+}
+
 :not(pre) > code {
     background-color: #F2F2F2;
     border: 1px solid #CCCCCC;

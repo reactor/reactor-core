@@ -52,7 +52,7 @@ public enum Subscribers{
 	 * onNext, request N x 0.75.
 	 *
 	 * <p>
-	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
 	 *
 	 * @param prefetch the in-flight capacity used to request source {@link Publisher}
 	 * @param callback an onNext {@link Consumer} callback
@@ -69,7 +69,7 @@ public enum Subscribers{
 	 * onNext, request N x 0.75.
 	 *
 	 * <p>
-	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
 	 *
 	 * @param prefetch the in-flight capacity used to request source {@link Publisher}
 	 * @param callback an onNext {@link Consumer} callback
@@ -300,7 +300,7 @@ public enum Subscribers{
 	 * {@link Subscriber} is slower.
 	 *
 	 * <p>
-	 * <img height="384" width="639" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
 	 * @return a serializing {@link Subscriber}
