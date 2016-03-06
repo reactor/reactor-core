@@ -31,10 +31,10 @@ public final class DependencyUtils {
 	static private final boolean HAS_REACTOR_NET;
 	static private final boolean HAS_REACTOR_BUS;
 
-	static private final FlowPublisherConverter     FLOW_PUBLISHER_CONVERTER;
-	static private final RxJava1ObservableConverter RX_JAVA_1_OBSERVABLE_CONVERTER;
-	static private final RxJava1SingleConverter     RX_JAVA_1_SINGLE_CONVERTER;
-	static final RxJava1CompletableConverter RX_JAVA_1_COMPLETABLE_CONVERTER;
+	static private final FlowPublisherConverter      FLOW_PUBLISHER_CONVERTER;
+	static private final RxJava1ObservableConverter  RX_JAVA_1_OBSERVABLE_CONVERTER;
+	static private final RxJava1SingleConverter      RX_JAVA_1_SINGLE_CONVERTER;
+	static private final RxJava1CompletableConverter RX_JAVA_1_COMPLETABLE_CONVERTER;
 
 	private DependencyUtils() {
 	}
