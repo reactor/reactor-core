@@ -47,7 +47,7 @@ ext {
   // Libraries
   jacksonDatabindVersion = '2.5.1'
   jsonPathVersion = '2.0.0'
-  rxJavaVersion = '1.0.14'
+  rxJavaVersion = '1.1.1'
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
