@@ -22,7 +22,7 @@ configure(rootProject) {
 		group = "Reactor Core Javadoc"
 
 		description = "Generates aggregated Javadoc API documentation."
-		title = "Reactor Core ${version} API"
+		title = "Reactor Core M2"
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			compileTestJava.options.compilerArgs += "-parameters"
@@ -61,7 +61,7 @@ configure(rootProject) {
 				'compat-mode': '',
 				stylesdir: "stylesheets/",
 				stylesheet: 'golo.css',
-				appversion: "$version",
+				appversion: "2.5.0.M2",
 				'source-highlighter': 'coderay'
 
 		doLast {
