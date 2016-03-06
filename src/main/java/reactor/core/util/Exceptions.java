@@ -78,24 +78,30 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Throw an unchecked
-	 * {@link RuntimeException} that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 * Return an unchecked
+	 * {@link RuntimeException} to be thrown that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 *
 	 * @param t the root cause
 	 */
-	public static void fail(Throwable t) {
+	public static RuntimeException fail(Throwable t) {
 		throwIfFatal(t);
-		throw wrapDownstream(t);
+		if(t instanceof DownstreamException){
+			return (DownstreamException)t;
+		}
+		return new DownstreamException(t);
 	}
 
 	/**
-	 * Throw an unchecked {@link RuntimeException} that will be propagated upstream
+	 * Throw an unchecked {@link RuntimeException} to be thrown that will be propagated upstream
 	 *
 	 * @param t the root cause
 	 */
-	public static void failUpstream(Throwable t) {
+	public static RuntimeException failUpstream(Throwable t) {
 		throwIfFatal(t);
-		throw wrapUpstream(t);
+		if(t instanceof UpstreamException){
+			return (UpstreamException) t;
+		}
+		return new UpstreamException(t);
 	}
 
 	/**
@@ -140,7 +146,7 @@ public enum Exceptions {
 	 * @param e the exception to handle
 	 */
 	public static void onErrorDropped(Throwable e) {
-		failUpstream(e);
+		throw failUpstream(e);
 	}
 
 	/**
@@ -234,30 +240,6 @@ public enum Exceptions {
 			return t.getCause();
 		}
 		return t;
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
-	public static RuntimeException wrapDownstream(Throwable t) {
-		if(t instanceof DownstreamException){
-			return (DownstreamException)t;
-		}
-		return new DownstreamException(t);
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} that will be propagated upstream
-	 *
-	 * @param t the root cause
-	 */
-	public static RuntimeException wrapUpstream(Throwable t) {
-		if(t instanceof UpstreamException){
-			return (UpstreamException) t;
-		}
-		return new UpstreamException(t);
 	}
 
 	/**

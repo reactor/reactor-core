@@ -315,7 +315,7 @@ public class Timer implements Timeable, Cancellable {
 
 	static void checkResolution(long time, long resolution) {
 		if (time % resolution != 0) {
-			Exceptions.failUpstream(new IllegalArgumentException(
+			throw Exceptions.failUpstream(new IllegalArgumentException(
 					"Period must be a multiple of Timer resolution (e.g. period % resolution == 0 ). " +
 							"Resolution for this Timer is: " + resolution + "ms"
 			));

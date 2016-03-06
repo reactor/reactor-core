@@ -900,8 +900,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 				scheduler = schedulerFactory.call();
 			}
 			catch (Throwable ex){
-				Exceptions.throwIfFatal(ex);
-				Exceptions.failUpstream(ex);
+				throw Exceptions.failUpstream(ex);
 			}
 			this.scheduler = Objects.requireNonNull(scheduler, "Provided schedulerFactory returned no scheduler");
 
