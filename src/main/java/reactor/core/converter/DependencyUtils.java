@@ -53,9 +53,9 @@ public final class DependencyUtils {
         try {
             Flux.class.getClassLoader().loadClass("rx.Observable");
             detected = RXJAVA_1_OBSERVABLE;
-            Class.forName("rx.Single");
+            Flux.class.getClassLoader().loadClass("rx.Single");
             detected |= RXJAVA_1_SINGLE;
-            Class.forName("rx.Completable");
+            Flux.class.getClassLoader().loadClass("rx.Completable");
             detected |= RXJAVA_1_COMPLETABLE;
         } catch (ClassNotFoundException ignore) {
 
