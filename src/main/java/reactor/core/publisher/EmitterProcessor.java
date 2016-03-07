@@ -602,7 +602,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			}
 			int n = a.length;
 			if (n + 1 > maxConcurrency) {
-				Exceptions.failWithOverflow();
+				throw Exceptions.failWithOverflow();
 			}
 			EmitterSubscriber<?>[] b = new EmitterSubscriber[n + 1];
 			System.arraycopy(a, 0, b, 0, n);

@@ -157,7 +157,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
 
         if (!hasAvailableCapacity(n))
         {
-            Exceptions.failWithOverflow();
+            throw Exceptions.failWithOverflow();
         }
 
         long nextSequence = this.nextValue += n;

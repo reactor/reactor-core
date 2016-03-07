@@ -139,7 +139,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				}
 				if (delay < System.currentTimeMillis()) {
 					cancel();
-					Exceptions.failWithCancel();
+					throw Exceptions.failWithCancel();
 				}
 				Thread.sleep(1);
 			}
@@ -147,8 +147,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 
-			Exceptions.failWithCancel();
-			return null;
+			throw Exceptions.failWithCancel();
 		}
 	}
 

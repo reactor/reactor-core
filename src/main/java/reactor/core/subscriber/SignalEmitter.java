@@ -460,11 +460,11 @@ public class SignalEmitter<E>
 					return;
 				}
 				else {
-					Exceptions.failWithOverflow();
+					throw Exceptions.failWithOverflow();
 				}
 			}
 			else {
-				Exceptions.failWithOverflow();
+				throw Exceptions.failWithOverflow();
 			}
 		}
 		if(emission.isFailed()){

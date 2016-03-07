@@ -227,7 +227,7 @@ class HashWheelTimer extends Timer {
 			long firstDelay,
 			Subscriber<? super Long> subscriber) {
 		if (loop.isInterrupted() || !loop.isAlive()) {
-			Exceptions.failWithCancel();
+			throw Exceptions.failWithCancel();
 		}
 		if (recurringTimeout != 0) {
 			checkResolution(recurringTimeout, resolution);

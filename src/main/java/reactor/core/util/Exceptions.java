@@ -82,6 +82,7 @@ public enum Exceptions {
 	 * {@link RuntimeException} to be thrown that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 *
 	 * @param t the root cause
+	 * @return an unchecked exception
 	 */
 	public static RuntimeException fail(Throwable t) {
 		throwIfFatal(t);
@@ -92,9 +93,10 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Throw an unchecked {@link RuntimeException} to be thrown that will be propagated upstream
+	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated upstream
 	 *
 	 * @param t the root cause
+	 * @return an unchecked exception that should choose bubbling up over error callback path
 	 */
 	public static RuntimeException failUpstream(Throwable t) {
 		throwIfFatal(t);
@@ -105,17 +107,19 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Throw a {@link CancelException}
+	 * Return a {@link CancelException}
+	 * @return a {@link CancelException}
 	 */
-	public static void failWithCancel() {
+	public static CancelException failWithCancel() {
 		throw PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**
-	 * Throw a {@link InsufficientCapacityException}
+	 * Return an {@link InsufficientCapacityException}
+	 * @return an {@link InsufficientCapacityException}
 	 */
-	public static void failWithOverflow() {
-		throw PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+	public static InsufficientCapacityException failWithOverflow() {
+		return PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
 
@@ -156,7 +160,7 @@ public enum Exceptions {
 	 */
 	public static <T> void onNextDropped(T t) {
 		if(t != null) {
-			failWithCancel();
+			throw failWithCancel();
 		}
 	}
 

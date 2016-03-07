@@ -3152,7 +3152,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureError() {
-		return onBackpressureDrop(t -> Exceptions.failWithOverflow());
+		return onBackpressureDrop(t -> { throw Exceptions.failWithOverflow();});
 	}
 
 	/**

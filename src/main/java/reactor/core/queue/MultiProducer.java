@@ -183,7 +183,7 @@ final class MultiProducer extends RingBufferProducer
 
             if (!hasAvailableCapacity(gatingSequences, n, current))
             {
-                Exceptions.failWithOverflow();
+                throw Exceptions.failWithOverflow();
             }
         }
         while (!cursor.compareAndSet(current, next));

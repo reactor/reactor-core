@@ -76,7 +76,7 @@ public class SubscriptionWithContext<C> implements Subscription, Receiver, Intro
 	 * Throw a CancelException
 	 */
 	public void abort(){
-		Exceptions.failWithCancel();
+		throw Exceptions.failWithCancel();
 	}
 
 	@Override
