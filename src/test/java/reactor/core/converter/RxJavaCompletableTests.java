@@ -1,20 +1,10 @@
 package reactor.core.converter;
 
 import org.junit.Before;
-<<<<<<< HEAD
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.tck.PublisherVerification;
-import org.reactivestreams.tck.TestEnvironment;
-import reactor.core.publisher.Flux;
-=======
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
->>>>>>> 506aa7e62677dd1ec139b5b8ea44b518991bf60b
 import reactor.core.publisher.Mono;
 import reactor.core.test.TestSubscriber;
 import rx.Completable;
@@ -28,22 +18,10 @@ import static org.junit.Assert.assertThat;
  */
 public class RxJavaCompletableTests extends PublisherVerification<Void> {
 
-<<<<<<< HEAD
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private Completable completable;
 
     private RxJava1CompletableConverter converter;
 
-=======
-    private Completable completable;
-
-    private Mono<Void> mono;
-    private RxJava1CompletableConverter converter;
-
-
->>>>>>> 506aa7e62677dd1ec139b5b8ea44b518991bf60b
     public RxJavaCompletableTests() {
         super(new TestEnvironment(500), 1000);
     }
@@ -90,22 +68,8 @@ public class RxJavaCompletableTests extends PublisherVerification<Void> {
 
     @Test
     public void shouldConvertAMonoIntoCompletable() throws Exception {
-<<<<<<< HEAD
-=======
-        RxJava1CompletableConverter converter = RxJava1CompletableConverter.INSTANCE;
->>>>>>> 506aa7e62677dd1ec139b5b8ea44b518991bf60b
         Completable completable = converter.fromPublisher(Mono.just(1));
         Throwable maybeErrors = completable.get();
         assertThat(maybeErrors, is(nullValue()));
     }
-<<<<<<< HEAD
-
-    @Test
-    public void iamConvertingWrongType() throws Exception {
-        Flux<Integer> integerFlux = Flux.just(123);
-        Completable completable = converter.fromPublisher(integerFlux);
-      //  thrown.expect(UnsupportedOperationException.class);
-    }
-=======
->>>>>>> 506aa7e62677dd1ec139b5b8ea44b518991bf60b
 }
