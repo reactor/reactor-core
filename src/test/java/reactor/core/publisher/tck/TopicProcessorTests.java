@@ -210,11 +210,11 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 
 		processor.shutdown();
 
-		assertFalse(processor.awaitAndShutdown(250, TimeUnit.MILLISECONDS));
+		assertFalse(processor.awaitAndShutdown(400, TimeUnit.MILLISECONDS));
 
 		processor.forceShutdown();
 
-		assertTrue(processor.awaitAndShutdown(250, TimeUnit.MILLISECONDS));
+		assertTrue(processor.awaitAndShutdown(400, TimeUnit.MILLISECONDS));
 	}
 
 }
