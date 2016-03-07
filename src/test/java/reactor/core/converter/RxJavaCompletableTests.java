@@ -16,25 +16,11 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Joao Pedro Evangelista
  */
-public class RxJavaCompletableTests extends PublisherVerification<Void> {
+public class RxJavaCompletableTests {
 
     private Completable completable;
 
     private RxJava1CompletableConverter converter;
-
-    public RxJavaCompletableTests() {
-        super(new TestEnvironment(500), 1000);
-    }
-
-    @Override
-    public Publisher<Void> createPublisher(long elements) {
-        return Mono.empty();
-    }
-
-    @Override
-    public Publisher<Void> createFailedPublisher() {
-        return Mono.error(new Exception("Failed Mono Publisher"));
-    }
 
     @Before
     public void setUp() throws Exception {
