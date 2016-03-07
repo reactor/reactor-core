@@ -65,7 +65,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 				Thread.sleep(1000);
 			}
 			catch(InterruptedException ie){
-				Exceptions.fail(ie);
+				throw Exceptions.fail(ie);
 			}
 		};
 		r.accept(() -> c.accept("Hello World!"));

@@ -133,7 +133,7 @@ public final class MonoProcessor<O> extends Mono<O>
 						if (error instanceof RuntimeException) {
 							throw (RuntimeException) error;
 						}
-						Exceptions.fail(error);
+						throw Exceptions.fail(error);
 					case STATE_COMPLETE_NO_VALUE:
 						return null;
 				}
