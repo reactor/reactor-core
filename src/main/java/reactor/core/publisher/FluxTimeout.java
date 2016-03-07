@@ -175,12 +175,10 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			if (!INDEX.compareAndSet(this, idx, Long.MIN_VALUE)) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 
 			cancelTimeout();

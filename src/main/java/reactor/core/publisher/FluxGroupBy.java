@@ -278,7 +278,7 @@ implements Fuseable, Backpressurable  {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		

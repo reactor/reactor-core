@@ -175,7 +175,7 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 					handleTermination();
 				}
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		

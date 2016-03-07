@@ -191,7 +191,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
@@ -225,7 +225,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 				
 				error(e);
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		
@@ -352,7 +352,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				main.otherError(index, t);
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 

@@ -84,7 +84,7 @@ public enum Exceptions {
 	 * @param t the root cause
 	 * @return an unchecked exception
 	 */
-	public static RuntimeException fail(Throwable t) {
+	public static RuntimeException wrap(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof DownstreamException){
 			return (DownstreamException)t;
@@ -98,7 +98,7 @@ public enum Exceptions {
 	 * @param t the root cause
 	 * @return an unchecked exception that should choose bubbling up over error callback path
 	 */
-	public static RuntimeException failUpstream(Throwable t) {
+	public static RuntimeException wrapUpstream(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof UpstreamException){
 			return (UpstreamException) t;
@@ -110,7 +110,7 @@ public enum Exceptions {
 	 * Return a {@link CancelException}
 	 * @return a {@link CancelException}
 	 */
-	public static CancelException failWithCancel() {
+	public static CancelException cancelException() {
 		throw PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
@@ -118,7 +118,7 @@ public enum Exceptions {
 	 * Return an {@link InsufficientCapacityException}
 	 * @return an {@link InsufficientCapacityException}
 	 */
-	public static InsufficientCapacityException failWithOverflow() {
+	public static InsufficientCapacityException overflow() {
 		return PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
@@ -133,54 +133,14 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e, Throwable root) {
-		if(root != null) {
-			e.addSuppressed(root);
-		}
-		onErrorDropped(e);
-	}
-
-	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e) {
-		throw failUpstream(e);
-	}
-
-	/**
 	 * An unexpected event is about to be dropped
 	 *
 	 * @param t the dropping data
 	 */
 	public static <T> void onNextDropped(T t) {
 		if(t != null) {
-			throw failWithCancel();
+			throw cancelException();
 		}
-	}
-
-	/**
-	 * Throws the exception if it is a regular runtimeException or wraps
-	 * it into a ReactiveException.
-	 * <p>
-	 * Use unwrap to get back the original cause.
-	 * <p>
-	 * The method calls throwIfFatal().
-	 *
-	 * @param e the exception to propagate
-	 * @return dummy return type to allow using throw with the function call
-	 */
-	public static RuntimeException propagate(Throwable e) {
-		throwIfFatal(e);
-		if (e instanceof RuntimeException) {
-			throw (RuntimeException)e;
-		}
-		throw new UpstreamException(e);
 	}
 
 	/**

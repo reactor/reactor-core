@@ -194,7 +194,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			if (report) {
 				anyError(t);
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
@@ -281,7 +281,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		

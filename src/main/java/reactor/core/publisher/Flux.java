@@ -3142,7 +3142,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Request an unbounded demand and push the returned
-	 * {@link Flux}, or emit onError fom {@link Exceptions#failWithOverflow} if not enough demand is requested
+	 * {@link Flux}, or emit onError fom {@link Exceptions#overflow} if not enough demand is requested
 	 * downstream.
 	 *
 	 * <p>
@@ -3152,7 +3152,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureError() {
-		return onBackpressureDrop(t -> { throw Exceptions.failWithOverflow();});
+		return onBackpressureDrop(t -> { throw Exceptions.overflow();});
 	}
 
 	/**

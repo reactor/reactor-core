@@ -133,13 +133,13 @@ public final class MonoProcessor<O> extends Mono<O>
 						if (error instanceof RuntimeException) {
 							throw (RuntimeException) error;
 						}
-						throw Exceptions.fail(error);
+						throw Exceptions.wrap(error);
 					case STATE_COMPLETE_NO_VALUE:
 						return null;
 				}
 				if (delay < System.currentTimeMillis()) {
 					cancel();
-					throw Exceptions.failWithCancel();
+					throw Exceptions.cancelException();
 				}
 				Thread.sleep(1);
 			}
@@ -147,7 +147,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 
-			throw Exceptions.failWithCancel();
+			throw Exceptions.cancelException();
 		}
 	}
 
@@ -229,8 +229,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		Subscription s = subscription;
 
 		if ((source != null && s == null) || this.error != null) {
-			Exceptions.onErrorDropped(cause);
-			return;
+			throw Exceptions.wrapUpstream(cause);
 		}
 
 		this.error = cause;
@@ -239,8 +238,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		int state = this.state;
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
-				Exceptions.onErrorDropped(cause);
-				return;
+				throw Exceptions.wrapUpstream(cause);
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
 				if(processor == null){
@@ -248,8 +246,7 @@ public final class MonoProcessor<O> extends Mono<O>
 						throw (RuntimeException) error;
 					}
 					else {
-						Exceptions.onErrorDropped(error);
-						return;
+						throw Exceptions.wrapUpstream(error);
 					}
 				}
 				break;
@@ -335,8 +332,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				throw (RuntimeException) error;
 			}
 			else {
-				Exceptions.onErrorDropped(error);
-				return null;
+				throw Exceptions.wrapUpstream(error);
 			}
 		}
 		else {
@@ -403,8 +399,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				throw (RuntimeException) error;
 			}
 			else {
-				Exceptions.onErrorDropped(error);
-				return false;
+				throw Exceptions.wrapUpstream(error);
 			}
 		}
 		return state > STATE_READY && subscription != null && state > STATE_POST_SUBSCRIBED;

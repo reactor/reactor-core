@@ -167,7 +167,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				
 				actual.onError(t);
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 

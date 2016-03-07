@@ -354,7 +354,7 @@ final class FluxCombineLatest<T, R>
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		

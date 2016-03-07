@@ -219,8 +219,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			Processor<T, T> w = window;
 			if (w != null) {
@@ -421,8 +420,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			Processor<T, T> w = window;
 			if (w != null) {
@@ -661,8 +659,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 
 			for (Processor<T, T> w : windows) {

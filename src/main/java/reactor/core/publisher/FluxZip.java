@@ -344,7 +344,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 				cancelAll();
 				subscriber.onError(e);
 			} else {
-			   Exceptions.onErrorDropped(e);
+			   throw Exceptions.wrapUpstream(e);
 			}
 		}
 		
@@ -435,8 +435,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			done = true;
 			parent.error(t, index);
@@ -620,7 +619,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		

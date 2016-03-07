@@ -180,7 +180,7 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 				processor.onError(t);
 			}
 			else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 

@@ -131,7 +131,7 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 			errorConsumer.accept(t, subscriptionWithContext != null ? subscriptionWithContext.context() : null);
 		}
 		else {
-			Exceptions.onErrorDropped(t);
+			throw Exceptions.wrapUpstream(t);
 		}
 	}
 

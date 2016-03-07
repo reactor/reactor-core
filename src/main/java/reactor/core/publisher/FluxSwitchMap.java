@@ -199,8 +199,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -213,7 +212,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
@@ -374,7 +373,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				inner.deactivate();
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		
