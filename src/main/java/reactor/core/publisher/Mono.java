@@ -1414,7 +1414,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Emit the current instance of the {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/nest.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/nest1.png" alt="">
 	 *
 	 * @return a new {@link Mono} whose value will be the current {@link Mono}
 	 */
