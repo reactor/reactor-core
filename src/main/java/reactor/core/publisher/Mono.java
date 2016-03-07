@@ -38,6 +38,8 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
+import reactor.core.subscriber.ConsumerSubscriber;
+import reactor.core.subscriber.Subscribers;
 import reactor.core.timer.Timer;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
@@ -757,6 +759,65 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 *
+	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 */
+	public final Runnable consume(Consumer<? super T> consumer) {
+		return consume(consumer, null, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumeerror1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each next signal
+	 * @param errorConsumer the consumer to invoke on error signal
+	 *
+	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 */
+	public final Runnable consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+		return consume(consumer, errorConsumer, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumecomplete1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 *
+	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 */
+	public final Runnable consume(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
+		return subscribeWith(new ConsumerSubscriber<>(consumer, errorConsumer, completeConsumer));
+	}
+
+	/**
 	 * Introspect this Mono graph
 	 *
 	 * @return {@literal ReactiveStateUtils.Graph} representation of a publisher graph
@@ -1446,7 +1507,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhenempty.png" alt="">
 	 *
 	 * @param repeatFactory the
 	 * {@link Function} providing a {@link Flux} signalling the current number of repeat on onComplete and returning a {@link Publisher} companion.
@@ -1809,7 +1870,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfirst1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutp1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 *
@@ -1826,7 +1887,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * the factory provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutallfallback1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfallbackp1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout
 	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
@@ -1835,7 +1896,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a first then per-item expirable {@link Mono} with a fallback {@link Publisher}
 	 *
 	 */
-	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Publisher<? extends T> fallback) {
+	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Mono<? extends T> fallback) {
 		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never(), fallback));
 	}
 
