@@ -21,7 +21,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
     dependencies {
       //compile "io.projectreactor:reactor-core:2.5.0.BUILD-SNAPSHOT"
-      compile "io.projectreactor:reactor-core:2.5.0.M1"
+      compile "io.projectreactor:reactor-core:2.5.0.M2"
     }
 ```
 
