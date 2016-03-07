@@ -54,7 +54,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void shouldConvertAMonoIntoCompletable() throws Exception {
-        Completable completable = converter.fromPublisher(Mono.just(1));
+        Completable completable = Mono.just(1).as(Completable.class);
         Throwable maybeErrors = completable.get();
         assertThat(maybeErrors, is(nullValue()));
     }
