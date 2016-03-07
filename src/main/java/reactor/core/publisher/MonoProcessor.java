@@ -133,13 +133,13 @@ public final class MonoProcessor<O> extends Mono<O>
 						if (error instanceof RuntimeException) {
 							throw (RuntimeException) error;
 						}
-						throw Exceptions.fail(error);
+						throw Exceptions.wrap(error);
 					case STATE_COMPLETE_NO_VALUE:
 						return null;
 				}
 				if (delay < System.currentTimeMillis()) {
 					cancel();
-					throw Exceptions.failWithCancel();
+					throw Exceptions.cancelException();
 				}
 				Thread.sleep(1);
 			}
@@ -147,7 +147,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 
-			throw Exceptions.failWithCancel();
+			throw Exceptions.cancelException();
 		}
 	}
 

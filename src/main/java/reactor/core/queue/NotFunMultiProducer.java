@@ -172,7 +172,7 @@ final class NotFunMultiProducer extends RingBufferProducer
 
             if (!hasAvailableCapacity(gatingSequences, n, current))
             {
-                throw Exceptions.failWithOverflow();
+                throw Exceptions.overflow();
             }
         }
         while (!cursor.compareAndSet(current, next));

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -602,7 +601,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			}
 			int n = a.length;
 			if (n + 1 > maxConcurrency) {
-				throw Exceptions.failWithOverflow();
+				throw Exceptions.overflow();
 			}
 			EmitterSubscriber<?>[] b = new EmitterSubscriber[n + 1];
 			System.arraycopy(a, 0, b, 0, n);

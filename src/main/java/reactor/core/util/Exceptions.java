@@ -84,7 +84,7 @@ public enum Exceptions {
 	 * @param t the root cause
 	 * @return an unchecked exception
 	 */
-	public static RuntimeException fail(Throwable t) {
+	public static RuntimeException wrap(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof DownstreamException){
 			return (DownstreamException)t;
@@ -98,7 +98,7 @@ public enum Exceptions {
 	 * @param t the root cause
 	 * @return an unchecked exception that should choose bubbling up over error callback path
 	 */
-	public static RuntimeException failUpstream(Throwable t) {
+	public static RuntimeException wrapUpstream(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof UpstreamException){
 			return (UpstreamException) t;
@@ -110,7 +110,7 @@ public enum Exceptions {
 	 * Return a {@link CancelException}
 	 * @return a {@link CancelException}
 	 */
-	public static CancelException failWithCancel() {
+	public static CancelException cancelException() {
 		throw PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
@@ -118,7 +118,7 @@ public enum Exceptions {
 	 * Return an {@link InsufficientCapacityException}
 	 * @return an {@link InsufficientCapacityException}
 	 */
-	public static InsufficientCapacityException failWithOverflow() {
+	public static InsufficientCapacityException overflow() {
 		return PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
@@ -150,7 +150,7 @@ public enum Exceptions {
 	 * @param e the exception to handle
 	 */
 	public static void onErrorDropped(Throwable e) {
-		throw failUpstream(e);
+		throw wrapUpstream(e);
 	}
 
 	/**
@@ -160,7 +160,7 @@ public enum Exceptions {
 	 */
 	public static <T> void onNextDropped(T t) {
 		if(t != null) {
-			throw failWithCancel();
+			throw cancelException();
 		}
 	}
 

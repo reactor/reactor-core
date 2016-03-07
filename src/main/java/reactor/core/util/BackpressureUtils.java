@@ -458,6 +458,6 @@ public enum BackpressureUtils {
 	 * Throw {@link reactor.core.util.Exceptions.InsufficientCapacityException}
 	 */
 	public static void reportMoreProduced() {
-		throw Exceptions.failWithOverflow();
+		throw Exceptions.overflow();
 	}
 }
