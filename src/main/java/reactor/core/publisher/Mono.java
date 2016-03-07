@@ -657,7 +657,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <E> the returned component type
 	 *
 	 * @return an eventually converted mono
-	 * @throws a {@link UnsupportedOperationException} if conversion fails
+	 * @throws UnsupportedOperationException if conversion fails
 	 */
 	@SuppressWarnings("unchecked")
 	public final <E> E as(Class<E> clazz) {
@@ -732,7 +732,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Cast the current {@link Mono} produced type into a target produced type.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
 	 *
 	 * @param <E> the {@link Mono} output type
 	 *
@@ -746,7 +746,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Turn this {@link Mono} into a hot source and cache last emitted signals for further {@link Subscriber}.
 	 * Completion and Error will also be replayed.
-	 * <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache1.png"
 	 * alt="">
@@ -789,7 +788,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * period elapses.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
 	 *
 	 * @param delay period in seconds before subscribing this {@link Mono}
 	 *
@@ -805,7 +804,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * period elapses.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
 	 *
 	 * @param delay duration before subscribing this {@link Mono}
 	 *
@@ -821,7 +820,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * signals a value or completes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp1.png" alt="">
 	 *
 	 * @param subscriptionDelay a
 	 * {@link Publisher} to signal by next or complete this {@link Mono#subscribe(Subscriber)}
@@ -841,7 +840,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
 	 *
 	 * @return a dematerialized {@link Mono}
 	 */
@@ -956,7 +955,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonrequest1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each request
 	 *
@@ -1012,7 +1011,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * next signal.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/elapsed.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/elapsed1.png" alt="">
 	 *
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
@@ -1184,7 +1183,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Emit a single boolean true if this {@link Mono} has an element.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/haselements.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/haselement.png" alt="">
 	 *
 	 * @return a new {@link Mono} with <code>true</code> if a value is emitted and <code>false</code>
 	 * otherwise
@@ -1197,7 +1196,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Ignores onNext signal (dropping it) and only reacts on termination.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignoreelements.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignoreelement.png" alt="">
 	 * <p>
 	 *
 	 * @return a new completable {@link Mono}.
@@ -1327,12 +1326,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/materialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/materialize1.png" alt="">
 	 *
 	 * @return a {@link Mono} of materialized {@link Signal}
 	 */
 	public final Mono<Signal<T>> materialize() {
-		return MonoSource.wrap(new FluxMaterialize<>(this));
+		return new FluxMaterialize<>(this).next();
 	}
 
 	/**
@@ -1503,7 +1502,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * The times == Long.MAX_VALUE is treated as infinite retry.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retry.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retry1.png" alt="">
 	 *
 	 * @return a re-subscribing {@link Mono} on onError
 	 */
@@ -1518,7 +1517,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * The times == Long.MAX_VALUE is treated as infinite retry.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryn1.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 *
@@ -1534,7 +1533,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * and the given {@link Predicate} matches otherwise push the error downstream.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retryb1.png" alt="">
 	 *
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
@@ -1549,7 +1548,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * error and the given {@link Predicate} matches otherwise push the error downstream.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrynb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrynb1.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
@@ -1570,7 +1569,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * immediately.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrywhen.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/retrywhen1.png" alt="">
 	 *
 	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling any error from the source sequence and returning a {@link Publisher} companion.
 	 *
@@ -1758,7 +1757,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 *
@@ -1772,7 +1771,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Signal a {@link java.util.concurrent.TimeoutException} in case an item doesn't arrive before the given period.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 *
@@ -1788,7 +1787,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
@@ -1810,7 +1809,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfirst.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutfirst1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 *
@@ -1827,7 +1826,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * the factory provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutallfallback.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutallfallback1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout
 	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
@@ -1845,7 +1844,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * millis and T2 {@link <T>} associated data for the eventual item from this {@link Mono}
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp1.png" alt="">
 	 *
 	 * @return a timestamped {@link Mono}
 	 */
