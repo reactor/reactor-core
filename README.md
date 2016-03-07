@@ -34,20 +34,20 @@ New to Reactive Programming or bored of reading already ? Try the [Introduction 
 
 A Reactive Streams Publisher with basic Rx operators. 
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
-- Instance methods allows operational building, materialized on each _Flux#subscribe()_ eventually called.
+- Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#consume()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
 ```java
 Flux.fromIterable(getSomeLongList())
-    .mergeWith(Flux.interval(1))
+    .mergeWith(Flux.interval(100))
     .doOnNext(serviceA::someObserver)
     .map(d -> d * 2)
-    .zipWith(Flux.just(1, 2, 3))
+    .take(3)
     .onErrorResumeWith(errorHandler::fallback)
     .doAfterTerminate(serviceM::incrementTerminate)
-    .subscribe(Subscribers.consumer(System.out::println));
+    .consume(System.out::println);
 ```
 
 ## Mono
@@ -61,10 +61,9 @@ Mono in action :
 ```java
 Mono.fromCallable(System::currentTimeMillis)
     .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
-    .or(Mono.delay(3))
+    .timeout(Duration.ofSeconds(3), errorHandler::fallback)
     .doOnSuccess(r -> serviceM.incrementSuccess())
-    .otherwiseIfEmpty(Mono.just(errorHandler::fallback)
-    .subscribe(Subscribers.consumer(System.out::println));
+    .consume(System.out::println);
 ```
 
 Blocking Mono result :
@@ -72,7 +71,7 @@ Blocking Mono result :
 Tuple2<Long, Long> nowAndLater = 
         Mono.when(
                 Mono.just(System.currentTimeMillis()),
-                Mono.delay(1).map(i -> System.currentTimeMillis()))
+                Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
             .get();
 ```
 
@@ -90,7 +89,7 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
     .flatMap(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
             .publishOn(io)
-    )
+    , 8) //maxConcurrency 8
     .subscribe();
 
 //... a little later
@@ -110,10 +109,9 @@ Flux.yield(sink -> {
         }
         sink.finish();
     })
-    .zipWith(Mono.delay(3))
-    .doOnNext(System.out::println)
+    .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))
-    .subscribe();
+    .consume(System.out::println)
 
 ```
 
@@ -130,7 +128,7 @@ EmitterProcessor<Integer> emitter = EmitterProcessor.create();
 SignalEmitter<Integer> sink = emitter.startEmitter();
 sink.submit(1);
 sink.submit(2);
-emitter.subscribe(Subscribers.consumer(System.out::println));
+emitter.consume(System.out::println);
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -140,7 +138,7 @@ EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
 SignalEmitter<Integer> sink = replayer.startEmitter();
 sink.submit(1);
 sink.submit(2);
-replayer.subscribe(Subscribers.consumer(System.out::println)); //output 1, 2
+replayer.consume(System.out::println); //output 1, 2
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -151,10 +149,10 @@ sink.finish();
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
-topic.subscribe(Subscribers.consumer(System.out::println));
+topic.consume(System.out::println);
 topic.onNext(1); //output : ...1
 topic.onNext(2); //output : ...2
-topic.subscribe(Subscribers.consumer(System.out::println)); //output : ...1, 2
+topic.consume(System.out::println); //output : ...1, 2
 topic.onNext(3); //output : ...3 ...3
 topic.onComplete();
 ```
@@ -165,8 +163,8 @@ Similar to TopicProcessor regarding thread per subscriber but this time exclusiv
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
-queue.subscribe(Subscribers.consumer(System.out::println));
-queue.subscribe(Subscribers.consumer(System.out::println));
+queue.consume(System.out::println);
+queue.consume(System.out::println);
 queue.onNext(1); //output : ...1
 queue.onNext(2); //output : .... ...2
 queue.onNext(3); //output : ...3 
