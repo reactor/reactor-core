@@ -211,7 +211,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler) {
-		return async(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, true);
+		return async(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, false);
 	}
 
 	/**
@@ -305,7 +305,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 */
 	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory, int
 			parallelSchedulers) {
-		return create(schedulerFactory, parallelSchedulers, true);
+		return create(schedulerFactory, parallelSchedulers, false);
 	}
 
 	/**
@@ -404,7 +404,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
 	public static SchedulerGroup io(String name, int bufferSize, int concurrency) {
-		return io(name, bufferSize, concurrency, null, null, true);
+		return io(name, bufferSize, concurrency, null, null, false);
 	}
 
 	/**
@@ -448,7 +448,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 */
 	public static SchedulerGroup io(String name, int bufferSize,
 			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
-		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, true);
+		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, false);
 	}
 
 	/**
@@ -682,7 +682,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup}
 	 */
 	public static SchedulerGroup single(Consumer<Runnable> scheduler) {
-		return single(scheduler, true);
+		return single(scheduler, false);
 	}
 
 	/**
