@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,7 +32,6 @@ import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -236,11 +236,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		private final Subscriber<IN> upstream;
 
 		public DelegateProcessor(Publisher<OUT> downstream, Subscriber<IN> upstream) {
-			Assert.notNull(upstream, "Upstream must not be null");
-			Assert.notNull(downstream, "Downstream must not be null");
-
-			this.downstream = downstream;
-			this.upstream = upstream;
+			this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
+			this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
 		}
 
 		@Override

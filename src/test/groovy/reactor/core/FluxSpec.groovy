@@ -1691,7 +1691,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'create'
-			res > 900
+			res > 800
 
 		when:
 			'consuming periodic'
@@ -1700,7 +1700,7 @@ class FluxSpec extends Specification {
 				i << it
 			}
 			sleep(2500)
-			c.cancel()
+			c.run()
 
 		then:
 			'create'

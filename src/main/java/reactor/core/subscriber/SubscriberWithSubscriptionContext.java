@@ -15,6 +15,7 @@
  */
 package reactor.core.subscriber;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -23,7 +24,6 @@ import java.util.function.Function;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
-import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
@@ -51,9 +51,9 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 			Function<? super Subscription, C> subscriptionHandler,
 			BiConsumer<Throwable, C> errorConsumer,
 			Consumer<C> completeConsumer) {
-		Assert.notNull(subscriptionHandler, "A subscription handler must be provided");
+
+		this.subscriptionHandler = Objects.requireNonNull(subscriptionHandler, "A subscription handler must be provided");
 		this.dataConsumer = dataConsumer;
-		this.subscriptionHandler = subscriptionHandler;
 		this.errorConsumer = errorConsumer;
 		this.completeConsumer = completeConsumer;
 	}

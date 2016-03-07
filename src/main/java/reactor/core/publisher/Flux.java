@@ -507,7 +507,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
 			Function<Subscriber<? super T>, C> contextFactory,
 			Consumer<C> shutdownConsumer) {
-		Assert.notNull(requestConsumer, "A data producer must be provided");
+		Objects.requireNonNull(requestConsumer, "A data producer must be provided");
 		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
 	}
 	

@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.Assert;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.PlatformDependent;
@@ -108,9 +107,9 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	public static void await(Duration timeout, Supplier<String> errorMessageSupplier,
 			Supplier<Boolean> conditionSupplier) {
 
-		Assert.notNull(errorMessageSupplier);
-		Assert.notNull(conditionSupplier);
-		Assert.notNull(timeout);
+		Objects.requireNonNull(errorMessageSupplier);
+		Objects.requireNonNull(conditionSupplier);
+		Objects.requireNonNull(timeout);
 
 		long timeoutNs = timeout.toNanos();
 		long startTime = System.nanoTime();
