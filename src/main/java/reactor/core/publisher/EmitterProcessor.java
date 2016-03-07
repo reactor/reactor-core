@@ -386,7 +386,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	public void onError(Throwable t) {
 		super.onError(t);
 		if (autoCancel && done) {
-			Exceptions.onErrorDropped(t);
+			throw Exceptions.wrapUpstream(t);
 		}
 		reportError(t);
 		done = true;

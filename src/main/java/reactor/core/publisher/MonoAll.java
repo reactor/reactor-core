@@ -112,8 +112,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			done = true;
 

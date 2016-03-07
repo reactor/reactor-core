@@ -166,8 +166,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			done = true;
 			actual.onError(t);
@@ -336,8 +335,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 
 			done = true;
@@ -548,8 +546,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 
 			done = true;

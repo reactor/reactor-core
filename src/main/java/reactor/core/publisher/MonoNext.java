@@ -89,8 +89,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			done = true;
 			actual.onError(t);

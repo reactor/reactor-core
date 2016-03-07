@@ -180,7 +180,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 
@@ -236,7 +236,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 

@@ -167,7 +167,7 @@ final class FluxUsing<T, S>
 			try {
 				resourceCleanup.accept(resource);
 			} catch (Throwable e) {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 

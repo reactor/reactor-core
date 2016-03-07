@@ -447,7 +447,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							done = true;
 						} else {
-							Exceptions.onErrorDropped(ex);
+							throw Exceptions.wrapUpstream(ex);
 						}
 
 						drainLoop();
@@ -462,7 +462,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							done = true;
 						} else {
-							Exceptions.onErrorDropped(e);
+							throw Exceptions.wrapUpstream(e);
 						}
 						drainLoop();
 						return;
@@ -486,7 +486,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						done = true;
 					} else {
-						Exceptions.onErrorDropped(ex);
+						throw Exceptions.wrapUpstream(ex);
 					}
 
 					drain();
@@ -501,7 +501,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						done = true;
 					} else {
-						Exceptions.onErrorDropped(e);
+						throw Exceptions.wrapUpstream(e);
 					}
 				}
 				drain();
@@ -520,14 +520,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 
@@ -645,7 +644,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 									Exceptions.throwIfFatal(ex);
 									inner.cancel();
 									if (!Exceptions.addThrowable(ERROR, this, ex)) {
-										Exceptions.onErrorDropped(ex);
+										throw Exceptions.wrapUpstream(ex);
 									}
 									v = null;
 									d = true;
@@ -684,7 +683,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 									Exceptions.throwIfFatal(ex);
 									inner.cancel();
 									if (!Exceptions.addThrowable(ERROR, this, ex)) {
-										Exceptions.onErrorDropped(ex);
+										throw Exceptions.wrapUpstream(ex);
 									}
 									empty = true;
 									d = true;
@@ -814,7 +813,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 
@@ -841,7 +840,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							inner.done = true;
 						} else {
-							Exceptions.onErrorDropped(ex);
+							throw Exceptions.wrapUpstream(ex);
 						}
 						drainLoop();
 						return;
@@ -855,7 +854,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							inner.done = true;
 						} else {
-							Exceptions.onErrorDropped(e);
+							throw Exceptions.wrapUpstream(e);
 						}
 						drainLoop();
 						return;
@@ -877,7 +876,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						inner.done = true;
 					} else {
-						Exceptions.onErrorDropped(ex);
+						throw Exceptions.wrapUpstream(ex);
 					}
 					drain();
 					return;
@@ -891,7 +890,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						inner.done = true;
 					} else {
-						Exceptions.onErrorDropped(e);
+						throw Exceptions.wrapUpstream(e);
 					}
 				}
 				drain();

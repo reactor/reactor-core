@@ -138,7 +138,7 @@ public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runna
 			errorConsumer.accept(t);
 		}
 		else {
-			Exceptions.onErrorDropped(t);
+			throw Exceptions.wrapUpstream(t);
 		}
 	}
 

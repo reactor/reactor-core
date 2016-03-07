@@ -133,27 +133,6 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e, Throwable root) {
-		if(root != null) {
-			e.addSuppressed(root);
-		}
-		onErrorDropped(e);
-	}
-
-	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e) {
-		throw wrapUpstream(e);
-	}
-
-	/**
 	 * An unexpected event is about to be dropped
 	 *
 	 * @param t the dropping data

@@ -122,8 +122,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			done = true;
 

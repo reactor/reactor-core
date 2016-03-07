@@ -235,7 +235,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
@@ -277,7 +277,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		
@@ -554,7 +554,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
@@ -585,7 +585,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				active = false;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				throw Exceptions.wrapUpstream(e);
 			}
 		}
 		

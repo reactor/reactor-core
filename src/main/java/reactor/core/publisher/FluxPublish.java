@@ -243,8 +243,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 			if (!queue.offer(t)) {
 				Throwable ex = new IllegalStateException("Queue full?!");
 				if (!Exceptions.addThrowable(ERROR, this, ex)) {
-					Exceptions.onErrorDropped(ex);
-					return;
+					throw Exceptions.wrapUpstream(ex);
 				}
 				done = true;
 			}
@@ -254,14 +253,13 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
-				return;
+				throw Exceptions.wrapUpstream(t);
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				throw Exceptions.wrapUpstream(t);
 			}
 		}
 		
