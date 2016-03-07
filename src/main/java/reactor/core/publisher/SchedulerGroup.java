@@ -96,7 +96,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
 	public static SchedulerGroup async() {
-		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE);
+		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE,
+				DEFAULT_POOL_SIZE, true);
 	}
 
 	/**
@@ -347,7 +348,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
 	public static SchedulerGroup io() {
-		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE);
+		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE, DEFAULT_POOL_SIZE, true);
 	}
 
 	/**
@@ -549,7 +550,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single() {
-		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE);
+		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE, true);
 	}
 
 	/**
