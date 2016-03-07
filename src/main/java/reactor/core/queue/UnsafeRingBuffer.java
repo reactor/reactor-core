@@ -147,19 +147,6 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public E claimAndGetPreallocated(long sequence)
-    {
-        sequenceProducer.claim(sequence);
-        return get(sequence);
-    }
-
-    @Override
-    public boolean isPublished(long sequence)
-    {
-        return sequenceProducer.isAvailable(sequence);
-    }
-
-    @Override
     public void addGatingSequence(Sequence gatingSequence)
     {
         sequenceProducer.addGatingSequence(gatingSequence);
@@ -208,12 +195,6 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public boolean hasAvailableCapacity(int requiredCapacity)
-    {
-        return sequenceProducer.hasAvailableCapacity(requiredCapacity);
-    }
-
-    @Override
     public void publish(long sequence)
     {
         sequenceProducer.publish(sequence);
@@ -240,12 +221,6 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     @Override
     public RingBufferProducer getSequencer() {
         return sequenceProducer;
-    }
-
-    @Override
-    public long cachedRemainingCapacity()
-    {
-        return sequenceProducer.cachedRemainingCapacity();
     }
 
 

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
@@ -73,7 +72,7 @@ import reactor.core.util.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  */
-public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> implements Backpressurable, MultiProducer {
+public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implements Backpressurable, MultiProducer {
 
 	/**
 	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
@@ -610,35 +609,30 @@ public final class WorkQueueProcessor<E> extends ExecutorProcessor<E, E> impleme
 	protected void doError(Throwable t) {
 		readWait.signalAllWhenBlocking();
 		writeWait.signalAllWhenBlocking();
+		//ringBuffer.markAsTerminated();
 	}
 
 	@Override
 	protected void doComplete() {
 		readWait.signalAllWhenBlocking();
 		writeWait.signalAllWhenBlocking();
+		//ringBuffer.markAsTerminated();
 	}
 
 	@Override
 	protected void requestTask(Subscription s) {
-		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(RingBuffer.createRequestTask(s, new
-				Runnable() {
-			@Override
-			public void run() {
-				if (!alive()) {
-					if (cancelled) {
-						throw Exceptions.CancelException.INSTANCE;
+		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(RingBuffer.createRequestTask(s,
+				() -> {
+					if (!alive()) {
+						if (cancelled) {
+							throw Exceptions.CancelException.INSTANCE;
+						}
+						else {
+							throw Exceptions.AlertException.INSTANCE;
+						}
 					}
-					else {
-						throw Exceptions.AlertException.INSTANCE;
-					}
-				}
-			}
-		}, null, new LongSupplier() {
-			@Override
-			public long getAsLong() {
-				return ringBuffer.getMinimumGatingSequence();
-			}
-		}, readWait, this, (int)ringBuffer.getCapacity())).start();
+				}, null,
+				ringBuffer::getMinimumGatingSequence, readWait, this, (int)ringBuffer.getCapacity())).start();
 	}
 
 	@Override

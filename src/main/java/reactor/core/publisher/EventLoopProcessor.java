@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
@@ -32,16 +31,16 @@ import reactor.core.util.ExecutorUtils;
  *
  * @author Stephane Maldini
  */
-public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Completable, Cancellable {
+public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+		implements Cancellable {
 
 	protected static final int SHUTDOWN = 1;
 
-	protected static final int                                          FORCED_SHUTDOWN  = 2;
-	protected static final AtomicIntegerFieldUpdater<ExecutorProcessor> SUBSCRIBER_COUNT =
-			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "subscriberCount");
-	protected final static AtomicIntegerFieldUpdater<ExecutorProcessor> TERMINATED       =
-			AtomicIntegerFieldUpdater.newUpdater(ExecutorProcessor.class, "terminated");
+	protected static final int                                           FORCED_SHUTDOWN  = 2;
+	protected static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
+			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
+	protected final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
+			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 	protected final ExecutorService executor;
 	protected final ClassLoader     contextClassLoader;
 	protected final String          name;
@@ -52,7 +51,7 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
 
-	protected ExecutorProcessor(String name, ExecutorService executor,
+	protected EventLoopProcessor(String name, ExecutorService executor,
 			boolean autoCancel) {
 		this.autoCancel = autoCancel;
 		contextClassLoader = new ClassLoader(Thread.currentThread()
@@ -64,6 +63,20 @@ public abstract class ExecutorProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 		else {
 			this.executor = executor;
+		}
+	}
+
+	@Override
+	public final void accept(IN runnable) {
+		if(runnable == null){
+			onComplete();
+		}
+		else {
+			if(autoCancel && isTerminated()){
+				Exceptions.onNextDropped(runnable);
+				return;
+			}
+			onNext(runnable);
 		}
 	}
 

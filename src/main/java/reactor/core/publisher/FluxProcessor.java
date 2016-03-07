@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
+import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
@@ -45,7 +46,7 @@ import reactor.core.util.Exceptions;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Receiver, Consumer<IN>, BaseSubscriber<IN> {
+		implements Processor<IN, OUT>, Backpressurable, Receiver, Completable, Consumer<IN>, BaseSubscriber<IN> {
 
 	/**
 	 * Create an asynchronously {@link Flux#dispatchOn(Callable) dispatched} {@link FluxProcessor} multicast/topic
@@ -204,6 +205,10 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			onComplete();
 		}
 		else {
+			if(isTerminated()){
+				Exceptions.onNextDropped(runnable);
+				return;
+			}
 			onNext(runnable);
 		}
 	}

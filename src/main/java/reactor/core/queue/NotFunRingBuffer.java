@@ -117,19 +117,6 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public E claimAndGetPreallocated(long sequence)
-    {
-        sequenceProducer.claim(sequence);
-        return get(sequence);
-    }
-
-    @Override
-    public boolean isPublished(long sequence)
-    {
-        return sequenceProducer.isAvailable(sequence);
-    }
-
-    @Override
     public void addGatingSequence(Sequence gatingSequence)
     {
         sequenceProducer.addGatingSequence(gatingSequence);
@@ -176,13 +163,6 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     {
         return bufferSize;
     }
-
-    @Override
-    public boolean hasAvailableCapacity(int requiredCapacity)
-    {
-        return sequenceProducer.hasAvailableCapacity(requiredCapacity);
-    }
-
     @Override
     public void publish(long sequence)
     {
@@ -210,12 +190,6 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     @Override
     public RingBufferProducer getSequencer() {
         return sequenceProducer;
-    }
-
-    @Override
-    public long cachedRemainingCapacity()
-    {
-        return sequenceProducer.cachedRemainingCapacity();
     }
 
 

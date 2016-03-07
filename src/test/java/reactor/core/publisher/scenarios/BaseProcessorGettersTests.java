@@ -16,7 +16,7 @@
 package reactor.core.publisher.scenarios;
 
 import org.junit.Test;
-import reactor.core.publisher.ExecutorProcessor;
+import reactor.core.publisher.EventLoopProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 
@@ -32,7 +32,7 @@ public class BaseProcessorGettersTests {
 	public void testTopicProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ExecutorProcessor<Object, Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		EventLoopProcessor<Object, Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -44,7 +44,7 @@ public class BaseProcessorGettersTests {
 	public void testWorkQueueProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		ExecutorProcessor<Object, Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		EventLoopProcessor<Object, Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 

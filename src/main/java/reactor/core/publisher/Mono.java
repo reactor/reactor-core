@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.converter.DependencyUtils;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
@@ -645,6 +646,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
+	}
+	/**
+	 * Try converting this {@link Mono} to the given "reactive" type using {@link DependencyUtils} support.
+	 * <p>Currently supports {@code rx.Observable}, {@code rx.Completable}, {@code rx.Single},
+	 * {@code java.util.concurrent.Flow.Publisher}.
+	 *
+	 * {@code mono.as(Observable.class).subscribe() }
+	 *
+	 * @param <E> the returned component type
+	 *
+	 * @return an eventually converted mono
+	 * @throws a {@link UnsupportedOperationException} if conversion fails
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E> E as(Class<E> clazz) {
+		if(Flux.class.isAssignableFrom(clazz)){
+			return (E)this;
+		}
+		return DependencyUtils.convertFromPublisher(this, clazz);
 	}
 
 	/**

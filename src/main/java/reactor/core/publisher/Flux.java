@@ -45,6 +45,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.converter.DependencyUtils;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
@@ -1453,6 +1454,26 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Try converting this {@link Flux} to the given "reactive" type using {@link DependencyUtils} support.
+	 * <p>Currently supports {@code rx.Observable}, {@code rx.Completable}, {@code rx.Single},
+	 * {@code java.util.concurrent.Flow.Publisher}.
+	 *
+	 * {@code flux.as(Observable.class).subscribe() }
+	 *
+	 * @param <E> the returned component type
+	 *
+	 * @return an eventually converted
+	 * @throws a {@link UnsupportedOperationException} if conversion fails
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E> E as(Class<E> clazz) {
+		if(Flux.class.isAssignableFrom(clazz)){
+			return (E)this;
+		}
+		return DependencyUtils.convertFromPublisher(this, clazz);
+	}
+
+	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
 	 * This will actively ignore the sequence and only replay completion or error signals.
 	 * <p>
@@ -2430,7 +2451,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
-		return new FluxElapsed(this);
+		return new FluxElapsed<>(this);
 	}
 
 	/**

@@ -23,8 +23,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
@@ -82,7 +80,7 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
  */
-public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements Backpressurable, MultiProducer {
+public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements Backpressurable, MultiProducer {
 
 	/**
 	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
@@ -580,23 +578,17 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
 		}
 
-		Supplier<Slot<E>> factory = new Supplier<Slot<E>>() {
-			@Override
-			public Slot<E> get() {
-				Slot<E> signal = new Slot<>();
-				if (signalSupplier != null) {
-					signal.value = signalSupplier.get();
-				}
-				return signal;
+		Supplier<Slot<E>> factory = () -> {
+			Slot<E> signal = new Slot<>();
+			if (signalSupplier != null) {
+				signal.value = signalSupplier.get();
 			}
+			return signal;
 		};
 
-		Runnable spinObserver = new Runnable() {
-			@Override
-			public void run() {
-				if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
-					throw Exceptions.AlertException.INSTANCE;
-				}
+		Runnable spinObserver = () -> {
+			if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
+				throw Exceptions.AlertException.INSTANCE;
 			}
 		};
 
@@ -680,12 +672,15 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 	protected void doError(Throwable t) {
 		readWait.signalAllWhenBlocking();
 		barrier.signal();
+		//ringBuffer.markAsTerminated();
+
 	}
 
 	@Override
 	protected void doComplete() {
 		readWait.signalAllWhenBlocking();
 		barrier.signal();
+		//ringBuffer.markAsTerminated();
 	}
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
@@ -706,10 +701,6 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 		return false;
 	}
 
-	RingBuffer<Slot<E>> ringBuffer() {
-		return ringBuffer;
-	}
-
 	@Override
 	public long getPending() {
 		return ringBuffer.getPending();
@@ -720,31 +711,18 @@ public final class TopicProcessor<E> extends ExecutorProcessor<E, E> implements 
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
 		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false)
-		             .newThread(RingBuffer.createRequestTask(s, new Runnable() {
-					@Override
-					public void run() {
-						if (!alive()) {
-							if(cancelled){
-								throw Exceptions.CancelException.INSTANCE;
-							}
-							else {
-								throw Exceptions.AlertException.INSTANCE;
-							}
-						}
-					}
-				}, new Consumer<Long>() {
-					@Override
-					public void accept(Long newMin) {
-						minimum.set(newMin);
-					}
-				}, new LongSupplier() {
-					@Override
-					public long getAsLong() {
-						return SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
-								minimum.getAsLong() :
-								ringBuffer.getMinimumGatingSequence(minimum);
-					}
-				}, readWait, this, (int)ringBuffer.getCapacity())).start();
+		             .newThread(RingBuffer.createRequestTask(s, () -> {
+			             if (!alive()) {
+				             if(cancelled){
+					             throw Exceptions.CancelException.INSTANCE;
+				             }
+				             else {
+					             throw Exceptions.AlertException.INSTANCE;
+				             }
+			             }
+		             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
+						minimum.getAsLong() :
+						ringBuffer.getMinimumGatingSequence(minimum), readWait, this, (int)ringBuffer.getCapacity())).start();
 	}
 
 	@Override

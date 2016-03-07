@@ -430,20 +430,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	abstract public void addGatingSequence(Sequence gatingSequence);
 
 	/**
-	 * Get the cached remaining capacity for this ringBuffer.
-	 * @return The number of slots remaining.
-	 */
-	abstract public long cachedRemainingCapacity();
-
-	/**
-	 * Sets the cursor to a specific sequence and returns the preallocated entry that is stored there.  This can cause a
-	 * data race and should only be done in controlled circumstances, e.g. during initialisation.
-	 * @param sequence The sequence to claim.
-	 * @return The preallocated event.
-	 */
-	abstract public E claimAndGetPreallocated(long sequence);
-
-	/**
 	 * <p>Get the event for a given sequence in the RingBuffer.</p>
 	 *
 	 * <p>This call has 2 uses.  Firstly use this call when publishing to a ring buffer. After calling {@link
@@ -499,23 +485,20 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 		return getSequencer().getGatingSequences();
 	}
 
-	abstract RingBufferProducer getSequencer();
+	abstract RingBufferProducer getSequencer();/*
 
-	/**
-	 * Given specified <tt>requiredCapacity</tt> determines if that amount of space is available.  Note, you can not
-	 * assume that if this method returns <tt>true</tt> that a call to {@link RingBuffer#next()} will not block.
-	 * Especially true if this ring buffer is set up to handle multiple producers.
-	 * @param requiredCapacity The capacity to check for.
-	 * @return <tt>true</tt> If the specified <tt>requiredCapacity</tt> is available <tt>false</tt> if now.
-	 */
-	abstract public boolean hasAvailableCapacity(int requiredCapacity);
-
-	/**
-	 * Determines if a particular entry has been published.
-	 * @param sequence The sequence to identify the entry.
-	 * @return If the value has been published or not.
-	 */
-	abstract public boolean isPublished(long sequence);
+	*//*
+	 * Mark the remaining capacity of this buffer to 0 to prevent later next.
+	 *//*
+	public final void markAsTerminated(){
+		addGatingSequence(newSequence(getCursor()));
+		try{
+			tryNext((int)remainingCapacity());
+		}
+		catch (Exceptions.AlertException | Exceptions.InsufficientCapacityException ice){
+			//ignore;
+		}
+	}*/
 
 	/**
 	 * Create a new {@link RingBufferReceiver} to be used by an EventProcessor to track which messages are available to be read

@@ -730,7 +730,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * Blocking shutdown of the internal {@link EventLoopProcessor} with {@link Processor#onComplete()}. If the
 	 * processor doesn't implement.
 	 *
 	 * The method will only return after shutdown has been confirmed, waiting undefinitely so.
@@ -742,9 +742,9 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * Blocking shutdown of the internal {@link ExecutorProcessor} with {@link Processor#onComplete()}. If the
+	 * Blocking shutdown of the internal {@link EventLoopProcessor} with {@link Processor#onComplete()}. If the
 	 * processor doesn't implement
-	 * {@link ExecutorProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
+	 * {@link EventLoopProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
 	 * @param timeout the time un given unit to wait for
 	 * @param timeUnit the unit
 	 *
@@ -754,10 +754,10 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		if (scheduler == null) {
 			return true;
 		}
-		else if (scheduler instanceof ExecutorProcessor) {
-			return ((ExecutorProcessor) scheduler).awaitAndShutdown(timeout, timeUnit);
+		else if (scheduler instanceof EventLoopProcessor) {
+			return ((EventLoopProcessor) scheduler).awaitAndShutdown(timeout, timeUnit);
 		}
-		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement ExecutorProcessor");
+		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement EventLoopProcessor");
 	}
 
 	/**
@@ -803,20 +803,20 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		if (scheduler == null) {
 			return Flux.empty();
 		}
-		else if (scheduler instanceof ExecutorProcessor) {
-			return ((ExecutorProcessor<Runnable, Runnable>) scheduler).forceShutdown();
+		else if (scheduler instanceof EventLoopProcessor) {
+			return ((EventLoopProcessor<Runnable, Runnable>) scheduler).forceShutdown();
 		}
-		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement ExecutorProcessor");
+		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement EventLoopProcessor");
 	}
 
 	@Override
 	public boolean isTerminated() {
-		return scheduler != null && scheduler instanceof ExecutorProcessor && ((ExecutorProcessor) scheduler).isTerminated();
+		return scheduler != null && scheduler instanceof EventLoopProcessor && ((EventLoopProcessor) scheduler).isTerminated();
 	}
 
 	@Override
 	public boolean isStarted() {
-		return scheduler == null || !(scheduler instanceof ExecutorProcessor) || ((ExecutorProcessor) scheduler).isStarted();
+		return scheduler == null || !(scheduler instanceof EventLoopProcessor) || ((EventLoopProcessor) scheduler).isStarted();
 	}
 
 	/**
@@ -826,8 +826,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		if (scheduler == null) {
 			return;
 		}
-		if (scheduler instanceof ExecutorProcessor) {
-			((ExecutorProcessor) scheduler).shutdown();
+		if (scheduler instanceof EventLoopProcessor) {
+			((EventLoopProcessor) scheduler).shutdown();
 		}
 		else {
 			scheduler.accept(null);
