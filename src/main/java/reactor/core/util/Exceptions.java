@@ -144,25 +144,6 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Throws the exception if it is a regular runtimeException or wraps
-	 * it into a ReactiveException.
-	 * <p>
-	 * Use unwrap to get back the original cause.
-	 * <p>
-	 * The method calls throwIfFatal().
-	 *
-	 * @param e the exception to propagate
-	 * @return dummy return type to allow using throw with the function call
-	 */
-	public static RuntimeException propagate(Throwable e) {
-		throwIfFatal(e);
-		if (e instanceof RuntimeException) {
-			throw (RuntimeException)e;
-		}
-		throw new UpstreamException(e);
-	}
-
-	/**
 	 * Atomic utility to safely mark a volatile throwable reference with a terminal marker.
 	 *
 	 * @param field the atomic container
