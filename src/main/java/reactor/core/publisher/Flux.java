@@ -553,7 +553,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new failed {@link Flux}
 	 */
 	public static <T> Flux<T> error(Throwable error) {
-		return Mono.<T>error(error).flux();
+		return error(error, false);
 	}
 
 	/**
@@ -4339,7 +4339,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
-		return collect(() -> new PriorityQueue<>(comparator), PriorityQueue::add).map(q -> {
+		return collect(() -> new PriorityQueue<T>(comparator), PriorityQueue::add).map(q -> {
 			PriorityQueue<T> temp = new PriorityQueue<T>( q );
 			List<T> res = new ArrayList<T>(q.size());
 
