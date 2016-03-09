@@ -3612,6 +3612,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sample.png" alt="">
 	 *
 	 * @param sampler the sampler {@link Publisher}
+	 * 
+	 * @param <U> the type of the sampler sequence
 	 *
 	 * @return a sampled {@link Flux} by last item observed when the sampler {@link Publisher} signals
 	 */
@@ -3697,6 +3699,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param throttlerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop checking
 	 * others values from this sequence and emit the selecting item
+	 * @param maxConcurrency the maximum number of concurrent timeouts
 	 * @param <U> the throttling type
 	 *
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
@@ -3896,9 +3899,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithi.png" alt="">
 	 *
+	 * @param iterable the sequence of values to start the sequence with
+	 * 
 	 * @return a prefixed {@link Flux} with given {@link Iterable}
 	 */
-	public final Flux<T> startWith(Iterable<T> iterable) {
+	public final Flux<T> startWith(Iterable<? extends T> iterable) {
 		return startWith(fromIterable(iterable));
 	}
 
@@ -3908,6 +3913,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithv.png" alt="">
 	 *
+	 * @param values the array of values to start with
+	 * 
 	 * @return a prefixed {@link Flux} with given values
 	 */
 	@SafeVarargs
@@ -3922,6 +3929,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwith.png" alt="">
 	 *
+	 * @param publisher the Publisher whose values to prepend
+	 * 
 	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
 	 */
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
@@ -4219,6 +4228,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 *
+	 * @param <U> the type of the timeout Publisher
+	 * 
 	 * @return an expirable {@link Flux} if the first item does not come before a {@link Publisher} signal
 	 *
 	 */
@@ -4239,6 +4250,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 * @param nextTimeoutFactory the timeout {@link Publisher} factory for each next item
 	 *
+	 * @param <U> the type of the elements of the first timeout Publisher
+	 * @param <V> the type of the elements of the subsequent timeout Publishers
+	 * 
 	 * @return a first then per-item expirable {@link Flux}
 	 *
 	 */
@@ -4259,6 +4273,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param nextTimeoutFactory the timeout {@link Publisher} factory for each next item
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
 	 *
+	 * @param <U> the type of the elements of the first timeout Publisher
+	 * @param <V> the type of the elements of the subsequent timeout Publishers
+	 * 
 	 * @return a first then per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 *
 	 */
@@ -4270,7 +4287,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@link <T>} associated data for each item from this {@link Flux}
+	 * millis and T2 {@link T} associated data for each item from this {@link Flux}
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
@@ -4315,7 +4332,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
-	 *
+	 * 
+	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * @param queueProvider the supplier of the queue implementation to be used for transferring elements
+	 * across threads.
+	 * 
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable(long batchSize, Supplier<Queue<T>> queueProvider) {
@@ -4394,7 +4415,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * 
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
 	 */
@@ -4412,6 +4434,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 * 
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
 	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
@@ -4431,6 +4456,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
 	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
 	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
@@ -4454,6 +4482,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
 	 */
@@ -4471,6 +4501,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
 	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
@@ -4490,6 +4523,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
 	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
 	 *
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
@@ -4639,7 +4675,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
 	 * emits to complete the window
-	 *
+	 * 
+	 * @param <U> the type of the sequence opening windows
+	 * @param <V> the type of the sequence closing windows opened by the bucketOpening Publisher's elements
+	 * 
 	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
 	 * a selected {@link Publisher} emits
 	 */
@@ -4789,7 +4828,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/withlatestfrom.png" alt="">
 	 *
 	 * @param other the {@link Publisher} to combine with
+	 * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
+	 * 
 	 * @param <U> the other {@link Publisher} sequence type
+	 * @param <R> the result type
 	 *
 	 * @return a combined {@link Flux} gated by another {@link Publisher}
 	 */
@@ -4883,6 +4925,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipwithiterable.png" alt="">
 	 *
+	 * @param <T2> the value type of the other iterable sequence
+	 *
 	 * @return a zipped {@link Flux}
 	 *
 	 */
@@ -4901,6 +4945,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param iterable the {@link Iterable} to pair with
 	 * @param zipper the {@link BiFunction} combinator
 	 *
+	 * @param <T2> the value type of the other iterable sequence
+	 * @param <V> the result type
+	 * 
 	 * @return a zipped {@link Flux}
 	 *
 	 */
@@ -4920,11 +4967,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return (int)c;
 	}
 
+	@SuppressWarnings("rawtypes")
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
+	@SuppressWarnings("rawtypes")
 	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
+	@SuppressWarnings("rawtypes")
 	static final Function        TIMESTAMP_OPERATOR      = o -> Tuple.of(System.currentTimeMillis(), o);
+	@SuppressWarnings("rawtypes")
 	static final Supplier        SET_SUPPLIER            = HashSet::new;
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
+	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
 	
 	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
