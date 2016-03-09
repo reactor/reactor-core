@@ -489,6 +489,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T5> The type of the fifth value.
 	 * @param <T6> The type of the sixth value.
 	 * @param <T7> The type of the seventh value.
+     * @param <T8> The type of the eighth value.
 	 * @param <R> The type of the return value.
 	 *
 	 * @return The unchecked conversion function to {@link Tuple8}.
