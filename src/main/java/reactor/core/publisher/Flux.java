@@ -2200,6 +2200,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize.png" alt="">
 	 *
+	 * @param <X> the dematerialized type
+	 * 
 	 * @return a dematerialized {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
@@ -2281,6 +2283,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 *
+	 * @param <V> the type of the key extracted from each value in this sequence
+	 * 
 	 * @return a filtering {@link Flux} with values having distinct keys
 	 */
 	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
@@ -2292,7 +2296,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/distinctuntilchanged.png" alt="">
-
 	 *
 	 * @return a filtering {@link Flux} with conflated repeated elements
 	 */
@@ -2310,6 +2313,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keySelector function to compute comparison key for each element
 	 *
+	 * @param <V> the type of the key extracted from each value in this sequence
+	 * 
 	 * @return a filtering {@link Flux} with conflated repeated elements given a comparison key
 	 */
 	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
@@ -2467,7 +2472,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Map this {@link Flux} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
-	 * {@link <T>} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * {@link T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal OR between two next signals.
 	 *
 	 * <p>
@@ -2727,7 +2732,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
-	 *
+	 * 
+	 * @param <K> the key type extracted from each value of this sequence
+	 * 
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 */
 	@SuppressWarnings("unchecked")
@@ -2744,6 +2751,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
+
+	 * @param <K> the key type extracted from each value of this sequence
+	 * @param <V> the value type extracted from each value of this sequence
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 *
@@ -2940,7 +2950,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multiplex.png" alt="">
-	 *
+	 * 
+	 * @param concurrency the concurrency level of the operation
 	 * @param fn the indexed via
 	 * {@link GroupedFlux#key()} sequence transformation to be merged in the returned {@link Flux}
 	 * @param <V> the type of the return value of the transformation function
@@ -3280,7 +3291,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return publish(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
 	}
 
-
 	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
 	 * subscribers in a backpressure-aware manner. This will effectively turn any type of sequence into a hot sequence.
@@ -3310,7 +3320,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Mono<T> publishNext() {
 		return new MonoProcessor<>(this);
 	}
-
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
@@ -3418,7 +3427,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return repeatWhen(v -> v.filter(t -> predicate.getAsBoolean()));
+		return repeatWhen(v -> v.takeWhile(t -> predicate.getAsBoolean()));
 	}
 
 	/**
@@ -3519,7 +3528,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
 	 */
 	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
-		return retryWhen(v -> v.filter(retryMatcher));
+		Flux<Integer> one = Flux.just(1);
+		return retryWhen(v -> v.flatMap(e -> retryMatcher.test(e) ? one : error(e)));
 	}
 
 	/**
