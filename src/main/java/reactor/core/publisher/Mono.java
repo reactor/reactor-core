@@ -68,7 +68,9 @@ import reactor.core.util.ReactiveStateUtils;
  *
  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
  * Publisher} as much as possible.
- *
+ * 
+ * @param <T> the type of the single value of this class
+ * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @see Flux
@@ -123,6 +125,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
+	 * 
+	 * @param <T> the element type of the returned Mono instance
 	 *
 	 * @return a new {@link Mono} factory
 	 */
@@ -302,6 +306,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 *
 	 * @param future the future to poll value from
+	 * @param <T> the value type of the Future and the retuned Mono instance
 	 * @return a new {@link Mono}
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future) {
@@ -315,6 +320,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 *
+	 * @param <T> the value type of the Future and the retuned Mono instance
 	 * @param future the future to poll value from
 	 * @param timeout the timeout in milliseconds
 	 * @return a new {@link Mono}
@@ -331,6 +337,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 *
 	 * @param future the future to poll value from
+	 * @param duration the duration to wait for the result of the future before failing with onError
+	 * @param <T> the value type of the Future and the retuned Mono instance
 	 * @return a new {@link Mono}
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future, Duration duration) {
@@ -619,6 +627,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param combinator the combinator {@link Function}
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
+	 * @param <V> The result type
 	 *
 	 * @return a {@link Mono}.
 	 */
@@ -642,7 +651,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @param transformer the {@link Function} applying this {@link Mono}
 	 * @param <P> the returned {@link Publisher} output
-	 *
+	 * @param <V> the element type of the returned Publisher
+	 * 
 	 * @return the transformed {@link Mono}
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
@@ -656,7 +666,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@code mono.as(Observable.class).subscribe() }
 	 *
 	 * @param <E> the returned component type
-	 *
+	 * @param clazz the target class for the conversion
+	 * 
 	 * @return an eventually converted mono
 	 * @throws UnsupportedOperationException if conversion fails
 	 */
@@ -675,7 +686,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
 	 * <p>
 	 * @param other the {@link Mono} to combine with
-	 *
+	 * @param <T2> the element type of the other Mono instance
+	 * 
 	 * @return a new combined Mono
 	 * @see #when
 	 */
@@ -703,6 +715,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 *
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
@@ -717,6 +730,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 *
+	 * @param <V> the element type of the supplied Mono
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
 	 * @param runOnError runs a supplied {@link Publisher} on error as well as on complete
 	 *
@@ -736,6 +750,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
 	 *
 	 * @param <E> the {@link Mono} output type
+	 * @param stream the target type to cast to
 	 *
 	 * @return a casted {@link Mono}
 	 */
@@ -901,7 +916,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
-	 *
+	 * @param <X> the dematerialized type
+	 * 
 	 * @return a dematerialized {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
@@ -1067,7 +1083,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Map this {@link Mono} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
-	 * {@link <T>} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * {@link T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal.
 	 *
 	 * <p>
@@ -1872,7 +1888,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutp1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
-	 *
+	 * @param <U> the element type of the timeout Publisher
+	 * 
 	 * @return an expirable {@link Mono} if the first item does not come before a {@link Publisher} signal
 	 *
 	 */
@@ -1891,6 +1908,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param firstTimeout the timeout
 	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 * @param <U> the element type of the timeout Publisher
 	 *
 	 * @return a first then per-item expirable {@link Mono} with a fallback {@link Publisher}
 	 *
@@ -1901,7 +1919,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@link <T>} associated data for the eventual item from this {@link Mono}
+	 * millis and T2 {@link T} associated data for the eventual item from this {@link Mono}
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp1.png" alt="">
