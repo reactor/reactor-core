@@ -68,21 +68,24 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 	@Override
 	@SuppressWarnings("unchecked")
 	public Flux toPublisher(Object o) {
-		final Observable<Object> obs = (Observable<Object>) o;
-		if (ScalarSynchronousObservable.class.isAssignableFrom(obs.getClass())) {
-			return Flux.just(((ScalarSynchronousObservable) obs).get());
-		}
-		return new Flux<Object>() {
-			@Override
-			public void subscribe(final Subscriber<? super Object> s) {
-				try {
-					obs.subscribe(new RxSubscriberToRS(s));
-				}
-				catch (Throwable t) {
-					EmptySubscription.error(s, t);
-				}
+		if (o instanceof Observable) {
+			final Observable<Object> obs = (Observable<Object>) o;
+			if (ScalarSynchronousObservable.class.isAssignableFrom(obs.getClass())) {
+				return Flux.just(((ScalarSynchronousObservable) obs).get());
 			}
-		};
+			return new Flux<Object>() {
+				@Override
+				public void subscribe(final Subscriber<? super Object> s) {
+					try {
+						obs.subscribe(new RxSubscriberToRS(s));
+					}
+					catch (Throwable t) {
+						EmptySubscription.error(s, t);
+					}
+				}
+			};
+		}
+		return null;
 	}
 
 	@Override
@@ -179,6 +182,7 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 
 		public RxSubscriberToRS(Subscriber<? super Object> s) {
 			this.s = s;
+			request(0L);
 		}
 
 		void doRequest(long n) {
@@ -187,7 +191,6 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 
 		@Override
 		public void onStart() {
-			request(0L);
 			s.onSubscribe(new Subscription() {
 				@Override
 				public void request(long n) {

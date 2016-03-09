@@ -56,8 +56,8 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 	@Override
 	@SuppressWarnings("unchecked")
 	public Flux toPublisher(Object o) {
-		final Flow.Publisher<?> pub = (Flow.Publisher<?>) o;
-		if (Flow.Publisher.class.isAssignableFrom(o.getClass())) {
+		if (o instanceof Flow.Publisher) {
+			final Flow.Publisher<?> pub = (Flow.Publisher<?>) o;
 			return new Flux<Object>() {
 				@Override
 				public void subscribe(final Subscriber<? super Object> s) {
