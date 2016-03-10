@@ -595,7 +595,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"varargs", "unchecked"})
 	private static <T, V> Mono<V> when(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
 	}
 
 	/**
@@ -634,7 +634,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public static <T, V> Mono<V> when(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
 	}
 
 //	 ==============================================================================================================
@@ -657,26 +657,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
-	}
-	/**
-	 * Try converting this {@link Mono} to the given "reactive" type using {@link DependencyUtils} support.
-	 * <p>Currently supports {@code rx.Observable}, {@code rx.Completable}, {@code rx.Single},
-	 * {@code java.util.concurrent.Flow.Publisher}.
-	 *
-	 * {@code mono.as(Observable.class).subscribe() }
-	 *
-	 * @param <E> the returned component type
-	 * @param clazz the target class for the conversion
-	 * 
-	 * @return an eventually converted mono
-	 * @throws UnsupportedOperationException if conversion fails
-	 */
-	@SuppressWarnings("unchecked")
-	public final <E> E as(Class<E> clazz) {
-		if(Flux.class.isAssignableFrom(clazz)){
-			return (E)this;
-		}
-		return DependencyUtils.convertFromPublisher(this, clazz);
 	}
 
 	/**
@@ -739,7 +719,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier, boolean runOnError) {
 		return MonoSource.wrap(after().flatMap(null,
 				!runOnError ? null : throwable -> Flux.concat(sourceSupplier.get(), Mono
-						.<V>error(throwable)),
+						.error(throwable)),
 				sourceSupplier));
 	}
 
@@ -1132,9 +1112,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				mapper,
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.<R>one(),
+				QueueSupplier.one(),
 				prefetch,
-				QueueSupplier.<R>get(prefetch)
+				QueueSupplier.get(prefetch)
 		);
 	}
 
@@ -1164,9 +1144,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				Function.identity(),
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.<R>xs(),
+				QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>xs()
+				QueueSupplier.xs()
 		);
 	}
 

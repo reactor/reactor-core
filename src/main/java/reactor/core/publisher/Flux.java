@@ -185,7 +185,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		return new FluxCombineLatest<>(sources,
 				combinator,
-				QueueSupplier.<FluxCombineLatest.SourceAndArray>get(prefetch),
+				QueueSupplier.get(prefetch),
 				prefetch);
 	}
 
@@ -385,7 +385,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		return new FluxCombineLatest<>(sources,
 				combinator,
-				QueueSupplier.<FluxCombineLatest.SourceAndArray>get(prefetch),
+				QueueSupplier.get(prefetch),
 				prefetch);
 	}
 
@@ -913,9 +913,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				Function.identity(),
 				false,
 				concurrency,
-				QueueSupplier.<T>get(concurrency),
+				QueueSupplier.get(concurrency),
 				prefetch,
-				QueueSupplier.<T>get(prefetch)
+				QueueSupplier.get(prefetch)
 		);
 	}
 
@@ -1473,27 +1473,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Try converting this {@link Flux} to the given "reactive" type using {@link DependencyUtils} support.
-	 * <p>Currently supports {@code rx.Observable}, {@code rx.Completable}, {@code rx.Single},
-	 * {@code java.util.concurrent.Flow.Publisher}.
-	 *
-	 * {@code flux.as(Observable.class).subscribe() }
-	 *
-	 * @param <E> the returned component type
-	 * @param clazz the the class to convert to
-	 *
-	 * @return an eventually converted
-	 * @throws a {@link UnsupportedOperationException} if conversion fails
-	 */
-	@SuppressWarnings("unchecked")
-	public final <E> E as(Class<E> clazz) {
-		if(Flux.class.isAssignableFrom(clazz)){
-			return (E)this;
-		}
-		return DependencyUtils.convertFromPublisher(this, clazz);
-	}
-
-	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
 	 * This will actively ignore the sequence and only replay completion or error signals.
 	 * <p>
@@ -1539,7 +1518,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier, boolean runOnError) {
 		return flatMap(null, !runOnError ? null : throwable ->
-				concat(afterSupplier.get(), Flux.<V>error(throwable)),
+				concat(afterSupplier.get(), Flux.error(throwable)),
 				afterSupplier);
 	}
 
@@ -1872,7 +1851,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> cache(int history) {
-		return multicast(EmitterProcessor.<T>replay(history)).autoConnect();
+		return multicast(EmitterProcessor.replay(history)).autoConnect();
 	}
 	
 	/**
@@ -1942,7 +1921,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a concatenated {@link Flux}
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>get(prefetch), prefetch,
+		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
 
@@ -1984,7 +1963,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.<T>get(prefetch), prefetch,
+		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END);
 	}
 
@@ -2256,7 +2235,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return new FluxPublishOnValue<>(value, scheduler, true);
 		}
 
-		return new FluxDispatchOn<>(this, scheduler, true, prefetch, QueueSupplier.<T>get(prefetch));
+		return new FluxDispatchOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
 	}
 
 
@@ -2666,9 +2645,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				mapper,
 				delayError,
 				concurrency,
-				QueueSupplier.<V>get(concurrency),
+				QueueSupplier.get(concurrency),
 				prefetch,
-				QueueSupplier.<V>get(prefetch)
+				QueueSupplier.get(prefetch)
 		);
 	}
 
@@ -2695,9 +2674,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				Function.identity(),
 				false,
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>xs(),
+				QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.<R>xs()
+				QueueSupplier.xs()
 		);
 	}
 
@@ -2762,7 +2741,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Function<? super T, ? extends V> valueMapper) {
 		return new FluxGroupBy<>(this, keyMapper, valueMapper,
 				QueueSupplier.<GroupedFlux<K, V>>small(),
-				QueueSupplier.<V>unbounded(),
+				QueueSupplier.unbounded(),
 				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
@@ -3305,7 +3284,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
-		return new FluxPublish<>(this, prefetch, QueueSupplier.<T>get(prefetch));
+		return new FluxPublish<>(this, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**
@@ -3529,7 +3508,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
 		Flux<Integer> one = Flux.just(1);
-		return retryWhen(v -> v.flatMap(e -> retryMatcher.test(e) ? one : error(e)));
+		return retryWhen(v -> v.flatMap(e -> retryMatcher.test(e) ? one : Flux.<T>error(e)));
 	}
 
 	/**
@@ -3805,7 +3784,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} with the eventual single item or no item
 	 */
 	public final Mono<T> singleOrEmpty() {
-		return new MonoSingle<>(this, MonoSingle.<T>completeOnEmptySequence());
+		return new MonoSingle<>(this, MonoSingle.completeOnEmptySequence());
 	}
 
 	/**
@@ -4601,7 +4580,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
-		return new FluxWindow<>(this, maxSize, QueueSupplier.<T>get(maxSize));
+		return new FluxWindow<>(this, maxSize, QueueSupplier.get(maxSize));
 	}
 
 	/**
@@ -4633,8 +4612,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxWindow<>(this,
 				maxSize,
 				skip,
-				QueueSupplier.<T>xs(),
-				QueueSupplier.<UnicastProcessor<T>>xs());
+				QueueSupplier.xs(),
+				QueueSupplier.xs());
 	}
 
 	/**
@@ -4651,7 +4630,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return new FluxWindowBoundary<>(this,
 				boundary,
-				QueueSupplier.<T>unbounded(PlatformDependent.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
 				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE));
 	}
 
@@ -4699,7 +4678,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				bucketOpening,
 				closeSelector,
 				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
-				QueueSupplier.<T>unbounded(PlatformDependent.XS_BUFFER_SIZE));
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE));
 	}
 
 	/**
