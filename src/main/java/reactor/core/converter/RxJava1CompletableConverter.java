@@ -16,7 +16,7 @@ public class RxJava1CompletableConverter extends PublisherConverter<Completable>
     static final RxJava1CompletableConverter INSTANCE = new RxJava1CompletableConverter();
 
     @SuppressWarnings("TypeMayBeWeakened")
-    static Completable from(Mono<Void> noValue) {
+    static Completable from(Publisher<?> noValue) {
         return INSTANCE.fromPublisher(noValue);
     }
 
