@@ -69,7 +69,7 @@ public final class DependencyUtils {
         }
 
         try {
-            Flux.class.getClassLoader().loadClass("reactor.io.net.ReactiveChannel");
+            Flux.class.getClassLoader().loadClass("reactor.io.ipc.RemoteFlux");
             detected |= REACTOR_NET;
         } catch (ClassNotFoundException ignore) {
 
