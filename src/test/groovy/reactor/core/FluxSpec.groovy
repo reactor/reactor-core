@@ -17,18 +17,11 @@ package reactor.core
 
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
-import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.FluxProcessor
-import reactor.core.publisher.Mono
-import reactor.core.publisher.Flux
-import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.SchedulerGroup
-import reactor.core.publisher.Signal
+import reactor.core.publisher.*
 import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
 import reactor.core.timer.Timer
 import reactor.core.util.ReactiveStateUtils
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -2705,6 +2698,16 @@ class FluxSpec extends Specification {
 
 	then: 'no exceptions'
 		a == 1
+  }
+
+  def 'A Flux of iterable can be mapped combining it items into another iterable'(){
+	  given: 'Flux  filled with iterable'
+	      def iflux = Flux.fromIterable(1..5)
+	  when: 'It maps multiplying to 2'
+	     def mapped =  iflux.flatMapIterable({ Arrays.asList(it*2) })
+	  then: 'Must all be multiplied by 2'
+	      def list = mapped.toList().get()
+	      list == Arrays.asList(2,4,6,8,10)
   }
 
 	static class SimplePojo {
