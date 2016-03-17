@@ -177,7 +177,7 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 					a.onNext(v);
 
 					if (r != Long.MAX_VALUE) {
-						REQUESTED.decrementAndGet(this);
+						r = REQUESTED.decrementAndGet(this);
 					}
 				}
 
