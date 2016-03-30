@@ -21,6 +21,8 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,7 +34,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.converter.DependencyUtils;
+
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
@@ -1536,18 +1538,20 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		if (maxRepeat != Integer.MAX_VALUE) {
-			Function<Flux<Long>, Flux<Long>> skip = f -> f.takeWhile(v -> v == 0L);
-			return MonoSource.wrap(new FluxRepeatWhen<T>(this,
-					skip.andThen(flux -> flux.zipWith(Flux.range(0, maxRepeat)
-					                                      .concatWith(Flux.error(new IllegalStateException(
-							                                      "Exceeded maximum number of retries"), true)),
-							1,
-							(a, b) -> b)
-					                         .map(a -> (long)a))
-					    .andThen(repeatFactory)));
+			return Mono.defer(() -> {
+				AtomicBoolean nonEmpty = new AtomicBoolean();
+				AtomicInteger count = new AtomicInteger();
+				return Flux.from(this.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
+						.repeatWhen(o -> repeatFactory.apply(o.takeWhile(e -> !nonEmpty.get() && count.getAndIncrement() < maxRepeat)))
+						.single();
+			});
 		}
-		Function<Flux<Long>, Flux<Long>> skip = f -> f.takeWhile(v -> v == 0L).scan(0L, (v, acc) -> acc++);
-		return MonoSource.wrap(new FluxRepeatWhen<T>(this, skip.andThen(repeatFactory)));
+		return Mono.defer(() -> {
+			AtomicBoolean nonEmpty = new AtomicBoolean();
+			return Flux.from(this.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
+					.repeatWhen(o -> repeatFactory.apply(o.takeWhile(e -> !nonEmpty.get())))
+					.single();
+		});
 	}
 
 
