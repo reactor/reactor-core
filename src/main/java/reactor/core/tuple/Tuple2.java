@@ -107,7 +107,6 @@ public class Tuple2<T1, T2> extends Tuple {
 
 	@Override
 	public String toString() {
-		return super.toString() +
-		  (t2 != null ? "," + t2.toString() : "");
+		return (t1 != null ? t1.toString() + "," : "") + (t2 != null ? t2.toString() : "");
 	}
 }
