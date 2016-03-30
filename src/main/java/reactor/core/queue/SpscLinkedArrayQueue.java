@@ -93,9 +93,11 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
             return null;
         }
         if (o == NEXT) {
-            a = (AtomicReferenceArray<Object>)a.get(m + 1);
-            o = a.get(offset);
-            consumerArray = a;
+            AtomicReferenceArray<Object> b = (AtomicReferenceArray<Object>)a.get(m + 1);
+            a.lazySet(m + 1, null);
+            o = b.get(offset);
+            a = b;
+            consumerArray = b;
         }
         CONSUMER_INDEX.lazySet(this, ci + 1);
         a.lazySet(offset, null);
