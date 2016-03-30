@@ -284,7 +284,7 @@ implements Fuseable, Backpressurable  {
 
 		@Override
 		public void onComplete() {
-			for (UnicastGroupedPublisher<K, V> g : groupMap.values()) {
+			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onComplete();
 			}
 			groupMap.clear();
