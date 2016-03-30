@@ -59,6 +59,14 @@ public class TupleTests {
 	}
 
 	@Test
+	public void tupleNotEquals() {
+		Tuple2<String, String> t2a = Tuple.of("ALPHA", "BRAVO");
+		Tuple2<String, String> t2b = Tuple.of("ALPHA", "CHARLIE");
+
+		assertThat("Tuples of same length and values are not equal.", t2a, is(not(t2b)));
+	}
+
+	@Test
 	public void tuplesOfDifferentLengthAreNotEqual() {
 		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
 		Tuple2<String, Long> t2 = Tuple.of("string", 1L);

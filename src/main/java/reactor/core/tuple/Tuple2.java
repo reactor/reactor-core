@@ -92,7 +92,7 @@ public class Tuple2<T1, T2> extends Tuple {
 
 		Tuple2 tuple2 = (Tuple2) o;
 
-		return t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null &&
+		return (t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null) &&
 				t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
 
 	}
