@@ -281,16 +281,22 @@ implements Fuseable, Backpressurable  {
 				Exceptions.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
+			for (UnicastGroupedPublisher<K, V> g : groupMap.values()) {
+				g.onComplete();
+			}
+			groupMap.clear();
+			GROUP_COUNT.decrementAndGet(this);
 			done = true;
 			if (enableAsyncFusion) {
-				signalAsyncComplete();
+				actual.onComplete();
 			} else {
 				drain();
 			}
 		}
+
 
 		@Override
 		public long getCapacity() {
