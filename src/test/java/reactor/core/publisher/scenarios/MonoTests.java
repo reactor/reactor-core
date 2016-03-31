@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.tuple.Tuple2;
 
@@ -78,5 +79,14 @@ public class MonoTests {
 		                             .get();
 		assertThat("Alternate mono not seen", h.getT2(), is("Spring Reactive world"));
 		System.out.println(h.getT1());
+	}
+
+	@Test
+	public void testMono() throws Exception {
+		MonoProcessor<String> promise = MonoProcessor.create();
+		promise.onNext("test");
+		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
+		promise.consume(v -> successCountDownLatch.countDown());
+		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
 	}
 }
