@@ -359,7 +359,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return MonoSource.wrap(new FluxPeek<>(MonoEmpty.<Void>instance(), null, null, null, runnable, null, null,
+		return MonoSource.wrap(new FluxPeek<>(MonoEmpty.instance(), null, null, null, runnable, null, null,
 				null));
 	}
 
@@ -455,7 +455,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return when(Tuple.<T1, T2>fn2(), p1, p2);
+		return when(Tuple.fn2(), p1, p2);
 	}
 
 	/**
@@ -475,7 +475,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return when(Tuple.<T1, T2, T3>fn3(), p1, p2, p3);
+		return when(Tuple.fn3(), p1, p2, p3);
 	}
 
 	/**
@@ -500,7 +500,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return when(Tuple.<T1, T2, T3, T4>fn4(), p1, p2, p3, p4);
+		return when(Tuple.fn4(), p1, p2, p3, p4);
 	}
 
 	/**
@@ -528,7 +528,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return when(Tuple.<T1, T2, T3, T4, T5>fn5(), p1, p2, p3, p4, p5);
+		return when(Tuple.fn5(), p1, p2, p3, p4, p5);
 	}
 
 	/**
@@ -559,7 +559,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return when(Tuple.<T1, T2, T3, T4, T5, T6> fn6(), p1, p2, p3, p4, p5, p6);
+		return when(Tuple.fn6(), p1, p2, p3, p4, p5, p6);
 	}
 
 	/**
@@ -1196,9 +1196,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		if(this instanceof Supplier){
 			return get();
 		}
-		MonoProcessor<T> result = new MonoProcessor<T>(this);
-		subscribe(result);
-		return result.get(timeout);
+		return subscribe().get(timeout);
 	}
 
 	/**
