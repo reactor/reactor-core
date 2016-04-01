@@ -16,66 +16,79 @@
 
 package reactor.core.publisher;
 
-import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.Test;
 import reactor.core.test.TestSubscriber;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class MonoRepeatWhenEmptyTest {
-	@Test
-	public void repeatInfinite() {
-		AtomicInteger c = new AtomicInteger();
-		
-		Mono<Integer> source = Mono.defer(
-		        () -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just(c.get()));
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
-		
-		source.repeatWhenEmpty(o -> o).subscribe(ts);
-		
-		Assert.assertEquals(4, c.get());
-		
-		ts.assertValues(4)
-		.assertComplete()
-		.assertNoError();
-	}
+    @Test
+    public void repeatInfinite() {
+        AtomicInteger c = new AtomicInteger();
 
+        Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
-	@Test
-	public void repeatFinite() {
-		AtomicInteger c = new AtomicInteger();
-		
-		Mono<Integer> source = Mono.defer(
-		        () -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just(c.get()));
+        List<Long> iterations = new ArrayList<>();
+        TestSubscriber<String> ts = new TestSubscriber<>();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
-		
-		source.repeatWhenEmpty(1000, o -> o).subscribe(ts);
-		
-		Assert.assertEquals(4, c.get());
-		
-		ts.assertValues(4)
-		.assertComplete()
-		.assertNoError();
-	}
+        source
+            .repeatWhenEmpty(o -> o.doOnNext(iterations::add))
+            .subscribe(ts);
 
-	@Test
-	public void repeatFiniteLessTimes() {
-		AtomicInteger c = new AtomicInteger();
-		
-		Mono<Integer> source = Mono.defer(
-		        () -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just(c.get()));
+        ts
+            .assertValues("test-data")
+            .assertComplete()
+            .assertNoError();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
-		
-		source.repeatWhenEmpty(2, o -> o).subscribe(ts);
-		
-		Assert.assertEquals(3, c.get());
-		
-		ts.assertNoValues()
-		.assertNotComplete()
-		.assertError(NoSuchElementException.class);
-	}
+        Assert.assertEquals(4, c.get());
+        Assert.assertEquals(Arrays.asList(0L, 1L, 2L), iterations);
+    }
+
+    @Test
+    public void repeatFinite() {
+        AtomicInteger c = new AtomicInteger();
+
+        Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
+
+        List<Long> iterations = new ArrayList<>();
+        TestSubscriber<String> ts = new TestSubscriber<>();
+
+        source
+            .repeatWhenEmpty(1000, o -> o.doOnNext(iterations::add))
+            .subscribe(ts);
+
+        ts
+            .assertValues("test-data")
+            .assertComplete()
+            .assertNoError();
+
+        Assert.assertEquals(4, c.get());
+        Assert.assertEquals(Arrays.asList(0L, 1L, 2L), iterations);
+    }
+
+    @Test
+    public void repeatFiniteExceeded() {
+        AtomicInteger c = new AtomicInteger();
+
+        Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
+
+        List<Long> iterations = new ArrayList<>();
+        TestSubscriber<String> ts = new TestSubscriber<>();
+
+        source
+            .repeatWhenEmpty(2, o -> o.doOnNext(iterations::add))
+            .subscribe(ts);
+
+        ts
+            .assertError(IllegalStateException.class);
+
+        Assert.assertEquals(3, c.get());
+        Assert.assertEquals(Arrays.asList(0L, 1L), iterations);
+    }
+
 }
