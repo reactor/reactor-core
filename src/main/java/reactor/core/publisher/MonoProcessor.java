@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -71,6 +72,8 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile int             state;
 	volatile int             wip;
 	volatile int             requested;
+	volatile int             connected;
+
 	MonoProcessor(Publisher<? extends O> source) {
 		this.source = source;
 	}
@@ -366,21 +369,32 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(final Subscriber<? super O> subscriber) {
-		int endState = this.state;
-		if (endState == STATE_COMPLETE_NO_VALUE) {
-			EmptySubscription.complete(subscriber);
-			return;
+		for (; ; ) {
+			int endState = this.state;
+			if (endState == STATE_COMPLETE_NO_VALUE) {
+				EmptySubscription.complete(subscriber);
+				return;
+			}
+			else if (endState == STATE_SUCCESS_VALUE) {
+				subscriber.onSubscribe(new ScalarSubscription<>(subscriber, value));
+				return;
+			}
+			else if (endState == STATE_ERROR) {
+				EmptySubscription.error(subscriber, error);
+				return;
+			}
+			else if (endState == STATE_CANCELLED) {
+				EmptySubscription.error(subscriber, new CancellationException("Mono has previously been cancelled"));
+				return;
+			}
+			Processor<O, O> out = getOrStart();
+			if (out == NOOP_PROCESSOR) {
+				continue;
+			}
+			out.subscribe(subscriber);
+			break;
 		}
-		else if (endState == STATE_SUCCESS_VALUE) {
-			subscriber.onSubscribe(new ScalarSubscription<>(subscriber, value));
-			return;
-		}
-		else if (endState == STATE_ERROR) {
-			EmptySubscription.error(subscriber, error);
-			return;
-		}
-		Processor<O, O> out = getOrStart();
-		out.subscribe(subscriber);
+
 		if (WIP.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
@@ -394,6 +408,17 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	final boolean isPending() {
 		return !isTerminated() && !isCancelled();
+	}
+
+	final void connect() {
+		if(CONNECTED.compareAndSet(this, 0, 1)){
+			if(source == null){
+				onSubscribe(EmptySubscription.INSTANCE);
+			}
+			else{
+				source.subscribe(this);
+			}
+		}
 	}
 
 	final boolean checkStarted(){
@@ -465,12 +490,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (out == null) {
 			out = EmitterProcessor.replayLastOrDefault(value);
 			if (PROCESSOR.compareAndSet(this, null, out)) {
-				if (source != null) {
-					source.subscribe(this);
-				}
-				else{
-					onSubscribe(EmptySubscription.INSTANCE);
-				}
+				connect();
 			}
 			else {
 				out = (Processor<O, O>) PROCESSOR.get(this);
@@ -516,6 +536,8 @@ public final class MonoProcessor<O> extends Mono<O>
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
+	final static AtomicIntegerFieldUpdater<MonoProcessor>              CONNECTED       =
+			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
 			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
 	final static int       STATE_CANCELLED         = -1;

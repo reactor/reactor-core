@@ -15,16 +15,19 @@
  */
 package reactor.core
 
+import org.reactivestreams.Subscriber
 import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoProcessor
 import reactor.core.publisher.SchedulerGroup
+import reactor.core.subscriber.DeferredScalarSubscriber
 import reactor.core.util.Exceptions
 import spock.lang.Specification
 
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * @author Stephane Maldini
@@ -635,6 +638,36 @@ class MonoSpec extends Specification {
 
 	then: 'Value!'
 	v
+  }
+
+  def "MonoProcessor should handle delayed subscriptions"() {
+	given: "a promise delaying subscriptions"
+	def m = new MonoDelayedSubscription()
+
+	when: "we subscribe to that promise"
+	def v = m.get(1_000)
+
+	then: 'it should be subscribed to only once'
+	m.subscriptionCount.get() == 1
+	v == 0
+  }
+
+  class MonoDelayedSubscription extends Mono<Integer>{
+
+	AtomicInteger subscriptionCount = new AtomicInteger()
+
+	@Override
+	void subscribe(Subscriber<? super Integer> s) {
+	  Thread.start {
+		DeferredScalarSubscriber<Integer, Integer> sds = new DeferredScalarSubscriber<>(s);
+		// second subscription should be handled first
+		// delaying the first subscription by 100ms, second by 50ms
+		sleep((Long)(100 / (subscriptionCount.get() + 1)))
+		s.onSubscribe(sds);
+		def v = subscriptionCount.getAndIncrement()
+		sds.complete(v)
+	  }
+	}
   }
 
 }

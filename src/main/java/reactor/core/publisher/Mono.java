@@ -1651,15 +1651,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		MonoProcessor<T> s;
 		if(this instanceof MonoProcessor){
 			s = (MonoProcessor<T>)this;
-			if(s.checkStarted()){
-				return s;
-			}
 		}
 		else{
 			s = new MonoProcessor<>(this);
 		}
-		subscribe(s);
+		s.connect();
 		return s;
+	}
+
+	/**
+	 * Subscribe the {@link Mono} with the givne {@link Subscriber} and return it.
+	 *
+	 * @param subscriber the {@link Subscriber} to subscribe
+	 * @param <E> the reified type of the {@link Subscriber} for chaining
+	 *
+	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
+	 */
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
+		subscribe(subscriber);
+		return subscriber;
 	}
 
 	/**
@@ -1871,7 +1881,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 * @param <U> the element type of the timeout Publisher
-	 * 
+	 *
 	 * @return an expirable {@link Mono} if the first item does not come before a {@link Publisher} signal
 	 *
 	 */
@@ -1899,6 +1909,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never(), fallback));
 	}
 
+
 	/**
 	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@link T} associated data for the eventual item from this {@link Mono}
@@ -1913,7 +1924,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return map(Flux.TIMESTAMP_OPERATOR);
 	}
 
-
 	/**
 	 * Transform this {@link Mono} into a {@link CompletableFuture} completing on onNext or onComplete and failing on
 	 * onError.
@@ -1926,19 +1936,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final CompletableFuture<T> toCompletableFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
-	}
-
-	/**
-	 * Subscribe the {@link Mono} with the givne {@link Subscriber} and return it.
-	 *
-	 * @param subscriber the {@link Subscriber} to subscribe
-	 * @param <E> the reified type of the {@link Subscriber} for chaining
-	 *
-	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
-	 */
-	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(subscriber);
-		return subscriber;
 	}
 
 	/**
