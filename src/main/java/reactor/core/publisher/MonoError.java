@@ -57,7 +57,7 @@ extends Mono<T> {
 
 	@Override
 	public T get() {
-		throw Exceptions.fail(getError());
+		throw Exceptions.propagate(getError());
 	}
 
 	@Override
