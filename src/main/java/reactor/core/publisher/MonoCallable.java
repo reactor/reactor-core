@@ -83,7 +83,7 @@ extends Mono<T>
 		try {
 			return callable.call();
 		} catch (Throwable e) {
-			throw Exceptions.propagate(e);
+			throw Exceptions.bubble(e);
 		}
 	}
 }

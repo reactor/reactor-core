@@ -198,7 +198,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(new FluxJust<>(1),
 				null,
-				d -> { throw Exceptions.fail(err); },
+				d -> { throw Exceptions.propagate(err); },
 				null,
 				null,
 				null,
@@ -214,7 +214,7 @@ public class FluxPeekTest {
 		try {
 			new FluxPeek<>(new FluxJust<>(1),
 					null,
-					d -> { throw Exceptions.failUpstream(err); },
+					d -> { throw Exceptions.bubble(err); },
 					null,
 					null,
 					null,

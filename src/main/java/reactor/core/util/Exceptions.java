@@ -78,13 +78,14 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Return an unchecked
-	 * {@link RuntimeException} to be thrown that will be propagated downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
+	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
+	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
 	 * @return an unchecked exception
 	 */
-	public static RuntimeException fail(Throwable t) {
+	public static RuntimeException propagate(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof DownstreamException){
 			return (DownstreamException)t;
@@ -93,17 +94,18 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated upstream
+	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble upstream.
+	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
 	 * @return an unchecked exception that should choose bubbling up over error callback path
 	 */
-	public static RuntimeException failUpstream(Throwable t) {
+	public static RuntimeException bubble(Throwable t) {
 		throwIfFatal(t);
 		if(t instanceof UpstreamException){
 			return (UpstreamException) t;
 		}
-		return new UpstreamException(t);
+		throw new UpstreamException(t);
 	}
 
 	/**
@@ -150,7 +152,7 @@ public enum Exceptions {
 	 * @param e the exception to handle
 	 */
 	public static void onErrorDropped(Throwable e) {
-		throw failUpstream(e);
+		throw bubble(e);
 	}
 
 	/**
@@ -162,25 +164,6 @@ public enum Exceptions {
 		if(t != null) {
 			throw failWithCancel();
 		}
-	}
-
-	/**
-	 * Throws the exception if it is a regular runtimeException or wraps
-	 * it into a ReactiveException.
-	 * <p>
-	 * Use unwrap to get back the original cause.
-	 * <p>
-	 * The method calls throwIfFatal().
-	 *
-	 * @param e the exception to propagate
-	 * @return dummy return type to allow using throw with the function call
-	 */
-	public static RuntimeException propagate(Throwable e) {
-		throwIfFatal(e);
-		if (e instanceof RuntimeException) {
-			throw (RuntimeException)e;
-		}
-		throw new UpstreamException(e);
 	}
 
 	/**
