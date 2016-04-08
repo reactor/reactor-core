@@ -83,6 +83,9 @@ extends Mono<T>
 		try {
 			return callable.call();
 		} catch (Throwable e) {
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException)e;
+			}
 			throw Exceptions.bubble(e);
 		}
 	}
