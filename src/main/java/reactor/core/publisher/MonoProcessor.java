@@ -142,7 +142,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				}
 				if (delay < System.currentTimeMillis()) {
 					cancel();
-					throw Exceptions.failWithCancel();
+					throw new IllegalStateException("Timeout on Mono blocking read");
 				}
 				Thread.sleep(1);
 			}
@@ -150,7 +150,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 
-			throw Exceptions.failWithCancel();
+			throw new IllegalStateException("Thread Interruption on Mono blocking read");
 		}
 	}
 

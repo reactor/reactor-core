@@ -631,7 +631,7 @@ class MonoSpec extends Specification {
 	 p2.get(Duration.ofSeconds(1))
 
 	then: 'No value'
-	thrown Exceptions.CancelException
+	thrown IllegalStateException
 
 	when: 'polling undefinitely'
 	def v = p2.get()
