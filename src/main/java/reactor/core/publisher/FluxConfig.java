@@ -20,7 +20,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.flow.Fuseable;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 
 /**
  * @param <T> the value type

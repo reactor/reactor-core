@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.timer;
+package reactor.core.scheduler;
 
 import java.util.Objects;
 import java.util.Set;
@@ -124,7 +124,7 @@ class HashWheelTimer extends Timer {
 		this.timeMillisResolver = timeResolver;
 		this.waitStrategy = strategy;
 
-		this.wheel = RingBuffer.createSingleProducer((Supplier<Set<HashWheelSubscription>>) ConcurrentSkipListSet::new, wheelSize);
+		this.wheel = RingBuffer.createSingleProducer(ConcurrentSkipListSet::new, wheelSize);
 
 		if (exec == null) {
 			this.executor =

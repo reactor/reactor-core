@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 
 /**
  * @author Stephane Maldini

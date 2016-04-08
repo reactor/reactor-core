@@ -27,11 +27,12 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
+ * An unbounded Java Lambda adapter to {@link Subscriber}
  * @author Stephane Maldini
  * @since 2.5
  */
-public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runnable, Completable,
-                                                                        Backpressurable {
+public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Runnable, Completable,
+                                            Backpressurable {
 
 	final Consumer<? super T>         consumer;
 	final Consumer<? super Throwable> errorConsumer;
@@ -43,7 +44,7 @@ public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runna
 	/**
 	 * Create a {@link Subscriber} to request  Long.MAX_VALUE onSubscribe.
 	 */
-	public ConsumerSubscriber(){
+	public LambdaSubscriber(){
 		this(null, null, null);
 	}
 
@@ -59,7 +60,7 @@ public class ConsumerSubscriber<T> implements BaseSubscriber<T>, Receiver, Runna
 	 * @param errorConsumer    A {@link Consumer} called onError
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual context if any
 	 */
-	public ConsumerSubscriber(Consumer<? super T> consumer,
+	public LambdaSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		this.consumer = consumer;

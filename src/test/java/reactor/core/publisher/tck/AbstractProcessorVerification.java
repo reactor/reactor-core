@@ -28,7 +28,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Flux;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 
 /**
  * @author Stephane Maldini

@@ -17,21 +17,20 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.publisher.FluxPublishOn.ScheduledEmptySubscriptionEager;
-import reactor.core.publisher.FluxPublishOn.ScheduledSubscriptionEagerCancel;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -41,9 +40,10 @@ import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
+import reactor.core.util.BackpressureUtils;
 
 /**
- * Emits events on a different thread specified by a scheduler callback.
+ * Emits events on a different thread specified by a worker callback.
  *
  * @param <T> the value type
  */
@@ -54,7 +54,7 @@ import reactor.core.util.Exceptions;
  */
 final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
-	final Callable<? extends Consumer<Runnable>> schedulerFactory;
+	final Scheduler scheduler;
 	
 	final boolean delayError;
 	
@@ -64,7 +64,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 	
 	public FluxDispatchOn(
 			Publisher<? extends T> source, 
-			Callable<? extends Consumer<Runnable>> schedulerFactory, 
+			Scheduler scheduler, 
 			boolean delayError,
 			int prefetch,
 			Supplier<? extends Queue<T>> queueSupplier) {
@@ -72,7 +72,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
-		this.schedulerFactory = Objects.requireNonNull(schedulerFactory, "schedulerFactory");
+		this.scheduler = Objects.requireNonNull(scheduler, "worker");
 		this.delayError = delayError;
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -81,50 +81,40 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		
-		Consumer<Runnable> scheduler;
+		if (source instanceof Supplier) {
+			FluxPublishOn.scalarScheduleOn(source, s, scheduler);
+			return;
+		}
+
+		Worker worker;
 		
 		try {
-			scheduler = schedulerFactory.call();
+			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
 			EmptySubscription.error(s, e);
 			return;
 		}
 		
-		if (scheduler == null) {
-			EmptySubscription.error(s, new NullPointerException("The schedulerFactory returned a null Function"));
-			return;
-		}
-		
-		if (source instanceof Supplier) {
-			@SuppressWarnings("unchecked")
-			Supplier<T> supplier = (Supplier<T>) source;
-			
-			T v = supplier.get();
-			
-			if (v == null) {
-				ScheduledEmptySubscriptionEager parent = new ScheduledEmptySubscriptionEager(s, scheduler);
-				s.onSubscribe(parent);
-				scheduler.accept(parent);
-			} else {
-				s.onSubscribe(new ScheduledSubscriptionEagerCancel<>(s, v, scheduler));
-			}
+		if (worker == null) {
+			EmptySubscription.error(s, new NullPointerException("The worker returned a null Function"));
 			return;
 		}
 		
 		if (s instanceof Fuseable.ConditionalSubscriber) {
-			@SuppressWarnings("unchecked")
 			Fuseable.ConditionalSubscriber<? super T> cs = (Fuseable.ConditionalSubscriber<? super T>) s;
-			source.subscribe(new DispatchOnConditionalSubscriber<>(cs, scheduler, delayError, prefetch, queueSupplier));
+			source.subscribe(new DispatchOnConditionalSubscriber<>(cs, worker, delayError, prefetch, queueSupplier));
 			return;
 		}
-		source.subscribe(new DispatchOnSubscriber<>(s, scheduler, delayError, prefetch, queueSupplier));
+		source.subscribe(new DispatchOnSubscriber<>(s, worker, delayError, prefetch, queueSupplier));
 	}
+
 
 	@Override
 	public Object connectedOutput() {
-		return schedulerFactory;
+		return scheduler;
 	}
+
 
 	@Override
 	public long getCapacity() {
@@ -133,12 +123,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 	static final class DispatchOnSubscriber<T>
 	implements Subscriber<T>, Subscription, Runnable,
-	           Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable,
-	           Requestable, Completable {
+			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable,
+			   Requestable, Completable {
 		
 		final Subscriber<? super T> actual;
 		
-		final Consumer<Runnable> scheduler;
+		final Worker worker;
 		
 		final boolean delayError;
 		
@@ -174,12 +164,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		public DispatchOnSubscriber(
 				Subscriber<? super T> actual,
-				Consumer<Runnable> scheduler,
+				Worker worker,
 				boolean delayError,
 				int prefetch,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
-			this.scheduler = scheduler;
+			this.worker = worker;
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
@@ -198,7 +188,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
-
+					
 					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
 					if (m == Fuseable.SYNC) {
@@ -218,9 +208,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						} catch (Throwable e) {
 							Exceptions.throwIfFatal(e);
 							s.cancel();
-							scheduler.accept(null);
 							
-							EmptySubscription.error(actual, e);
+							try {
+								EmptySubscription.error(actual, e);
+							} finally {
+								worker.shutdown();
+							}
 							return;
 						}
 					}
@@ -230,9 +223,11 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 					} catch (Throwable e) {
 						Exceptions.throwIfFatal(e);
 						s.cancel();
-						scheduler.accept(null);
-						
-						EmptySubscription.error(actual, e);
+						try {
+							EmptySubscription.error(actual, e);
+						} finally {
+							worker.shutdown();
+						}
 						return;
 					}
 				}
@@ -290,7 +285,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 			
 			cancelled = true;
-			scheduler.accept(null);
+			worker.shutdown();
 			
 			if (WIP.getAndIncrement(this) == 0) {
 				s.cancel();
@@ -302,7 +297,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			scheduler.accept(this);
+			worker.schedule(this);
 		}
 
 		void runSync() {
@@ -324,19 +319,15 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						v = q.poll();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
-						scheduler.accept(null);
-
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
 					if (cancelled) {
-						scheduler.accept(null);
 						return;
 					}
 					if (v == null) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return;
 					}
 
@@ -347,7 +338,6 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 				if (e == r) {
 					if (cancelled) {
-						scheduler.accept(null);
 						return;
 					}
 
@@ -357,15 +347,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
-						scheduler.accept(null);
-
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
 					if (empty) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return;
 					}
 				}
@@ -405,10 +392,9 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						Exceptions.throwIfFatal(ex);
 
 						s.cancel();
-						scheduler.accept(null);
 						q.clear();
 
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
@@ -443,10 +429,9 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						Exceptions.throwIfFatal(ex);
 
 						s.cancel();
-						scheduler.accept(null);
 						q.clear();
 
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
@@ -468,6 +453,22 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 		}
 
+		void doComplete(Subscriber<?> a) {
+			try {
+				a.onComplete();
+			} finally {
+				worker.shutdown();
+			}
+		}
+		
+		void doError(Subscriber<?> a, Throwable e) {
+			try {
+				a.onError(e);
+			} finally {
+				worker.shutdown();
+			}
+		}
+		
 		@Override
 		public void run() {
 			if (sourceMode == Fuseable.SYNC) {
@@ -480,34 +481,29 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
 				s.cancel();
-				scheduler.accept(null);
 				queue.clear();
 				return true;
 			}
 			if (d) {
 				if (delayError) {
 					if (empty) {
-						scheduler.accept(null);
 						Throwable e = error;
 						if (e != null) {
-							a.onError(e);
+							doError(a, e);
 						} else {
-							a.onComplete();
+							doComplete(a);
 						}
 						return true;
 					}
 				} else {
 					Throwable e = error;
 					if (e != null) {
-						scheduler.accept(null);
 						queue.clear();
-						a.onError(e);
+						doError(a, e);
 						return true;
-					}
-					else
+					} else
 					if (empty) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return true;
 					}
 				}
@@ -558,7 +554,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public Object connectedOutput() {
-			return scheduler;
+			return worker;
 		}
 
 		@Override
@@ -588,7 +584,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		final Fuseable.ConditionalSubscriber<? super T> actual;
 		
-		final Consumer<Runnable> scheduler;
+		final Worker worker;
 		
 		final boolean delayError;
 		
@@ -626,12 +622,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		public DispatchOnConditionalSubscriber(
 				Fuseable.ConditionalSubscriber<? super T> actual,
-				Consumer<Runnable> scheduler,
+				Worker worker,
 				boolean delayError,
 				int prefetch,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
-			this.scheduler = scheduler;
+			this.worker = worker;
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
@@ -650,7 +646,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
-
+					
 					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
 					if (m == Fuseable.SYNC) {
@@ -670,9 +666,11 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						} catch (Throwable e) {
 							Exceptions.throwIfFatal(e);
 							s.cancel();
-							scheduler.accept(null);
-							
-							EmptySubscription.error(actual, e);
+							try {
+								EmptySubscription.error(actual, e);
+							} finally {
+								worker.shutdown();
+							}
 							return;
 						}
 					}
@@ -682,9 +680,13 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 					} catch (Throwable e) {
 						Exceptions.throwIfFatal(e);
 						s.cancel();
-						scheduler.accept(null);
 						
-						EmptySubscription.error(actual, e);
+						try {
+							EmptySubscription.error(actual, e);
+						} finally {
+							worker.shutdown();
+						}
+
 						return;
 					}
 				}
@@ -742,7 +744,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 			
 			cancelled = true;
-			scheduler.accept(null);
+			worker.shutdown();
 			
 			if (WIP.getAndIncrement(this) == 0) {
 				s.cancel();
@@ -755,7 +757,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				return;
 			}
 			
-			scheduler.accept(this);
+			worker.schedule(this);
 		}
 		
 		void runSync() {
@@ -776,19 +778,15 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						v = q.poll();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
-						scheduler.accept(null);
-						
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
 					if (cancelled) {
-						scheduler.accept(null);
 						return;
 					}
 					if (v == null) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return;
 					}
 					
@@ -799,7 +797,6 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 				
 				if (e == r) {
 					if (cancelled) {
-						scheduler.accept(null);
 						return;
 					}
 					
@@ -809,15 +806,12 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
-						scheduler.accept(null);
-						
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 					
 					if (empty) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return;
 					}
 				}
@@ -857,10 +851,9 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						Exceptions.throwIfFatal(ex);
 
 						s.cancel();
-						scheduler.accept(null);
 						q.clear();
 						
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 					boolean empty = v == null;
@@ -894,10 +887,9 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 						Exceptions.throwIfFatal(ex);
 
 						s.cancel();
-						scheduler.accept(null);
 						q.clear();
 						
-						a.onError(ex);
+						doError(a, ex);
 						return;
 					}
 
@@ -967,7 +959,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public Object connectedOutput() {
-			return scheduler;
+			return worker;
 		}
 
 		@Override
@@ -995,36 +987,48 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 			return queue == null ? requested : (requested - queue.size());
 		}
 
+		void doComplete(Subscriber<?> a) {
+			try {
+				a.onComplete();
+			} finally {
+				worker.shutdown();
+			}
+		}
+		
+		void doError(Subscriber<?> a, Throwable e) {
+			try {
+				a.onError(e);
+			} finally {
+				worker.shutdown();
+			}
+		}
+		
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
 				s.cancel();
 				queue.clear();
-				scheduler.accept(null);
 				return true;
 			}
 			if (d) {
 				if (delayError) {
 					if (empty) {
-						scheduler.accept(null);
 						Throwable e = error;
 						if (e != null) {
-							a.onError(e);
+							doError(a, e);
 						} else {
-							a.onComplete();
+							doComplete(a);
 						}
 						return true;
 					}
 				} else {
 					Throwable e = error;
 					if (e != null) {
-						scheduler.accept(null);
 						queue.clear();
-						a.onError(e);
+						doError(a, e);
 						return true;
 					} else 
 					if (empty) {
-						scheduler.accept(null);
-						a.onComplete();
+						doComplete(a);
 						return true;
 					}
 				}

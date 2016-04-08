@@ -16,15 +16,18 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
+
+import reactor.core.publisher.FluxPublishOn.ScheduledEmpty;
+import reactor.core.publisher.FluxPublishOn.ScheduledScalar;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
+ * Publisher indicating a scalar/empty source that subscribes on the specified worker.
  * 
  * @param <T>
  */
@@ -32,43 +35,43 @@ final class FluxPublishOnValue<T> extends Flux<T> {
 
 	final T value;
 	
-	final Callable<? extends Consumer<Runnable>> schedulerFactory;
+	final Scheduler scheduler;
 
 	final boolean eagerCancel;
 
 	public FluxPublishOnValue(T value, 
-			Callable<? extends Consumer<Runnable>> schedulerFactory, 
+			Scheduler scheduler, 
 			boolean eagerCancel) {
 		this.value = value;
-		this.schedulerFactory = Objects.requireNonNull(schedulerFactory, "schedulerFactory");
+		this.scheduler = Objects.requireNonNull(scheduler, "worker");
 		this.eagerCancel = eagerCancel;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		Consumer<Runnable> scheduler;
+		Worker worker;
 		
 		try {
-			scheduler = schedulerFactory.call();
+			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
 			EmptySubscription.error(s, e);
 			return;
 		}
 		
-		if (scheduler == null) {
-			EmptySubscription.error(s, new NullPointerException("The schedulerFactory returned a null Function"));
+		if (worker == null) {
+			EmptySubscription.error(s, new NullPointerException("The worker returned a null Function"));
 			return;
 		}
 
-		if (value == null) {
-			FluxPublishOn.ScheduledEmptySubscriptionEager parent =
-					new FluxPublishOn.ScheduledEmptySubscriptionEager(s, scheduler);
+		T v = value;
+		if (v == null) {
+			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			scheduler.accept(parent);
-		}
-		else {
-			s.onSubscribe(new FluxPublishOn.ScheduledSubscriptionEagerCancel<>(s, value, scheduler));
+			Runnable f = scheduler.schedule(parent);
+			parent.setFuture(f);
+		} else {
+			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}
 	}
 }

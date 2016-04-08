@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.timer
+package reactor.core.scheduler
 
+import reactor.core.scheduler.HashWheelTimer
 import reactor.core.util.WaitStrategy
 import spock.lang.Specification
 

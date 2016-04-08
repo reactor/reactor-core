@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.timer
+package reactor.core.scheduler
 
+import reactor.core.scheduler.HashWheelTimer
 import reactor.core.util.WaitStrategy
 import spock.lang.Specification
 
@@ -26,7 +27,7 @@ import java.util.function.Consumer
  * @author Oleksandr Petrov
  * @author Stephane Maldini
  */
-class HashWheelTimerSleepWaitStrategy extends Specification {
+class HashWheelTimerBusySpinStrategy extends Specification {
 
 	def period = 50
 
@@ -34,7 +35,7 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 
 		given:
 			"a new globalTimer"
-			def timer = new HashWheelTimer(10, 8, WaitStrategy.sleeping())
+			def timer = new HashWheelTimer(10, 8, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(10)
 
@@ -50,8 +51,12 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 			"the latch was counted down"
 			latch.await(1, TimeUnit.SECONDS)
 
-		cleanup:
+		when:
+			"Cancelled"
 			timer.cancel()
+
+		then:
+			timer.isCancelled()
 
 	}
 
@@ -60,7 +65,7 @@ class HashWheelTimerSleepWaitStrategy extends Specification {
 		given:
 			"a new globalTimer"
 			def delay = 500
-			def timer = new HashWheelTimer(10, 8, WaitStrategy.sleeping())
+			def timer = new HashWheelTimer(10, 512, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(1)
 			def start = System.currentTimeMillis()

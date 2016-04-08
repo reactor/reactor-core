@@ -75,17 +75,72 @@ final class SerializedSubscriber<T>
 
 	@Override
 	public void onNext(T t) {
-		serOnNext(t);
+		if (isCancelled() || isTerminated()) {
+			return;
+		}
+
+		synchronized (this) {
+			if (isCancelled() || isTerminated()) {
+				return;
+			}
+
+			if (emitting) {
+				serAdd(t);
+				missed = true;
+				return;
+			}
+
+			emitting = true;
+		}
+
+		actual.onNext(t);
+
+		serDrainLoop(actual);
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		serOnError(t);
+		if (isCancelled() || isTerminated()) {
+			return;
+		}
+
+		synchronized (this) {
+			if (isCancelled() || isTerminated()) {
+				return;
+			}
+
+			done = true;
+			error = t;
+
+			if (emitting) {
+				missed = true;
+				return;
+			}
+		}
+
+		actual.onError(t);
 	}
 
 	@Override
 	public void onComplete() {
-		serOnComplete();
+		if (isCancelled() || isTerminated()) {
+			return;
+		}
+
+		synchronized (this) {
+			if (isCancelled() || isTerminated()) {
+				return;
+			}
+
+			done = true;
+
+			if (emitting) {
+				missed = true;
+				return;
+			}
+		}
+
+		actual.onComplete();
 	}
 
 	@Override
@@ -100,20 +155,20 @@ final class SerializedSubscriber<T>
 	}
 
 	void serAdd(T value) {
-		LinkedArrayNode<T> t = serGetTail();
+		LinkedArrayNode<T> t = tail;
 
 		if (t == null) {
 			t = new LinkedArrayNode<>(value);
 
-			serSetHead(t);
-			serSetTail(t);
+			head = t;
+			tail = t;
 		}
 		else {
 			if (t.count == LinkedArrayNode.DEFAULT_CAPACITY) {
 				LinkedArrayNode<T> n = new LinkedArrayNode<>(value);
 
 				t.next = n;
-				serSetTail(n);
+				tail = n;
 			}
 			else {
 				t.array[t.count++] = value;
@@ -132,24 +187,24 @@ final class SerializedSubscriber<T>
 			Throwable e;
 			LinkedArrayNode<T> n;
 
-			synchronized (serGuard()) {
+			synchronized (this) {
 				if (isCancelled()) {
 					return;
 				}
 
-				if (!serIsMissed()) {
-					serSetEmitting(false);
+				if (!missed) {
+					emitting = false;
 					return;
 				}
 
-				serSetMissed(false);
+				missed = false;
 
 				d = isTerminated();
 				e = getError();
-				n = serGetHead();
+				n = head;
 
-				serSetHead(null);
-				serSetTail(null);
+				head = null;
+				tail = null;
 			}
 
 			while (n != null) {
@@ -189,95 +244,6 @@ final class SerializedSubscriber<T>
 		return actual;
 	}
 
-	Object serGuard() {
-		return this;
-	}
-
-	boolean serIsEmitting() {
-		return emitting;
-	}
-
-	void serOnComplete() {
-		if (isCancelled() || isTerminated()) {
-			return;
-		}
-
-		synchronized (this) {
-			if (isCancelled() || isTerminated()) {
-				return;
-			}
-
-			serSetDone(true);
-
-			if (serIsEmitting()) {
-				serSetMissed(true);
-				return;
-			}
-		}
-
-		downstream().onComplete();
-	}
-
-	void serOnError(Throwable e) {
-		if (isCancelled() || isTerminated()) {
-			return;
-		}
-
-		synchronized (serGuard()) {
-			if (isCancelled() || isTerminated()) {
-				return;
-			}
-
-			serSetDone(true);
-			serSetError(e);
-
-			if (serIsEmitting()) {
-				serSetMissed(true);
-				return;
-			}
-		}
-
-		downstream().onError(e);
-	}
-
-	void serOnNext(T t) {
-		if (isCancelled() || isTerminated()) {
-			return;
-		}
-
-		synchronized (serGuard()) {
-			if (isCancelled() || isTerminated()) {
-				return;
-			}
-
-			if (serIsEmitting()) {
-				serAdd(t);
-				serSetMissed(true);
-				return;
-			}
-
-			serSetEmitting(true);
-		}
-
-		Subscriber<? super T> actual = downstream();
-
-		actual.onNext(t);
-
-		serDrainLoop(actual);
-	}
-
-	void serSetEmitting(boolean emitting) {
-		this.emitting = emitting;
-	}
-
-	boolean serIsMissed() {
-		return missed;
-	}
-
-	void serSetMissed(boolean missed) {
-		this.missed = missed;
-	}
-
 	@Override
 	public boolean isCancelled() {
 		return cancelled;
@@ -288,33 +254,9 @@ final class SerializedSubscriber<T>
 		return done;
 	}
 
-	void serSetDone(boolean done) {
-		this.done = done;
-	}
-
 	@Override
 	public Throwable getError() {
 		return error;
-	}
-
-	void serSetError(Throwable error) {
-		this.error = error;
-	}
-
-	LinkedArrayNode<T> serGetHead() {
-		return head;
-	}
-
-	void serSetHead(LinkedArrayNode<T> node) {
-		head = node;
-	}
-
-	LinkedArrayNode<T> serGetTail() {
-		return tail;
-	}
-
-	void serSetTail(LinkedArrayNode<T> node) {
-		tail = node;
 	}
 
 	@Override
@@ -329,7 +271,7 @@ final class SerializedSubscriber<T>
 
 	@Override
 	public long getPending() {
-		LinkedArrayNode<T> node = serGetTail();
+		LinkedArrayNode<T> node = tail;
 		if (node != null) {
 			return node.count;
 		}

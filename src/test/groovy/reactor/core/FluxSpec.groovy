@@ -26,7 +26,7 @@ import reactor.core.publisher.SchedulerGroup
 import reactor.core.publisher.Signal
 import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
-import reactor.core.timer.Timer
+import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Ignore
 import spock.lang.Shared

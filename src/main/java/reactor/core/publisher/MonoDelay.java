@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Timeable;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 

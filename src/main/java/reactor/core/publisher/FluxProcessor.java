@@ -17,8 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Processor;
@@ -27,6 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
@@ -37,8 +36,7 @@ import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * A base processor that expose {@link Flux} API, {@link Processor} and generic {@link Consumer} for {@link Runnable}
- * {@link SchedulerGroup scheduling contract}.
+ * A base processor that expose {@link Flux} API for {@link Processor}.
  *
  * Factories available allow arbitrary {@link FluxProcessor} creation from blackboxed and external reactive components.
  *
@@ -46,22 +44,24 @@ import reactor.core.util.Exceptions;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Receiver, Completable, Consumer<IN>, BaseSubscriber<IN> {
+		implements Processor<IN, OUT>, Backpressurable, Receiver, Completable, BaseSubscriber<IN> {
 
 	/**
-	 * Create an asynchronously {@link Flux#dispatchOn(Callable) dispatched} {@link FluxProcessor} multicast/topic
+	 * Create an asynchronously {@link Flux#dispatchOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
 	 * relay.
-	 * Like {@link Flux#dispatchOn(Callable)} the scheduler resources will be cleaned accordingly to the {@link Runnable} {@literal null} protocol.
+	 * Like {@link Flux#dispatchOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
+	 * {@literal null} protocol.
 	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
 	 * mandatory.
 	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 * @param <IN> The relayed data type
 	 *
 	 * @return a new asynchronous {@link FluxProcessor}
 	 */
-	public static <IN> FluxProcessor<IN, IN> async(final Callable<? extends Consumer<Runnable>> schedulerFactory) {
+	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
 		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
-		return create(emitter, emitter.dispatchOn(schedulerFactory));
+		return create(emitter, emitter.dispatchOn(scheduler));
 	}
 
 	/**
@@ -196,20 +196,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	public void subscribe(Subscriber<? super OUT> s) {
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
-		}
-	}
-
-	@Override
-	public void accept(IN runnable) {
-		if(runnable == null){
-			onComplete();
-		}
-		else {
-			if(isTerminated()){
-				Exceptions.onNextDropped(runnable);
-				return;
-			}
-			onNext(runnable);
 		}
 	}
 

@@ -45,16 +45,16 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.converter.DependencyUtils;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.ConsumerSubscriber;
+import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
@@ -1190,7 +1190,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a zipped {@link Flux}
 	 */
 	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
-		return zip(Tuple.<T1, T2>fn2(), source1, source2);
+		return zip(Tuple.fn2(), source1, source2);
 	}
 
 	/**
@@ -1212,7 +1212,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3) {
-		return zip(Tuple.<T1, T2, T3>fn3(), source1, source2, source3);
+		return zip(Tuple.fn3(), source1, source2, source3);
 	}
 
 	/**
@@ -1237,7 +1237,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4) {
-		return zip(Tuple.<T1, T2, T3, T4>fn4(), source1, source2, source3, source4);
+		return zip(Tuple.fn4(), source1, source2, source3, source4);
 	}
 
 	/**
@@ -1265,7 +1265,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5) {
-		return zip(Tuple.<T1, T2, T3, T4, T5>fn5(), source1, source2, source3, source4, source5);
+		return zip(Tuple.fn5(), source1, source2, source3, source4, source5);
 	}
 
 	/**
@@ -1296,7 +1296,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6) {
-		return zip(Tuple.<T1, T2, T3, T4, T5, T6>fn6(), source1, source2, source3, source4, source5, source6);
+		return zip(Tuple.fn6(), source1, source2, source3, source4, source5, source6);
 	}
 
 	/**
@@ -2039,9 +2039,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		long c = Math.min(Integer.MAX_VALUE, getCapacity());
 
-		ConsumerSubscriber<T> consumerAction;
+		LambdaSubscriber<T> consumerAction;
 		if (c == Integer.MAX_VALUE || c == -1L) {
-			consumerAction = new ConsumerSubscriber<>(consumer, errorConsumer, completeConsumer);
+			consumerAction = new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
 		}
 		else {
 			consumerAction = Subscribers.bounded((int) c, consumer, errorConsumer, completeConsumer);
@@ -2191,7 +2191,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler factory like {@link SchedulerGroup}.
+	 * {@link Consumer} {@link Runnable} worker factory like {@link SchedulerGroup}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -2202,17 +2202,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler) {
+	public final Flux<T> dispatchOn(Scheduler scheduler) {
 		return dispatchOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} scheduler factory like {@link SchedulerGroup}.
+	 * {@link Consumer} {@link Runnable} worker factory like {@link SchedulerGroup}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -2223,12 +2223,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 * @param prefetch the asynchronous boundary capacity
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Callable<? extends Consumer<Runnable>> scheduler, int prefetch) {
+	public final Flux<T> dispatchOn(Scheduler scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
@@ -2740,7 +2740,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends V> valueMapper) {
 		return new FluxGroupBy<>(this, keyMapper, valueMapper,
-				QueueSupplier.<GroupedFlux<K, V>>small(),
+				QueueSupplier.small(),
 				QueueSupplier.unbounded(),
 				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
@@ -3074,7 +3074,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
 	 *
-	 * @param processorSupplier the {@link Processor} {@link Supplier} to call, subscribe to this {@link Flux} and
+	 * @param processorSupplier the {@link Processor} {@link Supplier} to createWorker, subscribe to this {@link Flux} and
 	 * share.
 	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
 	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
@@ -3312,17 +3312,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param schedulerFactory a checked factory for {@link Consumer} of {@link Runnable}
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
-	public final Flux<T> publishOn(Callable<? extends Consumer<Runnable>> schedulerFactory) {
+	public final Flux<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxPublishOnValue<>(value, schedulerFactory, true);
+			return new FluxPublishOnValue<>(value, scheduler, true);
 		}
-		return new FluxPublishOn<>(this, schedulerFactory);
+		return new FluxPublishOn<>(this, scheduler);
 	}
 
 	/**
@@ -3956,7 +3956,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
 	public final Runnable subscribe() {
-		ConsumerSubscriber<T> s = new ConsumerSubscriber<>();
+		LambdaSubscriber<T> s = new LambdaSubscriber<>();
 		subscribe(s);
 		return s;
 	}

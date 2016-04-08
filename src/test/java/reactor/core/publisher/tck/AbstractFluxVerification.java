@@ -42,7 +42,7 @@ import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.subscriber.SignalEmitter;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 import reactor.core.util.Assert;
 import reactor.core.publisher.Flux;
 

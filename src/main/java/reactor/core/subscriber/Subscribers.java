@@ -47,7 +47,7 @@ public enum Subscribers{
 
 	/**
 	 *
-	 * Create a bounded {@link ConsumerSubscriber} that will keep a maximum in-flight items running.
+	 * Create a bounded {@link LambdaSubscriber} that will keep a maximum in-flight items running.
 	 * The prefetch strategy works with a first request N, then when 25% of N is left to be received on
 	 * onNext, request N x 0.75.
 	 *
@@ -57,14 +57,14 @@ public enum Subscribers{
 	 * @param prefetch the in-flight capacity used to request source {@link Publisher}
 	 * @param callback an onNext {@link Consumer} callback
 	 * @param <T> the consumed sequence type
-	 * @return a bounded {@link ConsumerSubscriber}
+	 * @return a bounded {@link LambdaSubscriber}
 	 */
-	public static <T> ConsumerSubscriber<T> bounded(int prefetch, Consumer<? super T> callback){
+	public static <T> LambdaSubscriber<T> bounded(int prefetch, Consumer<? super T> callback){
 		return bounded(prefetch, callback, null, null);
 	}
 
 	/**
-	 * Create a bounded {@link ConsumerSubscriber} that will keep a maximum in-flight items running.
+	 * Create a bounded {@link LambdaSubscriber} that will keep a maximum in-flight items running.
 	 * The prefetch strategy works with a first request N, then when 25% of N is left to be received on
 	 * onNext, request N x 0.75.
 	 *
@@ -76,9 +76,9 @@ public enum Subscribers{
 	 * @param errorCallback an onError {@link Consumer} callback
 	 * @param completeCallback an onComplete {@link Consumer} callback
 	 * @param <T> the consumed sequence type
-	 * @return a bounded {@link ConsumerSubscriber}
+	 * @return a bounded {@link LambdaSubscriber}
 	 */
-	public static <T> ConsumerSubscriber<T> bounded(int prefetch, Consumer<? super T> callback,
+	public static <T> LambdaSubscriber<T> bounded(int prefetch, Consumer<? super T> callback,
 			Consumer<? super Throwable> errorCallback, Runnable completeCallback){
 		return new BoundedSubscriber<>(prefetch, callback, errorCallback, completeCallback);
 	}
@@ -148,7 +148,7 @@ public enum Subscribers{
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public static <T> Subscriber<T> unbounded() {
-		return new ConsumerSubscriber<>(
+		return new LambdaSubscriber<>(
 				null,
 				null,
 				null
@@ -256,7 +256,7 @@ public enum Subscribers{
 	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
 			final Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
-		return new ConsumerSubscriber<>(
+		return new LambdaSubscriber<>(
 				dataConsumer,
 				errorConsumer,
 				completeConsumer

@@ -284,7 +284,7 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch latch = new CountDownLatch(items);
 		Random random = ThreadLocalRandom.current();
 
-		EmitterProcessor<String> d = EmitterProcessor.<String>create();
+		EmitterProcessor<String> d = EmitterProcessor.create();
 		SignalEmitter<String> s = SignalEmitter.create(d);
 		Flux<Integer> tasks = d.dispatchOn(asyncGroup)
 		                          .partition(8)
@@ -546,7 +546,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final CountDownLatch latch = new CountDownLatch(iterations);
 
-		EmitterProcessor<String> deferred = EmitterProcessor.<String>create();
+		EmitterProcessor<String> deferred = EmitterProcessor.create();
 		deferred.connect();
 		deferred.dispatchOn(asyncGroup)
 		        .partition(8)
@@ -607,7 +607,7 @@ public class FluxTests extends AbstractReactorTest {
 				break;
 
 			default:
-				deferred = EmitterProcessor.<Integer>create();
+				deferred = EmitterProcessor.create();
 				deferred.connect();
 				deferred.dispatchOn(asyncGroup)
 				        .map(i -> i)
@@ -652,14 +652,14 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<Integer> mapManydeferred;
 		switch (dispatcher) {
 			case "partitioned":
-				mapManydeferred = EmitterProcessor.<Integer>create();
+				mapManydeferred = EmitterProcessor.create();
 				mapManydeferred.partition(4)
 				               .consume(substream -> substream.dispatchOn(asyncGroup)
 				                                              .consume(i -> latch.countDown()));
 				break;
 			default:
-				mapManydeferred = EmitterProcessor.<Integer>create();
-				mapManydeferred.dispatchOn("sync".equals(dispatcher) ? SchedulerGroup.sync() : asyncGroup)
+				mapManydeferred = EmitterProcessor.create();
+				("sync".equals(dispatcher) ? mapManydeferred : mapManydeferred.dispatchOn(asyncGroup))
 				               .flatMap(Flux::just)
 				               .consume(i -> latch.countDown());
 		}
@@ -813,7 +813,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux<Integer> s = Flux.just("2222")
 		                            .map(Integer::parseInt)
-		                            .flatMap(l -> Flux.<Integer>merge(globalFeed.dispatchOn(asyncGroup),
+		                            .flatMap(l -> Flux.merge(globalFeed.dispatchOn(asyncGroup),
 				                           Flux.just(1111, l, 3333, 4444, 5555, 6666)).log("merged")
 		                                                                                 .dispatchOn(asyncGroup)
 		                                                                                 .log("dispatched")
@@ -1069,7 +1069,7 @@ public class FluxTests extends AbstractReactorTest {
 		int parallelStreams = 16;
 		CountDownLatch latch = new CountDownLatch(1);
 
-		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.<Integer>create();
+		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.create();
 		streamBatcher.connect();
 		streamBatcher.dispatchOn(asyncGroup)
 		             .buffer(batchsize, Duration.ofSeconds(timeout))

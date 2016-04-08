@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 
 /**
  * @author Stephane Maldini

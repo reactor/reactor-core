@@ -34,6 +34,8 @@ import reactor.core.util.ExecutorUtils;
 public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements Cancellable {
 
+
+
 	protected static final int SHUTDOWN = 1;
 
 	protected static final int                                           FORCED_SHUTDOWN  = 2;
@@ -54,29 +56,13 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	protected EventLoopProcessor(String name, ExecutorService executor,
 			boolean autoCancel) {
 		this.autoCancel = autoCancel;
-		contextClassLoader = new ClassLoader(Thread.currentThread()
-		                                           .getContextClassLoader()) {
-		};
+		contextClassLoader = new EventLoopContext();
 		this.name = null != name ? name : getClass().getSimpleName();
 		if (executor == null) {
 			this.executor = ExecutorUtils.singleUse(name, contextClassLoader);
 		}
 		else {
 			this.executor = executor;
-		}
-	}
-
-	@Override
-	public final void accept(IN runnable) {
-		if(runnable == null){
-			onComplete();
-		}
-		else {
-			if(autoCancel && isTerminated()){
-				Exceptions.onNextDropped(runnable);
-				return;
-			}
-			onNext(runnable);
 		}
 	}
 
@@ -229,7 +215,7 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	protected int decrementSubscribers() {
+	final int decrementSubscribers() {
 		Subscription subscription = upstreamSubscription;
 		int subs = SUBSCRIBER_COUNT.decrementAndGet(this);
 		if (subs == 0) {
@@ -253,7 +239,7 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	protected boolean incrementSubscribers() {
+	final boolean incrementSubscribers() {
 		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
 	}
 
@@ -261,7 +247,7 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		//implementation might run a specific request task for the given subscription
 	}
 
-	protected final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
+	final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
 		try {
 			Thread.currentThread()
 			      .setContextClassLoader(contextClassLoader);
@@ -275,4 +261,17 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	abstract void doError(Throwable throwable);
+
+	final static class EventLoopContext extends ClassLoader {
+
+		EventLoopContext() {
+			super(Thread.currentThread()
+			            .getContextClassLoader());
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return contextClassLoader.hashCode();
+	}
 }

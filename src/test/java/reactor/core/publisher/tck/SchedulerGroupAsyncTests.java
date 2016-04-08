@@ -18,13 +18,13 @@ package reactor.core.publisher.tck;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.util.Assert;
 
 
@@ -85,20 +85,16 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 			t.printStackTrace();
 		}, () -> {});
 
-		SchedulerGroup.release(
-		  runTest(service.call(true)),
-		  runTest(service.call(true))
-		);
+		runTest(service.createWorker()).shutdown();
+		runTest(service.createWorker()).shutdown();
 	}
 
-
-
-	private Consumer<Runnable> runTest(final Consumer<Runnable>  dispatcher) throws InterruptedException {
+	private Scheduler.Worker runTest(final Scheduler.Worker dispatcher) throws InterruptedException {
 		CountDownLatch tasksCountDown = new CountDownLatch(N);
 
-		dispatcher.accept(() -> {
+		dispatcher.schedule(() -> {
 			for (int i = 0; i < N; i++) {
-				dispatcher.accept(tasksCountDown::countDown);
+				dispatcher.schedule(tasksCountDown::countDown);
 			}
 		});
 

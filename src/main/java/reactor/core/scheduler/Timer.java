@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.timer;
+package reactor.core.scheduler;
 
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;

@@ -21,9 +21,14 @@ import java.io.Serializable;
  * A simple reusable data container.
  * @param <T>
  */
-public final class Slot<T> implements Serializable {
+public final class Slot<T> implements Serializable, Runnable {
 
 	private static final long serialVersionUID = 5172014386416785095L;
 
 	public T value = null;
+
+	@Override
+	public void run() {
+		value = null;
+	}
 }

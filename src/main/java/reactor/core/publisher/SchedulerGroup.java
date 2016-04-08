@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -32,9 +32,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -48,9 +48,9 @@ import reactor.core.util.WaitStrategy;
  * any used resources.
  * <p>
  * Based on this scheduling contract, a
- * {@link SchedulerGroup} offers a scheduler generator pool mutualizing one or more internal scheduler {@link Callable}
+ * {@link SchedulerGroup} offers a worker generator pool mutualizing one or more internal worker {@link Callable}
  * generator.
- *  {@link SchedulerGroup} maintains a reference count on how many scheduler have been generated. Therefore it will
+ *  {@link SchedulerGroup} maintains a reference count on how many worker have been generated. Therefore it will
  * automatically shutdown the required resources after all references have been released, e.g. when all {@link Flux}
  * using
  * {@link Flux#dispatchOn dispatchOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
@@ -66,12 +66,11 @@ import reactor.core.util.WaitStrategy;
  *
  * <p>
  * By default the {@link SchedulerGroup} are not guaranteed reentrant and such support is obtained via
- * {@link SchedulerGroup#call(boolean)} or {@link FluxProcessor#async(Callable)}.
+ * {@link Scheduler#createWorker)}.
  * 
  * @author Stephane Maldini
  */
-public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Runnable>, Loopback,
-                                       Completable {
+public final class SchedulerGroup implements Scheduler, MultiProducer, Completable {
 
 	static final Logger log = Logger.getLogger(SchedulerGroup.class);
 
@@ -83,14 +82,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	                                                            .availableProcessors(), 4);
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
@@ -101,14 +100,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -120,14 +119,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -140,14 +139,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -162,14 +161,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -188,14 +187,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -216,14 +215,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -247,14 +246,14 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An Async factory is  a scheduler factory with sensible defaults for for "fast" or
+	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each scheduler generation {@link #call} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
-	 * consuming rate difference is found mitigated which is suited for rapid firing scheduler request from dynamic
+	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
@@ -276,10 +275,10 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			boolean autoShutdown,
 			final Supplier<? extends WaitStrategy> waitStrategy) {
 
-		return fromProcessor(new Callable<Consumer<Runnable>>() {
+		return create(new Supplier<Processor<Runnable, Runnable>>() {
 			int i = 1;
 			@Override
-			public Consumer<Runnable> call() throws Exception {
+			public Processor<Runnable, Runnable> get() {
 				return TopicProcessor.share(name+(parallelSchedulers > 1 ? "-"+(i++) : ""), bufferSize, waitStrategy
 						.get(), false);
 			}
@@ -288,62 +287,91 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 
 	/**
-	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed scheduler
-	 * factory {@link Callable#call()} once each.
+	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed worker
+	 * factory {@link Scheduler#createWorker()} once each.
 	 * <p>
-	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a scheduler factory
+	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a worker factory
 	 * itself.
-	 * If reference count returns to 0 it will automatically call
-	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * If reference count returns to 0 it will automatically createWorker
+	 * {@link Worker#shutdown()}.
 	 * <p>
 	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
 	 *
-	 * @param schedulerFactory
+	 * @param processor
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link Runnable} {@link Subscriber}
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory, int
+	public static SchedulerGroup create(Processor<Runnable, Runnable> processor, int
 			parallelSchedulers) {
-		return create(schedulerFactory, parallelSchedulers, false);
+		return create(() -> processor, parallelSchedulers, false);
 	}
 
 	/**
 	 *
-	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed scheduler
-	 * factory {@link Callable#call()} once each.
+	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the {@link Processor}
+	 * {@link Supplier}
+	 * once each.
 	 * <p>
-	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a scheduler factory
-	 * itself.
+	 * It provides for reference counting on {@link SchedulerGroup#createWorker()} and {@link Worker#shutdown()}
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
-	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * {@link Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
-	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
 	 *
-	 * @param schedulerFactory
+	 * @param processors
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link Runnable} {@link Subscriber}
 	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
 
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Callable<? extends Consumer<Runnable>> schedulerFactory,
+	public static SchedulerGroup create(Supplier<? extends Processor<Runnable, Runnable>> processors,
 			int parallelSchedulers,
 			boolean autoShutdown) {
-		return new SchedulerGroup(schedulerFactory, parallelSchedulers, null, null, autoShutdown);
+		return create(processors, parallelSchedulers, null, null, autoShutdown);
 	}
 
+	/**
+	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the {@link Processor} {@link
+	 * Supplier} once each.
+	 * <p>
+	 * It provides for reference counting on {@link SchedulerGroup#createWorker()} and {@link Worker#shutdown()} If
+	 * autoShutdown is given true and reference count returns to 0 it will automatically call {@link
+	 * Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
+	 * <p>
+	 *
+	 * @param processors
+	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal {@link Runnable}
+	 * {@link Subscriber}
+	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
+	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
+	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 *
+	 * @return a new {@link SchedulerGroup}
+	 */
+	public static SchedulerGroup create(Supplier<? extends Processor<Runnable, Runnable>> processors,
+			int parallelSchedulers,
+			Consumer<Throwable> uncaughtExceptionHandler,
+			Runnable shutdownHandler,
+			boolean autoShutdown) {
+		return new SchedulerGroup(processors,
+				parallelSchedulers,
+				autoShutdown,
+				uncaughtExceptionHandler,
+				shutdownHandler);
+	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
 	 * to mitigate consuming rate difference.
+	 *
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
@@ -352,8 +380,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
@@ -370,8 +398,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
@@ -389,8 +417,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
@@ -409,8 +437,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
@@ -430,8 +458,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that will
@@ -453,8 +481,8 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@literal concurrency} number of subscribers that 
@@ -478,16 +506,13 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler, boolean autoShutdown) {
 		return io(name,
 				bufferSize,
-				concurrency,
-				uncaughtExceptionHandler,
-				shutdownHandler,
-				autoShutdown,
-				DEFAULT_WAIT_STRATEGY.get());
+				concurrency, uncaughtExceptionHandler, shutdownHandler,
+				autoShutdown, DEFAULT_WAIT_STRATEGY.get());
 	}
 
 	/**
-	 * An IO factory is  a scheduler factory with sensible defaults for for "slow" tasks
-	 * and "blocking" IO (e.g. blocking http call, file write...).
+	 * An IO factory is  a worker factory with sensible defaults for for "slow" tasks
+	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
 	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
@@ -513,33 +538,12 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-
-		return fromProcessor(WorkQueueProcessor.<Runnable>share(name, bufferSize, waitStrategy, false),
-				concurrency,
-				uncaughtExceptionHandler,
-				shutdownHandler,
-				autoShutdown);
+		Processor<Runnable, Runnable> p = WorkQueueProcessor.share(name, bufferSize, waitStrategy, false);
+		return new SchedulerGroup(() -> p, concurrency, autoShutdown, uncaughtExceptionHandler, shutdownHandler);
 	}
 
 	/**
-	 * Signal terminal signal {@literal null} to the passed {@link Consumer} {@link Runnable} schedulers
-	 *
-	 * @param schedulers the schedulers to shutdown
-	 */
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	public static void release(Consumer<Runnable>... schedulers) {
-		if (schedulers == null) {
-			return;
-		}
-
-		for (Consumer<Runnable> sharedProcessorReference : schedulers) {
-			sharedProcessorReference.accept(null);
-		}
-	}
-
-	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -554,7 +558,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -571,7 +575,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -585,11 +589,11 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
 	public static SchedulerGroup single(String name, int bufferSize) {
-		return single(name, bufferSize,null, null, false, SINGLE_WAIT_STRATEGY);
+		return single(name, bufferSize, null, null, false, SINGLE_WAIT_STRATEGY);
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -608,7 +612,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -627,7 +631,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -648,7 +652,7 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * A Single factory is  a scheduler factory with sensible defaults for for "ultra-fast" and low-latency consuming.
+	 * A Single factory is  a worker factory with sensible defaults for for "ultra-fast" and low-latency consuming.
 	 *
 	 * <p>
 	 * It uses a single
@@ -672,61 +676,33 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	}
 
 	/**
-	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Consumer} scheduler.
+	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Processor} of {@link Runnable}.
 	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
-	 * When reference count returns to 0 it will automatically call
-	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * When reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
-	 * Note: If the scheduler is a {@link Processor} it will be subscribed once.
+	 * It will be subscribed once.
 	 *
-	 * @param scheduler the {@link Runnable} {@link Consumer} to decorate
+	 * @param processor the {@link Processor} to decorate
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup single(Consumer<Runnable> scheduler) {
-		return single(scheduler, false);
+	public static SchedulerGroup single(Processor<Runnable, Runnable> processor) {
+		return single(processor, false);
 	}
 
 	/**
-	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Consumer} scheduler.
+	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Processor} of {@link Runnable}.
 	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
-	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
-	 * {@link Consumer#accept(Object)} with {@literal null} argument.
+	 * If autoShutdown is given true and reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
-	 * Note: If the scheduler is a {@link Processor} it will be subscribed once.
+	 * It will be subscribed once.
 	 *
-	 * @param scheduler the {@link Runnable} {@link Consumer} to decorate
-	 * @param autoShutdown true to automatically shutdown the inner scheduler
+	 * @param processor the {@link Processor} to decorate
+	 * @param autoShutdown true to automatically shutdown the inner worker
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup single(final Consumer<Runnable> scheduler, boolean autoShutdown) {
-		return create(() -> scheduler, 1, autoShutdown);
-	}
-
-	/**
-	 * @return A passthrough {@link SchedulerGroup} which uses no resources and runs immiately its tasks.
-	 */
-	@SuppressWarnings("unchecked")
-	public static SchedulerGroup sync() {
-		return SYNC_SERVICE;
-	}
-
-	/**
-	 * Execute the given runnable or decrement scheduler reference if {@literal null} is accepted
-	 *
-	 * @param runnable the task to run or null signal
-	 */
-	@Override
-	public void accept(Runnable runnable) {
-		if (runnable == null) {
-			decrementReference();
-		}
-		else if (scheduler == null) {
-			runnable.run();
-		}
-		else {
-			scheduler.accept(runnable);
-		}
+	public static SchedulerGroup single(final Processor<Runnable, Runnable> processor, boolean autoShutdown) {
+		return create(() -> processor, 1, autoShutdown);
 	}
 
 	/**
@@ -751,47 +727,35 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 * @return true if successfully shutdown
 	 */
 	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
-		if (scheduler == null) {
-			return true;
+		for (ProcessorWorker processorWorker : workerPool) {
+			if (processorWorker.processor instanceof EventLoopProcessor && !((EventLoopProcessor) processorWorker.processor).awaitAndShutdown(timeout,
+					timeUnit)) {
+				return false;
+			}
 		}
-		else if (scheduler instanceof EventLoopProcessor) {
-			return ((EventLoopProcessor) scheduler).awaitAndShutdown(timeout, timeUnit);
-		}
-		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement EventLoopProcessor");
+		return true;
 	}
 
 	/**
-	 * Return a scheduler reference to this {@link SchedulerGroup}, incrementing use count by 1
+	 * Return a worker reference to this {@link SchedulerGroup}, incrementing use count by 1
 	 *
-	 * @return a new scheduler reference
+	 * @return a new {@link reactor.core.scheduler.Scheduler.Worker} reference
 	 */
 	@Override
-	public Consumer<Runnable> call() throws Exception {
-		if (scheduler == null) {
-			return NOOP_TASK_SUBSCRIBER;
-		}
-		incrementReference();
-		return this;
+	public Worker createWorker() {
+		references.incrementAndGet();
+		return next();
 	}
 
-	/**
-	 * Return a scheduler reference to this {@link SchedulerGroup}, incrementing use count by 1
-	 *
-	 * @param tailRecurse true if the scheduler should be reentrant
-	 *
-	 * @return a new scheduler reference
-	 * @throws Exception
-	 */
-	public Consumer<Runnable> call(boolean tailRecurse) throws Exception {
-		if(tailRecurse){
-			if (scheduler == null) {
-				incrementReference();
-			}
-			FluxProcessor<Runnable, Runnable> processor = FluxProcessor.async(this);
-			processor.subscribe(NOOP_TASK_SUBSCRIBER);
-			return processor.connect();
-		}
-		return call();
+	@Override
+	public Iterator<?> downstreams() {
+		return Arrays.asList(workerPool)
+		             .iterator();
+	}
+
+	@Override
+	public long downstreamCount() {
+		return workerPool.length;
 	}
 
 	/**
@@ -800,73 +764,84 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	 */
 	@SuppressWarnings("unchecked")
 	public Flux<Runnable> forceShutdown() {
-		if (scheduler == null) {
-			return Flux.empty();
+		List<Flux<Runnable>> finish = new ArrayList<>(workerPool.length);
+		for (ProcessorWorker worker : workerPool) {
+			if (worker.processor instanceof EventLoopProcessor) {
+				finish.add(((EventLoopProcessor<Runnable, Runnable>) worker.processor).forceShutdown());
+			}
+			else {
+				throw new UnsupportedOperationException(
+						"Underlying Processor is null or doesn't implement EventLoopProcessor");
+			}
 		}
-		else if (scheduler instanceof EventLoopProcessor) {
-			return ((EventLoopProcessor<Runnable, Runnable>) scheduler).forceShutdown();
-		}
-		throw new UnsupportedOperationException("Underlying Processor is null or doesn't implement EventLoopProcessor");
+		return Flux.merge(finish);
+
 	}
 
 	@Override
 	public boolean isTerminated() {
-		return scheduler != null && scheduler instanceof EventLoopProcessor && ((EventLoopProcessor) scheduler).isTerminated();
+		for (ProcessorWorker processorWorker : workerPool) {
+			if (!(processorWorker.processor instanceof EventLoopProcessor && ((EventLoopProcessor) processorWorker.processor).isTerminated())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
 	public boolean isStarted() {
-		return scheduler == null || !(scheduler instanceof EventLoopProcessor) || ((EventLoopProcessor) scheduler).isStarted();
+		for (ProcessorWorker processorWorker : workerPool) {
+			if (!(processorWorker.processor instanceof EventLoopProcessor && ((EventLoopProcessor) processorWorker.processor).isStarted())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
-	/**
-	 * Non-blocking shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
-	 */
+	@Override
+	public Runnable schedule(Runnable task) {
+		next().processor.onNext(task);
+		return NOOP_CANCEL;
+	}
+
+	@Override
 	public void shutdown() {
-		if (scheduler == null) {
-			return;
+		for (ProcessorWorker processorWorker : workerPool) {
+			if (processorWorker.processor instanceof EventLoopProcessor) {
+				((EventLoopProcessor) processorWorker.processor).shutdown();
+			}
+			else {
+				processorWorker.processor.onComplete();
+			}
 		}
-		if (scheduler instanceof EventLoopProcessor) {
-			((EventLoopProcessor) scheduler).shutdown();
+	}
+
+	ProcessorWorker next() {
+		int size = workerPool.length;
+		if (size == 1) {
+			return workerPool[0];
 		}
-		else {
-			scheduler.accept(null);
+
+		int index;
+		for (; ; ) {
+			index = this.index;
+			if (index == Integer.MAX_VALUE) {
+				if (INDEX.compareAndSet(this, Integer.MAX_VALUE, 0)) {
+					index = 0;
+					break;
+				}
+				continue;
+			}
+
+			if (INDEX.compareAndSet(this, index, index + 1)) {
+				break;
+			}
 		}
+
+		return workerPool[index % size];
 	}
 
 	/* INTERNAL */
-
-	@SuppressWarnings("unchecked")
-	static SchedulerGroup fromProcessor(final Consumer<Runnable> scheduler,
-			int concurrency,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		return new SchedulerGroup(new Callable<Consumer<Runnable>>() {
-			@Override
-			public Consumer<Runnable> call() throws Exception {
-				return scheduler;
-			}
-		}, concurrency, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-	}
-
-	@SuppressWarnings("unchecked")
-	static SchedulerGroup fromProcessor(Callable<? extends Consumer<Runnable>> schedulerFactory,
-			int parallelSchedulers,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		if (schedulerFactory != null && parallelSchedulers > 1) {
-			return new PooledSchedulerGroup(schedulerFactory, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-		}
-		else {
-			return new SchedulerGroup(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler,
-					autoShutdown);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	static final SchedulerGroup SYNC_SERVICE = new SchedulerGroup(null, -1, null, null, false);
 
 	static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY =
 			() -> WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS);
@@ -874,211 +849,92 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 	static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY =
 			() -> WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
 
-	static final TaskSubscriber NOOP_TASK_SUBSCRIBER = new TaskSubscriber(null, null);
+	static final AtomicIntegerFieldUpdater<SchedulerGroup> INDEX =
+			AtomicIntegerFieldUpdater.newUpdater(SchedulerGroup.class, "index");
 
-	final Consumer<Runnable>         scheduler;
-	final boolean                    autoShutdown;
-	final int                        parallelSchedulers;
+	final ProcessorWorker[] workerPool;
+	final AtomicInteger references = new AtomicInteger(0);
 
-	@SuppressWarnings("unused")
-	private volatile int refCount = 0;
-
-	static final AtomicIntegerFieldUpdater<SchedulerGroup> REF_COUNT =
-			AtomicIntegerFieldUpdater.newUpdater(SchedulerGroup.class, "refCount");
+	volatile int index = 0;
 
 	@SuppressWarnings("unchecked")
-	protected SchedulerGroup(Callable<? extends Consumer<Runnable>> schedulerFactory,
+	protected SchedulerGroup(Supplier<? extends Processor<Runnable, Runnable>> processorSupplier,
 			int parallelSchedulers,
+			boolean autoShutdown,
 			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler,
-			boolean autoShutdown) {
-		this.autoShutdown = autoShutdown;
-		this.parallelSchedulers = parallelSchedulers;
+			Runnable shutdownHandler) {
 
-		if (schedulerFactory != null) {
-			Consumer<Runnable> scheduler = null;
-			try {
-				scheduler = schedulerFactory.call();
-			}
-			catch (Throwable ex){
-				throw Exceptions.failUpstream(ex);
-			}
-			this.scheduler = Objects.requireNonNull(scheduler, "Provided schedulerFactory returned no scheduler");
-
-			if(scheduler instanceof Processor){
-				@SuppressWarnings("unchecked")
-				Processor<Runnable, Runnable> p = (Processor<Runnable, Runnable>)scheduler;
-				for (int i = 0; i < parallelSchedulers; i++) {
-					p.onSubscribe(EmptySubscription.INSTANCE);
-					p.subscribe(new TaskSubscriber(uncaughtExceptionHandler, shutdownHandler));
-				}
-			}
-
-
+		if (parallelSchedulers < 1) {
+			throw new IllegalArgumentException("Cannot create group pools from null or negative parallel argument");
 		}
-		else {
-			this.scheduler = null;
+
+		this.workerPool = new ProcessorWorker[parallelSchedulers];
+
+		for (int i = 0; i < parallelSchedulers; i++) {
+			workerPool[i] = new ProcessorWorker(processorSupplier.get(),
+					autoShutdown,
+					uncaughtExceptionHandler,
+					shutdownHandler,
+					references);
+			workerPool[i].start();
 		}
 	}
 
-	@Override
-	public Object connectedInput() {
-		return scheduler;
-	}
+	final static Runnable NOOP_CANCEL = () -> {
+	};
 
-	@Override
-	public Object connectedOutput() {
-		return scheduler;
-	}
+	final static class ProcessorWorker implements Subscriber<Runnable>, Loopback, Worker, Introspectable {
 
-	protected void decrementReference() {
-		if ((scheduler != null || parallelSchedulers > 1) && REF_COUNT.decrementAndGet(this) <= 0 && autoShutdown) {
-			shutdown();
-		}
-	}
+		final Consumer<Throwable>           uncaughtExceptionHandler;
+		final Runnable                      shutdownHandler;
+		final Processor<Runnable, Runnable> processor;
+		final boolean                       autoShutdown;
+		final AtomicInteger                 references;
 
-	protected void incrementReference() {
-		REF_COUNT.incrementAndGet(this);
-	}
+		LinkedArrayNode head;
+		LinkedArrayNode tail;
+		boolean         running;
 
-	final static class PooledSchedulerGroup extends SchedulerGroup implements MultiProducer {
+		Thread thread;
 
-		final SchedulerGroup[] schedulerGroups;
-
-		volatile int index = 0;
-
-		public PooledSchedulerGroup(Callable<? extends Consumer<Runnable>> schedulerFactory,
-				int parallelSchedulers,
+		ProcessorWorker(final Processor<Runnable, Runnable> processor,
+				boolean autoShutdown,
 				Consumer<Throwable> uncaughtExceptionHandler,
 				Runnable shutdownHandler,
-				boolean autoShutdown) {
-			super(null, parallelSchedulers, null, null, autoShutdown);
-
-			schedulerGroups = new SchedulerGroup[parallelSchedulers];
-
-			for (int i = 0; i < parallelSchedulers; i++) {
-				schedulerGroups[i] =
-						new InnerSchedulerGroup(schedulerFactory, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-			}
-		}
-
-		@Override
-		public void shutdown() {
-			for (SchedulerGroup schedulerGroup : schedulerGroups) {
-				schedulerGroup.shutdown();
-			}
-		}
-
-		@Override
-		public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
-			for (SchedulerGroup schedulerGroup : schedulerGroups) {
-				if (!schedulerGroup.awaitAndShutdown(timeout, timeUnit)) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return Arrays.asList(schedulerGroups)
-			             .iterator();
-		}
-
-		@Override
-		public long downstreamCount() {
-			return schedulerGroups.length;
-		}
-
-		@Override
-		public Flux<Runnable> forceShutdown() {
-			List<Flux<Runnable>> finish = new ArrayList<>(schedulerGroups.length);
-			for (SchedulerGroup schedulerGroup : schedulerGroups) {
-				finish.add(schedulerGroup.forceShutdown());
-			}
-			return Flux.merge(finish);
-		}
-
-		@Override
-		public boolean isStarted() {
-			for (SchedulerGroup schedulerGroup : schedulerGroups) {
-				if (!schedulerGroup.isStarted()) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		private SchedulerGroup next() {
-			int index = this.index++;
-			if (index == Integer.MAX_VALUE) {
-				this.index -= Integer.MAX_VALUE;
-			}
-			return schedulerGroups[index % parallelSchedulers];
-		}
-
-		@Override
-		public void accept(Runnable runnable) {
-			next().accept(runnable);
-		}
-
-		@Override
-		public Consumer<Runnable> call() throws Exception {
-			return next().call();
-		}
-
-		private class InnerSchedulerGroup extends SchedulerGroup implements Introspectable {
-
-			public InnerSchedulerGroup(Callable<? extends Consumer<Runnable>> schedulerFactory,
-					Consumer<Throwable> uncaughtExceptionHandler,
-					Runnable shutdownHandler,
-					boolean autoShutdown) {
-				super(schedulerFactory, 1, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
-			}
-
-			@Override
-			protected void decrementReference() {
-				REF_COUNT.decrementAndGet(this);
-				PooledSchedulerGroup.this.decrementReference();
-			}
-
-			@Override
-			protected void incrementReference() {
-				REF_COUNT.incrementAndGet(this);
-				PooledSchedulerGroup.this.incrementReference();
-			}
-
-			@Override
-			public int getMode() {
-				return INNER;
-			}
-
-			@Override
-			public String getName() {
-				return InnerSchedulerGroup.class.getSimpleName();
-			}
-		}
-	}
-
-	final static class TaskSubscriber implements Subscriber<Runnable>, Consumer<Runnable>, Introspectable {
-
-		private final Consumer<Throwable> uncaughtExceptionHandler;
-		private final Runnable            shutdownHandler;
-
-		public TaskSubscriber(Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
+				AtomicInteger references) {
+			this.processor = processor;
+			this.autoShutdown = autoShutdown;
 			this.uncaughtExceptionHandler = uncaughtExceptionHandler;
 			this.shutdownHandler = shutdownHandler;
+			this.references = references;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
+			thread = Thread.currentThread();
 			s.request(Long.MAX_VALUE);
 		}
 
 		@Override
 		public void onNext(Runnable task) {
 			try {
+				running = true;
 				task.run();
+
+				//tail recurse
+				LinkedArrayNode n = head;
+
+				while ( n != null ){
+					for(int i = 0; i < n.count; i++){
+						n.array[i].run();
+					}
+					n = n.next;
+				}
+
+				head = null;
+				tail = null;
+
+				running = false;
 			}
 			catch (Exceptions.CancelException ce) {
 				//IGNORE
@@ -1089,46 +945,89 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 		}
 
 		@Override
-		public void accept(Runnable runnable) {
+		public Runnable schedule(Runnable task) {
 			try {
-				if (runnable == null) {
-					if (shutdownHandler != null) {
-						shutdownHandler.run();
-					}
+				if (Thread.currentThread() == thread && running) {
+					tail(task);
+					return NOOP_CANCEL;
 				}
-				else {
-					runnable.run();
-				}
+
+				processor.onNext(task);
+				return NOOP_CANCEL;
 			}
 			catch (Exceptions.CancelException ce) {
 				//IGNORE
 			}
-			catch (Throwable t){
-				routeError(t);
+			catch (Throwable t) {
+				if (processor != null) {
+					processor.onError(t);
+				}
+				else if (uncaughtExceptionHandler != null) {
+					uncaughtExceptionHandler.accept(t);
+				}
+			} return REJECTED;
+		}
+
+		@Override
+		public void shutdown() {
+			if (references.decrementAndGet() <= 0 && autoShutdown) {
+				processor.onComplete();
 			}
 		}
 
-		void routeError(Throwable t){
-			if(uncaughtExceptionHandler != null){
+		void start() {
+			processor.subscribe(this);
+		}
+
+		void tail(Runnable task) {
+			LinkedArrayNode t = tail;
+
+			if (t == null) {
+				t = new LinkedArrayNode(task);
+
+				head = t;
+				tail = t;
+			}
+			else {
+				if (t.count == LinkedArrayNode.DEFAULT_CAPACITY) {
+					LinkedArrayNode n = new LinkedArrayNode(task);
+
+					t.next = n;
+					tail = n;
+				}
+				else {
+					t.array[t.count++] = task;
+				}
+			}
+		}
+
+		void routeError(Throwable t) {
+			if (uncaughtExceptionHandler != null) {
 				uncaughtExceptionHandler.accept(t);
 			}
-			else{
+			else {
 				log.error("Unrouted exception", t);
 			}
 		}
 
 		@Override
-		public int getMode() {
-			return TRACE_ONLY;
+		public Object connectedInput() {
+			return processor;
 		}
 
 		@Override
-		public String getName() {
-			return TaskSubscriber.class.getSimpleName();
+		public Object connectedOutput() {
+			return processor;
+		}
+
+		@Override
+		public int getMode() {
+			return INNER;
 		}
 
 		@Override
 		public void onError(Throwable t) {
+			thread = null;
 			if (uncaughtExceptionHandler != null) {
 				uncaughtExceptionHandler.accept(t);
 			}
@@ -1140,9 +1039,30 @@ public class SchedulerGroup implements Callable<Consumer<Runnable>>, Consumer<Ru
 
 		@Override
 		public void onComplete() {
+			thread = null;
 			if (shutdownHandler != null) {
 				shutdownHandler.run();
 			}
+		}
+	}
+
+	/**
+	 * Node in a linked array list that is only appended.
+	 */
+	static final class LinkedArrayNode {
+
+		static final int DEFAULT_CAPACITY = 16;
+
+		final Runnable[] array;
+		int count;
+
+		LinkedArrayNode next;
+
+		@SuppressWarnings("unchecked")
+		LinkedArrayNode(Runnable value) {
+			array = new Runnable[DEFAULT_CAPACITY];
+			array[0] = value;
+			count = 1;
 		}
 	}
 }

@@ -26,7 +26,7 @@ import reactor.core.state.Prefetchable;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class BoundedSubscriber<T> extends ConsumerSubscriber<T> implements Backpressurable, Prefetchable {
+final class BoundedSubscriber<T> extends LambdaSubscriber<T> implements Backpressurable, Prefetchable {
 
 	final int capacity;
 	final int limit;

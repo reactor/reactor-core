@@ -15,10 +15,11 @@
  */
 
 /**
- * Time sensitive {@link reactor.core.timer.Timer} contract and static factory methods. Used for
+ * {@link reactor.core.scheduler.Scheduler} and  {@link reactor.core.scheduler.TimedScheduler} contract and static
+ * factory methods in {@link reactor.core.scheduler.Timer}. Used for
  * scheduling {@link reactor.core.publisher.Mono#delay},
  * {@link reactor.core.publisher.Flux#interval}, timeout handling or polling tasks.
  *
  * @author Stephane Maldini
  */
-package reactor.core.timer;
+package reactor.core.scheduler;

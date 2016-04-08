@@ -51,8 +51,8 @@
  *     {@link java.util.function.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
  *     terminal signal used for cleanup logic</li>
  *     <li>Scheduler Factory: a {@link java.util.concurrent.Callable} generating schedulers. A major implementation
- *     of it is {@link reactor.core.publisher.SchedulerGroup}, a reference-counting scheduler generator that release
- *     resources automatically after scheduler terminaisons.
+ *     of it is {@link reactor.core.publisher.SchedulerGroup}, a reference-counting worker generator that release
+ *     resources automatically after worker terminaisons.
  *     </li>
  * </ul>
  * The key difference between asynchronous processors and schedulers is their natural ability to be shared where

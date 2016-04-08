@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.timer;
+package reactor.core.scheduler;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +27,9 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.state.Pausable;
+import reactor.core.scheduler.HashWheelTimer;
+import reactor.core.scheduler.IncrementingTimeResolver;
+import reactor.core.scheduler.Timer;
 import reactor.core.util.WaitStrategy;
 
 /**

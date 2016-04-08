@@ -23,6 +23,7 @@ import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 
@@ -54,7 +55,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 	@Override
 	public void simpleTest() throws Exception {
 		SchedulerGroup serviceRB = SchedulerGroup.async("rbWork", 32, 1);
-		Consumer<Runnable>  r = serviceRB.call();
+		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();
 		CountDownLatch latch = new CountDownLatch(1);
@@ -68,7 +69,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 				throw Exceptions.fail(ie);
 			}
 		};
-		r.accept(() -> c.accept("Hello World!"));
+		r.schedule(() -> c.accept("Hello World!"));
 
 		boolean success = serviceRB.awaitAndShutdown(3, TimeUnit.SECONDS);
 		long end = System.currentTimeMillis();

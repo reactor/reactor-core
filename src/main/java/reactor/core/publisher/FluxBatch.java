@@ -29,7 +29,7 @@ import reactor.core.state.Requestable;
 
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.timer.Timer;
+import reactor.core.scheduler.Timer;
 import reactor.core.util.BackpressureUtils;
 
 /**

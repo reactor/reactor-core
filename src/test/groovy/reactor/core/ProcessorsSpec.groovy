@@ -22,6 +22,7 @@ import org.reactivestreams.Subscription
 import reactor.core.publisher.SchedulerGroup
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
+import reactor.core.scheduler.Scheduler
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -94,7 +95,7 @@ class ProcessorsSpec extends Specification {
 			bc.connect()
 
 		when:
-			"call the processor"
+			"createWorker the processor"
 			elems.times {
 				bc.onNext 'hello ' + it
 			}
@@ -147,7 +148,7 @@ class ProcessorsSpec extends Specification {
 			bc.onSubscribe(manualSub)
 
 		when:
-			"call the processor"
+			"createWorker the processor"
 			elems.times {
 				bc.onNext 'hello ' + it
 			}
@@ -163,25 +164,16 @@ class ProcessorsSpec extends Specification {
 	def "Dispatcher executes tasks in correct thread"() {
 
 		given:
-		def sameThread = SchedulerGroup.sync().call()
-		def diffThread = SchedulerGroup.io("rbWork").call()
+		def diffThread = SchedulerGroup.io("rbWork").createWorker()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
 
 
 		when:
-			"a task is submitted"
-		sameThread.accept { taskThread = Thread.currentThread() }
-
-		then:
-			"the task thread should be the current thread"
-			currentThread == taskThread
-
-		when:
 			"a task is submitted to the thread pool dispatcher"
 			def latch = new CountDownLatch(1)
-		diffThread.accept { taskThread = Thread.currentThread() }
-		diffThread.accept { taskThread = Thread.currentThread(); latch.countDown() }
+		diffThread.schedule { taskThread = Thread.currentThread() }
+		diffThread.schedule { taskThread = Thread.currentThread(); latch.countDown() }
 
 			latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
 
@@ -192,7 +184,7 @@ class ProcessorsSpec extends Specification {
 
 
 		cleanup:
-			SchedulerGroup.release(diffThread)
+			diffThread.shutdown()
 	}
 
 	def "Dispatcher thread can be reused"() {
@@ -200,7 +192,7 @@ class ProcessorsSpec extends Specification {
 		given:
 			"ring buffer eventBus"
 			def serviceRB = SchedulerGroup.single("rb", 32)
-		def r = serviceRB.call()
+		def r = serviceRB.createWorker()
 			def latch = new CountDownLatch(2)
 
 		when:
@@ -209,20 +201,20 @@ class ProcessorsSpec extends Specification {
 			c = { data ->
 				if (data < 2) {
 					latch.countDown()
-				  r.accept { c.accept(++data) }
+				  r.schedule { c.accept(++data) }
 				}
 			}
 
 		and:
-			"call the eventBus"
-		r.accept { c.accept(0) }
+			"createWorker the eventBus"
+		r.schedule { c.accept(0) }
 
 		then:
 			"a task is submitted to the thread pool dispatcher"
 			latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
 
 		cleanup:
-			SchedulerGroup.release(r)
+			r.shutdown()
 	}
 
 	def "Dispatchers can be shutdown awaiting tasks to complete"() {
@@ -230,7 +222,7 @@ class ProcessorsSpec extends Specification {
 		given:
 			"a Reactor with a ThreadPoolExecutorDispatcher"
 			def serviceRB = SchedulerGroup.io("rbWork", 32)
-		def r = serviceRB.call()
+		def r = serviceRB.createWorker()
 			long start = System.currentTimeMillis()
 			def hello = ""
 			def latch = new CountDownLatch(1)
@@ -242,7 +234,7 @@ class ProcessorsSpec extends Specification {
 
 		when:
 			"the Dispatcher is shutdown and tasks are awaited"
-		r.accept { c.accept("Hello World!") }
+		r.schedule { c.accept("Hello World!") }
 			def success = serviceRB.awaitAndShutdown(5, TimeUnit.SECONDS)
 			long end = System.currentTimeMillis()
 		then:
@@ -257,19 +249,19 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			def serviceRB = SchedulerGroup.single("rb", 8)
-		def dispatcher = serviceRB.call()
+		def dispatcher = serviceRB.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
 
 		when:
-		dispatcher.accept({ t2 = Thread.currentThread() })
+		dispatcher.schedule({ t2 = Thread.currentThread() })
 			Thread.sleep(500)
 
 		then:
 			t1 != t2
 
 		cleanup:
-			SchedulerGroup.release(dispatcher)
+			dispatcher.shutdown()
 
 	}
 
@@ -277,23 +269,23 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			def serviceRBWork = SchedulerGroup.io("rbWork", 1024, 8)
-		def dispatcher = serviceRBWork.call()
+		def dispatcher = serviceRBWork.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
 
 		when:
-		dispatcher.accept({ t2 = Thread.currentThread() })
+		dispatcher.schedule({ t2 = Thread.currentThread() })
 			Thread.sleep(500)
 
 		then:
 			t1 != t2
 
 		cleanup:
-			SchedulerGroup.release(dispatcher)
+		dispatcher.shutdown()
 
 	}
 
-  def "MultiThreadDispatchers support ping pong dispatching"(Consumer<Runnable> d) {
+  def "MultiThreadDispatchers support ping pong dispatching"(Scheduler.Worker d) {
 		given:
 			def latch = new CountDownLatch(4)
 			def main = Thread.currentThread()
@@ -306,19 +298,19 @@ class ProcessorsSpec extends Specification {
 			Consumer<String> ping = {
 				if (latch.count > 0) {
 					t1 = Thread.currentThread()
-				  d.accept { pong.accept("pong") }
+				  d.schedule { pong.accept("pong") }
 					latch.countDown()
 				}
 			}
 			pong = {
 				if (latch.count > 0) {
 					t2 = Thread.currentThread()
-				  d.accept { ping.accept("ping") }
+				  d.schedule { ping.accept("ping") }
 					latch.countDown()
 				}
 			}
 
-		d.accept { ping.accept("ping") }
+		d.schedule { ping.accept("ping") }
 
 		then:
 			latch.await(1, TimeUnit.SECONDS)
@@ -326,11 +318,10 @@ class ProcessorsSpec extends Specification {
 			main != t2
 
 		cleanup:
-		 SchedulerGroup.release(d)
+		 d.shutdown()
 
 		where:
-			d << [SchedulerGroup.io("rbWork", 1024, 4).call(),
-			]
+			d << [SchedulerGroup.io("rbWork", 1024, 4).createWorker()]
 
 	}
 }
