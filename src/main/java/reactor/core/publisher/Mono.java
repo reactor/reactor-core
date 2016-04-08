@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,6 +30,7 @@ import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.stream.LongStream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -1536,20 +1537,32 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
-		if (maxRepeat != Integer.MAX_VALUE) {
-			return Mono.defer(() -> {
-				AtomicBoolean nonEmpty = new AtomicBoolean();
-				AtomicInteger count = new AtomicInteger();
-				return Flux.from(this.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
-						.repeatWhen(o -> repeatFactory.apply(o.takeWhile(e -> !nonEmpty.get() && count.getAndIncrement() < maxRepeat)))
-						.single();
-			});
-		}
 		return Mono.defer(() -> {
+			Flux<Long> iterations;
+
+			if(maxRepeat == Integer.MAX_VALUE) {
+                AtomicLong counter = new AtomicLong();
+				iterations = Flux
+					.generate((range, subscriber) -> LongStream
+						.range(0, range)
+						.forEach(l -> subscriber.onNext(counter.getAndIncrement())));
+			} else {
+				iterations = Flux
+					.range(0, maxRepeat)
+					.map(Integer::longValue)
+					.concatWith(Flux.error(new IllegalStateException("Exceeded maximum number of repeats"), true));
+			}
+
 			AtomicBoolean nonEmpty = new AtomicBoolean();
-			return Flux.from(this.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
-					.repeatWhen(o -> repeatFactory.apply(o.takeWhile(e -> !nonEmpty.get())))
-					.single();
+
+			return Flux
+				.from(this
+					.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
+				.repeatWhen(o -> repeatFactory
+					.apply(o
+						.takeWhile(e -> !nonEmpty.get())
+						.zipWith(iterations, 1, (c, i) -> i)))
+				.single();
 		});
 	}
 
