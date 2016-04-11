@@ -618,7 +618,7 @@ class MonoSpec extends Specification {
 
 	when: "p1 is consumed by p2"
 	def p2 = p1
-			.dispatchOn(SchedulerGroup.single('test'))
+			.publishOn(SchedulerGroup.single('test'))
 			.map {
 	  println Thread.currentThread();
 	  sleep(3000);

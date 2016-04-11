@@ -2198,16 +2198,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Scheduler scheduler) {
-		return dispatchOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
+	public final Flux<T> publishOn(Scheduler scheduler) {
+		return publishOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -2219,23 +2219,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 * @param prefetch the asynchronous boundary capacity
 	 *
 	 * @return a {@link Flux} consuming asynchronously
 	 */
-	public final Flux<T> dispatchOn(Scheduler scheduler, int prefetch) {
+	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
 			return new FluxSubscribeOnValue<>(value, scheduler, true);
 		}
 
-		return new FluxDispatchOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
+		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
 	}
 
 

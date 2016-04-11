@@ -95,7 +95,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the error is retrieved after 2 sec'
-		stream.dispatchOn(asyncGroup).timeout(2, TimeUnit.SECONDS).next().get()
+		stream.publishOn(asyncGroup).timeout(2, TimeUnit.SECONDS).next().get()
 
 		then:
 			'an error has been thrown'
@@ -209,7 +209,7 @@ class FluxSpec extends Specification {
 	def 'A deferred Flux can be translated into a completable queue'() {
 		given:
 			'a composable with an initial value'
-			def stream = Flux.just('test', 'test2', 'test3').log().dispatchOn(asyncGroup)
+			def stream = Flux.just('test', 'test2', 'test3').log().publishOn(asyncGroup)
 
 		when:
 			'the flux is retrieved'
@@ -307,7 +307,7 @@ class FluxSpec extends Specification {
 			def last = s
 					.sample(2l)
 					.subscribeOn(SchedulerGroup.io("work", 8, 4))
-					.dispatchOn(asyncGroup)
+					.publishOn(asyncGroup)
 					.log()
 					.take(1)
 					.next()
@@ -615,7 +615,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			Flux<Integer> mapped = source.
 			log().
-					dispatchOn(asyncGroup).
+					publishOn(asyncGroup).
 					flatMap { v -> Flux.just(v * 2) }.
 					doOnError(Throwable) { it.printStackTrace() }
 
@@ -1458,7 +1458,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def promise = MonoProcessor.create()
 
-			source.dispatchOn(asyncGroup).log("prewindow").window(Duration.ofSeconds(10)).consume {
+			source.publishOn(asyncGroup).log("prewindow").window(Duration.ofSeconds(10)).consume {
 				it.log().buffer(2).consume { promise.onNext(it) }
 			}
 
@@ -1542,7 +1542,7 @@ class FluxSpec extends Specification {
 			def result = [:]
 			def latch = new CountDownLatch(6)
 
-			def partitionFlux = source.dispatchOn(asyncGroup).partition()
+			def partitionFlux = source.publishOn(asyncGroup).partition()
 			partitionFlux.consume { stream ->
 				stream.cast(SimplePojo).consume { pojo ->
 					if (result[pojo.id]) {
@@ -1840,7 +1840,7 @@ class FluxSpec extends Specification {
 				'hello future too long'
 			} as Callable<String>)
 
-			s = Mono.fromFuture(future, Duration.ofMillis(100)).dispatchOn(asyncGroup).as{ Flux.from(it) }
+			s = Mono.fromFuture(future, Duration.ofMillis(100)).publishOn(asyncGroup).as{ Flux.from(it) }
 			nexts = []
 			errors = []
 
@@ -1896,7 +1896,7 @@ class FluxSpec extends Specification {
 			def random = new Random()
 			def source = Flux.yield {
 				it.submit random.nextInt()
-			}.dispatchOn(asyncGroup)
+			}.publishOn(asyncGroup)
 
 			def values = []
 
@@ -2239,7 +2239,7 @@ class FluxSpec extends Specification {
 
 	source
 			.log("block")
-			.dispatchOn(asyncGroup)
+			.publishOn(asyncGroup)
 			.onBackpressureBuffer()
 			.doOnNext { value = it }
 			.log('overflow-block-test')
@@ -2349,10 +2349,10 @@ class FluxSpec extends Specification {
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
-			head.dispatchOn(asyncGroup).partition(3).consume {
+			head.publishOn(asyncGroup).partition(3).consume {
 				s ->
 					s
-							.dispatchOn(asyncGroup)
+							.publishOn(asyncGroup)
 							.map { it }
 							.buffer(batchSize)
 							.consume { List<Integer> ints ->
@@ -2618,7 +2618,7 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with an initial values'
 			def stream = Flux.range(0, Integer.MAX_VALUE)
-					.dispatchOn(asyncGroup)
+					.publishOn(asyncGroup)
 
 		when:
 			'take to the first 2 elements'
@@ -2667,7 +2667,7 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with an initial values'
 			def stream = Flux.range(0, 1000)
-					.dispatchOn(asyncGroup)
+					.publishOn(asyncGroup)
 
 		when:
 			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).buffer().next()

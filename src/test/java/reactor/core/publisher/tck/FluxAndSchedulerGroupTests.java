@@ -49,12 +49,12 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 						Throwable::printStackTrace, () -> System.out.println("EEEEE"));
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
-		return FluxProcessor.blackbox(EmitterProcessor.<Integer>create(), p ->
+		return FluxProcessor.blackbox(EmitterProcessor.create(), p ->
 
-				p.dispatchOn(sharedGroup)
+				p.publishOn(sharedGroup)
 				 .log("grouped")
 				 .partition(2)
-		                  .flatMap(stream -> stream.dispatchOn(asyncGroup)
+		                  .flatMap(stream -> stream.publishOn(asyncGroup)
 		                                           .doOnNext(this::monitorThreadUse)
 		                                           .scan((prev, next) -> next)
 		                                           .map(integer -> -integer)
@@ -65,7 +65,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 		                                           .flatMap(Flux::fromIterable)
 		                                           .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 		                  )
-				.dispatchOn(sharedGroup)
+				.publishOn(sharedGroup)
 				.doOnError(Throwable.class, Throwable::printStackTrace)
 		);
 	}

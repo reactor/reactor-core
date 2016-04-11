@@ -942,25 +942,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dispatchon1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 * <p> <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
 	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
 	 * fast async event loops.
 	 *
-	 * {@code mono.dispatchOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return an asynchronous {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public final Mono<T> dispatchOn(Scheduler scheduler) {
+	public final Mono<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			T value = get();
 			return  MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
 		}
-		return MonoSource.wrap(new FluxDispatchOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
+		return MonoSource.wrap(new FluxPublishOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
 	}
 
 

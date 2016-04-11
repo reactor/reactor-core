@@ -67,9 +67,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable {
 
 	/**
-	 * Create an asynchronously {@link Flux#dispatchOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
+	 * Create an asynchronously {@link Flux#publishOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
 	 * relay.
-	 * Like {@link Flux#dispatchOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
+	 * Like {@link Flux#publishOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
 	 * {@literal null} protocol.
 	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
 	 * mandatory.
@@ -81,7 +81,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 */
 	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
 		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
-		return create(emitter, emitter.dispatchOn(scheduler));
+		return create(emitter, emitter.publishOn(scheduler));
 	}
 
 	/**

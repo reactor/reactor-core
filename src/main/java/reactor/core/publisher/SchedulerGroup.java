@@ -42,7 +42,7 @@ import reactor.core.util.WaitStrategy;
 
 /**
  * "Scheduling" in Reactor via
- * {@link Flux#dispatchOn dispatchOn}, {@link Mono#subscribeOn subscribeOn} or {@link FluxProcessor}.{@link FluxProcessor#async async} requires
+ * {@link Flux#publishOn publishOn}, {@link Mono#subscribeOn subscribeOn} or {@link FluxProcessor}.{@link FluxProcessor#async async} requires
  * {@link Consumer} of {@link Runnable}. Unlike {@link java.util.concurrent.Executor} which apparently has the same
  * signature, these {@link Consumer} allow {@literal null} argument and should treat them as terminal signal to dispose
  * any used resources.
@@ -53,7 +53,7 @@ import reactor.core.util.WaitStrategy;
  *  {@link SchedulerGroup} maintains a reference count on how many worker have been generated. Therefore it will
  * automatically shutdown the required resources after all references have been released, e.g. when all {@link Flux}
  * using
- * {@link Flux#dispatchOn dispatchOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
+ * {@link Flux#publishOn publishOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
  * by setting the factories {@literal autoshutdown} to false.
  * <p>
  *   {@link SchedulerGroup} offers ready-to-use pool configurations :

@@ -106,7 +106,7 @@ public class FluxTests extends AbstractReactorTest {
 	public void simpleReactiveSubscriber() throws InterruptedException {
 		EmitterProcessor<String> str = EmitterProcessor.create();
 
-		str.dispatchOn(asyncGroup)
+		str.publishOn(asyncGroup)
 		   .subscribe(new TestSubscriber());
 
 		System.out.println(str.debug());
@@ -164,7 +164,7 @@ public class FluxTests extends AbstractReactorTest {
 		Flux<String> stream1 = Flux.just("1", "2");
 		Flux<String> stream2 = Flux.just("3", "4", "5");
 		Mono<Integer> s = Flux.merge(stream1, stream2)
-		                         //.dispatchOn(env)
+		                         //.publishOn(env)
 		                         .useCapacity(5)
 		                         .log("merge")
 		                         .map(STRING_2_INTEGER)
@@ -286,9 +286,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
 		SignalEmitter<String> s = SignalEmitter.create(d);
-		Flux<Integer> tasks = d.dispatchOn(asyncGroup)
+		Flux<Integer> tasks = d.publishOn(asyncGroup)
 		                          .partition(8)
-		                          .flatMap(stream -> stream.dispatchOn(asyncGroup)
+		                          .flatMap(stream -> stream.publishOn(asyncGroup)
 		                                                  .map((String str) -> {
 			                                                  try {
 				                                                  Thread.sleep(random.nextInt(10));
@@ -391,9 +391,9 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
 		SignalEmitter<Integer> s = SignalEmitter.create(d);
 
-		Runnable c = d.dispatchOn(asyncGroup)
+		Runnable c = d.publishOn(asyncGroup)
 		             .partition(8)
-		             .consume(stream -> stream.dispatchOn(asyncGroup)
+		             .consume(stream -> stream.publishOn(asyncGroup)
 		                                      .map(o -> {
 			                                      synchronized (internalLock) {
 
@@ -453,7 +453,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		Mono<Long> result = source
 				.log("delay")
-				.dispatchOn(asyncGroup)
+				.publishOn(asyncGroup)
 		                          .delay(Duration.ofMillis(avgTime))
 
 		                          .elapsed()
@@ -548,9 +548,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		EmitterProcessor<String> deferred = EmitterProcessor.create();
 		deferred.connect();
-		deferred.dispatchOn(asyncGroup)
+		deferred.publishOn(asyncGroup)
 		        .partition(8)
-		        .consume(stream -> stream.dispatchOn(asyncGroup)
+		        .consume(stream -> stream.publishOn(asyncGroup)
 		                                 .buffer(1000 / 8, Duration.ofSeconds(1))
 		                                 .consume(batch -> {
 			                                 for (String i : batch) {
@@ -596,9 +596,9 @@ public class FluxTests extends AbstractReactorTest {
 			case "partitioned":
 				deferred = EmitterProcessor.create();
 				deferred.connect();
-				System.out.println(ReactiveStateUtils.scan(deferred.dispatchOn(asyncGroup)
+				System.out.println(ReactiveStateUtils.scan(deferred.publishOn(asyncGroup)
 				                           .partition(2)
-				                           .consume(stream -> stream.dispatchOn(asyncGroup)
+				                           .consume(stream -> stream.publishOn(asyncGroup)
 				                                                    .map(i -> i)
 				                                                    .scan(1, (acc, next) -> acc + next)
 				                                                    .consume(i -> latch.countDown())
@@ -609,7 +609,7 @@ public class FluxTests extends AbstractReactorTest {
 			default:
 				deferred = EmitterProcessor.create();
 				deferred.connect();
-				deferred.dispatchOn(asyncGroup)
+				deferred.publishOn(asyncGroup)
 				        .map(i -> i)
 				        .scan(1, (acc, next) -> acc + next)
 				        .consume(i -> latch.countDown());
@@ -654,12 +654,12 @@ public class FluxTests extends AbstractReactorTest {
 			case "partitioned":
 				mapManydeferred = EmitterProcessor.create();
 				mapManydeferred.partition(4)
-				               .consume(substream -> substream.dispatchOn(asyncGroup)
+				               .consume(substream -> substream.publishOn(asyncGroup)
 				                                              .consume(i -> latch.countDown()));
 				break;
 			default:
 				mapManydeferred = EmitterProcessor.create();
-				("sync".equals(dispatcher) ? mapManydeferred : mapManydeferred.dispatchOn(asyncGroup))
+				("sync".equals(dispatcher) ? mapManydeferred : mapManydeferred.publishOn(asyncGroup))
 				               .flatMap(Flux::just)
 				               .consume(i -> latch.countDown());
 		}
@@ -743,7 +743,7 @@ public class FluxTests extends AbstractReactorTest {
 		Map<Integer, Integer> batchesDistribution = new ConcurrentHashMap<>();
 		batchingStreamDef
 		                 .partition(PARALLEL_STREAMS)
-		                 .consume(substream -> substream.hide().dispatchOn(asyncGroup)
+		                 .consume(substream -> substream.hide().publishOn(asyncGroup)
 		                                                .buffer(BATCH_SIZE, Duration.ofMillis(TIMEOUT))
 		                                                .consume(items -> {
 			                                                batchesDistribution.compute(items.size(),
@@ -813,9 +813,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux<Integer> s = Flux.just("2222")
 		                            .map(Integer::parseInt)
-		                            .flatMap(l -> Flux.merge(globalFeed.dispatchOn(asyncGroup),
+		                            .flatMap(l -> Flux.merge(globalFeed.publishOn(asyncGroup),
 				                           Flux.just(1111, l, 3333, 4444, 5555, 6666)).log("merged")
-		                                                                                 .dispatchOn(asyncGroup)
+		                                                                                 .publishOn(asyncGroup)
 		                                                                                 .log("dispatched")
 		                                                                                 .doOnSubscribe(x -> afterSubscribe.countDown())
 		                                                                                 .filter(nearbyLoc -> 3333 >= nearbyLoc)
@@ -856,7 +856,7 @@ public class FluxTests extends AbstractReactorTest {
 
 			Flux.just(source)
 			       .multicast(() -> FluxProcessor.blackbox(EmitterProcessor.<String>create(),
-					       operationStream -> operationStream.dispatchOn(asyncGroup)
+					       operationStream -> operationStream.publishOn(asyncGroup)
 					                                         .delay(Duration.ofMillis(100))
 					                                         .map(s -> s + " MODIFIED")
 					                                         .map(s -> {
@@ -885,9 +885,9 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch countDownLatch = new CountDownLatch(max);
 
 		Flux<Integer> worker = Flux.range(0, max)
-		                                 .dispatchOn(asyncGroup);
+		                                 .publishOn(asyncGroup);
 		worker.partition(2)
-		      .consume(s -> s.dispatchOn(supplier)
+		      .consume(s -> s.publishOn(supplier)
 		                     .map(v -> v)
 		                     .consume(v -> countDownLatch.countDown()));
 
@@ -904,12 +904,12 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch countDownLatch = new CountDownLatch(tasks.size());
 		Flux<Integer> worker = Flux.fromIterable(tasks)
 		                                 .log("before")
-		                                 .dispatchOn(asyncGroup);
+		                                 .publishOn(asyncGroup);
 
 		Runnable tail = worker.log("after")
 		                     .partition(2)
 		                     .consume(s -> s.log("w"+s.key())
-		                                    .dispatchOn(asyncGroup)
+		                                    .publishOn(asyncGroup)
 		                                    .map(v -> v)
 		                                    .consume(v -> countDownLatch.countDown(), Throwable::printStackTrace));
 
@@ -929,7 +929,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                                                         .nextDouble()),
 				sub -> new Random()).as(Flux::from)
 		                            .log("points")
-		                             //.requestWhen(requests -> requests.dispatchOn(Environment.cachedDispatcher()))
+		                             //.requestWhen(requests -> requests.publishOn(Environment.cachedDispatcher()))
 		                             .buffer(2)
 		                             .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
 		                             .subscribeWith(TopicProcessor.create(pool, 32))
@@ -946,7 +946,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                          .log("outer-2");
 
 		Flux.merge(innerSamples, outerSamples)
-		       .dispatchOn(asyncGroup)
+		       .publishOn(asyncGroup)
 		       .scan(new SimulationState(0l, 0l), SimulationState::withNextSample)
 		       .log("result")
 		       .map(s -> System.out.printf("After %8d samples π is approximated as %.5f", s.totalSamples, s.pi()))
@@ -1071,12 +1071,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.create();
 		streamBatcher.connect();
-		streamBatcher.dispatchOn(asyncGroup)
+		streamBatcher.publishOn(asyncGroup)
 		             .buffer(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
 		             .partition(parallelStreams)
 		             .log("batched-inner")
-		             .consume(innerStream -> innerStream.dispatchOn(asyncGroup)
+		             .consume(innerStream -> innerStream.publishOn(asyncGroup)
 		                                                .doOnError(Exception.class, Throwable::printStackTrace)
 		                                                .consume(i -> latch.countDown()));
 
@@ -1118,12 +1118,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		Runnable c = Flux.range(1, 10)
 		                                      .groupBy(n -> n % 2 == 0)
-		                                      .flatMap(stream -> stream.dispatchOn(supplier1)
+		                                      .flatMap(stream -> stream.publishOn(supplier1)
 		                                            .log("groupBy-" + stream.key()))
 		                                      .partition(5)
-		                                      .flatMap(stream -> stream.dispatchOn(supplier2)
+		                                      .flatMap(stream -> stream.publishOn(supplier2)
 		                                            .log("partition-" + stream.key()))
-		                                      .dispatchOn(asyncGroup)
+		                                      .publishOn(asyncGroup)
 		                                      .log("join")
 		                                      .consume(t -> {
 			                   latch.countDown();
@@ -1144,7 +1144,7 @@ public class FluxTests extends AbstractReactorTest {
 		Flux.range(1, 100)
 		       .log("testOn")
 		       .subscribeOn(ioGroup)
-		       .dispatchOn(asyncGroup)
+		       .publishOn(asyncGroup)
 		       .useCapacity(1)
 		       .consume(t -> latch.countDown());
 
@@ -1173,10 +1173,10 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux<Object> s1 = EmitterProcessor.replayLastOrDefault(new Object())
 		                                  .connect()
-		                                .dispatchOn(asyncGroup);
+		                                .publishOn(asyncGroup);
 		Flux<Object> s2 = EmitterProcessor.replayLastOrDefault(new Object())
 		                                  .connect()
-		                                .dispatchOn(asyncGroup);
+		                                .publishOn(asyncGroup);
 
 		// The following works:
 		//List<Flux<Object>> list = Arrays.asList(s1);
@@ -1354,7 +1354,7 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> computationStream =
-				computationEmitterProcessor.dispatchOn(SchedulerGroup.single("computation", BACKLOG))
+				computationEmitterProcessor.publishOn(SchedulerGroup.single("computation", BACKLOG))
 				                      .map(i -> {
 					                      final List<String> list = new ArrayList<>(i);
 					                      for (int j = 0; j < i; j++) {
@@ -1368,19 +1368,19 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> persistenceStream =
-				persistenceEmitterProcessor.dispatchOn(SchedulerGroup.single("persistence", BACKLOG))
+				persistenceEmitterProcessor.publishOn(SchedulerGroup.single("persistence", BACKLOG))
 				                      .doOnNext(i -> println("Persisted: ", i))
 				                      .map(i -> Collections.singletonList("done" + i))
 				                      .log("persistence");
 
-		Flux<Integer> forkStream = forkEmitterProcessor.dispatchOn(SchedulerGroup.single("fork", BACKLOG))
+		Flux<Integer> forkStream = forkEmitterProcessor.publishOn(SchedulerGroup.single("fork", BACKLOG))
 		                                             .log("fork");
 
 		forkStream.subscribe(computationEmitterProcessor);
 		forkStream.subscribe(persistenceEmitterProcessor);
 
 		final Flux<List<String>> joinStream = Flux.zip(computationStream, persistenceStream, (a, b) -> Arrays.asList(a, b))
-		                                                .dispatchOn(SchedulerGroup.single("join", BACKLOG))
+		                                                .publishOn(SchedulerGroup.single("join", BACKLOG))
 		                                                .map(listOfLists -> {
 			                                               listOfLists.get(0)
 			                                                          .addAll(listOfLists.get(1));

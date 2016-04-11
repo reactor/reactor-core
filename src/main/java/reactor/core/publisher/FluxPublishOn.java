@@ -52,7 +52,7 @@ import reactor.core.util.BackpressureUtils;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
+final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Scheduler scheduler;
 	
@@ -62,7 +62,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 	
 	final int prefetch;
 	
-	public FluxDispatchOn(
+	public FluxPublishOn(
 			Publisher<? extends T> source, 
 			Scheduler scheduler, 
 			boolean delayError,

@@ -53,11 +53,11 @@ public class PopularTagTests extends AbstractReactorTest {
 
 		Runnable top10every1second =
 		  Flux.fromIterable(PULP_SAMPLE)
-		         .dispatchOn(asyncGroup)
+		         .publishOn(asyncGroup)
 		         .flatMap(samuelJackson ->
 				Flux
 				  .fromArray(samuelJackson.split(" "))
-				  .dispatchOn(asyncGroup)
+				  .publishOn(asyncGroup)
 				  .filter(w -> !w.trim().isEmpty())
 				  .doOnNext(i -> simulateLatency())
 			)
