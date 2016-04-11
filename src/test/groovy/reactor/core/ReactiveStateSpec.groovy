@@ -68,7 +68,7 @@ class ReactiveStateSpec extends Specification {
 	def sub1 = unbounded()
 	def sub2 = unbounded()
 	def sub3 = unbounded()
-	def group = FluxProcessor.async(SchedulerGroup.single())
+	def group = EmitterProcessor.async(SchedulerGroup.single())
 	proc1.log(" test").subscribe(sub1)
 	group.subscribe(sub2)
 	proc1.log(" test").subscribe(sub3)

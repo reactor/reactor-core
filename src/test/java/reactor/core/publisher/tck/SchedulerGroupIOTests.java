@@ -35,7 +35,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return FluxProcessor.async(SchedulerGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace, () ->
+		return EmitterProcessor.async(SchedulerGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace, () ->
 		{}));
 	}
 

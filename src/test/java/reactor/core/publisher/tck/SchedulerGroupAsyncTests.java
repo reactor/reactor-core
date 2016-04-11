@@ -41,7 +41,7 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return FluxProcessor.async(SchedulerGroup.<Long>single("shared-async", bufferSize,
+		return EmitterProcessor.async(SchedulerGroup.<Long>single("shared-async", bufferSize,
 				Throwable::printStackTrace, () -> {}));
 
 	}

@@ -30,6 +30,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Slot;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -64,6 +65,24 @@ import reactor.core.util.Sequence;
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable {
+
+	/**
+	 * Create an asynchronously {@link Flux#dispatchOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
+	 * relay.
+	 * Like {@link Flux#dispatchOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
+	 * {@literal null} protocol.
+	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
+	 * mandatory.
+	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param <IN> The relayed data type
+	 *
+	 * @return a new asynchronous {@link FluxProcessor}
+	 */
+	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
+		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
+		return create(emitter, emitter.dispatchOn(scheduler));
+	}
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
