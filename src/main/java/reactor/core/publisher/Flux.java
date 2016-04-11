@@ -2944,10 +2944,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			@SuppressWarnings("rawtypes")
 			Publisher<T>[] newArray = expandArraySource((FluxFlatMap)this, other);
 			if (newArray != null) {
-				return merge(fromArray(newArray));
+				return merge(fromArray(newArray), newArray.length);
 			}
 		}
-		return merge(just(this, other));
+		return merge(just(this, other), 2);
 	}
 
 	/**
