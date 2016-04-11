@@ -457,7 +457,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return when(Tuple.fn2(), p1, p2);
+		return zip(Tuple.fn2(), p1, p2);
 	}
 
 	/**
@@ -477,7 +477,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return when(Tuple.fn3(), p1, p2, p3);
+		return zip(Tuple.fn3(), p1, p2, p3);
 	}
 
 	/**
@@ -502,7 +502,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return when(Tuple.fn4(), p1, p2, p3, p4);
+		return zip(Tuple.fn4(), p1, p2, p3, p4);
 	}
 
 	/**
@@ -530,7 +530,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return when(Tuple.fn5(), p1, p2, p3, p4, p5);
+		return zip(Tuple.fn5(), p1, p2, p3, p4, p5);
 	}
 
 	/**
@@ -561,7 +561,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return when(Tuple.fn6(), p1, p2, p3, p4, p5, p6);
+		return zip(Tuple.fn6(), p1, p2, p3, p4, p5, p6);
 	}
 
 	/**
@@ -579,7 +579,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
 	private static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return when(array -> (T[])array, monos);
+		return zip(array -> (T[])array, monos);
 	}
 
 	/**
@@ -598,7 +598,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"varargs", "unchecked"})
-	private static <T, V> Mono<V> when(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
+	private static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
 		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
 	}
 
@@ -617,7 +617,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return when(array -> (T[])array, monos);
+		return zip(array -> (T[])array, monos);
 	}
 
 	/**
@@ -625,7 +625,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zip1.png" alt="">
 	 * <p>
 	 *
 	 * @param combinator the combinator {@link Function}
@@ -636,7 +636,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T, V> Mono<V> when(final Function<? super Object[], ? extends V> combinator, final Iterable<?
+	public static <T, V> Mono<V> zip(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
 		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
 	}
