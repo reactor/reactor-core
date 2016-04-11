@@ -98,7 +98,7 @@ async.forceShutdown()
 io.shutdown();
 ```
 ## Hot Publishing : SignalEmitter
-To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.startEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.yield(emitter -> {}) :
+To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.connectEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.yield(emitter -> {}) :
 
 ```java
 Flux.yield(sink -> {
@@ -124,7 +124,7 @@ The 3 main processor implementations are message relays using 0 ([EmitterProcess
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
-SignalEmitter<Integer> sink = emitter.startEmitter();
+SignalEmitter<Integer> sink = emitter.connectEmitter();
 sink.submit(1);
 sink.submit(2);
 emitter.consume(System.out::println);
@@ -134,7 +134,7 @@ sink.finish();
 Replay capacity in action:
 ```java
 EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
-SignalEmitter<Integer> sink = replayer.startEmitter();
+SignalEmitter<Integer> sink = replayer.connectEmitter();
 sink.submit(1);
 sink.submit(2);
 replayer.consume(System.out::println); //output 1, 2

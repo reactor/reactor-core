@@ -104,7 +104,7 @@ public class CombinationTests {
 			         latch.countDown();
 		         }));
 
-		SignalEmitter<Integer> session = processor.startEmitter();
+		SignalEmitter<Integer> session = processor.connectEmitter();
 		long emission = session.submit(1);
 		if (emission == -1L) {
 			throw new IllegalStateException("Negatime " + emission);
@@ -140,7 +140,7 @@ public class CombinationTests {
 			         }, null, d -> latch.countDown()));
 		}
 
-		SignalEmitter<Integer> session = processor.startEmitter();
+		SignalEmitter<Integer> session = processor.connectEmitter();
 
 		for (int i = 0; i < n; i++) {
 			while (!session.emit(i)

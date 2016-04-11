@@ -48,8 +48,8 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 *
 	 * @return a new subscribed {@link SignalEmitter}
 	 */
-	default SignalEmitter<T> startEmitter() {
-		return bindEmitter(true);
+	default SignalEmitter<T> connectEmitter() {
+		return connectEmitter(true);
 	}
 
 	/**
@@ -58,7 +58,7 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 *
 	 * @return a new {@link SignalEmitter}
 	 */
-	default SignalEmitter<T> bindEmitter(boolean autostart) {
+	default SignalEmitter<T> connectEmitter(boolean autostart) {
 		return SignalEmitter.create(this, autostart);
 	}
 
