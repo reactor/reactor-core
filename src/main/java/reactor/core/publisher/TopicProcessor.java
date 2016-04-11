@@ -689,9 +689,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 		if (error != null) {
 			if (t != null) {
 				t.addSuppressed(error);
-				return concat(bufferIterable, Flux.<E>error(t));
+				return concat(bufferIterable, Flux.error(t));
 			}
-			return concat(bufferIterable, Flux.<E>error(error));
+			return concat(bufferIterable, Flux.error(error));
 		}
 		return bufferIterable;
 	}
@@ -974,7 +974,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 					return;
 				}
 
-				BackpressureUtils.getAndAdd(pendingRequest, n);
+				BackpressureUtils.getAndAddCap(pendingRequest, n);
 			}
 		}
 

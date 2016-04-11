@@ -749,7 +749,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, actual)) {
-				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}

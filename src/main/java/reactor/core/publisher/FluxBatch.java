@@ -135,7 +135,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 		@Override
 		protected void doRequest(long n) {
-			doRequested(BackpressureUtils.getAndAdd(REQUESTED, this, n), n);
+			doRequested(BackpressureUtils.getAndAddCap(REQUESTED, this, n), n);
 		}
 
 		protected final void requestMore(long n){

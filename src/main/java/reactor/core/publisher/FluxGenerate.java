@@ -133,7 +133,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 				return;
 			}
 
-			if (BackpressureUtils.getAndAdd(PENDING_UPDATER, this, n) > 0) {
+			if (BackpressureUtils.getAndAddCap(PENDING_UPDATER, this, n) > 0) {
 				return;
 			}
 
@@ -173,7 +173,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 
 		@Override
 		public void accept(Long n, SubscriberWithContext<T, C> sub) {
-			BackpressureUtils.getAndAdd(PENDING_UPDATER, this, n);
+			BackpressureUtils.getAndAddCap(PENDING_UPDATER, this, n);
 			if (RUNNING.getAndIncrement(this) == 0) {
 				int missed = 1;
 				long r;

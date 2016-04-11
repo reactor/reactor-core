@@ -163,7 +163,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				if(WIP.getAndIncrement(this) == 0){
 					worker.schedule(this);
 				}

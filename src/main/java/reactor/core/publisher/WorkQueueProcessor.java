@@ -1046,7 +1046,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 					return;
 				}
 
-				BackpressureUtils.getAndAdd(pendingRequest, n);
+				BackpressureUtils.getAndAddCap(pendingRequest, n);
 			}
 		}
 

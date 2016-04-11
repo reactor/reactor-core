@@ -402,7 +402,7 @@ public class SignalEmitter<E>
 	@Override
 	public void request(long n) {
 		if (BackpressureUtils.checkRequest(n, actual)) {
-			BackpressureUtils.getAndAdd(REQUESTED, this, n);
+			BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 		}
 	}
 

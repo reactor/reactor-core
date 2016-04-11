@@ -464,7 +464,7 @@ class HashWheelTimer extends Timer {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.checkRequest(n, delegate)) {
-				BackpressureUtils.getAndAdd(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 

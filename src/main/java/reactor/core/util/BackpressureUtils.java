@@ -222,7 +222,7 @@ public enum BackpressureUtils {
 	 * @param toAdd    delta to add
 	 * @return value before addition or Long.MAX_VALUE
 	 */
-	public static <T> long getAndAdd(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
+	public static <T> long getAndAddCap(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
 		long r, u;
 		do {
 			r = updater.get(instance);
@@ -242,7 +242,7 @@ public enum BackpressureUtils {
 	 * @param toAdd    delta to add
 	 * @return value before addition or Long.MAX_VALUE
 	 */
-	public static long getAndAdd(Sequence sequence, long toAdd) {
+	public static long getAndAddCap(Sequence sequence, long toAdd) {
 		long u, r;
 		do {
 			r = sequence.getAsLong();
@@ -268,28 +268,6 @@ public enum BackpressureUtils {
 		do {
 			r = updater.get(instance);
 			if (r == 0 || r == Long.MAX_VALUE) {
-				return r;
-			}
-			u = subOrZero(r, toSub);
-		} while (!updater.compareAndSet(instance, r, u));
-
-		return r;
-	}
-
-	/**
-	 * Concurrent substraction bound to 0.
-	 * Any concurrent write will "happen" before this operation.
-	 *
-	 * @param updater  current field updater
-	 * @param instance current instance to update
-	 * @param toSub    delta to sub
-	 * @return value before subscription or zero
-	 */
-	public static <T> long getAndSub(AtomicIntegerFieldUpdater<T> updater, T instance, int toSub) {
-		int r, u;
-		do {
-			r = updater.get(instance);
-			if (r == 0) {
 				return r;
 			}
 			u = subOrZero(r, toSub);
