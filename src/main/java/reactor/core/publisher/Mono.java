@@ -830,6 +830,20 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Concatenate emissions of this {@link Mono} with the provided {@link Publisher} (no interleave).
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 *
+	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
+	 *
+	 * @return a concatenated {@link Flux}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Flux<T> concatWith(Publisher<? extends T> other) {
+		return new FluxConcatArray<>(this, other);
+	}
+
+	/**
 	 * Introspect this Mono graph
 	 *
 	 * @return {@literal ReactiveStateUtils.Graph} representation of a publisher graph
