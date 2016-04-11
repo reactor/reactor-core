@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
+import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
