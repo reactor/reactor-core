@@ -2232,7 +2232,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxPublishOnValue<>(value, scheduler, true);
+			return new FluxSubscribeOnValue<>(value, scheduler, true);
 		}
 
 		return new FluxDispatchOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
@@ -3304,25 +3304,25 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Run subscribe, onSubscribe and request on a supplied
 	 * {@link Consumer} {@link Runnable} factory like {@link SchedulerGroup}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
 	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
 	 *
 	 * <p>
-	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return a {@link Flux} publishing asynchronously
 	 */
-	public final Flux<T> publishOn(Scheduler scheduler) {
+	public final Flux<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxPublishOnValue<>(value, scheduler, true);
+			return new FluxSubscribeOnValue<>(value, scheduler, true);
 		}
-		return new FluxPublishOn<>(this, scheduler);
+		return new FluxSubscribeOn<>(this, scheduler);
 	}
 
 	/**

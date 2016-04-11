@@ -44,7 +44,7 @@ public class MonoTests {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException("Some Exception");
 			})
-			    .publishOn(SchedulerGroup.io())
+			    .subscribeOn(SchedulerGroup.io())
 			    .doOnError(t -> latch1.countDown())
 			    .doOnSuccess(v -> latch2.countDown())
 			    .get();
@@ -62,7 +62,7 @@ public class MonoTests {
 			Thread.sleep(400);
 			return "hello";
 		})
-		               .publishOn(SchedulerGroup.io())
+		               .subscribeOn(SchedulerGroup.io())
 		               .after(() -> Mono.just("world"))
 		               .get();
 		assertThat("Alternate mono not seen", h, is("world"));

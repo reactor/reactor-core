@@ -76,7 +76,7 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/SchedulerGroup.html) over multiple Subscribers with adapted concurrency strategy for producing flows (publishOn) or receiving flows (dispatchOn) :
+[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/SchedulerGroup.html) over multiple Subscribers with adapted concurrency strategy for producing flows (subscribeOn) or receiving flows (dispatchOn) :
 
 ```java
 SchedulerGroup async = SchedulerGroup.async();
@@ -87,7 +87,7 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
     .log("foo.bar")
     .flatMap(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
-            .publishOn(io)
+            .subscribeOn(io)
     , 8) //maxConcurrency 8
     .subscribe();
 

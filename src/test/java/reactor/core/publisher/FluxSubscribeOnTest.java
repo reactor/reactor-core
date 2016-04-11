@@ -22,7 +22,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
 
-public class FluxPublishOnTest {
+public class FluxSubscribeOnTest {
 	
 	/*@Test
 	public void constructors() {
@@ -39,7 +39,7 @@ public class FluxPublishOnTest {
 	public void classic() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		FluxArrayTest.range(1, 1000).publishOn(SchedulerGroup.io()).subscribe(ts);
+		FluxArrayTest.range(1, 1000).subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -52,7 +52,7 @@ public class FluxPublishOnTest {
 	public void classicBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		FluxArrayTest.range(1, 1000).log().publishOn(SchedulerGroup.io()).subscribe(ts);
+		FluxArrayTest.range(1, 1000).log().subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -81,7 +81,7 @@ public class FluxPublishOnTest {
 	public void classicJust() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.just(1).publishOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.just(1).subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -94,7 +94,7 @@ public class FluxPublishOnTest {
 	public void classicJustBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.just(1).publishOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.just(1).subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -115,7 +115,7 @@ public class FluxPublishOnTest {
 	public void classicEmpty() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.<Integer>empty().publishOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -128,7 +128,7 @@ public class FluxPublishOnTest {
 	public void classicEmptyBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.<Integer>empty().publishOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(SchedulerGroup.io()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -143,7 +143,7 @@ public class FluxPublishOnTest {
 		
 		AtomicInteger count = new AtomicInteger();
 		
-		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).publishOn(SchedulerGroup.io());
+		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(SchedulerGroup.io());
 		
 		Assert.assertEquals(0, count.get());
 		

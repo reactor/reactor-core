@@ -306,7 +306,7 @@ class FluxSpec extends Specification {
 			'the most recent value is retrieved'
 			def last = s
 					.sample(2l)
-					.publishOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(SchedulerGroup.io("work", 8, 4))
 					.dispatchOn(asyncGroup)
 					.log()
 					.take(1)
@@ -326,7 +326,7 @@ class FluxSpec extends Specification {
 			def last =
 			s
 					.take(Duration.ofSeconds(4))
-					.publishOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(SchedulerGroup.io("work", 8, 4))
 					.last()
 					.subscribeWith(MonoProcessor.create())
 
@@ -996,7 +996,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> replay().connect()
 
 			def res = source
-					.publishOn(SchedulerGroup.io("test",32,2))
+					.subscribeOn(SchedulerGroup.io("test",32,2))
 					.delaySubscription(1L)
 					.log("streamed")
 					.map { it * 2 }
@@ -1612,7 +1612,7 @@ class FluxSpec extends Specification {
 					{ println Thread.currentThread().name + ' end' }
 			)
 					.log()
-					.publishOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(SchedulerGroup.io("work", 8, 4))
 
 		when:
 			'accept a value'

@@ -19,19 +19,19 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.publisher.FluxPublishOn.ScheduledEmpty;
-import reactor.core.publisher.FluxPublishOn.ScheduledScalar;
+import reactor.core.publisher.FluxSubscribeOn.ScheduledEmpty;
+import reactor.core.publisher.FluxSubscribeOn.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * Publisher indicating a scalar/empty source that subscribes on the specified worker.
+ * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
  * 
  * @param <T>
  */
-final class FluxPublishOnValue<T> extends Flux<T> {
+final class FluxSubscribeOnValue<T> extends Flux<T> {
 
 	final T value;
 	
@@ -39,11 +39,11 @@ final class FluxPublishOnValue<T> extends Flux<T> {
 
 	final boolean eagerCancel;
 
-	public FluxPublishOnValue(T value, 
+	public FluxSubscribeOnValue(T value, 
 			Scheduler scheduler, 
 			boolean eagerCancel) {
 		this.value = value;
-		this.scheduler = Objects.requireNonNull(scheduler, "worker");
+		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 		this.eagerCancel = eagerCancel;
 	}
 
@@ -60,7 +60,7 @@ final class FluxPublishOnValue<T> extends Flux<T> {
 		}
 		
 		if (worker == null) {
-			EmptySubscription.error(s, new NullPointerException("The worker returned a null Function"));
+			EmptySubscription.error(s, new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
 

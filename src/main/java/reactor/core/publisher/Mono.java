@@ -930,7 +930,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> dispatchOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			T value = get();
-			return  MonoSource.wrap(new FluxPublishOnValue<>(value, scheduler, true));
+			return  MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
 		}
 		return MonoSource.wrap(new FluxDispatchOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
 	}
@@ -1484,17 +1484,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Run the requests to this Publisher {@link Mono} on a given worker thread like {@link SchedulerGroup}.
 	 * <p>
-	 * {@code mono.publishOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.subscribeOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">
 	 * <p>
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
 	 * @return a new asynchronous {@link Mono}
 	 */
-	public final Mono<T> publishOn(Scheduler scheduler) {
-		return MonoSource.wrap(new FluxPublishOn<>(this, scheduler));
+	public final Mono<T> subscribeOn(Scheduler scheduler) {
+		return MonoSource.wrap(new FluxSubscribeOn<>(this, scheduler));
 	}
 
 	/**

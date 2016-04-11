@@ -468,8 +468,8 @@ class MonoSpec extends Specification {
   def "A combined promise through 'any' is fulfilled with the first component result when using asynchronously"() {
 	given: "two fulfilled promises"
 	def ioGroup = SchedulerGroup.io("promise-task", 8, 2)
-	def promise1 = Mono.fromCallable { sleep(10000); 1 }.publishOn(ioGroup)
-	def promise2 = Mono.fromCallable { sleep(325); 2 }.publishOn(ioGroup)
+	def promise1 = Mono.fromCallable { sleep(10000); 1 }.subscribeOn(ioGroup)
+	def promise2 = Mono.fromCallable { sleep(325); 2 }.subscribeOn(ioGroup)
 
 
 	when: "a combined promise is first created"

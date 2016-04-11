@@ -45,7 +45,7 @@
  ** <h2>Schedulers</h2>
  * Scheduling in Reactor is a couple of general concepts shared by reactive operators
  * "{@link reactor.core.publisher.Flux#dispatchOn dispatchOn}" and
- * "{@link reactor.core.publisher.Flux#publishOn publishOn}".
+ * "{@link reactor.core.publisher.Flux#subscribeOn subscribeOn}".
  * <ul>
  *     <li>Scheduler: a
  *     {@link java.util.function.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
@@ -58,7 +58,7 @@
  * The key difference between asynchronous processors and schedulers is their natural ability to be shared where
  * {@link org.reactivestreams.Processor} are bound to a single logical producer by {@link org.reactivestreams.Subscription}.
  * Thus, when no dedicated threading is required (hot or critical data pipeline), it is recommended to consider
- * schedulers + dispatchOn/publishOn over processors.
+ * schedulers + dispatchOn/subscribeOn over processors.
  * @author Stephane Maldini
  */
 package reactor.core.publisher;

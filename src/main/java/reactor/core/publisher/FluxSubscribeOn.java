@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.scheduler.Scheduler;
@@ -35,7 +34,7 @@ import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * Subscribes to the source Publisher asynchronously through a worker function or
+ * Subscribes to the source Publisher asynchronously through a scheduler function or
  * ExecutorService.
  * 
  * @param <T> the value type
@@ -45,15 +44,15 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
+final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Scheduler scheduler;
 	
-	public FluxPublishOn(
+	public FluxSubscribeOn(
 			Publisher<? extends T> source, 
 			Scheduler scheduler) {
 		super(source);
-		this.scheduler = Objects.requireNonNull(scheduler, "worker");
+		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
 
 	public static <T> void scalarScheduleOn(Publisher<? extends T> source, Subscriber<? super T> s, Scheduler scheduler) {
@@ -90,11 +89,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		}
 		
 		if (worker == null) {
-			EmptySubscription.error(s, new NullPointerException("The worker returned a null Function"));
+			EmptySubscription.error(s, new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
 
-		PublishOnPipeline<T> parent = new PublishOnPipeline<>(s, worker);
+		SubscribeOnPipeline<T> parent = new SubscribeOnPipeline<>(s, worker);
 		s.onSubscribe(parent);
 		
 		worker.schedule(new SourceSubscribeTask<>(parent, source));
@@ -110,7 +109,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		return null;
 	}
 
-	static final class PublishOnPipeline<T>
+	static final class SubscribeOnPipeline<T>
 			extends DeferredSubscription implements Subscriber<T>, Producer, Loopback, Runnable {
 		final Subscriber<? super T> actual;
 
@@ -119,16 +118,16 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<PublishOnPipeline> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(PublishOnPipeline.class, "requested");
+		static final AtomicLongFieldUpdater<SubscribeOnPipeline> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(SubscribeOnPipeline.class, "requested");
 
 		volatile int wip;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishOnPipeline> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(PublishOnPipeline.class, "wip");
+		static final AtomicIntegerFieldUpdater<SubscribeOnPipeline> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(SubscribeOnPipeline.class, "wip");
 
-		public PublishOnPipeline(Subscriber<? super T> actual, Worker worker) {
+		public SubscribeOnPipeline(Subscriber<? super T> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;
 		}
@@ -164,7 +163,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAdd(REQUESTED, this, n);
 				if(WIP.getAndIncrement(this) == 0){
 					worker.schedule(this);
 				}

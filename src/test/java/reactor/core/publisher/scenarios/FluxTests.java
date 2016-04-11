@@ -1143,7 +1143,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux.range(1, 100)
 		       .log("testOn")
-		       .publishOn(ioGroup)
+		       .subscribeOn(ioGroup)
 		       .dispatchOn(asyncGroup)
 		       .useCapacity(1)
 		       .consume(t -> latch.countDown());

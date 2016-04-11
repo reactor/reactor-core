@@ -82,7 +82,7 @@ final class FluxDispatchOn<T> extends FluxSource<T, T> implements Loopback {
 	public void subscribe(Subscriber<? super T> s) {
 		
 		if (source instanceof Supplier) {
-			FluxPublishOn.scalarScheduleOn(source, s, scheduler);
+			FluxSubscribeOn.scalarScheduleOn(source, s, scheduler);
 			return;
 		}
 
