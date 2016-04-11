@@ -16,6 +16,7 @@
 
 package reactor.core
 
+import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.FluxProcessor
 import reactor.core.publisher.SchedulerGroup
 import reactor.core.util.ReactiveStateUtils
