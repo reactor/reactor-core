@@ -566,7 +566,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-	 * Monos} have been fulfilled.
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -584,7 +584,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-	 * Monos} have been fulfilled.
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
@@ -604,7 +604,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-	 * Monos} have been fulfilled.
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -622,7 +622,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-	 * Monos} have been fulfilled.
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/when.png" alt="">
@@ -698,13 +698,29 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
 	 *
+	 * @param other a {@link Mono} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 */
+	public final <V> Mono<V> after(Mono<V> other) {
+		return after(() -> other);
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 *
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return after(sourceSupplier, false);
+		return MonoSource.wrap(after().flatMap(null, null, sourceSupplier));
 	}
 
 	/**
@@ -716,14 +732,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @param <V> the element type of the supplied Mono
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
-	 * @param runOnError runs a supplied {@link Publisher} on error as well as on complete
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier, boolean runOnError) {
+	public final <V> Mono<V> afterSuccessOrError(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return MonoSource.wrap(after().flatMap(null,
-				!runOnError ? null : throwable -> Flux.concat(sourceSupplier.get(), Mono
-						.error(throwable)),
+				 throwable -> Flux.concat(sourceSupplier.get(), Mono .error(throwable)),
 				sourceSupplier));
 	}
 
