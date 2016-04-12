@@ -1700,7 +1700,7 @@ class FluxSpec extends Specification {
 				i << it
 			}
 			sleep(2500)
-			c.run()
+			c.dispose()
 
 		then:
 			'create'
