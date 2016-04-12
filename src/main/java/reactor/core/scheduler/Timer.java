@@ -460,7 +460,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 		@Override
 		public Cancellation schedule(Runnable task) {
-			return null;
+			return schedule(task, resolution, TimeUnit.MILLISECONDS);
 		}
 
 		@Override
