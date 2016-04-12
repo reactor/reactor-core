@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1566,7 +1567,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return the fastest sequence
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public final Flux<T> ambWith(Publisher<? extends T> other) {
+		if (this instanceof FluxAmb) {
+			FluxAmb fluxConcatArray = (FluxAmb) this;
+			Publisher[] array = fluxConcatArray.array;
+			int n = array.length;
+			
+			Publisher[] newArray = new Publisher[n + 1];
+			System.arraycopy(array, 0, newArray, 0, n);
+			newArray[n] = other;
+			
+			return new FluxAmb<>(newArray);
+		}
 		return amb(this, other);
 	}
 
@@ -1991,8 +2004,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
+		if (this instanceof FluxConcatArray) {
+			FluxConcatArray fluxConcatArray = (FluxConcatArray) this;
+			Publisher[] array = fluxConcatArray.array;
+			int n = array.length;
+			
+			Publisher[] newArray = new Publisher[n + 1];
+			System.arraycopy(array, 0, newArray, 0, n);
+			newArray[n] = other;
+			
+			return new FluxConcatArray<>(newArray);
+		}
 		return new FluxConcatArray<>(this, other);
 	}
 
@@ -2931,9 +2955,48 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
-		return merge(just(this, other));
+		if (this instanceof FluxFlatMap) {
+			@SuppressWarnings("rawtypes")
+			Publisher<T>[] newArray = expandArraySource((FluxFlatMap)this, other);
+			if (newArray != null) {
+				return merge(fromArray(newArray), newArray.length);
+			}
+		}
+		return merge(just(this, other), 2);
 	}
 
+	/**
+	 * Extracts the array from a from a fromArray().flatMap() pattern
+	 * and returns a new array containing the new item, or returns
+	 * null if the upstream source is not a fromArray or not all
+	 * array items are Publishers.
+	 * @param <U> the return type
+	 * @param source the stage whose upstream should be checked
+	 * @param newItem the new Publisher to add
+	 * @return the array of publishers expanded or null
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	static <U> Publisher<U>[] expandArraySource(FluxSource source, Publisher newItem) {
+		Publisher<?> upstream = source.source;
+		if (upstream instanceof FluxArray) {
+			FluxArray<?> fluxArray = (FluxArray<?>) source.source;
+			
+			Object[] array = fluxArray.array;
+			int n = array.length;
+			
+			Publisher<U>[] newArray = new Flux[n + 1];
+			for (int i = 0; i < n; i++) {
+				if (!(array[i] instanceof Publisher)) {
+					return null;
+				}
+				newArray[i] = (Publisher<U>)array[i];
+			}
+			newArray[n] = newItem;
+			return newArray;
+		}
+		return null;
+	}
+	
 	/**
 	 * Make this
 	 * {@link Flux} subscribed N concurrency times for each child {@link Subscriber}. In effect, if this {@link Flux}
@@ -3927,9 +3990,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * 
 	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
 		if (publisher == null) {
 			return this;
+		}
+		if (this instanceof FluxConcatArray) {
+			FluxConcatArray fluxConcatArray = (FluxConcatArray) this;
+			Publisher[] array = fluxConcatArray.array;
+			int n = array.length;
+			
+			Publisher[] newArray = new Publisher[n + 1];
+			System.arraycopy(array, 0, newArray, 1, n);
+			newArray[0] = publisher;
+			
+			return new FluxConcatArray<>(newArray);
 		}
 		return concat(publisher, this);
 	}
