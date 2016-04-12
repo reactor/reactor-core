@@ -36,14 +36,13 @@ import reactor.core.util.EmptySubscription;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxConcatArray<T>
-		extends Flux<T>
+final class FluxConcatArray<T> 
+extends Flux<T>
 		implements MultiReceiver {
 
 	final Publisher<? extends T>[] array;
 
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public FluxConcatArray(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 	}
@@ -86,6 +85,45 @@ final class FluxConcatArray<T>
 		}
 	}
 
+	/**
+	 * Returns a new instance which has the additional source to be merged together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current FluxMerge instance.
+	 * 
+	 * @param source the new source to merge with the others
+	 * @return the new FluxConcatArray instance
+	 */
+	public FluxConcatArray<T> concatAdditionalSourceLast(Publisher<? extends T> source) {
+		int n = array.length;
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] newArray = new Publisher[n + 1];
+		System.arraycopy(array, 0, newArray, 0, n);
+		newArray[n] = source;
+		
+		return new FluxConcatArray<>(newArray);
+	}
+
+	/**
+	 * Returns a new instance which has the additional first source to be concatenated together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current FluxConcatArray instance.
+	 * 
+	 * @param source the new source to merge with the others
+	 * @return the new FluxConcatArray instance
+	 */
+	public FluxConcatArray<T> concatAdditionalSourceFirst(Publisher<? extends T> source) {
+		int n = array.length;
+		@SuppressWarnings("unchecked")
+		Publisher<? extends T>[] newArray = new Publisher[n + 1];
+		System.arraycopy(array, 0, newArray, 1, n);
+		newArray[0] = source;
+		
+		return new FluxConcatArray<>(newArray);
+	}
+
+	
 	static final class ConcatArraySubscriber<T>
 			extends MultiSubscriptionSubscriber<T, T> {
 

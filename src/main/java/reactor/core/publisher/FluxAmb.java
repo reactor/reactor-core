@@ -27,8 +27,8 @@ import reactor.core.flow.MultiReceiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.DeferredSubscriptionSubscriber;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
+import reactor.core.util.BackpressureUtils;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -154,6 +154,28 @@ extends Flux<T>
 		AmbCoordinator<T> coordinator = new AmbCoordinator<>(n);
 
 		coordinator.subscribe(a, n, s);
+	}
+
+	/**
+	 * Returns a new instance which has the additional source to be amb'd together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current FluxAmb instance.
+	 * 
+	 * @param source the new source to merge with the others
+	 * @return the new FluxAmb instance or null if the Amb runs with an Iterable
+	 */
+	public FluxAmb<T> ambAdditionalSource(Publisher<? extends T> source) {
+		if (array != null) {
+			int n = array.length;
+			@SuppressWarnings("unchecked")
+			Publisher<? extends T>[] newArray = new Publisher[n + 1];
+			System.arraycopy(array, 0, newArray, 0, n);
+			newArray[n] = source;
+			
+			return new FluxAmb<>(newArray);
+		}
+		return null;
 	}
 
 	static final class AmbCoordinator<T>
@@ -315,11 +337,6 @@ extends Flux<T>
 		@Override
 		public int getMode() {
 			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return getClass().getSimpleName();
 		}
 	}
 }
