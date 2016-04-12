@@ -216,15 +216,6 @@ final class FluxRange
 		}
 
 		@Override
-		public Integer peek() {
-			long i = index;
-			if (i == end) {
-				return null;
-			}
-			return (int)i;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return index == end;
 		}
@@ -232,11 +223,6 @@ final class FluxRange
 		@Override
 		public void clear() {
 			index = end;
-		}
-		
-		@Override
-		public void drop() {
-			index++;
 		}
 		
 		@Override
@@ -387,15 +373,6 @@ final class FluxRange
 		}
 
 		@Override
-		public Integer peek() {
-			long i = index;
-			if (i == end) {
-				return null;
-			}
-			return (int)i;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return index == end;
 		}
@@ -403,11 +380,6 @@ final class FluxRange
 		@Override
 		public void clear() {
 			index = end;
-		}
-
-		@Override
-		public void drop() {
-			index++;
 		}
 
 		@Override

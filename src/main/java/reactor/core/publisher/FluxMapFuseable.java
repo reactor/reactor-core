@@ -196,22 +196,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
-			// FIXME maybe should cache the result to avoid mapping twice in case of peek/poll pairs
 			T v = s.poll();
-			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					throw new NullPointerException();
-				}
-				return u;
-			}
-			return null;
-		}
-
-		@Override
-		public R peek() {
-			// FIXME maybe should cache the result to avoid mapping twice in case of peek/poll pairs
-			T v = s.peek();
 			if (v != null) {
 				R u = mapper.apply(v);
 				if (u == null) {
@@ -248,11 +233,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 			return m;
 		}
 
-		@Override
-		public void drop() {
-			s.drop();
-		}
-		
 		@Override
 		public int size() {
 			return s.size();
@@ -428,20 +408,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		}
 
 		@Override
-		public R peek() {
-			// FIXME maybe should cache the result to avoid mapping twice in case of peek/poll pairs
-			T v = s.peek();
-			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					throw new NullPointerException();
-				}
-				return u;
-			}
-			return null;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return s.isEmpty();
 		}
@@ -467,11 +433,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 			return m;
 		}
 
-		@Override
-		public void drop() {
-			s.drop();
-		}
-		
 		@Override
 		public int size() {
 			return s.size();

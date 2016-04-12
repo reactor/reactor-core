@@ -257,25 +257,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 		}
 
 		@Override
-		public T peek() {
-			T v = s.peek();
-			if (v != null && parent.onNextCall() != null) {
-				parent.onNextCall().accept(v);
-			}
-			if (v == null && sourceMode == SYNC) {
-				Runnable call = parent.onCompleteCall();
-				if (call != null) {
-					call.run();
-				}
-				call = parent.onAfterTerminateCall();
-				if (call != null) {
-					call.run();
-				}
-			}
-			return v;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return s.isEmpty();
 		}
@@ -301,11 +282,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 			return m;
 		}
 
-		@Override
-		public void drop() {
-			s.drop();
-		}
-		
 		@Override
 		public int size() {
 			return s.size();
@@ -500,19 +476,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 		}
 
 		@Override
-		public T peek() {
-			T v = s.peek();
-			if (v != null && parent.onNextCall() != null) {
-				parent.onNextCall().accept(v);
-			}
-			if (v == null && sourceMode == SYNC) {
-				parent.onCompleteCall().run();
-				parent.onAfterTerminateCall().run();
-			}
-			return v;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return s.isEmpty();
 		}
@@ -531,11 +494,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 			return m;
 		}
 
-		@Override
-		public void drop() {
-			s.drop();
-		}
-		
 		@Override
 		public int size() {
 			return s.size();

@@ -58,11 +58,6 @@ public enum EmptySubscription implements Fuseable.QueueSubscription<Object>, Int
 	}
 
 	@Override
-	public Object peek() {
-		return null;
-	}
-
-	@Override
 	public int size() {
 		return 0;
 	}
@@ -80,11 +75,6 @@ public enum EmptySubscription implements Fuseable.QueueSubscription<Object>, Int
 	@Override
 	public int requestFusion(int requestedMode) {
 		return Fuseable.NONE; // can't enable fusion due to complete/error possibility
-	}
-
-	@Override
-	public void drop() {
-		// deliberately no op
 	}
 
 }

@@ -102,13 +102,10 @@ public interface Fuseable {
 		 */
 		int requestFusion(int requestedMode);
 
-		/**
-		 * Requests the upstream to drop the current value.
-		 * <p>
-		 * This is allows fused intermediate operators to avoid peek/poll pairs.
-		 */
-		void drop();
-
+		@Override
+		default T peek() {
+			throw new UnsupportedOperationException("Operators should not use this method!");
+		}
 
 		@Override
 		default boolean add(T t) {

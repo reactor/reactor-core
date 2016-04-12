@@ -500,11 +500,6 @@ implements Fuseable, Backpressurable  {
 		}
 
 		@Override
-		public GroupedFlux<K, V> peek() {
-			return queue.peek();
-		}
-
-		@Override
 		public int size() {
 			return queue.size();
 		}
@@ -526,11 +521,6 @@ implements Fuseable, Backpressurable  {
 				return Fuseable.ASYNC;
 			}
 			return Fuseable.NONE;
-		}
-		
-		@Override
-		public void drop() {
-			queue.poll();
 		}
 		
 		void requestInner(long n) {
@@ -837,11 +827,6 @@ implements Fuseable, Backpressurable  {
 		}
 
 		@Override
-		public V peek() {
-			return queue.peek();
-		}
-
-		@Override
 		public int size() {
 			return queue.size();
 		}
@@ -866,26 +851,9 @@ implements Fuseable, Backpressurable  {
 		}
 		
 		@Override
-		public void drop() {
-			queue.poll();
-			int p = produced + 1;
-			if (p == limit) {
-				produced = 0;
-				GroupByMain<?, K, V> main = parent;
-				if (main != null) {
-					main.requestInner(p);
-				}
-			} else {
-				produced = p;
-			}
-		}
-
-		@Override
 		public boolean isCancelled() {
 			return cancelled;
 		}
-
-
 
 		@Override
 		public boolean isStarted() {

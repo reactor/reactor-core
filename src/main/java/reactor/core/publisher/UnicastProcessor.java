@@ -331,11 +331,6 @@ final class UnicastProcessor<T>
 	}
 
 	@Override
-	public T peek() {
-		return queue.peek();
-	}
-
-	@Override
 	public int size() {
 		return queue.size();
 	}
@@ -357,11 +352,6 @@ final class UnicastProcessor<T>
 			return Fuseable.ASYNC;
 		}
 		return Fuseable.NONE;
-	}
-
-	@Override
-	public void drop() {
-		queue.poll();
 	}
 
 	@Override

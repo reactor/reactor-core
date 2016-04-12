@@ -329,28 +329,11 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 		}
 
 		@Override
-		public void drop() {
-			s.drop();
-		}
-
-		@Override
 		public T poll() {
 			if(isTerminated()){
 				return null;
 			}
 			T v = s.poll();
-			if(v == null && sourceMode == Fuseable.SYNC){
-				CONNECTED.set(this, 2);
-			}
-			return v;
-		}
-
-		@Override
-		public T peek() {
-			if(isTerminated()){
-				return null;
-			}
-			T v = s.peek();
 			if(v == null && sourceMode == Fuseable.SYNC){
 				CONNECTED.set(this, 2);
 			}

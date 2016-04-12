@@ -212,20 +212,6 @@ extends Flux<T>
 		}
 
 		@Override
-		public T peek() {
-			int i = index;
-			T[] a = array;
-			if (i < a.length) {
-				T t = a[i];
-				if (t == null) {
-					throw new NullPointerException();
-				}
-				return t;
-			}
-			return null;
-		}
-
-		@Override
 		public boolean isEmpty() {
 			return index == array.length;
 		}
@@ -234,12 +220,7 @@ extends Flux<T>
 		public void clear() {
 			index = array.length;
 		}
-		
-		@Override
-		public void drop() {
-			index++;
-		}
-		
+
 		@Override
 		public int size() {
 			return array.length - index;
