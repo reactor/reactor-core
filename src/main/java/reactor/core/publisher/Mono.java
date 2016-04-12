@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -939,32 +940,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
-	 * <p> <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
-	 * fast async event loops.
-	 *
-	 * {@code mono.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
-	 *
-	 * @return an asynchronous {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-	public final Mono<T> publishOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarSupplier) {
-			T value = get();
-			return  MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
-		}
-		return MonoSource.wrap(new FluxPublishOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
-	}
-
-
-	/**
 	 * Triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
 	 * The arguments will be null depending on success, success with data and error:
 	 * <ul>
@@ -1548,19 +1523,44 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run the requests to this Publisher {@link Mono} on a given worker thread like {@link SchedulerGroup}.
-	 * <p>
-	 * {@code mono.subscribeOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
+	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">
-	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
+	 * <p> <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
+	 * fast async event loops.
+	 *
+	 * {@code mono.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
-	 * @return a new asynchronous {@link Mono}
+	 * @return an asynchronously producing {@link Mono}
 	 */
-	public final Mono<T> subscribeOn(Scheduler scheduler) {
-		return MonoSource.wrap(new FluxSubscribeOn<>(this, scheduler));
+	@SuppressWarnings("unchecked")
+	public final Mono<T> publishOn(Scheduler scheduler) {
+		if (this instanceof Fuseable.ScalarSupplier) {
+			T value = get();
+			return  MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
+		}
+		return MonoSource.wrap(new FluxPublishOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code mono.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param executorService an {@link ExecutorService}
+	 *
+	 * @return a {@link Mono} producing asynchronously
+	 */
+	public final Mono<T> publishOn(ExecutorService executorService) {
+		return publishOn(new ExecutorServiceScheduler(executorService));
 	}
 
 	/**
@@ -1737,6 +1737,42 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		s.connect();
 		return s;
+	}
+
+	/**
+	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
+	 * <p>
+	 * {@code mono.subscribeOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">
+	 * <p>
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 *
+	 * @return an asynchronously requesting {@link Mono}
+	 */
+	public final Mono<T> subscribeOn(Scheduler scheduler) {
+		if (this instanceof Fuseable.ScalarSupplier) {
+			T value = get();
+			return MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
+		}
+		return MonoSource.wrap(new FluxSubscribeOn<>(this, scheduler));
+	}
+
+	/**
+	 * Run the requests to this Publisher {@link Mono} on supplied {@link ExecutorService}.
+	 * <p>
+	 * {@code mono.subscribeOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">
+	 * <p>
+	 * @param executorService an {@link ExecutorService}
+	 *
+	 * @return an asynchronously requesting {@link Mono}
+	 */
+	public final Mono<T> subscribeOn(ExecutorService executorService) {
+		return subscribeOn(new ExecutorServiceScheduler(executorService));
 	}
 
 	/**

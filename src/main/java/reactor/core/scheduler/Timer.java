@@ -388,6 +388,11 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 		}
 
 		@Override
+		public Cancellation schedule(Runnable task) {
+			return schedule(task, resolution, TimeUnit.MILLISECONDS);
+		}
+
+		@Override
 		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
 			if (isInterrupted() || !isAlive()) {
 				throw Exceptions.failWithCancel();
@@ -441,11 +446,6 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			SUBSCRIPTIONS.incrementAndGet(parent);
 
 			return r;
-		}
-
-		@Override
-		public Cancellation schedule(Runnable task) {
-			return schedule(task, resolution, TimeUnit.MILLISECONDS);
 		}
 
 		@Override

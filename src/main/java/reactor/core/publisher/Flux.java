@@ -30,6 +30,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -2256,8 +2257,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} worker factory like {@link SchedulerGroup}.
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -2270,15 +2271,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
-	 * @return a {@link Flux} consuming asynchronously
+	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler) {
 		return publishOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied
-	 * {@link Consumer} {@link Runnable} worker factory like {@link SchedulerGroup}.
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
@@ -2292,7 +2293,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 * @param prefetch the asynchronous boundary capacity
 	 *
-	 * @return a {@link Flux} consuming asynchronously
+	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarSupplier) {
@@ -2303,7 +2304,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
 	}
-
 
 	/**
 	 * For each {@link Subscriber}, tracks this {@link Flux} values that have been seen and
@@ -3409,29 +3409,39 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new MonoProcessor<>(this);
 	}
 
+
 	/**
-	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Consumer} {@link Runnable} factory like {@link SchedulerGroup}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
-	 * <p>
-	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
+	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
 	 *
 	 * <p>
-	 * {@code flux.subscribeOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param executorService an {@link ExecutorService}
 	 *
-	 * @return a {@link Flux} publishing asynchronously
+	 * @return a {@link Flux} producing asynchronously
 	 */
-	public final Flux<T> subscribeOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarSupplier) {
-			@SuppressWarnings("unchecked")
-			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxSubscribeOnValue<>(value, scheduler, true);
-		}
-		return new FluxSubscribeOn<>(this, scheduler);
+	public final Flux<T> publishOn(ExecutorService executorService) {
+		return publishOn(executorService, PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param executorService an {@link ExecutorService}
+	 * @param prefetch the asynchronous boundary capacity
+	 *
+	 * @return a {@link Flux} producing asynchronously
+	 */
+	public final Flux<T> publishOn(ExecutorService executorService, int prefetch) {
+		return publishOn(new ExecutorServiceScheduler(executorService), prefetch);
 	}
 
 	/**
@@ -4071,6 +4081,46 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		LambdaSubscriber<T> s = new LambdaSubscriber<>();
 		subscribe(s);
 		return s;
+	}
+
+	/**
+	 * Run subscribe, onSubscribe and request on a supplied
+	 * {@link Consumer} {@link Runnable} factory like {@link SchedulerGroup}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
+	 * <p>
+	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
+	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
+	 *
+	 * <p>
+	 * {@code flux.subscribeOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 *
+	 * @return a {@link Flux} requesting asynchronously
+	 */
+	public final Flux<T> subscribeOn(Scheduler scheduler) {
+		if (this instanceof Fuseable.ScalarSupplier) {
+			@SuppressWarnings("unchecked")
+			T value = ((Fuseable.ScalarSupplier<T>)this).get();
+			return new FluxSubscribeOnValue<>(value, scheduler, true);
+		}
+		return new FluxSubscribeOn<>(this, scheduler);
+	}
+
+	/**
+	 * Run subscribe, onSubscribe and request on a supplied {@link ExecutorService}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
+	 * <p>
+	 * {@code flux.subscribeOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param executorService an {@link ExecutorService}
+	 *
+	 * @return a {@link Flux} requesting asynchronously
+	 */
+	public final Flux<T> subscribeOn(ExecutorService executorService) {
+		return subscribeOn(new ExecutorServiceScheduler(executorService));
 	}
 
 	/**
