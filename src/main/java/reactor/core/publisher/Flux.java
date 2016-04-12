@@ -180,7 +180,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 
 		if (sources.length == 1) {
-			return from((Publisher<V>) sources[0]);
+			return from(sources[0]).map(v -> combinator.apply(new Object[] { v }));
 		}
 
 		return new FluxCombineLatest<>(sources,
@@ -972,7 +972,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return merge(fromArray(sources), prefetch);
+		return new FluxMerge<>(sources, false, sources.length, QueueSupplier.get(sources.length), prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**
@@ -1566,6 +1566,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return the fastest sequence
 	 */
 	public final Flux<T> ambWith(Publisher<? extends T> other) {
+		if (this instanceof FluxAmb) {
+			FluxAmb<T> publisherAmb = (FluxAmb<T>) this;
+			
+			FluxAmb<T> result = publisherAmb.ambAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
 		return amb(this, other);
 	}
 
@@ -1951,6 +1959,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
+		if (this instanceof FluxConcatArray) {
+			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+			return fluxConcatArray.concatAdditionalSourceLast(other);
+		}
 		return new FluxConcatArray<>(this, other);
 	}
 
@@ -3010,7 +3022,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
-		return merge(just(this, other));
+		if (this instanceof FluxMerge) {
+			FluxMerge<T> fluxMerge = (FluxMerge<T>) this;
+			return fluxMerge.mergeAdditionalSource(other, QueueSupplier::get);
+		}
+		return merge(this, other);
 	}
 
 	/**
@@ -4009,6 +4025,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
 		if (publisher == null) {
 			return this;
+		}
+		if (this instanceof FluxConcatArray) {
+			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+			return fluxConcatArray.concatAdditionalSourceFirst(publisher);
 		}
 		return concat(publisher, this);
 	}
