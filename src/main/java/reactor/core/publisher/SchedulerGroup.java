@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
 import reactor.core.scheduler.Scheduler;
@@ -799,7 +800,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	}
 
 	@Override
-	public Runnable schedule(Runnable task) {
+	public Cancellation schedule(Runnable task) {
 		next().processor.onNext(task);
 		return NOOP_CANCEL;
 	}
@@ -880,7 +881,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 		}
 	}
 
-	final static Runnable NOOP_CANCEL = () -> {
+	final static Cancellation NOOP_CANCEL = () -> {
 	};
 
 	final static class ProcessorWorker implements Subscriber<Runnable>, Loopback, Worker, Introspectable {
@@ -945,7 +946,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 		}
 
 		@Override
-		public Runnable schedule(Runnable task) {
+		public Cancellation schedule(Runnable task) {
 			try {
 				if (Thread.currentThread() == thread && running) {
 					tail(task);

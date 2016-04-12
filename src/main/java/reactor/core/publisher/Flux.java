@@ -30,6 +30,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -48,6 +49,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
@@ -436,7 +438,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return new FluxConcatMap<>(sources, IDENTITY_FUNCTION,
+		return new FluxConcatMap<>(sources, identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
@@ -739,15 +741,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
 	 * <p>
 	 * @param period The duration in milliseconds to wait before the next increment
-	 * @param timer a {@link Timer} instance
+	 * @param timer a {@link TimedScheduler} instance
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long period, Timer timer) {
-		Assert.isTrue(period >= timer.period(), "The period " + period + " cannot be less than the timer resolution " +
-				"" + timer.period());
-
-		return new FluxInterval(period, period, timer);
+	public static Flux<Long> interval(long period, TimedScheduler timer) {
+		return new FluxInterval(period, period, TimeUnit.MILLISECONDS, timer);
 	}
 
 	/**
@@ -758,11 +757,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
 	 * <p>
 	 * @param period The duration to wait before the next increment
-	 * @param timer a {@link Timer} instance
+	 * @param timer a {@link TimedScheduler} instance
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(Duration period, Timer timer) {
+	public static Flux<Long> interval(Duration period, TimedScheduler timer) {
 		return interval(period.toMillis(), timer);
 	}
 
@@ -811,12 +810,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param delay  the timespan in milliseconds to wait before emitting 0l
 	 * @param period the period in milliseconds before each following increment
-	 * @param timer  the {@link Timer} to schedule on
+	 * @param timer  the {@link TimedScheduler} to schedule on
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long delay, long period, Timer timer) {
-		return new FluxInterval(delay, period, timer);
+	public static Flux<Long> interval(long delay, long period, TimedScheduler timer) {
+		return new FluxInterval(delay, period, TimeUnit.MILLISECONDS, timer);
 	}
 
 	/**
@@ -833,8 +832,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(Duration delay, Duration period, Timer timer) {
-		return new FluxInterval(delay.toMillis(), period.toMillis(), timer);
+	public static Flux<Long> interval(Duration delay, Duration period, TimedScheduler timer) {
+		return new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer);
 	}
 	/**
 	 * Create a new {@link Flux} that emits the specified items and then complete.
@@ -910,7 +909,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return new FluxFlatMap<>(
 				source,
-				IDENTITY_FUNCTION,
+				identityFunction(),
 				false,
 				concurrency,
 				QueueSupplier.get(concurrency),
@@ -1076,7 +1075,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return new FluxSwitchMap<>(mergedPublishers,
-				IDENTITY_FUNCTION,
+				identityFunction(),
 				QueueSupplier.get(prefetch),
 				prefetch);
 	}
@@ -2738,7 +2737,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				IDENTITY_FUNCTION,
+				identityFunction(),
 				false,
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.xs(),
@@ -2822,7 +2821,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
-		return groupBy(keyMapper, IDENTITY_FUNCTION);
+		return groupBy(keyMapper, identityFunction());
 	}
 
 	/**
@@ -3135,7 +3134,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final ConnectableFlux<T> multicast(
 			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
-		return multicast(processorSupplier, IDENTITY_FUNCTION);
+		return multicast(processorSupplier, identityFunction());
 	}
 
 	/**
@@ -4513,7 +4512,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, T>> toMap(Function<? super T, ? extends K> keyExtractor) {
-		return toMap(keyExtractor, IDENTITY_FUNCTION);
+		return toMap(keyExtractor, identityFunction());
 	}
 
 	/**
@@ -4580,7 +4579,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, Collection<T>>> toMultimap(Function<? super T, ? extends K> keyExtractor) {
-		return toMultimap(keyExtractor, IDENTITY_FUNCTION);
+		return toMultimap(keyExtractor, identityFunction());
 	}
 
 	/**
@@ -5070,6 +5069,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
 	static final Function        IDENTITY_FUNCTION       = Function.identity();
+
+	@SuppressWarnings("unchecked")
+	static final <T> Function<T, T> identityFunction(){
+		return (Function<T, T>)IDENTITY_FUNCTION;
+	}
 
 	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
 		if (max <= 0) {

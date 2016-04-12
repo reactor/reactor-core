@@ -35,7 +35,6 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.state.Timeable;
 
 /**
  * Navigate and introspect
@@ -275,11 +274,11 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * @param o candidate instance
-	 * @return a time resolution if the tested instance is {@link Timeable} otherwise {@literal -1}
+	 * @return a time resolution if the tested instance is {@link Introspectable} otherwise {@literal -1}
 	 */
 	public static long getTimedPeriod(Object o) {
-		if (reactiveStateCheck(o, Timeable.class)) {
-			return ((Timeable) o).period();
+		if (reactiveStateCheck(o, Introspectable.class)) {
+			return ((Introspectable) o).getPeriod();
 		}
 		return -1L;
 	}

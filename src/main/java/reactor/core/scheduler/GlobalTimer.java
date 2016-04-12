@@ -27,28 +27,45 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  * @since 2.5
  */
-class GlobalTimer extends HashWheelTimer implements Introspectable {
+final class GlobalTimer extends Timer implements Introspectable {
 
-	private static final class GlobalContext{
+
+	/**
+	 * The returned timer SHOULD always be cancelled after use, however global timer will ignore it.
+	 *
+	 * @return eventually the global timer or if not set a fresh timer.
+	 */
+	public static Timer globalOrNew() {
+		Timer timer = context.timer;
+
+		if (timer == null) {
+			timer = new Timer(50, 64, WaitStrategy.sleeping());
+			timer.start();
+		}
+		return timer;
+	}
+
+
+	static final class GlobalContext{
 		volatile GlobalTimer timer;
 	}
 
-	private static final AtomicReferenceFieldUpdater<GlobalContext, GlobalTimer> GLOBAL_TIMER =
+	static final AtomicReferenceFieldUpdater<GlobalContext, GlobalTimer> GLOBAL_TIMER =
 		PlatformDependent.newAtomicReferenceFieldUpdater(GlobalContext.class, "timer");
 
-	private static final GlobalContext context = new GlobalContext();
+	static final GlobalContext context = new GlobalContext();
 
-	public GlobalTimer() {
+	GlobalTimer() {
 		super("global-timer", 50, DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping(), null);
 	}
 
-	private void _cancel() {
-		super.cancel();
+	void _cancel() {
+		super.shutdown();
 		//TimeUtils.disable();
 	}
 
 	@Override
-	public void cancel() {
+	public void shutdown() {
 		// IGNORE
 	}
 
@@ -62,17 +79,17 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 	 * Obtain the default global timer from the current context. The globalTimer is created lazily so
 	 * it is preferrable to fetch them out of the critical path.
 	 * <p>
-	 * The global timer will also ignore {@link Timer#cancel()} calls and should be cleaned using {@link
+	 * The global timer will also ignore {@link Timer#shutdown()} calls and should be cleaned using {@link
 	 * #unregister()} ()}.
 	 * <p>
-	 * The default globalTimer is a {@link HashWheelTimer}. It is suitable for non blocking
+	 * It is suitable for non blocking
 	 * periodic
 	 * work
 	 * such as  eventing, memory access, lock-free code, dispatching...
 	 *
-	 * @return the globalTimer, usually a {@link HashWheelTimer}
+	 * @return the global {@link Timer}
 	 */
-	public static Timer get() {
+	static Timer get() {
 		GlobalTimer t = context.timer;
 		while (null == t) {
 				t = new GlobalTimer();
@@ -92,7 +109,7 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 	 * Clean current global timer references and cancel the respective {@link Timer}.
 	 * A new global timer can be assigned later with {@link #get()}.
 	 */
-	public static void unregister() {
+	static void unregister() {
 		GlobalTimer timer;
 		while ((timer = GLOBAL_TIMER.getAndSet(context, null)) != null) {
 			timer._cancel();
@@ -110,23 +127,8 @@ class GlobalTimer extends HashWheelTimer implements Introspectable {
 	 *
 	 * @return true if context timer is initialized
 	 */
-	public static boolean available() {
+	static boolean available() {
 		return context.timer != null;
-	}
-
-	/**
-	 * The returned timer SHOULD always be cancelled after use, however global timer will ignore it.
-	 *
-	 * @return eventually the global timer or if not set a fresh timer.
-	 */
-	public static Timer globalOrNew() {
-		Timer timer = context.timer;
-
-		if (timer == null) {
-			timer = new HashWheelTimer(50, 64, WaitStrategy.sleeping());
-			timer.start();
-		}
-		return timer;
 	}
 
 }

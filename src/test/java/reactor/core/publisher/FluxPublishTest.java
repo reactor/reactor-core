@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.flow.Cancellation;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Exceptions;
@@ -318,13 +319,13 @@ public class FluxPublishTest {
 		ConnectableFlux<Integer> p = e.publish();
 		
 		p.subscribe(ts);
-		
-		Runnable r = p.connect();
+
+		Cancellation r = p.connect();
 				
 		e.onNext(1);
 		e.onNext(2);
 		
-		r.run();
+		r.dispose();
 		
 		ts.assertValues(1, 2)
 		.assertError(Exceptions.CancelException.class)
@@ -343,10 +344,10 @@ public class FluxPublishTest {
 		ConnectableFlux<Integer> p = e.publish();
 		
 		p.subscribe(ts);
-		
-		Runnable r = p.connect();
+
+		Cancellation r = p.connect();
 				
-		r.run();
+		r.dispose();
 		
 		ts.assertNoValues()
 		.assertError(Exceptions.CancelException.class)

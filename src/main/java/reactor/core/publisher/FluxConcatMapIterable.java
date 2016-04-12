@@ -65,10 +65,41 @@ final class FluxConcatMapIterable<T, R> extends FluxSource<T, R> implements Fuse
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
 
-
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
+		if (source instanceof Supplier) {
+			T v;
+			
+			try {
+				v = ((Supplier<T>)source).get();
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				EmptySubscription.error(s, ex);
+				return;
+			}
+			
+			if (v == null) {
+				EmptySubscription.complete(s);
+				return;
+			}
+			
+			Iterator<? extends R> it;
+			
+			try {
+				Iterable<? extends R> iter = mapper.apply(v);
+				
+				it = iter.iterator();
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				EmptySubscription.error(s, ex);
+				return;
+			}
+			
+			FluxIterable.subscribe(s, it);
+			
+			return;
+		}
 		source.subscribe(new ConcatMapIterableSubscriber<>(s, mapper, prefetch, queueSupplier));
 	}
 	

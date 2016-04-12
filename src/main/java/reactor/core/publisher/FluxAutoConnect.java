@@ -20,10 +20,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Receiver;
+
+import reactor.core.flow.*;
 
 /**
- * Connects to the underlying Stream once the given amount of Subscribers
+ * Connects to the underlying Flux once the given amount of Subscribers
  * subscribed.
  *
  * @param <T> the value type
@@ -38,7 +39,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 
 	final ConnectableFlux<? extends T> source;
 
-	final Consumer<? super Runnable> cancelSupport;
+	final Consumer<? super Cancellation> cancelSupport;
 
 	volatile int remaining;
 	@SuppressWarnings("rawtypes")
@@ -47,7 +48,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 
 
 	public FluxAutoConnect(ConnectableFlux<? extends T> source,
-			int n, Consumer<? super Runnable> cancelSupport) {
+			int n, Consumer<? super Cancellation> cancelSupport) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);
 		}

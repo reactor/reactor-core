@@ -15,22 +15,17 @@
  */
 package reactor.core.publisher;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
 import reactor.core.util.BackpressureUtils;
 
 /**
- * Connects to the underlying Stream once the given number of Subscribers subscribed
+ * Connects to the underlying Flux once the given number of Subscribers subscribed
  * to it and disconnects once all Subscribers cancelled their Subscriptions.
  *
  * @param <T> the value type
@@ -81,6 +76,7 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 	}
 
+
 	@Override
 	public Object connectedOutput() {
 		return connection;
@@ -91,7 +87,7 @@ final class FluxRefCount<T> extends Flux<T>
 		return source;
 	}
 
-	static final class State<T> implements Consumer<Runnable>, MultiProducer, Receiver {
+	static final class State<T> implements Consumer<Cancellation>, MultiProducer, Receiver {
 		
 		final int n;
 		
@@ -102,17 +98,12 @@ final class FluxRefCount<T> extends Flux<T>
 		static final AtomicIntegerFieldUpdater<State> SUBSCRIBERS =
 				AtomicIntegerFieldUpdater.newUpdater(State.class, "subscribers");
 		
-		volatile Runnable disconnect;
+		volatile Cancellation disconnect;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Runnable> DISCONNECT =
-				AtomicReferenceFieldUpdater.newUpdater(State.class, Runnable.class, "disconnect");
+		static final AtomicReferenceFieldUpdater<State, Cancellation> DISCONNECT =
+				AtomicReferenceFieldUpdater.newUpdater(State.class, Cancellation.class, "disconnect");
 		
-		static final Runnable DISCONNECTED = new Runnable() {
-			@Override
-			public void run() { 
-				
-			}
-		};
+		static final Cancellation DISCONNECTED = () -> { };
 
 		public State(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
@@ -131,18 +122,18 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 		
 		@Override
-		public void accept(Runnable r) {
+		public void accept(Cancellation r) {
 			if (!DISCONNECT.compareAndSet(this, null, r)) {
-				r.run();
+				r.dispose();
 			}
 		}
 		
 		void doDisconnect() {
-			Runnable a = disconnect;
+			Cancellation a = disconnect;
 			if (a != DISCONNECTED) {
 				a = DISCONNECT.getAndSet(this, DISCONNECTED);
 				if (a != null && a != DISCONNECTED) {
-					a.run();
+					a.dispose();
 				}
 			}
 		}
@@ -158,7 +149,7 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 		
 		void upstreamFinished() {
-			Runnable a = disconnect;
+			Cancellation a = disconnect;
 			if (a != DISCONNECTED) {
 				DISCONNECT.getAndSet(this, DISCONNECTED);
 			}

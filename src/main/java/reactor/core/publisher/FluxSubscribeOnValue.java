@@ -19,12 +19,11 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.publisher.FluxSubscribeOn.ScheduledEmpty;
-import reactor.core.publisher.FluxSubscribeOn.ScheduledScalar;
+import reactor.core.flow.Cancellation;
+import reactor.core.publisher.FluxSubscribeOn.*;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -68,7 +67,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Runnable f = scheduler.schedule(parent);
+			Cancellation f = scheduler.schedule(parent);
 			parent.setFuture(f);
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));

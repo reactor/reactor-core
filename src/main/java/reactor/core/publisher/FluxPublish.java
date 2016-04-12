@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
@@ -41,8 +42,8 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
- * A connectable {@link Flux} which shares an underlying source and dispatches source values to subscribers in a
- * backpressure-aware manner.
+ * A connectable observable which shares an underlying source and dispatches source values to subscribers in a backpressure-aware
+ * manner. 
  * @param <T> the value type
  */
 
@@ -52,7 +53,7 @@ import reactor.core.util.Exceptions;
  */
 final class FluxPublish<T> extends ConnectableFlux<T>
 		implements Receiver, Loopback, Backpressurable {
-	/** The source publisher. */
+	/** The source observable. */
 	final Publisher<? extends T> source;
 	
 	/** The size of the prefetch buffer. */
@@ -75,7 +76,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public void connect(Consumer<? super Runnable> cancelSupport) {
+	public void connect(Consumer<? super Cancellation> cancelSupport) {
 		boolean doConnect;
 		State<T> s;
 		for (;;) {
@@ -130,6 +131,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		return prefetch;
 	}
 
+
 	@Override
 	public Object connectedOutput() {
 		return connection;
@@ -140,8 +142,8 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		return source;
 	}
 	
-	static final class State<T> implements Subscriber<T>, Runnable, Receiver, MultiProducer, Backpressurable,
-										   Completable, Cancellable, Introspectable {
+	static final class State<T> implements Subscriber<T>, Receiver, MultiProducer, Backpressurable,
+										   Completable, Cancellable, Cancellation, Introspectable {
 
 		final int prefetch;
 		
@@ -272,7 +274,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		}
 		
 		@Override
-		public void run() {
+		public void dispose() {
 			if (cancelled) {
 				return;
 			}
@@ -287,8 +289,9 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		
 		void disconnectAction() {
 			queue.clear();
+			Exception ex = Exceptions.CancelException.INSTANCE;
 			for (InnerSubscription<T> inner : terminate()) {
-				inner.actual.onError(Exceptions.CancelException.INSTANCE);
+				inner.actual.onError(ex);
 			}
 		}
 		
@@ -573,7 +576,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				State<T> p = parent;
 				if (p != null) {
 					p.drain();

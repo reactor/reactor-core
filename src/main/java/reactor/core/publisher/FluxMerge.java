@@ -72,7 +72,7 @@ final class FluxMerge<T> extends Flux<T> implements MultiReceiver {
 	public void subscribe(Subscriber<? super T> s) {
 		@SuppressWarnings("unchecked")
 		FluxFlatMap.FlatMapMain<Publisher<? extends T>, T> merger = new FluxFlatMap.FlatMapMain<>(
-				s, IDENTITY_FUNCTION, delayError, maxConcurrency, mainQueueSupplier, prefetch,
+				s, identityFunction(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
 				innerQueueSupplier);
 		
 		merger.onSubscribe(new FluxArray.ArraySubscription<>(merger, sources));

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.CancellationException;
 
 import org.junit.Test;
+import reactor.core.flow.Cancellation;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.test.TestSubscriber;
 
@@ -113,7 +114,7 @@ public class FluxMulticastTest {
 	public void normalProcessorBackpressured() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = Flux.range(1, 5).multicast(EmitterProcessor.create());
 
 		p.subscribe(ts1);
 
@@ -156,7 +157,7 @@ public class FluxMulticastTest {
 		up.onNext(5);
 		up.onComplete();
 		
-		ConnectableFlux<Integer> p = up.multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = up.multicast(EmitterProcessor.create());
 		
 		p.subscribe(ts1);
 
@@ -308,16 +309,16 @@ public class FluxMulticastTest {
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.replay();
 		sp.connect();
-		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.create());
 		
 		p.subscribe(ts);
-		
-		Runnable r = p.connect();
+
+		Cancellation r = p.connect();
 				
 		sp.onNext(1);
 		sp.onNext(2);
 		
-		r.run();
+		r.dispose();
 		
 		ts.assertValues(1, 2)
 		.assertError(CancellationException.class)
@@ -334,19 +335,19 @@ public class FluxMulticastTest {
 
 		sp.connect();
 
-		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.create());
 
 		p.subscribe(ts1);
 		p.subscribe(ts2);
 
-		Runnable r = p.connect();
+		Cancellation r = p.connect();
 
 		sp.onNext(1);
 		sp.onNext(2);
 
 		ts1.cancel();
 
-		r.run();
+		r.dispose();
 
 		ts1.assertValues(1, 2)
 		  .assertNoError()
@@ -363,15 +364,15 @@ public class FluxMulticastTest {
 	public void disconnectBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		FluxProcessor<Integer, Integer> sp = EmitterProcessor.<Integer>create();
+		FluxProcessor<Integer, Integer> sp = EmitterProcessor.create();
 		sp.connect();
-		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 		
-		Runnable r = p.connect();
+		Cancellation r = p.connect();
 				
-		r.run();
+		r.dispose();
 		
 		ts.assertNoValues()
 		.assertError(CancellationException.class)
@@ -385,7 +386,7 @@ public class FluxMulticastTest {
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
 		sp.connect();
-		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = sp.multicast(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 		
@@ -404,7 +405,7 @@ public class FluxMulticastTest {
 	public void fusedMapInvalid() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).multicast(EmitterProcessor.<Integer>create());
+		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).multicast(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 		

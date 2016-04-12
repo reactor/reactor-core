@@ -16,22 +16,15 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.*;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.Producer;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -64,7 +57,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Runnable f = scheduler.schedule(parent);
+			Cancellation f = scheduler.schedule(parent);
 			parent.setFuture(f);
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
@@ -228,14 +221,14 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		static final AtomicIntegerFieldUpdater<ScheduledScalar> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
 		
-		volatile Runnable future;
+		volatile Cancellation future;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ScheduledScalar, Runnable> FUTURE =
-				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class, Runnable.class, "future");
+		static final AtomicReferenceFieldUpdater<ScheduledScalar, Cancellation> FUTURE =
+				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class, Cancellation.class, "future");
 		
-		static final Runnable CANCELLED = () -> { };
+		static final Cancellation CANCELLED = () -> { };
 
-		static final Runnable FINISHED = () -> { };
+		static final Cancellation FINISHED = () -> { };
 
 		public ScheduledScalar(Subscriber<? super T> actual, T value, Scheduler scheduler) {
 			this.actual = actual;
@@ -247,10 +240,10 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
-					Runnable f = scheduler.schedule(this);
+					Cancellation f = scheduler.schedule(this);
 					if (!FUTURE.compareAndSet(this, null, f)) {
 						if (future != FINISHED && future != CANCELLED) {
-							f.run();
+							f.dispose();
 						}
 					}
 				}
@@ -260,11 +253,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void cancel() {
 			ONCE.lazySet(this, 1);
-			Runnable f = future;
+			Cancellation f = future;
 			if (f != CANCELLED && future != FINISHED) {
 				f = FUTURE.getAndSet(this, CANCELLED);
 				if (f != null && f != CANCELLED && f != FINISHED) {
-					f.run();
+					f.dispose();
 				}
 			}
 		}
@@ -298,13 +291,13 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	static final class ScheduledEmpty implements Subscription, Runnable, Producer, Loopback {
 		final Subscriber<?> actual;
 
-		volatile Runnable future;
-		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Runnable> FUTURE =
-				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class, Runnable.class, "future");
+		volatile Cancellation future;
+		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Cancellation> FUTURE =
+				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class, Cancellation.class, "future");
 		
-		static final Runnable CANCELLED = () -> { };
+		static final Cancellation CANCELLED = () -> { };
 		
-		static final Runnable FINISHED = () -> { };
+		static final Cancellation FINISHED = () -> { };
 
 		public ScheduledEmpty(Subscriber<?> actual) {
 			this.actual = actual;
@@ -317,11 +310,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public void cancel() {
-			Runnable f = future;
+			Cancellation f = future;
 			if (f != CANCELLED && f != FINISHED) {
 				f = FUTURE.getAndSet(this, CANCELLED);
 				if (f != null && f != CANCELLED && f != FINISHED) {
-					f.run();
+					f.dispose();
 				}
 			}
 		}
@@ -335,11 +328,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 		}
 
-		void setFuture(Runnable f) {
+		void setFuture(Cancellation f) {
 			if (!FUTURE.compareAndSet(this, null, f)) {
-				Runnable a = future;
+				Cancellation a = future;
 				if (a != FINISHED && a != CANCELLED) {
-					f.run();
+					f.dispose();
 				}
 			}
 		}

@@ -17,6 +17,8 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import reactor.core.flow.Cancellation;
+
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
  * before they connect to their data source.
@@ -25,7 +27,6 @@ import java.util.function.Consumer;
  * @see #publish
  * @see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>
  * @param <T> the input and output value type
- *
  * @since 2.5
  */
 public abstract class ConnectableFlux<T> extends Flux<T> {
@@ -65,14 +66,14 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * Connects this {@link ConnectableFlux} to the upstream source when the specified amount of
 	 * {@link org.reactivestreams.Subscriber} subscribes and calls the supplied consumer with a runnable that allows disconnecting.
 	 * @param minSubscribers the minimum number of subscribers
-	 * @param cancelSupport the consumer that will receive the {@link Runnable} that allows disconnecting
+	 * @param cancelSupport the consumer that will receive the {@link Cancellation} that allows disconnecting
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/autoconnect.png" alt="">
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the given amount of subscribers subscribed
 	 */
-	public final Flux<T> autoConnect(int minSubscribers, Consumer<? super Runnable> cancelSupport) {
+	public final Flux<T> autoConnect(int minSubscribers, Consumer<? super Cancellation> cancelSupport) {
 		if (minSubscribers == 0) {
 			connect(cancelSupport);
 			return this;
@@ -83,27 +84,26 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	/**
 	 * Connect this {@link ConnectableFlux} to its source and return a {@link Runnable} that
 	 * can be used for disconnecting.
-	 *
-	 * @return a {@link Runnable} that allows disconnecting the connection after.
+	 * @return the {@link Cancellation} that allows disconnecting the connection after.
 	 */
-	public final Runnable connect() {
-		final Runnable[] out = { null };
+	public final Cancellation connect() {
+		final Cancellation[] out = { null };
 		connect(r -> out[0] = r);
 		return out[0];
 	}
 
 	/**
-	 * Connects this {@link ConnectableFlux} to its source and sends a {@link Runnable} to a callback that
+	 * Connects this {@link ConnectableFlux} to its source and sends a {@link Cancellation} to a callback that
 	 * can be used for disconnecting.
 	 *
 	 * <p>The call should be idempotent in respect of connecting the first
 	 * and subsequent times. In addition the disconnection should be also tied
 	 * to a particular connection (so two different connection can't disconnect the other).
 	 *
-	 * @param cancelSupport the callback is called with a Runnable instance that can
+	 * @param cancelSupport the callback is called with a Cancellation instance that can
 	 * be called to disconnect the source, even synchronously.
 	 */
-	public abstract void connect(Consumer<? super Runnable> cancelSupport);
+	public abstract void connect(Consumer<? super Cancellation> cancelSupport);
 
 	/**
 	 * Connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes and disconnects
@@ -133,5 +133,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 		return new FluxRefCount<>(this, minSubscribers);
 	}
 
-	static final Consumer<Runnable> NOOP_DISCONNECT = runnable -> {};
+	static final Consumer<Cancellation> NOOP_DISCONNECT = runnable -> {
+
+	};
 }

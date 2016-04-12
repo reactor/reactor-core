@@ -15,13 +15,11 @@
  */
 package reactor.core.scheduler
 
-import reactor.core.scheduler.HashWheelTimer
 import reactor.core.util.WaitStrategy
 import spock.lang.Specification
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 
 /**
  * @author Oleksandr Petrov
@@ -35,22 +33,23 @@ class HashWheelTimerYieldingStrategy extends Specification {
 
 		given:
 			"a new globalTimer"
-			def timer = new HashWheelTimer(10, 8, WaitStrategy.yielding())
+			def timer = new Timer(10, 8, WaitStrategy.yielding())
 			timer.start()
 			def latch = new CountDownLatch(10)
 
 		when:
 			"a task is submitted"
-			timer.schedule(
-					{ Long now -> latch.countDown() } as Consumer<Long>,
+			timer.schedulePeriodically(
+					{ latch.countDown() },
 					period,
-					period
+					period,
+					TimeUnit.MILLISECONDS
 			)
 
 		then:
 			"the latch was counted down"
 			latch.await(1, TimeUnit.SECONDS)
-			timer.cancel()
+			timer.shutdown()
 
 	}
 
@@ -59,7 +58,7 @@ class HashWheelTimerYieldingStrategy extends Specification {
 		given:
 			"a new globalTimer"
 			def delay = 500
-			def timer = new HashWheelTimer(10, 512, WaitStrategy.yielding())
+			def timer = new Timer(10, 512, WaitStrategy.yielding())
 			timer.start()
 			def latch = new CountDownLatch(1)
 			def start = System.currentTimeMillis()
@@ -68,12 +67,13 @@ class HashWheelTimerYieldingStrategy extends Specification {
 
 		when:
 			"a task is submitted"
-			timer.submit(
-					{ Long now ->
+			timer.schedule (
+					{
 						elapsed = System.currentTimeMillis() - start
 						latch.countDown()
-					} as Consumer<Long>,
-					delay
+					} ,
+					delay,
+					TimeUnit.MILLISECONDS
 			)
 
 		then:
@@ -82,7 +82,7 @@ class HashWheelTimerYieldingStrategy extends Specification {
 			elapsed >= delay
 			elapsed < delay * 2
 		cleanup:
-			timer.cancel()
+			timer.shutdown()
 	}
 
 }

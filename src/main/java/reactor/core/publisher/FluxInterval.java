@@ -15,45 +15,108 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.core.state.Timeable;
-import reactor.core.scheduler.Timer;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+
+import org.reactivestreams.*;
+
+import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.TimedScheduler.TimedWorker;
+import reactor.core.util.*;
 
 /**
- * @author Stephane Maldini
+ * Periodically emits an ever increasing long value either via a ScheduledExecutorService
+ * or a custom async callback function
  */
-final class FluxInterval extends Flux<Long> implements Timeable {
 
-	final private long     delay;
-	final private long     period;
-	final private Timer    timer;
+/**
+ * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @since 2.5
+ */
+final class FluxInterval extends Flux<Long> {
 
-	public FluxInterval(long delay, long period, Timer timer) {
-		this.delay = delay >= 0L ? delay : -1L;
+	final TimedScheduler timedScheduler;
+	
+	final long initialDelay;
+	
+	final long period;
+	
+	final TimeUnit unit;
+
+	public FluxInterval(
+			long initialDelay, 
+			long period, 
+			TimeUnit unit, 
+			TimedScheduler timedScheduler) {
+		if (period < 0L) {
+			throw new IllegalArgumentException("period >= 0 required but it was " + period);
+		}
+		this.initialDelay = initialDelay;
 		this.period = period;
-		this.timer = timer;
+		this.unit = Objects.requireNonNull(unit, "unit");
+		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");
 	}
-
+	
 	@Override
-	public void subscribe(final Subscriber<? super Long> s) {
-		try {
-			s.onSubscribe(timer.interval(s, period, delay));
+	public void subscribe(Subscriber<? super Long> s) {
+		
+		TimedWorker w = timedScheduler.createWorker();
+
+		IntervalRunnable r = new IntervalRunnable(s, w);
+		
+		s.onSubscribe(r);
+
+		w.schedulePeriodically(r, initialDelay, period, unit);
+	}
+	
+	static final class IntervalRunnable implements Runnable, Subscription {
+		final Subscriber<? super Long> s;
+		
+		final TimedWorker worker;
+		
+		volatile long requested;
+		static final AtomicLongFieldUpdater<IntervalRunnable> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(IntervalRunnable.class, "requested");
+		
+		long count;
+		
+		volatile boolean cancelled;
+
+		public IntervalRunnable(Subscriber<? super Long> s, TimedWorker worker) {
+			this.s = s;
+			this.worker = worker;
 		}
-		catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			EmptySubscription.error(s, Exceptions.unwrap(t));
+		
+		@Override
+		public void run() {
+			if (!cancelled) {
+				if (requested != 0L) {
+					s.onNext(count++);
+					if (requested != Long.MAX_VALUE) {
+						REQUESTED.decrementAndGet(this);
+					}
+				} else {
+					cancel();
+					
+					s.onError(new IllegalStateException("Could not emit value " + count + " due to lack of requests"));
+				}
+			}
 		}
-	}
-
-	@Override
-	public long period() {
-		return delay;
-	}
-
-	@Override
-	public long getCapacity() {
-		return Long.MAX_VALUE;
+		
+		@Override
+		public void request(long n) {
+			if (BackpressureUtils.validate(n)) {
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			}
+		}
+		
+		@Override
+		public void cancel() {
+			if (!cancelled) {
+				cancelled = true;
+				worker.shutdown();
+			}
+		}
 	}
 }

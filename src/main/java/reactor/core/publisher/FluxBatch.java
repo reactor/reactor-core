@@ -16,20 +16,19 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.scheduler.Timer;
 import reactor.core.state.Introspectable;
-import reactor.core.state.Pausable;
 import reactor.core.state.Requestable;
-
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.scheduler.Timer;
 import reactor.core.util.BackpressureUtils;
 
 /**
@@ -193,16 +192,16 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		};
 
-		protected final boolean        next;
-		protected final boolean        flush;
-		protected final boolean        first;
-		protected final int            batchSize;
-		protected final long           timespan;
-		protected final Timer          timer;
-		protected final Consumer<Long> flushTask;
+		protected final boolean  next;
+		protected final boolean  flush;
+		protected final boolean  first;
+		protected final int      batchSize;
+		protected final long     timespan;
+		protected final Timer    timer;
+		protected final Runnable flushTask;
 
 		private volatile int index = 0;
-		private Pausable timespanRegistration;
+		private Cancellation timespanRegistration;
 
 		public BatchAction(Subscriber<? super V> actual,
 				int batchSize,
@@ -217,9 +216,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			if (timespan > 0 && timer != null) {
 				this.timespan = timespan;
 				this.timer = timer;
-				this.flushTask = new Consumer<Long>() {
-					@Override
-					public void accept(Long aLong) {
+				this.flushTask = () -> {
 						if (!isTerminated()) {
 							synchronized (timer) {
 								if (index == 0) {
@@ -231,7 +228,6 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 							}
 							flushCallback(null);
 						}
-					}
 				};
 			}
 			else {
@@ -280,7 +276,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 			if (index == 1) {
 				if (timer != null) {
-					timespanRegistration = timer.submit(flushTask, timespan);
+					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				}
 				if (first) {
 					firstCallback(value);
@@ -293,7 +289,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 			if (index % batchSize == 0) {
 				if (timer != null && timespanRegistration != null) {
-					timespanRegistration.cancel();
+					timespanRegistration.dispose();
 					timespanRegistration = null;
 				}
 				if (timer != null) {

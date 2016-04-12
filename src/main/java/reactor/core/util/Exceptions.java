@@ -210,14 +210,6 @@ public enum Exceptions {
 	}
 
 	/**
-	 * @return a cached or new
-	 * {@link TimeoutException} depending on whether {@link PlatformDependent#TRACE_TIMEROVERLOW} has been set.
-	 */
-	public static TimeoutException timeOverflow() {
-		return TimerOverflowException.get();
-	}
-
-	/**
 	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
 	 *
 	 * @param t the exception to wrap
@@ -352,25 +344,5 @@ public enum Exceptions {
 			return PlatformDependent.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
 		}
 
-	}
-
-
-	static final class TimerOverflowException extends TimeoutException {
-
-		public static final TimerOverflowException INSTANCE = new TimerOverflowException();
-
-		public static TimerOverflowException get() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? new TimerOverflowException() : INSTANCE;
-		}
-
-		private TimerOverflowException() {
-			super("The subscriber has not requested for the timer signals, consider Flux#onBackpressureDrop or any" +
-					"unbounded subscriber");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return PlatformDependent.TRACE_TIMEROVERLOW ? super.fillInStackTrace() : this;
-		}
 	}
 }

@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -39,6 +40,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
@@ -180,10 +182,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(long duration, Timer timer) {
-		Assert.isTrue(duration >= timer.period(), "The delay " + duration + " cannot be less than the timer resolution " +
-				"" + timer.period());
-		return new MonoDelay(timer, duration);
+	public static Mono<Long> delay(long duration, TimedScheduler timer) {
+		return new MonoTimer(duration, TimeUnit.MILLISECONDS, timer);
 	}
 
 	/**
@@ -198,7 +198,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(Duration duration, Timer timer) {
+	public static Mono<Long> delay(Duration duration, TimedScheduler timer) {
 		return delay(duration.toMillis(), timer);
 	}
 
@@ -1173,7 +1173,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.IDENTITY_FUNCTION,
+				Flux.identityFunction(),
 				false,
 				Integer.MAX_VALUE,
 				QueueSupplier.xs(),

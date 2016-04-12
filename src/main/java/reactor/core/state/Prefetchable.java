@@ -22,11 +22,13 @@ package reactor.core.state;
 public interface Prefetchable {
 
 	/**
+	 * Expected number of events to be produced to this component
 	 * @return expected number of events to be produced to this component
 	 */
 	long expectedFromUpstream();
 
 	/**
+	 * A given limit threshold to replenish outstanding upstream request
 	 * @return a given limit threshold to replenish outstanding upstream request
 	 */
 	long limit();

@@ -15,13 +15,11 @@
  */
 package reactor.core.scheduler
 
-import reactor.core.scheduler.HashWheelTimer
 import reactor.core.util.WaitStrategy
 import spock.lang.Specification
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 
 /**
  * @author Oleksandr Petrov
@@ -35,16 +33,17 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 
 		given:
 			"a new globalTimer"
-			def timer = new HashWheelTimer(10, 8, WaitStrategy.busySpin())
+			def timer = new Timer(10, 8, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(10)
 
 		when:
 			"a task is submitted"
-			timer.schedule(
-					{ Long now -> latch.countDown() } as Consumer<Long>,
+			timer.schedulePeriodically(
+					{ latch.countDown() },
 					period,
-					period
+					period,
+					TimeUnit.MILLISECONDS
 			)
 
 		then:
@@ -53,7 +52,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 
 		when:
 			"Cancelled"
-			timer.cancel()
+			timer.shutdown()
 
 		then:
 			timer.isCancelled()
@@ -65,7 +64,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 		given:
 			"a new globalTimer"
 			def delay = 500
-			def timer = new HashWheelTimer(10, 512, WaitStrategy.busySpin())
+			def timer = new Timer(10, 512, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(1)
 			def start = System.currentTimeMillis()
@@ -74,12 +73,13 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 
 		when:
 			"a task is submitted"
-			timer.submit(
-					{ Long now ->
+			timer.schedule(
+					{
 						elapsed = System.currentTimeMillis() - start
 						latch.countDown()
-					} as Consumer<Long>,
-					delay
+					} ,
+					delay,
+					TimeUnit.MILLISECONDS
 			)
 
 		then:
@@ -89,7 +89,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 			elapsed < delay * 2
 
 		cleanup:
-			timer.cancel()
+			timer.shutdown()
 	}
 
 }

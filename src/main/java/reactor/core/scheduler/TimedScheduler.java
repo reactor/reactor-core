@@ -1,9 +1,8 @@
 package reactor.core.scheduler;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import reactor.core.util.BackpressureUtils;
+import reactor.core.flow.Cancellation;
 
 /**
  * Provides an abstract, timed asychronous boundary to operators.
@@ -20,9 +19,9 @@ public interface TimedScheduler extends Scheduler {
 	 * @param task the task to schedule
 	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 	 * @param unit the unit of measure of the delay amount
-	 * @return the Cancellable that let's one cancel this particular delayed task.
+	 * @return the Cancellation that let's one cancel this particular delayed task.
 	 */
-	Runnable schedule(Runnable task, long delay, TimeUnit unit);
+	Cancellation schedule(Runnable task, long delay, TimeUnit unit);
 	
 	/**
 	 * Schedules a periodic execution of the given task with the given initial delay and period.
@@ -41,24 +40,7 @@ public interface TimedScheduler extends Scheduler {
 	 * @param unit the unit of measure of the delay amount
 	 * @return the Cancellable that let's one cancel this particular delayed task.
 	 */
-	Runnable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit);
-	
-	default Runnable schedule(Runnable task, Duration delay) {
-		long s = BackpressureUtils.multiplyCap(delay.getSeconds(), 1_000_000_000);
-		long d = BackpressureUtils.addCap(s, delay.getNano());
-		
-		return schedule(task, d, TimeUnit.NANOSECONDS);
-	}
-
-	default Runnable schedulePeriodically(Runnable task, Duration initialDelay, Duration period) {
-		long s0 = BackpressureUtils.multiplyCap(initialDelay.getSeconds(), 1_000_000_000);
-		long d0 = BackpressureUtils.addCap(s0, initialDelay.getNano());
-		
-		long s1 = BackpressureUtils.multiplyCap(period.getSeconds(), 1_000_000_000);
-		long d1 = BackpressureUtils.addCap(s1, period.getNano());
-
-		return schedulePeriodically(task, d0, d1, TimeUnit.NANOSECONDS);
-	}
+	Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit);
 	
 	/**
 	 * Returns the "current time" notion of this scheduler.
@@ -86,9 +68,9 @@ public interface TimedScheduler extends Scheduler {
 		 * @param task the task to schedule
 		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 		 * @param unit the unit of measure of the delay amount
-		 * @return the Cancellable that let's one cancel this particular delayed task.
+		 * @return the Cancellation that let's one cancel this particular delayed task.
 		 */
-		Runnable schedule(Runnable task, long delay, TimeUnit unit);
+		Cancellation schedule(Runnable task, long delay, TimeUnit unit);
 		
 		/**
 		 * Schedules a periodic execution of the given task with the given initial delay and period.
@@ -104,27 +86,10 @@ public interface TimedScheduler extends Scheduler {
 		 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
 		 * @param period the period at which the task should be re-executed
 		 * @param unit the unit of measure of the delay amount
-		 * @return the Cancellable that let's one cancel this particular delayed task.
+		 * @return the Cancellation that let's one cancel this particular delayed task.
 		 */
-		Runnable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit);
+		Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit);
 		
-		default Runnable schedule(Runnable task, Duration delay) {
-			long s = BackpressureUtils.multiplyCap(delay.getSeconds(), 1_000_000_000);
-			long d = BackpressureUtils.addCap(s, delay.getNano());
-			
-			return schedule(task, d, TimeUnit.NANOSECONDS);
-		}
-
-		default Runnable schedulePeriodically(Runnable task, Duration initialDelay, Duration period) {
-			long s0 = BackpressureUtils.multiplyCap(initialDelay.getSeconds(), 1_000_000_000);
-			long d0 = BackpressureUtils.addCap(s0, initialDelay.getNano());
-			
-			long s1 = BackpressureUtils.multiplyCap(period.getSeconds(), 1_000_000_000);
-			long d1 = BackpressureUtils.addCap(s1, period.getNano());
-
-			return schedulePeriodically(task, d0, d1, TimeUnit.NANOSECONDS);
-		}
-
 		/**
 		 * Returns the "current time" notion of this scheduler.
 		 * @param unit the target unit of the current time

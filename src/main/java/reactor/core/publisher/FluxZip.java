@@ -15,34 +15,16 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.concurrent.atomic.*;
+import java.util.function.*;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
+import reactor.core.state.*;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -56,7 +38,8 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiver {
+final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressurable,
+																		  MultiReceiver {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -92,11 +75,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		this.prefetch = prefetch;
 	}
 
-	@Override
-	public long getCapacity() {
-		return prefetch;
-	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		Publisher<? extends T>[] srcs = sources;
@@ -271,6 +250,11 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 	}
 
 	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
+
+	@Override
 	public long upstreamCount() {
 		return sources == null ? -1 : sources.length;
 	}
@@ -386,13 +370,13 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		void cancelAll() {
 			for (ZipSingleSubscriber<T> s : subscribers) {
 				if (s != null) {
-					s.cancel();
+					s.dispose();
 				}
 			}
 		}
 	}
 	
-	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Backpressurable,
+	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Cancellation, Backpressurable,
 																  Completable, Introspectable, Receiver {
 		final ZipSingleCoordinator<T, ?> parent;
 		
@@ -492,13 +476,14 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 			return s;
 		}
 
-		void cancel() {
+		@Override
+		public void dispose() {
 			BackpressureUtils.terminate(S, this);
 		}
 	}
 	
 	static final class ZipCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable, Backpressurable, Completable, Requestable,
-	                                                   Introspectable {
+																Introspectable {
 
 		final Subscriber<? super R> actual;
 		
@@ -551,7 +536,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, MultiReceiv
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.flow.Cancellation;
 import reactor.core.test.TestSubscriber;
 
 public class FluxAutoConnectTest {
@@ -39,14 +40,14 @@ public class FluxAutoConnectTest {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
 		
-		AtomicReference<Runnable> cancel = new AtomicReference<>();
+		AtomicReference<Cancellation> cancel = new AtomicReference<>();
 		
 		e.publish().autoConnect(0, cancel::set);
 		
 		Assert.assertNotNull(cancel.get());
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		cancel.get().run();
+		cancel.get().dispose();
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 	}
 
@@ -55,7 +56,7 @@ public class FluxAutoConnectTest {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
 		
-		AtomicReference<Runnable> cancel = new AtomicReference<>();
+		AtomicReference<Cancellation> cancel = new AtomicReference<>();
 		
 		Flux<Integer> p = e.publish().autoConnect(2, cancel::set);
 		
@@ -72,7 +73,7 @@ public class FluxAutoConnectTest {
 		Assert.assertNotNull(cancel.get());
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 		
-		cancel.get().run();
+		cancel.get().dispose();
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 	}
 }

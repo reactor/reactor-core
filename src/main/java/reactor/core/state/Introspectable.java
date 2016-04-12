@@ -80,4 +80,12 @@ public interface Introspectable {
 	default Throwable getError(){
 		return null;
 	}
+
+	/**
+	 * Can represent a period duration if the component is timed otherwise -1L
+	 * @return a period duration if the component is timed or -1L
+	 */
+	default long getPeriod(){
+		return -1L;
+	}
 }

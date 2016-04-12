@@ -15,25 +15,16 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.*;
+import java.util.function.*;
 
-import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
+import reactor.core.state.*;
+import reactor.core.util.*;
 
 /**
  * @param <T>
@@ -46,8 +37,8 @@ import reactor.core.util.Exceptions;
  */
 final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, Producer {
 
-	final Publisher<T>                                           source;
-	final Supplier<? extends Processor<? super T, ? extends T>>  processorSupplier;
+	final Publisher<T>												 source;
+	final Supplier<? extends Processor<? super T, ? extends T>>		processorSupplier;
 	final Function<Flux<T>, ? extends Publisher<? extends U>> selector;
 
 	volatile State<T, U> connection;
@@ -64,7 +55,12 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 	}
 
 	@Override
-	public void connect(Consumer<? super Runnable> cancelSupport) {
+	public Object downstream() {
+		return connection;
+	}
+
+	@Override
+	public void connect(Consumer<? super Cancellation> cancelSupport) {
 		boolean doConnect;
 		State<T, U> s;
 
@@ -125,17 +121,12 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 	}
 
 	@Override
-	public Object downstream() {
-		return connection;
-	}
-
-	@Override
 	public Object upstream() {
 		return source;
 	}
 
 	static abstract class State<T, U>
-			implements Runnable, Completable, Subscription, Receiver, Introspectable, Producer, Subscriber<T> {
+			implements Cancellation, Completable, Subscription, Receiver, Introspectable, Producer, Subscriber<T> {
 
 		final Processor<? super T, ? extends T> processor;
 		final Publisher<? extends U>			publisher;
@@ -221,7 +212,7 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (CONNECTED.compareAndSet(this, 1, 2)) {
 				if(BackpressureUtils.terminate(S, this)) {
 					processor.onError(new CancellationException("Disconnected"));
@@ -270,9 +261,9 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (CONNECTED.compareAndSet(this, 1, 2)) {
-				Fuseable.QueueSubscription a = this.s;
+				Fuseable.QueueSubscription<?> a = this.s;
 				if (a != null) {
 					a = S.getAndSet(this, null);
 					if (a != null) {
@@ -290,7 +281,7 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			Fuseable.QueueSubscription a = this.s;
+			Fuseable.QueueSubscription<?> a = this.s;
 			if (isTerminated()) {
 				s.cancel();
 				return;
@@ -300,7 +291,7 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 				return;
 			}
 
-			if (S.compareAndSet(this, null, (Fuseable.QueueSubscription)s)) {
+			if (S.compareAndSet(this, null, (Fuseable.QueueSubscription<?>)s)) {
 				processor.onSubscribe(s);
 			}
 			else {

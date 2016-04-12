@@ -15,6 +15,8 @@
  */
 package reactor.core.scheduler;
 
+import reactor.core.flow.Cancellation;
+
 /**
  * Provides an abstract asychronous boundary to operators.
  */
@@ -28,16 +30,16 @@ public interface Scheduler {
 	 * 
 	 * @param task the task to execute
 	 * 
-	 * @return the Runnable instance that let's one cancel this particular task.
-	 * If the Scheduler has been shut down, the {@link #REJECTED} Cancellable instance is returned.
+	 * @return the {@link Cancellation} instance that let's one cancel this particular task.
+	 * If the {@link Scheduler} has been shut down, the {@link #REJECTED} {@link Cancellation} instance is returned.
 	 */
-	Runnable schedule(Runnable task);
+	Cancellation schedule(Runnable task);
 	
 	/**
 	 * Creates a worker of this Scheduler that executed task in a strict
 	 * FIFO order, guaranteed non-concurrently with each other.
 	 * <p>
-	 * Once the Worker is no longer in use, one should createWorker shutdown() on it to
+	 * Once the Worker is no longer in use, one should call shutdown() on it to
 	 * release any resources the particular Scheduler may have used.
 	 * 
 	 * <p>Tasks scheduled with this worker run in FIFO order and strictly non-concurrently, but
@@ -81,10 +83,10 @@ public interface Scheduler {
 		/**
 		 * Schedules the task on this worker.
 		 * @param task the task to schedule
-		 * @return the Cancellable instance that let's one cancel this particular task.
-		 * If the Scheduler has been shut down, the {@link #REJECTED} Cancellable instance is returned.
+		 * @return the Cancellation instance that let's one cancel this particular task.
+		 * If the Scheduler has been shut down, the {@link #REJECTED} Cancellation instance is returned.
 		 */
-		Runnable schedule(Runnable task);
+		Cancellation schedule(Runnable task);
 		
 		/**
 		 * Instructs this worker to cancel all pending tasks, all running tasks in 
@@ -97,5 +99,15 @@ public interface Scheduler {
 	/**
 	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down.
 	 */
-	Runnable REJECTED = () -> { };
+	Cancellation REJECTED = new Cancellation() {
+		@Override
+		public void dispose() {
+			// deliberately no-op
+		}
+		
+		@Override
+		public String toString() {
+			return "Rejected task";
+		}
+	};
 }
