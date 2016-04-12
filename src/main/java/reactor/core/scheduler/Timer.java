@@ -262,7 +262,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 	@Override
 	public Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		return null;
+		return loop.schedulePeriodically(task, initialDelay, period, unit);
 	}
 
 	@Override
