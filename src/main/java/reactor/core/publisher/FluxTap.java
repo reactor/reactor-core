@@ -176,11 +176,6 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 		}
 
 		@Override
-		public void drop() {
-			s.drop();
-		}
-
-		@Override
 		public O poll() {
 			O v = s.poll();
 			if(v != null){
@@ -197,15 +192,6 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 		@Override
 		public Object upstream() {
 			return s;
-		}
-
-		@Override
-		public O peek() {
-			O v = s.peek();
-			if(v != null){
-				VAL.set(parent, v);
-			}
-			return v;
 		}
 
 		@Override
