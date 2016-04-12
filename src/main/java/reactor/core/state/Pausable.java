@@ -21,7 +21,7 @@ import org.reactivestreams.Subscription;
 /**
  *
  */
-public interface Pausable extends Subscription {
+public interface Pausable extends Subscription, Runnable {
 
 	/**
 	 * Pause this {@literal Pausable}. The implementing component should stop reacting, pausing resources if necessary.
@@ -34,4 +34,7 @@ public interface Pausable extends Subscription {
 	 */
 	void resume();
 
+	default void run(){
+		cancel();
+	}
 }

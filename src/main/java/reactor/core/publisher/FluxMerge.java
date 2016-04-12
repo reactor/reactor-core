@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Function;
@@ -22,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.MultiReceiver;
 
 /**
  * Merges a fixed array of Publishers.
@@ -32,7 +35,7 @@ import org.reactivestreams.Subscriber;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxMerge<T> extends Flux<T> {
+final class FluxMerge<T> extends Flux<T> implements MultiReceiver {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -97,5 +100,20 @@ final class FluxMerge<T> extends Flux<T> {
 		}
 		
 		return new FluxMerge<>(newArray, delayError, mc, mainQueueSupplier, prefetch, innerQueueSupplier);
+	}
+
+	@Override
+	public Iterator<?> upstreams() {
+		return Arrays.asList(sources).iterator();
+	}
+
+	@Override
+	public long getCapacity() {
+		return prefetch;
+	}
+
+	@Override
+	public long upstreamCount() {
+		return sources.length;
 	}
 }
