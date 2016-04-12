@@ -29,14 +29,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
-import org.reactivestreams.Subscriber;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Producer;
 import reactor.core.queue.RingBuffer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
 import reactor.core.util.WaitStrategy;
