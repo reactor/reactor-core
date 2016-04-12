@@ -404,7 +404,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			if (isInterrupted() || !isAlive()) {
 				throw Exceptions.failWithCancel();
 			}
-			long delayMs = unit.convert(delay, TimeUnit.MILLISECONDS);
+			long delayMs = TimeUnit.MILLISECONDS.convert(delay, unit);
 
 			if (delay != 0) {
 				checkResolution(delayMs, resolution);
@@ -427,8 +427,8 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			if (isInterrupted() || !isAlive()) {
 				throw Exceptions.failWithCancel();
 			}
-			long periodMs = unit.convert(period, TimeUnit.MILLISECONDS);
-			long initialDelayMs = unit.convert(initialDelay, TimeUnit.MILLISECONDS);
+			long periodMs = TimeUnit.MILLISECONDS.convert(period, unit);
+			long initialDelayMs = TimeUnit.MILLISECONDS.convert(initialDelay, unit);
 
 			if (initialDelay != 0) {
 				checkResolution(initialDelayMs, resolution);
