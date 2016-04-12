@@ -305,11 +305,11 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 	final static class ThreadWorker extends Thread implements TimedWorker {
 
-		final RingBuffer<Set<Timer.HashWheelSubscription>> wheel;
-		final Timer                                        parent;
-		final LongSupplier                                 timeMillisResolver;
-		final WaitStrategy                                 waitStrategy;
-		final int                                          resolution;
+		final RingBuffer<Set<HashWheelTask>> wheel;
+		final Timer                          parent;
+		final LongSupplier                   timeMillisResolver;
+		final WaitStrategy                   waitStrategy;
+		final int                            resolution;
 
 		ThreadWorker(String name,
 				int resolution,
@@ -336,9 +336,9 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			};
 
 			for (; ; ) {
-				Set<Timer.HashWheelSubscription> registrations = wheel.get(wheel.getCursor());
+				Set<HashWheelTask> registrations = wheel.get(wheel.getCursor());
 
-				for (Timer.HashWheelSubscription r : registrations) {
+				for (HashWheelTask r : registrations) {
 					if (r.isCancelled()) {
 						registrations.remove(r);
 						if (SUBSCRIPTIONS.decrementAndGet(parent) == 0) {
@@ -401,8 +401,8 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			long firstFireOffset = delayMs / resolution;
 			long firstFireRounds = firstFireOffset / wheel.getCapacity();
 
-			Timer.HashWheelSubscription r =
-					new Timer.TimerSubscription(resolution * wheel.getCapacity(), firstFireRounds, 0L, task);
+			HashWheelTask r =
+					new TimerTask(resolution * wheel.getCapacity(), firstFireRounds, 0L, task);
 
 			wheel.get(wheel.getCursor() + firstFireOffset)
 			     .add(r);
@@ -429,7 +429,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			long firstFireOffset = initialDelayMs / resolution;
 			long firstFireRounds = firstFireOffset / wheel.getCapacity();
 
-			Timer.HashWheelSubscription r = new Timer.IntervalSubscription(resolution * wheel.getCapacity(),
+			HashWheelTask r = new IntervalTask(resolution * wheel.getCapacity(),
 					firstFireRounds,
 					offset,
 					task,
@@ -458,17 +458,17 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 		}
 
 		/**
-		 * Reschedule a {@link Timer.IntervalSubscription}  for the next fire
+		 * Reschedule a {@link IntervalTask}  for the next fire
 		 */
-		void reschedule(Timer.HashWheelSubscription registration, long rounds) {
-			Timer.HashWheelSubscription.ROUNDS.set(registration, rounds);
+		void reschedule(HashWheelTask registration, long rounds) {
+			HashWheelTask.ROUNDS.set(registration, rounds);
 			wheel.get(wheel.getCursor() + registration.scheduleOffset)
 			     .add(registration);
 		}
 
 	}
 
-	static abstract class HashWheelSubscription
+	static abstract class HashWheelTask
 			implements Runnable, Cancellation, Comparable, Cancellable, Producer, Introspectable {
 
 		final    Runnable task;
@@ -477,7 +477,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 		volatile long     rounds;
 		volatile int      status;
 
-		HashWheelSubscription(long wheelResolution,
+		HashWheelTask(long wheelResolution,
 				Runnable task,
 				long rounds,
 				long scheduleOffset) {
@@ -495,7 +495,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 		@Override
 		public final int compareTo(Object o) {
-			Timer.HashWheelSubscription other = (Timer.HashWheelSubscription) o;
+			HashWheelTask other = (HashWheelTask) o;
 			if (rounds == other.rounds) {
 				return other == this ? 0 : -1;
 			}
@@ -529,7 +529,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			return String.format("Timer { Rounds left: %d, Status: %d }", rounds, status);
 		}
 
-		abstract Timer.IntervalSubscription asInterval();
+		abstract IntervalTask asInterval();
 
 		/**
 		 * Decrement an amount of runs Registration has to run until it's elapsed
@@ -547,17 +547,17 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			return status == STATUS_READY && rounds == 0;
 		}
 
-		static final AtomicLongFieldUpdater<Timer.HashWheelSubscription>    ROUNDS =
-				AtomicLongFieldUpdater.newUpdater(Timer.HashWheelSubscription.class, "rounds");
-		static final AtomicIntegerFieldUpdater<Timer.HashWheelSubscription> STATUS =
-				AtomicIntegerFieldUpdater.newUpdater(Timer.HashWheelSubscription.class, "status");
+		static final AtomicLongFieldUpdater<HashWheelTask>    ROUNDS =
+				AtomicLongFieldUpdater.newUpdater(HashWheelTask.class, "rounds");
+		static final AtomicIntegerFieldUpdater<HashWheelTask> STATUS =
+				AtomicIntegerFieldUpdater.newUpdater(HashWheelTask.class, "status");
 	}
 
-	static final class IntervalSubscription extends Timer.HashWheelSubscription {
+	static final class IntervalTask extends HashWheelTask {
 
 		final long rescheduleRounds;
 
-		IntervalSubscription(long resolution,
+		IntervalTask(long resolution,
 				long rounds,
 				long offset,
 				Runnable task,
@@ -575,20 +575,20 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 		}
 
 		@Override
-		Timer.IntervalSubscription asInterval() {
+		IntervalTask asInterval() {
 			return this;
 		}
 
 	}
 
-	final static class TimerSubscription extends Timer.HashWheelSubscription {
+	final static class TimerTask extends HashWheelTask {
 
-		TimerSubscription(long resolution, long rounds, long offset, Runnable task) {
+		TimerTask(long resolution, long rounds, long offset, Runnable task) {
 			super(resolution, task, rounds, offset);
 		}
 
 		@Override
-		public Timer.IntervalSubscription asInterval() {
+		public IntervalTask asInterval() {
 			return null;
 		}
 
