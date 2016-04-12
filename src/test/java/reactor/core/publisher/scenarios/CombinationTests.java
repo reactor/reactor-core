@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Cancellation;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -425,12 +426,12 @@ public class CombinationTests {
 		int elements = 40;
 		CountDownLatch latch = new CountDownLatch(elements / 2 - 2);
 
-		Runnable tail = Flux.combineLatest(
+		Cancellation tail = Flux.combineLatest(
 				sensorOdd().cache().delay(Duration.ofMillis(100)),
 				sensorEven().cache().delay(Duration.ofMillis(200)),
 				this::computeMin)
-		                                      .log("combineLatest")
-		                                      .consume(i -> latch.countDown(), null, latch::countDown);
+		                        .log("combineLatest")
+		                        .consume(i -> latch.countDown(), null, latch::countDown);
 
 		generateData(elements);
 

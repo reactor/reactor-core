@@ -25,6 +25,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
@@ -51,7 +52,8 @@ import reactor.core.util.ScalarSubscription;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Runnable, Subscription, Cancellable, Receiver, Producer, Prefetchable {
+		implements Processor<O, O>, Cancellation, Subscription, Cancellable, Receiver, Producer,
+		           Prefetchable {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -94,6 +96,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (WIP.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
+	}
+
+	@Override
+	public void dispose() {
+		cancel();
 	}
 
 	@Override
@@ -359,11 +366,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (WIP.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
-	}
-
-	@Override
-	public void run() {
-		cancel();
 	}
 
 	@Override

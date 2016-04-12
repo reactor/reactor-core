@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
@@ -31,7 +32,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  * @since 2.5
  */
-public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Runnable, Completable,
+public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation, Completable,
                                             Backpressurable {
 
 	final Consumer<? super T>         consumer;
@@ -214,7 +215,7 @@ public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Runnabl
 	}
 
 	@Override
-	public void run() {
+	public void dispose() {
 		Object notifyBarrier = barrier;
 		cancel();
 	}

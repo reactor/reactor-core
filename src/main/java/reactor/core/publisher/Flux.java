@@ -46,6 +46,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
@@ -2057,9 +2058,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer) {
+	public final Cancellation consume(Consumer<? super T> consumer) {
 		return consume(consumer, null, null);
 	}
 
@@ -2076,9 +2077,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		return consume(consumer, errorConsumer, null);
 	}
 
@@ -2096,9 +2097,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer,
+	public final Cancellation consume(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 
@@ -4064,9 +4065,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
 	 * <p>
 	 *
-	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
-	public final Runnable subscribe() {
+	public final Cancellation subscribe() {
 		LambdaSubscriber<T> s = new LambdaSubscriber<>();
 		subscribe(s);
 		return s;

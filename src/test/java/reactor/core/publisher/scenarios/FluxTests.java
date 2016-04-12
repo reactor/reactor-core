@@ -52,6 +52,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
@@ -300,7 +301,7 @@ public class FluxTests extends AbstractReactorTest {
 			                                                  return Integer.parseInt(str);
 		                                                  }));
 
-		Runnable tail = tasks.consume(i -> {
+		Cancellation tail = tasks.consume(i -> {
 			latch.countDown();
 		});
 
@@ -391,7 +392,7 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
 		SignalEmitter<Integer> s = SignalEmitter.create(d);
 
-		Runnable c = d.publishOn(asyncGroup)
+		Cancellation c = d.publishOn(asyncGroup)
 		             .partition(8)
 		             .consume(stream -> stream.publishOn(asyncGroup)
 		                                      .map(o -> {
@@ -823,7 +824,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		                           );
 
-		Runnable action = s.useCapacity(1L)
+		Cancellation action = s.useCapacity(1L)
 		                  .consume(integer -> {
 			                  latch.countDown();
 			                  System.out.println(integer);
@@ -906,9 +907,9 @@ public class FluxTests extends AbstractReactorTest {
 		                                 .log("before")
 		                                 .publishOn(asyncGroup);
 
-		Runnable tail = worker.log("after")
-		                     .partition(2)
-		                     .consume(s -> s.log("w"+s.key())
+		Cancellation tail = worker.log("after")
+		                          .partition(2)
+		                          .consume(s -> s.log("w"+s.key())
 		                                    .publishOn(asyncGroup)
 		                                    .map(v -> v)
 		                                    .consume(v -> countDownLatch.countDown(), Throwable::printStackTrace));
@@ -1041,7 +1042,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch endLatch = new CountDownLatch(1000 / 100);
 
-		Runnable controls = sensorDataStream
+		Cancellation controls = sensorDataStream
 				/*     step 2  */.window(100)
 				///*     step 3  */.timeout(1000)
 				/*     step 4  */
@@ -1116,7 +1117,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch latch = new CountDownLatch(10);
 
-		Runnable c = Flux.range(1, 10)
+		Cancellation c = Flux.range(1, 10)
 		                                      .groupBy(n -> n % 2 == 0)
 		                                      .flatMap(stream -> stream.publishOn(supplier1)
 		                                            .log("groupBy-" + stream.key()))
@@ -1216,7 +1217,7 @@ public class FluxTests extends AbstractReactorTest {
 		                        .toEpochMilli();
 		long elapsed = System.nanoTime();
 
-		Runnable ctrl = Flux.interval(Duration.ofMillis(delayMS))
+		Cancellation ctrl = Flux.interval(Duration.ofMillis(delayMS))
 		                                            .map((signal) -> {
 			                      return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - elapsed);
 		                      })
@@ -1227,7 +1228,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                            .subscribe();
 
 		barrier.awaitAdvanceInterruptibly(barrier.arrive(), tasks * delayMS + 1000, TimeUnit.MILLISECONDS);
-		ctrl.run();
+		ctrl.dispose();
 
 		Assert.assertEquals(tasks, times.size());
 

@@ -37,6 +37,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
@@ -783,7 +784,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer) {
+	public final Cancellation consume(Consumer<? super T> consumer) {
 		return consume(consumer, null, null);
 	}
 
@@ -802,7 +803,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		return consume(consumer, errorConsumer, null);
 	}
 
@@ -820,9 +821,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
-	public final Runnable consume(Consumer<? super T> consumer,
+	public final Cancellation consume(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer));

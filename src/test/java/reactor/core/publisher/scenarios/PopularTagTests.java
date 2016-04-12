@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.tuple.Tuple;
 import reactor.core.util.Logger;
@@ -51,7 +52,7 @@ public class PopularTagTests extends AbstractReactorTest {
 	public void sampleTest() throws Exception {
 		CountDownLatch latch = new CountDownLatch(1);
 
-		Runnable top10every1second =
+		Cancellation top10every1second =
 		  Flux.fromIterable(PULP_SAMPLE)
 		         .publishOn(asyncGroup)
 		         .flatMap(samuelJackson ->
@@ -88,7 +89,7 @@ public class PopularTagTests extends AbstractReactorTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void awaitLatch(Runnable tail, CountDownLatch latch) throws Exception {
+	private void awaitLatch(Cancellation tail, CountDownLatch latch) throws Exception {
 		if (!latch.await(10, SECONDS)) {
 			throw new Exception("Never completed: (" + latch.getCount() + ") "
 			  + ReactiveStateUtils.scan(tail));
