@@ -68,7 +68,7 @@ final class FluxMerge<T> extends Flux<T> {
 	public void subscribe(Subscriber<? super T> s) {
 		@SuppressWarnings("unchecked")
 		FluxFlatMap.FlatMapMain<Publisher<? extends T>, T> merger = new FluxFlatMap.FlatMapMain<>(
-				s, Function.identity(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
+				s, IDENTITY_FUNCTION, delayError, maxConcurrency, mainQueueSupplier, prefetch,
 				innerQueueSupplier);
 		
 		merger.onSubscribe(new FluxArray.ArraySubscription<>(merger, sources));

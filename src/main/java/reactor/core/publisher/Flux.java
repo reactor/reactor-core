@@ -436,7 +436,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return new FluxConcatMap<>(sources, Function.identity(),
+		return new FluxConcatMap<>(sources, IDENTITY_FUNCTION,
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
@@ -910,7 +910,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return new FluxFlatMap<>(
 				source,
-				Function.identity(),
+				IDENTITY_FUNCTION,
 				false,
 				concurrency,
 				QueueSupplier.get(concurrency),
@@ -1076,7 +1076,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return new FluxSwitchMap<>(mergedPublishers,
-				Function.identity(),
+				IDENTITY_FUNCTION,
 				QueueSupplier.get(prefetch),
 				prefetch);
 	}
@@ -2726,7 +2726,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Function.identity(),
+				IDENTITY_FUNCTION,
 				false,
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.xs(),
@@ -2812,7 +2812,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
-		return groupBy(keyMapper, Function.identity());
+		return groupBy(keyMapper, IDENTITY_FUNCTION);
 	}
 
 	/**
@@ -3121,7 +3121,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final ConnectableFlux<T> multicast(
 			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
-		return multicast(processorSupplier, Function.identity());
+		return multicast(processorSupplier, IDENTITY_FUNCTION);
 	}
 
 	/**
@@ -4495,7 +4495,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, T>> toMap(Function<? super T, ? extends K> keyExtractor) {
-		return toMap(keyExtractor, Function.identity());
+		return toMap(keyExtractor, IDENTITY_FUNCTION);
 	}
 
 	/**
@@ -4562,7 +4562,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, Collection<T>>> toMultimap(Function<? super T, ? extends K> keyExtractor) {
-		return toMultimap(keyExtractor, Function.identity());
+		return toMultimap(keyExtractor, IDENTITY_FUNCTION);
 	}
 
 	/**
@@ -5051,7 +5051,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
 	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
-	
+	static final Function        IDENTITY_FUNCTION       = Function.identity();
+
 	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
 		if (max <= 0) {
 			return predicate;

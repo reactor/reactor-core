@@ -1173,7 +1173,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 		return new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Function.identity(),
+				Flux.IDENTITY_FUNCTION,
 				false,
 				Integer.MAX_VALUE,
 				QueueSupplier.xs(),
