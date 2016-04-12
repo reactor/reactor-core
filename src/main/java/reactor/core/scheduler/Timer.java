@@ -16,27 +16,15 @@
 
 package reactor.core.scheduler;
 
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.LongSupplier;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Producer;
+import reactor.core.flow.*;
 import reactor.core.queue.RingBuffer;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Introspectable;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ExecutorUtils;
-import reactor.core.util.WaitStrategy;
+import reactor.core.state.*;
+import reactor.core.util.*;
 
 /**
  * Hash Wheel Timer, as per the paper: <p> Hashed and hierarchical timing wheels: http://www.cs.columbia.edu/~nahum/w6998/papers/ton97-timing-wheels.pdf
@@ -267,7 +255,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 	@Override
 	public TimedWorker createWorker() {
-		return loop;
+		return new CompositeTimedScheduler(loop);
 	}
 
 	@Override
