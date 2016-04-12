@@ -1182,6 +1182,44 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		);
 	}
 
+
+	/**
+	 * Transform the items emitted by this {@link Mono} into {@link Iterable}, then flatten the elements from those by
+	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+		return flatMapIterable(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Transform the items emitted by this {@link Mono} into {@link Iterable}, then flatten the emissions from those by
+	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
+	 * @param prefetch the maximum in-flight elements from the inner {@link Iterable} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
+		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+	}
+
 	/**
 	 * Convert this {@link Mono} to a {@link Flux}
 	 *

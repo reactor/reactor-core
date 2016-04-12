@@ -2747,8 +2747,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		);
 	}
 
-
-
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
@@ -2768,7 +2766,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
+	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
 	 * arbitrary prefetch size to the merged {@link Iterable}.
 	 *
