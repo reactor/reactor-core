@@ -48,13 +48,13 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.scheduler.Timer;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
@@ -1527,7 +1527,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * alt="">
 	 *
 	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
-	 * @param runOnError runs a supplied {@link Publisher} on error as well as on complete
 	 * @param <V> the supplied produced type
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
@@ -1941,6 +1940,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png"
+	 * alt="">
+	 *
+	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
+	 *
+	 * @return a concatenated {@link Flux}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Flux<T> concatWith(Publisher<? extends T> other) {
+		return new FluxConcatArray<>(this, other);
+	}
+
+	/**
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
 	 *
@@ -1983,17 +1997,43 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
+	 * Bind {@link Iterable} sequences given this input sequence like {@link #flatMapIterable(Function)}, but preserve
+	 * ordering and concatenate emissions instead of merging (no interleave).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 * Errors will be delayed after the current concat backlog.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png"
+	 * alt="">
 	 *
-	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
+	 * @param mapper the function to transform this sequence of T into concatenated sequences of R
+	 * @param <R> the produced concatenated type
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
-	public final Flux<T> concatWith(Publisher<? extends T> other) {
-		return new FluxConcatArray<>(this, other);
+	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+		return concatMapIterable(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Bind {@link Iterable} sequences given this input sequence like {@link #flatMapIterable(Function)}, but preserve
+	 * ordering and concatenate emissions instead of merging (no interleave).
+	 * <p>
+	 * Errors will be delayed after the current concat backlog.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png"
+	 * alt="">
+	 *
+	 * @param mapper the function to transform this sequence of T into concatenated sequences of R
+	 * @param prefetch the inner source produced demand
+	 * @param <R> the produced concatenated type
+	 *
+	 * @return a concatenated {@link Flux}
+	 */
+	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
+			int prefetch) {
+		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**
@@ -2693,6 +2733,45 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
 		);
+	}
+
+
+
+	/**
+	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
+	 * merging them into a single {@link Flux}, so that they may interleave. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+		return flatMapIterable(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+	}
+
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
+	 * merging them into a single {@link Flux}, so that they may interleave. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
+	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
+		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	@Override
