@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import reactor.core.publisher.Flux;
@@ -28,7 +29,6 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 /**
  * @author Stephane Maldini
@@ -39,7 +39,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		System.out.println("new processor");
-		return FluxProcessor.blackbox(WorkQueueProcessor.<Long>create("rb-work", bufferSize), Flux::log);
+		return FluxProcessor.blackbox(WorkQueueProcessor.create("rb-work", bufferSize), Flux::log);
 	}
 
 	@Override
@@ -106,7 +106,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		latch.await(5, TimeUnit.SECONDS);
 		System.out.println("count " + count+" errors: "+errorCount);
 		sink.onComplete();
- 		Assert.isTrue(latch.getCount() <= 1, "Latch is " + latch.getCount());
+		Assert.assertTrue("Latch is " + latch.getCount(), latch.getCount() <= 1);
 	}
 
 	@Override

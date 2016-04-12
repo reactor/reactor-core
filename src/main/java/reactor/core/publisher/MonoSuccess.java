@@ -22,7 +22,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Loopback;
 import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 
 /**
@@ -40,8 +39,9 @@ final class MonoSuccess<I> extends MonoSource<I, I> implements Loopback {
 			BiConsumer<? super I, Throwable> onSuccessOrFailure,
 			BiConsumer<? super I, Throwable> afterSuccessOrFailure) {
 		super(source);
-		Assert.isTrue(onSuccess != null || onSuccessOrFailure != null || afterSuccessOrFailure != null, "Callback not" +
-				" registered (null argument ?)");
+		if(onSuccess == null && onSuccessOrFailure == null && afterSuccessOrFailure == null) {
+			throw new IllegalArgumentException("Callback not registered (null argument ?)");
+		}
 		this.onSuccess = onSuccess;
 		this.afterSuccessOrFailure = afterSuccessOrFailure;
 		this.onSuccessOrFailure = onSuccessOrFailure;

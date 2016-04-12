@@ -52,7 +52,7 @@ public class LogTests {
 
 		log.trace("test");
 
-		Assert.isTrue(count.get() == 2, "Extension should have been used by 2 traces only");
+		org.junit.Assert.assertTrue("Extension should have been used by 2 traces only", count.get() == 2);
 	}
 
 }

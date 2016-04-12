@@ -375,7 +375,7 @@ public class FluxPublishTest {
 		
 		ts.assertValues(1, 2)
 		.assertError(RuntimeException.class)
-		  .assertErrorWith( x -> reactor.core.util.Assert.isTrue(x.getMessage().contains("forced failure")))
+		  .assertErrorWith( x -> Assert.assertTrue(x.getMessage().contains("forced failure")))
 		.assertNotComplete();
 	}
 

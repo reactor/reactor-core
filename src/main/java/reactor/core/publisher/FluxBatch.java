@@ -24,7 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
-import reactor.core.scheduler.Timer;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.subscriber.SubscriberBarrier;
@@ -37,12 +37,12 @@ import reactor.core.util.BackpressureUtils;
  */
 abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
-	protected final boolean  next;
-	protected final boolean  flush;
-	protected final boolean  first;
-	protected final int      batchSize;
-	protected final long     timespan;
-	protected final Timer    timer;
+	protected final boolean        next;
+	protected final boolean        flush;
+	protected final boolean        first;
+	protected final int            batchSize;
+	protected final long           timespan;
+	protected final TimedScheduler timer;
 
 	public FluxBatch(Publisher<T> source, int batchSize, boolean next, boolean first, boolean flush) {
 		this(source, batchSize, next, first, flush, -1L, null);
@@ -53,8 +53,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			boolean next,
 			boolean first,
 			boolean flush,
-			long timespan,
-			final Timer timer) {
+			long timespan, final TimedScheduler timer) {
 		super(source);
 		if (timespan > 0) {
 			this.timespan = timespan;
@@ -192,13 +191,13 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		};
 
-		protected final boolean  next;
-		protected final boolean  flush;
-		protected final boolean  first;
-		protected final int      batchSize;
-		protected final long     timespan;
-		protected final Timer    timer;
-		protected final Runnable flushTask;
+		protected final boolean        next;
+		protected final boolean        flush;
+		protected final boolean        first;
+		protected final int            batchSize;
+		protected final long           timespan;
+		protected final TimedScheduler timer;
+		protected final Runnable       flushTask;
 
 		private volatile int index = 0;
 		private Cancellation timespanRegistration;
@@ -208,8 +207,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 				boolean next,
 				boolean first,
 				boolean flush,
-				long timespan,
-				final Timer timer) {
+				long timespan, final TimedScheduler timer) {
 
 			super(actual);
 

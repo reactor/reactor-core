@@ -15,9 +15,9 @@
  */
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class FluxWithLatestFromTest {
 
@@ -128,6 +128,6 @@ public class FluxWithLatestFromTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure")));
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
 	}
 }

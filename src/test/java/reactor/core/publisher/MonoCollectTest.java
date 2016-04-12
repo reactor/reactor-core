@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class MonoCollectTest {
 
@@ -48,7 +48,7 @@ public class MonoCollectTest {
 
 		new MonoCollect<>(new FluxRange(1, 10), ArrayList<Integer>::new, (a, b) -> a.add(b)).subscribe(ts);
 
-		ts.assertValues(new ArrayList<>(Arrays.<Integer>asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
+		ts.assertValues(new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -65,7 +65,7 @@ public class MonoCollectTest {
 
 		ts.request(2);
 
-		ts.assertValues(new ArrayList<>(Arrays.<Integer>asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
+		ts.assertValues(new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -81,7 +81,7 @@ public class MonoCollectTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
 		  .assertNotComplete();
 
 	}
@@ -108,7 +108,7 @@ public class MonoCollectTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
 		  .assertNotComplete();
 
 	}

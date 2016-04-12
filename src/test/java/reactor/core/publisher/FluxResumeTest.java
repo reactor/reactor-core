@@ -15,9 +15,9 @@
  */
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class FluxResumeTest {
 /*
@@ -174,7 +174,7 @@ public class FluxResumeTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure 2")));
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure 2")));
 	}
 
 	@Test

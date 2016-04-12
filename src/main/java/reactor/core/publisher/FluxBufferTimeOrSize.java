@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.scheduler.Timer;
+import reactor.core.scheduler.TimedScheduler;
 
 /**
  * @author Stephane Maldini
@@ -29,7 +29,7 @@ import reactor.core.scheduler.Timer;
  */
 final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 
-	public FluxBufferTimeOrSize(Publisher<T> source, int maxSize, long timespan, Timer timer) {
+	public FluxBufferTimeOrSize(Publisher<T> source, int maxSize, long timespan, TimedScheduler timer) {
 		super(source, maxSize, true, false, true, timespan, timer);
 	}
 
@@ -45,7 +45,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 		public BufferAction(Subscriber<? super List<T>> actual,
 				int maxSize,
 				long timespan,
-				Timer timer) {
+				TimedScheduler timer) {
 
 			super(actual, maxSize, true, false, true, timespan, timer);
 		}

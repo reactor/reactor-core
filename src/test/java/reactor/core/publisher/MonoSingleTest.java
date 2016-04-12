@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class MonoSingleTest {
 
@@ -60,7 +60,8 @@ public class MonoSingleTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage()
+		                                            .contains("forced failure")))
 		  .assertNotComplete();
 	}
 
@@ -109,7 +110,7 @@ public class MonoSingleTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.<Integer>empty(), () -> 1).subscribe(ts);
+		new MonoSingle<>(Mono.empty(), () -> 1).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -120,7 +121,7 @@ public class MonoSingleTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoSingle<>(Mono.<Integer>empty(), () -> 1).subscribe(ts);
+		new MonoSingle<>(Mono.empty(), () -> 1).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

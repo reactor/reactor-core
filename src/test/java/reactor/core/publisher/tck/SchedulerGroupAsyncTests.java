@@ -19,14 +19,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.util.Assert;
 
 
 /**
@@ -103,8 +102,8 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 		if(exceptionThrown.get()!= null){
 			exceptionThrown.get().printStackTrace();
 		}
-		Assert.isTrue(exceptionThrown.get() == null);
-		Assert.isTrue(check);
+		Assert.assertTrue(exceptionThrown.get() == null);
+		Assert.assertTrue(check);
 
 		return dispatcher;
 	}

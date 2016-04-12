@@ -83,7 +83,7 @@ public class FluxFlatMapTest {
 		
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> reactor.core.util.Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
 		.assertNotComplete();
 	}
 
@@ -95,7 +95,7 @@ public class FluxFlatMapTest {
 		
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
-		  .assertErrorWith( e -> reactor.core.util.Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
 		.assertNotComplete();
 	}
 

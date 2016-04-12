@@ -74,7 +74,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.<Integer>error(new RuntimeException("forced failure")),
+		new FluxPeek<>(Flux.error(new RuntimeException("forced failure")),
 		  onSubscribe::set,
 		  onNext::set,
 		  onError::set,
@@ -207,7 +207,7 @@ public class FluxPeekTest {
 		).subscribe(ts);
 
 		//nominal error path (DownstreamException)
-		ts.assertErrorWith( e -> reactor.core.util.Assert.isTrue(e.getMessage().contains("test")));
+		ts.assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("test")));
 
 		ts = new TestSubscriber<>();
 

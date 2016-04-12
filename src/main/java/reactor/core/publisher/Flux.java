@@ -63,7 +63,6 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
-import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -828,7 +827,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param delay  the timespan to wait before emitting 0l
 	 * @param period the period before each following increment
-	 * @param timer  the {@link Timer} to schedule on
+	 * @param timer  the {@link TimedScheduler} to schedule on
 	 *
 	 * @return a new timed {@link Flux}
 	 */
@@ -1708,11 +1707,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * alt="">
 	 *
 	 * @param timespan theduration to use to release a buffered list
-	 * @param timer the {@link Timer} to schedule on
+	 * @param timer the {@link TimedScheduler} to schedule on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, Timer timer) {
+	public final Flux<List<T>> buffer(Duration timespan, TimedScheduler timer) {
 		return buffer(interval(timespan, timer));
 	}
 
@@ -1767,11 +1766,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param timespan the duration to use to release buffered lists
 	 * @param timeshift the duration to use to create a new bucket
-	 * @param timer the {@link Timer} to run on
+	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, final Duration timeshift, final Timer timer) {
+	public final Flux<List<T>> buffer(Duration timespan, final Duration timeshift, final TimedScheduler timer) {
 		if (timespan.equals(timeshift)) {
 			return buffer(timespan, timer);
 		}
@@ -1819,11 +1818,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer the {@link Timer} to run on
+	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> buffer(int maxSize, final long timespan, final Timer timer) {
+	public final Flux<List<T>> buffer(int maxSize, final long timespan, final TimedScheduler timer) {
 		return new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer);
 	}
 
@@ -1836,11 +1835,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer the {@link Timer} to run on
+	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> buffer(int maxSize, final Duration timespan, final Timer timer) {
+	public final Flux<List<T>> buffer(int maxSize, final Duration timespan, final TimedScheduler timer) {
 		return buffer(maxSize, timespan.toMillis(), timer);
 	}
 
@@ -2044,7 +2043,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch) {
-		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**
@@ -2181,7 +2180,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> delay(Duration delay) {
-		Timer timer = getTimer() != null ? getTimer() : Timer.globalOrNew();
+		TimedScheduler timer = getTimer() != null ? getTimer() : Timer.globalOrNew();
 		return concatMap(t ->  Mono.delay(delay, timer).map(i -> t));
 	}
 
@@ -2214,7 +2213,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> delaySubscription(Duration delay) {
-		Timer timer = getTimer();
+		TimedScheduler timer = getTimer();
 		return delaySubscription(Mono.delay(delay, timer != null ? timer : Timer.globalOrNew()));
 	}
 
@@ -2780,7 +2779,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
-		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	@Override
@@ -2799,9 +2798,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Get the current timer available if any or try returning the shared Environment one (which may cause an error if
 	 * no Environment has been globally initialized)
 	 *
-	 * @return any available timer
+	 * @return any available {@link TimedScheduler}
 	 */
-	public Timer getTimer() {
+	public TimedScheduler getTimer() {
 		return Timer.globalOrNull();
 	}
 
@@ -3047,7 +3046,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> multiplex(int concurrency,
 			final Function<GroupedFlux<Integer, T>, Publisher<V>> fn) {
-		Assert.isTrue(concurrency > 0, "Must subscribe once at least, concurrency set to " + concurrency);
+		if(concurrency <= 0){
+			throw new IllegalArgumentException( "Must subscribe once at least, concurrency set to " + concurrency);
+		}
 
 		Publisher<V> pub;
 		final List<Publisher<? extends V>> publisherList = new ArrayList<>(concurrency);
@@ -3067,7 +3068,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				}
 
 				@Override
-				public Timer getTimer() {
+				public TimedScheduler getTimer() {
 					return Flux.this.getTimer();
 				}
 
@@ -3925,8 +3926,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> skip(Duration timespan) {
 		if(!timespan.isZero()) {
-			Timer timer = getTimer();
-			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the flux");
+			TimedScheduler timer = Objects.requireNonNull(getTimer(), "Timer can't be found, try assigning an environment to the flux");
 			return skipUntil(Mono.delay(timespan, timer));
 		}
 		else{
@@ -4184,8 +4184,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> take(Duration timespan) {
 		if (!timespan.isZero()) {
-			Timer timer = getTimer();
-			Assert.isTrue(timer != null, "Timer can't be found, try assigning an environment to the flux");
+			TimedScheduler timer = Objects.requireNonNull(getTimer(), "Timer can't be found, try assigning an environment to the flux");
 			return takeUntil(Mono.delay(timespan, timer));
 		}
 		else {
@@ -4296,8 +4295,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
-		final Timer timer = getTimer();
-		Assert.state(timer != null, "Cannot use default timer as no environment has been provided to this " + "Stream");
+		final TimedScheduler timer = Objects.requireNonNull(getTimer(), "Cannot use default timer as no environment has been " +
+				"provided to this " + "Stream");
 
 		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseJust(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
@@ -4666,13 +4665,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Configure a {@link Timer} that can be used by timed operators downstream.
+	 * Configure a {@link TimedScheduler} that can be used by timed operators downstream.
 	 *
 	 * @param timer the timer
 	 *
 	 * @return a configured flux
 	 */
-	public Flux<T> useTimer(Timer timer) {
+	public Flux<T> useTimer(TimedScheduler timer) {
 		return FluxConfig.withTimer(this, timer);
 
 	}
@@ -4803,7 +4802,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(long timespan) {
-		Timer t = getTimer();
+		TimedScheduler t = getTimer();
 		if(t == null) t = Timer.global();
 		return window(interval(timespan, t));
 	}
@@ -4852,9 +4851,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return window(timespan);
 		}
 
-		Timer t = getTimer();
+		TimedScheduler t = getTimer();
 		if(t == null) t = Timer.global();
-		final Timer timer = t;
+		final TimedScheduler timer = t;
 
 		return window(interval(0L, timeshift, timer), aLong -> Mono.delay(timespan, timer));
 	}

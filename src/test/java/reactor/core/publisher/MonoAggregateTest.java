@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class MonoAggregateTest {
 
@@ -98,7 +98,7 @@ public class MonoAggregateTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.isTrue(e.getMessage()
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
 		                                       .contains("forced failure")))
 		  .assertNotComplete();
 	}
@@ -115,8 +115,8 @@ public class MonoAggregateTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith(e -> Assert.isTrue(e.getMessage()
-		                                       .contains("forced failure")))
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
+		                                           .contains("forced failure")))
 		  .assertNotComplete();
 	}
 

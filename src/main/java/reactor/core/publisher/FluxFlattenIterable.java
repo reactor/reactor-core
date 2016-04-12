@@ -45,7 +45,7 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxConcatMapIterable<T, R> extends FluxSource<T, R> implements Fuseable {
+final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Iterable<? extends R>> mapper;
 	
@@ -53,7 +53,7 @@ final class FluxConcatMapIterable<T, R> extends FluxSource<T, R> implements Fuse
 	
 	final Supplier<Queue<T>> queueSupplier;
 	
-	public FluxConcatMapIterable(Publisher<? extends T> source,
+	public FluxFlattenIterable(Publisher<? extends T> source,
 			Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch,
 			Supplier<Queue<T>> queueSupplier) {
 		super(source);

@@ -255,7 +255,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 	@Override
 	public TimedWorker createWorker() {
-		return new CompositeTimedScheduler(loop);
+		return new CompositeTimedWorker(loop);
 	}
 
 	@Override

@@ -113,7 +113,7 @@ public enum Exceptions {
 	 * @return a {@link CancelException}
 	 */
 	public static CancelException failWithCancel() {
-		throw PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+		return PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**

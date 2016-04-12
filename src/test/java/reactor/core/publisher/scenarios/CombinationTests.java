@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Processor;
@@ -38,7 +39,6 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.ReactiveStateUtils;
 
@@ -117,8 +117,8 @@ public class CombinationTests {
 		session.finish();
 
 		latch.await(5, TimeUnit.SECONDS);
-		Assert.isTrue(count.get() == 1, "latch : " + count);
-		Assert.isTrue(emission >= 0, "time : " + emission);
+		Assert.assertTrue("latch : " + count, count.get() == 1);
+		Assert.assertTrue("time : " + emission, emission >= 0);
 	}
 
 	@Test
@@ -156,7 +156,7 @@ public class CombinationTests {
 		session.finish();
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
-		Assert.isTrue(waited, "latch : " + latch.getCount());
+		Assert.assertTrue( "latch : " + latch.getCount(), waited);
 	}
 
 	public Flux<SensorData> sensorOdd() {

@@ -26,15 +26,15 @@ import reactor.core.util.Exceptions;
 /**
  * Wraps another TimedWorker and tracks Runnable tasks scheduled with it.
  */
-final class CompositeTimedScheduler implements TimedWorker {
+final class CompositeTimedWorker implements TimedWorker {
     
     final TimedWorker actual;
     
-    HashSet<CompositeTimedScheduler.TimedTask> tasks;
+    HashSet<CompositeTimedWorker.TimedTask> tasks;
     
     volatile boolean terminated;
     
-    public CompositeTimedScheduler(TimedWorker actual) {
+    public CompositeTimedWorker(TimedWorker actual) {
         this.actual = actual;
         this.tasks = new HashSet<>();
     }
@@ -146,7 +146,7 @@ final class CompositeTimedScheduler implements TimedWorker {
         }
     }
     
-    void delete(CompositeTimedScheduler.TimedTask f) {
+    void delete(CompositeTimedWorker.TimedTask f) {
         if (terminated) {
             return;
         }
@@ -163,15 +163,15 @@ final class CompositeTimedScheduler implements TimedWorker {
     static final Cancellation CANCELLED = () -> { };
 
     static abstract class TimedTask implements Runnable, Cancellation {
-        final CompositeTimedScheduler parent;
+        final CompositeTimedWorker parent;
         
         final Runnable run;
         
         volatile Cancellation future;
-        static final AtomicReferenceFieldUpdater<CompositeTimedScheduler.TimedTask, Cancellation> FUTURE =
-                AtomicReferenceFieldUpdater.newUpdater(CompositeTimedScheduler.TimedTask.class, Cancellation.class, "future");
+        static final AtomicReferenceFieldUpdater<CompositeTimedWorker.TimedTask, Cancellation> FUTURE =
+                AtomicReferenceFieldUpdater.newUpdater(CompositeTimedWorker.TimedTask.class, Cancellation.class, "future");
         
-        public TimedTask(Runnable run, CompositeTimedScheduler parent) {
+        public TimedTask(Runnable run, CompositeTimedWorker parent) {
             this.run = run;
             this.parent = parent;
         }
@@ -225,9 +225,9 @@ final class CompositeTimedScheduler implements TimedWorker {
         }
     }
     
-    static final class SingleTask extends CompositeTimedScheduler.TimedTask {
+    static final class SingleTask extends CompositeTimedWorker.TimedTask {
 
-        public SingleTask(Runnable run, CompositeTimedScheduler parent) {
+        public SingleTask(Runnable run, CompositeTimedWorker parent) {
             super(run, parent);
         }
         
@@ -249,9 +249,9 @@ final class CompositeTimedScheduler implements TimedWorker {
             }
         }
     }
-    static final class PeriodicTask extends CompositeTimedScheduler.TimedTask {
+    static final class PeriodicTask extends CompositeTimedWorker.TimedTask {
 
-        public PeriodicTask(Runnable run, CompositeTimedScheduler parent) {
+        public PeriodicTask(Runnable run, CompositeTimedWorker parent) {
             super(run, parent);
         }
 

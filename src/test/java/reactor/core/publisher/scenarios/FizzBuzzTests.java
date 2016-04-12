@@ -21,11 +21,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.TopicProcessor;
-import reactor.core.util.Assert;
 import reactor.core.publisher.AbstractReactorTest;
 
 /**
@@ -109,7 +109,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 			else ring.onNext(String.valueOf(curr));
 		}
 
-		Assert.isTrue(p.get(Duration.ofSeconds(5)) != null, "Has not returned list");
+		Assert.assertTrue("Has not returned list", p.get(Duration.ofSeconds(5)) != null);
 
 	}
 }

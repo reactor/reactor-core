@@ -52,7 +52,6 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
-import reactor.core.util.Assert;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -1217,7 +1216,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
-		return new FluxConcatMapIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**

@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import reactor.core.flow.Fuseable;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
-import reactor.core.scheduler.Timer;
 
 /**
  * @param <T> the value type
@@ -30,7 +30,7 @@ import reactor.core.scheduler.Timer;
 final class FluxConfig<T> extends FluxSource<T, T> {
 
 	final long   capacity;
-	final Timer  timer;
+	final TimedScheduler  timer;
 	final String name;
 
 	static <T> Flux<T> withCapacity(Publisher<? extends T> source, long capacity) {
@@ -48,7 +48,7 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 				                                                                               .getSimpleName());
 	}
 
-	static <T> Flux<T> withTimer(Publisher<? extends T> source, Timer timer) {
+	static <T> Flux<T> withTimer(Publisher<? extends T> source, TimedScheduler timer) {
 		if (source instanceof Fuseable) {
 			return new FuseableFluxConfig<>(source,
 					source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
@@ -76,7 +76,7 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 				name);
 	}
 
-	public FluxConfig(Publisher<? extends T> source, long capacity, Timer timer, String name) {
+	public FluxConfig(Publisher<? extends T> source, long capacity, TimedScheduler timer, String name) {
 		super(source);
 		this.capacity = capacity;
 		this.timer = timer;
@@ -84,7 +84,7 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public Timer getTimer() {
+	public TimedScheduler getTimer() {
 		return timer;
 	}
 
@@ -101,11 +101,11 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 
 final class FuseableFluxConfig<I> extends FluxSource<I, I> implements Fuseable {
 
-	final long   capacity;
-	final Timer  timer;
-	final String name;
+	final long           capacity;
+	final TimedScheduler timer;
+	final String         name;
 
-	public FuseableFluxConfig(Publisher<? extends I> source, long capacity, Timer timer, String name) {
+	public FuseableFluxConfig(Publisher<? extends I> source, long capacity, TimedScheduler timer, String name) {
 		super(source);
 		this.capacity = capacity;
 		this.timer = timer;
@@ -113,7 +113,7 @@ final class FuseableFluxConfig<I> extends FluxSource<I, I> implements Fuseable {
 	}
 
 	@Override
-	public Timer getTimer() {
+	public TimedScheduler getTimer() {
 		return timer;
 	}
 

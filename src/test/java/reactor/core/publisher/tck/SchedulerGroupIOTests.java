@@ -19,13 +19,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.junit.Assert;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.util.Assert;
 import reactor.core.util.Exceptions;
 
 /**
@@ -75,9 +74,9 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 		boolean success = serviceRB.awaitAndShutdown(3, TimeUnit.SECONDS);
 		long end = System.currentTimeMillis();
 
-		Assert.isTrue(latch.getCount() == 0, "Event missed");
-		Assert.isTrue(success, "Shutdown failed");
-		Assert.isTrue((end - start) >= 1000, "Timeout too long");
+		Assert.assertTrue("Event missed", latch.getCount() == 0);
+		Assert.assertTrue("Shutdown failed", success );
+		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
 
 	}
 

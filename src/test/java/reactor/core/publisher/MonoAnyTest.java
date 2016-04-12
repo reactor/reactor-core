@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class MonoAnyTest {
 
@@ -129,7 +129,7 @@ public class MonoAnyTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorWith( e -> {
 			  e.printStackTrace();
-			  Assert.isTrue(e.getMessage().contains("forced failure"));
+			  Assert.assertTrue(e.getMessage().contains("forced failure"));
 		  });
 	}
 

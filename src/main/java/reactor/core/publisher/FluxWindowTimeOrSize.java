@@ -21,6 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.util.PlatformDependent;
 
@@ -32,42 +33,42 @@ import reactor.core.util.PlatformDependent;
  */
 final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
-	protected final Timer timer;
+	final TimedScheduler timer;
 
 	public FluxWindowTimeOrSize(Publisher<T> source, Timer timer, int backlog) {
 		super(source, backlog, true, true, true);
 		this.timer = timer;
 	}
 
-	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, Timer timer) {
+	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, TimedScheduler timer) {
 		super(source, backlog, true, true, true, timespan, timer);
 		this.timer = timer;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> subscriber) {
-		source.subscribe(new WindowAction<>(prepareSub(subscriber), batchSize, timespan, timer));
+		source.subscribe(new WindowAction<T>(prepareSub(subscriber), batchSize, timespan, timer));
 	}
 
 	final static class Window<T> extends Flux<T> implements Subscriber<T>, Subscription, Producer {
 
 		final protected FluxProcessor<T, T> processor;
-		final protected Timer               timer;
+		final protected TimedScheduler      timer;
 
 		protected int count = 0;
 
-		public Window(Timer timer) {
+		public Window(TimedScheduler timer) {
 			this(timer, PlatformDependent.SMALL_BUFFER_SIZE);
 		}
 
-		public Window(Timer timer, int size) {
+		public Window(TimedScheduler timer, int size) {
 			this.processor = EmitterProcessor.create(size);
 			this.processor.onSubscribe(this);
 			this.timer = timer;
 		}
 
 		@Override
-		public Timer getTimer() {
+		public TimedScheduler getTimer() {
 			return timer;
 		}
 
@@ -125,14 +126,14 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 	final static class WindowAction<T> extends BatchAction<T, Flux<T>> implements Loopback {
 
-		private final Timer timer;
+		private final TimedScheduler timer;
 
 		private Window<T> currentWindow;
 
 		public WindowAction(Subscriber<? super Flux<T>> actual,
 				int backlog,
 				long timespan,
-				Timer timer) {
+				TimedScheduler timer) {
 
 			super(actual, backlog, true, true, true, timespan, timer);
 			this.timer = timer;

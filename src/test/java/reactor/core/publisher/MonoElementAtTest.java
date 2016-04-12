@@ -16,9 +16,9 @@
 
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Assert;
 
 public class MonoElementAtTest {
 
@@ -146,7 +146,7 @@ public class MonoElementAtTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(Mono.<Integer>empty(), 0, () -> 20).subscribe(ts);
+		new MonoElementAt<>(Mono.empty(), 0, () -> 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -157,7 +157,7 @@ public class MonoElementAtTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(Mono.<Integer>empty(), 0, () -> 20).subscribe(ts);
+		new MonoElementAt<>(Mono.empty(), 0, () -> 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -219,7 +219,7 @@ public class MonoElementAtTest {
 
 		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.isTrue(e.getMessage().contains("forced failure")))
+		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
 		  .assertNotComplete();
 	}
 }
