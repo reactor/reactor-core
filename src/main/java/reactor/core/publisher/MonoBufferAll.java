@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
+import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 import rx.exceptions.Exceptions;
 
@@ -60,6 +61,7 @@ public final class MonoBufferAll<T, C extends Collection<? super T>> extends Mon
     }
     
     static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>
+    extends DeferredScalarSubscriber<T, C>
     implements Subscriber<T>, Subscription {
         
         final Subscriber<? super C> actual;
@@ -69,6 +71,7 @@ public final class MonoBufferAll<T, C extends Collection<? super T>> extends Mon
         Subscription s;
 
         public MonoBufferAllSubscriber(Subscriber<? super C> actual, C collection) {
+            super(actual);
             this.actual = actual;
             this.collection = collection;
         }
@@ -79,6 +82,8 @@ public final class MonoBufferAll<T, C extends Collection<? super T>> extends Mon
                 this.s = s;
                 
                 actual.onSubscribe(this);
+                
+                s.request(Long.MAX_VALUE);
             }
         }
         
@@ -98,22 +103,13 @@ public final class MonoBufferAll<T, C extends Collection<? super T>> extends Mon
             C c = collection;
             collection = null;
             
-            if (!c.isEmpty()) {
-                actual.onNext(c);
-            }
-            actual.onComplete();
+            complete(c);
         }
         
         @Override
         public void cancel() {
+            super.cancel();
             s.cancel();
-        }
-        
-        @Override
-        public void request(long n) {
-            if (BackpressureUtils.validate(n)) {
-                s.request(Long.MAX_VALUE);
-            }
         }
     }
 }
