@@ -18,44 +18,21 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+import java.util.function.*;
 import java.util.logging.Level;
 import java.util.stream.LongStream;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.Timer;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
+import reactor.core.scheduler.*;
+import reactor.core.state.*;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
-import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
+import reactor.core.tuple.*;
+import reactor.core.util.*;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -321,7 +298,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future) {
-		return new MonoFuture<T>(future);
+		return new MonoFuture<>(future);
 	}
 
 	/**
@@ -368,8 +345,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return MonoSource.wrap(new FluxPeek<>(MonoEmpty.instance(), null, null, null, runnable, null, null,
-				null));
+		return new MonoRunnable(runnable);
 	}
 
 	/**
@@ -589,6 +565,31 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return zip(array -> (T[])array, monos);
 	}
 
+    /**
+     * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
+     * Monos} have been fulfilled. 
+     * 
+     * If any Mono terminates without value, the resulting array will contain the defaultValue at its respective place.
+     *
+     * <p>
+     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+     * <p>
+     * @param defaultValue the value to use if a source Mono is empty
+     * @param monos The monos to use.
+     * @param <T> The type of the function result.
+     *
+     * @return a {@link Mono}.
+     */
+	@SafeVarargs
+	@SuppressWarnings({"unchecked","varargs"})
+	private static <T> Mono<T[]> when(T defaultValue, Mono<? extends T>... monos) {
+	    Mono<T>[] newMonos = new Mono[monos.length];
+	    for (int i = 0; i < monos.length; i++) {
+	        newMonos[i] = ((Mono<T>)monos[i]).defaultIfEmpty(defaultValue);
+	    }
+	    return zip(array -> (T[])array, newMonos);
+	}
+
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
@@ -626,6 +627,26 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
 		return zip(array -> (T[])array, monos);
 	}
+
+    /**
+     * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
+     * Monos} have been fulfilled. 
+     * 
+     * If any Mono terminates without value, the resulting array will contain the defaultValue at its respective place.
+     *
+     * <p>
+     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+     * <p>
+     *
+     * @param monos The monos to use.
+     * @param <T> The type of the function result.
+     *
+     * @return a {@link Mono}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Mono<T[]> when(T defaultValue, final Iterable<? extends Mono<? extends T>> monos) {
+        return zip(array -> (T[])array, new MapIterable<>(monos, m -> ((Mono<T>)m).defaultIfEmpty(defaultValue)));
+    }
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
@@ -873,7 +894,14 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-		return MonoSource.wrap(new FluxDefaultIfEmpty<T>(this, defaultV));
+	    if (this instanceof Fuseable.ScalarSupplier) {
+            T v = get();
+	        if (v == null) {
+	            return Mono.just(defaultV);
+	        }
+	        return this;
+	    }
+		return new MonoDefaultIfEmpty<>(this, defaultV);
 	}
 
 
@@ -1206,7 +1234,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
-	public final Flux<T> flux() {
+	@SuppressWarnings("unchecked")
+    public final Flux<T> flux() {
+	    if (this instanceof Supplier) {
+	        if (this instanceof Fuseable.ScalarSupplier) {
+	            T v = get();
+	            if (v == null) {
+	                return Flux.empty();
+	            }
+	            return Flux.just(v);
+	        }
+	        return new FluxSupplier<>((Supplier<T>)this);
+	    }
 		return FluxSource.wrap(this);
 	}
 
@@ -1432,9 +1471,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxMapFuseable<>(this, mapper));
+			return new MonoMapFuseable<>(this, mapper);
 		}
-		return MonoSource.wrap(new FluxMap<>(this, mapper));
+		return new MonoMap<>(this, mapper);
 	}
 
 	/**
@@ -1560,9 +1599,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			T value = get();
-			return  MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
+			return  new MonoSubscribeOnValue<>(value, scheduler);
 		}
-		return MonoSource.wrap(new FluxPublishOn(this, scheduler, false, 1, QueueSupplier.<T>one()));
+		return MonoSource.wrap(new FluxPublishOn<>(this, scheduler, false, 1, QueueSupplier.<T>one()));
 	}
 
 	/**
@@ -1772,7 +1811,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarSupplier) {
 			T value = get();
-			return MonoSource.wrap(new FluxSubscribeOnValue<>(value, scheduler, true));
+			return new MonoSubscribeOnValue<>(value, scheduler);
 		}
 		return MonoSource.wrap(new FluxSubscribeOn<>(this, scheduler));
 	}

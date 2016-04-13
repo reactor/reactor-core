@@ -2265,7 +2265,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxSubscribeOnValue<>(value, scheduler, true);
+			return new FluxSubscribeOnValue<>(value, scheduler);
 		}
 
 		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
@@ -4141,7 +4141,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (this instanceof Fuseable.ScalarSupplier) {
 			@SuppressWarnings("unchecked")
 			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxSubscribeOnValue<>(value, scheduler, true);
+			return new FluxSubscribeOnValue<>(value, scheduler);
 		}
 		return new FluxSubscribeOn<>(this, scheduler);
 	}

@@ -24,17 +24,17 @@ import reactor.core.publisher.FluxSubscribeOn.*;
 import reactor.core.scheduler.Scheduler;
 
 /**
- * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
+ * Mono indicating a scalar/empty source that subscribes on the specified scheduler.
  * 
  * @param <T>
  */
-final class FluxSubscribeOnValue<T> extends Flux<T> {
+final class MonoSubscribeOnValue<T> extends Mono<T> {
 
 	final T value;
 	
 	final Scheduler scheduler;
 
-	public FluxSubscribeOnValue(T value, 
+	public MonoSubscribeOnValue(T value, 
 			Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");

@@ -17,8 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
+
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.Exceptions;
@@ -37,7 +39,7 @@ import reactor.core.util.Exceptions;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Receiver {
+		implements Receiver, Supplier<T> {
 
 	final Callable<? extends T> callable;
 
