@@ -268,6 +268,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		if (source instanceof Mono) {
 			return (Mono<T>) source;
 		}
+		if (source instanceof Fuseable.ScalarSupplier) {
+			T t = ((Fuseable.ScalarSupplier<T>) source).get();
+			if (t != null) {
+				return just(t);
+			}
+			return empty();
+		}
 		return new MonoNext<>(source);
 	}
 
