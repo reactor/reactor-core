@@ -1534,8 +1534,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> afterCompleteOrError(Supplier<? extends Publisher<V>> afterSupplier) {
-		return flatMap(null,  throwable -> new FluxConcatArray<>(true, afterSupplier.get(), Flux.error(throwable)),
-				afterSupplier);
+	    return (Flux<V>)new FluxConcatArray<>(true, ignoreElements(), defer(afterSupplier));
 	}
 
 	/**
@@ -1604,7 +1603,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(int maxSize) {
-		return new FluxBuffer<>(this, maxSize, (Supplier<List<T>>) LIST_SUPPLIER);
+		return new FluxBuffer<>(this, maxSize, LIST_SUPPLIER);
 	}
 
 	/**
@@ -2542,7 +2541,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of the item at a specified index
 	 */
 	public final Mono<T> elementAt(int index) {
-		return new MonoElementAt<T>(this, index);
+		return new MonoElementAt<>(this, index);
 	}
 
 	/**
@@ -2897,7 +2896,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a limited {@link Flux}
 	 */
 	public final Mono<T> last() {
-		return MonoSource.wrap(new FluxTakeLast<>(this, 1));
+		return new MonoTakeLastOne<>(this);
 	}
 	
 	/**

@@ -157,6 +157,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 			T v = value;
 			if (v == null) {
 				subscriber.onComplete();
+				return;
 			}
 			complete(v);
 		}
