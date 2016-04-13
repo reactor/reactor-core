@@ -1500,7 +1500,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Publisher<V> other) {
-		return after(() -> other);
+		return (Flux<V>)concat(this, other);
 	}
 
 	/**
@@ -1517,7 +1517,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier) {
-		return flatMap(null, null, afterSupplier);
+		return (Flux<V>)concat(this, defer(afterSupplier));
 	}
 
 	/**
