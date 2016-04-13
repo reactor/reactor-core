@@ -43,7 +43,8 @@ import reactor.core.util.WaitStrategy;
 
 /**
  * "Scheduling" in Reactor via
- * {@link Flux#publishOn publishOn}, {@link Mono#subscribeOn subscribeOn} or {@link FluxProcessor}.{@link FluxProcessor#async async} requires
+ * {@link Flux#publishOn publishOn}, {@link Mono#subscribeOn subscribeOn} or {@link EmitterProcessor}
+ * .{@link EmitterProcessor#async async} requires
  * {@link Consumer} of {@link Runnable}. Unlike {@link java.util.concurrent.Executor} which apparently has the same
  * signature, these {@link Consumer} allow {@literal null} argument and should treat them as terminal signal to dispose
  * any used resources.

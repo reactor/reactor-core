@@ -47,24 +47,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Receiver, Completable, BaseSubscriber<IN> {
 
 	/**
-	 * Create an asynchronously {@link Flux#publishOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
-	 * relay.
-	 * Like {@link Flux#publishOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
-	 * {@literal null} protocol.
-	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
-	 * mandatory.
-	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
-	 * @param <IN> The relayed data type
-	 *
-	 * @return a new asynchronous {@link FluxProcessor}
-	 */
-	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
-		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
-		return create(emitter, emitter.publishOn(scheduler));
-	}
-
-	/**
 	 * Blackbox a given
 	 * {@link Subscriber} receiving type with a transforming function returning the producing side {@link Publisher}.
 	 *
