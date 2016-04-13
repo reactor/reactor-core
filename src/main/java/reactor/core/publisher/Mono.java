@@ -1292,6 +1292,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Hides the identity of this {@link Mono} instance.
+	 * 
+	 * <p>The main purpose of this operator is to prevent certain identity-based
+	 * optimizations from happening, mostly for diagnostic purposes.
+	 * 
+	 * @return a new {@link Mono} instance
+	 */
+	public final Mono<T> hide() {
+	    return new MonoHide<>(this);
+	}
+	
+	/**
 	 * Ignores onNext signal (dropping it) and only reacts on termination.
 	 *
 	 * <p>

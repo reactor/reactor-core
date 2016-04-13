@@ -116,7 +116,7 @@ public class RxJava1SingleConverterTest {
     @Test
     public void publisherToSingleNormalHidden() {
         
-        Mono<Integer> m = Mono.just(1).doOnSuccess(e -> { });
+        Mono<Integer> m = Mono.just(1).hide();
         
         Single<Integer> s = RxJava1SingleConverter.from(m);
         
@@ -148,7 +148,7 @@ public class RxJava1SingleConverterTest {
     @Test
     public void publisherToSingleEmptyHidden() {
         
-        Mono<Integer> m = Mono.<Integer>empty().doOnSuccess(e -> { });
+        Mono<Integer> m = Mono.<Integer>empty().hide();
         
         Single<Integer> s = RxJava1SingleConverter.from(m);
         

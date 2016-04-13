@@ -35,7 +35,7 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
     @Override
     protected Mono<Void> toPublisher(Object o) {
         if (o instanceof Completable) {
-            return new CompletableMono((Completable)o);
+            return new CompletableAsMono((Completable)o);
         } else {
             return null;
         }
@@ -43,7 +43,7 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
 
     @Override
     protected Completable fromPublisher(Publisher<?> source) {
-        return Completable.create(new PublisherCompletable(source));
+        return Completable.create(new PublisherAsCompletable(source));
     }
 
     @Override
@@ -54,10 +54,10 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
     /**
      * Wraps an rx.Completable and exposes it as a Mono&lt;Void>.
      */
-    static final class CompletableMono extends Mono<Void> {
+    static final class CompletableAsMono extends Mono<Void> {
         final Completable source;
         
-        public CompletableMono(Completable source) {
+        public CompletableAsMono(Completable source) {
             this.source = Objects.requireNonNull(source, "source");
         }
         
@@ -114,10 +114,10 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
      * Wraps a Publisher and exposes it as a CompletableOnSubscribe and ignores
      * the onNext signals of the Publisher.
      */
-    static final class PublisherCompletable implements Completable.CompletableOnSubscribe {
+    static final class PublisherAsCompletable implements Completable.CompletableOnSubscribe {
         final Publisher<?> source;
         
-        public PublisherCompletable(Publisher<?> source) {
+        public PublisherAsCompletable(Publisher<?> source) {
             this.source = Objects.requireNonNull(source, "source");
         }
         
