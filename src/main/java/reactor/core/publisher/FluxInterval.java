@@ -69,6 +69,11 @@ final class FluxInterval extends Flux<Long> {
 
 		w.schedulePeriodically(r, initialDelay, period, unit);
 	}
+
+	@Override
+	public long getPeriod() {
+		return period;
+	}
 	
 	static final class IntervalRunnable implements Runnable, Subscription {
 		final Subscriber<? super Long> s;

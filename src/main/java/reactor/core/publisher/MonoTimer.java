@@ -57,7 +57,12 @@ final class MonoTimer extends Mono<Long> {
 		
 		r.setCancel(timedScheduler.schedule(r, delay, unit));
 	}
-	
+
+	@Override
+	public long getPeriod() {
+		return delay;
+	}
+
 	static final class TimerRunnable implements Runnable, Subscription {
 		final Subscriber<? super Long> s;
 		
