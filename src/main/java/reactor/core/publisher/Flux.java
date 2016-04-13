@@ -183,7 +183,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 
 		if (sources.length == 1) {
-			return from(sources[0]).map(v -> combinator.apply(new Object[] { v }));
+			return new FluxMap<>(sources[0], v -> combinator.apply(new Object[] { v }));
 		}
 
 		return new FluxCombineLatest<>(sources,
@@ -209,17 +209,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced value
 	 */
+    @SuppressWarnings("unchecked")
     public static <T1, T2, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			BiFunction<? super T1, ? super T2, ? extends V> combinator) {
-	    return combineLatest(new Function<Object[], V>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public V apply(Object[] tuple) {
-                return combinator.apply((T1)tuple[0], (T2)tuple[1]);
-            }
-        }, source1, source2);
-//		return new FluxWithLatestFrom<>(source1, source2, combinator);
+	    return combineLatest((Function<Object[], V>) tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
 	}
 
 	/**
@@ -582,7 +576,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new failed {@link Flux}
 	 */
 	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
-		return new FluxError<O>(throwable, whenRequested);
+		return new FluxError<>(throwable, whenRequested);
 	}
 
 	/**
@@ -601,11 +595,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return (Flux<T>) source;
 		}
 
-		if (source instanceof Supplier) {
-			T t = ((Supplier<T>) source).get();
+		if (source instanceof Fuseable.ScalarSupplier) {
+			T t = ((Fuseable.ScalarSupplier<T>) source).get();
 			if (t != null) {
 				return just(t);
 			}
+			return empty();
 		}
 		return FluxSource.wrap(source);
 	}
