@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
@@ -38,6 +39,7 @@ import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 
+import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -80,7 +82,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new asynchronous {@link FluxProcessor}
 	 */
 	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
-		FluxProcessor<IN, IN> emitter = EmitterProcessor.create();
+		FluxProcessor<IN, IN> emitter = create();
 		return create(emitter, emitter.publishOn(scheduler));
 	}
 
@@ -221,6 +223,23 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			b.onNext(value);
 		}
 		return b;
+	}
+
+	/**
+	 * Create a {@link FluxProcessor} from hot {@link EmitterProcessor#create EmitterProcessor}  safely gated by a serializing {@link Subscriber}.
+	 * It will not propagate cancel upstream if {@link Subscription} has been set. Serialization uses thread-stealing
+	 * and a potentially unbounded queue that might starve a calling thread if races are too important and
+	 * {@link Subscriber} is slower.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 *
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> FluxProcessor<T, T> serialize() {
+		Processor<T, T> processor = create();
+		return new DelegateProcessor<>(processor, Subscribers.serialize(processor));
 	}
 
 	final int maxConcurrency;
