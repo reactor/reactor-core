@@ -17,18 +17,20 @@ package reactor.core.queue;
 
 import java.io.Serializable;
 
+import reactor.core.flow.Cancellation;
+
 /**
  * A simple reusable data container.
  * @param <T>
  */
-public final class Slot<T> implements Serializable, Runnable {
+public final class Slot<T> implements Serializable, Cancellation {
 
 	private static final long serialVersionUID = 5172014386416785095L;
 
 	public T value = null;
 
 	@Override
-	public void run() {
+	public void dispose() {
 		value = null;
 	}
 }
