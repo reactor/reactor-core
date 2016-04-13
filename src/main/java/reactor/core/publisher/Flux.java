@@ -183,7 +183,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 
 		if (sources.length == 1) {
-			return new FluxMap<>(sources[0], v -> combinator.apply(new Object[] { v }));
+            Publisher<? extends T> source = sources[0];
+            if (source instanceof Fuseable) {
+                return new FluxMapFuseable<>(source, v -> combinator.apply(new Object[] { v }));
+            }
+            return new FluxMap<>(source, v -> combinator.apply(new Object[] { v }));
 		}
 
 		return new FluxCombineLatest<>(sources,
@@ -1405,7 +1409,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return empty();
 		}
 		if (sources.length == 1) {
-		    return new FluxMap<>(sources[0], v -> combinator.apply(new Object[] { v }));
+		    Publisher<? extends I> source = sources[0];
+		    if (source instanceof Fuseable) {
+	            return new FluxMapFuseable<>(source, v -> combinator.apply(new Object[] { v }));
+		    }
+            return new FluxMap<>(source, v -> combinator.apply(new Object[] { v }));
 		}
 
 		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
@@ -1428,13 +1436,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced value
 	 */
-	public static <TUPLE extends Tuple, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+    public static <TUPLE extends Tuple, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
-		return from(sources).buffer()
+		return new FluxBuffer(sources, Integer.MAX_VALUE, LIST_SUPPLIER)
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
-			                    @SuppressWarnings("unchecked")
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
 				                    return zip(Tuple.fnAny((Function<Tuple, V>)combinator), publishers.toArray(new Publisher[publishers
 						                    .size()]));
