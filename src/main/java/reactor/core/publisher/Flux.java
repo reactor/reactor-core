@@ -96,7 +96,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 //	 Static Generators
 //	 ==============================================================================================================
 
-	static final Flux<?>          EMPTY                  = from(Mono.empty());
+	static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
@@ -1158,17 +1158,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2, O> Flux<O> zip(Publisher<? extends T1> source1,
+	@SuppressWarnings("unchecked")
+    public static <T1, T2, O> Flux<O> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			final BiFunction<? super T1, ? super T2, ? extends O> combinator) {
 
-		return zip(new Function<Object[], O>() {
-			@Override
-			@SuppressWarnings("unchecked")
-			public O apply(Object[] tuple) {
-				return combinator.apply((T1)tuple[0], (T2)tuple[1]);
-			}
-		}, source1, source2);
+		return zip((Function<Object[], O>) tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
 	}
 
 	/**
@@ -1406,8 +1401,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			int prefetch,
 			Publisher<? extends I>... sources) {
 
-		if (sources == null) {
+		if (sources == null || sources.length == 0) {
 			return empty();
+		}
+		if (sources.length == 1) {
+		    return new FluxMap<>(sources[0], v -> combinator.apply(new Object[] { v }));
 		}
 
 		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
