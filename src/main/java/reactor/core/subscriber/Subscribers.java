@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+//
 /**
  * A Reactive Streams {@link Subscriber} factory which callbacks on start, onNext, onError and shutdown
  * <p>
@@ -84,6 +85,56 @@ public enum Subscribers{
 	}
 
 	/**
+	 * Create a {@link Subscriber} reacting onNext. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 *
+	 * @param dataConsumer A {@link Consumer} with argument onNext data
+	 * @param <T>          The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer) {
+		return consumer(dataConsumer, null, null);
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext and onError. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 *
+	 * @param dataConsumer  A {@link Consumer} with argument onNext data
+	 * @param errorConsumer A {@link Consumer} called onError
+	 * @param <T>           The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
+			Consumer<? super Throwable> errorConsumer) {
+		return consumer(dataConsumer, errorConsumer, null);
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 * <p>
+	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
+	 * every
+	 * request calls.
+	 *
+	 * @param dataConsumer     A {@link Consumer} with argument onNext data
+	 * @param errorConsumer    A {@link Consumer} called onError
+	 * @param completeConsumer A {@link Runnable} called onComplete with the actual context if any
+	 * @param <T>              The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
+			final Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
+		return new LambdaSubscriber<>(
+				dataConsumer,
+				errorConsumer,
+				completeConsumer
+		);
+	}
+
+	/**
 	 * Create a {@link Subscriber} reacting onSubscribe with the passed {@link Consumer}
 	 *
 	 * @param subscriptionHandler A {@link Consumer} called once for every new subscription returning
@@ -97,7 +148,6 @@ public enum Subscribers{
 			return null;
 		}, null, null, null);
 	}
-
 
 	/**
 	 * Create a {@link Subscriber} reacting onSubscribe and onNext, eventually sharing a context.
@@ -142,128 +192,6 @@ public enum Subscribers{
 	}
 
 	/**
-	 * Create a {@link Subscriber} that will automatically request Long.MAX_VALUE onSubscribe.
-	 *
-	 * @param <T> The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> unbounded() {
-		return new LambdaSubscriber<>(
-				null,
-				null,
-				null
-		);
-	}
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 *
-	 * @param dataConsumer A {@link BiConsumer} with left argument onNext data and right argument upstream subscription
-	 * @param <T>          The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer) {
-		return unbounded(dataConsumer, null, null);
-	}
-
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext and onError. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 *
-	 * @param dataConsumer  A {@link BiConsumer} with left argument onNext data and right argument upstream
-	 *                         subscription
-	 * @param errorConsumer A {@link Consumer} called onError
-	 * @param <T>           The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
-			Consumer<Throwable> errorConsumer) {
-		return unbounded(dataConsumer, errorConsumer, null);
-	}
-
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 * <p>
-	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
-	 * every
-	 * request calls.
-	 *
-	 * @param dataConsumer     A {@link BiConsumer} with left argument onNext data and right argument upstream
-	 *                         subscription
-	 * @param errorConsumer    A {@link Consumer} called onError
-	 * @param completeConsumer A {@link Consumer} called onComplete with the actual context if any
-	 * @param <T>              The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
-			final Consumer<Throwable> errorConsumer,
-			Consumer<Void> completeConsumer) {
-		return create(
-				UNBOUNDED_REQUEST_FUNCTION,
-				dataConsumer,
-				errorConsumer != null ?
-						(BiConsumer<Throwable, Void>) (throwable, aVoid) -> errorConsumer.accept(throwable) : null,
-				completeConsumer
-		);
-	}
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 *
-	 * @param dataConsumer A {@link Consumer} with argument onNext data
-	 * @param <T>          The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer) {
-		return consumer(dataConsumer, null, null);
-	}
-
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext and onError. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 *
-	 * @param dataConsumer  A {@link Consumer} with argument onNext data
-	 * @param errorConsumer A {@link Consumer} called onError
-	 * @param <T>           The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
-			Consumer<? super Throwable> errorConsumer) {
-		return consumer(dataConsumer, errorConsumer, null);
-	}
-
-
-	/**
-	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber will automatically
-	 * request Long.MAX_VALUE onSubscribe.
-	 * <p>
-	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
-	 * every
-	 * request calls.
-	 *
-	 * @param dataConsumer     A {@link Consumer} with argument onNext data
-	 * @param errorConsumer    A {@link Consumer} called onError
-	 * @param completeConsumer A {@link Runnable} called onComplete with the actual context if any
-	 * @param <T>              The type of the data sequence
-	 * @return a fresh Reactive Streams subscriber ready to be subscribed
-	 */
-	public static <T> Subscriber<T> consumer(Consumer<? super T> dataConsumer,
-			final Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer) {
-		return new LambdaSubscriber<>(
-				dataConsumer,
-				errorConsumer,
-				completeConsumer
-		);
-	}
-
-	/**
 	 * Create a {@link Subscriber} reacting onNext, onSubscribe, onError, onComplete with the passed {@link
 	 * BiConsumer}.
 	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
@@ -292,7 +220,6 @@ public enum Subscribers{
 		return new SubscriberWithSubscriptionContext<T, C>(dataConsumer, subscriptionHandler, errorConsumer, completeConsumer);
 	}
 
-
 	/**
 	 * Safely gate a {@link Subscriber} by a serializing {@link Subscriber}.
 	 * Serialization uses thread-stealing and a potentially unbounded queue that might starve a calling thread if
@@ -309,6 +236,73 @@ public enum Subscribers{
 		return new SerializedSubscriber<>(subscriber);
 	}
 
+	/**
+	 * Create a {@link Subscriber} that will automatically request Long.MAX_VALUE onSubscribe.
+	 *
+	 * @param <T> The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> unbounded() {
+		return new LambdaSubscriber<>(
+				null,
+				null,
+				null
+		);
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 *
+	 * @param dataConsumer A {@link BiConsumer} with left argument onNext data and right argument upstream subscription
+	 * @param <T>          The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer) {
+		return unbounded(dataConsumer, null, null);
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext and onError. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 *
+	 * @param dataConsumer  A {@link BiConsumer} with left argument onNext data and right argument upstream
+	 *                         subscription
+	 * @param errorConsumer A {@link Consumer} called onError
+	 * @param <T>           The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
+			Consumer<Throwable> errorConsumer) {
+		return unbounded(dataConsumer, errorConsumer, null);
+	}
+
+	/**
+	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber will automatically
+	 * request Long.MAX_VALUE onSubscribe.
+	 * <p>
+	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
+	 * every
+	 * request calls.
+	 *
+	 * @param dataConsumer     A {@link BiConsumer} with left argument onNext data and right argument upstream
+	 *                         subscription
+	 * @param errorConsumer    A {@link Consumer} called onError
+	 * @param completeConsumer A {@link Consumer} called onComplete with the actual context if any
+	 * @param <T>              The type of the data sequence
+	 * @return a fresh Reactive Streams subscriber ready to be subscribed
+	 */
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
+			final Consumer<Throwable> errorConsumer,
+			Consumer<Void> completeConsumer) {
+		return create(
+				UNBOUNDED_REQUEST_FUNCTION,
+				dataConsumer,
+				errorConsumer != null ?
+						(BiConsumer<Throwable, Void>) (throwable, aVoid) -> errorConsumer.accept(throwable) : null,
+				completeConsumer
+		);
+	}
 	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = subscription -> {
 		subscription.request(Long.MAX_VALUE);
 		return null;
