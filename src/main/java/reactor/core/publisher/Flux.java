@@ -213,7 +213,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
     public static <T1, T2, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			BiFunction<? super T1, ? super T2, ? extends V> combinator) {
-	    return combineLatest((Function<Object[], V>) tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
+	    return combineLatest(tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
 	}
 
 	/**
@@ -3213,7 +3213,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> next() {
-		return new MonoNext<>(this);
+		return Mono.from(this);
 	}
 
 
