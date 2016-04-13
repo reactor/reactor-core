@@ -582,7 +582,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
      */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
-	private static <T> Mono<T[]> when(T defaultValue, Mono<? extends T>... monos) {
+	private static <T> Mono<T[]> whenDefault(T defaultValue, Mono<? extends T>... monos) {
 	    Mono<T>[] newMonos = new Mono[monos.length];
 	    for (int i = 0; i < monos.length; i++) {
 	        newMonos[i] = ((Mono<T>)monos[i]).defaultIfEmpty(defaultValue);
@@ -644,7 +644,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
      * @return a {@link Mono}.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Mono<T[]> when(T defaultValue, final Iterable<? extends Mono<? extends T>> monos) {
+    public static <T> Mono<T[]> whenDefault(T defaultValue, final Iterable<? extends Mono<? extends T>> monos) {
         return zip(array -> (T[])array, new MapIterable<>(monos, m -> ((Mono<T>)m).defaultIfEmpty(defaultValue)));
     }
 
