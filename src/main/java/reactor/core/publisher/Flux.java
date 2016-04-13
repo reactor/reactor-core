@@ -4545,7 +4545,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
                 
                 T v = scalarSupplier.get();
                 if (v == null) {
-                    return Mono.empty();
+                    return new MonoSupplier<>(LIST_SUPPLIER);
                 }
                 
                 return Mono.just(v).map(u -> {
