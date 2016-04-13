@@ -37,17 +37,16 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.scheduler.Timer;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
@@ -711,8 +710,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
+	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> after(Mono<V> other) {
-		return after(() -> other);
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
 	}
 
 	/**
@@ -727,8 +727,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
+	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return MonoSource.wrap(after().flatMap(null, null, sourceSupplier));
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
 	}
 
 	/**
@@ -744,9 +745,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> afterSuccessOrError(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return MonoSource.wrap(after().flatMap(null,
-				 throwable -> Flux.concat(sourceSupplier.get(), Mono .error(throwable)),
-				sourceSupplier));
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
 	}
 
 	/**
@@ -848,7 +847,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
-		return new FluxConcatArray<>(this, other);
+		return Flux.concat(this, other);
 	}
 
 	/**

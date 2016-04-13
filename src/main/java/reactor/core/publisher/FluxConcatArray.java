@@ -18,13 +18,13 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.util.EmptySubscription;
+import reactor.core.util.*;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -41,10 +41,13 @@ extends Flux<T>
 		implements MultiReceiver {
 
 	final Publisher<? extends T>[] array;
+	
+	final boolean delayError;
 
 	@SafeVarargs
-	public FluxConcatArray(Publisher<? extends T>... array) {
+	public FluxConcatArray(boolean delayError, Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
+		this.delayError = delayError;
 	}
 
 	@Override
@@ -76,6 +79,16 @@ extends Flux<T>
 			return;
 		}
 
+		if (delayError) {
+			ConcatArrayDelayErrorSubscriber<T> parent = new ConcatArrayDelayErrorSubscriber<>(s, a);
+
+			s.onSubscribe(parent);
+
+			if (!parent.isCancelled()) {
+				parent.onComplete();
+			}
+			return;
+		}
 		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a);
 
 		s.onSubscribe(parent);
@@ -101,7 +114,7 @@ extends Flux<T>
 		System.arraycopy(array, 0, newArray, 0, n);
 		newArray[n] = source;
 		
-		return new FluxConcatArray<>(newArray);
+		return new FluxConcatArray<>(delayError, newArray);
 	}
 
 	/**
@@ -120,7 +133,7 @@ extends Flux<T>
 		System.arraycopy(array, 0, newArray, 1, n);
 		newArray[0] = source;
 		
-		return new FluxConcatArray<>(newArray);
+		return new FluxConcatArray<>(delayError, newArray);
 	}
 
 	
@@ -190,4 +203,91 @@ extends Flux<T>
 
 		}
 	}
+
+	static final class ConcatArrayDelayErrorSubscriber<T>
+	extends MultiSubscriptionSubscriber<T, T> {
+
+		final Publisher<? extends T>[] sources;
+
+		int index;
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ConcatArrayDelayErrorSubscriber> WIP =
+		AtomicIntegerFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, "wip");
+
+		volatile Throwable error;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ConcatArrayDelayErrorSubscriber, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(ConcatArrayDelayErrorSubscriber.class, Throwable.class, "error");
+		
+		long produced;
+
+		public ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<? extends T>[] sources) {
+			super(actual);
+			this.sources = sources;
+		}
+
+		@Override
+		public void onNext(T t) {
+			produced++;
+
+			subscriber.onNext(t);
+		}
+		
+		@Override
+		public void onError(Throwable t) {
+			if (Exceptions.addThrowable(ERROR, this, t)) {
+				onComplete();
+			} else {
+				Exceptions.onErrorDropped(t);
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			if (WIP.getAndIncrement(this) == 0) {
+				Publisher<? extends T>[] a = sources;
+				do {
+
+					if (isCancelled()) {
+						return;
+					}
+
+					int i = index;
+					if (i == a.length) {
+						Throwable e = Exceptions.terminate(ERROR, this);
+						if (e != null) {
+							subscriber.onError(e);
+						} else {
+							subscriber.onComplete();
+						}
+						return;
+					}
+
+					Publisher<? extends T> p = a[i];
+
+					if (p == null) {
+						subscriber.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						return;
+					}
+
+					long c = produced;
+					if (c != 0L) {
+						produced = 0L;
+						produced(c);
+					}
+					p.subscribe(this);
+
+					if (isCancelled()) {
+						return;
+					}
+
+					index = ++i;
+				} while (WIP.decrementAndGet(this) != 0);
+			}
+
+		}
+	}
+
 }

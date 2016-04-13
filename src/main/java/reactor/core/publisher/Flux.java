@@ -457,7 +457,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
-		return new FluxConcatArray<>(sources);
+		return new FluxConcatArray<>(false, sources);
 	}
 
 	/**
@@ -1500,7 +1500,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Publisher<V> other) {
-		return (Flux<V>)concat(this, other);
+		return (Flux<V>)concat(ignoreElements(), other);
 	}
 
 	/**
@@ -1517,7 +1517,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier) {
-		return (Flux<V>)concat(this, defer(afterSupplier));
+		return (Flux<V>)concat(ignoreElements(), defer(afterSupplier));
 	}
 
 	/**
@@ -1534,7 +1534,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> afterCompleteOrError(Supplier<? extends Publisher<V>> afterSupplier) {
-		return flatMap(null,  throwable -> concat(afterSupplier.get(), Flux.error(throwable)), afterSupplier);
+		return flatMap(null,  throwable -> new FluxConcatArray<>(true, afterSupplier.get(), Flux.error(throwable)),
+				afterSupplier);
 	}
 
 	/**
@@ -1964,7 +1965,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return new FluxConcatArray<>(this, other);
+		return new FluxConcatArray<>(false, this, other);
 	}
 
 	/**
