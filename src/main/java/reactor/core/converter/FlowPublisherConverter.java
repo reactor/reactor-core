@@ -45,12 +45,7 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 
 	@Override
 	public Flow.Publisher fromPublisher(final Publisher<?> pub) {
-		return new Flow.Publisher<Object>() {
-			@Override
-			public void subscribe(Flow.Subscriber<? super Object> subscriber) {
-				pub.subscribe(new FlowSubscriber(subscriber));
-			}
-		};
+		return new PublisherAsFlowPublisher(pub);
 	}
 
 	@Override
@@ -58,12 +53,7 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 	public Flux toPublisher(Object o) {
 		if (o instanceof Flow.Publisher) {
 			final Flow.Publisher<?> pub = (Flow.Publisher<?>) o;
-			return new Flux<Object>() {
-				@Override
-				public void subscribe(final Subscriber<? super Object> s) {
-					pub.subscribe(new SubscriberToRS(s));
-				}
-			};
+			return new FlowPublisherAsFlux(pub);
 		}
 		return null;
 	}
@@ -73,7 +63,33 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 		return Flow.Publisher.class;
 	}
 
-	private static class FlowSubscriber implements Subscriber<Object> {
+	private final class FlowPublisherAsFlux extends Flux<Object> {
+        private final java.util.concurrent.Flow.Publisher<?> pub;
+
+        private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<?> pub) {
+            this.pub = pub;
+        }
+
+        @Override
+        public void subscribe(final Subscriber<? super Object> s) {
+        	pub.subscribe(new SubscriberToRS(s));
+        }
+    }
+
+    private final class PublisherAsFlowPublisher implements Flow.Publisher<Object> {
+        private final Publisher<?> pub;
+
+        private PublisherAsFlowPublisher(Publisher<?> pub) {
+            this.pub = pub;
+        }
+
+        @Override
+        public void subscribe(Flow.Subscriber<? super Object> subscriber) {
+        	pub.subscribe(new FlowSubscriber(subscriber));
+        }
+    }
+
+    private static class FlowSubscriber implements Subscriber<Object> {
 
 		private final Flow.Subscriber<? super Object> subscriber;
 
