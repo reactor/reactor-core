@@ -17,58 +17,22 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.*;
 import reactor.core.scheduler.Timer;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
-import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.subscriber.SignalEmitter;
-import reactor.core.subscriber.SubscriberWithContext;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
+import reactor.core.state.*;
+import reactor.core.subscriber.*;
+import reactor.core.tuple.*;
+import reactor.core.util.*;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -96,7 +60,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 //	 Static Generators
 //	 ==============================================================================================================
 
-	static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
+    static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 
 	/**
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
@@ -2888,6 +2852,25 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Returns the appropriate Mono instance for a known Supplier Flux.
+	 * 
+	 * @param supplier the supplier Flux
+	 * @return the mono representing that Flux
+	 */
+	Mono<T> convertToMono(Supplier<T> supplier) {
+	    if (supplier instanceof Fuseable.ScalarSupplier) {
+            Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) supplier;
+	        
+            T v = scalarSupplier.get();
+            if (v == null) {
+                return Mono.empty();
+            }
+            return Mono.just(v);
+	    }
+	    return new MonoSupplier<>(supplier);
+	}
+	
+	/**
 	 * Signal the last element observed before complete signal.
 	 *
 	 * <p>
@@ -2895,7 +2878,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a limited {@link Flux}
 	 */
-	public final Mono<T> last() {
+	@SuppressWarnings("unchecked")
+    public final Mono<T> last() {
+	    if (this instanceof Supplier) {
+	        return convertToMono((Supplier<T>)this);
+	    }
 		return new MonoTakeLastOne<>(this);
 	}
 	
@@ -3057,28 +3044,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		for (int i = 0; i < concurrency; i++) {
 			final int index = i;
-			pub = fn.apply(new GroupedFlux<Integer, T>() {
-
-				@Override
-				public Integer key() {
-					return index;
-				}
-
-				@Override
-				public long getCapacity() {
-					return Flux.this.getCapacity();
-				}
-
-				@Override
-				public TimedScheduler getTimer() {
-					return Flux.this.getTimer();
-				}
-
-				@Override
-				public void subscribe(Subscriber<? super T> s) {
-					Flux.this.subscribe(s);
-				}
-			});
+			pub = fn.apply(new MultiplexGroupedFlux<>(index, this));
 
 			if (concurrency == 1) {
 				return from(pub);
@@ -3091,6 +3057,43 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return Flux.merge(publisherList);
 	}
 	
+	/**
+	 * An indexed GroupedFlux instance, delegating to a source Flux.
+	 *
+	 * @param <T> the value type
+	 */
+	static final class MultiplexGroupedFlux<T> extends GroupedFlux<Integer, T> {
+
+	    final int index;
+	    
+	    final Flux<T> source;
+
+	    public MultiplexGroupedFlux(int index, Flux<T> source) {
+	        this.index = index;
+	        this.source = source;
+	    }
+
+	    @Override
+	    public Integer key() {
+	        return index;
+	    }
+
+	    @Override
+	    public long getCapacity() {
+	        return source.getCapacity();
+	    }
+
+	    @Override
+	    public TimedScheduler getTimer() {
+	        return source.getTimer();
+	    }
+
+	    @Override
+	    public void subscribe(Subscriber<? super T> s) {
+	        source.subscribe(s);
+	    }
+	}
+
 	/**
 	 * Prepare a
 	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
@@ -3258,6 +3261,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressuredropc.png" alt="">
 	 *
+	 * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
 	 * @return a dropping {@link Flux}
 	 *
 	 */
@@ -3459,9 +3463,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 *
 	 */
+    @SuppressWarnings("unchecked")
 	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
-		if(this instanceof Supplier){
-			return MonoSource.wrap(this);
+		if (this instanceof Supplier){
+		    return convertToMono((Supplier<T>)this);
 		}
 		return new MonoAggregate<>(this, aggregator);
 	}
@@ -3541,7 +3546,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		return new FluxRepeat<T>(this, numRepeat);
+		return new FluxRepeat<>(this, numRepeat);
 	}
 
 	/**
@@ -3579,7 +3584,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRepeatWhen<T>(this, whenFactory);
+		return new FluxRepeatWhen<>(this, whenFactory);
 	}
 
 	/**
@@ -3612,7 +3617,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> retry(long numRetries) {
-		return new FluxRetry<T>(this, numRetries);
+		return new FluxRetry<>(this, numRetries);
 	}
 
 	/**
@@ -3666,7 +3671,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onNext signal
 	 */
 	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRetryWhen<T>(this, whenFactory);
+		return new FluxRetryWhen<>(this, whenFactory);
 	}
 
 	/**
@@ -3865,6 +3870,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxScan<>(this, initial, accumulator);
 	}
 
+	
 	/**
 	 * Expect and emit a single item from this {@link Flux} source or signal
 	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
@@ -3875,7 +3881,20 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} with the eventual single item or an error signal
 	 */
-	public final Mono<T> single() {
+	@SuppressWarnings("unchecked")
+    public final Mono<T> single() {
+	    if (this instanceof Supplier) {
+	        if (this instanceof Fuseable.ScalarSupplier) {
+                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
+	            
+                T v = scalarSupplier.get();
+                if (v == null) {
+                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+                }
+                return Mono.just(v);
+	        }
+	        return new MonoSupplier<>((Supplier<T>)this);
+	    }
 		return new MonoSingle<>(this);
 	}
 
@@ -3891,7 +3910,20 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} with the eventual single item or a supplied default value
 	 */
-	public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+	@SuppressWarnings("unchecked")
+    public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+        if (this instanceof Supplier) {
+            if (this instanceof Fuseable.ScalarSupplier) {
+                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
+                
+                T v = scalarSupplier.get();
+                if (v == null) {
+                    return new MonoSupplier<>(defaultSupplier);
+                }
+                return Mono.just(v);
+            }
+            return new MonoSupplier<>((Supplier<T>)this);
+        }
 		return new MonoSingle<>(this, defaultSupplier);
 	}
 
@@ -3903,7 +3935,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Mono} with the eventual single item or no item
 	 */
-	public final Mono<T> singleOrEmpty() {
+	@SuppressWarnings("unchecked")
+    public final Mono<T> singleOrEmpty() {
+	    if (this instanceof Supplier) {
+	        return convertToMono((Supplier<T>)this);
+	    }
 		return new MonoSingle<>(this, MonoSingle.completeOnEmptySequence());
 	}
 

@@ -22,7 +22,7 @@ import org.reactivestreams.*;
  *
  * @param <T> the value type
  */
-public final class MonoTakeLastOne<T> extends MonoSource<T, T> {
+final class MonoTakeLastOne<T> extends MonoSource<T, T> {
 
     public MonoTakeLastOne(Publisher<? extends T> source) {
         super(source);
