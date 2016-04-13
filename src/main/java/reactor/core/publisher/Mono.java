@@ -1601,7 +1601,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			T value = get();
 			return  new MonoSubscribeOnValue<>(value, scheduler);
 		}
-		return MonoSource.wrap(new FluxPublishOn<>(this, scheduler, false, 1, QueueSupplier.<T>one()));
+		return new MonoPublishOn<>(this, scheduler);
 	}
 
 	/**
@@ -1720,7 +1720,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> retry(long numRetries) {
-		return MonoSource.wrap(new FluxRetry<T>(this, numRetries));
+		return MonoSource.wrap(new FluxRetry<>(this, numRetries));
 	}
 
 	/**
@@ -1772,7 +1772,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onNext signal
 	 */
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
-		return MonoSource.wrap(new FluxRetryWhen<T>(this, whenFactory));
+		return MonoSource.wrap(new FluxRetryWhen<>(this, whenFactory));
 	}
 
 	/**
@@ -1813,7 +1813,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			T value = get();
 			return new MonoSubscribeOnValue<>(value, scheduler);
 		}
-		return MonoSource.wrap(new FluxSubscribeOn<>(this, scheduler));
+		return new MonoSubscribeOn<>(this, scheduler);
 	}
 
 	/**

@@ -81,7 +81,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		
-		if (source instanceof Supplier) {
+		if (source instanceof Fuseable.ScalarSupplier) {
 			FluxSubscribeOn.scalarScheduleOn(source, s, scheduler);
 			return;
 		}

@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.*;
-import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
@@ -50,7 +49,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 	public static <T> void scalarScheduleOn(Publisher<? extends T> source, Subscriber<? super T> s, Scheduler scheduler) {
 		@SuppressWarnings("unchecked")
-		Supplier<T> supplier = (Supplier<T>) source;
+		Fuseable.ScalarSupplier<T> supplier = (Fuseable.ScalarSupplier<T>) source;
 		
 		T v = supplier.get();
 		
@@ -66,7 +65,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Supplier) {
+		if (source instanceof Fuseable.ScalarSupplier) {
 			scalarScheduleOn(source, s, scheduler);
 			return;
 		}
