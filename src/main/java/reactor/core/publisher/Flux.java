@@ -1543,15 +1543,37 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} on complete only.
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Mono} on complete only.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffer.png"
 	 * alt="">
 	 *
-	 * @return a buffered {@link Flux} of at most one {@link List}
+	 * @return a buffered {@link Mono} of at most one {@link List}
 	 */
-	public final Flux<List<T>> buffer() {
-		return buffer(Integer.MAX_VALUE);
+	@SuppressWarnings("unchecked")
+    public final Mono<List<T>> buffer() {
+	    if (this instanceof Supplier) {
+	        if (this instanceof Fuseable.ScalarSupplier) {
+                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
+	            
+                T v = scalarSupplier.get();
+                if (v == null) {
+                    return Mono.empty();
+                }
+                
+                return Mono.just(v).map(u -> {
+                    List<T> list = (List<T>)LIST_SUPPLIER.get();
+                    list.add(u);
+                    return list;
+                });
+	        }
+            return new MonoSupplier<>((Supplier<T>)this).map(u -> {
+                List<T> list = (List<T>)LIST_SUPPLIER.get();
+                list.add(u);
+                return list;
+            });
+	    }
+		return new MonoBufferAll<>(this, LIST_SUPPLIER);
 	}
 
 	/**
@@ -4253,7 +4275,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a size limited {@link Flux}
 	 */
 	public final Flux<T> take(long n) {
-		return new FluxTake<T>(this, n);
+		return new FluxTake<>(this, n);
 	}
 
 	/**
@@ -4322,7 +4344,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return an eventually limited {@link Flux}
 	 */
 	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
-		return new FluxTakeWhile<T>(this, continuePredicate);
+		return new FluxTakeWhile<>(this, continuePredicate);
 	}
 
 	/**
@@ -4411,9 +4433,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <U> Flux<T> timeout(Publisher<U> firstTimeout) {
-		return timeout(firstTimeout, t -> {
-			return never();
-		});
+		return timeout(firstTimeout, t -> never());
 	}
 
 	/**
@@ -4570,16 +4590,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of all sorted values from this {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
-		return collect(() -> new PriorityQueue<T>(comparator), PriorityQueue::add).map(q -> {
-			PriorityQueue<T> temp = new PriorityQueue<T>( q );
-			List<T> res = new ArrayList<T>(q.size());
-
-			while ( !temp.isEmpty() ) {
-				res.add(temp.remove());
-			}
-			return res;
+		return buffer().map(list -> {
+		    // Note: this assumes the list emitted by buffer() is mutable
+		    if (comparator != null) {
+		        Collections.sort(list, comparator);
+		    } else {
+		        Collections.sort((List<Comparable>)list);
+		    }
+		    return list;
 		});
 	}
 
