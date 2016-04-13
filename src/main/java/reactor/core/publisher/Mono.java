@@ -2124,9 +2124,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> where(final Predicate<? super T> tester) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxFilterFuseable<>(this, tester));
+			return new MonoFilterFuseable<>(this, tester);
 		}
-		return MonoSource.wrap(new FluxFilter<>(this, tester));
+		return new MonoFilter<>(this, tester);
 	}
 
 }
