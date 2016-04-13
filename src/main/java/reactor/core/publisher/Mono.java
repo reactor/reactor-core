@@ -565,31 +565,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return zip(array -> (T[])array, monos);
 	}
 
-    /**
-     * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-     * Monos} have been fulfilled. 
-     * 
-     * If any Mono terminates without value, the resulting array will contain the defaultValue at its respective place.
-     *
-     * <p>
-     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-     * <p>
-     * @param defaultValue the value to use if a source Mono is empty
-     * @param monos The monos to use.
-     * @param <T> The type of the function result.
-     *
-     * @return a {@link Mono}.
-     */
-	@SafeVarargs
-	@SuppressWarnings({"unchecked","varargs"})
-	private static <T> Mono<T[]> whenDefault(T defaultValue, Mono<? extends T>... monos) {
-	    Mono<T>[] newMonos = new Mono[monos.length];
-	    for (int i = 0; i < monos.length; i++) {
-	        newMonos[i] = ((Mono<T>)monos[i]).defaultIfEmpty(defaultValue);
-	    }
-	    return zip(array -> (T[])array, newMonos);
-	}
-
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
@@ -627,26 +602,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
 		return zip(array -> (T[])array, monos);
 	}
-
-    /**
-     * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
-     * Monos} have been fulfilled. 
-     * 
-     * If any Mono terminates without value, the resulting array will contain the defaultValue at its respective place.
-     *
-     * <p>
-     * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-     * <p>
-     *
-     * @param monos The monos to use.
-     * @param <T> The type of the function result.
-     *
-     * @return a {@link Mono}.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> Mono<T[]> whenDefault(T defaultValue, final Iterable<? extends Mono<? extends T>> monos) {
-        return zip(array -> (T[])array, new MapIterable<>(monos, m -> ((Mono<T>)m).defaultIfEmpty(defaultValue)));
-    }
 
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
