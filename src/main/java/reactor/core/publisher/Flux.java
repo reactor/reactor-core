@@ -1551,29 +1551,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a buffered {@link Mono} of at most one {@link List}
 	 */
 	@SuppressWarnings("unchecked")
-    public final Mono<List<T>> buffer() {
-	    if (this instanceof Supplier) {
-	        if (this instanceof Fuseable.ScalarSupplier) {
-                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
-	            
-                T v = scalarSupplier.get();
-                if (v == null) {
-                    return Mono.empty();
-                }
-                
-                return Mono.just(v).map(u -> {
-                    List<T> list = (List<T>)LIST_SUPPLIER.get();
-                    list.add(u);
-                    return list;
-                });
-	        }
-            return new MonoSupplier<>((Supplier<T>)this).map(u -> {
-                List<T> list = (List<T>)LIST_SUPPLIER.get();
-                list.add(u);
-                return list;
-            });
-	    }
-		return new MonoBufferAll<>(this, LIST_SUPPLIER);
+    public final Flux<List<T>> buffer() {
+	    return buffer(Integer.MAX_VALUE);
 	}
 
 	/**
@@ -4560,7 +4539,28 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> toList() {
-		return collect((Supplier<List<T>>) LIST_SUPPLIER, List<T>::add);
+        if (this instanceof Supplier) {
+            if (this instanceof Fuseable.ScalarSupplier) {
+                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
+                
+                T v = scalarSupplier.get();
+                if (v == null) {
+                    return Mono.empty();
+                }
+                
+                return Mono.just(v).map(u -> {
+                    List<T> list = (List<T>)LIST_SUPPLIER.get();
+                    list.add(u);
+                    return list;
+                });
+            }
+            return new MonoSupplier<>((Supplier<T>)this).map(u -> {
+                List<T> list = (List<T>)LIST_SUPPLIER.get();
+                list.add(u);
+                return list;
+            });
+        }
+        return new MonoBufferAll<>(this, LIST_SUPPLIER);
 	}
 
 	/**
@@ -4592,7 +4592,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
-		return buffer().map(list -> {
+		return toList().map(list -> {
 		    // Note: this assumes the list emitted by buffer() is mutable
 		    if (comparator != null) {
 		        Collections.sort(list, comparator);
