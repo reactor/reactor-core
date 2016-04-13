@@ -15,9 +15,7 @@
  */
 package reactor.core.queue;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -196,7 +194,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return new SpscLinkedArrayQueue<>(PlatformDependent.SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
-			return new OneQueue<>(waiting);
+			return new OneQueue<>();
 		}
 		else if(waiting) {
 			return RingBuffer.blockingBoundedQueue(
@@ -210,26 +208,24 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	}
 
 	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
+		/** */
+        private static final long serialVersionUID = -6079491923525372331L;
 
-		final boolean waiting;
-
-		OneQueue(boolean waiting) {
-			this.waiting = waiting;
-		}
-
-		@Override
+        @Override
 		public boolean add(T t) {
 
-			for (; ; ) {
-				if (compareAndSet(null, t)) {
-					return true;
-				}
-			}
+		    while (!offer(t));
+		    
+		    return true;
 		}
 
 		@Override
 		public boolean offer(T t) {
-			return compareAndSet(null, t);
+			if (get() != null) {
+			    return false;
+			}
+			lazySet(t);
+			return true;
 		}
 
 		@Override
@@ -239,7 +235,11 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 		@Override
 		public T poll() {
-			return getAndSet(null);
+			T v = get();
+			if (v != null) {
+			    lazySet(null);
+			}
+			return v;
 		}
 
 		@Override
@@ -264,7 +264,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 		@Override
 		public boolean contains(Object o) {
-			return get() == o;
+			return Objects.equals(get(), o);
 		}
 
 		@Override
@@ -286,6 +286,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		public <T1> T1[] toArray(T1[] a) {
 			if (a.length > 0) {
 				a[0] = (T1)get();
+				if (a.length > 1) {
+				    a[1] = null;
+				}
 				return a;
 			}
 			return (T1[])toArray();
