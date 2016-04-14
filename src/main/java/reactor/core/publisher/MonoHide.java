@@ -28,7 +28,7 @@ import org.reactivestreams.*;
  * 
  * @since 2.5
  */
-public final class MonoHide<T> extends MonoSource<T, T> {
+final class MonoHide<T> extends MonoSource<T, T> {
 
     public MonoHide(Publisher<? extends T> source) {
         super(source);

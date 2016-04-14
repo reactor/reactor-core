@@ -31,7 +31,7 @@ import rx.exceptions.Exceptions;
  * @param <T> the source value type
  * @param <C> the collection type that takes any supertype of T
  */
-public final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource<T, C> {
+final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource<T, C> {
 
     final Supplier<C> collectionSupplier;
     
