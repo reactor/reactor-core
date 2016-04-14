@@ -288,7 +288,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Build a {@link Mono} that will only emit the result of the future and then complete.
-	 * The future will be polled for an unbounded amount of time on request().
+	 * The future will be polled for an unbounded amount of time on {@code subscribe()}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
@@ -296,6 +296,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param future the future to poll value from
 	 * @param <T> the value type of the Future and the retuned Mono instance
 	 * @return a new {@link Mono}
+	 * @deprecated Try to avoid using this method because it invokes {@link Future#get()} blocking method. Try to use {@link #fromCompletableFuture(CompletableFuture)} or {@link MonoProcessor#create()} + callback when possible.
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future) {
 		return new MonoFuture<>(future);
