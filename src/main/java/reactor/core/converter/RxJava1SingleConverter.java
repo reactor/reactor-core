@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.publisher.Mono;
-import reactor.core.util.*;
-import rx.*;
-import rx.internal.util.ScalarSynchronousSingle;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.Exceptions;
+import rx.Single;
+import rx.SingleSubscriber;
 
 /**
  * Convert a RxJava 1 {@link Single} to/from a Reactive Streams {@link Publisher}.
@@ -67,13 +67,13 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	public Mono toPublisher(Object o) { 
 	    if (o instanceof Single) {
     		Single<?> single = (Single<?>) o;
-    		if (single instanceof ScalarSynchronousSingle) {
+    		/*if (single instanceof ScalarSynchronousSingle) {
     		    Object v = ((ScalarSynchronousSingle)single).get();
     		    if (v == null) {
     		        return Mono.error(new NullPointerException("The wrapped Single produced a null value"));
     		    }
                 return Mono.just(v);
-    		}
+    		}*/
     		return new SingleAsMono<>(single);
 	    }
 	    return null;
