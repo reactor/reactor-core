@@ -260,7 +260,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcallable.png" alt="">
 	 * <p>
-	 * @param supplier {@link Supplier} that will produce the value
+	 * @param supplier {@link Callable} that will produce the value
 	 * @param <T> type of the expected value
 	 *
 	 * @return A {@link Mono}.
@@ -348,6 +348,22 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static Mono<Void> fromRunnable(Runnable runnable) {
 		return new MonoRunnable(runnable);
 	}
+
+	/**
+	 * Create a {@link Mono} producing the value for the {@link Mono} using the given supplier.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromsupplier.png" alt="">
+	 * <p>
+	 * @param supplier {@link Supplier} that will produce the value
+	 * @param <T> type of the expected value
+	 *
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromSupplier(Supplier<? extends T> supplier) {
+		return new MonoSupplier<>(supplier);
+	}
+
 
 	/**
 	 * Create a new {@link Mono} that ignores onNext (dropping them) and only react on Completion signal.
