@@ -774,7 +774,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		assertEquals(NUM_MESSAGES, messagesProcessed);
 		assertTrue("Less than 90% (" + NUM_MESSAGES / BATCH_SIZE * TOLERANCE +
-						") of the batches are matching the buffer() size: " + batchesDistribution.get(BATCH_SIZE),
+						") of the batches are matching the buffer size: " + batchesDistribution.get(BATCH_SIZE),
 				NUM_MESSAGES / BATCH_SIZE * TOLERANCE >= batchesDistribution.get(BATCH_SIZE) * TOLERANCE);
 	}
 

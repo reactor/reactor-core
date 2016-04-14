@@ -341,8 +341,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinctUntilChanged().buffer().tap()
-			tap.subscribe()
+			def tap = s.distinctUntilChanged().toList().subscribe()
 
 		then:
 			'collected must remove duplicates'
@@ -356,8 +355,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinctUntilChanged { it % 2 == 0 }.buffer().tap()
-			tap.subscribe()
+			def tap = s.distinctUntilChanged { it % 2 == 0 }.toList().subscribe()
 
 		then:
 			'collected must remove duplicates'
@@ -371,8 +369,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinct().buffer().tap()
-			tap.subscribe()
+			def tap = s.distinct().toList().subscribe()
 
 		then:
 			'collected should be without duplicates'
@@ -386,8 +383,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinct { it % 3 }.buffer().tap()
-			tap.subscribe()
+			def tap = s.distinct { it % 3 }.toList().subscribe()
 
 		then:
 			'collected should be without duplicates'
@@ -1205,9 +1201,8 @@ class FluxSpec extends Specification {
 		given:
 			'a composable'
 			def source = EmitterProcessor.<Integer> create().connect()
-			def reduced = source.useCapacity(1).buffer()
-			def value = reduced.publishNext()
-	  		value.subscribe()
+			def reduced = source.toList()
+	  		def value = reduced.subscribe()
 
 		when:
 			'the first value is accepted'
@@ -1350,8 +1345,8 @@ class FluxSpec extends Specification {
 		when:
 			'non overlapping buffers'
 			res = numbers.delay(Duration.ofMillis(100)).window(Duration.ofMillis(200), Duration.ofMillis(300))
-					.flatMap{ it.log('fm').buffer() }
-					.buffer().next()
+					.flatMap{ it.log('fm').toList() }
+					.toList().cache()
 
 		then:
 			'the collected lists are available'
@@ -1388,9 +1383,8 @@ class FluxSpec extends Specification {
 			numbers = EmitterProcessor.<Integer> create().connect()
 			def bucketOpening = EmitterProcessor.<Integer> create().connect()
 			res = numbers.log("w").window(bucketOpening.log("bucket")) { boundaryFlux.log('boundary') }.flatMap { it
-					.log('fm').buffer() }
-					.buffer()
-					.publishNext()
+					.log('fm').toList() }
+					.toList().cache()
 
 			res.subscribe()
 
@@ -2648,7 +2642,7 @@ class FluxSpec extends Specification {
 			stream = EmitterProcessor.replay().connect()
 			def value2 = stream.skipWhile {
 				'test1' == it
-			}.log("test").buffer().publishNext()
+			}.log("test").toList()
 
 			stream.subscribe()
 
@@ -2670,7 +2664,7 @@ class FluxSpec extends Specification {
 					.publishOn(asyncGroup)
 
 		when:
-			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).buffer().next()
+			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).toList()
 
 		then:
 			!promise.get()

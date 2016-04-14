@@ -72,6 +72,7 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 			subscriber.onSubscribe(createSubscription(subscriber, context));
 		}
 		catch (Throwable throwable) {
+			Exceptions.throwIfFatal(throwable);
 			EmptySubscription.error(subscriber, throwable);
 		}
 	}
@@ -263,6 +264,9 @@ class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 				if (Exceptions.CancelException.class != t.getClass()) {
 					subscriber.onError(t);
 				}
+			}
+			else{
+				Exceptions.onErrorDropped(t);
 			}
 		}
 
