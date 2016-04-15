@@ -457,7 +457,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return new MonoWhen(p1, p2);
+		return new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a));
 	}
 
 	/**
@@ -477,7 +477,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return new MonoWhen(p1, p2, p3);
+		return new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
 	}
 
 	/**
@@ -502,7 +502,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return new MonoWhen(p1, p2, p3, p4);
+		return new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
 	}
 
 	/**
@@ -530,7 +530,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return new MonoWhen(p1, p2, p3, p4, p5);
+		return new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
 	}
 
 	/**
@@ -561,7 +561,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return new MonoWhen(p1, p2, p3, p4, p5, p6);
+        return new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
 	}
 
 	/**
@@ -579,7 +579,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
 	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return new MonoWhen<>(monos).map(v -> (T[])v.toArray());
+		return new MonoWhen<>(false, monos);
 	}
 
 	/**
@@ -617,7 +617,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return new MonoWhen<T>(monos).map(t -> (T[])t.toArray());
+		return new MonoWhen<>(false, monos);
 	}
 
 	/**

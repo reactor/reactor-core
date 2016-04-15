@@ -23,7 +23,7 @@ import org.reactivestreams.*;
 
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.tuple.*;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.util.*;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -32,26 +32,30 @@ import reactor.core.util.BackpressureUtils;
  *
  * @param <T> the source value types
  */
-public final class MonoWhen<T> extends Mono<Tuple> {
+public final class MonoWhen<T> extends Mono<T[]> {
 
+    final boolean delayError;
+    
     final Mono<? extends T>[] sources;
 
     final Iterable<? extends Mono<? extends T>> sourcesIterable;
 
     @SafeVarargs
-    public MonoWhen(Mono<? extends T>... sources) {
+    public MonoWhen(boolean delayError, Mono<? extends T>... sources) {
+        this.delayError = delayError;
         this.sources = Objects.requireNonNull(sources, "sources");
         this.sourcesIterable = null;
     }
 
-    public MonoWhen(Iterable<? extends Mono<? extends T>> sourcesIterable) {
+    public MonoWhen(boolean delayError, Iterable<? extends Mono<? extends T>> sourcesIterable) {
+        this.delayError = delayError;
         this.sources = null;
         this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void subscribe(Subscriber<? super Tuple> s) {
+    public void subscribe(Subscriber<? super T[]> s) {
         Mono<? extends T>[] a;
         int n = 0;
         if (sources != null) {
@@ -69,15 +73,22 @@ public final class MonoWhen<T> extends Mono<Tuple> {
             }
         }
         
-        MonoWhenCoordinator<T> parent = new MonoWhenCoordinator<>(s, n);
+        if (n == 0) {
+            EmptySubscription.complete(s);
+            return;
+        }
+        
+        MonoWhenCoordinator<T> parent = new MonoWhenCoordinator<>(s, n, delayError);
         s.onSubscribe(parent);
         parent.subscribe(a);
     }
     
     static final class MonoWhenCoordinator<T> 
-    extends DeferredScalarSubscriber<T, Tuple>
+    extends DeferredScalarSubscriber<T, T[]>
     implements Subscription {
         final MonoWhenSubscriber<T>[] subscribers;
+        
+        final boolean delayError;
         
         volatile int done;
         @SuppressWarnings("rawtypes")
@@ -85,8 +96,9 @@ public final class MonoWhen<T> extends Mono<Tuple> {
                 AtomicIntegerFieldUpdater.newUpdater(MonoWhenCoordinator.class, "done");
 
         @SuppressWarnings("unchecked")
-        public MonoWhenCoordinator(Subscriber<? super Tuple> subscriber, int n) {
+        public MonoWhenCoordinator(Subscriber<? super T[]> subscriber, int n, boolean delayError) {
             super(subscriber);
+            this.delayError = delayError;
             subscribers = new MonoWhenSubscriber[n];
             for (int i = 0; i < n; i++) {
                 subscribers[i] = new MonoWhenSubscriber<>(this);
@@ -100,6 +112,19 @@ public final class MonoWhen<T> extends Mono<Tuple> {
             }
         }
         
+        void signalError(Throwable t) {
+            if (delayError) {
+                signal();
+            } else {
+                int n = subscribers.length;
+                if (DONE.getAndSet(this, n) != n) {
+                    cancel();
+                    subscriber.onError(t);
+                }
+            }
+        }
+        
+        @SuppressWarnings("unchecked")
         void signal() {
             MonoWhenSubscriber<T>[] a = subscribers;
             int n = a.length;
@@ -145,7 +170,7 @@ public final class MonoWhen<T> extends Mono<Tuple> {
             if (hasEmpty) {
                 subscriber.onComplete();
             } else {
-                complete(Tuple.of(o));
+                complete((T[])o);
             }
         }
         
@@ -196,7 +221,7 @@ public final class MonoWhen<T> extends Mono<Tuple> {
         @Override
         public void onError(Throwable t) {
             error = t;
-            parent.signal();
+            parent.signalError(t);
         }
         
         @Override
