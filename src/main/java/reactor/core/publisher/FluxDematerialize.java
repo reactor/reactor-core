@@ -109,6 +109,10 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		    }
 		    done = true;
 		    error = t;
+            long p = produced;
+            if (p != 0L) {
+                REQUESTED.addAndGet(this, -p);
+            }
             DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
 		}
 		

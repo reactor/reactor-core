@@ -91,6 +91,8 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
         volatile boolean cancelled;
         
+        long produced;
+        
         public FluxMapSignalSubscriber(Subscriber<? super R> actual, FluxMapSignal<T, R> parent) {
             this.actual = actual;
             this.parent = parent;
@@ -128,6 +130,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
                 return;
             }
 
+            produced++;
             actual.onNext(v);
         }
 
@@ -162,6 +165,10 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        }
 
 	        value = v;
+            long p = produced;
+            if (p != 0L) {
+                REQUESTED.addAndGet(this, -p);
+            }
 	        DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
 
@@ -194,6 +201,10 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        }
 
             value = v;
+            long p = produced;
+            if (p != 0L) {
+                REQUESTED.addAndGet(this, -p);
+            }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
 

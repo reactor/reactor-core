@@ -16,9 +16,13 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriberBarrier;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.BooleanSupplier;
+
+import org.reactivestreams.*;
+
+import reactor.core.util.BackpressureUtils;
 
 /**
  * @author Stephane Maldini
@@ -35,27 +39,112 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		source.subscribe(new MaterializeAction<>(subscriber));
 	}
 
-	final static class MaterializeAction<T> extends SubscriberBarrier<T, Signal<T>> {
+	final static class MaterializeAction<T>
+	extends AbstractQueue<Signal<T>>
+	implements Subscriber<T>, Subscription, BooleanSupplier {
+	    
+	    final Subscriber<? super Signal<T>> actual;
 
+	    Signal<T> value;
+	    
+	    volatile boolean cancelled;
+	    
+	    volatile long requested;
+	    @SuppressWarnings("rawtypes")
+        static final AtomicLongFieldUpdater<MaterializeAction> REQUESTED =
+	            AtomicLongFieldUpdater.newUpdater(MaterializeAction.class, "requested");
+	    
+	    long produced;
+	    
+	    Subscription s;
+	    
 		public MaterializeAction(Subscriber<? super Signal<T>> subscriber) {
-			super(subscriber);
+		    this.actual = subscriber;
 		}
 
 		@Override
-		protected void doNext(T ev) {
-			subscriber.onNext(Signal.next(ev));
+		public void onSubscribe(Subscription s) {
+		    if (BackpressureUtils.validate(this.s, s)) {
+		        this.s = s;
+		        
+		        actual.onSubscribe(this);
+		    }
+		}
+		
+		@Override
+		public void onNext(T ev) {
+		    produced++;
+			actual.onNext(Signal.next(ev));
 		}
 
 		@Override
-		protected void doError(Throwable ev) {
-			subscriber.onNext(Signal.<T>error(ev));
-			subscriber.onComplete();
+		public void onError(Throwable ev) {
+			value = Signal.error(ev);
+            long p = produced;
+            if (p != 0L) {
+                REQUESTED.addAndGet(this, -p);
+            }
+            DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 
 		@Override
-		protected void doComplete() {
-			subscriber.onNext(Signal.<T>complete());
-			subscriber.onComplete();
+		public void onComplete() {
+			value = Signal.complete();
+            long p = produced;
+            if (p != 0L) {
+                REQUESTED.addAndGet(this, -p);
+            }
+            DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
+		
+		@Override
+		public void request(long n) {
+		    if (BackpressureUtils.validate(n)) {
+		        if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
+		            s.request(n);
+		        }
+		    }
+		}
+		
+		@Override
+		public void cancel() {
+		    cancelled = true;
+		    s.cancel();
+		}
+		
+		@Override
+		public boolean getAsBoolean() {
+		    return cancelled;
+		}
+
+        @Override
+        public boolean offer(Signal<T> e) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Signal<T> poll() {
+            Signal<T> v = value;
+            if (v != null) {
+                value = null;
+                return v;
+            }
+            return null;
+        }
+
+        @Override
+        public Signal<T> peek() {
+            return value;
+        }
+
+        @Override
+        public Iterator<Signal<T>> iterator() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return value == null ? 0 : 1;
+        }
 	}
 }

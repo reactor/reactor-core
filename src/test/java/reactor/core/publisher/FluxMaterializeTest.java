@@ -19,12 +19,13 @@ import org.junit.Test;
 
 import reactor.core.test.TestSubscriber;
 
-public class FluxMapSignalTest {
+public class FluxMaterializeTest {
+
     @Test
     public void completeOnlyBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Signal<Integer>> ts = new TestSubscriber<>(0L);
         
-        new FluxMapSignal<>(Flux.empty(), null, null, () -> 1)
+        Flux.<Integer>empty().materialize()
         .subscribe(ts);
         
         ts.assertNoValues()
@@ -33,16 +34,18 @@ public class FluxMapSignalTest {
         
         ts.request(1);
         
-        ts.assertValues(1)
+        ts.assertValues(Signal.complete())
         .assertNoError()
         .assertComplete();
     }
 
     @Test
     public void errorOnlyBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Signal<Integer>> ts = new TestSubscriber<>(0L);
+
+        RuntimeException ex = new RuntimeException();
         
-        new FluxMapSignal<>(Flux.error(new RuntimeException()), null, e -> 1, null)
+        Flux.<Integer>error(ex).materialize()
         .subscribe(ts);
         
         ts.assertNoValues()
@@ -51,9 +54,8 @@ public class FluxMapSignalTest {
         
         ts.request(1);
         
-        ts.assertValues(1)
+        ts.assertValues(Signal.<Integer>error(ex))
         .assertNoError()
         .assertComplete();
     }
-
 }
