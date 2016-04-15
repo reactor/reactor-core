@@ -67,7 +67,7 @@ public final class DependencyUtils {
 
         try {
             Flux.class.getClassLoader()
-                      .loadClass("reactor.io.ipc.ChannelFlux");
+                      .loadClass("reactor.io.ipc.Channel");
             detected |= REACTOR_IPC;
         }
         catch (ClassNotFoundException ignore) {
