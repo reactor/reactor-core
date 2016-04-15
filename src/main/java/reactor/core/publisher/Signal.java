@@ -31,9 +31,10 @@ import reactor.core.util.SignalKind;
  * @author Stephane Maldini
  */
 public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>>, Serializable {
+	/** */
+    private static final long serialVersionUID = 8430680363917273272L;
 
-
-	private static final Signal<Void> ON_COMPLETE = new Signal<>(SignalKind.onComplete, null, null, null);
+    private static final Signal<Void> ON_COMPLETE = new Signal<>(SignalKind.onComplete, null, null, null);
 
 	private final SignalKind      type;
 	private final Throwable throwable;
@@ -49,7 +50,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
-		return new Signal<T>(SignalKind.onNext, t, null, null);
+		return new Signal<>(SignalKind.onNext, t, null, null);
 	}
 
 	/**
@@ -59,7 +60,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
-		return new Signal<T>(SignalKind.onError, null, e, null);
+		return new Signal<>(SignalKind.onError, null, e, null);
 	}
 
 	/**
@@ -78,9 +79,8 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @param subscription the subscription
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Signal<T> subscribe(Subscription subscription) {
-		return new Signal<T>(SignalKind.onSubscribe, null, null, subscription);
+		return new Signal<>(SignalKind.onSubscribe, null, null, subscription);
 	}
 
 	private Signal(SignalKind type, T value, Throwable e, Subscription subscription) {
@@ -113,6 +113,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 *
 	 * @return the item associated with this (onNext) signal
 	 */
+	@Override
 	public T get() {
 		return value;
 	}
@@ -202,7 +203,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 			return false;
 		}
 
-		Signal signal = (Signal) o;
+		Signal<?> signal = (Signal<?>) o;
 
 		if (type != signal.type) {
 			return false;

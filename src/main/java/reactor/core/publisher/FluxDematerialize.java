@@ -15,9 +15,13 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriberBarrier;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.BooleanSupplier;
+
+import org.reactivestreams.*;
+
+import reactor.core.util.*;
 
 /**
  * @author Stephane Maldini
@@ -34,25 +38,146 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		source.subscribe(new DematerializeAction<>(subscriber));
 	}
 
-	static final class DematerializeAction<T> extends SubscriberBarrier<Signal<T>, T> {
+	static final class DematerializeAction<T>
+	extends AbstractQueue<T>
+	implements Subscriber<Signal<T>>, Subscription, BooleanSupplier {
 
+	    final Subscriber<? super T> actual;
+	    
+	    Subscription s;
+	    
+	    T value;
+	    
+	    boolean done;
+	    
+	    long produced;
+	    
+	    volatile long requested;
+	    @SuppressWarnings("rawtypes")
+        static final AtomicLongFieldUpdater<DematerializeAction> REQUESTED =
+	            AtomicLongFieldUpdater.newUpdater(DematerializeAction.class, "requested");
+	    
+	    volatile boolean cancelled;
+	    
+	    Throwable error;
+	    
 		public DematerializeAction(Subscriber<? super T> subscriber) {
-			super(subscriber);
+			this.actual = subscriber;
 		}
 
 		@Override
-		protected void doNext(Signal<T> ev) {
-			if(!ev.isOnSubscribe()){
-				if(ev.isOnNext()){
-					subscriber.onNext(ev.get());
-				}else if(ev.isOnComplete()){
-					cancel();
-					subscriber.onComplete();
-				}else{
-					cancel();
-					subscriber.onError(ev.getThrowable());
-				}
-			}
+		public void onSubscribe(Subscription s) {
+		    if (BackpressureUtils.validate(this.s, s)) {
+		        this.s = s;
+		        
+		        actual.onSubscribe(this);
+		        
+		        s.request(1);
+		    }
+		}
+		
+		@Override
+		public void onNext(Signal<T> t) {
+		    if (done) {
+		        Exceptions.onNextDropped(t);
+		        return;
+		    }
+		    if (t.isOnComplete()) {
+		        s.cancel();
+		        onComplete();
+		    } else
+		    if (t.isOnError()) {
+                s.cancel();
+		        onError(t.getThrowable());
+		    } else
+		    if (t.isOnNext()) {
+		        T v = value;
+		        value = t.get();
+		        
+		        if (v != null) {
+		            produced++;
+		            actual.onNext(v);
+		        }
+		    }
+		}
+		
+		@Override
+		public void onError(Throwable t) {
+		    if (done) {
+		        Exceptions.onErrorDropped(t);
+		        return;
+		    }
+		    done = true;
+		    error = t;
+            DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+		}
+		
+		@Override
+		public void onComplete() {
+		    if (done) {
+		        return;
+		    }
+		    done = true;
+		    long p = produced;
+		    if (p != 0L) {
+		        REQUESTED.addAndGet(this, -p);
+		    }
+		    DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+		}
+		
+		@Override
+		public void request(long n) {
+		    if (BackpressureUtils.validate(n)) {
+    		    if (!DrainUtils.postCompleteRequestDelayError(n, actual, this, REQUESTED, this, this, error)) {
+    		        s.request(n);
+    		    }
+		    }
+		}
+		
+		@Override
+		public void cancel() {
+		    cancelled = true;
+		    s.cancel();
+		}
+		
+		@Override
+		public boolean getAsBoolean() {
+		    return cancelled;
+		}
+		
+		@Override
+		public int size() {
+		    return value == null ? 0 : 1;
+		}
+		
+		@Override
+		public boolean isEmpty() {
+		    return value == null;
+		}
+		
+		@Override
+		public boolean offer(T e) {
+            throw new UnsupportedOperationException();
+		}
+		
+		@Override
+		public T peek() {
+		    return value;
+		}
+		
+		@Override
+		public T poll() {
+		    T v = value;
+		    if (v != null) {
+		        value = null;
+		        return v;
+		    }
+		    return null;
+		}
+		
+		@Override
+		public Iterator<T> iterator() {
+		    throw new UnsupportedOperationException();
 		}
 	}
 }
