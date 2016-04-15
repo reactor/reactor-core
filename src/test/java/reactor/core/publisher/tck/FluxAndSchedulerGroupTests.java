@@ -176,7 +176,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 		Processor p = s.createProcessor(256);
 		SignalEmitter sess = SignalEmitter.create(p);
 		p.subscribe(Subscribers.unbounded());
-		Nexus nexus = ReactiveNet.nexus().withSystemStats();
+		Nexus nexus = Nexus.create.withSystemStats();
 		nexus.monitor(p);
 		nexus.startAndAwait();
 		int n = 1;
