@@ -18,21 +18,44 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.function.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.LongStream;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.scheduler.*;
-import reactor.core.state.*;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Timer;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Completable;
+import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.tuple.*;
-import reactor.core.util.*;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
+import reactor.core.tuple.Tuple3;
+import reactor.core.tuple.Tuple4;
+import reactor.core.tuple.Tuple5;
+import reactor.core.tuple.Tuple6;
+import reactor.core.util.Logger;
+import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -444,6 +467,156 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
+		return new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a));
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4) {
+		return new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
+		return new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 * @param <T6> type of the value from source6
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
+        return new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
+	}
+
+	/**
+	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono
+	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param monos The monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SafeVarargs
+	@SuppressWarnings({"unchecked","varargs"})
+	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
+		return new MonoWhen<>(false, monos);
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
 	 * have been fulfilled.
 	 *
 	 * <p>
@@ -456,8 +629,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a));
+	@SuppressWarnings("unchecked")
+	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
+		return new MonoWhen<>(true, p1, p2).map(a -> (Tuple2)Tuple.of(a));
 	}
 
 	/**
@@ -476,8 +650,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
 	}
 
 	/**
@@ -498,11 +673,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
+		return new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
 	}
 
 	/**
@@ -525,12 +701,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
+		return new MonoWhen<>(true, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
 	}
 
 	/**
@@ -555,13 +732,14 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
+	@SuppressWarnings("unchecked")
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
+		return new MonoWhen<>(true, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
 	}
 
 	/**
@@ -578,8 +756,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
-	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return new MonoWhen<>(false, monos);
+	public static <T> Mono<T[]> whenDelayError(Mono<? extends T>... monos) {
+		return new MonoWhen<>(true, monos);
 	}
 
 	/**

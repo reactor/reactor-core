@@ -384,7 +384,7 @@ class MonoSpec extends Specification {
 	def promise2 = bc2.flux().log().next()
 
 	when: "a combined promise is first created"
-	def combined = Mono.when(promise1, promise2).subscribeWith(MonoProcessor.create())
+	def combined = Mono.when(promise1, promise2).subscribe()
 
 	then: "it is pending"
 	!combined.pending
@@ -429,8 +429,7 @@ class MonoSpec extends Specification {
 	def promise2 = Mono.just(2)
 
 	when: "a combined promise is first created"
-	def combined = MonoProcessor.create()
-	Mono.when(promise1, promise2).subscribe(combined)
+	def combined = Mono.when(promise1, promise2).subscribe()
 	combined.peek()
 
 	then: "it is fulfilled"

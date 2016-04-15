@@ -165,7 +165,7 @@ public final class MonoWhen<T> extends Mono<T[]> {
                 subscriber.onError(compositeError);
             } else
             if (error != null) {
-                subscriber.onError(compositeError);
+                subscriber.onError(error);
             } else
             if (hasEmpty) {
                 subscriber.onComplete();
