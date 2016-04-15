@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
@@ -24,7 +23,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.util.PlatformDependent;
 
 /**
  *  A
@@ -42,9 +40,6 @@ import reactor.core.util.PlatformDependent;
 public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 
 	volatile T value;
-
-	static final AtomicReferenceFieldUpdater<FluxTap, Object> VAL =
-			PlatformDependent.newAtomicReferenceFieldUpdater(FluxTap.class, "value");
 
 	/**
 	 * Allow to continue assembling the chain while having access to {@link #get()} to peek the last observed item.
@@ -75,9 +70,8 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 	 * @return the value
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public T get() {
-		return (T)VAL.get(this);
+		return value;
 	}
 
 	@Override
@@ -124,7 +118,7 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 
 		@Override
 		public void onNext(O o) {
-			VAL.set(parent, o);
+			parent.value = o;
 			actual.onNext(o);
 		}
 
@@ -145,7 +139,6 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 		final FluxTap<O>            parent;
 
 		Fuseable.QueueSubscription<O> s;
-		int sourceMode;
 
 		public TapFuseable(Subscriber<? super O> actual, FluxTap<O> parent) {
 			this.actual = actual;
@@ -161,7 +154,7 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 
 		@Override
 		public void onNext(O o) {
-			VAL.set(parent, o);
+			parent.value = o;
 			actual.onNext(o);
 		}
 
@@ -179,7 +172,7 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 		public O poll() {
 			O v = s.poll();
 			if(v != null){
-				VAL.set(parent, v);
+				parent.value = v;
 			}
 			return v;
 		}
@@ -221,13 +214,7 @@ public class FluxTap<T> extends FluxSource<T, T> implements Supplier<T> {
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			int m = s.requestFusion(requestedMode);
-			if (m != Fuseable.NONE) {
-				sourceMode = m == Fuseable.SYNC ? Fuseable.SYNC : ((requestedMode & Fuseable.THREAD_BARRIER) != 0 ?
-						Fuseable.NONE :
-						Fuseable.ASYNC);
-			}
-			return m;
+			return s.requestFusion(requestedMode);
 		}
 	}
 
