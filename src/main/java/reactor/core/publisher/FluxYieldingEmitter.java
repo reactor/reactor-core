@@ -53,9 +53,10 @@ final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
 		final Consumer<? super SignalEmitter<T>> onSubscribe;
 
 		@SuppressWarnings("unused")
-		private volatile int running = 0;
+		private volatile int running;
 
-		private final static AtomicIntegerFieldUpdater<YieldingSignalEmitter> RUNNING =
+		@SuppressWarnings("rawtypes")
+        private final static AtomicIntegerFieldUpdater<YieldingSignalEmitter> RUNNING =
 				AtomicIntegerFieldUpdater.newUpdater(YieldingSignalEmitter.class, "running");
 
 		public YieldingSignalEmitter(Consumer<? super SignalEmitter<T>> onSubscribe, Subscriber<? super T> actual) {
@@ -65,19 +66,15 @@ final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
 
 		@Override
 		public void request(long n) {
-			super.request(n);
-			if (RUNNING.getAndIncrement(this) == 0) {
-				int missed = 1;
+			if (isCancelled()) {
+			    return;
+			}
+            super.request(n);
+			if (RUNNING.compareAndSet(this, 0, 1)) {
 
 				onSubscribe.accept(this);
 
-				for (; ; ) {
-					missed = RUNNING.addAndGet(this, -missed);
-					if (missed == 0) {
-						break;
-					}
-				}
-
+				running = 0;
 			}
 		}
 	}
