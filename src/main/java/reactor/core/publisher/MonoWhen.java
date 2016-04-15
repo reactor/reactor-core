@@ -180,6 +180,8 @@ public final class MonoWhen<T> extends Mono<Tuple> {
         public void onSubscribe(Subscription s) {
             if (BackpressureUtils.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);
+            } else {
+                s.cancel();
             }
         }
         
@@ -199,7 +201,9 @@ public final class MonoWhen<T> extends Mono<Tuple> {
         
         @Override
         public void onComplete() {
-            parent.signal();
+            if (value == null) {
+                parent.signal();
+            }
         }
         
         void cancel() {

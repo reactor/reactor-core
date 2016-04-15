@@ -578,7 +578,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SafeVarargs
 	@SuppressWarnings({"unchecked","varargs"})
-	private static <T> Mono<T[]> when(Mono<? extends T>... monos) {
+	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
 		return new MonoWhen<>(monos).map(v -> (T[])v.toArray());
 	}
 
