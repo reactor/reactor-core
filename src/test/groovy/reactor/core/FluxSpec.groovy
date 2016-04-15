@@ -2113,12 +2113,20 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by complete'
 			def res = []
+			/*
 			def myFlux = Flux.yield { aSubscriber ->
 				aSubscriber.onNext(Signal.next(1))
 				aSubscriber.onNext(Signal.next(2))
 				aSubscriber.onNext(Signal.next(3))
 				aSubscriber.onNext(Signal.complete())
 			}
+			*/
+			def myFlux = Flux.just(
+				Signal.next(1),
+				Signal.next(2),
+				Signal.next(3),
+				Signal.complete()
+			).concatWith(Flux.never())
 
 		and:
 			'A dematerialized flux is consumed'

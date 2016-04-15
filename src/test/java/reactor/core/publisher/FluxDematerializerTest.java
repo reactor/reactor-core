@@ -165,4 +165,20 @@ public class FluxDematerializerTest {
         .assertNotComplete();
     }
 
+    @Test
+    public void neverEnding() {
+        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        
+        Flux<Integer> dematerialize = Flux.just(Signal.next(1), Signal.next(2), 
+                Signal.next(3), Signal.<Integer>complete())
+        .concatWith(Flux.never())
+        .dematerialize();
+        
+        dematerialize.subscribe(ts);
+        
+        ts.assertValues(1, 2, 3)
+        .assertNoError()
+        .assertComplete();
+    }
+
 }
