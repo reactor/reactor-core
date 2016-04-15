@@ -15,17 +15,15 @@
  */
 package reactor.core.publisher;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.function.*;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -73,7 +71,9 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         source.subscribe(new FluxMapSignalSubscriber<>(s, this));
     }
 
-    static final class FluxMapSignalSubscriber<T, R> implements Subscriber<T>, Receiver, Producer, Completable {
+    static final class FluxMapSignalSubscriber<T, R> 
+    extends AbstractQueue<R>
+    implements Subscriber<T>, Receiver, Producer, Completable, Subscription, BooleanSupplier {
 
         final Subscriber<? super R>            actual;
         final FluxMapSignal<T, R> parent;
@@ -81,7 +81,16 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         boolean done;
 
         Subscription s;
+        
+        R value;
+        
+        volatile long requested;
+        @SuppressWarnings("rawtypes")
+        static final AtomicLongFieldUpdater<FluxMapSignalSubscriber> REQUESTED =
+                AtomicLongFieldUpdater.newUpdater(FluxMapSignalSubscriber.class, "requested");
 
+        volatile boolean cancelled;
+        
         public FluxMapSignalSubscriber(Subscriber<? super R> actual, FluxMapSignal<T, R> parent) {
             this.actual = actual;
             this.parent = parent;
@@ -92,7 +101,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             if (BackpressureUtils.validate(this.s, s)) {
                 this.s = s;
 
-                actual.onSubscribe(s);
+                actual.onSubscribe(this);
             }
         }
 
@@ -152,8 +161,8 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 		        return;
 	        }
 
-	        actual.onNext(v);
-	        actual.onComplete();
+	        value = v;
+	        DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
 
         @Override
@@ -184,8 +193,8 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 		        return;
 	        }
 
-	        actual.onNext(v);
-	        actual.onComplete();
+            value = v;
+            DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
 
         @Override
@@ -214,5 +223,55 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 		    Exceptions.throwIfFatal(e);
 		    actual.onError(Exceptions.unwrap(e));
 	    }
+	    
+	    @Override
+	    public void request(long n) {
+	        if (BackpressureUtils.validate(n)) {
+	            if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
+	                s.request(n);
+	            }
+	        }
+	    }
+
+        @Override
+        public boolean offer(R e) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public R poll() {
+            R v = value;
+            if (v != null) {
+                value = null;
+                return v;
+            }
+            return null;
+        }
+
+        @Override
+        public R peek() {
+            return value;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return cancelled;
+        }
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+            s.cancel();
+        }
+
+        @Override
+        public Iterator<R> iterator() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return value == null ? 0 : 1;
+        }
     }
 }
