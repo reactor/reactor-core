@@ -16,24 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.stream.LongStream;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -47,15 +29,19 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
+import reactor.core.tuple.*;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
+
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.*;
+import java.util.logging.Level;
+import java.util.stream.LongStream;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -79,6 +65,7 @@ import reactor.core.util.ReactiveStateUtils;
  * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
  * @see Flux
  * @since 2.5
  */
@@ -1198,6 +1185,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
 	}
 
+	@SuppressWarnings("unchecked")
+	public final  <E extends Throwable>  Mono<T> doOnError(Class<? extends Throwable> exceptionType, Consumer<E> onError) {
+		return doOnError(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				onError.accept((E) throwable);
+			}
+		});
+	}
+
 	/**
 	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
 	 *
@@ -1696,6 +1692,26 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
 		return MonoSource.wrap(new FluxResume<>(this, fallback));
+	}
+
+	/**
+	 *  Subscribe to a fallback mono that respond with a supplier if the given
+	 *  exceptionType is matched with the incoming error
+	 *
+	 * @param exceptionType expected type of exception
+	 * @param fallback mono to return if the exception match the exceptionType
+     * @return an alternating {@link Mono} supplyed by you when the exceptions match, otherwise a wrapped error
+	 *
+	 * @see this#otherwise(Function)
+     */
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, final Supplier<Mono<T>> fallback) {
+		return otherwise(e -> {
+			if (exceptionType.isAssignableFrom(e.getClass())) {
+				return fallback.get();
+			} else {
+				return Mono.error(e);
+			}
+		});
 	}
 
 	/**
