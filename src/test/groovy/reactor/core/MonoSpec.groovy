@@ -26,11 +26,11 @@ import spock.lang.Specification
 
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * @author Stephane Maldini
- * @author Joao Pedro Evangelista
  */
 class MonoSpec extends Specification {
 
@@ -197,78 +197,6 @@ class MonoSpec extends Specification {
 	then: "the consumer is invoked with the rejecting value"
 	thrown(Exception)
 	acceptedValue == failure
-  }
-
-  def "A doOnError is called with exceptionType so only if the exception is satisfied the accept is called"() {
-	  given: "a MonoProcessor with error"
-	  def failure = new IllegalArgumentException()
-	  def promise = Mono.error(failure)
-
-	  when: "an doOnError for another exception is added"
-	  def counter = 0
-	  promise.doOnError(IllegalStateException, { counter = 1 })
-			  .subscribeWith(MonoProcessor.create())
-	  println promise.debug()
-
-	  then: "the consumer is not invoked"
-	  thrown(IllegalArgumentException)
-	  counter == 0
-
-  }
-
-  def "Multiple doOnError can call different types of exception"() {
-	  given: "a MonoProcessor with error"
-	  def failure = new IllegalArgumentException()
-	  def promise = Mono.error(failure)
-
-	  when: "two doOnError is added "
-
-	  def counter = 0
-
-	  promise.doOnError(IllegalArgumentException, {counter = 2})
-			  .doOnError(IllegalStateException, {counter = 3})
-			  .subscribeWith(MonoProcessor.create())
-
-	  println promise.debug()
-
-	  then: "Only one doOnError consumer is executed"
-	  thrown(IllegalArgumentException)
-	  counter == 2
-  }
-
-  def "An otherwise can handle properly a type of exception if it matches the thrown"() {
-	  given: "a MonoProcessor with error"
-
-	  def failure = new IllegalArgumentException()
-	  def promise = Mono.error(failure)
-
-	  when: "otherwise is added to handle the same exception type of error"
-
-	  def result = promise.otherwise(IllegalArgumentException, { Mono.just("I'm a fallback")})
-	         .get()
-	  println promise.debug()
-
-	  then: "A fallback becomes the result and exception is suppressed"
-
-	  result == "I'm a fallback"
-  }
-
-  def "When a error occurs it can be translated to another exception type"() {
-	  given: "A Mono with NoSuchElementException"
-
-	  def failure = new NoSuchElementException()
-	  def promise = Mono.error(failure)
-
-	  when: "otherwise is added to translate the exception"
-
-	  promise.otherwiseReplace(NoSuchElementException, {
-		  new IllegalArgumentException("No element on the planet")
-	  }).subscribeWith(MonoProcessor.create())
-
-	  promise.debug()
-
-	  then: "The error on mono is translated to a new type and thrown"
-	  thrown(IllegalArgumentException)
   }
 
   def "When getting a rejected promise's value the exception that the promise was rejected with is thrown"() {

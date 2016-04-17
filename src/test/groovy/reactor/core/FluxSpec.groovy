@@ -17,11 +17,18 @@ package reactor.core
 
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
-import reactor.core.publisher.*
-import reactor.core.scheduler.Timer
+import reactor.core.publisher.EmitterProcessor
+import reactor.core.publisher.FluxProcessor
+import reactor.core.publisher.Mono
+import reactor.core.publisher.Flux
+import reactor.core.publisher.MonoProcessor
+import reactor.core.publisher.SchedulerGroup
+import reactor.core.publisher.Signal
 import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
+import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -2661,32 +2668,7 @@ class FluxSpec extends Specification {
 
 		then:
 			!promise.get()
-	}
-
-
-	def 'A Flux can resume with new value only when the exception occurred match the expected'() {
-		given: 'a rejected Flux'
-
-		def failure = new Exception()
-		def promise = Flux.error(failure)
-
-		when: 'onErrorResumeWith is added to handle multiple exceptions'
-
-		def result = promise
-				.onErrorResumeWith(IllegalStateException, {Flux.just(4,5,6)})
-				.onErrorResumeWith(Exception, {Flux.just(1,2,3)})
-			.toList()
-		    .get()
-
-		promise.debug()
-
-		then: 'A flux is handled using the matching exception type then resumed with supplied list of integers'
-
-		result == [1,2,3]
-		result != [4,5,6]
-	}
-
-	/*
+	}/*
 
 	def "A Codec output can be streamed"() {
 		given: "A delimiter stripping decoder and a buffer of delimited data"
