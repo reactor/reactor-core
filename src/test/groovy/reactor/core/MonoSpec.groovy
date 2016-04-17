@@ -261,8 +261,8 @@ class MonoSpec extends Specification {
 
 	  when: "otherwise is added to translate the exception"
 
-	  promise.otherwise(NoSuchElementException, {
-		  Mono.error(new IllegalArgumentException("No element on the planet"))
+	  promise.otherwiseReplace(NoSuchElementException, {
+		  new IllegalArgumentException("No element on the planet")
 	  }).subscribeWith(MonoProcessor.create())
 
 	  promise.debug()
