@@ -24,6 +24,7 @@ import org.reactivestreams.*;
 import reactor.core.flow.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.util.BackpressureUtils;
+import reactor.core.util.Exceptions;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -87,11 +88,17 @@ final class MonoTimer extends Mono<Long> {
 		@Override
 		public void run() {
 			if (requested) {
-				if (cancel != CANCELLED) {
-					s.onNext(0L);
+				try {
+					if (cancel != CANCELLED) {
+						s.onNext(0L);
+					}
+					if (cancel != CANCELLED) {
+						s.onComplete();
+					}
 				}
-				if (cancel != CANCELLED) {
-					s.onComplete();
+				catch (Throwable t){
+					Exceptions.throwIfFatal(t);
+					s.onError(t);
 				}
 			} else {
 				s.onError(new IllegalStateException("Could not emit value due to lack of requests"));

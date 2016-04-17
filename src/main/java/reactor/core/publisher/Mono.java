@@ -1835,7 +1835,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 					.apply(o
 						.takeWhile(e -> !nonEmpty.get())
 						.zipWith(iterations, 1, (c, i) -> i)))
-				.single();
+				.next();
 		});
 	}
 

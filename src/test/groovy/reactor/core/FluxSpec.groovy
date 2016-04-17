@@ -888,7 +888,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element with index > number of values is requested'
-			s.elementAt(10).doOnError(errorConsumer).subscribe()
+			s.elementAt(10).doOnError(errorConsumer).get()
 
 		then:
 			'error is thrown'
