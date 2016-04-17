@@ -50,6 +50,7 @@ import reactor.core.util.*;
  *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
  *
  * @see Mono
  * @since 2.5
@@ -966,6 +967,31 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T> source,
 			Function<Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(source, fallback);
+	}
+
+
+	/**
+	 * Create a {@link Flux} that will fallback to a publish if the error exception matches the given type
+	 * failing to an error with the same that of original
+	 *
+	 * @param errorType exception type to match
+	 * @param source source sequence
+	 * @param fallback supplier called when the exceptions and errorType matches
+	 * @param <T> {@link Subscriber} type target
+	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
+	 */
+	public static <T> Flux<T> onErrorResumeWith(
+			Class<? extends Throwable> errorType,
+			Publisher<? extends T> source,
+			Supplier<Publisher<? extends T>> fallback) {
+
+		return new FluxResume<>(source, throwable -> {
+			if (errorType.isAssignableFrom(throwable.getClass())) {
+				return fallback.get();
+			} else {
+				return Flux.error(throwable);
+			}
+		});
 	}
 
 	/**
@@ -3298,6 +3324,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> onBackpressureLatest() {
 		return new FluxLatest<>(this);
 	}
+
 	/**
 	 * Subscribe to a returned fallback publisher when any error occurs.
 	 * <p>
@@ -3309,6 +3336,29 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> onErrorResumeWith(Function<Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(this, fallback);
+	}
+
+
+	/**
+	 * Subscribe to a fallback Publisher if the error exception matches the given type
+	 * failing to an error with the same that of original and assign the supplier error
+	 * value as error, if does not match the given type it return the same error on a new Flux
+	 *
+	 * @param errorType exception type to match
+	 * @param fallback supplier called when the exceptions and errorType matches
+	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
+	 */
+	public final Flux<T> onErrorResumeWith(
+			Class<? extends Throwable> errorType,
+			Supplier<Publisher<? extends T>> fallback) {
+
+		return new FluxResume<>(this, throwable -> {
+			if (errorType.isAssignableFrom(throwable.getClass())) {
+				return fallback.get();
+			} else {
+				return Flux.error(throwable);
+			}
+		});
 	}
 
 	/**
