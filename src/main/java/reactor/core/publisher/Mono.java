@@ -1701,6 +1701,47 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 *  Subscribe to a fallback mono that respond with a supplier if the given
+	 *  exceptionType is matched with the incoming error
+	 *
+	 * @param exceptionType expected type of exception
+	 * @param fallback mono to return if the exception match the exceptionType
+	 * @return an alternating {@link Mono} supplyed by you when the exceptions match, otherwise a wrapped error
+	 *
+	 * @see this#otherwise(Function)
+	 */
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, final Supplier<Mono<T>> fallback) {
+		return otherwise(e -> {
+			if (exceptionType.isAssignableFrom(e.getClass())) {
+				return fallback.get();
+			} else {
+				return Mono.error(e);
+			}
+		});
+	}
+
+	/**
+	 * Subscribe to a rejected Mono which wraps the error occurred in the new
+	 * type provided by supplier
+	 *
+	 * @param exceptionType expected type of exception
+	 * @param exceptionSupplier new exception supplier
+	 * @return a reject Mono with supplied exception
+	 *
+	 * @see this#otherwise(Function)
+	 * @see this#otherwise(Class, Supplier)
+	 */
+	public final Mono<T> otherwiseReplace(Class<? extends Throwable> exceptionType,
+			final Supplier<? extends Throwable> exceptionSupplier) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return Mono.error(exceptionSupplier.get());
+			} else {
+				return 	Mono.error(throwable);
+			}
+		});
+	}
+	/**
 	 * Provide an alternative {@link Mono} if this mono is completed without data
 	 *
 	 * <p>
