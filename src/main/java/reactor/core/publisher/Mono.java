@@ -16,6 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.stream.LongStream;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -29,19 +47,15 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.tuple.*;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
+import reactor.core.tuple.Tuple3;
+import reactor.core.tuple.Tuple4;
+import reactor.core.tuple.Tuple5;
+import reactor.core.tuple.Tuple6;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
-
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.*;
-import java.util.logging.Level;
-import java.util.stream.LongStream;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -1723,7 +1737,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
      * @return a reject Mono with supplied exception
 	 *
 	 * @see this#otherwise(Function)
-	 * @see this#otherwise(Class, Supplier) 
+	 * @see this#
      */
 	public final Mono<T> otherwiseReplace(Class<? extends Throwable> exceptionType,
                                           final Supplier<? extends Throwable> exceptionSupplier) {

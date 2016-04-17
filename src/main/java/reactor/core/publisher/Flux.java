@@ -16,36 +16,23 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
-import reactor.core.queue.QueueSupplier;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.Timer;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
-import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.subscriber.SignalEmitter;
-import reactor.core.subscriber.SubscriberWithContext;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.tuple.*;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
-
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.logging.Level;
 import java.util.stream.Stream;
+
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
+import reactor.core.queue.QueueSupplier;
+import reactor.core.scheduler.*;
+import reactor.core.scheduler.Timer;
+import reactor.core.state.*;
+import reactor.core.subscriber.*;
+import reactor.core.tuple.*;
+import reactor.core.util.*;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -993,7 +980,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <T> {@link Subscriber} type target
 	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
 	 */
-	public final <T> Flux<T> onErrorResumeWith(
+	public final Flux<T> onErrorResumeWith(
 			Class<? extends Throwable> errorType,
 			Publisher<? extends T> source,
 			Supplier<Publisher<? extends T>> fallback) {
