@@ -3915,60 +3915,60 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 
   /**
-	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/single.png" alt="">
-	 *
-	 * @return a {@link Mono} with the eventual single item or an error signal
-	 */
-	@SuppressWarnings("unchecked")
-  public final Mono<T> single() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+  	 * Expect and emit a single item from this {@link Flux} source or signal
+  	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+  	 * {@link IndexOutOfBoundsException} for a multi-item source.
+  	 *
+  	 * <p>
+  	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/single.png" alt="">
+  	 *
+  	 * @return a {@link Mono} with the eventual single item or an error signal
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Mono<T> single() {
+  	    if (this instanceof Callable) {
+  	        if (this instanceof Fuseable.ScalarCallable) {
+                  Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
-                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
-                }
-                return Mono.just(v);
-	        }
-	        return new MonoCallable<>((Callable<T>)this);
-	    }
-		return new MonoSingle<>(this);
-	}
+                  T v = scalarCallable.call();
+                  if (v == null) {
+                      return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+                  }
+                  return Mono.just(v);
+  	        }
+  	        return new MonoCallable<>((Callable<T>)this);
+  	    }
+  		return new MonoSingle<>(this);
+  	}
 
-  /**
-	 *
-	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
-	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
-	 *
-	 * @return a {@link Mono} with the eventual single item or a supplied default value
-	 */
-	@SuppressWarnings("unchecked")
-    public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
-        if (this instanceof Callable) {
-            if (this instanceof Fuseable.ScalarCallable) {
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+    /**
+  	 *
+  	 * Expect and emit a single item from this {@link Flux} source or signal
+  	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+  	 * {@link IndexOutOfBoundsException} for a multi-item source.
+  	 *
+  	 * <p>
+  	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
+  	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
+  	 *
+  	 * @return a {@link Mono} with the eventual single item or a supplied default value
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+          if (this instanceof Callable) {
+              if (this instanceof Fuseable.ScalarCallable) {
+                  Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
-                    return new MonoSupplier<>(defaultSupplier);
-                }
-                return Mono.just(v);
-            }
-            return new MonoCallable<>((Callable<T>)this);
-        }
-		return new MonoSingle<>(this, defaultSupplier);
-	}
+                  T v = scalarCallable.call();
+                  if (v == null) {
+                      return new MonoSupplier<>(defaultSupplier);
+                  }
+                  return Mono.just(v);
+              }
+              return new MonoCallable<>((Callable<T>)this);
+          }
+  		return new MonoSingle<>(this, defaultSupplier);
+  	}
 
 	/**
 	 * Expect and emit a zero or single item from this {@link Flux} source or
@@ -4604,6 +4604,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
         }
         return new MonoBufferAll<>(this, LIST_SUPPLIER);
 	}
+
 
 	/**
 	 * Accumulate and sort this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
