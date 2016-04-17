@@ -87,8 +87,8 @@ public enum Exceptions {
 	 */
 	public static RuntimeException propagate(Throwable t) {
 		throwIfFatal(t);
-		if(t instanceof DownstreamException){
-			return (DownstreamException)t;
+		if(t instanceof RuntimeException){
+			return (RuntimeException)t;
 		}
 		return new DownstreamException(t);
 	}
