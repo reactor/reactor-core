@@ -980,7 +980,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param <T> {@link Subscriber} type target
 	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
 	 */
-	public final Flux<T> onErrorResumeWith(
+	public static <T> Flux<T> onErrorResumeWith(
 			Class<? extends Throwable> errorType,
 			Publisher<? extends T> source,
 			Supplier<Publisher<? extends T>> fallback) {
