@@ -27,6 +27,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Function
 
 /**
  * @author Stephane Maldini
@@ -244,7 +245,7 @@ class MonoSpec extends Specification {
 
 		when: "otherwise is added to handle the same exception type of error"
 
-		def result = promise.otherwise(IllegalArgumentException, { Mono.just("I'm a fallback")})
+		def result = promise.otherwise(IllegalArgumentException, Mono.<String>just("I'm a fallback"))
 				.get()
 		println promise.debug()
 
@@ -261,9 +262,8 @@ class MonoSpec extends Specification {
 
 		when: "otherwise is added to translate the exception"
 
-		promise.otherwiseReplace(NoSuchElementException, {
-			new IllegalArgumentException("No element on the planet")
-		}).subscribeWith(MonoProcessor.create())
+		promise.otherwise(NoSuchElementException,{ Mono.error(new IllegalArgumentException(it))
+		} as Function).subscribeWith(MonoProcessor.create())
 
 		promise.debug()
 
@@ -743,4 +743,3 @@ class MonoSpec extends Specification {
   }
 
 }
-

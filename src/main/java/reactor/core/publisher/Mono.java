@@ -74,9 +74,9 @@ import reactor.core.util.ReactiveStateUtils;
  *
  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
  * Publisher} as much as possible.
- * 
+ *
  * @param <T> the type of the single value of this class
- * 
+ *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @see Flux
@@ -131,7 +131,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
-	 * 
+	 *
 	 * @param <T> the element type of the returned Mono instance
 	 *
 	 * @return a new {@link Mono} factory
@@ -834,7 +834,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param transformer the {@link Function} applying this {@link Mono}
 	 * @param <P> the returned {@link Publisher} output
 	 * @param <V> the element type of the returned Publisher
-	 * 
+	 *
 	 * @return the transformed {@link Mono}
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
@@ -849,7 +849,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param other the {@link Mono} to combine with
 	 * @param <T2> the element type of the other Mono instance
-	 * 
+	 *
 	 * @return a new combined Mono
 	 * @see #when
 	 */
@@ -1114,7 +1114,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
 	 * @param <X> the dematerialized type
-	 * 
+	 *
 	 * @return a dematerialized {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
@@ -1196,6 +1196,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, onError, null, null, null, null));
 		}
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+	}
+
+	/**
+	 * Triggered when the {@link Mono} completes with an error and the exception type of
+	 * that error matches the exceptionType parameter
+	 *
+	 * @param exceptionType type to match the error
+	 * @param onError error callback to be executed on {@link Subscriber#onError(Throwable)}
+	 * @param <E> type of exception
+	 * @return a new {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final  <E extends Throwable>  Mono<T> doOnError(Class<? extends Throwable> exceptionType, Consumer<E> onError) {
+		return doOnError(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				onError.accept((E) throwable);
+			}
+		});
 	}
 
 	/**
@@ -1488,16 +1506,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Hides the identity of this {@link Mono} instance.
-	 * 
+	 *
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
-	 * 
+	 *
 	 * @return a new {@link Mono} instance
 	 */
 	public final Mono<T> hide() {
 	    return new MonoHide<>(this);
 	}
-	
+
 	/**
 	 * Ignores onNext signal (dropping it) and only reacts on termination.
 	 *
@@ -1708,37 +1726,28 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @see this#otherwise(Function)
 	 */
-	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, final Supplier<Mono<T>> fallback) {
-		return otherwise(e -> {
-			if (exceptionType.isAssignableFrom(e.getClass())) {
-				return fallback.get();
-			} else {
-				return Mono.error(e);
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
+		return otherwise(exceptionType, throwable -> fallback);
+	}
+
+	/**
+	 * Subscribe to a
+	 * @param ex
+	 * @param fallback
+	 * @return
+	 */
+	public final Mono<T> otherwise(Class<? extends Throwable> ex,
+			Function<Throwable, Mono<? extends T>> fallback) {
+		return otherwise(throwable -> {
+			if (ex.isAssignableFrom(throwable.getClass())) {
+				return otherwise(fallback);
+			}
+			else {
+				return Mono.error(throwable);
 			}
 		});
 	}
 
-	/**
-	 * Subscribe to a rejected Mono which wraps the error occurred in the new
-	 * type provided by supplier
-	 *
-	 * @param exceptionType expected type of exception
-	 * @param exceptionSupplier new exception supplier
-	 * @return a reject Mono with supplied exception
-	 *
-	 * @see this#otherwise(Function)
-	 * @see this#otherwise(Class, Supplier)
-	 */
-	public final Mono<T> otherwiseReplace(Class<? extends Throwable> exceptionType,
-			final Supplier<? extends Throwable> exceptionSupplier) {
-		return otherwise(throwable -> {
-			if (exceptionType.isAssignableFrom(throwable.getClass())) {
-				return Mono.error(exceptionSupplier.get());
-			} else {
-				return 	Mono.error(throwable);
-			}
-		});
-	}
 	/**
 	 * Provide an alternative {@link Mono} if this mono is completed without data
 	 *
