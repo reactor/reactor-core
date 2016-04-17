@@ -3336,18 +3336,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxResume<>(this, fallback);
 	}
 
-	/**
-	 * Subscribe to a returned fallback publisher when any error occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png" alt="">
-	 * <p>
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
-	 *
-	 * @return a new {@link Flux}
-	 */
-	public final Flux<T> onErrorResumeWith(Function<Throwable, ? extends Publisher<? extends T>> fallback) {
-		return new FluxResume<>(this, fallback);
-	}
 
 	/**
 	 * Subscribe to a fallback Publisher if the error exception matches the given type
