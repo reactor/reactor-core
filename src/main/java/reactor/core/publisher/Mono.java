@@ -1201,6 +1201,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Triggered when the {@link Mono} completes with an error and the exception type of
+	 * that error matches the exceptionType parameter
+	 *
+	 * @param exceptionType type to match the error
+	 * @param onError error callback to be executed on {@link Subscriber#onError(Throwable)}
+	 * @param <E> type of exception
+	 * @return a new {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final  <E extends Throwable>  Mono<T> doOnError(Class<? extends Throwable> exceptionType, Consumer<E> onError) {
+		return doOnError(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				onError.accept((E) throwable);
+			}
+		});
+	}
+
+	/**
 	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
 	 *
 	 * <p>
