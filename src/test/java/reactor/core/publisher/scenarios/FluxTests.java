@@ -256,8 +256,8 @@ public class FluxTests extends AbstractReactorTest {
 		Throwable error = new Exception();
 		try {
 			deferred.onError(error);
-			fail();
 			deferred.onNext(error);
+			fail();
 		}
 		catch (Exceptions.UpstreamException ise) {
 			// Swallow
@@ -271,8 +271,8 @@ public class FluxTests extends AbstractReactorTest {
 		Throwable error = new Exception();
 		try {
 			deferred.onError(error);
-			fail();
 			deferred.onNext("alpha");
+			fail();
 		}
 		catch (Exceptions.ReactiveException ise) {
 		}

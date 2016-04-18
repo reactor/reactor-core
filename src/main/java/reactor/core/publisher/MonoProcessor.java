@@ -253,15 +253,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
-				if(processor == null){
-					if (RuntimeException.class.isInstance(error)) {
-						throw (RuntimeException) error;
-					}
-					else {
-						Exceptions.onErrorDropped(error);
-						return;
-					}
-				}
 				break;
 			}
 			state = this.state;
@@ -341,7 +332,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			return value;
 		}
 		else if (endState == STATE_ERROR) {
-			if (RuntimeException.class.isInstance(error)) {
+			if (error instanceof RuntimeException) {
 				throw (RuntimeException) error;
 			}
 			else {

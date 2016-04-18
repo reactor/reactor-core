@@ -94,15 +94,17 @@ public class MonoTests {
 	}
 
 	@Test
-	public void otherwiseWithOverloadedOperators() throws Exception {
+	public void mapAnErrorThenChainWithOtherwise() throws Exception {
 		IllegalArgumentException failure = new IllegalArgumentException();
 		Mono<Object> promise = Mono.error(failure);
-		Object result = promise.otherwise(IllegalArgumentException.class,
+		Object result = promise.mapError(IllegalArgumentException.class,
 				throwable -> Mono.error(new IllegalStateException(throwable)))
 				.otherwise(IllegalStateException.class, Mono.just(1))
 				.get();
 		assertThat("Result must be instance of integer when catch two times by otherwise",
 				result,
 				instanceOf(Integer.class));
+		Integer intResult = (Integer) result;
+		assertThat("Result is one",intResult, is(1));
 	}
 }

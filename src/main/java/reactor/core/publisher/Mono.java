@@ -37,6 +37,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
@@ -1645,6 +1646,30 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform a rejected {@link Mono} into a fallback by applying a transforming function
+	 * only when the exceptionType match the incoming error type, otherwise new a Mono
+	 * carrying the error will be returned
+	 *
+	 * @param exceptionType  type of exception to match the incoming error
+	 * @param fallback transforming function
+	 *
+	 * @return a new {@link Mono}
+	 *
+	 * @see this#otherwise(Function)
+ 	 */
+	public final Mono<T> mapError(Class<? extends Throwable> exceptionType,
+			Function<Throwable, Mono<? extends T>> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return otherwise(fallback);
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1727,20 +1752,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see this#otherwise(Function)
 	 */
 	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
-		return otherwise(exceptionType, throwable -> fallback);
-	}
-
-	/**
-	 * Subscribe to a
-	 * @param ex
-	 * @param fallback
-	 * @return
-	 */
-	public final Mono<T> otherwise(Class<? extends Throwable> ex,
-			Function<Throwable, Mono<? extends T>> fallback) {
 		return otherwise(throwable -> {
-			if (ex.isAssignableFrom(throwable.getClass())) {
-				return otherwise(fallback);
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return fallback;
 			}
 			else {
 				return Mono.error(throwable);
@@ -1885,7 +1899,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 					.apply(o
 						.takeWhile(e -> !nonEmpty.get())
 						.zipWith(iterations, 1, (c, i) -> i)))
-				.single();
+				.next();
 		});
 	}
 

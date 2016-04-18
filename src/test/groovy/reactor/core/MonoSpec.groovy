@@ -27,8 +27,6 @@ import spock.lang.Specification
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Function
-
 /**
  * @author Stephane Maldini
  * @author Joao Pedro Evangelista
@@ -126,7 +124,6 @@ class MonoSpec extends Specification {
 	promise.doOnError { ex = it }.subscribe()
 
 	then: "no error is thrown"
-	thrown Exception
 	ex in Exception
   }
 
@@ -146,14 +143,14 @@ class MonoSpec extends Specification {
 	def promise = MonoProcessor.create()
 	def acceptedValue
 
-	promise.doOnError { v -> acceptedValue = v }.subscribeWith(MonoProcessor.create())
+	def s = promise.doOnError { v -> acceptedValue = v }.subscribe()
 
 	when: "the promise is rejected"
 	def failure = new Exception()
 	promise.onError failure
 
 	then: "the consumer is invoked with the rejecting value"
-	thrown Exception
+	s.isError()
   }
 
   def "A promise can only listen to terminal states"() {
@@ -178,7 +175,6 @@ class MonoSpec extends Specification {
 	promise.onError new Exception()
 
 	then: "the promise is invoked with the rejecting value"
-	thrown(Exception)
 	after.isError()
 	after.getError().class == Exception
   }
@@ -196,7 +192,6 @@ class MonoSpec extends Specification {
 	println promise.debug()
 
 	then: "the consumer is invoked with the rejecting value"
-	thrown(Exception)
 	acceptedValue == failure
   }
 
@@ -254,23 +249,76 @@ class MonoSpec extends Specification {
 		result == "I'm a fallback"
 	}
 
-	def "When a error occurs it can be translated to another exception type"() {
-		given: "A Mono with NoSuchElementException"
+	def "When a error occurs it can be mapped to another exception type"() {
+		given: "A rejected Mono with NoSuchElementException"
 
 		def failure = new NoSuchElementException()
 		def promise = Mono.error(failure)
 
 		when: "otherwise is added to translate the exception"
 
-		promise.otherwise(NoSuchElementException,{ Mono.error(new IllegalArgumentException(it))
-		} as Function).subscribeWith(MonoProcessor.create())
+		promise.mapError(NoSuchElementException,{ Mono.error(new IllegalArgumentException(it)) })
+				.subscribeWith(MonoProcessor.create())
 
 		promise.debug()
 
-		then: "The error on mono is translated to a new type and thrown"
+		then: "The error on mono is transformed to a new type and thrown"
 		thrown(IllegalArgumentException)
 	}
 
+	def "A rejected Mono can map it's error into a new Mono with value"() {
+		given: "A rejected Mono with IllegalArgumentException"
+
+		def failure = new IllegalArgumentException()
+		def promise = Mono.error(failure)
+
+		and: "A Mono as fallback"
+
+		def fallback = Mono.just(1)
+
+		when: "An error is mapped into another result by matching its error type"
+
+		def promiseResult = promise.mapError(IllegalArgumentException, { fallback }).get()
+		promise.debug()
+
+		then: "No error is thrown and fallback is available"
+		noExceptionThrown()
+		promiseResult == 1
+
+	}
+
+	def "When a mapError is provided and no error is thrown on the stream mapError must do nothing"() {
+		given: "A Mono with a value"
+
+		def promise = Mono.just(1)
+
+		when: "mapError is added to the chain and a result is got"
+
+		def result = promise.mapError(Exception, {Mono.just(2)}).get()
+
+		then: "result must be equals than the original and no exception thrown"
+		noExceptionThrown()
+		result == 1
+	}
+
+	def "A rejected Mono can use mapError to transform the original exception into a new one wrapping into a Mono"() {
+		given: "A rejected Mono"
+
+		def failure = new Exception()
+		def promise = Mono.error(failure)
+
+		when: "mapError is added to return a IllegalStateException"
+
+		promise.mapError(Exception, { Mono.error(new IllegalStateException(it))} )
+		.subscribeWith(MonoProcessor.create())
+
+		promise.debug()
+
+		then: "A IllegalStateException must be thrown instead of the original"
+
+		thrown(IllegalStateException)
+
+	}
 
 	def "When getting a rejected promise's value the exception that the promise was rejected with is thrown"() {
 	given: "a rejected MonoProcessor"
@@ -368,7 +416,6 @@ class MonoSpec extends Specification {
 
 	then: "the consumer is called"
 	value == e
-	thrown(Exception)
   }
 
   def "An onSuccess consumer registered via then is called when the promise is already fulfilled"() {
@@ -395,7 +442,6 @@ class MonoSpec extends Specification {
 	mapped.request(1)
 
 	then: "the mapped promise is rejected"
-	thrown(Exception)
 	mapped.error
   }
 
@@ -409,7 +455,6 @@ class MonoSpec extends Specification {
 	promise.map { throw e }.subscribe(mapped)
 
 	then: "the mapped promise is rejected"
-	thrown(Exception)
 	mapped.error
   }
 
@@ -492,7 +537,6 @@ class MonoSpec extends Specification {
 	promise1.onError new Exception()
 
 	then: "the combined promise is rejected"
-	thrown(Exception)
 	combined.error
   }
 
