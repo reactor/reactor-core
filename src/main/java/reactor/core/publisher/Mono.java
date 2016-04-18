@@ -37,6 +37,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
@@ -53,6 +54,7 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -248,6 +250,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static <T> Mono<T> error(Throwable error) {
 		return new MonoError<>(error);
 	}
+
 
   /**
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
@@ -904,7 +907,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
 	}
 
-	/**
+  /**
 	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
 	 * returned {@link Mono}.
 	 *
@@ -1033,7 +1036,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 
-	/**
+  /**
 	 * Provide a default unique value if this mono is completed without any data
 	 *
 	 * <p>
@@ -1399,25 +1402,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
-	/**
-	 * Convert this {@link Mono} to a {@link Flux}
-	 *
-	 * @return a {@link Flux} variant of this {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-    public final Flux<T> flux() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-	            T v = get();
-	            if (v == null) {
-	                return Flux.empty();
-	            }
-	            return Flux.just(v);
-	        }
-	        return new FluxCallable<>((Callable<T>)this);
-	    }
-		return FluxSource.wrap(this);
-	}
+  /**
+  	 * Convert this {@link Mono} to a {@link Flux}
+  	 *
+  	 * @return a {@link Flux} variant of this {@link Mono}
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Flux<T> flux() {
+  	    if (this instanceof Callable) {
+  	        if (this instanceof Fuseable.ScalarCallable) {
+  	            T v = get();
+  	            if (v == null) {
+  	                return Flux.empty();
+  	            }
+  	            return Flux.just(v);
+  	        }
+  	        return new FluxCallable<>((Callable<T>)this);
+  	    }
+  		return FluxSource.wrap(this);
+  	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -1434,7 +1437,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return get(PlatformDependent.DEFAULT_TIMEOUT);
 	}
 
-	/**
+  /**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
@@ -1647,6 +1650,30 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform a rejected {@link Mono} into a fallback by applying a transforming function
+	 * only when the exceptionType match the incoming error type, otherwise new a Mono
+	 * carrying the error will be returned
+	 *
+	 * @param exceptionType  type of exception to match the incoming error
+	 * @param fallback transforming function
+	 *
+	 * @return a new {@link Mono}
+	 *
+	 * @see this#otherwise(Function)
+ 	 */
+	public final Mono<T> mapError(Class<? extends Throwable> exceptionType,
+			Function<Throwable, Mono<? extends T>> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return otherwise(fallback);
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1718,47 +1745,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return MonoSource.wrap(new FluxResume<>(this, fallback));
 	}
 
-	/**
-	 *  Subscribe to a fallback mono that respond with a supplier if the given
-	 *  exceptionType is matched with the incoming error
-	 *
-	 * @param exceptionType expected type of exception
-	 * @param fallback mono to return if the exception match the exceptionType
-	 * @return an alternating {@link Mono} supplyed by you when the exceptions match, otherwise a wrapped error
-	 *
-	 * @see this#otherwise(Function)
-	 */
-	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, final Supplier<Mono<T>> fallback) {
-		return otherwise(e -> {
-			if (exceptionType.isAssignableFrom(e.getClass())) {
-				return fallback.get();
-			} else {
-				return Mono.error(e);
+
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return fallback;
+			}
+			else {
+				return Mono.error(throwable);
 			}
 		});
 	}
 
-	/**
-	 * Subscribe to a rejected Mono which wraps the error occurred in the new
-	 * type provided by supplier
-	 *
-	 * @param exceptionType expected type of exception
-	 * @param exceptionSupplier new exception supplier
-	 * @return a reject Mono with supplied exception
-	 *
-	 * @see this#otherwise(Function)
-	 * @see this#otherwise(Class, Supplier)
-	 */
-	public final Mono<T> otherwiseReplace(Class<? extends Throwable> exceptionType,
-			final Supplier<? extends Throwable> exceptionSupplier) {
-		return otherwise(throwable -> {
-			if (exceptionType.isAssignableFrom(throwable.getClass())) {
-				return Mono.error(exceptionSupplier.get());
-			} else {
-				return 	Mono.error(throwable);
-			}
-		});
-	}
 	/**
 	 * Provide an alternative {@link Mono} if this mono is completed without data
 	 *
@@ -1790,7 +1788,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return otherwise(throwable -> just(fallback));
 	}
 
-	/**
+  /**
 	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link Computations}.
 	 *
 	 * <p>
@@ -1814,6 +1812,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		return new MonoPublishOn<>(this, scheduler);
 	}
+
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
@@ -2007,7 +2006,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return s;
 	}
 
-	/**
+  /**
 	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
 	 * <p>
 	 * {@code mono.subscribeOn(Computations.concurrent()).subscribe(Subscribers.unbounded()) }
