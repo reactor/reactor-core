@@ -61,6 +61,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.SchedulerGroup;
 import reactor.core.publisher.TopicProcessor;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
@@ -879,7 +880,7 @@ public class FluxTests extends AbstractReactorTest {
 	 */
 	@Test
 	public void testParallelWithJava8StreamsInput() throws InterruptedException {
-		SchedulerGroup supplier = SchedulerGroup.async("test-p", 2048, 2);
+		Scheduler supplier = SchedulerGroup.async("test-p", 2048, 2);
 
 		int max = ThreadLocalRandom.current()
 		                           .nextInt(100, 300);
@@ -1112,8 +1113,8 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void consistentMultithreadingWithPartition() throws InterruptedException {
-		SchedulerGroup supplier1 = SchedulerGroup.async("groupByPool", 32, 2);
-		SchedulerGroup supplier2 = SchedulerGroup.async("partitionPool", 32, 5);
+		Scheduler supplier1 = SchedulerGroup.async("groupByPool", 32, 2);
+		Scheduler supplier2 = SchedulerGroup.async("partitionPool", 32, 5);
 
 		CountDownLatch latch = new CountDownLatch(10);
 

@@ -96,7 +96,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async() {
+	public static Scheduler async() {
 		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE,
 				DEFAULT_POOL_SIZE, true);
 	}
@@ -116,7 +116,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(String name) {
+	public static Scheduler async(String name) {
 		return async(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
@@ -136,7 +136,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(String name, int bufferSize) {
+	public static Scheduler async(String name, int bufferSize) {
 		return async(name, bufferSize, DEFAULT_POOL_SIZE);
 	}
 
@@ -158,7 +158,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(String name, int bufferSize, int parallelSchedulers) {
+	public static Scheduler async(String name, int bufferSize, int parallelSchedulers) {
 		return async(name, bufferSize, parallelSchedulers, null, null, false);
 	}
 
@@ -181,7 +181,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(String name,
+	public static Scheduler async(String name,
 			int bufferSize,
 			int parallelSchedulers,
 			boolean autoShutdown) {
@@ -208,7 +208,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(String name,
+	public static Scheduler async(String name,
 			int bufferSize,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -237,7 +237,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(final String name,
+	public static Scheduler async(final String name,
 			final int bufferSize,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -269,7 +269,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for fast tasks
 	 */
-	public static SchedulerGroup async(final String name,
+	public static Scheduler async(final String name,
 			final int bufferSize,
 			final int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -305,7 +305,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Processor<Runnable, Runnable> processor, int
+	public static Scheduler create(Processor<Runnable, Runnable> processor, int
 			parallelSchedulers) {
 		return create(() -> processor, parallelSchedulers, false);
 	}
@@ -328,7 +328,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Supplier<? extends Processor<Runnable, Runnable>> processors,
+	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
 			int parallelSchedulers,
 			boolean autoShutdown) {
 		return create(processors, parallelSchedulers, null, null, autoShutdown);
@@ -352,7 +352,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup create(Supplier<? extends Processor<Runnable, Runnable>> processors,
+	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
@@ -377,7 +377,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io() {
+	public static Scheduler io() {
 		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE, DEFAULT_POOL_SIZE, true);
 	}
 
@@ -395,7 +395,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name) {
+	public static Scheduler io(String name) {
 		return io(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
@@ -414,7 +414,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name, int bufferSize) {
+	public static Scheduler io(String name, int bufferSize) {
 		return io(name, bufferSize, DEFAULT_POOL_SIZE);
 	}
 
@@ -434,7 +434,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name, int bufferSize, int concurrency) {
+	public static Scheduler io(String name, int bufferSize, int concurrency) {
 		return io(name, bufferSize, concurrency, null, null, false);
 	}
 
@@ -455,7 +455,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name, int bufferSize, int concurrency, boolean autoShutdown) {
+	public static Scheduler io(String name, int bufferSize, int concurrency, boolean autoShutdown) {
 		return io(name, bufferSize, concurrency, null, null, autoShutdown);
 	}
 
@@ -477,7 +477,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(String name, int bufferSize,
+	public static Scheduler io(String name, int bufferSize,
 			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
 		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, false);
 	}
@@ -502,7 +502,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(final String name,
+	public static Scheduler io(final String name,
 			final int bufferSize,
 			int concurrency,
 			Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler, boolean autoShutdown) {
@@ -532,7 +532,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for slow tasks
 	 */
-	public static SchedulerGroup io(final String name,
+	public static Scheduler io(final String name,
 			final int bufferSize,
 			int concurrency,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -555,7 +555,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single() {
+	public static Scheduler single() {
 		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE, true);
 	}
 
@@ -572,7 +572,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name) {
+	public static Scheduler single(String name) {
 		return single(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
@@ -590,7 +590,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name, int bufferSize) {
+	public static Scheduler single(String name, int bufferSize) {
 		return single(name, bufferSize, null, null, false, SINGLE_WAIT_STRATEGY);
 	}
 
@@ -609,7 +609,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name, int bufferSize, boolean autoShutdown) {
+	public static Scheduler single(String name, int bufferSize, boolean autoShutdown) {
 		return single(name, bufferSize, null, null, autoShutdown, SINGLE_WAIT_STRATEGY);
 	}
 
@@ -628,7 +628,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name, int bufferSize, WaitStrategy waitStrategy) {
+	public static Scheduler single(String name, int bufferSize, WaitStrategy waitStrategy) {
 		return single(name, bufferSize, null, null, false, () -> waitStrategy);
 	}
 
@@ -648,7 +648,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name, int bufferSize, Consumer<Throwable> errorC,
+	public static Scheduler single(String name, int bufferSize, Consumer<Throwable> errorC,
 			Runnable shutdownC) {
 		return single(name, bufferSize, errorC, shutdownC, false, SINGLE_WAIT_STRATEGY);
 	}
@@ -671,7 +671,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
 	 */
-	public static SchedulerGroup single(String name, int bufferSize,
+	public static Scheduler single(String name, int bufferSize,
 			Consumer<Throwable> errorC,
 			Runnable shutdownC,  boolean autoShutdown, Supplier<? extends WaitStrategy> waitStrategy) {
 		return async(name, bufferSize, 1, errorC, shutdownC, autoShutdown, waitStrategy);
@@ -687,7 +687,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param processor the {@link Processor} to decorate
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup single(Processor<Runnable, Runnable> processor) {
+	public static Scheduler single(Processor<Runnable, Runnable> processor) {
 		return single(processor, false);
 	}
 
@@ -703,7 +703,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @return a new {@link SchedulerGroup}
 	 */
-	public static SchedulerGroup single(final Processor<Runnable, Runnable> processor, boolean autoShutdown) {
+	public static Scheduler single(final Processor<Runnable, Runnable> processor, boolean autoShutdown) {
 		return create(() -> processor, 1, autoShutdown);
 	}
 

@@ -54,7 +54,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		SchedulerGroup serviceRB = SchedulerGroup.async("rbWork", 32, 1);
+		Scheduler serviceRB = SchedulerGroup.async("rbWork", 32, 1);
 		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();
@@ -71,11 +71,11 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 		};
 		r.schedule(() -> c.accept("Hello World!"));
 
-		boolean success = serviceRB.awaitAndShutdown(3, TimeUnit.SECONDS);
+		serviceRB.shutdown();
+		Thread.sleep(1200);
 		long end = System.currentTimeMillis();
 
 		Assert.assertTrue("Event missed", latch.getCount() == 0);
-		Assert.assertTrue("Shutdown failed", success );
 		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
 
 	}

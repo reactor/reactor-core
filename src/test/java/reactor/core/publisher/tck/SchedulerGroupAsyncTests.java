@@ -80,7 +80,7 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Test
 	public void testDispatch() throws Exception {
-		SchedulerGroup service = SchedulerGroup.single("dispatcher", BUFFER_SIZE, t -> {
+		Scheduler service = SchedulerGroup.single("dispatcher", BUFFER_SIZE, t -> {
 			exceptionThrown.set(t);
 			t.printStackTrace();
 		}, () -> {});

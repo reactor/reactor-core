@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Timer;
 
 /**
@@ -29,8 +30,8 @@ import reactor.core.scheduler.Timer;
  */
 public abstract class AbstractReactorTest {
 
-	protected static SchedulerGroup asyncGroup;
-	protected static SchedulerGroup ioGroup;
+	protected static Scheduler      asyncGroup;
+	protected static Scheduler ioGroup;
 	protected static Timer          timer;
 
 	protected final Map<Thread, AtomicLong> counters = new ConcurrentHashMap<>();

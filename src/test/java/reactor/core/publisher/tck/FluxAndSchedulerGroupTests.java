@@ -28,6 +28,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.SchedulerGroup;
+import reactor.core.scheduler.Scheduler;
 
 /**
  * @author Stephane Maldini
@@ -35,7 +36,7 @@ import reactor.core.publisher.SchedulerGroup;
 @org.testng.annotations.Test
 public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 
-	static SchedulerGroup sharedGroup;
+	static Scheduler sharedGroup;
 
 
 	@Override
@@ -44,7 +45,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 		Flux<String> otherStream = Flux.just("test", "test2", "test3");
 		System.out.println("Providing new downstream");
 
-		SchedulerGroup asyncGroup =
+		Scheduler asyncGroup =
 				SchedulerGroup.async("fluxion-p-tck", bufferSize, 2,
 						Throwable::printStackTrace, () -> System.out.println("EEEEE"));
 
@@ -132,7 +133,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 	@org.junit.AfterClass
 	@AfterClass
 	public static void tearDownGlobal(){
-		System.out.println("shutdown "+sharedGroup.awaitAndShutdown());
+		sharedGroup.shutdown();
 	}
 
 	@Override

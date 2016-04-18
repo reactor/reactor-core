@@ -24,6 +24,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.MonoProcessor
 import reactor.core.publisher.SchedulerGroup
 import reactor.core.publisher.Signal
+import reactor.core.scheduler.Scheduler
 import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
 import reactor.core.scheduler.Timer
@@ -42,7 +43,7 @@ import static reactor.core.publisher.Flux.error
 class FluxSpec extends Specification {
 
 	@Shared
-	SchedulerGroup asyncGroup
+	Scheduler asyncGroup
 
 	void setupSpec() {
 		Timer.global()
