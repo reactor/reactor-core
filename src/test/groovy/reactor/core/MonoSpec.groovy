@@ -229,6 +229,7 @@ class MonoSpec extends Specification {
   				.doOnError(IllegalStateException, {counter = 3})
   				.get()
 
+
   		println promise.debug()
 
   		then: "Only one doOnError consumer is executed"
@@ -263,6 +264,7 @@ class MonoSpec extends Specification {
 
   		def object = promise.mapError(NoSuchElementException, { Mono.error(new IllegalArgumentException(it)) })
   				.get()
+
 
   		promise.debug()
 
@@ -368,7 +370,7 @@ class MonoSpec extends Specification {
 		when: "mapError is added to return a IllegalStateException"
 
 		promise.mapError(Exception, { Mono.error(new IllegalStateException(it))} )
-		.subscribeWith(MonoProcessor.create())
+		.get()
 
 		promise.debug()
 
