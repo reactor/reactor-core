@@ -31,7 +31,7 @@ New to Reactive Programming or bored of reading already ? Try the [Introduction 
 
 ## Flux
 
-A Reactive Streams Publisher with basic Rx operators. 
+A Reactive Streams Publisher with basic Rx operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#consume()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
@@ -50,7 +50,7 @@ Flux.fromIterable(getSomeLongList())
 ```
 
 ## Mono
-A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropriate operators. 
+A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropriate operators.
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
@@ -67,7 +67,7 @@ Mono.fromCallable(System::currentTimeMillis)
 
 Blocking Mono result :
 ```java    
-Tuple2<Long, Long> nowAndLater = 
+Tuple2<Long, Long> nowAndLater =
         Mono.when(
                 Mono.just(System.currentTimeMillis()),
                 Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
@@ -94,7 +94,7 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
 //... a little later
 async.forceShutdown()
      .subscribe(Runnable::run);
-     
+
 io.shutdown();
 ```
 ## Hot Publishing : SignalEmitter
@@ -166,7 +166,7 @@ queue.consume(System.out::println);
 queue.consume(System.out::println);
 queue.onNext(1); //output : ...1
 queue.onNext(2); //output : .... ...2
-queue.onNext(3); //output : ...3 
+queue.onNext(3); //output : ...3
 queue.onComplete();
 ```
 
@@ -179,6 +179,9 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 "Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/core/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 -------------------------------------
+## Contributing
+See our [Contribution Guide](https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md)
+
 ## Reference
 http://projectreactor.io/core/docs/reference/
 
