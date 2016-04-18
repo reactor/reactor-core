@@ -66,7 +66,7 @@ IntelliJ users can import the xml from `$PROJECT_DIR/codequality/idea`.
 
 IntelliJ users: If your IDE doesn't support import of xml files
 (versions prior to 2016.1) you can copy manually into
-`$HOME/.IntelliJIdea{version}/codestyle`
+`$HOME/.IntelliJIdea{version}/codestyles`
 
 The complete code style can be found at [Spring Framework Wiki][] but
 here's a quick summary:
