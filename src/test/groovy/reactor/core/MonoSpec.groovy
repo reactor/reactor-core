@@ -203,7 +203,7 @@ class MonoSpec extends Specification {
 		when: "an doOnError for another exception is added"
 		def counter = 0
 		promise.doOnError(IllegalStateException, { counter = 1 })
-				.subscribeWith(MonoProcessor.create())
+				.get()
 		println promise.debug()
 
 		then: "the consumer is not invoked"
@@ -223,7 +223,7 @@ class MonoSpec extends Specification {
 
 		promise.doOnError(IllegalArgumentException, {counter = 2})
 				.doOnError(IllegalStateException, {counter = 3})
-				.subscribeWith(MonoProcessor.create())
+				.get()
 
 		println promise.debug()
 
@@ -257,8 +257,8 @@ class MonoSpec extends Specification {
 
 		when: "otherwise is added to translate the exception"
 
-		promise.mapError(NoSuchElementException,{ Mono.error(new IllegalArgumentException(it)) })
-				.subscribeWith(MonoProcessor.create())
+		def object = promise.mapError(NoSuchElementException, { Mono.error(new IllegalArgumentException(it)) })
+				.get()
 
 		promise.debug()
 
@@ -310,7 +310,7 @@ class MonoSpec extends Specification {
 		when: "mapError is added to return a IllegalStateException"
 
 		promise.mapError(Exception, { Mono.error(new IllegalStateException(it))} )
-		.subscribeWith(MonoProcessor.create())
+		.get()
 
 		promise.debug()
 
