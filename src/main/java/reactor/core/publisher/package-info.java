@@ -51,7 +51,7 @@
  *     {@link java.util.function.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
  *     terminal signal used for cleanup logic</li>
  *     <li>Scheduler Factory: a {@link java.util.concurrent.Callable} generating schedulers. A major implementation
- *     of it is {@link reactor.core.publisher.SchedulerGroup}, a reference-counting worker generator that release
+ *     of it is {@link reactor.core.publisher.Computations}, a reference-counting worker generator that release
  *     resources automatically after worker terminaisons.
  *     </li>
  * </ul>

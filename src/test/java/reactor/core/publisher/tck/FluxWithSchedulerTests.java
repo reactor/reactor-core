@@ -24,17 +24,17 @@ import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
 
 /**
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
+public class FluxWithSchedulerTests extends AbstractFluxVerification {
 
 	static Scheduler sharedGroup;
 
@@ -46,7 +46,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 		System.out.println("Providing new downstream");
 
 		Scheduler asyncGroup =
-				SchedulerGroup.async("fluxion-p-tck", bufferSize, 2,
+				Computations.parallel("fluxion-p-tck", bufferSize, 2,
 						Throwable::printStackTrace, () -> System.out.println("EEEEE"));
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
@@ -126,7 +126,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 	@BeforeClass
 	public static void setupGlobal(){
 		System.out.println("test ");
-		sharedGroup = SchedulerGroup.async("fluxion-tck", 32, 2,
+		sharedGroup = Computations.parallel("fluxion-tck", 32, 2,
 				Throwable::printStackTrace, null, false);
 	}
 
@@ -173,7 +173,7 @@ public class FluxAndSchedulerGroupTests extends AbstractFluxVerification {
 	}
 
 	/*public static void main(String... args) throws Exception {
-		AbstractFluxVerification s = new FluxAndSchedulerGroupTests();
+		AbstractFluxVerification s = new FluxWithSchedulerTests();
 		Processor p = s.createProcessor(256);
 		SignalEmitter sess = SignalEmitter.create(p);
 		p.subscribe(Subscribers.unbounded());

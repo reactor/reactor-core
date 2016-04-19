@@ -19,9 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.tuple.Tuple2;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -44,7 +44,7 @@ public class MonoTests {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException("Some Exception");
 			})
-			    .subscribeOn(SchedulerGroup.io())
+			    .subscribeOn(Computations.concurrent())
 			    .doOnError(t -> latch1.countDown())
 			    .doOnSuccess(v -> latch2.countDown())
 			    .get();
@@ -62,7 +62,7 @@ public class MonoTests {
 			Thread.sleep(400);
 			return "hello";
 		})
-		               .subscribeOn(SchedulerGroup.io())
+		               .subscribeOn(Computations.concurrent())
 		               .after(() -> Mono.just("world"))
 		               .get();
 		assertThat("Alternate mono not seen", h, is("world"));

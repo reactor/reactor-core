@@ -54,12 +54,12 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SignalEmitter;
@@ -880,7 +880,7 @@ public class FluxTests extends AbstractReactorTest {
 	 */
 	@Test
 	public void testParallelWithJava8StreamsInput() throws InterruptedException {
-		Scheduler supplier = SchedulerGroup.async("test-p", 2048, 2);
+		Scheduler supplier = Computations.parallel("test-p", 2048, 2);
 
 		int max = ThreadLocalRandom.current()
 		                           .nextInt(100, 300);
@@ -1113,8 +1113,8 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void consistentMultithreadingWithPartition() throws InterruptedException {
-		Scheduler supplier1 = SchedulerGroup.async("groupByPool", 32, 2);
-		Scheduler supplier2 = SchedulerGroup.async("partitionPool", 32, 5);
+		Scheduler supplier1 = Computations.parallel("groupByPool", 32, 2);
+		Scheduler supplier2 = Computations.parallel("partitionPool", 32, 5);
 
 		CountDownLatch latch = new CountDownLatch(10);
 
@@ -1356,7 +1356,7 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> computationStream =
-				computationEmitterProcessor.publishOn(SchedulerGroup.single("computation", BACKLOG))
+				computationEmitterProcessor.publishOn(Computations.single("computation", BACKLOG))
 				                      .map(i -> {
 					                      final List<String> list = new ArrayList<>(i);
 					                      for (int j = 0; j < i; j++) {
@@ -1370,19 +1370,19 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> persistenceStream =
-				persistenceEmitterProcessor.publishOn(SchedulerGroup.single("persistence", BACKLOG))
+				persistenceEmitterProcessor.publishOn(Computations.single("persistence", BACKLOG))
 				                      .doOnNext(i -> println("Persisted: ", i))
 				                      .map(i -> Collections.singletonList("done" + i))
 				                      .log("persistence");
 
-		Flux<Integer> forkStream = forkEmitterProcessor.publishOn(SchedulerGroup.single("fork", BACKLOG))
+		Flux<Integer> forkStream = forkEmitterProcessor.publishOn(Computations.single("fork", BACKLOG))
 		                                             .log("fork");
 
 		forkStream.subscribe(computationEmitterProcessor);
 		forkStream.subscribe(persistenceEmitterProcessor);
 
 		final Flux<List<String>> joinStream = Flux.zip(computationStream, persistenceStream, (a, b) -> Arrays.asList(a, b))
-		                                                .publishOn(SchedulerGroup.single("join", BACKLOG))
+		                                                .publishOn(Computations.single("join", BACKLOG))
 		                                                .map(listOfLists -> {
 			                                               listOfLists.get(0)
 			                                                          .addAll(listOfLists.get(1));

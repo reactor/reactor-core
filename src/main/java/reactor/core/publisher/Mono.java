@@ -1730,13 +1730,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link SchedulerGroup}.
+	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link Computations}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 * <p> <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
+	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
 	 * fast async event loops.
 	 *
 	 * {@code mono.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
@@ -1949,7 +1949,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
 	 * <p>
-	 * {@code mono.subscribeOn(SchedulerGroup.io()).subscribe(Subscribers.unbounded()) }
+	 * {@code mono.subscribeOn(Computations.concurrent()).subscribe(Subscribers.unbounded()) }
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">

@@ -42,39 +42,34 @@ import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
 
 /**
- * "Scheduling" in Reactor via
+ * {@link Computations} provide event-loop based {@link Scheduler} useable by
  * {@link Flux#publishOn publishOn}, {@link Mono#subscribeOn subscribeOn} or {@link EmitterProcessor}
- * .{@link EmitterProcessor#async async} requires
- * {@link Consumer} of {@link Runnable}. Unlike {@link java.util.concurrent.Executor} which apparently has the same
- * signature, these {@link Consumer} allow {@literal null} argument and should treat them as terminal signal to dispose
- * any used resources.
+ * .{@link EmitterProcessor#async async}.
  * <p>
  * Based on this scheduling contract, a
- * {@link SchedulerGroup} offers a worker generator pool mutualizing one or more internal worker {@link Callable}
- * generator.
- *  {@link SchedulerGroup} maintains a reference count on how many worker have been generated. Therefore it will
+ * {@link Computations} offers a {@link reactor.core.scheduler.Scheduler.Worker} mutualized pool and will round-robin
+ * assignation via {@link #createWorker()}.
+ *  {@link Computations} also maintains a reference count on how many worker have been generated. Therefore it will
  * automatically shutdown the required resources after all references have been released, e.g. when all {@link Flux}
  * using
- * {@link Flux#publishOn publishOn} have been cancelled, completed or errored. The shutdown can also be {@link SchedulerGroup#shutdown manual}
+ * {@link Flux#publishOn publishOn} have been cancelled, completed or errored. The shutdown can also be {@link Computations#shutdown manual}
  * by setting the factories {@literal autoshutdown} to false.
  * <p>
- *   {@link SchedulerGroup} offers ready-to-use pool configurations :
+ *   {@link Computations} offers ready-to-use pool configurations :
  *    <ul>
- *        <li>{@link #async} : Optimized for fast {@link Runnable} executions </li>
- *        <li>{@link #io} : Optimized for slow {@link Runnable} executions </li>
+ *        <li>{@link #parallel} : Optimized for fast {@link Runnable} executions </li>
+ *        <li>{@link #concurrent} : Optimized for slow {@link Runnable} executions </li>
  *        <li>{@link #single} : Optimized for low-latency {@link Runnable} executions </li>
  *        <li>{@link #create create} : Arbitrary group creation. </li>
  *    </ul>
  *
  * <p>
- * By default the {@link SchedulerGroup} are not guaranteed reentrant and such support is obtained via
- * {@link Scheduler#createWorker)}.
  * 
  * @author Stephane Maldini
  */
-public final class SchedulerGroup implements Scheduler, MultiProducer, Completable {
+public final class Computations implements Scheduler, MultiProducer, Completable {
 
-	static final Logger log = Logger.getLogger(SchedulerGroup.class);
+	static final Logger log = Logger.getLogger(Computations.class);
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
@@ -94,10 +89,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async() {
-		return async("async", PlatformDependent.MEDIUM_BUFFER_SIZE,
+	public static Scheduler parallel() {
+		return parallel("parallel", PlatformDependent.MEDIUM_BUFFER_SIZE,
 				DEFAULT_POOL_SIZE, true);
 	}
 
@@ -114,10 +109,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(String name) {
-		return async(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	public static Scheduler parallel(String name) {
+		return parallel(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -134,10 +129,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(String name, int bufferSize) {
-		return async(name, bufferSize, DEFAULT_POOL_SIZE);
+	public static Scheduler parallel(String name, int bufferSize) {
+		return parallel(name, bufferSize, DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -156,10 +151,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link TopicProcessor}
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(String name, int bufferSize, int parallelSchedulers) {
-		return async(name, bufferSize, parallelSchedulers, null, null, false);
+	public static Scheduler parallel(String name, int bufferSize, int parallelSchedulers) {
+		return parallel(name, bufferSize, parallelSchedulers, null, null, false);
 	}
 
 	/**
@@ -177,15 +172,15 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link TopicProcessor}
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(String name,
+	public static Scheduler parallel(String name,
 			int bufferSize,
 			int parallelSchedulers,
 			boolean autoShutdown) {
-		return async(name, bufferSize, parallelSchedulers, null, null, autoShutdown);
+		return parallel(name, bufferSize, parallelSchedulers, null, null, autoShutdown);
 	}
 
 	/**
@@ -206,14 +201,14 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(String name,
+	public static Scheduler parallel(String name,
 			int bufferSize,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler) {
-		return async(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, false);
+		return parallel(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, false);
 	}
 
 	/**
@@ -233,18 +228,18 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * {@link TopicProcessor}
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(final String name,
+	public static Scheduler parallel(final String name,
 			final int bufferSize,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
 			boolean autoShutdown) {
 
-		return async(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown, DEFAULT_WAIT_STRATEGY);
+		return parallel(name, bufferSize, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown, DEFAULT_WAIT_STRATEGY);
 	}
 
 	/**
@@ -264,12 +259,12 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * {@link TopicProcessor}
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for fast tasks
+	 * @return a new {@link Computations} tuned for fast tasks
 	 */
-	public static Scheduler async(final String name,
+	public static Scheduler parallel(final String name,
 			final int bufferSize,
 			final int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -289,10 +284,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 
 
 	/**
-	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the passed worker
+	 * Create a {@link Computations} pool of N {@literal parallelSchedulers} size calling the passed worker
 	 * factory {@link Scheduler#createWorker()} once each.
 	 * <p>
-	 * It provides for reference counting when the containing {@link SchedulerGroup} is used as a worker factory
+	 * It provides for reference counting when the containing {@link Computations} is used as a worker factory
 	 * itself.
 	 * If reference count returns to 0 it will automatically createWorker
 	 * {@link Worker#shutdown()}.
@@ -303,7 +298,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link Runnable} {@link Subscriber}
 	 *
-	 * @return a new {@link SchedulerGroup}
+	 * @return a new {@link Computations}
 	 */
 	public static Scheduler create(Processor<Runnable, Runnable> processor, int
 			parallelSchedulers) {
@@ -312,11 +307,11 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 
 	/**
 	 *
-	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the {@link Processor}
+	 * Create a {@link Computations} pool of N {@literal parallelSchedulers} size calling the {@link Processor}
 	 * {@link Supplier}
 	 * once each.
 	 * <p>
-	 * It provides for reference counting on {@link SchedulerGroup#createWorker()} and {@link Worker#shutdown()}
+	 * It provides for reference counting on {@link Computations#createWorker()} and {@link Worker#shutdown()}
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
 	 * {@link Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
@@ -324,9 +319,9 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param processors
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link Runnable} {@link Subscriber}
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 
-	 * @return a new {@link SchedulerGroup}
+	 * @return a new {@link Computations}
 	 */
 	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
 			int parallelSchedulers,
@@ -335,10 +330,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	}
 
 	/**
-	 * Create a {@link SchedulerGroup} pool of N {@literal parallelSchedulers} size calling the {@link Processor} {@link
+	 * Create a {@link Computations} pool of N {@literal parallelSchedulers} size calling the {@link Processor} {@link
 	 * Supplier} once each.
 	 * <p>
-	 * It provides for reference counting on {@link SchedulerGroup#createWorker()} and {@link Worker#shutdown()} If
+	 * It provides for reference counting on {@link Computations#createWorker()} and {@link Worker#shutdown()} If
 	 * autoShutdown is given true and reference count returns to 0 it will automatically call {@link
 	 * Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
@@ -348,16 +343,16 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * {@link Subscriber}
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup}
+	 * @return a new {@link Computations}
 	 */
 	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
 			boolean autoShutdown) {
-		return new SchedulerGroup(processors,
+		return new Computations(processors,
 				parallelSchedulers,
 				autoShutdown,
 				uncaughtExceptionHandler,
@@ -369,16 +364,16 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
 	 * to mitigate consuming rate difference.
 	 *
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io() {
-		return io("io", PlatformDependent.MEDIUM_BUFFER_SIZE, DEFAULT_POOL_SIZE, true);
+	public static Scheduler concurrent() {
+		return concurrent("concurrent", PlatformDependent.MEDIUM_BUFFER_SIZE, DEFAULT_POOL_SIZE, true);
 	}
 
 	/**
@@ -386,17 +381,17 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
 	 * to mitigate consuming rate difference.
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(String name) {
-		return io(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
+	public static Scheduler concurrent(String name) {
+		return concurrent(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
 
 	/**
@@ -404,7 +399,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
 	 * mitigate consuming rate difference.
@@ -412,10 +407,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(String name, int bufferSize) {
-		return io(name, bufferSize, DEFAULT_POOL_SIZE);
+	public static Scheduler concurrent(String name, int bufferSize) {
+		return concurrent(name, bufferSize, DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -432,10 +427,10 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(String name, int bufferSize, int concurrency) {
-		return io(name, bufferSize, concurrency, null, null, false);
+	public static Scheduler concurrent(String name, int bufferSize, int concurrency) {
+		return concurrent(name, bufferSize, concurrency, null, null, false);
 	}
 
 	/**
@@ -451,12 +446,12 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(String name, int bufferSize, int concurrency, boolean autoShutdown) {
-		return io(name, bufferSize, concurrency, null, null, autoShutdown);
+	public static Scheduler concurrent(String name, int bufferSize, int concurrency, boolean autoShutdown) {
+		return concurrent(name, bufferSize, concurrency, null, null, autoShutdown);
 	}
 
 	/**
@@ -475,11 +470,11 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(String name, int bufferSize,
+	public static Scheduler concurrent(String name, int bufferSize,
 			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
-		return io(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, false);
+		return concurrent(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, false);
 	}
 
 	/**
@@ -498,15 +493,15 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(final String name,
+	public static Scheduler concurrent(final String name,
 			final int bufferSize,
 			int concurrency,
 			Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler, boolean autoShutdown) {
-		return io(name,
+		return concurrent(name,
 				bufferSize,
 				concurrency, uncaughtExceptionHandler, shutdownHandler,
 				autoShutdown, DEFAULT_WAIT_STRATEGY.get());
@@ -517,7 +512,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link SchedulerGroup#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
 	 * mitigate consuming rate difference.
@@ -527,12 +522,12 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for slow tasks
+	 * @return a new {@link Computations} tuned for slow tasks
 	 */
-	public static Scheduler io(final String name,
+	public static Scheduler concurrent(final String name,
 			final int bufferSize,
 			int concurrency,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -541,7 +536,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 			WaitStrategy waitStrategy) {
 
 		Processor<Runnable, Runnable> p = WorkQueueProcessor.share(name, bufferSize, waitStrategy, false);
-		return new SchedulerGroup(() -> p, concurrency, autoShutdown, uncaughtExceptionHandler, shutdownHandler);
+		return new Computations(() -> p, concurrency, autoShutdown, uncaughtExceptionHandler, shutdownHandler);
 	}
 
 	/**
@@ -553,7 +548,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
 	 * mitigated.
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single() {
 		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE, true);
@@ -570,7 +565,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name) {
 		return single(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
@@ -588,7 +583,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize) {
 		return single(name, bufferSize, null, null, false, SINGLE_WAIT_STRATEGY);
@@ -605,9 +600,9 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 *
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, boolean autoShutdown) {
 		return single(name, bufferSize, null, null, autoShutdown, SINGLE_WAIT_STRATEGY);
@@ -626,7 +621,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, WaitStrategy waitStrategy) {
 		return single(name, bufferSize, null, null, false, () -> waitStrategy);
@@ -646,7 +641,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, Consumer<Throwable> errorC,
 			Runnable shutdownC) {
@@ -666,34 +661,34 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
-	 * @param autoShutdown true if this {@link SchedulerGroup} should automatically shutdown its resources
+	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link SchedulerGroup} tuned for low latency tasks
+	 * @return a new {@link Computations} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize,
 			Consumer<Throwable> errorC,
 			Runnable shutdownC,  boolean autoShutdown, Supplier<? extends WaitStrategy> waitStrategy) {
-		return async(name, bufferSize, 1, errorC, shutdownC, autoShutdown, waitStrategy);
+		return parallel(name, bufferSize, 1, errorC, shutdownC, autoShutdown, waitStrategy);
 	}
 
 	/**
-	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Processor} of {@link Runnable}.
-	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
+	 * Creates an arbitrary single {@link Computations} wrapper around a given {@link Processor} of {@link Runnable}.
+	 * Provides for reference counting when the containing {@link Computations} is supplied as a factory.
 	 * When reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
 	 * It will be subscribed once.
 	 *
 	 * @param processor the {@link Processor} to decorate
-	 * @return a new {@link SchedulerGroup}
+	 * @return a new {@link Computations}
 	 */
 	public static Scheduler single(Processor<Runnable, Runnable> processor) {
 		return single(processor, false);
 	}
 
 	/**
-	 * Creates an arbitrary single {@link SchedulerGroup} wrapper around a given {@link Processor} of {@link Runnable}.
-	 * Provides for reference counting when the containing {@link SchedulerGroup} is supplied as a factory.
+	 * Creates an arbitrary single {@link Computations} wrapper around a given {@link Processor} of {@link Runnable}.
+	 * Provides for reference counting when the containing {@link Computations} is supplied as a factory.
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
 	 * It will be subscribed once.
@@ -701,7 +696,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	 * @param processor the {@link Processor} to decorate
 	 * @param autoShutdown true to automatically shutdown the inner worker
 	 *
-	 * @return a new {@link SchedulerGroup}
+	 * @return a new {@link Computations}
 	 */
 	public static Scheduler single(final Processor<Runnable, Runnable> processor, boolean autoShutdown) {
 		return create(() -> processor, 1, autoShutdown);
@@ -739,7 +734,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	}
 
 	/**
-	 * Return a worker reference to this {@link SchedulerGroup}, incrementing use count by 1
+	 * Return a worker reference to this {@link Computations}, incrementing use count by 1
 	 *
 	 * @return a new {@link reactor.core.scheduler.Scheduler.Worker} reference
 	 */
@@ -851,8 +846,8 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY =
 			() -> WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
 
-	static final AtomicIntegerFieldUpdater<SchedulerGroup> INDEX =
-			AtomicIntegerFieldUpdater.newUpdater(SchedulerGroup.class, "index");
+	static final AtomicIntegerFieldUpdater<Computations> INDEX =
+			AtomicIntegerFieldUpdater.newUpdater(Computations.class, "index");
 
 	final ProcessorWorker[] workerPool;
 	final AtomicInteger references = new AtomicInteger(0);
@@ -860,7 +855,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 	volatile int index = 0;
 
 	@SuppressWarnings("unchecked")
-	protected SchedulerGroup(Supplier<? extends Processor<Runnable, Runnable>> processorSupplier,
+	protected Computations(Supplier<? extends Processor<Runnable, Runnable>> processorSupplier,
 			int parallelSchedulers,
 			boolean autoShutdown,
 			Consumer<Throwable> uncaughtExceptionHandler,
@@ -1036,7 +1031,7 @@ public final class SchedulerGroup implements Scheduler, MultiProducer, Completab
 			Exceptions.throwIfFatal(t);
 
 			//TODO support resubscribe ?
-			throw new UnsupportedOperationException("No error handler provided for this SchedulerGroup", t);
+			throw new UnsupportedOperationException("No error handler provided for this Computations", t);
 		}
 
 		@Override

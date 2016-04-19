@@ -76,11 +76,11 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/SchedulerGroup.html) over multiple Subscribers with adapted concurrency strategy for producing flows (subscribeOn) or receiving flows (publishOn) :
+[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/Computations.html) over multiple Subscribers with adapted concurrency strategy for producing flows (subscribeOn) or receiving flows (publishOn) :
 
 ```java
-Scheduler async = SchedulerGroup.async();
-Scheduler io = SchedulerGroup.io();
+Scheduler async = Computations.parallel();
+Scheduler io = Computations.concurrent();
 
 Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
     .publishOn(async)

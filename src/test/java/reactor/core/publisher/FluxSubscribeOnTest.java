@@ -29,7 +29,7 @@ public class FluxSubscribeOnTest {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxPublishOn.class);
 		
 		ctb.addRef("source", Flux.never());
-		ctb.addRef("executor", SchedulerGroup.io());
+		ctb.addRef("executor", Computations.concurrent());
 		ctb.addRef("schedulerFactory", (Callable<? extends Consumer<Runnable>>)() -> r -> { });
 		
 		ctb.test();
@@ -39,7 +39,7 @@ public class FluxSubscribeOnTest {
 	public void classic() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		FluxArrayTest.range(1, 1000).subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		FluxArrayTest.range(1, 1000).subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -52,7 +52,7 @@ public class FluxSubscribeOnTest {
 	public void classicBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		FluxArrayTest.range(1, 1000).log().subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		FluxArrayTest.range(1, 1000).log().subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -81,7 +81,7 @@ public class FluxSubscribeOnTest {
 	public void classicJust() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.just(1).subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.just(1).subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -94,7 +94,7 @@ public class FluxSubscribeOnTest {
 	public void classicJustBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.just(1).subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.just(1).subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -115,7 +115,7 @@ public class FluxSubscribeOnTest {
 	public void classicEmpty() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.<Integer>empty().subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -128,7 +128,7 @@ public class FluxSubscribeOnTest {
 	public void classicEmptyBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.<Integer>empty().subscribeOn(SchedulerGroup.io()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -143,7 +143,7 @@ public class FluxSubscribeOnTest {
 		
 		AtomicInteger count = new AtomicInteger();
 		
-		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(SchedulerGroup.io());
+		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(Computations.concurrent());
 		
 		Assert.assertEquals(0, count.get());
 		

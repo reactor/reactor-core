@@ -31,11 +31,11 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Cancellation;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
@@ -87,7 +87,7 @@ public class CombinationTests {
 
 	@Test
 	public void tesSubmitSession() throws Exception {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(SchedulerGroup.io());
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(Computations.concurrent());
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
 		processor.subscribe(Subscribers.create(s -> {
@@ -124,7 +124,7 @@ public class CombinationTests {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(SchedulerGroup.single());
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(Computations.single());
 
 		int n = 100_000;
 		int subs = 4;
@@ -279,7 +279,7 @@ public class CombinationTests {
 	public void sampleZipTest3() throws Exception {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
-		Processor<SensorData, SensorData> sensorDataProcessor = EmitterProcessor.async(SchedulerGroup.single());
+		Processor<SensorData, SensorData> sensorDataProcessor = EmitterProcessor.async(Computations.single());
 
 		sensorDataProcessor.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null,

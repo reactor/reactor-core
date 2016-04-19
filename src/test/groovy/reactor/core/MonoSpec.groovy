@@ -19,14 +19,13 @@ import org.reactivestreams.Subscriber
 import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.SchedulerGroup
+import reactor.core.publisher.Computations
 import reactor.core.subscriber.DeferredScalarSubscriber
 import reactor.core.util.Exceptions
 import spock.lang.Specification
 
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -459,7 +458,7 @@ class MonoSpec extends Specification {
 
   def "A combined promise through 'any' is fulfilled with the first component result when using asynchronously"() {
 	given: "two fulfilled promises"
-	def ioGroup = SchedulerGroup.io("promise-task", 8, 2)
+	def ioGroup = Computations.concurrent("promise-task", 8, 2)
 	def promise1 = Mono.fromCallable { sleep(10000); 1 }.subscribeOn(ioGroup)
 	def promise2 = Mono.fromCallable { sleep(325); 2 }.subscribeOn(ioGroup)
 
@@ -610,7 +609,7 @@ class MonoSpec extends Specification {
 
 	when: "p1 is consumed by p2"
 	def p2 = p1
-			.publishOn(SchedulerGroup.single('test'))
+			.publishOn(Computations.single('test'))
 			.map {
 	  println Thread.currentThread();
 	  sleep(3000);

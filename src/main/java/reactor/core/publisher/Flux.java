@@ -2228,7 +2228,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
+	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
 	 * fast async event loops.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
@@ -2249,7 +2249,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#single} and {@link SchedulerGroup#async} which implement
+	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
 	 * fast async event loops.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
@@ -3328,14 +3328,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	/**
 	 * Re-route incoming values into a dynamically created {@link Flux} for each unique key evaluated by the given
 	 * key mapper. The hashcode of the incoming data will be used for partitionning over
-	 * {@link SchedulerGroup#DEFAULT_POOL_SIZE} number of partitions. That
-	 * means that at any point of time at most {@link SchedulerGroup#DEFAULT_POOL_SIZE} number of streams will be
+	 * {@link Computations#DEFAULT_POOL_SIZE} number of partitions. That
+	 * means that at any point of time at most {@link Computations#DEFAULT_POOL_SIZE} number of streams will be
 	 * created.
 	 *
 	 * <p> Partition resolution happens accordingly to the positive modulo of the current hashcode over
 	 * the
 	 * number of
-	 * buckets {@link SchedulerGroup#DEFAULT_POOL_SIZE}: <code>bucket = o.hashCode() % buckets;</code>
+	 * buckets {@link Computations#DEFAULT_POOL_SIZE}: <code>bucket = o.hashCode() % buckets;</code>
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/partition.png" alt="">
 	 *
@@ -3343,7 +3343,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a partitioning {@link Flux} whose values are {@link GroupedFlux} of all active partionned sequences
 	 */
 	public final Flux<GroupedFlux<Integer, T>> partition() {
-		return partition(SchedulerGroup.DEFAULT_POOL_SIZE);
+		return partition(Computations.DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -4123,12 +4123,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Consumer} {@link Runnable} factory like {@link SchedulerGroup}.
+	 * {@link Consumer} {@link Runnable} factory like {@link Computations}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link SchedulerGroup#io} which implements work-queue thread dispatching.
+	 * It naturally combines with {@link Computations#concurrent} which implements work-queue thread dispatching.
 	 *
 	 * <p>
 	 * {@code flux.subscribeOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }

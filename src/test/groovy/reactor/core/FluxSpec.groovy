@@ -18,18 +18,16 @@ package reactor.core
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
 import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.FluxProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.SchedulerGroup
+import reactor.core.publisher.Computations
 import reactor.core.publisher.Signal
 import reactor.core.scheduler.Scheduler
 import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
 import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -47,7 +45,7 @@ class FluxSpec extends Specification {
 
 	void setupSpec() {
 		Timer.global()
-		asyncGroup = SchedulerGroup.async("flux-spec", 128, 4, null, null, false)
+		asyncGroup = Computations.parallel("flux-spec", 128, 4, null, null, false)
 	}
 
 	def cleanupSpec() {
@@ -307,7 +305,7 @@ class FluxSpec extends Specification {
 			'the most recent value is retrieved'
 			def last = s
 					.sample(2l)
-					.subscribeOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(Computations.concurrent("work", 8, 4))
 					.publishOn(asyncGroup)
 					.log()
 					.take(1)
@@ -327,7 +325,7 @@ class FluxSpec extends Specification {
 			def last =
 			s
 					.take(Duration.ofSeconds(4))
-					.subscribeOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(Computations.concurrent("work", 8, 4))
 					.last()
 					.subscribeWith(MonoProcessor.create())
 
@@ -993,7 +991,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> replay().connect()
 
 			def res = source
-					.subscribeOn(SchedulerGroup.io("test",32,2))
+					.subscribeOn(Computations.concurrent("test",32,2))
 					.delaySubscription(1L)
 					.log("streamed")
 					.map { it * 2 }
@@ -1607,7 +1605,7 @@ class FluxSpec extends Specification {
 					{ println Thread.currentThread().name + ' end' }
 			)
 					.log()
-					.subscribeOn(SchedulerGroup.io("work", 8, 4))
+					.subscribeOn(Computations.concurrent("work", 8, 4))
 
 		when:
 			'accept a value'

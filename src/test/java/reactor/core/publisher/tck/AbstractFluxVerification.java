@@ -39,8 +39,8 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.scheduler.Timer;
 import reactor.core.publisher.Flux;
@@ -206,7 +206,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 
 		long count = latch.getCount();
 		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " +
-				SchedulerGroup.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
+				Computations.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
 
 	}
 
@@ -270,7 +270,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		System.out.println(counters);
 		long count = latch.getCount();
 		org.junit.Assert.assertTrue("Count > 0 : " + count + "  , Running on " +
-				SchedulerGroup.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
+				Computations.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
 
 
 		stream.onComplete();

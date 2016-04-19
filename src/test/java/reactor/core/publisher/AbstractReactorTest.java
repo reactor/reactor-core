@@ -39,8 +39,8 @@ public abstract class AbstractReactorTest {
 	@BeforeClass
 	public static void loadEnv() {
 		timer = Timer.global();
-		ioGroup = SchedulerGroup.io("work", 2048, 4, Throwable::printStackTrace, null, false);
-		asyncGroup = SchedulerGroup.async("async", 2048, 4, Throwable::printStackTrace, null, false);
+		ioGroup = Computations.concurrent("work", 2048, 4, Throwable::printStackTrace, null, false);
+		asyncGroup = Computations.parallel("parallel", 2048, 4, Throwable::printStackTrace, null, false);
 	}
 
 	@AfterClass

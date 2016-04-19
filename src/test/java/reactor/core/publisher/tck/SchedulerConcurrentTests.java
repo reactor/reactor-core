@@ -16,14 +16,13 @@
 package reactor.core.publisher.tck;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.util.Exceptions;
 
@@ -31,11 +30,11 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class SchedulerGroupIOTests extends AbstractProcessorVerification {
+public class SchedulerConcurrentTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return EmitterProcessor.async(SchedulerGroup.io("shared-work", bufferSize, 2, Throwable::printStackTrace, () ->
+		return EmitterProcessor.async(Computations.concurrent("shared-work", bufferSize, 2, Throwable::printStackTrace, () ->
 		{}));
 	}
 
@@ -54,7 +53,7 @@ public class SchedulerGroupIOTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		Scheduler serviceRB = SchedulerGroup.async("rbWork", 32, 1);
+		Scheduler serviceRB = Computations.parallel("rbWork", 32, 1);
 		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();

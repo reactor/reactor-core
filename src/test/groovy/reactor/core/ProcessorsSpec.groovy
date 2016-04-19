@@ -19,7 +19,7 @@ package reactor.core
 
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import reactor.core.publisher.SchedulerGroup
+import reactor.core.publisher.Computations
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
 import reactor.core.scheduler.Scheduler
@@ -164,7 +164,7 @@ class ProcessorsSpec extends Specification {
 	def "Dispatcher executes tasks in correct thread"() {
 
 		given:
-		def diffThread = SchedulerGroup.io("rbWork").createWorker()
+		def diffThread = Computations.concurrent("rbWork").createWorker()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
 
@@ -191,7 +191,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer eventBus"
-			def serviceRB = SchedulerGroup.single("rb", 32)
+			def serviceRB = Computations.single("rb", 32)
 		def r = serviceRB.createWorker()
 			def latch = new CountDownLatch(2)
 
@@ -221,7 +221,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"a Reactor with a ThreadPoolExecutorDispatcher"
-			def serviceRB = SchedulerGroup.io("rbWork", 32)
+			def serviceRB = Computations.concurrent("rbWork", 32)
 		def r = serviceRB.createWorker()
 			long start = System.currentTimeMillis()
 			def hello = ""
@@ -248,7 +248,7 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = SchedulerGroup.single("rb", 8)
+			def serviceRB = Computations.single("rb", 8)
 		def dispatcher = serviceRB.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -268,7 +268,7 @@ class ProcessorsSpec extends Specification {
 	def "WorkQueueDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRBWork = SchedulerGroup.io("rbWork", 1024, 8)
+			def serviceRBWork = Computations.concurrent("rbWork", 1024, 8)
 		def dispatcher = serviceRBWork.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -321,7 +321,7 @@ class ProcessorsSpec extends Specification {
 		 d.shutdown()
 
 		where:
-			d << [SchedulerGroup.io("rbWork", 1024, 4).createWorker()]
+			d << [Computations.concurrent("rbWork", 1024, 4).createWorker()]
 
 	}
 }

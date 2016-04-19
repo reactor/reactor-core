@@ -23,8 +23,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
+import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.SchedulerGroup;
 import reactor.core.scheduler.Scheduler;
 
 
@@ -33,7 +33,7 @@ import reactor.core.scheduler.Scheduler;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
+public class SchedulerParallelTests extends AbstractProcessorVerification {
 
 	private final int             BUFFER_SIZE     = 8;
 	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
@@ -41,7 +41,7 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return EmitterProcessor.async(SchedulerGroup.<Long>single("shared-async", bufferSize,
+		return EmitterProcessor.async(Computations.<Long>single("shared-async", bufferSize,
 				Throwable::printStackTrace, () -> {}));
 
 	}
@@ -70,7 +70,7 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Override
 	public void required_spec109_mustIssueOnSubscribeForNonNullSubscriber() throws Throwable {
-		throw new SkipException("SchedulerGroup only supports subscribe if eventually onSubscribed");
+		throw new SkipException("Computations only supports subscribe if eventually onSubscribed");
 	}
 
 	@Override
@@ -80,7 +80,7 @@ public class SchedulerGroupAsyncTests extends AbstractProcessorVerification {
 
 	@Test
 	public void testDispatch() throws Exception {
-		Scheduler service = SchedulerGroup.single("dispatcher", BUFFER_SIZE, t -> {
+		Scheduler service = Computations.single("dispatcher", BUFFER_SIZE, t -> {
 			exceptionThrown.set(t);
 			t.printStackTrace();
 		}, () -> {});
