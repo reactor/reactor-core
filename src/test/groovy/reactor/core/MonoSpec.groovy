@@ -16,20 +16,22 @@
 package reactor.core
 
 import org.reactivestreams.Subscriber
+
 import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoProcessor
 import reactor.core.publisher.Computations
 import reactor.core.subscriber.DeferredScalarSubscriber
 import reactor.core.util.Exceptions
+
 import spock.lang.Specification
 
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-
 /**
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
  */
 class MonoSpec extends Specification {
 
@@ -195,7 +197,188 @@ class MonoSpec extends Specification {
 	acceptedValue == failure
   }
 
-  def "When getting a rejected promise's value the exception that the promise was rejected with is thrown"() {
+  def "A doOnError is called with exceptionType so only if the exception is satisfied the accept is called"() {
+  		given: "a MonoProcessor with error"
+  		def failure = new IllegalArgumentException()
+  		def promise = Mono.error(failure)
+
+  		when: "an doOnError for another exception is added"
+  		def counter = 0
+  		promise.doOnError(IllegalStateException, { counter = 1 })
+  				.get()
+  		println promise.debug()
+
+  		then: "the consumer is not invoked"
+  		thrown(IllegalArgumentException)
+  		counter == 0
+
+  	}
+
+  	def "Multiple doOnError can call different types of exception"() {
+  		given: "a MonoProcessor with error"
+  		def failure = new IllegalArgumentException()
+  		def promise = Mono.error(failure)
+
+  		when: "two doOnError is added "
+
+  		def counter = 0
+
+  		promise.doOnError(IllegalArgumentException, {counter = 2})
+  				.doOnError(IllegalStateException, {counter = 3})
+  				.get()
+
+
+  		println promise.debug()
+
+  		then: "Only one doOnError consumer is executed"
+  		thrown(IllegalArgumentException)
+  		counter == 2
+  	}
+
+  	def "An otherwise can handle properly a type of exception if it matches the thrown"() {
+  		given: "a MonoProcessor with error"
+
+  		def failure = new IllegalArgumentException()
+  		def promise = Mono.error(failure)
+
+  		when: "otherwise is added to handle the same exception type of error"
+
+  		def result = promise.otherwise(IllegalArgumentException, Mono.<String>just("I'm a fallback"))
+  				.get()
+  		println promise.debug()
+
+  		then: "A fallback becomes the result and exception is suppressed"
+
+  		result == "I'm a fallback"
+  	}
+
+  	def "When a error occurs it can be mapped to another exception type"() {
+  		given: "A rejected Mono with NoSuchElementException"
+
+  		def failure = new NoSuchElementException()
+  		def promise = Mono.error(failure)
+
+  		when: "otherwise is added to translate the exception"
+
+  		def object = promise.mapError(NoSuchElementException, { Mono.error(new IllegalArgumentException(it)) })
+  				.get()
+
+
+  		promise.debug()
+
+  		then: "The error on mono is transformed to a new type and thrown"
+  		thrown(IllegalArgumentException)
+  	}
+
+  	def "A rejected Mono can map it's error into a new Mono with value"() {
+  		given: "A rejected Mono with IllegalArgumentException"
+
+  		def failure = new IllegalArgumentException()
+  		def promise = Mono.error(failure)
+
+  		and: "A Mono as fallback"
+
+  		def fallback = Mono.just(1)
+
+  		when: "An error is mapped into another result by matching its error type"
+
+  		def promiseResult = promise.mapError(IllegalArgumentException, { fallback }).get()
+  		promise.debug()
+
+  		then: "No error is thrown and fallback is available"
+  		noExceptionThrown()
+  		promiseResult == 1
+
+  	}
+
+  	def "When a mapError is provided and no error is thrown on the stream mapError must do nothing"() {
+  		given: "A Mono with a value"
+
+  		def promise = Mono.just(1)
+
+  		when: "mapError is added to the chain and a result is got"
+
+  		def result = promise.mapError(Exception, {Mono.just(2)}).get()
+
+  		then: "result must be equals than the original and no exception thrown"
+  		noExceptionThrown()
+  		result == 1
+  	}
+
+  	def "A rejected Mono can use mapError to transform the original exception into a new one wrapping into a Mono"() {
+  		given: "A rejected Mono"
+
+  		def failure = new Exception()
+  		def promise = Mono.error(failure)
+
+  		when: "mapError is added to return a IllegalStateException"
+
+  		promise.mapError(Exception, { Mono.error(new IllegalStateException(it))} )
+  		.get()
+
+  		promise.debug()
+
+  		then: "A IllegalStateException must be thrown instead of the original"
+
+  		thrown(IllegalStateException)
+
+  	}
+
+	def "A rejected Mono can map it's error into a new Mono with value"() {
+		given: "A rejected Mono with IllegalArgumentException"
+
+		def failure = new IllegalArgumentException()
+		def promise = Mono.error(failure)
+
+		and: "A Mono as fallback"
+
+		def fallback = Mono.just(1)
+
+		when: "An error is mapped into another result by matching its error type"
+
+		def promiseResult = promise.mapError(IllegalArgumentException, { fallback }).get()
+		promise.debug()
+
+		then: "No error is thrown and fallback is available"
+		noExceptionThrown()
+		promiseResult == 1
+
+	}
+
+	def "When a mapError is provided and no error is thrown on the stream mapError must do nothing"() {
+		given: "A Mono with a value"
+
+		def promise = Mono.just(1)
+
+		when: "mapError is added to the chain and a result is got"
+
+		def result = promise.mapError(Exception, {Mono.just(2)}).get()
+
+		then: "result must be equals than the original and no exception thrown"
+		noExceptionThrown()
+		result == 1
+	}
+
+	def "A rejected Mono can use mapError to transform the original exception into a new one wrapping into a Mono"() {
+		given: "A rejected Mono"
+
+		def failure = new Exception()
+		def promise = Mono.error(failure)
+
+		when: "mapError is added to return a IllegalStateException"
+
+		promise.mapError(Exception, { Mono.error(new IllegalStateException(it))} )
+		.get()
+
+		promise.debug()
+
+		then: "A IllegalStateException must be thrown instead of the original"
+
+		thrown(IllegalStateException)
+
+	}
+
+	def "When getting a rejected promise's value the exception that the promise was rejected with is thrown"() {
 	given: "a rejected MonoProcessor"
 	def failure = new Exception()
 	def promise = Mono.error(failure)
@@ -662,4 +845,3 @@ class MonoSpec extends Specification {
   }
 
 }
-

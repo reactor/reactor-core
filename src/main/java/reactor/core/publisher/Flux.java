@@ -486,7 +486,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		Objects.requireNonNull(requestConsumer, "A data producer must be provided");
 		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
 	}
-	
+
 	/**
 	 * Supply a {@link Publisher} everytime subscribe is called on the returned flux. The passed {@link Supplier}
 	 * will be invoked and it's up to the developer to choose to return a new instance of a {@link Publisher} or reuse
@@ -608,7 +608,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
 		return new FluxIterable<>(it);
 	}
-	
+
 
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Stream}.
@@ -970,6 +970,32 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Create a {@link Flux} that will fallback to a publish if the error exception matches the given type
+	 * failing to an error with the same that of original
+	 *
+	 * @param errorType exception type to match
+	 * @param source source sequence
+	 * @param fallback supplier called when the exceptions and errorType matches
+	 * @param <T> {@link Subscriber} type target
+	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
+	 */
+	public static <T> Flux<T> onErrorResumeWith(
+			Class<? extends Throwable> errorType,
+			Publisher<? extends T> source,
+			Supplier<Publisher<? extends T>> fallback) {
+
+		return new FluxResume<>(source, throwable -> {
+			if (errorType.isAssignableFrom(throwable.getClass())) {
+				return fallback.get();
+			} else {
+				return Flux.error(throwable);
+			}
+		});
+	}
+
+
+
+	/**
 	 * Build a {@link Flux} that will only emit a sequence of incrementing integer from {@code start} to {@code
 	 * start + count} then complete.
 	 *
@@ -1007,7 +1033,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.create(emitter, switchOnNext(emitter));
 		return p;
 	}
-	
+
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}. The {@link
 	 * Flux} will complete once both the publishers source and the last switched to {@link Publisher} have completed.
@@ -1534,7 +1560,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> ambWith(Publisher<? extends T> other) {
 		if (this instanceof FluxAmb) {
 			FluxAmb<T> publisherAmb = (FluxAmb<T>) this;
-			
+
 			FluxAmb<T> result = publisherAmb.ambAdditionalSource(other);
 			if (result != null) {
 				return result;
@@ -1842,7 +1868,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> cache(int history) {
 		return multicast(EmitterProcessor.replay(history)).autoConnect();
 	}
-	
+
 	/**
 	 * Cast the current {@link Flux} produced type into a target produced type.
 	 *
@@ -2116,7 +2142,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Mono<Long> count() {
 		return new MonoCount<>(this);
 	}
-	
+
 	/**
 	 * Introspect this {@link Flux} graph
 	 *
@@ -2233,7 +2259,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize.png" alt="">
 	 *
 	 * @param <X> the dematerialized type
-	 * 
+	 *
 	 * @return a dematerialized {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
@@ -2314,7 +2340,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param keySelector function to compute comparison key for each element
 	 *
 	 * @param <V> the type of the key extracted from each value in this sequence
-	 * 
+	 *
 	 * @return a filtering {@link Flux} with values having distinct keys
 	 */
 	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
@@ -2333,7 +2359,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> distinctUntilChanged() {
 		return new FluxDistinctUntilChanged<T, T>(this, HASHCODE_EXTRACTOR);
 	}
-	
+
 	/**
 	 * Filters out subsequent and repeated elements provided a matching extracted key.
 	 *
@@ -2344,7 +2370,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param keySelector function to compute comparison key for each element
 	 *
 	 * @param <V> the type of the key extracted from each value in this sequence
-	 * 
+	 *
 	 * @return a filtering {@link Flux} with conflated repeated elements given a comparison key
 	 */
 	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
@@ -2799,9 +2825,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
-	 * 
+	 *
 	 * @param <K> the key type extracted from each value of this sequence
-	 * 
+	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 */
 	@SuppressWarnings("unchecked")
@@ -2871,9 +2897,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return Mono.ignoreElements(this);
 	}
 
-	/**
+  /**
 	 * Returns the appropriate Mono instance for a known Supplier Flux.
-	 * 
+	 *
 	 * @param supplier the supplier Flux
 	 * @return the mono representing that Flux
 	 */
@@ -2889,7 +2915,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    }
 	    return new MonoCallable<>(supplier);
 	}
-	
+
 	/**
 	 * Signal the last element observed before complete signal.
 	 *
@@ -2905,7 +2931,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    }
 		return new MonoTakeLastOne<>(this);
 	}
-	
+
 	/**
 	 * Create a {@link Flux} intercepting all source signals with the returned Subscriber that might choose to pass them
 	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
@@ -3044,7 +3070,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multiplex.png" alt="">
-	 * 
+	 *
 	 * @param concurrency the concurrency level of the operation
 	 * @param fn the indexed via
 	 * {@link GroupedFlux#key()} sequence transformation to be merged in the returned {@link Flux}
@@ -3076,7 +3102,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 		return Flux.merge(publisherList);
 	}
-	
+
 	/**
 	 * An indexed GroupedFlux instance, delegating to a source Flux.
 	 *
@@ -3085,7 +3111,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	static final class MultiplexGroupedFlux<T> extends GroupedFlux<Integer, T> {
 
 	    final int index;
-	    
+
 	    final Flux<T> source;
 
 	    public MultiplexGroupedFlux(int index, Flux<T> source) {
@@ -3232,7 +3258,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Mono<Flux<T>> nest() {
 		return Mono.just(this);
 	}
-	
+
 	/**
 	 * Emit only the first item emitted by this {@link Flux}.
 	 * <p>
@@ -3328,6 +3354,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> onErrorResumeWith(Function<Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(this, fallback);
+	}
+
+
+	/**
+	 * Subscribe to a fallback Publisher if the error exception matches the given type
+	 * failing to an error with the same that of original and assign the supplier error
+	 * value as error, if does not match the given type it return the same error on a new Flux
+	 *
+	 * @param errorType exception type to match
+	 * @param fallback supplier called when the exceptions and errorType matches
+	 * @return a {@link Flux} handling error if exceptions match otherwise an rejected Flux
+	 */
+	public final Flux<T> onErrorResumeWith(
+			Class<? extends Throwable> errorType,
+			Supplier<Publisher<? extends T>> fallback) {
+
+		return onErrorResumeWith(errorType, this, fallback);
 	}
 
 	/**
@@ -3736,7 +3779,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/sample.png" alt="">
 	 *
 	 * @param sampler the sampler {@link Publisher}
-	 * 
+	 *
 	 * @param <U> the type of the sampler sequence
 	 *
 	 * @return a sampled {@link Flux} by last item observed when the sampler {@link Publisher} signals
@@ -3814,8 +3857,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Emit the last value from this {@link Flux} only if there were no newer values emitted
-	 * during the time window provided by a publisher for that particular last value. 
-	 * <p>The provided {@literal maxConcurrency} will keep a bounded maximum of concurrent timeouts and drop any new 
+	 * during the time window provided by a publisher for that particular last value.
+	 * <p>The provided {@literal maxConcurrency} will keep a bounded maximum of concurrent timeouts and drop any new
 	 * items until at least one timeout terminates.
 	 *
 	 * <p>
@@ -3890,62 +3933,61 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxScan<>(this, initial, accumulator);
 	}
 
-	
-	/**
-	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/single.png" alt="">
-	 *
-	 * @return a {@link Mono} with the eventual single item or an error signal
-	 */
-	@SuppressWarnings("unchecked")
-    public final Mono<T> single() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+    /**
+  	 * Expect and emit a single item from this {@link Flux} source or signal
+  	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+  	 * {@link IndexOutOfBoundsException} for a multi-item source.
+  	 *
+  	 * <p>
+  	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/single.png" alt="">
+  	 *
+  	 * @return a {@link Mono} with the eventual single item or an error signal
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Mono<T> single() {
+  	    if (this instanceof Callable) {
+  	        if (this instanceof Fuseable.ScalarCallable) {
+                  Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
-                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
-                }
-                return Mono.just(v);
-	        }
-	        return new MonoCallable<>((Callable<T>)this);
-	    }
-		return new MonoSingle<>(this);
-	}
+                  T v = scalarCallable.call();
+                  if (v == null) {
+                      return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+                  }
+                  return Mono.just(v);
+  	        }
+  	        return new MonoCallable<>((Callable<T>)this);
+  	    }
+  		return new MonoSingle<>(this);
+  	}
 
-	/**
-	 *
-	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
-	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
-	 *
-	 * @return a {@link Mono} with the eventual single item or a supplied default value
-	 */
-	@SuppressWarnings("unchecked")
-    public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
-        if (this instanceof Callable) {
-            if (this instanceof Fuseable.ScalarCallable) {
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+  	/**
+  	 *
+  	 * Expect and emit a single item from this {@link Flux} source or signal
+  	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+  	 * {@link IndexOutOfBoundsException} for a multi-item source.
+  	 *
+  	 * <p>
+  	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
+  	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
+  	 *
+  	 * @return a {@link Mono} with the eventual single item or a supplied default value
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+          if (this instanceof Callable) {
+              if (this instanceof Fuseable.ScalarCallable) {
+                  Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
-                    return new MonoSupplier<>(defaultSupplier);
-                }
-                return Mono.just(v);
-            }
-            return new MonoCallable<>((Callable<T>)this);
-        }
-		return new MonoSingle<>(this, defaultSupplier);
-	}
+                  T v = scalarCallable.call();
+                  if (v == null) {
+                      return new MonoSupplier<>(defaultSupplier);
+                  }
+                  return Mono.just(v);
+              }
+              return new MonoCallable<>((Callable<T>)this);
+          }
+  		return new MonoSingle<>(this, defaultSupplier);
+  	}
 
 	/**
 	 * Expect and emit a zero or single item from this {@link Flux} source or
@@ -4054,7 +4096,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithi.png" alt="">
 	 *
 	 * @param iterable the sequence of values to start the sequence with
-	 * 
+	 *
 	 * @return a prefixed {@link Flux} with given {@link Iterable}
 	 */
 	public final Flux<T> startWith(Iterable<? extends T> iterable) {
@@ -4068,7 +4110,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwithv.png" alt="">
 	 *
 	 * @param values the array of values to start with
-	 * 
+	 *
 	 * @return a prefixed {@link Flux} with given values
 	 */
 	@SafeVarargs
@@ -4084,7 +4126,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/startwith.png" alt="">
 	 *
 	 * @param publisher the Publisher whose values to prepend
-	 * 
+	 *
 	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
 	 */
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
@@ -4426,7 +4468,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
 	 *
 	 * @param <U> the type of the timeout Publisher
-	 * 
+	 *
 	 * @return an expirable {@link Flux} if the first item does not come before a {@link Publisher} signal
 	 *
 	 */
@@ -4447,7 +4489,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <U> the type of the elements of the first timeout Publisher
 	 * @param <V> the type of the elements of the subsequent timeout Publishers
-	 * 
+	 *
 	 * @return a first then per-item expirable {@link Flux}
 	 *
 	 */
@@ -4470,7 +4512,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <U> the type of the elements of the first timeout Publisher
 	 * @param <V> the type of the elements of the subsequent timeout Publishers
-	 * 
+	 *
 	 * @return a first then per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 *
 	 */
@@ -4527,11 +4569,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/toiterablen.png" alt="">
-	 * 
+	 *
 	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
 	 * @param queueProvider the supplier of the queue implementation to be used for transferring elements
 	 * across threads.
-	 * 
+	 *
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable(long batchSize, Supplier<Queue<T>> queueProvider) {
@@ -4545,7 +4587,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new BlockingIterable<>(this, batchSize, provider);
 	}
 
-	/**
+  /**
 	 * Accumulate this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
 	 * onComplete.
 	 *
@@ -4632,7 +4674,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param <K> the key extracted from each value of this Flux instance
-	 * 
+	 *
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
 	 */
@@ -4650,7 +4692,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
-	 * 
+	 *
 	 * @param <K> the key extracted from each value of this Flux instance
 	 * @param <V> the value extracted from each value of this Flux instance
 	 *
@@ -4891,10 +4933,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
 	 * emits to complete the window
-	 * 
+	 *
 	 * @param <U> the type of the sequence opening windows
 	 * @param <V> the type of the sequence closing windows opened by the bucketOpening Publisher's elements
-	 * 
+	 *
 	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
 	 * a selected {@link Publisher} emits
 	 */
@@ -5045,7 +5087,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param other the {@link Publisher} to combine with
 	 * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
-	 * 
+	 *
 	 * @param <U> the other {@link Publisher} sequence type
 	 * @param <R> the result type
 	 *
@@ -5163,7 +5205,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <T2> the value type of the other iterable sequence
 	 * @param <V> the result type
-	 * 
+	 *
 	 * @return a zipped {@link Flux}
 	 *
 	 */

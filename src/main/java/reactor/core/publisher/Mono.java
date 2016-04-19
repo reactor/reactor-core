@@ -37,6 +37,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
@@ -53,6 +54,7 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
@@ -67,7 +69,7 @@ import reactor.core.util.ReactiveStateUtils;
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
- * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with 
+ * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with
  * possibly
  * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then then}.
  *
@@ -75,11 +77,13 @@ import reactor.core.util.ReactiveStateUtils;
  *
  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
  * Publisher} as much as possible.
- * 
+ *
  * @param <T> the type of the single value of this class
- * 
+ *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
+ *
  * @see Flux
  * @since 2.5
  */
@@ -132,7 +136,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
-	 * 
+	 *
 	 * @param <T> the element type of the returned Mono instance
 	 *
 	 * @return a new {@link Mono} factory
@@ -249,7 +253,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoError<>(error);
 	}
 
-	/**
+
+  /**
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
 	 *
 	 * <p>
@@ -835,7 +840,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param transformer the {@link Function} applying this {@link Mono}
 	 * @param <P> the returned {@link Publisher} output
 	 * @param <V> the element type of the returned Publisher
-	 * 
+	 *
 	 * @return the transformed {@link Mono}
 	 */
 	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
@@ -850,7 +855,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param other the {@link Mono} to combine with
 	 * @param <T2> the element type of the other Mono instance
-	 * 
+	 *
 	 * @return a new combined Mono
 	 * @see #when
 	 */
@@ -904,7 +909,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
 	}
 
-	/**
+  /**
 	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
 	 * returned {@link Mono}.
 	 *
@@ -1033,7 +1038,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 
-	/**
+  /**
 	 * Provide a default unique value if this mono is completed without any data
 	 *
 	 * <p>
@@ -1116,7 +1121,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
 	 * @param <X> the dematerialized type
-	 * 
+	 *
 	 * @return a dematerialized {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
@@ -1198,6 +1203,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, onError, null, null, null, null));
 		}
 		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+	}
+
+	/**
+	 * Triggered when the {@link Mono} completes with an error and the exception type of
+	 * that error matches the exceptionType parameter
+	 *
+	 * @param exceptionType type to match the error
+	 * @param onError error callback to be executed on {@link Subscriber#onError(Throwable)}
+	 * @param <E> type of exception
+	 * @return a new {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final  <E extends Throwable>  Mono<T> doOnError(Class<? extends Throwable> exceptionType, Consumer<E> onError) {
+		return doOnError(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				onError.accept((E) throwable);
+			}
+		});
 	}
 
 	/**
@@ -1381,25 +1404,25 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
 	}
 
-	/**
-	 * Convert this {@link Mono} to a {@link Flux}
-	 *
-	 * @return a {@link Flux} variant of this {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-    public final Flux<T> flux() {
-	    if (this instanceof Callable) {
-	        if (this instanceof Fuseable.ScalarCallable) {
-	            T v = get();
-	            if (v == null) {
-	                return Flux.empty();
-	            }
-	            return Flux.just(v);
-	        }
-	        return new FluxCallable<>((Callable<T>)this);
-	    }
-		return FluxSource.wrap(this);
-	}
+  /**
+  	 * Convert this {@link Mono} to a {@link Flux}
+  	 *
+  	 * @return a {@link Flux} variant of this {@link Mono}
+  	 */
+  	@SuppressWarnings("unchecked")
+      public final Flux<T> flux() {
+  	    if (this instanceof Callable) {
+  	        if (this instanceof Fuseable.ScalarCallable) {
+  	            T v = get();
+  	            if (v == null) {
+  	                return Flux.empty();
+  	            }
+  	            return Flux.just(v);
+  	        }
+  	        return new FluxCallable<>((Callable<T>)this);
+  	    }
+  		return FluxSource.wrap(this);
+  	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
@@ -1416,7 +1439,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return get(PlatformDependent.DEFAULT_TIMEOUT);
 	}
 
-	/**
+  /**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
@@ -1490,16 +1513,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Hides the identity of this {@link Mono} instance.
-	 * 
+	 *
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
-	 * 
+	 *
 	 * @return a new {@link Mono} instance
 	 */
 	public final Mono<T> hide() {
 	    return new MonoHide<>(this);
 	}
-	
+
 	/**
 	 * Ignores onNext signal (dropping it) and only reacts on termination.
 	 *
@@ -1629,6 +1652,30 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform a rejected {@link Mono} into a fallback by applying a transforming function
+	 * only when the exceptionType match the incoming error type, otherwise new a Mono
+	 * carrying the error will be returned
+	 *
+	 * @param exceptionType  type of exception to match the incoming error
+	 * @param fallback transforming function
+	 *
+	 * @return a new {@link Mono}
+	 *
+	 * @see this#otherwise(Function)
+ 	 */
+	public final Mono<T> mapError(Class<? extends Throwable> exceptionType,
+			Function<Throwable, Mono<? extends T>> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return otherwise(fallback);
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1701,6 +1748,27 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 *  Subscribe to a fallback mono that respond with a supplier if the given
+	 *  exceptionType is matched with the incoming error
+	 *
+	 * @param exceptionType expected type of exception
+	 * @param fallback mono to return if the exception match the exceptionType
+	 * @return an alternating {@link Mono} supplyed by you when the exceptions match, otherwise a wrapped error
+	 *
+	 * @see this#otherwise(Function)
+	 */
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return fallback;
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
+	}
+
+	/**
 	 * Provide an alternative {@link Mono} if this mono is completed without data
 	 *
 	 * <p>
@@ -1731,7 +1799,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return otherwise(throwable -> just(fallback));
 	}
 
-	/**
+  /**
 	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link Computations}.
 	 *
 	 * <p>
@@ -1755,6 +1823,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		return new MonoPublishOn<>(this, scheduler);
 	}
+
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
@@ -1948,7 +2017,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return s;
 	}
 
-	/**
+  /**
 	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
 	 * <p>
 	 * {@code mono.subscribeOn(Computations.concurrent()).subscribe(Subscribers.unbounded()) }

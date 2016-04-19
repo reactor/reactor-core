@@ -19,16 +19,21 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
+
 import reactor.core.publisher.Computations;
+
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.tuple.Tuple2;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
  */
 public class MonoTests {
 
@@ -88,5 +93,20 @@ public class MonoTests {
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
 		promise.consume(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void mapAnErrorThenChainWithOtherwise() throws Exception {
+		IllegalArgumentException failure = new IllegalArgumentException();
+		Mono<Object> promise = Mono.error(failure);
+		Object result = promise.mapError(IllegalArgumentException.class,
+				throwable -> Mono.error(new IllegalStateException(throwable)))
+				.otherwise(IllegalStateException.class, Mono.just(1))
+				.get();
+		assertThat("Result must be instance of integer when catch two times by otherwise",
+				result,
+				instanceOf(Integer.class));
+		Integer intResult = (Integer) result;
+		assertThat("Result is one",intResult, is(1));
 	}
 }
