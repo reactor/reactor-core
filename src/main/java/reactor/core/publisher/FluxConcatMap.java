@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -354,14 +355,13 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							}
 
 
-							if (p instanceof Supplier) {
-								@SuppressWarnings("unchecked")
-								Supplier<R> supplier = (Supplier<R>) p;
+							if (p instanceof Callable) {
+								@SuppressWarnings("unchecked") Callable<R> supplier = (Callable<R>) p;
 								
 								R vr;
 								
 								try {
-									vr = supplier.get();
+									vr = supplier.call();
 								} catch (Throwable e) {
 									s.cancel();
 									actual.onError(Exceptions.unwrap(e));
@@ -679,14 +679,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								}
 							}
 							
-							if (p instanceof Supplier) {
+							if (p instanceof Callable) {
 								@SuppressWarnings("unchecked")
-								Supplier<R> supplier = (Supplier<R>) p;
+								Callable<R> supplier = (Callable<R>) p;
 								
 								R vr;
 								
 								try {
-									vr = supplier.get();
+									vr = supplier.call();
 								} catch (Throwable e) {
 									s.cancel();
 									actual.onError(Exceptions.unwrap(e));

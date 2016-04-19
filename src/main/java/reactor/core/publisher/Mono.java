@@ -53,6 +53,7 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -267,10 +268,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		if (source instanceof Mono) {
 			return (Mono<T>) source;
 		}
-		if (source instanceof Fuseable.ScalarSupplier) {
-			T t = ((Fuseable.ScalarSupplier<T>) source).get();
-			if (t != null) {
-				return just(t);
+		if (source instanceof Fuseable.ScalarCallable) {
+			try {
+				T t = ((Fuseable.ScalarCallable<T>) source).call();
+				if (t != null) {
+					return just(t);
+				}
+			}
+			catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				return error(e);
 			}
 			return empty();
 		}
@@ -915,6 +922,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
+	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> afterSuccessOrError(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
 	}
@@ -1044,7 +1052,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
-	    if (this instanceof Fuseable.ScalarSupplier) {
+	    if (this instanceof Fuseable.ScalarCallable) {
             T v = get();
 	        if (v == null) {
 	            return Mono.just(defaultV);
@@ -1386,15 +1394,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
     public final Flux<T> flux() {
-	    if (this instanceof Supplier) {
-	        if (this instanceof Fuseable.ScalarSupplier) {
+	    if (this instanceof Callable) {
+	        if (this instanceof Fuseable.ScalarCallable) {
 	            T v = get();
 	            if (v == null) {
 	                return Flux.empty();
 	            }
 	            return Flux.just(v);
 	        }
-	        return new FluxSupplier<>((Supplier<T>)this);
+	        return new FluxCallable<>((Callable<T>)this);
 	    }
 		return FluxSource.wrap(this);
 	}
@@ -1431,7 +1439,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T get(long timeout) {
-		if(this instanceof Supplier){
+		if(this instanceof Callable){
 			return get();
 		}
 		return subscribe().get(timeout);
@@ -1747,7 +1755,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<T> publishOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarSupplier) {
+		if (this instanceof Fuseable.ScalarCallable) {
 			T value = get();
 			return  new MonoSubscribeOnValue<>(value, scheduler);
 		}
@@ -1959,7 +1967,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return an asynchronously requesting {@link Mono}
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarSupplier) {
+		if (this instanceof Fuseable.ScalarCallable) {
 			T value = get();
 			return new MonoSubscribeOnValue<>(value, scheduler);
 		}

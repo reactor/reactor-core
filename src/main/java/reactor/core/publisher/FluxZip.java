@@ -15,16 +15,36 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.function.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
-import reactor.core.state.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.MultiReceiver;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Introspectable;
+import reactor.core.state.Prefetchable;
+import reactor.core.state.Requestable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.CancelledSubscription;
+import reactor.core.util.EmptySubscription;
+import reactor.core.util.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -100,13 +120,13 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				return;
 			}
 			
-			if (p instanceof Supplier) {
-				Supplier<T> supplier = (Supplier<T>) p;
+			if (p instanceof Callable) {
+				Callable<T> supplier = (Callable<T>) p;
 				
 				T v;
 				
 				try {
-					v = supplier.get();
+					v = supplier.call();
 				} catch (Throwable e) {
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;
@@ -175,11 +195,11 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				return;
 			}
 			
-			if (p instanceof Supplier) {
+			if (p instanceof Callable) {
 				Object v;
 				
 				try {
-					v = ((Supplier<? extends T>)p).get();
+					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;

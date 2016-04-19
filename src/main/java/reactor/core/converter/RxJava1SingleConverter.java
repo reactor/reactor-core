@@ -51,13 +51,19 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 
 	@Override
 	public Single fromPublisher(Publisher<?> o) {
-	    if (o instanceof Fuseable.ScalarSupplier) {
-            Fuseable.ScalarSupplier<?> scalarSupplier = (Fuseable.ScalarSupplier<?>) o;
-	        Object v = scalarSupplier.get();
-	        if (v == null) {
-	            return Single.error(new NoSuchElementException("Can't convert an empty Publisher to Single"));
-	        }
-	        return Single.just(v);
+	    if (o instanceof Fuseable.ScalarCallable) {
+            Fuseable.ScalarCallable<?> scalarCallable = (Fuseable.ScalarCallable<?>) o;
+		    try {
+			    Object v = scalarCallable.call();
+			    if (v == null) {
+				    return Single.error(new NoSuchElementException("Can't convert an empty Publisher to Single"));
+			    }
+			    return Single.just(v);
+		    }
+		    catch(Throwable t){
+			    Exceptions.throwIfFatal(t);
+			    return Single.error(t);
+		    }
 	    }
 		return Single.create(new PublisherAsSingle<>(o));
 	}

@@ -52,7 +52,7 @@ import reactor.core.util.Exceptions;
  *
  * @author Stephane Maldini
  */
-final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, Loopback {
+final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Loopback {
 
 	final T value;
 
@@ -62,7 +62,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarSupplier<T>, L
 	}
 
 	@Override
-	public T get() {
+	public T call() throws Exception {
 		return value;
 	}
 

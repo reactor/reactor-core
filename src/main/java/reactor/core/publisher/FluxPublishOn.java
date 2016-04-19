@@ -40,7 +40,6 @@ import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * Emits events on a different thread specified by a worker callback.
@@ -81,7 +80,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		
-		if (source instanceof Fuseable.ScalarSupplier) {
+		if (source instanceof Fuseable.ScalarCallable) {
 			FluxSubscribeOn.scalarScheduleOn(source, s, scheduler);
 			return;
 		}

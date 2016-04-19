@@ -29,12 +29,17 @@ import reactor.core.util.ScalarSubscription;
  */
 final class MonoJust<T> 
 extends Mono<T>
-		implements Fuseable.ScalarSupplier<T>, Receiver {
+		implements Fuseable.ScalarCallable<T>, Receiver {
 
 	final T value;
 
 	public MonoJust(T value) {
 		this.value = Objects.requireNonNull(value, "value");
+	}
+
+	@Override
+	public T call() throws Exception {
+		return value;
 	}
 
 	@Override

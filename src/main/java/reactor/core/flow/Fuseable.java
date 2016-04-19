@@ -18,7 +18,7 @@ package reactor.core.flow;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -195,7 +195,7 @@ public interface Fuseable {
 	 *
 	 * @param <T> the value type returned
 	 */
-	interface ScalarSupplier<T> extends Supplier<T> {
+	interface ScalarCallable<T> extends Callable<T> {
 
 	}
 }

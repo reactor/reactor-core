@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -27,12 +28,9 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
@@ -68,11 +66,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		if (source instanceof Supplier) {
+		if (source instanceof Callable) {
 			T v;
 			
 			try {
-				v = ((Supplier<T>)source).get();
+				v = ((Callable<T>)source).call();
 			} catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
 				EmptySubscription.error(s, ex);

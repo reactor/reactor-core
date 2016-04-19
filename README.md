@@ -76,7 +76,11 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-[Create and Reuse scheduling resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/Computations.html) over multiple Subscribers with adapted concurrency strategy for producing flows (subscribeOn) or receiving flows (publishOn) :
+Reactor use a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Scheduler.html) as a
+contract for `Runnable` execution. It provides some guarantees required by Reactive Streams flows like FIFO execution.
+
+You can create low-latency [event loop resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/Computations.html) to share with multiple Subscribers for producing flows
+(subscribeOn) or receiving flows (publishOn) :
 
 ```java
 Scheduler async = Computations.parallel();
@@ -92,10 +96,11 @@ Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
     .subscribe();
 
 //... a little later
-async.forceShutdown()
-     .subscribe(Runnable::run);
-     
+async.shutdown();
 io.shutdown();
+
+Note that `ExecutorService` is also a supported argument for `publishOn` and `subscribeOn`. `Computations` might be
+too much a cost for some CPU, `ExecutorService` based scheduling may have a more relaxed use.
 ```
 ## Hot Publishing : SignalEmitter
 To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.connectEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.yield(emitter -> {}) :

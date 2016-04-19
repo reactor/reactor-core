@@ -16,10 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.Exceptions;
 
@@ -27,11 +26,11 @@ import reactor.core.util.Exceptions;
  * For each subscriber, a Supplier is invoked and the returned value emitted.
  * @param <T> the value type;
  */
-final class FluxSupplier<T> extends Flux<T> implements Supplier<T> {
+final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
-    final Supplier<T> supplier;
+    final Callable<T> supplier;
     
-    public FluxSupplier(Supplier<T> supplier) {
+    FluxCallable(Callable<T> supplier) {
         this.supplier = supplier;
     }
 
@@ -42,7 +41,7 @@ final class FluxSupplier<T> extends Flux<T> implements Supplier<T> {
         
         T v;
         try {
-            v = supplier.get();
+            v = supplier.call();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
             s.onError(ex);
@@ -53,7 +52,7 @@ final class FluxSupplier<T> extends Flux<T> implements Supplier<T> {
     }
 
     @Override
-    public T get() {
-        return supplier.get();
+    public T call() throws Exception {
+        return supplier.call();
     }
 }

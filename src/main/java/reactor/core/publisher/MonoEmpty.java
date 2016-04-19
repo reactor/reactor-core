@@ -34,7 +34,7 @@ import reactor.core.util.EmptySubscription;
  */
 final class MonoEmpty 
 extends Mono<Object>
-		implements Fuseable.ScalarSupplier<Object>, Completable {
+		implements Fuseable.ScalarCallable<Object>, Completable {
 
 	private static final Publisher<Object> INSTANCE = new MonoEmpty();
 
@@ -60,8 +60,13 @@ extends Mono<Object>
 	}
 
 	@Override
-	public Object get() {
+	public Object call() throws Exception {
 		return null; /* Scalar optimizations on empty */
+	}
+
+	@Override
+	public Object get() {
+		return null;
 	}
 
 	@Override

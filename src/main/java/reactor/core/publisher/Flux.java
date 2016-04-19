@@ -563,10 +563,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return (Flux<T>) source;
 		}
 
-		if (source instanceof Fuseable.ScalarSupplier) {
-			T t = ((Fuseable.ScalarSupplier<T>) source).get();
-			if (t != null) {
-				return just(t);
+		if (source instanceof Fuseable.ScalarCallable) {
+			try {
+				T t = ((Fuseable.ScalarCallable<T>) source).call();
+				if (t != null) {
+					return just(t);
+				}
+			}
+			catch(Throwable t){
+				Exceptions.throwIfFatal(t);
+				return error(t);
 			}
 			return empty();
 		}
@@ -2262,10 +2268,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
-		if (this instanceof Fuseable.ScalarSupplier) {
-			@SuppressWarnings("unchecked")
-			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxSubscribeOnValue<>(value, scheduler);
+		if (this instanceof Fuseable.ScalarCallable) {
+			try {
+				@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
+				return new FluxSubscribeOnValue<>(value, scheduler);
+			}
+			catch(Throwable e){
+				Exceptions.throwIfFatal(e);
+				return error(e);
+			}
 		}
 
 		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
@@ -2858,17 +2869,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param supplier the supplier Flux
 	 * @return the mono representing that Flux
 	 */
-	Mono<T> convertToMono(Supplier<T> supplier) {
-	    if (supplier instanceof Fuseable.ScalarSupplier) {
-            Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) supplier;
-	        
-            T v = scalarSupplier.get();
-            if (v == null) {
-                return Mono.empty();
-            }
-            return Mono.just(v);
+	Mono<T> convertToMono(Callable<T> supplier) {
+	    if (supplier instanceof Fuseable.ScalarCallable) {
+            Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
+
+		    try {
+			    T v = scalarCallable.call();
+			    if (v == null) {
+				    return Mono.empty();
+			    }
+			    return Mono.just(v);
+		    }
+		    catch(Throwable e){
+			    Exceptions.throwIfFatal(e);
+			    return Mono.error(e);
+		    }
 	    }
-	    return new MonoSupplier<>(supplier);
+	    return new MonoCallable<>(supplier);
 	}
 	
 	/**
@@ -2881,8 +2898,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
     public final Mono<T> last() {
-	    if (this instanceof Supplier) {
-	        return convertToMono((Supplier<T>)this);
+	    if (this instanceof Callable) {
+	        return convertToMono((Callable<T>)this);
 	    }
 		return new MonoTakeLastOne<>(this);
 	}
@@ -3466,8 +3483,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
     @SuppressWarnings("unchecked")
 	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
-		if (this instanceof Supplier){
-		    return convertToMono((Supplier<T>)this);
+		if (this instanceof Callable){
+		    return convertToMono((Callable<T>)this);
 		}
 		return new MonoAggregate<>(this, aggregator);
 	}
@@ -3884,17 +3901,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
     public final Mono<T> single() {
-	    if (this instanceof Supplier) {
-	        if (this instanceof Fuseable.ScalarSupplier) {
-                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
-	            
-                T v = scalarSupplier.get();
-                if (v == null) {
-                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
-                }
-                return Mono.just(v);
+	    if (this instanceof Callable) {
+	        if (this instanceof Fuseable.ScalarCallable) {
+                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+		        try {
+			        T v = scalarCallable.call();
+			        if (v == null) {
+				        return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+			        }
+			        return Mono.just(v);
+		        }
+		        catch(Throwable t){
+			        Exceptions.throwIfFatal(t);
+			        return Mono.error(t);
+		        }
 	        }
-	        return new MonoSupplier<>((Supplier<T>)this);
+	        return new MonoCallable<>((Callable<T>)this);
 	    }
 		return new MonoSingle<>(this);
 	}
@@ -3913,17 +3936,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
     public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
-        if (this instanceof Supplier) {
-            if (this instanceof Fuseable.ScalarSupplier) {
-                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
-                
-                T v = scalarSupplier.get();
-                if (v == null) {
-                    return new MonoSupplier<>(defaultSupplier);
-                }
-                return Mono.just(v);
+        if (this instanceof Callable) {
+            if (this instanceof Fuseable.ScalarCallable) {
+                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+	            try {
+		            T v = scalarCallable.call();
+		            if (v == null) {
+			            return new MonoSupplier<>(defaultSupplier);
+		            }
+		            return Mono.just(v);
+	            }
+	            catch(Throwable t){
+		            Exceptions.throwIfFatal(t);
+		            return Mono.error(t);
+	            }
             }
-            return new MonoSupplier<>((Supplier<T>)this);
+            return new MonoCallable<>((Callable<T>)this);
         }
 		return new MonoSingle<>(this, defaultSupplier);
 	}
@@ -3938,8 +3967,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
     public final Mono<T> singleOrEmpty() {
-	    if (this instanceof Supplier) {
-	        return convertToMono((Supplier<T>)this);
+	    if (this instanceof Callable) {
+	        return convertToMono((Callable<T>)this);
 	    }
 		return new MonoSingle<>(this, MonoSingle.completeOnEmptySequence());
 	}
@@ -4138,10 +4167,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} requesting asynchronously
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarSupplier) {
-			@SuppressWarnings("unchecked")
-			T value = ((Fuseable.ScalarSupplier<T>)this).get();
-			return new FluxSubscribeOnValue<>(value, scheduler);
+		if (this instanceof Fuseable.ScalarCallable) {
+			try {
+				@SuppressWarnings("unchecked")
+				T value = ((Fuseable.ScalarCallable<T>)this).call();
+				return new FluxSubscribeOnValue<>(value, scheduler);
+			}
+			catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				return error(e);
+			}
 		}
 		return new FluxSubscribeOn<>(this, scheduler);
 	}
@@ -4539,22 +4574,28 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> toList() {
-        if (this instanceof Supplier) {
-            if (this instanceof Fuseable.ScalarSupplier) {
-                Fuseable.ScalarSupplier<T> scalarSupplier = (Fuseable.ScalarSupplier<T>) this;
+        if (this instanceof Callable) {
+            if (this instanceof Fuseable.ScalarCallable) {
+                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+	            try {
+		            T v = scalarCallable.call();
+		            if (v == null) {
+			            return new MonoSupplier<>(LIST_SUPPLIER);
+		            }
+		            return Mono.just(v).map(u -> {
+			            List<T> list = (List<T>)LIST_SUPPLIER.get();
+			            list.add(u);
+			            return list;
+		            });
+	            }
+	            catch (Exception e){
+		            return Mono.error(e);
+	            }
                 
-                T v = scalarSupplier.get();
-                if (v == null) {
-                    return new MonoSupplier<>(LIST_SUPPLIER);
-                }
-                
-                return Mono.just(v).map(u -> {
-                    List<T> list = (List<T>)LIST_SUPPLIER.get();
-                    list.add(u);
-                    return list;
-                });
+
             }
-            return new MonoSupplier<>((Supplier<T>)this).map(u -> {
+            return new MonoCallable<>((Callable<T>)this).map(u -> {
                 List<T> list = (List<T>)LIST_SUPPLIER.get();
                 list.add(u);
                 return list;

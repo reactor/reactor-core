@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -101,11 +102,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			Publisher<? extends T> source,
 			Subscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		if (source instanceof Supplier) {
+		if (source instanceof Callable) {
 			T t;
 
 			try {
-				t = ((Supplier<? extends T>)source).get();
+				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
 				EmptySubscription.error(s, Exceptions.unwrap(e));
@@ -132,11 +133,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				return true;
 			}
 
-			if (p instanceof Supplier) {
+			if (p instanceof Callable) {
 				R v;
 
 				try {
-					v = ((Supplier<R>)p).get();
+					v = ((Callable<R>)p).call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					EmptySubscription.error(s, Exceptions.unwrap(e));
@@ -382,10 +383,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			if (p instanceof Supplier) {
+			if (p instanceof Callable) {
 				R v;
 				try {
-					v = ((Supplier<R>)p).get();
+					v = ((Callable<R>)p).call();
 				} catch (Throwable e) {
 					s.cancel();
 					onError(Exceptions.unwrap(e));
