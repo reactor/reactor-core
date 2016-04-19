@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.logging.Level;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import org.reactivestreams.*;
@@ -1870,11 +1871,30 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param containerSupplier the supplier of the container instance for each Subscriber
 	 * @param collector the consumer of both the container instance and the current value
 	 *
-	 * @return a Mono sequence of the collected value on complete
+	 * @return a {@link Mono} sequence of the collected value on complete
 	 *
 	 */
 	public final <E> Mono<E> collect(Supplier<E> containerSupplier, BiConsumer<E, ? super T> collector) {
 		return new MonoCollect<>(this, containerSupplier, collector);
+	}
+
+	/**
+	 * Collect the {@link Flux} sequence with the given collector and supplied container on subscribe.
+	 * The collected result will be emitted when this sequence completes.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collect.png" alt="">
+
+	 *
+	 * @param collector the {@link Collector} 
+	 * @param <A> The mutable accumulation type
+	 * @param <R> the {@link Flux} collected container type
+	 *
+	 * @return a {@link Mono} sequence of the collected value on complete
+	 *
+	 */
+	public final <R, A> Mono<R> collect(Collector<T, A, R> collector) {
+		return new MonoStreamCollector<>(this, collector);
 	}
 
 	/**
