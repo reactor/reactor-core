@@ -37,6 +37,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
@@ -53,7 +54,6 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
-import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -80,6 +80,8 @@ import reactor.core.util.ReactiveStateUtils;
  * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author Joao Pedro Evangelista
+ *
  * @see Flux
  * @since 2.5
  */
@@ -1201,6 +1203,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 +	 * Triggered when the {@link Mono} completes with an error and the exception type of
+	 +	 * that error matches the exceptionType parameter
+	 +	 *
+	 +	 * @param exceptionType type to match the error
+	 +	 * @param onError error callback to be executed on {@link Subscriber#onError(Throwable)}
+	 +	 * @param <E> type of exception
+	 +	 * @return a new {@link Mono}
+	 +	 */
+	@SuppressWarnings("unchecked")
+	public final  <E extends Throwable>  Mono<T> doOnError(Class<? extends Throwable> exceptionType, Consumer<E> onError) {
+			return doOnError(throwable -> {
+					if (exceptionType.isAssignableFrom(throwable.getClass())) {
+							onError.accept((E) throwable);
+						}
+				});
+		}
+
+	/**
 	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
 	 *
 	 * <p>
@@ -1629,6 +1649,30 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform a rejected {@link Mono} into a fallback by applying a transforming function
+	 * only when the exceptionType match the incoming error type, otherwise new a Mono
+	 * carrying the error will be returned
+	 *
+	 * @param exceptionType  type of exception to match the incoming error
+	 * @param fallback transforming function
+	 *
+	 * @return a new {@link Mono}
+	 *
+	 * @see this#otherwise(Function)
+	 */
+	public final Mono<T> mapError(Class<? extends Throwable> exceptionType,
+			Function<Throwable, Mono<? extends T>> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return otherwise(fallback);
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1698,6 +1742,27 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
 		return MonoSource.wrap(new FluxResume<>(this, fallback));
+	}
+
+	/**
+	 *  Subscribe to a fallback mono that respond with a supplier if the given
+	 *  exceptionType is matched with the incoming error
+	 *
+	 * @param exceptionType expected type of exception
+	 * @param fallback mono to return if the exception match the exceptionType
+	 * @return an alternating {@link Mono} supplyed by you when the exceptions match, otherwise a wrapped error
+	 *
+	 * @see this#otherwise(Function)
+	 */
+	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
+		return otherwise(throwable -> {
+			if (exceptionType.isAssignableFrom(throwable.getClass())) {
+				return fallback;
+			}
+			else {
+				return Mono.error(throwable);
+			}
+		});
 	}
 
 	/**
