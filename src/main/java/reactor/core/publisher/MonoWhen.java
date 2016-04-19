@@ -32,7 +32,7 @@ import reactor.core.util.*;
  *
  * @param <T> the source value types
  */
-public final class MonoWhen<T> extends Mono<T[]> {
+final class MonoWhen<T> extends Mono<T[]> {
 
     final boolean delayError;
     
