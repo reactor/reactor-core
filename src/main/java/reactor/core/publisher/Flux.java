@@ -3913,8 +3913,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxScan<>(this, initial, accumulator);
 	}
 
-
-  /**
+    /**
   	 * Expect and emit a single item from this {@link Flux} source or signal
   	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
   	 * {@link IndexOutOfBoundsException} for a multi-item source.
@@ -3941,7 +3940,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
   		return new MonoSingle<>(this);
   	}
 
-    /**
+  	/**
   	 *
   	 * Expect and emit a single item from this {@link Flux} source or signal
   	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
@@ -4604,7 +4603,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
         }
         return new MonoBufferAll<>(this, LIST_SUPPLIER);
 	}
-
 
 	/**
 	 * Accumulate and sort this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on

@@ -30,7 +30,6 @@ import spock.lang.Specification
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-
 /**
  * @author Stephane Maldini
  * @author Joao Pedro Evangelista
@@ -199,6 +198,7 @@ class MonoSpec extends Specification {
 	acceptedValue == failure
   }
 
+<<<<<<< HEAD
   def "A doOnError is called with exceptionType so only if the exception is satisfied the accept is called"() {
   		given: "a MonoProcessor with error"
   		def failure = new IllegalArgumentException()
@@ -379,7 +379,6 @@ class MonoSpec extends Specification {
 		thrown(IllegalStateException)
 
 	}
->>>>>>> Add mapError and tests for it
 
 	def "When getting a rejected promise's value the exception that the promise was rejected with is thrown"() {
 	given: "a rejected MonoProcessor"

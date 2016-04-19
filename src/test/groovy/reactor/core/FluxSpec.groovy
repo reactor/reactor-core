@@ -17,13 +17,6 @@ package reactor.core
 
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
-import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.Mono
-import reactor.core.publisher.Flux
-import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.Computations
-import reactor.core.publisher.Signal
-import reactor.core.scheduler.Scheduler
 import reactor.core.publisher.*
 import reactor.core.scheduler.Timer
 import reactor.core.subscriber.SubscriberWithContext
