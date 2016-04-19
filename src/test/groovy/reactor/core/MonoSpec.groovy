@@ -21,7 +21,6 @@ import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoProcessor
 import reactor.core.publisher.Computations
-import reactor.core.publisher.SchedulerGroup
 import reactor.core.subscriber.DeferredScalarSubscriber
 import reactor.core.util.Exceptions
 
@@ -198,7 +197,6 @@ class MonoSpec extends Specification {
 	acceptedValue == failure
   }
 
-<<<<<<< HEAD
   def "A doOnError is called with exceptionType so only if the exception is satisfied the accept is called"() {
   		given: "a MonoProcessor with error"
   		def failure = new IllegalArgumentException()
