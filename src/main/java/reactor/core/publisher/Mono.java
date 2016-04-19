@@ -1747,18 +1747,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return MonoSource.wrap(new FluxResume<>(this, fallback));
 	}
 
-
-	public final Mono<T> otherwise(Class<? extends Throwable> exceptionType, Mono<? extends T> fallback) {
-		return otherwise(throwable -> {
-			if (exceptionType.isAssignableFrom(throwable.getClass())) {
-				return fallback;
-			}
-			else {
-				return Mono.error(throwable);
-			}
-		});
-	}
-
 	/**
 	 *  Subscribe to a fallback mono that respond with a supplier if the given
 	 *  exceptionType is matched with the incoming error
