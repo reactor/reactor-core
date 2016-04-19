@@ -60,7 +60,7 @@ extends Mono<Object>
 	}
 
 	@Override
-	public Object call() throws Exception {
+	public Object call() {
 		return null; /* Scalar optimizations on empty */
 	}
 

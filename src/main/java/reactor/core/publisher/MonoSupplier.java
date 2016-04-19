@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
@@ -36,7 +37,7 @@ import reactor.core.util.Exceptions;
  */
 final class MonoSupplier<T> 
 extends Mono<T>
-		implements Receiver {
+		implements Receiver, Callable<T> {
 
 	final Supplier<? extends T> supplier;
 
@@ -80,5 +81,10 @@ extends Mono<T>
 	@Override
 	public T get() {
         return supplier.get();
+	}
+	
+	@Override
+	public T call() throws Exception {
+	    return supplier.get();
 	}
 }

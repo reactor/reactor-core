@@ -39,7 +39,7 @@ import reactor.core.util.Exceptions;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Receiver, Supplier<T> {
+		implements Receiver, Callable<T> {
 
 	final Callable<? extends T> callable;
 
@@ -90,5 +90,10 @@ extends Mono<T>
 			}
 			throw Exceptions.bubble(e);
 		}
+	}
+	
+	@Override
+	public T call() throws Exception {
+	    return callable.call();
 	}
 }

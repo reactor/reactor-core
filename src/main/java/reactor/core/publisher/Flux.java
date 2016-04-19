@@ -564,16 +564,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 
 		if (source instanceof Fuseable.ScalarCallable) {
-			try {
-				T t = ((Fuseable.ScalarCallable<T>) source).call();
-				if (t != null) {
-					return just(t);
-				}
-			}
-			catch(Throwable t){
-				Exceptions.throwIfFatal(t);
-				return error(t);
-			}
+            T t = ((Fuseable.ScalarCallable<T>) source).call();
+            if (t != null) {
+                return just(t);
+            }
 			return empty();
 		}
 		return FluxSource.wrap(source);
@@ -2269,14 +2263,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarCallable) {
-			try {
-				@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
-				return new FluxSubscribeOnValue<>(value, scheduler);
-			}
-			catch(Throwable e){
-				Exceptions.throwIfFatal(e);
-				return error(e);
-			}
+            @SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
+            return new FluxSubscribeOnValue<>(value, scheduler);
 		}
 
 		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
@@ -2873,17 +2861,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    if (supplier instanceof Fuseable.ScalarCallable) {
             Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
 
-		    try {
-			    T v = scalarCallable.call();
-			    if (v == null) {
-				    return Mono.empty();
-			    }
-			    return Mono.just(v);
-		    }
-		    catch(Throwable e){
-			    Exceptions.throwIfFatal(e);
-			    return Mono.error(e);
-		    }
+            T v = scalarCallable.call();
+            if (v == null) {
+                return Mono.empty();
+            }
+            return Mono.just(v);
 	    }
 	    return new MonoCallable<>(supplier);
 	}
@@ -3905,17 +3887,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	        if (this instanceof Fuseable.ScalarCallable) {
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-		        try {
-			        T v = scalarCallable.call();
-			        if (v == null) {
-				        return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
-			        }
-			        return Mono.just(v);
-		        }
-		        catch(Throwable t){
-			        Exceptions.throwIfFatal(t);
-			        return Mono.error(t);
-		        }
+                T v = scalarCallable.call();
+                if (v == null) {
+                    return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+                }
+                return Mono.just(v);
 	        }
 	        return new MonoCallable<>((Callable<T>)this);
 	    }
@@ -3940,17 +3916,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
             if (this instanceof Fuseable.ScalarCallable) {
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-	            try {
-		            T v = scalarCallable.call();
-		            if (v == null) {
-			            return new MonoSupplier<>(defaultSupplier);
-		            }
-		            return Mono.just(v);
-	            }
-	            catch(Throwable t){
-		            Exceptions.throwIfFatal(t);
-		            return Mono.error(t);
-	            }
+                T v = scalarCallable.call();
+                if (v == null) {
+                    return new MonoSupplier<>(defaultSupplier);
+                }
+                return Mono.just(v);
             }
             return new MonoCallable<>((Callable<T>)this);
         }
@@ -4168,15 +4138,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
-			try {
-				@SuppressWarnings("unchecked")
-				T value = ((Fuseable.ScalarCallable<T>)this).call();
-				return new FluxSubscribeOnValue<>(value, scheduler);
-			}
-			catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				return error(e);
-			}
+            @SuppressWarnings("unchecked")
+            T value = ((Fuseable.ScalarCallable<T>)this).call();
+            return new FluxSubscribeOnValue<>(value, scheduler);
 		}
 		return new FluxSubscribeOn<>(this, scheduler);
 	}
@@ -4578,21 +4542,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
             if (this instanceof Fuseable.ScalarCallable) {
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-	            try {
-		            T v = scalarCallable.call();
-		            if (v == null) {
-			            return new MonoSupplier<>(LIST_SUPPLIER);
-		            }
-		            return Mono.just(v).map(u -> {
-			            List<T> list = (List<T>)LIST_SUPPLIER.get();
-			            list.add(u);
-			            return list;
-		            });
-	            }
-	            catch (Exception e){
-		            return Mono.error(e);
-	            }
-                
+                T v = scalarCallable.call();
+                if (v == null) {
+                    return new MonoSupplier<>(LIST_SUPPLIER);
+                }
+                return Mono.just(v).map(u -> {
+                    List<T> list = (List<T>)LIST_SUPPLIER.get();
+                    list.add(u);
+                    return list;
+                });
 
             }
             return new MonoCallable<>((Callable<T>)this).map(u -> {

@@ -50,23 +50,17 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	public static <T> void scalarScheduleOn(Publisher<? extends T> source, Subscriber<? super T> s, Scheduler scheduler) {
 		@SuppressWarnings("unchecked") Fuseable.ScalarCallable<T> supplier = (Fuseable.ScalarCallable<T>) source;
 
-		try {
-			T v = supplier.call();
+        T v = supplier.call();
 
-			if (v == null) {
-				ScheduledEmpty parent = new ScheduledEmpty(s);
-				s.onSubscribe(parent);
-				Cancellation f = scheduler.schedule(parent);
-				parent.setFuture(f);
-			}
-			else {
-				s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
-			}
-		}
-		catch(Throwable t){
-			Exceptions.throwIfFatal(t);
-			EmptySubscription.error(s, t);
-		}
+        if (v == null) {
+            ScheduledEmpty parent = new ScheduledEmpty(s);
+            s.onSubscribe(parent);
+            Cancellation f = scheduler.schedule(parent);
+            parent.setFuture(f);
+        }
+        else {
+            s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
+        }
 	}
 	
 	@Override

@@ -28,10 +28,10 @@ import reactor.core.util.Exceptions;
  */
 final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
-    final Callable<T> supplier;
+    final Callable<T> callable;
     
-    FluxCallable(Callable<T> supplier) {
-        this.supplier = supplier;
+    FluxCallable(Callable<T> callable) {
+        this.callable = callable;
     }
 
     @Override
@@ -41,7 +41,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
         
         T v;
         try {
-            v = supplier.call();
+            v = callable.call();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
             s.onError(ex);
@@ -53,6 +53,6 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
     @Override
     public T call() throws Exception {
-        return supplier.call();
+        return callable.call();
     }
 }

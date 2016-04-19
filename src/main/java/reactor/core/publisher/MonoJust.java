@@ -38,7 +38,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public T call() throws Exception {
+	public T call() {
 		return value;
 	}
 

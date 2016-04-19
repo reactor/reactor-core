@@ -54,17 +54,11 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 	    if (pub instanceof Fuseable.ScalarCallable) {
             Fuseable.ScalarCallable scalarCallable = (Fuseable.ScalarCallable) pub;
 
-		    try {
-			    Object v = scalarCallable.call();
-			    if (v == null) {
-				    return Observable.empty();
-			    }
-			    return Observable.just(v);
-		    }
-		    catch(Throwable t){
-			    Exceptions.throwIfFatal(t);
-			    return Observable.error(t);
-		    }
+            Object v = scalarCallable.call();
+            if (v == null) {
+                return Observable.empty();
+            }
+            return Observable.just(v);
 	    }
 		return Observable.create(new PublisherAsObservable(pub));
 	}

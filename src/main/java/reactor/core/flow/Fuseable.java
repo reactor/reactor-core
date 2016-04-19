@@ -196,6 +196,7 @@ public interface Fuseable {
 	 * @param <T> the value type returned
 	 */
 	interface ScalarCallable<T> extends Callable<T> {
-
+        @Override
+        T call();
 	}
 }
