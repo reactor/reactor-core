@@ -76,7 +76,7 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-Reactor use a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Scheduler.html) as a
+Reactor uses a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Scheduler.html) as a
 contract for `Runnable` execution. It provides some guarantees required by Reactive Streams flows like FIFO execution.
 
 You can create low-latency [event loop resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/Computations.html) to share with multiple Subscribers for producing flows
