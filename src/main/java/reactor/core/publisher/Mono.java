@@ -80,6 +80,8 @@ import reactor.core.util.ReactiveStateUtils;
  * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author David Karnok
+ *
  * @see Flux
  * @since 2.5
  */

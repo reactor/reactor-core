@@ -51,6 +51,7 @@ import reactor.core.util.*;
  *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author David Karnok
  *
  * @see Mono
  * @since 2.5
