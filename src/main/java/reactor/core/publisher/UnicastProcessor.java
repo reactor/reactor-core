@@ -15,22 +15,14 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 
-import org.reactivestreams.Processor;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import org.reactivestreams.*;
+
+import reactor.core.flow.*;
+import reactor.core.state.*;
+import reactor.core.util.*;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -284,7 +276,7 @@ final class UnicastProcessor<T>
 			}
 		}
 		else {
-			s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
+			EmptySubscription.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
 		}
 	}
 
