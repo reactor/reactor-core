@@ -1911,7 +1911,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<V> concatMap(Function<? super T, Publisher<? extends V>> mapper) {
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
+			mapper) {
 		return concatMap(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
 	}
 
@@ -1929,7 +1930,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<V> concatMap(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
+			mapper, int prefetch) {
 		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE);
 	}
@@ -1990,7 +1992,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper, int prefetch) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
+			extends V>> mapper, int prefetch) {
 		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END);
 	}
