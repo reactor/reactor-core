@@ -16,21 +16,19 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
+import java.util.Queue;
 import java.util.function.Function;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.scheduler.Scheduler;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SignalEmitter;
-import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
@@ -44,7 +42,7 @@ import reactor.core.util.Exceptions;
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Receiver, Completable, BaseSubscriber<IN> {
+		implements Processor<IN, OUT>, Backpressurable, Completable, BaseSubscriber<IN> {
 
 	/**
 	 * Blackbox a given
@@ -122,7 +120,41 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return new DelegateProcessor<>(downstream, upstream);
 	}
 
-	Subscription upstreamSubscription;
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> FluxProcessor<T, T> unicast() {
+		return unicast(QueueSupplier.<T>unbounded().get());
+	}
+
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param queue the buffering queue
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> FluxProcessor<T, T> unicast(Queue<T> queue) {
+		return unicast(queue, null);
+	}
+
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param queue the buffering queue
+	 * @param endcallback called on any terminal signal
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> FluxProcessor<T, T> unicast(Queue<T> queue, Runnable endcallback) {
+		return new UnicastProcessor<>(queue, endcallback);
+	}
 
 	protected FluxProcessor() {
 	}
@@ -131,25 +163,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	public FluxProcessor<IN, OUT> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
-	}
-
-	@Override
-	public void onSubscribe(final Subscription s) {
-		if (BackpressureUtils.validate(upstreamSubscription, s)) {
-			this.upstreamSubscription = s;
-			try {
-				doOnSubscribe(s);
-			}
-			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				s.cancel();
-				onError(t);
-			}
-		}
-	}
-
-	protected void doOnSubscribe(Subscription s) {
-		//IGNORE
 	}
 
 	@Override
@@ -164,70 +177,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		}
 	}
 
-	protected void cancel(Subscription subscription) {
-		if (subscription != EmptySubscription.INSTANCE) {
-			subscription.cancel();
-		}
-	}
-
-	@Override
-	public Subscription upstream() {
-		return upstreamSubscription;
-	}
-
 	@Override
 	public int getMode() {
 		return 0;
 	}
 
-	final static class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-			implements Producer, Backpressurable {
-
-		private final Publisher<OUT> downstream;
-		private final Subscriber<IN> upstream;
-
-		public DelegateProcessor(Publisher<OUT> downstream, Subscriber<IN> upstream) {
-			this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
-			this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
-		}
-
-		@Override
-		public Subscriber<? super IN> downstream() {
-			return upstream;
-		}
-
-		@Override
-		public long getCapacity() {
-			return Backpressurable.class.isAssignableFrom(upstream.getClass()) ?
-					((Backpressurable) upstream).getCapacity() :
-					Long.MAX_VALUE;
-		}
-
-		@Override
-		public void onComplete() {
-			upstream.onComplete();
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			upstream.onError(t);
-		}
-
-		@Override
-		public void onNext(IN in) {
-			upstream.onNext(in);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			upstream.onSubscribe(s);
-		}
-
-		@Override
-		public void subscribe(Subscriber<? super OUT> s) {
-			if(s == null)
-				throw Exceptions.argumentIsNullException();
-			downstream.subscribe(s);
-		}
-	}
 }

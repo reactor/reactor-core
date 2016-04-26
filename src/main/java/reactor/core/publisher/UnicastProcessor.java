@@ -34,7 +34,7 @@ import reactor.core.util.*;
  * @param <T> the input and output type
  */
 final class UnicastProcessor<T>
-		extends Flux<T>
+		extends FluxProcessor<T, T>
 		implements Processor<T, T>, Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver,
 		           Completable, Cancellable, Requestable {
 

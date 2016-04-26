@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.state.Cancellable;
+import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
@@ -32,27 +33,18 @@ import reactor.core.util.ExecutorUtils;
  * @author Stephane Maldini
  */
 public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Cancellable {
+		implements Cancellable, reactor.core.flow.Receiver {
 
-
-
-	protected static final int SHUTDOWN = 1;
-
-	protected static final int                                           FORCED_SHUTDOWN  = 2;
-	protected static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
-			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
-	protected final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
-			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 	protected final ExecutorService executor;
 	protected final ClassLoader     contextClassLoader;
 	protected final String          name;
 	protected final boolean         autoCancel;
+	Subscription upstreamSubscription;
 	volatile        boolean         cancelled;
 	volatile        int             terminated;
 	volatile        Throwable       error;
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
-
 	protected EventLoopProcessor(String name, ExecutorService executor,
 			boolean autoCancel) {
 		this.autoCancel = autoCancel;
@@ -140,6 +132,11 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
+	public int hashCode() {
+		return contextClassLoader.hashCode();
+	}
+
+	@Override
 	public boolean isCancelled() {
 		return cancelled;
 	}
@@ -192,6 +189,23 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
+	@Override
+	public void onSubscribe(final Subscription s) {
+		if (BackpressureUtils.validate(upstreamSubscription, s)) {
+			this.upstreamSubscription = s;
+			try {
+				if (s != EmptySubscription.INSTANCE) {
+					requestTask(s);
+				}
+			}
+			catch (Throwable t) {
+				Exceptions.throwIfFatal(t);
+				s.cancel();
+				onError(t);
+			}
+		}
+	}
+
 	/**
 	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
 	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
@@ -208,11 +222,23 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
+	public Subscription upstream() {
+		return upstreamSubscription;
+	}
+
 	protected void cancel(Subscription subscription) {
 		cancelled = true;
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			ExecutorUtils.shutdownIfSingleUse(executor);
 		}
+	}
+
+	protected void doComplete() {
+
+	}
+
+	protected void requestTask(final Subscription s) {
+		//implementation might run a specific request task for the given subscription
 	}
 
 	final int decrementSubscribers() {
@@ -228,23 +254,10 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		return subs;
 	}
 
-	protected void doComplete() {
-
-	}
-
-	@Override
-	protected void doOnSubscribe(Subscription s) {
-		if (s != EmptySubscription.INSTANCE) {
-			requestTask(s);
-		}
-	}
+	abstract void doError(Throwable throwable);
 
 	final boolean incrementSubscribers() {
 		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
-	}
-
-	protected void requestTask(final Subscription s) {
-		//implementation might run a specific request task for the given subscription
 	}
 
 	final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
@@ -260,8 +273,6 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		}
 	}
 
-	abstract void doError(Throwable throwable);
-
 	final static class EventLoopContext extends ClassLoader {
 
 		EventLoopContext() {
@@ -269,9 +280,10 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 			            .getContextClassLoader());
 		}
 	}
-
-	@Override
-	public int hashCode() {
-		return contextClassLoader.hashCode();
-	}
+	protected static final int SHUTDOWN = 1;
+	protected static final int                                           FORCED_SHUTDOWN  = 2;
+	protected static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
+			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
+	protected final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
+			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 }

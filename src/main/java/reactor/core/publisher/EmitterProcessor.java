@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Slot;
 import reactor.core.scheduler.Scheduler;
@@ -66,7 +67,8 @@ import reactor.core.util.Sequence;
  * @since 2.5
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>
-		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable {
+		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable,
+		           Receiver {
 
 	/**
 	 * Create an asynchronously {@link Flux#publishOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
@@ -247,10 +249,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	final int limit;
 	final int replay;
 	final boolean autoCancel;
+	Subscription upstreamSubscription;
 
 	private volatile RingBuffer<Slot<T>> emitBuffer;
 
 	private volatile boolean done;
+
+	@Override
+	public Subscription upstream() {
+		return upstreamSubscription;
+	}
 
 	static final EmitterSubscriber<?>[] EMPTY = new EmitterSubscriber<?>[0];
 
@@ -264,22 +272,22 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
 			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "subscribers");
-
 	@SuppressWarnings("unused")
 	private volatile int running;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> RUNNING =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "running");
-
 	@SuppressWarnings("unused")
 	private volatile int outstanding;
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> OUTSTANDING =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
-
 	boolean firstDrain = true;
 
 	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
@@ -317,16 +325,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public long getPending() {
 		return (emitBuffer == null ? -1L : emitBuffer.getPending());
-	}
-
-	@Override
-	protected void doOnSubscribe(Subscription s) {
-		EmitterSubscriber<?>[] innerSubscribers = subscribers;
-		if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
-			for (int i = 0; i < innerSubscribers.length; i++) {
-				innerSubscribers[i].start();
-			}
-		}
 	}
 
 	@Override
@@ -439,6 +437,26 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 		done = true;
 		drain();
+	}
+
+	@Override
+	public void onSubscribe(final Subscription s) {
+		if (BackpressureUtils.validate(upstreamSubscription, s)) {
+			this.upstreamSubscription = s;
+			try {
+				EmitterSubscriber<?>[] innerSubscribers = subscribers;
+				if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
+					for (int i = 0; i < innerSubscribers.length; i++) {
+						innerSubscribers[i].start();
+					}
+				}
+			}
+			catch (Throwable t) {
+				Exceptions.throwIfFatal(t);
+				s.cancel();
+				onError(t);
+			}
+		}
 	}
 
 	@Override
