@@ -91,7 +91,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		final Processor<Integer, Integer> p = createProcessor(bufferSize);
 
 		/*Streams.interval(200, TimeUnit.MILLISECONDS)
-		  .consume(i -> System.out.println(p.debug()) );*/
+		  .subscribe(i -> System.out.println(p.debug()) );*/
 
 		processorReferences.add(p);
 		return p;

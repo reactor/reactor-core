@@ -35,7 +35,7 @@ import reactor.core.util.Exceptions;
  * Create such fluxion with the provided factory, E.g.:
  * <pre>
  * {@code
- * Streams.just(1).consume(
+ * Streams.just(1).subscribe(
  *    log::info,
  *    log::error,
  *    (-> log.info("complete"))

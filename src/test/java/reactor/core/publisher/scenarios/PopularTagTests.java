@@ -71,7 +71,7 @@ public class PopularTagTests extends AbstractReactorTest {
 		                       .doAfterTerminate(() -> LOG.info("------------------------ window terminated" +
 						      "----------------------"))
 			)
-		         .consume(
+		         .subscribe(
 			  entry -> LOG.info(entry.t1 + ": " + entry.t2),
 			  error -> LOG.error("", error),
 				        latch::countDown

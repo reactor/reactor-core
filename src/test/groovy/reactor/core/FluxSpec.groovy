@@ -150,7 +150,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the complete signal is observed and flux is retrieved'
-			def tap = stream.after()
+			def tap = stream.then()
 
 		then:
 			'it is available'
@@ -159,7 +159,7 @@ class FluxSpec extends Specification {
 		when:
 			'the error signal is observed and flux is retrieved'
 			stream = Flux.error(new Exception())
-			stream.after().get()
+			stream.then().get()
 
 		then:
 			'it is available'
@@ -727,7 +727,7 @@ class FluxSpec extends Specification {
 			'the sources are zipped'
 			def mergedFlux = Flux.merge(odds, even)
 			def res = []
-			mergedFlux.consume(
+			mergedFlux.subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res.sort(); res << 'done'; println 'completed!' }
@@ -751,7 +751,7 @@ class FluxSpec extends Specification {
 			def mergedFlux = Flux.combineLatest(w1, w2, w3, { t -> t[0] + t[1] + t[2] })
 			def res = []
 
-			mergedFlux.consume(
+			mergedFlux.subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res.sort(); res << 'done'; println 'completed!' }
@@ -788,7 +788,7 @@ class FluxSpec extends Specification {
 			'the sources are zipped'
 			def mergedFlux = Flux.concat(firsts, lasts)
 			def res = []
-			mergedFlux.consume(
+			mergedFlux.subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res << 'done'; println 'completed!' }
@@ -800,7 +800,7 @@ class FluxSpec extends Specification {
 
 		when:
 			res = []
-			lasts.startWith(firsts).consume(
+			lasts.startWith(firsts).subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res << 'done'; println 'completed!' }
@@ -812,7 +812,7 @@ class FluxSpec extends Specification {
 
 		when:
 			res = []
-			lasts.startWith([1, 2, 3]).consume(
+			lasts.startWith([1, 2, 3]).subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res << 'done'; println 'completed!' }
@@ -833,7 +833,7 @@ class FluxSpec extends Specification {
 			'the sources are zipped'
 			def mergedFlux = firsts.concatMap { Flux.range(it, 2) }
 			def res = []
-			mergedFlux.consume(
+			mergedFlux.subscribe(
 					{ res << it; println it },
 					{ it.printStackTrace() },
 					{ res << 'done'; println 'completed!' }
@@ -1740,7 +1740,7 @@ class FluxSpec extends Specification {
 			def nexts = []
 			def errors = []
 
-			s.consume(
+			s.subscribe(
 					{ nexts << 'never' },
 					{ errors << 'never ever' },
 					{ latch.countDown() }
@@ -1775,13 +1775,13 @@ class FluxSpec extends Specification {
 			def nexts = []
 			def errors = []
 
-			s.consume(
+			s.subscribe(
 					{ nexts << it },
 					{ errors << it },
 					{ latch.countDown() }
 			)
 
-			s.consume(
+			s.subscribe(
 					{ nexts << it },
 					{ errors << it },
 					{ latch.countDown() }
@@ -1813,7 +1813,7 @@ class FluxSpec extends Specification {
 			def nexts = []
 			def errors = []
 
-			s.consume(
+			s.subscribe(
 					{ nexts << it },
 					{ errors << it; it.printStackTrace() },
 					{ latch.countDown() }
@@ -1837,7 +1837,7 @@ class FluxSpec extends Specification {
 			nexts = []
 			errors = []
 
-			s.consume(
+			s.subscribe(
 					{ nexts << 'never ever' },
 					{ errors << it; latch.countDown() }
 			)
@@ -2030,7 +2030,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'fallback flux is assigned to source flux on any error'
-			myFlux.switchOnError(myFallback).consume(
+			myFlux.switchOnError(myFallback).subscribe(
 					{ println(it); res << it },                          // onNext
 					{ println("Error: " + it.message) }, // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2054,7 +2054,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'A fallback value will emit values and complete'
-			myFlux.onErrorReturn('Zero').consume(
+			myFlux.onErrorReturn('Zero').subscribe(
 					{ println(it); res << it },                          // onNext
 					{ println("Error: " + it.message) }, // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2077,7 +2077,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'A materialized flux is consumed'
-			myFlux.materialize().consume(
+			myFlux.materialize().subscribe(
 					{ println(it); res << it.toString() },                          // onNext
 					{ it.printStackTrace() },                          // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2097,7 +2097,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'A materialized flux is consumed'
-			myFlux.materialize().consume(
+			myFlux.materialize().subscribe(
 					{ println(it); res << it.toString() },                          // onNext
 					{ it.printStackTrace() },                          // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2121,7 +2121,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'A dematerialized flux is consumed'
-			myFlux.dematerialize().consume(
+			myFlux.dematerialize().subscribe(
 					{ println(it); res << it },                          // onNext
 					{ it.printStackTrace() },                          // onError
 					{ println("Sequence complete"); res << 'complete' }          // onComplete
@@ -2154,7 +2154,7 @@ class FluxSpec extends Specification {
 		and:
 			'The streams are switched'
 			def switched = Flux.switchOnNext(Flux.just(myFlux, myFallback))
-			switched.consume(
+			switched.subscribe(
 					{ println(Thread.currentThread().name + ' ' + it); res << it },                          // onNext
 					{ println("Error: " + it.message) }, // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2178,7 +2178,7 @@ class FluxSpec extends Specification {
 		and:
 			'The streams are switched'
 			def switched = myFlux.log('lol').switchMap { Flux.range(it, 3) }.log("after-lol")
-			switched.consume(
+			switched.subscribe(
 					{ println(Thread.currentThread().name + ' ' + it); res << it },                          // onNext
 					{ println("Error: " + it.message) }, // onError
 					{ println("Sequence complete"); res << 'complete' }          // onCompleted
@@ -2615,7 +2615,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'take to the first 2 elements'
-		stream.take(Duration.ofSeconds(2)).after().get()
+		stream.take(Duration.ofSeconds(2)).then().get()
 
 		then:
 			'the second is the last available'

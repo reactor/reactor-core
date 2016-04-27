@@ -27,6 +27,7 @@ import spock.lang.Specification
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Function
 
 /**
  * @author Stephane Maldini
@@ -157,7 +158,7 @@ class MonoSpec extends Specification {
 	given: "a MonoProcessor with an doOnError Consumer"
 	def promise = MonoProcessor.create()
 	def after = MonoProcessor.create()
-	promise.after().subscribe(after)
+	promise.then().subscribe(after)
 
 	when: "the promise is fulfilled"
 	promise.onNext "test"
@@ -170,7 +171,7 @@ class MonoSpec extends Specification {
 	when: "the promise is rejected"
 	promise = MonoProcessor.create()
 	after = MonoProcessor.create()
-	promise.after().subscribe(after)
+	promise.then().subscribe(after)
 
 	promise.onError new Exception()
 
@@ -244,7 +245,7 @@ class MonoSpec extends Specification {
   def "A map many can be used to bind to another MonoProcessor and compose asynchronous results "() {
 	given: "a promise with a map many function"
 	def promise = MonoProcessor.<Integer> create()
-	def mappedMonoProcessor = promise.then { Mono.just(it + 1) }
+	def mappedMonoProcessor = promise.then ({  -> Mono.just(d + 1) } as Function)
 
 	when: "the original promise is fulfilled"
 	println promise.debug()

@@ -63,7 +63,7 @@ public class MonoTests {
 			return "hello";
 		})
 		               .subscribeOn(Computations.concurrent())
-		               .after(() -> Mono.just("world"))
+		               .then(() -> Mono.just("world"))
 		               .get();
 		assertThat("Alternate mono not seen", h, is("world"));
 	}
@@ -86,7 +86,7 @@ public class MonoTests {
 		MonoProcessor<String> promise = MonoProcessor.create();
 		promise.onNext("test");
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
-		promise.consume(v -> successCountDownLatch.countDown());
+		promise.subscribe(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
 	}
 }

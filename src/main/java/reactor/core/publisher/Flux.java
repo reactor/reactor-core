@@ -1440,70 +1440,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
-	 * This will actively ignore the sequence and only replay completion or error signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
-	 * <p>
-	 * @return a new {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-	public final Mono<Void> after() {
-		return (Mono<Void>) new MonoIgnoreElements<>(this);
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
-	 * alt="">
-	 *
-	 * @param other a {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 */
-	@SuppressWarnings("unchecked")
-	public final <V> Flux<V> after(Publisher<V> other) {
-		return (Flux<V>)concat(ignoreElements(), other);
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
-	 * alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 */
-	@SuppressWarnings("unchecked")
-	public final <V> Flux<V> after(Supplier<? extends Publisher<V>> afterSupplier) {
-		return (Flux<V>)concat(ignoreElements(), defer(afterSupplier));
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
-	 * alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 */
-	@SuppressWarnings("unchecked")
-	public final <V> Flux<V> afterCompleteOrError(Supplier<? extends Publisher<V>> afterSupplier) {
-	    return (Flux<V>)new FluxConcatArray<>(true, ignoreElements(), defer(afterSupplier));
-	}
-
-	/**
 	 *
 	 * Emit a single boolean true if all values of this sequence match
 	 * the {@link Predicate}.
@@ -2050,7 +1986,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param consumer the consumer to invoke on each value
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
+	@Deprecated
 	public final Cancellation consume(Consumer<? super T> consumer) {
 		return consume(consumer, null, null);
 	}
@@ -2069,7 +2007,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
+	@Deprecated
 	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		return consume(consumer, errorConsumer, null);
 	}
@@ -2089,7 +2029,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
+	@Deprecated
 	public final Cancellation consume(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
@@ -4144,6 +4086,77 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return s;
 	}
 
+
+	/**
+	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
+	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
+	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer) {
+		return subscribe(consumer, null, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
+	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
+	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * For a passive version that observe and forward incoming data see
+	 * {@link #doOnNext(java.util.function.Consumer)} and {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumeerror.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each next signal
+	 * @param errorConsumer the consumer to invoke on error signal
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+		return subscribe(consumer, errorConsumer, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
+	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
+	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
+	 * {@link #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumecomplete.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
+
+		long c = Math.min(Integer.MAX_VALUE, getCapacity());
+
+		LambdaSubscriber<T> consumerAction;
+		if (c == Integer.MAX_VALUE || c == -1L) {
+			consumerAction = new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+		}
+		else {
+			consumerAction = Subscribers.bounded((int) c, consumer, errorConsumer, completeConsumer);
+		}
+
+		subscribe(consumerAction);
+		return consumerAction;
+	}
+
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
 	 * {@link Consumer} {@link Runnable} factory like {@link Computations}.
@@ -4360,6 +4373,72 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final FluxTap<T> tap() {
 		return FluxTap.tap(this);
+	}
+
+
+
+	/**
+	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
+	 * This will actively ignore the sequence and only replay completion or error signals.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after.png" alt="">
+	 * <p>
+	 * @return a new {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<Void> then() {
+		return (Mono<Void>) new MonoIgnoreElements<>(this);
+	}
+
+	/**
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
+	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
+	 * alt="">
+	 *
+	 * @param other a {@link Publisher} to emit from after termination
+	 * @param <V> the supplied produced type
+	 *
+	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> then(Publisher<V> other) {
+		return (Flux<V>)concat(ignoreElements(), other);
+	}
+
+	/**
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
+	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
+	 * alt="">
+	 *
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
+	 * @param <V> the supplied produced type
+	 *
+	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> then(Supplier<? extends Publisher<V>> afterSupplier) {
+		return (Flux<V>)concat(ignoreElements(), defer(afterSupplier));
+	}
+
+	/**
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
+	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters.png"
+	 * alt="">
+	 *
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
+	 * @param <V> the supplied produced type
+	 *
+	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> thenOrError(Supplier<? extends Publisher<V>> afterSupplier) {
+		return (Flux<V>)new FluxConcatArray<>(true, ignoreElements(), defer(afterSupplier));
 	}
 
 	/**

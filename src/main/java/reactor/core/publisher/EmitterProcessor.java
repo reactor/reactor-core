@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -29,7 +28,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.QueueSupplier;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Slot;
 import reactor.core.scheduler.Scheduler;
@@ -39,7 +37,6 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-
 import reactor.core.subscriber.Subscribers;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
@@ -323,14 +320,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public long getPending() {
-		return (emitBuffer == null ? -1L : emitBuffer.getPending());
-	}
-
-	@Override
 	public EmitterProcessor<T> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
 		return this;
+	}
+
+	@Override
+	public long getPending() {
+		return (emitBuffer == null ? -1L : emitBuffer.getPending());
 	}
 
 	@Override

@@ -867,7 +867,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
 	 * <p>
 	 * @return a {@link Mono} igoring its payload (actively dropping)
+	 * @deprecated use {@link #then}
 	 */
+	@Deprecated
 	public final Mono<Void> after() {
 		return empty(this);
 	}
@@ -883,8 +885,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <V> the element type of the supplied Mono
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 * @deprecated use {@link #then}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public final <V> Mono<V> after(Mono<V> other) {
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
 	}
@@ -900,27 +903,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <V> the element type of the supplied Mono
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 * @deprecated use {@link #then}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
-	}
-
-	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
-	 *
-	 * @param <V> the element type of the supplied Mono
-	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 */
-	@SuppressWarnings("unchecked")
-	public final <V> Mono<V> afterSuccessOrError(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
 	}
 
 	/**
@@ -952,6 +939,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoProcessor<>(this);
 	}
 
+
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
 	 * sequence.
@@ -965,9 +953,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param consumer the consumer to invoke on each value
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
+	@Deprecated
 	public final Cancellation consume(Consumer<? super T> consumer) {
-		return consume(consumer, null, null);
+		return subscribe(consumer, null, null);
 	}
 
 	/**
@@ -984,8 +974,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
-	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	@Deprecated
+	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super
+			Throwable> errorConsumer) {
 		return consume(consumer, errorConsumer, null);
 	}
 
@@ -1004,12 +997,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated use {@link #subscribe}
 	 */
+	@Deprecated
 	public final Cancellation consume(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer));
 	}
+
 
 	/**
 	 * Concatenate emissions of this {@link Mono} with the provided {@link Publisher} (no interleave).
@@ -1951,6 +1947,65 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 *
+	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer) {
+		return subscribe(consumer, null, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumeerror1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each next signal
+	 * @param errorConsumer the consumer to invoke on error signal
+	 *
+	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+		return subscribe(consumer, errorConsumer, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumecomplete1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
+		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer));
+	}
+
+	/**
 	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
 	 * <p>
 	 * {@code mono.subscribeOn(Computations.concurrent()).subscribe(Subscribers.unbounded()) }
@@ -2012,6 +2067,70 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
 		return MonoSource.wrap(flatMap(transformer));
+	}
+
+	/**
+	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
+	 * <p>
+	 * @return a {@link Mono} igoring its payload (actively dropping)
+	 */
+	public final Mono<Void> then() {
+		return empty(this);
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 *
+	 * @param other a {@link Mono} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Mono<V> then(Mono<V> other) {
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 *
+	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 *
+	 * @param <V> the element type of the supplied Mono
+	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
+	 *
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Mono<V> thenOrError(final Supplier<? extends Mono<V>>
+			sourceSupplier) {
+		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
 	}
 
 	/**

@@ -33,7 +33,7 @@ New to Reactive Programming or bored of reading already ? Try the [Introduction 
 
 A Reactive Streams Publisher with basic Rx operators. 
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
-- Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#consume()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
+- Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 
@@ -46,7 +46,7 @@ Flux.fromIterable(getSomeLongList())
     .take(3)
     .onErrorResumeWith(errorHandler::fallback)
     .doAfterTerminate(serviceM::incrementTerminate)
-    .consume(System.out::println);
+    .subscribe(System.out::println);
 ```
 
 ## Mono
@@ -62,7 +62,7 @@ Mono.fromCallable(System::currentTimeMillis)
     .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
     .timeout(Duration.ofSeconds(3), errorHandler::fallback)
     .doOnSuccess(r -> serviceM.incrementSuccess())
-    .consume(System.out::println);
+    .subscribe(System.out::println);
 ```
 
 Blocking Mono result :
@@ -115,7 +115,7 @@ Flux.yield(sink -> {
     })
     .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))
-    .consume(System.out::println)
+    .subscribe(System.out::println)
 
 ```
 
@@ -132,7 +132,7 @@ EmitterProcessor<Integer> emitter = EmitterProcessor.create();
 SignalEmitter<Integer> sink = emitter.connectEmitter();
 sink.submit(1);
 sink.submit(2);
-emitter.consume(System.out::println);
+emitter.subscribe(System.out::println);
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -142,7 +142,7 @@ EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
 SignalEmitter<Integer> sink = replayer.connectEmitter();
 sink.submit(1);
 sink.submit(2);
-replayer.consume(System.out::println); //output 1, 2
+replayer.subscribe(System.out::println); //output 1, 2
 sink.submit(3); //output : 3
 sink.finish();
 ```
@@ -153,10 +153,10 @@ sink.finish();
 
 ```java
 TopicProcessor<Integer> topic = TopicProcessor.create();
-topic.consume(System.out::println);
+topic.subscribe(System.out::println);
 topic.onNext(1); //output : ...1
 topic.onNext(2); //output : ...2
-topic.consume(System.out::println); //output : ...1, 2
+topic.subscribe(System.out::println); //output : ...1, 2
 topic.onNext(3); //output : ...3 ...3
 topic.onComplete();
 ```
@@ -167,8 +167,8 @@ Similar to TopicProcessor regarding thread per subscriber but this time exclusiv
 
 ```java
 WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
-queue.consume(System.out::println);
-queue.consume(System.out::println);
+queue.subscribe(System.out::println);
+queue.subscribe(System.out::println);
 queue.onNext(1); //output : ...1
 queue.onNext(2); //output : .... ...2
 queue.onNext(3); //output : ...3 

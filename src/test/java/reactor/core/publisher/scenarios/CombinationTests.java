@@ -60,7 +60,7 @@ public class CombinationTests {
 	}
 
 	@After
-	public void after() {
+	public void then() {
 		if (sensorEven != null) {
 			sensorEven.onComplete();
 			sensorEven = null;
@@ -82,7 +82,7 @@ public class CombinationTests {
 		Flux<Integer> stream = Flux.merge(Flux.map(Flux.just(1), i -> Flux.range(0, n)));
 
 		final CountDownLatch latch = new CountDownLatch(n);
-		awaitLatch(stream.consume(integer -> latch.countDown()), latch);
+		awaitLatch(stream.subscribe(integer -> latch.countDown()), latch);
 	}*/
 
 	@Test
@@ -431,7 +431,7 @@ public class CombinationTests {
 				sensorEven().cache().delay(Duration.ofMillis(200)),
 				this::computeMin)
 		                        .log("combineLatest")
-		                        .consume(i -> latch.countDown(), null, latch::countDown);
+		                        .subscribe(i -> latch.countDown(), null, latch::countDown);
 
 		generateData(elements);
 
