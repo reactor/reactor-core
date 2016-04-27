@@ -948,7 +948,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 *
@@ -968,7 +968,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumeerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -990,7 +990,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumecomplete1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -1954,7 +1954,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consume1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 *
@@ -1972,7 +1972,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumeerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -1991,7 +1991,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@link #doOnError(java.util.function.Consumer)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/consumecomplete1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -2073,7 +2073,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
 	 * <p>
 	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
@@ -2086,7 +2086,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
 	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -2103,7 +2103,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
 	 *
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -2120,7 +2120,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
 	 *
 	 * @param <V> the element type of the supplied Mono
 	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
