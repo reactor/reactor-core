@@ -2055,6 +2055,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
+	 * <p>
+	 * @return a {@link Mono} igoring its payload (actively dropping)
+	 */
+	public final Mono<Void> then() {
+		return empty(this);
+	}
+
+	/**
 	 * Convert the value of {@link Mono} to another {@link Mono} possibly with another value type.
 	 *
 	 * <p>
@@ -2067,18 +2079,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
 		return MonoSource.wrap(flatMap(transformer));
-	}
-
-	/**
-	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
-	 * <p>
-	 * @return a {@link Mono} igoring its payload (actively dropping)
-	 */
-	public final Mono<Void> then() {
-		return empty(this);
 	}
 
 	/**
@@ -2113,6 +2113,42 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Publisher<V>} that will emit at most one result in the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
+	 *
+	 * @param other a {@link Publisher} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> thenMany(Publisher<V> other) {
+		return (Flux<V>)new FluxConcatArray<>(false, ignoreElement(), other);
+	}
+
+	/**
+	 * Transform the terminal signal (error or completion) into {@code Publisher<V>} that will emit at most one result in the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
+	 *
+	 * @param sourceSupplier a {@link Supplier} of {@link Publisher} to emit from after
+	 * termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <V> Flux<V> thenMany(final Supplier<? extends Mono<V>> sourceSupplier) {
+		return (Flux<V>)new FluxConcatArray<>(false, ignoreElement(), defer
+				(sourceSupplier));
 	}
 
 	/**
