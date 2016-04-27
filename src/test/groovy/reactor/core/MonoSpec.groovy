@@ -245,7 +245,7 @@ class MonoSpec extends Specification {
   def "A map many can be used to bind to another MonoProcessor and compose asynchronous results "() {
 	given: "a promise with a map many function"
 	def promise = MonoProcessor.<Integer> create()
-	def mappedMonoProcessor = promise.then ({  -> Mono.just(d + 1) } as Function)
+	def mappedMonoProcessor = promise.then ({ d -> Mono.just(d + 1) } as Function)
 
 	when: "the original promise is fulfilled"
 	println promise.debug()
