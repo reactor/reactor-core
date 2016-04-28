@@ -1512,24 +1512,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Create a {@link Mono} intercepting all source signals with the returned Subscriber that might choose to pass them
-	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/lift1.png" alt="">
-	 * <p>
-	 * @param lifter the function accepting the target {@link Subscriber} and returning the {@link Subscriber}
-	 * exposed this sequence
-	 * @param <V> the output type
-	 * @return a new lifted {@link Mono}
-	 *
-	 * @see Flux#lift
-	 */
-	public final <V> Mono<V> lift(Function<Subscriber<? super V>, Subscriber<? super T>> lifter) {
-		return new FluxLift.MonoLift<>(this, lifter);
-	}
-
-	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *

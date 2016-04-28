@@ -2907,22 +2907,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    }
 		return new MonoTakeLastOne<>(this);
 	}
-	
-	/**
-	 * Create a {@link Flux} intercepting all source signals with the returned Subscriber that might choose to pass them
-	 * alone to the provided Subscriber (given to the returned {@code subscribe(Subscriber)}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/lift.png" alt="">
-	 * <p>
-	 * @param lifter the function accepting the target {@link Subscriber} and returning the {@link Subscriber}
-	 * exposed this sequence
-	 * @param <R> the output operator type
-	 *
-	 * @return a new {@link Flux}
-	 */
-	public final <R> Flux<R> lift(Function<Subscriber<? super R>, Subscriber<? super T>> lifter) {
-		return new FluxLift<>(this, lifter);
-	}
 
 	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
