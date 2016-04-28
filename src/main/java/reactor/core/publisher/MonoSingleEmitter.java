@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Cancellation;
+import reactor.core.subscriber.SingleEmitter;
 import reactor.core.util.BackpressureUtils;
 import rx.exceptions.Exceptions;
 

@@ -46,7 +46,7 @@ import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.LambdaSubscriber;
+import reactor.core.subscriber.*;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
