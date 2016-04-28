@@ -29,7 +29,7 @@ import rx.exceptions.Exceptions;
  * and calls the given callback to produce a signal (a)synchronously.
  * @param <T> the value type
  */
-public final class MonoSingleEmitter<T> extends Mono<T> {
+final class MonoSingleEmitter<T> extends Mono<T> {
 
     final Consumer<SingleEmitter<T>> callback;
 
