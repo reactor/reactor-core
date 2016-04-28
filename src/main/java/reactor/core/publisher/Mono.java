@@ -127,6 +127,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Creates a deferred emitter that can be used with callback-based
+	 * APIs to signal at most one value, a complete or an error signal.
+	 * @param callback the consumer who will receive a per-subscriber SignalEmitter.
+	 * @param <T> The type of the value emitted
+	 * @return a {@link Mono}
+	 */
+	public static <T> Mono<T> create(Consumer<SingleEmitter<T>> callback) {
+	    return new MonoSingleEmitter<>(callback);
+	}
+	/**
 	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
 	 * each {@link Subscriber} downstream.
 	 *
