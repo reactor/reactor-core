@@ -1424,18 +1424,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target {@link Publisher} type.
+	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target type.
 	 *
 	 * {@code flux.as(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Publisher}
+	 * @param transformer the {@link Function} to immediately map this {@link Flux}
+	 * into a target type
 	 * instance.
-	 * @param <P> the returned {@link Publisher} sequence type
-	 * @param <V> the item type in the returned {@link Publisher}
+	 * @param <P> the returned type
 	 *
-	 * @return a new {@link Flux}
+	 * @return a an instance of P
+	 * @see #compose for a bounded conversion to {@link Publisher}
 	 */
-	public final <V, P extends Publisher<V>> P as(Function<? super Flux<T>, P> transformer) {
+	public final <P> P as(Function<? super Flux<T>, P> transformer) {
 		return transformer.apply(this);
 	}
 
@@ -1888,6 +1889,24 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <R, A> Mono<R> collect(Collector<T, A, R> collector) {
 		return new MonoStreamCollector<>(this, collector);
+	}
+
+	/**
+	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target {@link Publisher} type.
+	 *
+	 * {@code flux.compose(Mono::from).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Publisher}
+	 * instance.
+	 * @param <P> the returned {@link Publisher} sequence type
+	 * @param <V> the item type in the returned {@link Publisher}
+	 *
+	 * @return a new {@link Flux}
+	 * @see #as for a loose conversion to an arbitrary type
+	 */
+	public final <V, P extends Publisher<V>> P compose(Function<? super Flux<T>, P>
+			transformer) {
+		return transformer.apply(this);
 	}
 
 	/**

@@ -830,17 +830,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Transform this {@link Mono} into a target {@link Publisher}
+	 * Transform this {@link Mono} into a target type.
 	 *
 	 * {@code mono.as(Flux::from).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param transformer the {@link Function} applying this {@link Mono}
-	 * @param <P> the returned {@link Publisher} output
-	 * @param <V> the element type of the returned Publisher
-	 * 
-	 * @return the transformed {@link Mono}
+	 * @param <P> the returned instance type
+	 *
+	 * @return the transformed {@link Mono} to instance P
+	 * @see #compose for a bounded conversion to {@link Publisher}
 	 */
-	public final <V, P extends Publisher<V>> P as(Function<? super Mono<T>, P> transformer) {
+	public final <P> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
 	}
 
@@ -939,6 +939,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoProcessor<>(this);
 	}
 
+
+	/**
+	 * Transform this {@link Mono} into a target {@link Publisher}
+	 *
+	 * {@code mono.compose(Flux::from).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param transformer the {@link Function} applying this {@link Mono}
+	 * @param <P> the returned {@link Publisher} output
+	 * @param <V> the element type of the returned Publisher
+	 *
+	 * @return the transformed {@link Mono}
+	 * @see #as for a loosen conversion to any type
+	 */
+	public final <V, P extends Publisher<V>> P compose(Function<? super Mono<T>, P>
+			transformer) {
+		return transformer.apply(this);
+	}
 
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
