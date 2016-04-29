@@ -1908,7 +1908,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <V> Flux<V> compose(Function<? super Flux<T>, ?
 			extends Publisher<V>>
 			transformer) {
-		return as(flux -> defer(() -> transformer.apply(flux)));
+		return defer(() -> transformer.apply(this));
 	}
 
 	/**
