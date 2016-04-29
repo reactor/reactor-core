@@ -22,8 +22,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.Cancellation;
 import reactor.core.subscriber.SingleEmitter;
-import reactor.core.util.BackpressureUtils;
-import rx.exceptions.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -114,6 +113,8 @@ final class MonoSingleEmitter<T> extends Mono<T> {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 cancellation = CANCELLED;
                 actual.onError(e);
+            } else {
+                Exceptions.onErrorDropped(e);
             }
         }
 

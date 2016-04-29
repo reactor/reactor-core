@@ -129,6 +129,74 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Creates a deferred emitter that can be used with callback-based
 	 * APIs to signal at most one value, a complete or an error signal.
+	 * <p>
+	 * Bridging legacy API involves mostly boilerplate code due to the lack
+	 * of standard types and methods. There are two kinds of API surfaces:
+	 * 1) addListener/removeListener and 2) callback-handler.
+	 * <p>
+	 * <b>1) addListener/removeListener pairs</b><br>
+	 * To work with such API one has to instantiate the listener,
+	 * wire up the SingleEmitter inside it then add the listener
+	 * to the source:
+	 * <pre><code>
+	 * Mono.&lt;String&gt;create(emitter -&gt; {
+	 *     HttpListener listener = event -&gt; {
+	 *         if (event.getResponseCode() >= 400) {
+	 *             emitter.error(new RuntimeExeption("Failed"));
+	 *         } else {
+	 *             String body = event.getBody();
+	 *             if (body.isEmpty()) {
+	 *                 emitter.complete();
+	 *             } else {
+	 *                 emitter.complete(body.toLowerCase());
+	 *             }
+	 *         }
+	 *     };
+	 *     
+	 *     client.addListener(listener);
+	 *     
+	 *     emitter.setCancellation(() -&gt; client.removeListener(listener));
+	 * });
+	 * </code></pre>
+	 * Note that this works only with single-value emitting listeners. Otherwise,
+	 * all subsequent signals are dropped. You may have to add {@code client.removeListener(this);}
+	 * to the listener's body.
+	 * <p>
+     * <b>2) callback handler</b><br>
+     * This requires a similar instantiation pattern such as above, but usually the
+     * successful completion and error are separated into different methods.
+     * In addition, the legacy API may or may not support some cancellation mechanism.
+     * <pre><code>
+     * Mono.&lt;String&gt;create(emitter -&gt; {
+     *     Callback&lt;String&gt; callback = new Callback&lt;String&gt;() {
+     *         &#64;Override
+     *         public void onResult(String data) {
+     *             emitter.complete(data.toLowerCase());
+     *         }
+     *         
+     *         &#64;Override
+     *         public void onError(Exception e) {
+     *             emitter.error(e);
+     *         }
+     *     }
+     *     
+     *     // without cancellation support:
+     *     
+     *     client.call("query", callback);
+     *     
+     *     // with cancellation support:
+     *     
+     *     AutoCloseable cancel = client.call("query", callback);
+     *     emitter.setCancellation(() -> {
+     *         try {
+     *             cancel.close();
+     *         } catch (Exception ex) {
+     *             Exceptions.onErrorDropped(ex);
+     *         }
+     *     });
+     * }); 
+     * <code></pre>
+	 * 
 	 * @param callback the consumer who will receive a per-subscriber SignalEmitter.
 	 * @param <T> The type of the value emitted
 	 * @return a {@link Mono}

@@ -25,25 +25,32 @@ import reactor.core.flow.Cancellation;
 public interface SingleEmitter<T> {
     /**
      * Complete without any value.
+     * <p>Calling this method multiple times or after the other
+     * terminating methods has no effect.
      */
     void complete();
     
     /**
      * Complete with the given value.
-     * @param value
+     * <p>Calling this method multiple times or after the other
+     * terminating methods has no effect.
+     * @param value the value to complete with
      */
     void complete(T value);
     
     /**
      * Terminate with the give exception
-     * @param e
+     * <p>Calling this method multiple times or after the other
+     * terminating methods has no effect.
+     * @param e the exception to complete with
      */
     void error(Throwable e);
     
     /**
      * Sets a cancellation callback triggered by
      * downstreams cancel().
-     * @param c
+     * <p>Calling this method more than once has no effect.
+     * @param c the cancellation callback
      */
     void setCancellation(Cancellation c);
 }
