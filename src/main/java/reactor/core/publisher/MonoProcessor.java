@@ -53,7 +53,7 @@ import reactor.core.util.ScalarSubscription;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, Cancellation, Subscription, Cancellable, Receiver, Producer,
-		           Prefetchable {
+		           Prefetchable, MonoEmitter<O> {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -315,6 +315,36 @@ public final class MonoProcessor<O> extends Mono<O>
 				drainLoop();
 			}
 		}
+	}
+
+	@Override
+	public void complete() {
+		onComplete();
+	}
+
+	@Override
+	public void complete(O value) {
+		onNext(value);
+	}
+
+	@Override
+	public void fail(Throwable e) {
+		onError(e);
+	}
+
+	@Override
+	public void setCancellation(Cancellation c) {
+		onSubscribe(new Subscription() {
+			@Override
+			public void request(long n) {
+
+			}
+
+			@Override
+			public void cancel() {
+				c.dispose();
+			}
+		});
 	}
 
 	/**

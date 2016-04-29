@@ -21,26 +21,26 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.subscriber.SingleEmitter;
-import reactor.core.util.*;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.Exceptions;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
  * and calls the given callback to produce a signal (a)synchronously.
  * @param <T> the value type
  */
-final class MonoSingleEmitter<T> extends Mono<T> {
+final class MonoCreate<T> extends Mono<T> {
 
-    final Consumer<SingleEmitter<T>> callback;
+    final Consumer<MonoEmitter<T>> callback;
 
-    public MonoSingleEmitter(Consumer<SingleEmitter<T>> callback) {
+    public MonoCreate(Consumer<MonoEmitter<T>> callback) {
         this.callback = callback;
     }
 
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DefaultSingleEmitter<T> emitter = new DefaultSingleEmitter<>(s);
+        DefaultMonoEmitter<T> emitter = new DefaultMonoEmitter<>(s);
         
         s.onSubscribe(emitter);
         
@@ -48,22 +48,22 @@ final class MonoSingleEmitter<T> extends Mono<T> {
             callback.accept(emitter);
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
-            emitter.error(ex);
+            emitter.fail(ex);
         }
     }
 
-    static final class DefaultSingleEmitter<T> implements SingleEmitter<T>, Subscription {
+    static final class DefaultMonoEmitter<T> implements MonoEmitter<T>, Subscription {
         final Subscriber<? super T> actual;
         
         volatile Cancellation cancellation;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultSingleEmitter, Cancellation> CANCELLATION =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultSingleEmitter.class, Cancellation.class, "cancellation");
+        static final AtomicReferenceFieldUpdater<DefaultMonoEmitter, Cancellation> CANCELLATION =
+                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoEmitter.class, Cancellation.class, "cancellation");
         
         volatile int state;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<DefaultSingleEmitter> STATE =
-                AtomicIntegerFieldUpdater.newUpdater(DefaultSingleEmitter.class, "state");
+        static final AtomicIntegerFieldUpdater<DefaultMonoEmitter> STATE =
+                AtomicIntegerFieldUpdater.newUpdater(DefaultMonoEmitter.class, "state");
 
         T value;
         
@@ -74,7 +74,7 @@ final class MonoSingleEmitter<T> extends Mono<T> {
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
         
-        public DefaultSingleEmitter(Subscriber<? super T> actual) {
+        public DefaultMonoEmitter(Subscriber<? super T> actual) {
             this.actual = actual;
         }
 
@@ -109,7 +109,7 @@ final class MonoSingleEmitter<T> extends Mono<T> {
         }
 
         @Override
-        public void error(Throwable e) {
+        public void fail(Throwable e) {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 cancellation = CANCELLED;
                 actual.onError(e);

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -53,7 +54,6 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
-import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
@@ -197,12 +197,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
      * }); 
      * <code></pre>
 	 * 
-	 * @param callback the consumer who will receive a per-subscriber SignalEmitter.
+	 * @param callback the consumer who will receive a per-subscriber {@link MonoEmitter}.
 	 * @param <T> The type of the value emitted
 	 * @return a {@link Mono}
 	 */
-	public static <T> Mono<T> create(Consumer<SingleEmitter<T>> callback) {
-	    return new MonoSingleEmitter<>(callback);
+	public static <T> Mono<T> create(Consumer<MonoEmitter<T>> callback) {
+	    return new MonoCreate<>(callback);
 	}
 	/**
 	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
@@ -1514,7 +1514,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -1537,7 +1537,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each get() will subscribe a new single (MonoResult) subscriber, in other words, the result might
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -1845,6 +1845,88 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> publishOn(ExecutorService executorService) {
 		return publishOn(new ExecutorServiceScheduler(executorService));
+	}
+
+
+
+	/**
+	 * Repeatedly subscribe to the source completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeat.png" alt="">
+	 *
+	 * @return an indefinitively repeated {@link Flux} on onComplete
+	 */
+	public final Flux<T> repeat() {
+		return repeat(Flux.ALWAYS_BOOLEAN_SUPPLIER);
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatb.png" alt="">
+	 *
+	 * @param predicate the boolean to evaluate on onComplete.
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete
+	 *
+	 */
+	public final Flux<T> repeat(BooleanSupplier predicate) {
+		return repeatWhen(v -> v.takeWhile(t -> predicate.getAsBoolean()));
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatn.png" alt="">
+	 *
+	 * @param numRepeat the number of times to re-subscribe on onComplete
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified
+	 *
+	 */
+	public final Flux<T> repeat(long numRepeat) {
+		return new FluxRepeat<>(this, numRepeat);
+	}
+
+	/**
+	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous
+	 * subscription. A specified maximum of repeat will limit the number of re-subscribe.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatnb.png" alt="">
+	 *
+	 * @param numRepeat the number of times to re-subscribe on complete
+	 * @param predicate the boolean to evaluate on onComplete
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified OR matching
+	 * predicate
+	 *
+	 */
+	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
+		return repeat(Flux.countingBooleanSupplier(predicate, numRepeat));
+	}
+
+	/**
+	 * Repeatedly subscribe to this {@link Flux} when a companion sequence signals a number of emitted elements in
+	 * response to the flux completion signal.
+	 * <p>If the companion sequence signals when this {@link Flux} is active, the repeat
+	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen.png" alt="">
+	 *
+	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling an exclusive number of
+	 * emitted elements on onComplete and returning a {@link Publisher} companion.
+	 *
+	 * @return an eventually repeated {@link Flux} on onComplete when the companion {@link Publisher} produces an
+	 * onNext signal
+	 *
+	 */
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
+		return new FluxRepeatWhen<>(this, whenFactory);
 	}
 
 	/**
