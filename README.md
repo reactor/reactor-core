@@ -198,7 +198,7 @@ https://github.com/reactor/lite-rx-api-hands-on
 - [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
 
 -------------------------------------
-_Powered by [Reactive Stream Commons](http://github.com/reactor/reactive-streams-commons)_
+_Powered by [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons)_
 
 _Licensed under [Apache Software License 2.0](www.apache.org/licenses/LICENSE-2.0)_
 
