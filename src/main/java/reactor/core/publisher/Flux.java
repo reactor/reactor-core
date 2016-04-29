@@ -746,7 +746,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long delay, long period) {
-		return interval(delay, period, Timer.globalOrNew());
+		return interval(delay, period, Timer.global());
 	}
 
 	/**
@@ -2189,7 +2189,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> delay(Duration delay) {
-		TimedScheduler timer = getTimer() != null ? getTimer() : Timer.globalOrNew();
+		TimedScheduler timer = getTimer();
 		return concatMap(t ->  Mono.delay(delay, timer).map(i -> t));
 	}
 
@@ -2223,7 +2223,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> delaySubscription(Duration delay) {
 		TimedScheduler timer = getTimer();
-		return delaySubscription(Mono.delay(delay, timer != null ? timer : Timer.globalOrNew()));
+		return delaySubscription(Mono.delay(delay, timer));
 	}
 
 	/**
@@ -2808,7 +2808,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return any available {@link TimedScheduler}
 	 */
 	public TimedScheduler getTimer() {
-		return Timer.globalOrNull();
+		return Timer.global();
 	}
 
 
@@ -5106,7 +5106,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<Flux<T>> window(long timespan) {
 		TimedScheduler t = getTimer();
-		if(t == null) t = Timer.global();
 		return window(interval(timespan, t));
 	}
 
@@ -5154,9 +5153,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return window(timespan);
 		}
 
-		TimedScheduler t = getTimer();
-		if(t == null) t = Timer.global();
-		final TimedScheduler timer = t;
+		final TimedScheduler timer = getTimer();
 
 		return window(interval(0L, timeshift, timer), aLong -> Mono.delay(timespan, timer));
 	}
