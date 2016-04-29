@@ -205,7 +205,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			return null;
 		}
 	}
-	
+
 	static final class ScheduledScalar<T>
 			implements Subscription, Runnable, Producer, Loopback {
 

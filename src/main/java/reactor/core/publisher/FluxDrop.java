@@ -92,7 +92,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
@@ -187,6 +187,11 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 		@Override
 		public Object connectedInput() {
 			return onDrop;
+		}
+
+		@Override
+		public Object connectedOutput() {
+			return null;
 		}
 	}
 }

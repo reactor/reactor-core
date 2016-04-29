@@ -36,61 +36,63 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 
     final Publisher<? extends T> other;
 
-    public FluxSwitchIfEmpty(Publisher<? extends T> source, Publisher<? extends T> other) {
-        super(source);
-        this.other = Objects.requireNonNull(other, "other");
-    }
+	public FluxSwitchIfEmpty(Publisher<? extends T> source,
+			Publisher<? extends T> other) {
+		super(source);
+		this.other = Objects.requireNonNull(other, "other");
+	}
 
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        StreamSwitchIfEmptySubscriber<T> parent = new StreamSwitchIfEmptySubscriber<>(s, other);
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(s, other);
 
-        s.onSubscribe(parent);
+		s.onSubscribe(parent);
 
-        source.subscribe(parent);
-    }
+		source.subscribe(parent);
+	}
 
-    static final class StreamSwitchIfEmptySubscriber<T> extends MultiSubscriptionSubscriber<T, T>
-            implements Loopback {
+	static final class SwitchIfEmptySubscriber<T>
+			extends MultiSubscriptionSubscriber<T, T> implements Loopback {
 
-        final Publisher<? extends T> other;
+		final Publisher<? extends T> other;
 
-        boolean once;
+		boolean once;
 
-        public StreamSwitchIfEmptySubscriber(Subscriber<? super T> actual, Publisher<? extends T> other) {
-            super(actual);
-            this.other = other;
-        }
+		public SwitchIfEmptySubscriber(Subscriber<? super T> actual,
+				Publisher<? extends T> other) {
+			super(actual);
+			this.other = other;
+		}
 
-        @Override
-        public void onNext(T t) {
-            if (!once) {
-                once = true;
-            }
+		@Override
+		public void onNext(T t) {
+			if (!once) {
+				once = true;
+			}
 
-            subscriber.onNext(t);
-        }
+			subscriber.onNext(t);
+		}
 
-        @Override
-        public void onComplete() {
-            if (!once) {
-                once = true;
+		@Override
+		public void onComplete() {
+			if (!once) {
+				once = true;
 
-                other.subscribe(this);
-            }
-            else {
-                subscriber.onComplete();
-            }
-        }
+				other.subscribe(this);
+			}
+			else {
+				subscriber.onComplete();
+			}
+		}
 
-        @Override
-        public Object connectedInput() {
-            return null;
-        }
+		@Override
+		public Object connectedInput() {
+			return null;
+		}
 
-        @Override
-        public Object connectedOutput() {
-            return other;
-        }
-    }
+		@Override
+		public Object connectedOutput() {
+			return other;
+		}
+	}
 }

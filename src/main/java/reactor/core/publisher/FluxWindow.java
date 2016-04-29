@@ -72,7 +72,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		this.overflowQueueSupplier = null; // won't be needed here
 	}
 
-	
+
 	public FluxWindow(Publisher<? extends T> source, int size, int skip,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier) {
@@ -142,7 +142,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		int index;
 		
 		Subscription s;
-		
+
 		UnicastProcessor<T> window;
 		
 		boolean done;
@@ -171,7 +171,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			}
 			
 			int i = index;
-			
+
 			UnicastProcessor<T> w = window;
 			if (i == 0) {
 				WIP.getAndIncrement(this);
@@ -196,7 +196,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
 					return;
 				}
-				
+
 				w = new UnicastProcessor<>(q, this);
 				window = w;
 				
@@ -308,7 +308,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			return size;
 		}
 	}
-	
+
 	static final class WindowSkipSubscriber<T> implements Subscriber<T>, Subscription, Runnable, MultiProducer,
 	                                                      Producer, Receiver, Completable, Backpressurable {
 		
@@ -338,7 +338,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		int index;
 		
 		Subscription s;
-		
+
 		UnicastProcessor<T> window;
 		
 		boolean done;
@@ -368,7 +368,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			}
 			
 			int i = index;
-			
+
 			UnicastProcessor<T> w = window;
 			if (i == 0) {
 				WIP.getAndIncrement(this);
@@ -393,7 +393,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
 					return;
 				}
-				
+
 				w = new UnicastProcessor<>(q, this);
 				window = w;
 				
@@ -623,7 +623,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 						actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
 						return;
 					}
-					
+
 					UnicastProcessor<T> w = new UnicastProcessor<>(q, this);
 					
 					windows.offer(w);
@@ -766,7 +766,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				
 				while (e != r) {
 					boolean d = done;
-					
+
 					UnicastProcessor<T> t = q.poll();
 					
 					boolean empty = t == null;
@@ -835,8 +835,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					long u = BackpressureUtils.multiplyCap(skip, n);
 					s.request(u);
 				}
-				
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

@@ -141,7 +141,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 	public Object upstream() {
 		return source;
 	}
-	
+
 	static final class State<T> implements Subscriber<T>, Receiver, MultiProducer, Backpressurable,
 										   Completable, Cancellable, Cancellation, Introspectable {
 

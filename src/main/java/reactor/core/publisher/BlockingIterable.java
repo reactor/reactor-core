@@ -72,6 +72,11 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 		return it;
 	}
 
+	@Override
+	public Spliterator<T> spliterator() {
+		return stream().spliterator(); // cancellation should be composed through this way
+	}
+
 	/**
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
@@ -261,7 +266,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 			BackpressureUtils.terminate(S, this);
 			signalConsumer();
 		}
-		
+
 		@Override
 		public Object upstream() {
 			return s;

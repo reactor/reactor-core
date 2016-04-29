@@ -48,7 +48,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	final Function<? super T, ? extends R> mapper;
 
 	/**
-	 * Constructs a StreamMap instance with the given source and mapper.
+	 * Constructs a FluxMap instance with the given source and mapper.
 	 *
 	 * @param source the source Publisher instance
 	 * @param mapper the mapper function
@@ -77,7 +77,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		source.subscribe(new MapFuseableSubscriber<>(s, mapper));
 	}
 
-	static final class MapFuseableSubscriber<T, R> 
+	static final class MapFuseableSubscriber<T, R>
 	implements Subscriber<T>, Completable, Receiver, Producer, Loopback, SynchronousSubscription<R> {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
@@ -117,16 +117,15 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					done = true;
+					Exceptions.throwIfFatal(e);
 					s.cancel();
-					actual.onError(e);
+					onError(Exceptions.unwrap(e));
 					return;
 				}
 	
 				if (v == null) {
-					done = true;
 					s.cancel();
-					actual.onError(new NullPointerException("The mapper returned a null value."));
+					onError(new NullPointerException("The mapper returned a null value."));
 					return;
 				}
 	
@@ -279,9 +278,9 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					done = true;
+					Exceptions.throwIfFatal(e);
 					s.cancel();
-					actual.onError(e);
+					onError(Exceptions.unwrap(e));
 					return;
 				}
 	
@@ -314,9 +313,9 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					done = true;
+					Exceptions.throwIfFatal(e);
 					s.cancel();
-					actual.onError(e);
+					onError(Exceptions.unwrap(e));
 					return true;
 				}
 	
@@ -395,7 +394,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
-			// FIXME maybe should cache the result to avoid mapping twice in case of peek/poll pairs
 			T v = s.poll();
 			if (v != null) {
 				R u = mapper.apply(v);

@@ -126,9 +126,9 @@ implements Fuseable, Backpressurable  {
 		final Supplier<? extends Queue<V>> groupQueueSupplier;
 
 		final int prefetch;
-		
+
 		final ConcurrentMap<K, UnicastGroupedFlux<K, V>> groupMap;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<GroupByMain> WIP =
@@ -353,15 +353,6 @@ implements Fuseable, Backpressurable  {
 			return requested;
 		}
 
-		void signalAsyncComplete() {
-			groupCount = 0;
-			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
-				g.onComplete();
-			}
-			actual.onComplete();
-			groupMap.clear();
-		}
-
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this);
 			groupCount = 0;
@@ -378,7 +369,7 @@ implements Fuseable, Backpressurable  {
 				if (enableAsyncFusion) {
 					actual.onNext(null);
 				} else {
-					BackpressureUtils.addAndGet(REQUESTED, this, n);
+					BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 					drain();
 				}
 			}
@@ -425,6 +416,7 @@ implements Fuseable, Backpressurable  {
 			}
 			drainLoop();
 		}
+
 		void drainLoop() {
 			
 			int missed = 1;
@@ -486,7 +478,7 @@ implements Fuseable, Backpressurable  {
 					return true;
 				} else
 				if (empty) {
-					signalAsyncComplete();
+					a.onComplete();
 					return true;
 				}
 			}
@@ -527,7 +519,7 @@ implements Fuseable, Backpressurable  {
 			s.request(n);
 		}
 	}
-	
+
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
 	implements Fuseable, QueueSubscription<V>,
 			   Producer, Receiver, Completable, Prefetchable, Cancellable, Requestable, Backpressurable {
@@ -786,7 +778,7 @@ implements Fuseable, Backpressurable  {
 						a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
 					}
 				} else {
-					BackpressureUtils.addAndGet(REQUESTED, this, n);
+					BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 					drain();
 				}
 			}

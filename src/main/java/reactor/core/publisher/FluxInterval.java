@@ -64,7 +64,7 @@ final class FluxInterval extends Flux<Long> {
 		TimedWorker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(s, w);
-		
+
 		s.onSubscribe(r);
 
 		w.schedulePeriodically(r, initialDelay, period, unit);
@@ -74,7 +74,7 @@ final class FluxInterval extends Flux<Long> {
 	public long getPeriod() {
 		return period;
 	}
-	
+
 	static final class IntervalRunnable implements Runnable, Subscription {
 		final Subscriber<? super Long> s;
 		

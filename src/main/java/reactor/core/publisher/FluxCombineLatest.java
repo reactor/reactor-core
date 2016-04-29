@@ -557,7 +557,7 @@ final class FluxCombineLatest<T, R>
 				if (a != null) {
 					a.request(p);
 				} else {
-					BackpressureUtils.addAndGet(REQUESTED, this, p);
+					BackpressureUtils.getAndAddCap(REQUESTED, this, p);
 
 					a = s;
 
@@ -604,15 +604,10 @@ final class FluxCombineLatest<T, R>
 		public int getMode() {
 			return INNER;
 		}
-
-		@Override
-		public String getName() {
-			return getClass().getSimpleName();
-		}
 	}
 	
 	/**
-	 * The queue element type for internal use with StreamCombineLatest.
+	 * The queue element type for internal use with FluxCombineLatest.
 	 */
 	public static final class SourceAndArray {
 		final CombineLatestInner<?> source;

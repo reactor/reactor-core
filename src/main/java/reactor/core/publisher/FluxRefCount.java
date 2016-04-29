@@ -37,7 +37,7 @@ import reactor.core.util.BackpressureUtils;
  */
 final class FluxRefCount<T> extends Flux<T>
 		implements Receiver, Loopback {
-	
+
 	final ConnectableFlux<? extends T> source;
 	
 	final int n;
@@ -46,7 +46,7 @@ final class FluxRefCount<T> extends Flux<T>
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxRefCount, State> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, State.class, "connection");
-	
+
 	public FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > 0 required but it was " + n);

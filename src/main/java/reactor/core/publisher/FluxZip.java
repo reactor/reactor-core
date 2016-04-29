@@ -128,6 +128,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				try {
 					v = supplier.call();
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;
 				}
@@ -201,6 +202,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				try {
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;
 				}
@@ -501,7 +503,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 			BackpressureUtils.terminate(S, this);
 		}
 	}
-	
+
 	static final class ZipCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable, Backpressurable, Completable, Requestable,
 																Introspectable {
 

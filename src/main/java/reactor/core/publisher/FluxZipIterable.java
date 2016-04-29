@@ -50,7 +50,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 	final BiFunction<? super T, ? super U, ? extends R> zipper;
 
 	public FluxZipIterable(
-			Publisher<? extends T> source, 
+			Publisher<? extends T> source,
 			Iterable<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> zipper) {
 		super(source);
@@ -90,7 +90,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		
 		source.subscribe(new ZipSubscriber<>(s, it, zipper));
 	}
-	
+
 	static final class ZipSubscriber<T, U, R> implements Subscriber<T>, Producer, MultiReceiver,
 																  Completable, Receiver, Subscription {
 		

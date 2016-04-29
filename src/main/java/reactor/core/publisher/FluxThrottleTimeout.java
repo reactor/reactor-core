@@ -136,7 +136,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 

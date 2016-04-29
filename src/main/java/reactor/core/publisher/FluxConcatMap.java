@@ -188,8 +188,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
+							Exceptions.throwIfFatal(ex);
 							s.cancel();
-							
 							EmptySubscription.error(actual, ex);
 							return;
 						}
@@ -198,8 +198,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						
 						EmptySubscription.error(actual, ex);
 						return;
 					}
@@ -363,6 +363,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
+									Exceptions.throwIfFatal(e);
 									s.cancel();
 									actual.onError(Exceptions.unwrap(e));
 									return;
@@ -512,8 +513,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
+							Exceptions.throwIfFatal(ex);
 							s.cancel();
-							
 							EmptySubscription.error(actual, ex);
 							return;
 						}
@@ -522,8 +523,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						
 						EmptySubscription.error(actual, ex);
 						return;
 					}
@@ -688,6 +689,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
+									Exceptions.throwIfFatal(e);
 									s.cancel();
 									actual.onError(Exceptions.unwrap(e));
 									return;
@@ -729,11 +731,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	
 	static final class ConcatMapInner<R>
 			extends MultiSubscriptionSubscriber<R, R> {
-		
+
 		final StreamConcatMapSupport<R> parent;
 		
 		long produced;
-		
+
 		public ConcatMapInner(StreamConcatMapSupport<R> parent) {
 			super(null);
 			this.parent = parent;

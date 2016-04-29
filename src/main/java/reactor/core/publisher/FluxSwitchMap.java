@@ -51,7 +51,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 	final int bufferSize;
 	
 	static final SwitchMapInner<Object> CANCELLED_INNER = new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
-	
+
 	public FluxSwitchMap(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 					Supplier<? extends Queue<Object>> queueSupplier, int bufferSize) {
@@ -234,7 +234,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

@@ -73,7 +73,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		source.subscribe(new FilterSubscriber<>(s, predicate));
 	}
 
-	static final class FilterSubscriber<T> 
+	static final class FilterSubscriber<T>
 	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
 		final Subscriber<? super T> actual;
 
@@ -108,6 +108,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
 				s.cancel();
 
 				Exceptions.throwIfFatal(e);
@@ -133,9 +134,9 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
 				s.cancel();
 
-				Exceptions.throwIfFatal(e);
 				onError(Exceptions.unwrap(e));
 				return false;
 			}
@@ -201,7 +202,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class FilterConditionalSubscriber<T> 
+	static final class FilterConditionalSubscriber<T>
 	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
 		final ConditionalSubscriber<? super T> actual;
 
@@ -236,9 +237,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				s.cancel();
-
 				Exceptions.throwIfFatal(e);
+				s.cancel();
 				onError(Exceptions.unwrap(e));
 				return;
 			}
@@ -261,9 +261,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				s.cancel();
-
 				Exceptions.throwIfFatal(e);
+				s.cancel();
 				onError(Exceptions.unwrap(e));
 				return false;
 			}

@@ -46,7 +46,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	final Function<? super T, ? extends R> mapper;
 
 	/**
-	 * Constructs a StreamMap instance with the given source and mapper.
+	 * Constructs a FluxMap instance with the given source and mapper.
 	 *
 	 * @param source the source Publisher instance
 	 * @param mapper the mapper function
@@ -110,8 +110,9 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				done = true;
+				Exceptions.throwIfFatal(e);
 				s.cancel();
-				actual.onError(e);
+				onError(Exceptions.unwrap(e));
 				return;
 			}
 
@@ -218,8 +219,9 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				done = true;
+				Exceptions.throwIfFatal(e);
 				s.cancel();
-				actual.onError(e);
+				onError(Exceptions.unwrap(e));
 				return;
 			}
 

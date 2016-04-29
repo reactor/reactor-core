@@ -100,7 +100,7 @@ final class FluxRange
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.addAndGet(REQUESTED, this, n) == 0) {
+				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -255,7 +255,7 @@ final class FluxRange
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.addAndGet(REQUESTED, this, n) == 0) {
+				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

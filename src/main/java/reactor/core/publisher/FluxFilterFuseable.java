@@ -77,13 +77,6 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		
 		int sourceMode;
 
-		/** Running with regular, arbitrary source. */
-		static final int NORMAL = 0;
-		/** Running with a source that implements SynchronousSource. */
-		static final int SYNC = 1;
-		/** Running with a source that implements AsynchronousSource. */
-		static final int ASYNC = 2;
-		
 		public FilterFuseableSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
@@ -113,9 +106,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					s.cancel();
 	
-					Exceptions.throwIfFatal(e);
 					onError(Exceptions.unwrap(e));
 					return;
 				}
@@ -145,9 +138,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					s.cancel();
 	
-					Exceptions.throwIfFatal(e);
 					onError(Exceptions.unwrap(e));
 					return false;
 				}
@@ -275,7 +268,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		}
 	}
 
-	static final class FilterFuseableConditionalSubscriber<T> 
+	static final class FilterFuseableConditionalSubscriber<T>
 	implements Receiver, Producer, Loopback, Completable, SynchronousSubscription<T>, ConditionalSubscriber<T> {
 		final ConditionalSubscriber<? super T> actual;
 
@@ -316,9 +309,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					s.cancel();
 	
-					Exceptions.throwIfFatal(e);
 					onError(Exceptions.unwrap(e));
 					return;
 				}
@@ -348,9 +341,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
 					s.cancel();
 	
-					Exceptions.throwIfFatal(e);
 					onError(Exceptions.unwrap(e));
 					return false;
 				}

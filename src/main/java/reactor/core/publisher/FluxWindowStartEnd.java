@@ -134,7 +134,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, "open");
 		
 		Set<WindowStartEndEnder<T, V>> windowEnds;
-		
+
 		Set<UnicastProcessor<T>> windows;
 
 		volatile boolean mainDone;
@@ -193,7 +193,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		
@@ -295,7 +295,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			
+
 			final Subscriber<? super UnicastProcessor<T>> a = actual;
 			final Queue<Object> q = queue;
 			
@@ -378,7 +378,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							}
 
 							OPEN.getAndIncrement(this);
-							
+
 							UnicastProcessor<T> w = new UnicastProcessor<>(pq, this);
 							
 							WindowStartEndEnder<T, V> end = new WindowStartEndEnder<>(this, w);
@@ -409,7 +409,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 					} else {
 						@SuppressWarnings("unchecked")
 						T v = (T)o;
-						
+
 						for (UnicastProcessor<T> w : windows) {
 							w.onNext(v);
 						}
@@ -463,9 +463,9 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	implements Subscriber<V> {
 
 		final WindowStartEndMainSubscriber<T, ?, V> main;
-		
+
 		final UnicastProcessor<T> window;
-		
+
 		public WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main, UnicastProcessor<T> window) {
 			this.main = main;
 			this.window = window;

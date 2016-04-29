@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
@@ -41,6 +40,7 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
+
 /**
  * Emits events on a different thread specified by a worker callback.
  *
@@ -51,7 +51,7 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
+final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopback {
 
 	final Scheduler scheduler;
 	
@@ -71,7 +71,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
-		this.scheduler = Objects.requireNonNull(scheduler, "worker");
+		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 		this.delayError = delayError;
 		this.prefetch = prefetch;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -79,8 +79,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		
-		if (source instanceof Fuseable.ScalarCallable) {
+
+		if (source instanceof ScalarCallable) {
 			FluxSubscribeOn.scalarScheduleOn(source, s, scheduler);
 			return;
 		}
@@ -96,16 +96,25 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		}
 		
 		if (worker == null) {
-			EmptySubscription.error(s, new NullPointerException("The worker returned a null Function"));
+			EmptySubscription.error(s,
+					new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
-		
-		if (s instanceof Fuseable.ConditionalSubscriber) {
-			Fuseable.ConditionalSubscriber<? super T> cs = (Fuseable.ConditionalSubscriber<? super T>) s;
-			source.subscribe(new DispatchOnConditionalSubscriber<>(cs, worker, delayError, prefetch, queueSupplier));
+
+		if (s instanceof ConditionalSubscriber) {
+			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
+			source.subscribe(new PublishOnConditionalSubscriber<>(cs,
+					worker,
+					delayError,
+					prefetch,
+					queueSupplier));
 			return;
 		}
-		source.subscribe(new DispatchOnSubscriber<>(s, worker, delayError, prefetch, queueSupplier));
+		source.subscribe(new PublishOnSubscriber<>(s,
+				worker,
+				delayError,
+				prefetch,
+				queueSupplier));
 	}
 
 
@@ -120,9 +129,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		return prefetch;
 	}
 
-	static final class DispatchOnSubscriber<T>
-	implements Subscriber<T>, Subscription, Runnable,
-			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable,
+	static final class PublishOnSubscriber<T>
+			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
+			           Backpressurable, Prefetchable, Receiver, Cancellable,
+			           Introspectable,
 			   Requestable, Completable {
 		
 		final Subscriber<? super T> actual;
@@ -149,19 +159,21 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<DispatchOnSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(DispatchOnSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<PublishOnSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnSubscriber.class, "wip");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<DispatchOnSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(DispatchOnSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<PublishOnSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PublishOnSubscriber.class, "requested");
 
 		int sourceMode;
 		
 		long produced;
-		
-		public DispatchOnSubscriber(
+
+		boolean outputFused;
+
+		public PublishOnSubscriber(
 				Subscriber<? super T> actual,
 				Worker worker,
 				boolean delayError,
@@ -183,10 +195,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
-				
-				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked")
-					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
+
+				if (s instanceof QueueSubscription) {
+					@SuppressWarnings("unchecked") QueueSubscription<T> f =
+							(QueueSubscription<T>) s;
 					
 					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
@@ -201,46 +213,45 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 					if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
-					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable e) {
-							Exceptions.throwIfFatal(e);
-							s.cancel();
-							
-							try {
-								EmptySubscription.error(actual, e);
-							} finally {
-								worker.shutdown();
-							}
-							return;
-						}
-					}
-				} else {
-					try {
-						queue = queueSupplier.get();
-					} catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						s.cancel();
-						try {
-							EmptySubscription.error(actual, e);
-						} finally {
-							worker.shutdown();
-						}
+
+						actual.onSubscribe(this);
+
+						initialRequest();
+
 						return;
 					}
 				}
-				
-				actual.onSubscribe(this);
-				
-				if (prefetch == Integer.MAX_VALUE) {
-					s.request(Long.MAX_VALUE);
-				} else {
-					s.request(prefetch);
+
+				try {
+					queue = queueSupplier.get();
 				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					s.cancel();
+					try {
+						EmptySubscription.error(actual, e);
+					}
+					finally {
+						worker.shutdown();
+					}
+					return;
+				}
+
+				actual.onSubscribe(this);
+
+				initialRequest();
 			}
 		}
-		
+
+		void initialRequest() {
+			if (prefetch == Integer.MAX_VALUE) {
+				s.request(Long.MAX_VALUE);
+			}
+			else {
+				s.request(prefetch);
+			}
+		}
+
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
@@ -272,7 +283,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}
@@ -452,6 +463,35 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 		}
 
+		void runBackfused() {
+			int missed = 1;
+
+			for (; ; ) {
+
+				if (cancelled) {
+					return;
+				}
+
+				actual.onNext(null);
+
+				if (done) {
+					Throwable e = error;
+					if (e != null) {
+						actual.onError(e);
+					}
+					else {
+						actual.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
 		void doComplete(Subscriber<?> a) {
 			try {
 				a.onComplete();
@@ -470,6 +510,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		@Override
 		public void run() {
+			if (outputFused) {
+				runBackfused();
+			}
+			else
 			if (sourceMode == Fuseable.SYNC) {
 				runSync();
 			} else {
@@ -575,13 +619,53 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		public Object upstream() {
 			return s;
 		}
+
+		@Override
+		public void clear() {
+			queue.clear();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
+		@Override
+		public T poll() {
+			T v = queue.poll();
+			if (v != null && sourceMode != SYNC) {
+				long p = produced + 1;
+				if (p == limit) {
+					produced = 0;
+					s.request(p);
+				}
+				else {
+					produced = p;
+				}
+			}
+			return v;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & ASYNC) != 0) {
+				outputFused = true;
+				return ASYNC;
+			}
+			return NONE;
+		}
+
+		@Override
+		public int size() {
+			return queue.size();
+		}
 	}
 
-	static final class DispatchOnConditionalSubscriber<T>
-	implements Subscriber<T>, Subscription, Runnable,
+	static final class PublishOnConditionalSubscriber<T>
+			implements Subscriber<T>, QueueSubscription<T>, Runnable,
 			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable, Completable, Requestable {
-		
-		final Fuseable.ConditionalSubscriber<? super T> actual;
+
+		final ConditionalSubscriber<? super T> actual;
 		
 		final Worker worker;
 		
@@ -605,22 +689,25 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<DispatchOnConditionalSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(DispatchOnConditionalSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<PublishOnConditionalSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
+						"wip");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<DispatchOnConditionalSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(DispatchOnConditionalSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<PublishOnConditionalSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PublishOnConditionalSubscriber.class,
+						"requested");
 
 		int sourceMode;
 		
 		long produced;
 		
 		long consumed;
-		
-		public DispatchOnConditionalSubscriber(
-				Fuseable.ConditionalSubscriber<? super T> actual,
+
+		boolean outputFused;
+
+		public PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Worker worker,
 				boolean delayError,
 				int prefetch,
@@ -641,10 +728,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
-				
-				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked")
-					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
+
+				if (s instanceof QueueSubscription) {
+					@SuppressWarnings("unchecked") QueueSubscription<T> f =
+							(QueueSubscription<T>) s;
 					
 					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
@@ -659,47 +746,46 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 					if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
-					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable e) {
-							Exceptions.throwIfFatal(e);
-							s.cancel();
-							try {
-								EmptySubscription.error(actual, e);
-							} finally {
-								worker.shutdown();
-							}
-							return;
-						}
-					}
-				} else {
-					try {
-						queue = queueSupplier.get();
-					} catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						s.cancel();
-						
-						try {
-							EmptySubscription.error(actual, e);
-						} finally {
-							worker.shutdown();
-						}
+
+						actual.onSubscribe(this);
+
+						initialRequest();
 
 						return;
 					}
 				}
+				try {
+					queue = queueSupplier.get();
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					s.cancel();
+
+					try {
+						EmptySubscription.error(actual, e);
+					}
+					finally {
+						worker.shutdown();
+					}
+
+					return;
+				}
 				
 				actual.onSubscribe(this);
-				
-				if (prefetch == Integer.MAX_VALUE) {
-					s.request(Long.MAX_VALUE);
-				} else {
-					s.request(prefetch);
-				}
+
+				initialRequest();
 			}
 		}
-		
+
+		void initialRequest() {
+			if (prefetch == Integer.MAX_VALUE) {
+				s.request(Long.MAX_VALUE);
+			}
+			else {
+				s.request(prefetch);
+			}
+		}
+
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
@@ -731,7 +817,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}
@@ -761,8 +847,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		void runSync() {
 			int missed = 1;
-			
-			final Fuseable.ConditionalSubscriber<? super T> a = actual;
+
+			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 
 			long e = produced;
@@ -830,8 +916,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		void runAsync() {
 			int missed = 1;
-			
-			final Fuseable.ConditionalSubscriber<? super T> a = actual;
+
+			final ConditionalSubscriber<? super T> a = actual;
 			final Queue<T> q = queue;
 			
 			long emitted = produced;
@@ -911,9 +997,42 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 
 		}
-		
+
+		void runBackfused() {
+			int missed = 1;
+
+			for (; ; ) {
+
+				if (cancelled) {
+					return;
+				}
+
+				actual.onNext(null);
+
+				if (done) {
+					Throwable e = error;
+					if (e != null) {
+						actual.onError(e);
+					}
+					else {
+						actual.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
 		@Override
 		public void run() {
+			if (outputFused) {
+				runBackfused();
+			}
+			else
 			if (sourceMode == Fuseable.SYNC) {
 				runSync();
 			} else {
@@ -1034,6 +1153,46 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback {
 			}
 			
 			return false;
+		}
+
+		@Override
+		public void clear() {
+			queue.clear();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
+		@Override
+		public T poll() {
+			T v = queue.poll();
+			if (v != null && sourceMode != SYNC) {
+				long p = consumed + 1;
+				if (p == limit) {
+					consumed = 0;
+					s.request(p);
+				}
+				else {
+					consumed = p;
+				}
+			}
+			return v;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & ASYNC) != 0) {
+				outputFused = true;
+				return ASYNC;
+			}
+			return NONE;
+		}
+
+		@Override
+		public int size() {
+			return queue.size();
 		}
 	}
 }

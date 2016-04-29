@@ -1892,21 +1892,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target {@link Publisher} type.
+	 * Defer the given transformation to this {@link Flux} in order to generate a
+	 * target {@link Publisher} type. A transformation will occur for each
+	 * {@link Subscriber}.
 	 *
 	 * {@code flux.compose(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Publisher}
 	 * instance.
-	 * @param <P> the returned {@link Publisher} sequence type
 	 * @param <V> the item type in the returned {@link Publisher}
 	 *
 	 * @return a new {@link Flux}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V, P extends Publisher<V>> P compose(Function<? super Flux<T>, P>
+	public final <V> Flux<V> compose(Function<? super Flux<T>, ?
+			extends Publisher<V>>
 			transformer) {
-		return transformer.apply(this);
+		return as(flux -> defer(() -> transformer.apply(flux)));
 	}
 
 	/**
@@ -2339,6 +2341,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a filtering {@link Flux} with values having distinct keys
 	 */
 	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
+		if (this instanceof Fuseable) {
+			return new FluxDistinctFuseable<>(this, keySelector, hashSetSupplier());
+		}
 		return new FluxDistinct<>(this, keySelector, hashSetSupplier());
 	}
 
@@ -4349,6 +4354,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a size limited {@link Flux}
 	 */
 	public final Flux<T> take(long n) {
+		if (this instanceof Fuseable) {
+			return new FluxTakeFuseable<>(this, n);
+		}
 		return new FluxTake<>(this, n);
 	}
 

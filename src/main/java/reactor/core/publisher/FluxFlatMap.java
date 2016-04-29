@@ -88,6 +88,22 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		this.innerQueueSupplier = Objects.requireNonNull(innerQueueSupplier, "innerQueueSupplier");
 	}
 
+	@Override
+	public void subscribe(Subscriber<? super R> s) {
+
+		if (trySubscribeScalarMap(source, s, mapper)) {
+			return;
+		}
+
+		source.subscribe(new FlatMapMain<>(s,
+				mapper,
+				delayError,
+				maxConcurrency,
+				mainQueueSupplier,
+				prefetch,
+				innerQueueSupplier));
+	}
+
 	/**
 	 * Checks if the source is a Supplier and if the mapper's publisher output is also
 	 * a supplier, thus avoiding subscribing to any of them.
@@ -164,20 +180,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		return -1L;
 	}
 
-	@Override
-	public void subscribe(Subscriber<? super R> s) {
-
-		if (trySubscribeScalarMap(source, s, mapper)) {
-			return;
-		}
-
-		source.subscribe(new FlatMapMain<>(s, mapper, delayError, maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier));
-//		source.subscribe(new MergeSubscriber<>(s, mapper, delayError, maxConcurrency, prefetch));
-	}
-
-	static final class FlatMapMain<T, R>
-			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable, Completable, Producer,
-			           Cancellable, Backpressurable, Introspectable {
+	static final class FlatMapMain<T, R> extends SpscFreeListTracker<FlatMapInner<R>>
+			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable,
+			           Completable, Producer, Cancellable, Backpressurable,
+			           Introspectable {
 
 		final Subscriber<? super R> actual;
 
@@ -218,11 +224,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		static final AtomicIntegerFieldUpdater<FlatMapMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(FlatMapMain.class, "wip");
 
-		volatile FlatMapInner<R>[] subscribers;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, FlatMapInner[]> SUBSCRIBERS =
-				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class, FlatMapInner[].class, "subscribers");
-
 		@SuppressWarnings("rawtypes")
 		static final FlatMapInner[] EMPTY = new FlatMapInner[0];
 
@@ -232,10 +233,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		int lastIndex;
 
 		int produced;
-
-		long unique;
-
-		long lastId;
 
 		public FlatMapMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
@@ -248,13 +245,40 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			this.prefetch = prefetch;
 			this.innerQueueSupplier = innerQueueSupplier;
 			this.limit = maxConcurrency - (maxConcurrency >> 2);
-			SUBSCRIBERS.lazySet(this, EMPTY);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected FlatMapInner<R>[] empty() {
+			return EMPTY;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected FlatMapInner<R>[] terminated() {
+			return TERMINATED;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected FlatMapInner<R>[] newArray(int size) {
+			return new FlatMapInner[size];
+		}
+
+		@Override
+		protected void setIndex(FlatMapInner<R> entry, int index) {
+			entry.index = index;
+		}
+
+		@Override
+		protected void unsubscribeEntry(FlatMapInner<R> entry) {
+			entry.cancel();
 		}
 
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -267,77 +291,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (WIP.getAndIncrement(this) == 0) {
 					scalarQueue = null;
 					s.cancel();
-					cancelAllInner();
-				}
-			}
-		}
-
-		@SuppressWarnings("unchecked")
-		void cancelAllInner() {
-			FlatMapInner<R>[] a = subscribers;
-			if (a != TERMINATED) {
-				a = SUBSCRIBERS.getAndSet(this, TERMINATED);
-				if (a != TERMINATED) {
-					for (FlatMapInner<R> e : a) {
-						e.cancel();
-					}
-				}
-			}
-		}
-
-		boolean add(FlatMapInner<R> inner) {
-			for (;;) {
-				FlatMapInner<R>[] a = subscribers;
-				if (a == TERMINATED) {
-					return false;
-				}
-
-				int n = a.length;
-
-				@SuppressWarnings("unchecked")
-				FlatMapInner<R>[] b = new FlatMapInner[n + 1];
-				System.arraycopy(a, 0, b, 0, n);
-				b[n] = inner;
-
-				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-					return true;
-				}
-			}
-		}
-
-		@SuppressWarnings("unchecked")
-		void remove(FlatMapInner<R> inner) {
-			for (;;) {
-				FlatMapInner<R>[] a = subscribers;
-				if (a == TERMINATED || a == EMPTY) {
-					return;
-				}
-
-				int n = a.length;
-
-				int j = -1;
-
-				for (int i = 0; i < n; i++) {
-					if (a[i] == inner) {
-						j = i;
-						break;
-					}
-				}
-
-				if (j < 0) {
-					return;
-				}
-
-				FlatMapInner<R>[] b;
-				if (n == 1) {
-					b = EMPTY;
-				} else {
-					b = new FlatMapInner[n - 1];
-					System.arraycopy(a, 0, b, 0, j);
-					System.arraycopy(a, j + 1, b, j, n - j - 1);
-				}
-				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-					return;
+					unsubscribe();
 				}
 			}
 		}
@@ -394,7 +348,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 				emitScalar(v);
 			} else {
-				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch, unique++);
+				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
 				if (add(inner)) {
 
 					p.subscribe(inner);
@@ -558,13 +512,15 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 				boolean d = done;
 
-				FlatMapInner<R>[] as = subscribers;
+				FlatMapInner<R>[] as = get();
 
 				int n = as.length;
 
 				Queue<R> sq = scalarQueue;
 
-				if (checkTerminated(d, n == 0 && (sq == null || sq.isEmpty()), a)) {
+				boolean noSources = isEmpty();
+
+				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a)) {
 					return;
 				}
 
@@ -609,7 +565,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 					}
 				}
-				if (r != 0L && n != 0) {
+				if (r != 0L && !noSources) {
 
 					int j = lastIndex;
 					if (j >= n) {
@@ -620,95 +576,96 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (cancelled) {
 							scalarQueue = null;
 							s.cancel();
-							cancelAllInner();
+							unsubscribe();
 							return;
 						}
 
 						FlatMapInner<R> inner = as[j];
-
-						d = inner.done;
-						Queue<R> q = inner.queue;
-						if (d && q == null) {
-							remove(inner);
-							again = true;
-							replenishMain++;
-						}
-						else if (q != null) {
-							while (e != r) {
-								d = inner.done;
-
-								R v;
-
-								try {
-									v = q.poll();
-								}
-								catch (Throwable ex) {
-									Exceptions.throwIfFatal(ex);
-									inner.cancel();
-									if (!Exceptions.addThrowable(ERROR, this, ex)) {
-										Exceptions.onErrorDropped(ex);
-									}
-									v = null;
-									d = true;
-								}
-
-								boolean empty = v == null;
-
-								if (checkTerminated(d, false, a)) {
-									return;
-								}
-
-								if (d && empty) {
-									remove(inner);
-									again = true;
-									replenishMain++;
-									break;
-								}
-
-								if (empty) {
-									break;
-								}
-
-								a.onNext(v);
-
-								e++;
+						if (inner != null) {
+							d = inner.done;
+							Queue<R> q = inner.queue;
+							if (d && q == null) {
+								remove(inner.index);
+								again = true;
+								replenishMain++;
 							}
+							else if (q != null) {
+								while (e != r) {
+									d = inner.done;
 
-							if (e == r) {
-								d = inner.done;
-								boolean empty;
+									R v;
 
-								try {
-									empty = q.isEmpty();
-								}
-								catch (Throwable ex) {
-									Exceptions.throwIfFatal(ex);
-									inner.cancel();
-									if (!Exceptions.addThrowable(ERROR, this, ex)) {
-										Exceptions.onErrorDropped(ex);
+									try {
+										v = q.poll();
 									}
-									empty = true;
-									d = true;
+									catch (Throwable ex) {
+										Exceptions.throwIfFatal(ex);
+										inner.cancel();
+										if (!Exceptions.addThrowable(ERROR, this, ex)) {
+											Exceptions.onErrorDropped(ex);
+										}
+										v = null;
+										d = true;
+									}
+
+									boolean empty = v == null;
+
+									if (checkTerminated(d, false, a)) {
+										return;
+									}
+
+									if (d && empty) {
+										remove(inner.index);
+										again = true;
+										replenishMain++;
+										break;
+									}
+
+									if (empty) {
+										break;
+									}
+
+									a.onNext(v);
+
+									e++;
 								}
 
-								if (d && empty) {
-									remove(inner);
-									again = true;
-									replenishMain++;
-								}
-							}
+								if (e == r) {
+									d = inner.done;
+									boolean empty;
 
-							if (e != 0L) {
-								if (!inner.done) {
-									inner.request(e);
-								}
-								if (r != Long.MAX_VALUE) {
-									r = REQUESTED.addAndGet(this, -e);
-									if (r == 0L) {
-										break; // 0 .. n - 1
+									try {
+										empty = q.isEmpty();
+									}
+									catch (Throwable ex) {
+										Exceptions.throwIfFatal(ex);
+										inner.cancel();
+										if (!Exceptions.addThrowable(ERROR, this, ex)) {
+											Exceptions.onErrorDropped(ex);
+										}
+										empty = true;
+										d = true;
+									}
+
+									if (d && empty) {
+										remove(inner.index);
+										again = true;
+										replenishMain++;
 									}
 								}
-								e = 0L;
+
+								if (e != 0L) {
+									if (!inner.done) {
+										inner.request(e);
+									}
+									if (r != Long.MAX_VALUE) {
+										r = REQUESTED.addAndGet(this, -e);
+										if (r == 0L) {
+											break; // 0 .. n - 1
+										}
+									}
+									e = 0L;
+								}
 							}
 						}
 
@@ -724,24 +681,34 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					lastIndex = j;
 				}
 
-				if (r == 0L && n != 0) {
-					as = subscribers;
+				if (r == 0L && !noSources) {
+					as = get();
 					n = as.length;
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
 							scalarQueue = null;
 							s.cancel();
-							cancelAllInner();
+							unsubscribe();
 							return;
 						}
 
 						FlatMapInner<R> inner = as[i];
+						if (inner == null) {
+							continue;
+						}
 
 						d = inner.done;
 						Queue<R> q = inner.queue;
-						if (d && (q == null || q.isEmpty())) {
-							remove(inner);
+						boolean empty = (q == null || q.isEmpty());
+
+						// if we have a non-empty source then quit the cleanup
+						if (!empty) {
+							break;
+						}
+
+						if (d && empty) {
+							remove(inner.index);
 							again = true;
 							replenishMain++;
 						}
@@ -767,7 +734,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (cancelled) {
 				scalarQueue = null;
 				s.cancel();
-				cancelAllInner();
+				unsubscribe();
 
 				return true;
 			}
@@ -791,13 +758,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						e = Exceptions.terminate(ERROR, this);
 						scalarQueue = null;
 						s.cancel();
-						cancelAllInner();
+						unsubscribe();
 
 						a.onError(e);
 						return true;
 					}
-					else
-					if (empty) {
+					else if (empty) {
 						a.onComplete();
 						return true;
 					}
@@ -930,7 +896,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isTerminated() {
-			return done && subscribers.length == 0;
+			return done && get().length == 0;
 		}
 
 		@Override
@@ -945,12 +911,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers).iterator();
+			return Arrays.asList(get())
+			             .iterator();
 		}
 
 		@Override
 		public long upstreamCount() {
-			return subscribers.length;
+			return get().length;
 		}
 
 		@Override
@@ -965,16 +932,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class FlatMapInner<R>
-			implements Subscriber<R>, Subscription, Producer, Receiver, Backpressurable, Cancellable, Completable,
-			           Prefetchable, Introspectable {
+			implements Subscriber<R>, Subscription, Producer, Receiver, Backpressurable,
+			           Cancellable, Completable, Prefetchable, Introspectable {
 
 		final FlatMapMain<?, R> parent;
 
 		final int prefetch;
 
 		final int limit;
-
-		final long id;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -1002,10 +967,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		static final AtomicIntegerFieldUpdater<FlatMapInner> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(FlatMapInner.class, "once");
 
-		public FlatMapInner(FlatMapMain<?, R> parent, int prefetch, long index) {
+		int index;
+
+		public FlatMapInner(FlatMapMain<?, R> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch;
-			this.id = index;
 			this.limit = prefetch - (prefetch >> 2);
 		}
 
@@ -1022,8 +988,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						parent.drain();
 						return;
 					}
-					else
-					if (m == Fuseable.ASYNC) {
+					else if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
 					}

@@ -1019,20 +1019,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 
 	/**
-	 * Transform this {@link Mono} into a target {@link Publisher}
+	 * Defer the given transformation to this {@link Mono} in order to generate a
+	 * target {@link Mono} type. A transformation will occur for each
+	 * {@link Subscriber}.
 	 *
-	 * {@code mono.compose(Flux::from).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.compose(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transformer the {@link Function} applying this {@link Mono}
-	 * @param <P> the returned {@link Publisher} output
-	 * @param <V> the element type of the returned Publisher
+	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
+	 * instance.
+	 * @param <V> the item type in the returned {@link Publisher}
 	 *
-	 * @return the transformed {@link Mono}
-	 * @see #as for a loosen conversion to any type
+	 * @return a new {@link Mono}
+	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V, P extends Publisher<V>> P compose(Function<? super Mono<T>, P>
+	public final <V> Mono<V> compose(Function<? super Mono<T>, ?
+			extends Mono<V>>
 			transformer) {
-		return transformer.apply(this);
+		return as(mono -> defer(() -> transformer.apply(mono)));
 	}
 
 	/**

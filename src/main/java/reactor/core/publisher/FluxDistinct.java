@@ -23,6 +23,9 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Fuseable.ConditionalSubscriber;
+import reactor.core.flow.Fuseable.QueueSubscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -73,11 +76,24 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			return;
 		}
 
-		source.subscribe(new DistinctSubscriber<>(s, collection, keyExtractor));
+		if (source instanceof Fuseable) {
+			source.subscribe(new DistinctFuseableSubscriber<>(s,
+					collection,
+					keyExtractor));
+		}
+		else if (s instanceof ConditionalSubscriber) {
+			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+					collection,
+					keyExtractor));
+		}
+		else {
+			source.subscribe(new DistinctSubscriber<>(s, collection, keyExtractor));
+		}
 	}
 
 	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
-			implements Subscriber<T>, Receiver, Producer, Loopback, Completable, Subscription {
+			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
+			           Completable, Subscription {
 		final Subscriber<? super T> actual;
 
 		final C collection;
@@ -90,6 +106,141 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		public DistinctSubscriber(Subscriber<? super T> actual, C collection,
 										   Function<? super T, ? extends K> keyExtractor) {
+			this.actual = actual;
+			this.collection = collection;
+			this.keyExtractor = keyExtractor;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (BackpressureUtils.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			if (!tryOnNext(t)) {
+				s.request(1);
+			}
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return true;
+			}
+
+			K k;
+
+			try {
+				k = keyExtractor.apply(t);
+			}
+			catch (Throwable e) {
+				s.cancel();
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+				return true;
+			}
+
+			boolean b;
+
+			try {
+				b = collection.add(k);
+			}
+			catch (Throwable e) {
+				s.cancel();
+
+				onError(e);
+				return true;
+			}
+
+			if (b) {
+				actual.onNext(t);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			collection.clear();
+
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			collection.clear();
+
+			actual.onComplete();
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return keyExtractor;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+	}
+
+	static final class DistinctConditionalSubscriber<T, K, C extends Collection<? super K>>
+			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
+			           Completable, Subscription {
+
+		final ConditionalSubscriber<? super T> actual;
+
+		final C collection;
+
+		final Function<? super T, ? extends K> keyExtractor;
+
+		Subscription s;
+
+		boolean done;
+
+		public DistinctConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				C collection,
+				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
 			this.collection = collection;
 			this.keyExtractor = keyExtractor;
@@ -142,12 +293,50 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		}
 
 		@Override
+		public boolean tryOnNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return true;
+			}
+
+			K k;
+
+			try {
+				k = keyExtractor.apply(t);
+			}
+			catch (Throwable e) {
+				s.cancel();
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+				return true;
+			}
+
+			boolean b;
+
+			try {
+				b = collection.add(k);
+			}
+			catch (Throwable e) {
+				s.cancel();
+
+				onError(e);
+				return true;
+			}
+
+			if (b) {
+				return actual.tryOnNext(t);
+			}
+			return false;
+		}
+
+		@Override
 		public void onError(Throwable t) {
 			if (done) {
 				Exceptions.onErrorDropped(t);
 				return;
 			}
 			done = true;
+			collection.clear();
 
 			actual.onError(t);
 		}
@@ -158,6 +347,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return;
 			}
 			done = true;
+			collection.clear();
 
 			actual.onComplete();
 		}
@@ -186,15 +376,209 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
 		}
 	}
+
+	static final class DistinctFuseableSubscriber<T, K, C extends Collection<? super K>>
+			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
+			           Completable, QueueSubscription<T> {
+
+		final Subscriber<? super T> actual;
+
+		final C collection;
+
+		final Function<? super T, ? extends K> keyExtractor;
+
+		QueueSubscription<T> qs;
+
+		boolean done;
+
+		int sourceMode;
+
+		public DistinctFuseableSubscriber(Subscriber<? super T> actual,
+				C collection,
+				Function<? super T, ? extends K> keyExtractor) {
+			this.actual = actual;
+			this.collection = collection;
+			this.keyExtractor = keyExtractor;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (BackpressureUtils.validate(this.qs, s)) {
+				this.qs = (QueueSubscription<T>) s;
+
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			if (!tryOnNext(t)) {
+				qs.request(1);
+			}
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return true;
+			}
+
+			if (sourceMode == Fuseable.ASYNC) {
+				actual.onNext(null);
+				return true;
+			}
+
+			K k;
+
+			try {
+				k = keyExtractor.apply(t);
+			}
+			catch (Throwable e) {
+				qs.cancel();
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+				return true;
+			}
+
+			boolean b;
+
+			try {
+				b = collection.add(k);
+			}
+			catch (Throwable e) {
+				qs.cancel();
+
+				onError(e);
+				return true;
+			}
+
+			if (b) {
+				actual.onNext(t);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			collection.clear();
+
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			collection.clear();
+
+			actual.onComplete();
+		}
+
+		@Override
+		public boolean isStarted() {
+			return qs != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return keyExtractor;
+		}
+
+		@Override
+		public Object upstream() {
+			return qs;
+		}
+
+		@Override
+		public void request(long n) {
+			qs.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			qs.cancel();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			int m = qs.requestFusion(requestedMode);
+			sourceMode = m;
+			return m;
+		}
+
+		@Override
+		public T poll() {
+			if (sourceMode == Fuseable.ASYNC) {
+				long dropped = 0;
+				for (; ; ) {
+					T v = qs.poll();
+
+					if (v == null || collection.add(keyExtractor.apply(v))) {
+						if (dropped != 0) {
+							request(dropped);
+						}
+						return v;
+					}
+					dropped++;
+				}
+			}
+			else {
+				for (; ; ) {
+					T v = qs.poll();
+
+					if (v == null || collection.add(keyExtractor.apply(v))) {
+						return v;
+					}
+				}
+			}
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			qs.clear();
+			collection.clear();
+		}
+
+		@Override
+		public int size() {
+			return qs.size();
+		}
+	}
+
 }

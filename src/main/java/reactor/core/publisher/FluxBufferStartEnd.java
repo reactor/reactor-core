@@ -222,7 +222,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		
@@ -273,6 +273,24 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				cancelStart();
 				
 				cancelEnds();
+			}
+		}
+
+		boolean emit(C b) {
+			long r = requested;
+			if (r != 0L) {
+				actual.onNext(b);
+				if (r != Long.MAX_VALUE) {
+					REQUESTED.decrementAndGet(this);
+				}
+				return true;
+			}
+			else {
+
+				actual.onError(new IllegalStateException(
+						"Could not emit buffer due to lack of requests"));
+
+				return false;
 			}
 		}
 		
