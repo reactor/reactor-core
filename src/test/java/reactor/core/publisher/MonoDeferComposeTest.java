@@ -25,7 +25,7 @@ public class MonoDeferComposeTest {
     @Test
     public void perSubscriberState() {
         
-        Mono<Integer> source = Mono.just(10).deferCompose(f -> {
+        Mono<Integer> source = Mono.just(10).compose(f -> {
             AtomicInteger value = new AtomicInteger();
             return f.map(v -> v + value.incrementAndGet());
         });
@@ -44,7 +44,7 @@ public class MonoDeferComposeTest {
     
     @Test
     public void composerThrows() {
-        Mono<Integer> source = Mono.just(10).deferCompose(f -> {
+        Mono<Integer> source = Mono.just(10).compose(f -> {
             throw new RuntimeException("Forced failure");
         });
         
@@ -62,7 +62,7 @@ public class MonoDeferComposeTest {
     
     @Test
     public void composerReturnsNull() {
-        Mono<Integer> source = Mono.just(10).deferCompose(f -> {
+        Mono<Integer> source = Mono.just(10).compose(f -> {
             return null;
         });
         

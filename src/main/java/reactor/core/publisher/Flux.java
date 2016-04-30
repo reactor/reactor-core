@@ -504,19 +504,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return new FluxDefer<>(supplier);
 	}
-	
-	/**
-	 * Defers the composition of operators to subscription time.
-     * <p>
-     * This allows per-subscriber state to be present while also
-     * composing operators with the upstream.
-	 * @param <R> the result value type
-	 * @param composer the composer function taking this instance and returns a publisher with the desired type
-	 * @return a deferred {@link Flux}
-	 */
-	public <R> Flux<R> deferCompose(Function<? super Flux<? extends T>, ? extends Publisher<? extends R>> composer) {
-	    return new FluxDeferCompose<>(this, composer);
-	}
 
 	/**
 	 * Create a {@link Flux} that completes without emitting any item.
