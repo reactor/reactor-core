@@ -221,6 +221,19 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoDefer<>(supplier);
 	}
 
+	   /**
+     * Defers the composition of operators to subscription time.
+     * <p>
+     * This allows per-subscriber state to be present while also
+     * composing operators with the upstream.
+     * @param <R> the result value type
+     * @param composer the composer function taking this instance and returns a mono with the desired type
+     * @return a deferred {@link Mono}
+     */
+    public <R> Mono<R> deferCompose(Function<? super Mono<? extends T>, ? extends Mono<? extends R>> composer) {
+        return new MonoDeferCompose<>(this, composer);
+    }
+
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
