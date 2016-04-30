@@ -115,6 +115,41 @@ public class DeferredSubscription
 			}
 		}
 	}
+	/**
+	 * Sets the Subscription once but does not request anything.
+	 * @param s the Subscription to set
+	 * @return true if successful, false if the current subscription is not null
+	 */
+	protected final boolean setWithoutRequesting(Subscription s) {
+		Objects.requireNonNull(s, "s");
+		for (;;) {
+			Subscription a = this.s;
+			if (a == CancelledSubscription.INSTANCE) {
+				s.cancel();
+				return false;
+			}
+			if (a != null) {
+				s.cancel();
+				BackpressureUtils.reportSubscriptionSet();
+				return false;
+			}
+
+			if (S.compareAndSet(this, null, s)) {
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * Requests the deferred amount if not zero.
+	 */
+	protected final void requestDeferred() {
+		long r = REQUESTED.getAndSet(this, 0L);
+
+		if (r != 0L) {
+			s.request(r);
+		}
+	}
 
 	/**
 	 * Returns true if this arbiter has been cancelled.
