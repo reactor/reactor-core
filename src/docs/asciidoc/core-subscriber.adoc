@@ -1,4 +1,0 @@
-[[core-subscriber]]
-ifndef::env-github[]
-== Core Subscribers
-endif::[]

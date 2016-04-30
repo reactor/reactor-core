@@ -12,16 +12,16 @@ include::nav.html[]
 ++++
 endif::[]
 
-include::gettingstarted.adoc[]
+//include::gettingstarted.adoc[]
 
-include::20to25.adoc[]
+//include::20to25.adoc[]
 
 [[reactor-core]]
 = *reactor-core*
-include::core.adoc[]
+//include::core.adoc[]
 //include::core-publisher.adoc[]
 //include::core-subscriber.adoc[]
-include::core-processor.adoc[]
+//include::core-processor.adoc[]
 //include::core-timer.adoc[]
 
 //[[reactor-samples]]
