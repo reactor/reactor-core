@@ -15,32 +15,21 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Assert;
+import java.util.concurrent.CancellationException;
+
 import org.junit.Test;
 import reactor.core.flow.Cancellation;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.Exceptions;
 
-public class FluxPublishTest {
+public class ConnectableFluxProcessTest {
 
-	/*@Test
-	public void constructors() {
-		ConstructorTestBuilder ctb = new ConstructorTestBuilder(StreamPublish.class);
-		
-		ctb.addRef("source", Flux.never());
-		ctb.addInt("prefetch", 1, Integer.MAX_VALUE);
-		ctb.addRef("queueSupplier", (Supplier<Queue<Object>>)() -> new ConcurrentLinkedQueue<>());
-		
-		ctb.test();
-	}*/
-	
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
 		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
-
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
+		
+		ConnectableFlux<Integer> p = Flux.range(1, 5).process(EmitterProcessor.create(), Flux::log);
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -70,8 +59,8 @@ public class FluxPublishTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
 		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
-
-		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
+		
+		ConnectableFlux<Integer> p = Flux.range(1, 5).process(EmitterProcessor.create());
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -101,7 +90,7 @@ public class FluxPublishTest {
 		ts1.request(3);
 		ts2.request(2);
 		
-		ts1.assertValues(1, 2)
+		ts1.assertValues(1, 2, 3)
 		.assertNoError()
 		.assertNotComplete();
 
@@ -122,10 +111,44 @@ public class FluxPublishTest {
 	}
 
 	@Test
+	public void normalProcessorBackpressured() {
+		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
+
+		ConnectableFlux<Integer> p = Flux.range(1, 5).process(EmitterProcessor.create());
+
+		p.subscribe(ts1);
+
+		ts1
+		.assertNoValues()
+		.assertNoError()
+		.assertNotComplete();
+
+		p.connect();
+
+		ts1
+		.assertNoValues()
+		.assertNoError()
+		.assertNotComplete();
+
+		ts1.request(3);
+
+		ts1.assertValues(1, 2, 3)
+		.assertNoError()
+		.assertNotComplete();
+
+		ts1.request(2);
+
+		ts1.assertValues(1, 2, 3, 4, 5)
+		.assertNoError()
+		.assertComplete();
+
+	}
+
+
+	@Test
 	public void normalAsyncFused() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
-		
+
 		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
 		up.onNext(2);
@@ -133,37 +156,28 @@ public class FluxPublishTest {
 		up.onNext(4);
 		up.onNext(5);
 		up.onComplete();
-
-		ConnectableFlux<Integer> p = up.publish();
+		
+		ConnectableFlux<Integer> p = up.process(EmitterProcessor.create());
 		
 		p.subscribe(ts1);
-		p.subscribe(ts2);
-		
+
 		ts1
 		.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
 
-		ts2
-		.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-		
+
 		p.connect();
 		
 		ts1.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
 
-		ts2.assertValues(1, 2, 3, 4, 5)
-		.assertNoError()
-		.assertComplete();
 	}
 	
 	@Test
 	public void normalBackpressuredAsyncFused() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
 
 		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
@@ -173,21 +187,16 @@ public class FluxPublishTest {
 		up.onNext(5);
 		up.onComplete();
 
-		ConnectableFlux<Integer> p = up.publish();
+		ConnectableFlux<Integer> p = up.process(EmitterProcessor.create());
 		
 		p.subscribe(ts1);
-		p.subscribe(ts2);
-		
+
 		ts1
 		.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
 
-		ts2
-		.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-		
+
 		p.connect();
 
 		ts1
@@ -195,30 +204,15 @@ public class FluxPublishTest {
 		.assertNoError()
 		.assertNotComplete();
 
-		ts2
-		.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-
 		ts1.request(3);
-		ts2.request(2);
-		
-		ts1.assertValues(1, 2)
+
+		ts1.assertValues(1, 2, 3)
 		.assertNoError()
 		.assertNotComplete();
 
-		ts2.assertValues(1, 2)
-		.assertNoError()
-		.assertNotComplete();
-		
 		ts1.request(2);
-		ts2.request(3);
 
 		ts1.assertValues(1, 2, 3, 4, 5)
-		.assertNoError()
-		.assertComplete();
-
-		ts2.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
 	}
@@ -227,8 +221,8 @@ public class FluxPublishTest {
 	public void normalHidden() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
 		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
-
-		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
+		
+		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().process(EmitterProcessor.create(), Flux::log);
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -242,9 +236,9 @@ public class FluxPublishTest {
 		.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		p.connect();
-		
+
 		ts1.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
@@ -258,8 +252,8 @@ public class FluxPublishTest {
 	public void normalHiddenBackpressured() {
 		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
 		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
-
-		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
+		
+		ConnectableFlux<Integer> p = Flux.range(1, 5).hide().process(EmitterProcessor.create());
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -289,7 +283,7 @@ public class FluxPublishTest {
 		ts1.request(3);
 		ts2.request(2);
 		
-		ts1.assertValues(1, 2)
+		ts1.assertValues(1, 2, 3)
 		.assertNoError()
 		.assertNotComplete();
 
@@ -313,77 +307,105 @@ public class FluxPublishTest {
 	public void disconnect() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.connect();
-
-		ConnectableFlux<Integer> p = e.publish();
+		EmitterProcessor<Integer> sp = EmitterProcessor.replay();
+		sp.connect();
+		ConnectableFlux<Integer> p = sp.process(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 
 		Cancellation r = p.connect();
 				
-		e.onNext(1);
-		e.onNext(2);
+		sp.onNext(1);
+		sp.onNext(2);
 		
 		r.dispose();
 		
 		ts.assertValues(1, 2)
-		.assertError(Exceptions.CancelException.class)
+		.assertError(CancellationException.class)
 		.assertNotComplete();
-		
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 	}
+
+
+	@Test
+	public void cancel() {
+		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
+		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
+
+		FluxProcessor<Integer, Integer> sp = EmitterProcessor.create();
+
+		sp.connect();
+
+		ConnectableFlux<Integer> p = sp.process(EmitterProcessor.create());
+
+		p.subscribe(ts1);
+		p.subscribe(ts2);
+
+		Cancellation r = p.connect();
+
+		sp.onNext(1);
+		sp.onNext(2);
+
+		ts1.cancel();
+
+		r.dispose();
+
+		ts1.assertValues(1, 2)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts2.assertValues(1, 2)
+		   .assertError(CancellationException.class)
+		  .assertNotComplete();
+
+	}
+
 
 	@Test
 	public void disconnectBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
-
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.connect();
-
-		ConnectableFlux<Integer> p = e.publish();
+		
+		FluxProcessor<Integer, Integer> sp = EmitterProcessor.create();
+		sp.connect();
+		ConnectableFlux<Integer> p = sp.process(EmitterProcessor.create());
 		
 		p.subscribe(ts);
-
+		
 		Cancellation r = p.connect();
 				
 		r.dispose();
 		
 		ts.assertNoValues()
-		.assertError(Exceptions.CancelException.class)
+		.assertError(CancellationException.class)
 		.assertNotComplete();
 
-		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 	}
 
 	@Test
 	public void error() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.connect();
-
-		ConnectableFlux<Integer> p = e.publish();
+		EmitterProcessor<Integer> sp = EmitterProcessor.create();
+		sp.connect();
+		ConnectableFlux<Integer> p = sp.process(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 		
 		p.connect();
 				
-		e.onNext(1);
-		e.onNext(2);
-		e.onError(new RuntimeException("forced failure"));
+		sp.onNext(1);
+		sp.onNext(2);
+		sp.onError(new RuntimeException("forced failure"));
 		
 		ts.assertValues(1, 2)
 		.assertError(RuntimeException.class)
-		  .assertErrorWith( x -> Assert.assertTrue(x.getMessage().contains("forced failure")))
 		.assertNotComplete();
 	}
 
 	@Test
 	public void fusedMapInvalid() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
-
-		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).publish();
+		
+		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).process(EmitterProcessor.create());
 		
 		p.subscribe(ts);
 		

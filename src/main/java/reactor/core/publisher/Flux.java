@@ -1834,7 +1834,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> cache(int history) {
-		return multicast(EmitterProcessor.replay(history)).autoConnect();
+		return process(EmitterProcessor.replay(history)).autoConnect();
 	}
 	
 	/**
@@ -3124,112 +3124,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    }
 	}
 
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
-	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
-	 * depending on the {@link Processor}.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
-	 *
-	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final ConnectableFlux<T> multicast(Processor<? super T, ? extends T> processor) {
-		return multicast(() -> processor);
-	}
-
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
-	 * when
-	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
-	 *
-	 * @param processorSupplier the {@link Processor} {@link Supplier} to call, subscribe to this {@link Flux} and
-	 * share.
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final ConnectableFlux<T> multicast(
-			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
-		return multicast(processorSupplier, identityFunction());
-	}
-
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
-	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
-	 * depending on the {@link Processor}.
-	 *
-	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
-	 *
-	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
-	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
-	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
-	 * @param <U> produced type from the given selector
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final <U> ConnectableFlux<U> multicast(Processor<? super T, ? extends T>
-			processor, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
-		return multicast(() -> processor, selector);
-	}
-
-	 /**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
-	 * when
-	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
-	 *
-	 * @param processorSupplier the {@link Processor} {@link Supplier} to createWorker, subscribe to this {@link Flux} and
-	 * share.
-	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
-	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
-	 * @param <U> produced type from the given selector
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final <U> ConnectableFlux<U> multicast(Supplier<? extends Processor<? super T, ? extends T>>
-			processorSupplier, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
-		return new FluxMulticast<>(this, processorSupplier, selector);
-	}
 
 	/**
 	 * Emit the current instance of the {@link Flux}.
@@ -3398,6 +3292,114 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		});
 	}
 
+
+	/**
+	 * Prepare a
+	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
+	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
+	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
+	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
+	 *  focuses on subscribe lifecycle.
+	 *
+	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
+	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
+	 * depending on the {@link Processor}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 *
+	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
+	 *
+	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
+	 *
+	 */
+	public final ConnectableFlux<T> process(Processor<? super T, ? extends T> processor) {
+		return process(() -> processor);
+	}
+
+	/**
+	 * Prepare a
+	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
+	 * when
+	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
+	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
+	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
+	 *  focuses on subscribe lifecycle.
+	 *
+	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 *
+	 * @param processorSupplier the {@link Processor} {@link Supplier} to call, subscribe to this {@link Flux} and
+	 * share.
+	 *
+	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
+	 *
+	 */
+	public final ConnectableFlux<T> process(
+			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
+		return process(processorSupplier, identityFunction());
+	}
+
+	/**
+	 * Prepare a
+	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
+	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
+	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
+	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
+	 *  focuses on subscribe lifecycle.
+	 *
+	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
+	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
+	 * depending on the {@link Processor}.
+	 *
+	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 *
+	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
+	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
+	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
+	 * @param <U> produced type from the given selector
+	 *
+	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
+	 *
+	 */
+	public final <U> ConnectableFlux<U> process(Processor<? super T, ? extends T>
+			processor, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
+		return process(() -> processor, selector);
+	}
+
+	/**
+	 * Prepare a
+	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
+	 * when
+	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
+	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
+	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
+	 *  focuses on subscribe lifecycle.
+	 *
+	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
+	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 *
+	 * @param processorSupplier the {@link Processor} {@link Supplier} to createWorker, subscribe to this {@link Flux} and
+	 * share.
+	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
+	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
+	 * @param <U> produced type from the given selector
+	 *
+	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
+	 *
+	 */
+	public final <U> ConnectableFlux<U> process(Supplier<? extends Processor<? super T, ? extends T>>
+			processorSupplier, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
+		return new ConnectableFluxProcess<>(this, processorSupplier, selector);
+	}
+
 	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
 	 * subscribers in a backpressure-aware manner. Prefetch will default to {@link PlatformDependent#SMALL_BUFFER_SIZE}.
@@ -3428,7 +3430,39 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
-		return new FluxPublish<>(this, prefetch, QueueSupplier.get(prefetch));
+		return new ConnectableFluxPublish<>(this, prefetch, QueueSupplier.get(prefetch));
+	}
+
+	/**
+	 * Shares a sequence for the duration of a function that may transform it and
+	 * consume it as many times as necessary without causing multiple subscriptions
+	 * to the upstream.
+	 *
+	 * @param transform
+	 * @param <R> the output value type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
+			extends
+			R>> transform) {
+		return publish(transform, getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+	}
+
+	/**
+	 * Shares a sequence for the duration of a function that may transform it and
+	 * consume it as many times as necessary without causing multiple subscriptions
+	 * to the upstream.
+	 *
+	 * @param transform
+	 * @param prefetch
+	 * @param <R> the output value type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
+			extends R>> transform, int prefetch) {
+		return new FluxPublish<>(this, transform, prefetch, QueueSupplier.get(prefetch));
 	}
 
 	/**

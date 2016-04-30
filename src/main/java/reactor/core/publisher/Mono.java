@@ -1810,6 +1810,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Shares a {@link Mono} for the duration of a function that may transform it and
+	 * consume it as many times as necessary without causing multiple subscriptions
+	 * to the upstream.
+	 *
+	 * @param transform
+	 * @param <R> the output value type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final <R> Mono<R> publish(Function<? super Flux<T>, ? extends Mono<? extends
+			R>> transform) {
+		return MonoSource.wrap(new FluxPublish<>(this, transform, Integer.MAX_VALUE,
+				QueueSupplier
+				.one()));
+	}
+
+	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link Computations}.
 	 *
 	 * <p>
@@ -1849,7 +1866,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> publishOn(ExecutorService executorService) {
 		return publishOn(new ExecutorServiceScheduler(executorService));
 	}
-
 
 
 	/**

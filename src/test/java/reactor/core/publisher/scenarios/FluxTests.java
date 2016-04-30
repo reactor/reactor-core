@@ -857,7 +857,7 @@ public class FluxTests extends AbstractReactorTest {
 			final String source = "ASYNC_TEST " + i;
 
 			Flux.just(source)
-			       .multicast(() -> FluxProcessor.blackbox(EmitterProcessor.<String>create(),
+			       .process(() -> FluxProcessor.blackbox(EmitterProcessor.<String>create(),
 					       operationStream -> operationStream.publishOn(asyncGroup)
 					                                         .delay(Duration.ofMillis(100))
 					                                         .map(s -> s + " MODIFIED")

@@ -35,7 +35,7 @@ import reactor.core.util.*;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, Producer {
+final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements Receiver, Producer {
 
 	final Publisher<T>												 source;
 	final Supplier<? extends Processor<? super T, ? extends T>>		processorSupplier;
@@ -43,10 +43,10 @@ final class FluxMulticast<T, U> extends ConnectableFlux<U> implements Receiver, 
 
 	volatile State<T, U> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxMulticast, State> CONNECTION =
-			AtomicReferenceFieldUpdater.newUpdater(FluxMulticast.class, State.class, "connection");
+	static final AtomicReferenceFieldUpdater<ConnectableFluxProcess, State> CONNECTION =
+			AtomicReferenceFieldUpdater.newUpdater(ConnectableFluxProcess.class, State.class, "connection");
 
-	FluxMulticast(Publisher<T> source,
+	ConnectableFluxProcess(Publisher<T> source,
 			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier,
 			Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
 		this.source = Objects.requireNonNull(source, "source");

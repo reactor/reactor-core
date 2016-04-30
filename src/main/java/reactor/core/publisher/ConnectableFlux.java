@@ -23,7 +23,7 @@ import reactor.core.flow.Cancellation;
  * The abstract base class for connectable publishers that let subscribers pile up
  * before they connect to their data source.
  *
- * @see #multicast
+ * @see #process
  * @see #publish
  * @see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>
  * @param <T> the input and output value type
@@ -78,7 +78,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 			connect(cancelSupport);
 			return this;
 		}
-		return new FluxAutoConnect<>(this, minSubscribers, cancelSupport);
+		return new ConnectableFluxAutoConnect<>(this, minSubscribers, cancelSupport);
 	}
 
 	/**
@@ -130,7 +130,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * @return a reference counting {@link Flux}
 	 */
 	public final Flux<T> refCount(int minSubscribers) {
-		return new FluxRefCount<>(this, minSubscribers);
+		return new ConnectableFluxRefCount<>(this, minSubscribers);
 	}
 
 	static final Consumer<Cancellation> NOOP_DISCONNECT = runnable -> {

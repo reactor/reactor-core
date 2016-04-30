@@ -35,7 +35,7 @@ import reactor.core.util.BackpressureUtils;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxRefCount<T> extends Flux<T>
+final class ConnectableFluxRefCount<T> extends Flux<T>
 		implements Receiver, Loopback {
 
 	final ConnectableFlux<? extends T> source;
@@ -44,10 +44,10 @@ final class FluxRefCount<T> extends Flux<T>
 
 	volatile State<T> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxRefCount, State> CONNECTION =
-			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, State.class, "connection");
+	static final AtomicReferenceFieldUpdater<ConnectableFluxRefCount, State> CONNECTION =
+			AtomicReferenceFieldUpdater.newUpdater(ConnectableFluxRefCount.class, State.class, "connection");
 
-	public FluxRefCount(ConnectableFlux<? extends T> source, int n) {
+	public ConnectableFluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > 0 required but it was " + n);
 		}
@@ -91,7 +91,7 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		final int n;
 		
-		final FluxRefCount<? extends T> parent;
+		final ConnectableFluxRefCount<? extends T> parent;
 		
 		volatile int subscribers;
 		@SuppressWarnings("rawtypes")
@@ -105,7 +105,7 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		static final Cancellation DISCONNECTED = () -> { };
 
-		public State(int n, FluxRefCount<? extends T> parent) {
+		public State(int n, ConnectableFluxRefCount<? extends T> parent) {
 			this.n = n;
 			this.parent = parent;
 		}

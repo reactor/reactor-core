@@ -20,7 +20,7 @@ import org.junit.Test;
 import reactor.core.flow.Cancellation;
 import reactor.core.test.TestSubscriber;
 
-public class FluxRefCountTest {
+public class ConnectableFluxRefCountTest {
 	/*@Test
 	public void constructors() {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(StreamRefCount.class);
