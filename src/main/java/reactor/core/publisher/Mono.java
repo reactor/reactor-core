@@ -1361,7 +1361,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
-		return MonoSource.wrap(new FluxElapsed<>(this));
+		return compose(f -> f.map(new Elapsed<>()));
 	}
 
 	/**
