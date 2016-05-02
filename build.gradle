@@ -57,7 +57,11 @@ ext {
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
 
 
-  bundleImportPackages = ['org.slf4j;version="[1.5.4,2)"', '*']
+  bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
+						  'rx;resolution:=optional',
+						  'com.google;resolution:=optional',
+						  'com.google;resolution:=optional',
+						  '*']
 
 }
 
