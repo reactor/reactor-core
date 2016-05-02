@@ -652,15 +652,40 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	@Override
 	public void onNext(T t) {
-		valueCount++;
-		if (valuesStorage) {
-			List<T> nextValuesSnapshot;
+		if (establishedFusionMode == Fuseable.ASYNC) {
 			for (; ; ) {
-			   nextValuesSnapshot = values;
-			   nextValuesSnapshot.add(t);
-			   if (NEXT_VALUES.compareAndSet(this, nextValuesSnapshot, nextValuesSnapshot)) {
-				   break;
-			   }
+				t = qs.poll();
+				if (t == null) {
+					break;
+				}
+				valueCount++;
+				if (valuesStorage) {
+					List<T> nextValuesSnapshot;
+					for (; ; ) {
+						nextValuesSnapshot = values;
+						nextValuesSnapshot.add(t);
+						if (NEXT_VALUES.compareAndSet(this,
+								nextValuesSnapshot,
+								nextValuesSnapshot)) {
+							break;
+						}
+					}
+				}
+			}
+			}
+		else {
+			valueCount++;
+			if (valuesStorage) {
+				List<T> nextValuesSnapshot;
+				for (; ; ) {
+					nextValuesSnapshot = values;
+					nextValuesSnapshot.add(t);
+					if (NEXT_VALUES.compareAndSet(this,
+							nextValuesSnapshot,
+							nextValuesSnapshot)) {
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -763,7 +788,9 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	@Override
 	public void request(long n) {
 		if (BackpressureUtils.validate(n)) {
-			super.request(n);
+			if (establishedFusionMode != Fuseable.SYNC) {
+				super.request(n);
+			}
 		}
 	}
 

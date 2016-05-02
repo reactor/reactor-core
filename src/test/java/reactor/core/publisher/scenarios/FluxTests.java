@@ -60,6 +60,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SignalEmitter;
@@ -449,7 +450,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void analyticsTest() throws Exception {
-		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>replay().connect();
+		ReplayProcessor<Integer> source = ReplayProcessor.<Integer>create().connect();
 
 		long avgTime = 50l;
 
@@ -1173,10 +1174,10 @@ public class FluxTests extends AbstractReactorTest {
 
 		Phaser phaser = new Phaser(2);
 
-		Flux<Object> s1 = EmitterProcessor.replayLastOrDefault(new Object())
-		                                  .connect()
-		                                .publishOn(asyncGroup);
-		Flux<Object> s2 = EmitterProcessor.replayLastOrDefault(new Object())
+		Flux<Object> s1 = ReplayProcessor.cacheLastOrDefault(new Object())
+		                                 .connect()
+		                                 .publishOn(asyncGroup);
+		Flux<Object> s2 = ReplayProcessor.cacheLastOrDefault(new Object())
 		                                  .connect()
 		                                .publishOn(asyncGroup);
 

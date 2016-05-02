@@ -55,10 +55,6 @@ import reactor.core.util.Sequence;
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitter.png" alt="">
  * <p>
- *     The RingBuffer nature gives this processor a natural ability to replay data to late subscribers that can be
- *     set with {@link #replay}.
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitterreplay.png" alt="">
- * <p>
  *
  * @author Stephane Maldini
  * @since 2.5
@@ -143,85 +139,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize, -1);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> replay() {
-		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> replay(int historySize) {
-		return replay(historySize, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> replay(int historySize, int concurrency) {
-		return replay(historySize, concurrency, false);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> replay(int historySize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, historySize, historySize);
-	}
-
-	/**
-	 * Create a {@link EmitterProcessor} from hot-cold {@link EmitterProcessor#replay EmitterProcessor}  that will not 
-	 * propagate 
-	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber}
-	 * (buffer and history size of 1).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png" alt="">
-	 *
-	 * @param <T>  the relayed type
-	 *
-	 * @return a non interruptable last item cached pub-sub {@link EmitterProcessor}
-	 */
-	public static <T> EmitterProcessor<T> replayLast() {
-		return replayLastOrDefault(null);
-	}
-
-	/**
-	 * Create a {@link EmitterProcessor} from hot-cold {@link EmitterProcessor#replay EmitterProcessor}  that will not 
-	 * propagate 
-	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber} (buffer and history size of 1).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png" alt="">
-	 *
-	 * @param value a default value to start the sequence with
-	 * @param <T> the relayed type
-	 *
-	 * @return a non interruptable last item cached pub-sub {@link EmitterProcessor}
-	 */
-	public static <T> EmitterProcessor<T> replayLastOrDefault(T value) {
-		EmitterProcessor<T> b = replay(1);
-		if(value != null){
-			b.onNext(value);
-		}
-		return b;
+		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize);
 	}
 
 	/**
@@ -244,7 +162,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	final int maxConcurrency;
 	final int bufferSize;
 	final int limit;
-	final int replay;
 	final boolean autoCancel;
 	Subscription upstreamSubscription;
 
@@ -287,17 +204,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
 	boolean firstDrain = true;
 
-	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize, int replayLastN) {
+	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize) {
 		this.autoCancel = autoCancel;
 		this.maxConcurrency = maxConcurrency;
 		this.bufferSize = bufferSize;
 		this.limit = Math.max(1, bufferSize / 2);
-		this.replay = Math.min(replayLastN, bufferSize);
 		OUTSTANDING.lazySet(this, bufferSize);
 		SUBSCRIBERS.lazySet(this, EMPTY);
-		if (replayLastN > 0) {
-			getMainQueue();
-		}
 	}
 
 	@Override
@@ -375,13 +288,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					}
 					continue;
 				}
-
-				if (is.unbounded && replay == -1) {
-					is.actual.onNext(t);
-				}
-				else {
 					long r = is.requested;
-					is.unbounded = r == Long.MAX_VALUE && replay == -1 ;
+					is.unbounded = r == Long.MAX_VALUE;
 					Sequence poll = is.unbounded ? null : is.pollCursor;
 
 					//no tracking and remaining demand positive
@@ -401,7 +309,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 							is.startTracking(seq);
 						}
 					}
-				}
+
 			}
 
 			if (RUNNING.getAndIncrement(this) != 0) {
@@ -527,7 +435,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			}
 			boolean d = done;
 
-			if (d && replay == -1 && inner == EMPTY) {
+			if (d && inner == EMPTY) {
 				return;
 			}
 
@@ -816,14 +724,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			if (REQUESTED.compareAndSet(this, MASK_NOT_SUBSCRIBED, 0)) {
 				RingBuffer<Slot<T>> ringBuffer = parent.emitBuffer;
 				if (ringBuffer != null) {
-					if (parent.replay > 0) {
-						long cursor = ringBuffer.getCursor();
-						startTracking(Math.max(0L,
-								cursor - Math.min(parent.replay, cursor % ringBuffer.getCapacity())));
-					}
-					else {
-						startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence() + 1L));
-					}
+					startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence() + 1L));
 				}
 
 				actual.onSubscribe(this);

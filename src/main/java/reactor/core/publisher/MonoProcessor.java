@@ -511,7 +511,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	Processor<O, O> getOrStart(){
 		Processor<O, O> out = processor;
 		if (out == null) {
-			out = EmitterProcessor.replayLastOrDefault(value);
+			out = ReplayProcessor.cacheLastOrDefault(value);
 			if (PROCESSOR.compareAndSet(this, null, out)) {
 				connect();
 			}

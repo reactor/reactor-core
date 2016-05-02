@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.MonoProcessor
 import reactor.core.publisher.Computations
+import reactor.core.publisher.ReplayProcessor
 import reactor.core.publisher.Signal
 import reactor.core.scheduler.Scheduler
 import reactor.core.subscriber.SubscriberWithContext
@@ -988,7 +989,7 @@ class FluxSpec extends Specification {
 	def "When a processor is streamed"() {
 		given:
 			'a source composable and a async downstream'
-			def source = EmitterProcessor.<Integer> replay().connect()
+			def source = ReplayProcessor.<Integer> create().connect()
 
 			def res = source
 					.subscribeOn(Computations.concurrent("test",32,2))
@@ -2638,7 +2639,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'skip until test2 is seen'
-			stream = EmitterProcessor.replay().connect()
+			stream = ReplayProcessor.create().connect()
 			def value2 = stream.skipWhile {
 				'test1' == it
 			}.log("test").toList()

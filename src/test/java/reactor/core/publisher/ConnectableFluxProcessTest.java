@@ -307,7 +307,7 @@ public class ConnectableFluxProcessTest {
 	public void disconnect() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		EmitterProcessor<Integer> sp = EmitterProcessor.replay();
+		ReplayProcessor<Integer> sp = ReplayProcessor.create();
 		sp.connect();
 		ConnectableFlux<Integer> p = sp.process(EmitterProcessor.create());
 		

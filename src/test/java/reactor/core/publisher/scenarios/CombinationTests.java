@@ -36,6 +36,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
@@ -384,14 +385,14 @@ public class CombinationTests {
 	}
 
 	TestSubscriber<Long>   ts;
-	EmitterProcessor<Long> emitter1;
-	EmitterProcessor<Long> emitter2;
+	ReplayProcessor<Long> emitter1;
+	ReplayProcessor<Long> emitter2;
 
 	@Before
 	public void anotherBefore() {
 		ts = new TestSubscriber<Long>();
-		emitter1 = EmitterProcessor.replay();
-		emitter2 = EmitterProcessor.replay();
+		emitter1 = ReplayProcessor.create();
+		emitter2 = ReplayProcessor.create();
 		emitter1.connect();
 		emitter2.connect();
 	}

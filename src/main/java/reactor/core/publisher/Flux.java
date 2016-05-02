@@ -1004,7 +1004,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> FluxProcessor<Publisher<? extends T>, T> switchOnNext() {
-		Processor<Publisher<? extends T>, Publisher<? extends T>> emitter = EmitterProcessor.replay();
+		Processor<Publisher<? extends T>, Publisher<? extends T>> emitter =
+				ReplayProcessor.create();
 		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.create(emitter, switchOnNext(emitter));
 		return p;
 	}
@@ -1834,7 +1835,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> cache(int history) {
-		return process(EmitterProcessor.replay(history)).autoConnect();
+		return process(ReplayProcessor.create(history)).autoConnect();
 	}
 	
 	/**
