@@ -16,95 +16,26 @@
 
 package reactor.core.publisher;
 
-import java.util.Queue;
-import java.util.function.Function;
-
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
-import reactor.core.subscriber.SignalEmitter;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
- * A base processor that expose {@link Flux} API for {@link Processor}.
+ * A base processor that exposes {@link Flux} API for {@link Processor}.
  *
- * Factories available allow arbitrary {@link FluxProcessor} creation from blackboxed and external reactive components.
+ * Implementors include {@link UnicastProcessor}, {@link EmitterProcessor},
+ * {@link ReplayProcessor}, {@link WorkQueueProcessor} and {@link TopicProcessor}.
  *
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Completable, BaseSubscriber<IN> {
-
-	/**
-	 * Blackbox a given
-	 * {@link Subscriber} receiving type with a transforming function returning the producing side {@link Publisher}.
-	 *
-	 * <pre>
-	 * {@code
-	 *   Processor<String, String> asyncLowerCase =
-	 *      FluxProcessor.blackbox(TopicProcessor.create(), input -> input.map(String::toLowerCase));
-	 * }
-	 *</pre>
-	 *
-	 * @param input an input {@link Subscriber}
-	 * @param  blackboxFunction the
-	 * {@link Function} given the input subscriber to compose on and return {@link Publisher}
-	 * @param <IN> the reified received type
-	 * @param <OUT> the reified produced type
-	 *
-	 * @return a blackboxed chain as {@link FluxProcessor}
-	 */
-	public static <IN, OUT, E extends Subscriber<IN>> FluxProcessor<IN, OUT> blackbox(
-			final E input,
-			final Function<E, ? extends Publisher<OUT>> blackboxFunction) {
-		return create(input, blackboxFunction.apply(input));
-	}
-
-	/**
-	 * Blackbox an arbitrary {@link Flux} operation chain into a {@link FluxProcessor} that can be subscribed once
-	 * only.
-	 * <p>
-	 * <pre>
-	 * {@code
-	 *  Processor<String, Integer> stringToInt =
-	 *      FluxProcessor.blackbox(input -> input.map(Integer::parseString));
-	 * }
-	 *</pre>
-	 *
-	 * @param blackboxFunction the {@link Function} given a {@link Flux} to compose on and return {@link Publisher}
-	 * @param <IN> the reified received type
-	 * @param <OUT> the reified produced type
-	 *
-	 * @return a blackboxed chain as {@link FluxProcessor}
-	 */
-	public static <IN, OUT> FluxProcessor<IN, OUT> blackbox(final Function<Flux<IN>, ? extends Publisher<OUT>> blackboxFunction) {
-		FluxPassthrough<IN> passthrough = new FluxPassthrough<>();
-		return create(passthrough, blackboxFunction.apply(passthrough));
-	}
-
-	/**
-	 * Create a passthrough {@link FluxProcessor} relay blocking when overrun.
-	 * <p>
-	 * It will use a deferred blocking {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)}.
-	 * Multiple producer can share the returned reference IF and only IF they don't publish concurrently. In this
-	 * very case, implementor must take care of using a multiproducer capable receiver downstream e.g.
-	 * {@link TopicProcessor#share()} or {@link WorkQueueProcessor#share()}.
-	 *
-	 * @return a new {@link FluxProcessor}
-	 */
-	public static <IN> FluxProcessor<IN, IN> blocking() {
-		FluxPassthrough<IN> passthrough = new FluxPassthrough<>();
-		return create(SignalEmitter.blocking(passthrough), passthrough);
-	}
 
 	/**
 	 * Transform a receiving {@link Subscriber} and a producing {@link Publisher} in a logical {@link FluxProcessor}.
@@ -116,47 +47,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return a new blackboxed {@link FluxProcessor}
 	 */
-	public static <IN, OUT> FluxProcessor<IN, OUT> create(final Subscriber<IN> upstream, final Publisher<OUT> downstream) {
+	public static <IN, OUT> FluxProcessor<IN, OUT> wrap(final Subscriber<IN> upstream, final Publisher<OUT> downstream) {
 		return new DelegateProcessor<>(downstream, upstream);
-	}
-
-	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
-	 * unbounded fashion.
-	 *
-	 * @param <T> the relayed type
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public static <T> FluxProcessor<T, T> unicast() {
-		return unicast(QueueSupplier.<T>unbounded().get());
-	}
-
-	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
-	 * unbounded fashion.
-	 *
-	 * @param queue the buffering queue
-	 * @param <T> the relayed type
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public static <T> FluxProcessor<T, T> unicast(Queue<T> queue) {
-		return unicast(queue, null);
-	}
-
-	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
-	 * unbounded fashion.
-	 *
-	 * @param queue the buffering queue
-	 * @param endcallback called on any terminal signal
-	 * @param <T> the relayed type
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public static <T> FluxProcessor<T, T> unicast(Queue<T> queue, Runnable endcallback) {
-		return new UnicastProcessor<>(queue, endcallback);
-	}
-
-	protected FluxProcessor() {
 	}
 
 	@Override
@@ -177,9 +69,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		}
 	}
 
-	@Override
-	public int getMode() {
-		return 0;
+	protected FluxProcessor() {
 	}
 
 }

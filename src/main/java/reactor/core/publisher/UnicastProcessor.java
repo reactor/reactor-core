@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.*;
 import org.reactivestreams.*;
 
 import reactor.core.flow.*;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.state.*;
 import reactor.core.util.*;
 
@@ -33,10 +34,47 @@ import reactor.core.util.*;
  *
  * @param <T> the input and output type
  */
-final class UnicastProcessor<T>
+public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
 		implements Processor<T, T>, Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver,
 		           Completable, Cancellable, Requestable {
+
+
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> UnicastProcessor<T> create() {
+		return create(QueueSupplier.<T>unbounded().get());
+	}
+
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param queue the buffering queue
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> UnicastProcessor<T> create(Queue<T> queue) {
+		return create(queue, null);
+	}
+
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param queue the buffering queue
+	 * @param endcallback called on any terminal signal
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> UnicastProcessor<T> create(Queue<T> queue, Runnable endcallback) {
+		return new UnicastProcessor<>(queue, endcallback);
+	}
 
 	final Queue<T> queue;
 
@@ -72,12 +110,12 @@ final class UnicastProcessor<T>
 
 	volatile boolean enableOperatorFusion;
 
-	public UnicastProcessor(Queue<T> queue) {
+	UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue, Runnable onTerminate) {
+	UnicastProcessor(Queue<T> queue, Runnable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}

@@ -17,10 +17,13 @@
 package reactor.core.publisher.tck;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -50,25 +53,51 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 						Throwable::printStackTrace, () -> System.out.println("EEEEE"));
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
-		return FluxProcessor.blackbox(EmitterProcessor.create(), p ->
+		EmitterProcessor<Integer> p = EmitterProcessor.create();
 
+		return new Processor<Integer, Integer>() {
+			@Override
+			public void subscribe(Subscriber<? super Integer> s) {
+				Objects.requireNonNull(s);
 				p.publishOn(sharedGroup)
 				 .log("grouped")
 				 .partition(2)
-		                  .flatMap(stream -> stream.publishOn(asyncGroup)
-		                                           .doOnNext(this::monitorThreadUse)
-		                                           .scan((prev, next) -> next)
-		                                           .map(integer -> -integer)
-		                                           .filter(integer -> integer <= 0)
-		                                           .every(1)
-		                                           .map(integer -> -integer)
-		                                           .buffer(batch, Duration.ofMillis(50))
-		                                           .flatMap(Flux::fromIterable)
-		                                           .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
-		                  )
-				.publishOn(sharedGroup)
-				.doOnError(Throwable.class, Throwable::printStackTrace)
-		);
+				 .flatMap(stream -> stream.publishOn(asyncGroup)
+				                          .doOnNext(d -> monitorThreadUse(d))
+				                          .scan((prev, next) -> next)
+				                          .map(integer -> -integer)
+				                          .filter(integer -> integer <= 0)
+				                          .every(1)
+				                          .map(integer -> -integer)
+				                          .buffer(batch, Duration.ofMillis(50))
+				                          .flatMap(Flux::fromIterable)
+				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
+				 )
+				 .publishOn(sharedGroup)
+				 .doOnError(Throwable.class, Throwable::printStackTrace)
+				 .subscribe(s);
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				p.onSubscribe(s);
+			}
+
+			@Override
+			public void onNext(Integer integer) {
+				p.onNext(integer);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				p.onError(t);
+			}
+
+			@Override
+			public void onComplete() {
+				p.onComplete();
+			}
+		};
 	}
 
 	@Override

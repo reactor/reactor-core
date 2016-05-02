@@ -25,6 +25,7 @@ import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
 
 
@@ -41,8 +42,13 @@ public class SchedulerParallelTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return EmitterProcessor.async(Computations.<Long>single("shared-async", bufferSize,
-				Throwable::printStackTrace, () -> {}));
+		EmitterProcessor<Long> e = EmitterProcessor.create();
+		return FluxProcessor.wrap(e,
+				e.publishOn(Computations.<Long>single("shared-async",
+						bufferSize,
+						Throwable::printStackTrace,
+						() -> {
+						})));
 
 	}
 

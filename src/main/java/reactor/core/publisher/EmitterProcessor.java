@@ -64,24 +64,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		           Receiver {
 
 	/**
-	 * Create an asynchronously {@link Flux#publishOn(Scheduler) dispatched} {@link FluxProcessor} multicast/topic
-	 * relay.
-	 * Like {@link Flux#publishOn(Scheduler)} the worker resources will be cleaned accordingly to the {@link Runnable}
-	 * {@literal null} protocol.
-	 * Unlike {@link TopicProcessor} or {@link WorkQueueProcessor}, the threading resources are not dedicated nor
-	 * mandatory.
-	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
-	 * @param <IN> The relayed data type
-	 *
-	 * @return a new asynchronous {@link FluxProcessor}
-	 */
-	public static <IN> FluxProcessor<IN, IN> async(final Scheduler scheduler) {
-		FluxProcessor<IN, IN> emitter = create();
-		return create(emitter, emitter.publishOn(scheduler));
-	}
-
-	/**
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *

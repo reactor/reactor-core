@@ -24,15 +24,25 @@ import java.util.Iterator;
 public interface MultiProducer {
 
 	/**
+	 * the connected data receivers
 	 * @return the connected data receivers
 	 */
 	Iterator<?> downstreams();
 
 	/**
+	 * the number of downstream receivers
 	 * @return the number of downstream receivers
 	 */
 	default long downstreamCount() {
 		return -1L;
+	}
+
+	/**
+	 * Has any Subscriber attached to this multi-producer ?
+	 * @return Has any Subscriber attached to this multi-producer ?
+	 */
+	default boolean hasDownstreams() {
+		return downstreamCount() != 0;
 	}
 
 }

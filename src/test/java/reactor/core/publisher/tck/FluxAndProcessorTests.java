@@ -49,7 +49,7 @@ public class FluxAndProcessorTests extends AbstractFluxVerification {
 		cumulatedJoin.set(0);
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
-		return FluxProcessor.create(p, p
+		return FluxProcessor.wrap(p, p
 		                                      .multiplex(2, stream -> stream.scan((prev, next) -> next)
 		                                                                   .map(integer -> -integer)
 		                                                                   .filter(integer -> integer <= 0)

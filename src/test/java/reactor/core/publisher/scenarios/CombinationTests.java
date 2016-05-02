@@ -27,7 +27,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Cancellation;
@@ -38,6 +37,7 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
@@ -88,10 +88,11 @@ public class CombinationTests {
 
 	@Test
 	public void tesSubmitSession() throws Exception {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(Computations.concurrent());
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
-		processor.subscribe(Subscribers.create(s -> {
+		processor.publishOn(Computations.concurrent())
+		         .subscribe(Subscribers.create(s -> {
 			         try {
 				         System.out.println("test" + Thread.currentThread());
 				         Thread.sleep(1000);
@@ -125,14 +126,15 @@ public class CombinationTests {
 
 	@Test
 	public void testEmitter() throws Throwable {
-		FluxProcessor<Integer, Integer> processor = EmitterProcessor.async(Computations.single());
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 
 		int n = 100_000;
 		int subs = 4;
 		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
-
+		Scheduler c = Computations.single();
 		for (int i = 0; i < subs; i++) {
-			processor.subscribe(Subscribers.create(s -> {
+			processor.publishOn(c)
+			         .subscribe(Subscribers.create(s -> {
 				         s.request(1L);
 				         return null;
 			         }, (d, s) -> {
@@ -164,24 +166,24 @@ public class CombinationTests {
 	public Flux<SensorData> sensorOdd() {
 		if (sensorOdd == null) {
 			// this is the stream we publish odd-numbered events to
-			this.sensorOdd = FluxProcessor.blackbox(TopicProcessor.create("odd"), p -> p.log("odd"));
+			this.sensorOdd = TopicProcessor.create("odd");
 
 			// add substream to "master" list
 			//allSensors().add(sensorOdd.reduce(this::computeMin).timeout(1000));
 		}
 
-		return sensorOdd;
+		return sensorOdd.log("odd");
 	}
 
 	public Flux<SensorData> sensorEven() {
 		if (sensorEven == null) {
 			// this is the stream we publish even-numbered events to
-			this.sensorEven = FluxProcessor.blackbox(TopicProcessor.create("even"), p -> p.log("even"));
+			this.sensorEven = TopicProcessor.create("even");
 
 			// add substream to "master" list
 			//allSensors().add(sensorEven.reduce(this::computeMin).timeout(1000));
 		}
-		return sensorEven;
+		return sensorEven.log("even");
 	}
 
 	@Test
@@ -280,9 +282,10 @@ public class CombinationTests {
 	public void sampleZipTest3() throws Exception {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
-		Processor<SensorData, SensorData> sensorDataProcessor = EmitterProcessor.async(Computations.single());
+		EmitterProcessor<SensorData> sensorDataProcessor = EmitterProcessor.create();
 
-		sensorDataProcessor.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
+		sensorDataProcessor.publishOn(Computations.single())
+		                   .subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null,
 				n -> latch.countDown()));
 

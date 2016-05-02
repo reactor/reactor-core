@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,7 +27,15 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
+import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 
@@ -38,7 +48,9 @@ import reactor.core.util.PlatformDependent;
  * @param <T> the value type
  */
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable {
+		implements Processor<T, T>, Fuseable, MultiProducer, Backpressurable, Completable,
+		           Receiver {
+
 
 	/**
 	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create ReplayProcessor}  that will not
@@ -117,37 +129,32 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	final Buffer<T> buffer;
 
+	Subscription subscription;
+
 	volatile ReplaySubscription<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ReplayProcessor, ReplaySubscription[]>
-			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class,
-			ReplaySubscription[].class,
-			"subscribers");
+	static final AtomicReferenceFieldUpdater<ReplayProcessor, ReplaySubscription[]> SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class, ReplaySubscription[].class, "subscribers");
 
 	@SuppressWarnings("rawtypes")
-	static final ReplaySubscription[] EMPTY      = new ReplaySubscription[0];
+	static final ReplaySubscription[] EMPTY = new ReplaySubscription[0];
 	@SuppressWarnings("rawtypes")
 	static final ReplaySubscription[] TERMINATED = new ReplaySubscription[0];
 
 	/**
-	 * Constructs a ReplayProcessor with bounded or unbounded buffering.
-	 *
-	 * @param bufferSize if unbounded, this number represents the link size of the shared
-	 * buffer, if bounded, this is the maximum number of retained items
+	 * Constructs a ReplayProcessor with bounded or unbounded
+	 * buffering.
+	 * @param bufferSize if unbounded, this number represents the link size of the shared buffer,
+	 *				   if bounded, this is the maximum number of retained items
 	 * @param unbounded should the replay buffer be unbounded
 	 */
-	ReplayProcessor(int bufferSize, boolean unbounded) {
+	public ReplayProcessor(int bufferSize, boolean unbounded) {
 		if (unbounded) {
 			this.buffer = new UnboundedBuffer<>(bufferSize);
-		}
-		else {
+		} else {
 			this.buffer = new BoundedBuffer<>(bufferSize);
 		}
 		SUBSCRIBERS.lazySet(this, EMPTY);
-	}
-
-	public boolean hasSubscribers() {
-		return subscribers.length != 0;
 	}
 
 	@Override
@@ -160,28 +167,51 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			if (rp.cancelled) {
 				remove(rp);
 			}
-		}
-		else {
+		} else {
 			buffer.drain(rp);
 		}
 	}
 
 	@Override
-	public ReplayProcessor<T> connect() {
-		super.connect();
-		return this;
+	public Iterator<?> downstreams() {
+		return Arrays.asList(subscribers).iterator();
+	}
+
+	@Override
+	public long downstreamCount() {
+		return subscribers.length;
+	}
+
+	@Override
+	public long getCapacity() {
+		return buffer.capacity();
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return buffer.isDone();
+	}
+
+	@Override
+	public boolean isStarted() {
+		return subscription != null;
+	}
+
+	@Override
+	public Object upstream() {
+		return subscription;
 	}
 
 	boolean add(ReplaySubscription<T> rp) {
-		for (; ; ) {
+		for (;;) {
 			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED) {
 				return false;
 			}
 			int n = a.length;
 
-			@SuppressWarnings("unchecked") ReplaySubscription<T>[] b =
-					new ReplaySubscription[n + 1];
+			@SuppressWarnings("unchecked")
+			ReplaySubscription<T>[] b = new ReplaySubscription[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = rp;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
@@ -193,7 +223,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@SuppressWarnings("unchecked")
 	void remove(ReplaySubscription<T> rp) {
 		outer:
-		for (; ; ) {
+		for (;;) {
 			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
@@ -206,8 +236,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 					if (n == 1) {
 						b = EMPTY;
-					}
-					else {
+					} else {
 						b = new ReplaySubscription[n - 1];
 						System.arraycopy(a, 0, b, 0, i);
 						System.arraycopy(a, i + 1, b, i, n - i - 1);
@@ -229,8 +258,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	public void onSubscribe(Subscription s) {
 		if (buffer.isDone()) {
 			s.cancel();
-		}
-		else {
+		} else {
+			if(!BackpressureUtils.validate(subscription, s)) {
+				s.cancel();
+			}
+			subscription = s;
 			s.request(Long.MAX_VALUE);
 		}
 	}
@@ -240,8 +272,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		Buffer<T> b = buffer;
 		if (b.isDone()) {
 			Exceptions.onNextDropped(t);
-		}
-		else {
+		} else {
 			b.onNext(t);
 			for (ReplaySubscription<T> rp : subscribers) {
 				b.drain(rp);
@@ -254,12 +285,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		Buffer<T> b = buffer;
 		if (b.isDone()) {
 			Exceptions.onErrorDropped(t);
-		}
-		else {
+		} else {
 			b.onError(t);
 
-			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
-					SUBSCRIBERS.getAndSet(this, TERMINATED);
+			@SuppressWarnings("unchecked")
+			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 			for (ReplaySubscription<T> rp : a) {
 				b.drain(rp);
@@ -273,13 +303,19 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		if (!b.isDone()) {
 			b.onComplete();
 
-			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
-					SUBSCRIBERS.getAndSet(this, TERMINATED);
+			@SuppressWarnings("unchecked")
+			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 			for (ReplaySubscription<T> rp : a) {
 				b.drain(rp);
 			}
 		}
+	}
+
+	@Override
+	public ReplayProcessor<T> connect() {
+		onSubscribe(EmptySubscription.INSTANCE);
+		return this;
 	}
 
 	interface Buffer<T> {
@@ -301,6 +337,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		boolean isEmpty(ReplaySubscription<T> rp);
 
 		int size(ReplaySubscription<T> rp);
+
+		int capacity();
 	}
 
 	static final class UnboundedBuffer<T> implements Buffer<T> {
@@ -326,6 +364,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
+		public int capacity() {
+			return size;
+		}
+
+		@Override
 		public void onNext(T value) {
 			int i = tailIndex;
 			Object[] a = tail;
@@ -335,8 +378,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 				tailIndex = 1;
 				a[i] = b;
 				tail = b;
-			}
-			else {
+			} else {
 				a[i] = value;
 				tailIndex = i + 1;
 			}
@@ -360,12 +402,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			final Subscriber<? super T> a = rp.actual;
 			final int n = batchSize;
 
-			for (; ; ) {
+			for (;;) {
 
 				long r = rp.requested;
 				long e = 0L;
 
-				Object[] node = (Object[]) rp.node;
+				Object[] node = (Object[])rp.node;
 				if (node == null) {
 					node = head;
 				}
@@ -386,8 +428,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						}
-						else {
+						} else {
 							a.onComplete();
 						}
 						return;
@@ -398,11 +439,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 					}
 
 					if (tailIndex == n) {
-						node = (Object[]) node[tailIndex];
+						node = (Object[])node[tailIndex];
 						tailIndex = 0;
 					}
 
-					@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
+					@SuppressWarnings("unchecked")
+					T v = (T)node[tailIndex];
 
 					a.onNext(v);
 
@@ -425,8 +467,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						}
-						else {
+						} else {
 							a.onComplete();
 						}
 						return;
@@ -455,7 +496,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			final Subscriber<? super T> a = rp.actual;
 
-			for (; ; ) {
+			for (;;) {
 
 				if (rp.cancelled) {
 					rp.node = null;
@@ -468,8 +509,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					}
-					else {
+					} else {
 						a.onComplete();
 					}
 					return;
@@ -490,8 +530,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			if (rp.fusionMode == NONE) {
 				drainNormal(rp);
-			}
-			else {
+			} else {
 				drainFused(rp);
 			}
 		}
@@ -507,17 +546,18 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			if (index == size) {
 				return null;
 			}
-			Object[] node = (Object[]) rp.node;
+			Object[] node = (Object[])rp.node;
 			if (node == null) {
 				node = head;
 				rp.node = node;
 			}
 			int tailIndex = rp.tailIndex;
 			if (tailIndex == batchSize) {
-				node = (Object[]) node[tailIndex];
+				node = (Object[])node[tailIndex];
 				tailIndex = 0;
 			}
-			@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
+			@SuppressWarnings("unchecked")
+			T v = (T)node[tailIndex];
 			rp.index = index + 1;
 			rp.tailIndex = tailIndex + 1;
 			return v;
@@ -561,6 +601,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
+		public int capacity() {
+			return size;
+		}
+
+		@Override
 		public void onNext(T value) {
 			Node<T> n = new Node<>(value);
 			tail.set(n);
@@ -568,8 +613,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			int s = size;
 			if (s == limit) {
 				head = head.get();
-			}
-			else {
+			} else {
 				size = s + 1;
 			}
 		}
@@ -590,12 +634,13 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			int missed = 1;
 
-			for (; ; ) {
+			for (;;) {
 
 				long r = rp.requested;
 				long e = 0L;
 
-				@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rp.node;
+				@SuppressWarnings("unchecked")
+				Node<T> node = (Node<T>)rp.node;
 				if (node == null) {
 					node = head;
 				}
@@ -615,8 +660,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						}
-						else {
+						} else {
 							a.onComplete();
 						}
 						return;
@@ -646,8 +690,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						}
-						else {
+						} else {
 							a.onComplete();
 						}
 						return;
@@ -674,7 +717,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			final Subscriber<? super T> a = rp.actual;
 
-			for (; ; ) {
+			for (;;) {
 
 				if (rp.cancelled) {
 					rp.node = null;
@@ -687,8 +730,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					}
-					else {
+					} else {
 						a.onComplete();
 					}
 					return;
@@ -709,8 +751,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			if (rp.fusionMode == NONE) {
 				drainNormal(rp);
-			}
-			else {
+			} else {
 				drainFused(rp);
 			}
 		}
@@ -721,7 +762,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		static final class Node<T> extends AtomicReference<Node<T>> {
-
 			/** */
 			private static final long serialVersionUID = 3713592843205853725L;
 
@@ -734,7 +774,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public T poll(ReplaySubscription<T> rp) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rp.node;
+			@SuppressWarnings("unchecked")
+			Node<T> node = (Node<T>)rp.node;
 			if (node == null) {
 				node = head;
 				rp.node = node;
@@ -756,7 +797,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rp) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rp.node;
+			@SuppressWarnings("unchecked")
+			Node<T> node = (Node<T>)rp.node;
 			if (node == null) {
 				node = head;
 				rp.node = node;
@@ -766,7 +808,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public int size(ReplaySubscription<T> rp) {
-			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rp.node;
+			@SuppressWarnings("unchecked")
+			Node<T> node = (Node<T>)rp.node;
 			if (node == null) {
 				node = head;
 			}
@@ -782,8 +825,9 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	static final class ReplaySubscription<T> implements QueueSubscription<T> {
-
+	static final class ReplaySubscription<T> implements QueueSubscription<T>, Producer,
+	                                                    Cancellable, Receiver,
+	                                                    Requestable {
 		final Subscriber<? super T> actual;
 
 		final ReplayProcessor<T> parent;
@@ -810,11 +854,30 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		int fusionMode;
 
-		public ReplaySubscription(Subscriber<? super T> actual,
-				ReplayProcessor<T> parent) {
+		public ReplaySubscription(Subscriber<? super T> actual, ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.buffer = parent.buffer;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return parent;
 		}
 
 		@Override

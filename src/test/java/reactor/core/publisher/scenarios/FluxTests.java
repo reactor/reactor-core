@@ -737,14 +737,14 @@ public class FluxTests extends AbstractReactorTest {
 		 */
 		final double TOLERANCE = 0.9;
 
-		FluxProcessor<Integer, Integer> batchingStreamDef = EmitterProcessor.async(asyncGroup);
+		FluxProcessor<Integer, Integer> batchingStreamDef = EmitterProcessor.create();
 		batchingStreamDef.connect();
 
 		List<Integer> testDataset = createTestDataset(NUM_MESSAGES);
 
 		final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
 		Map<Integer, Integer> batchesDistribution = new ConcurrentHashMap<>();
-		batchingStreamDef
+		batchingStreamDef.publishOn(asyncGroup)
 		                 .partition(PARALLEL_STREAMS)
 		                 .subscribe(substream -> substream.hide().publishOn(asyncGroup)
 		                                                .buffer(BATCH_SIZE, Duration.ofMillis(TIMEOUT))
@@ -858,18 +858,16 @@ public class FluxTests extends AbstractReactorTest {
 			final String source = "ASYNC_TEST " + i;
 
 			Flux.just(source)
-			       .process(() -> FluxProcessor.blackbox(EmitterProcessor.<String>create(),
-					       operationStream -> operationStream.publishOn(asyncGroup)
-					                                         .delay(Duration.ofMillis(100))
-					                                         .map(s -> s + " MODIFIED")
-					                                         .map(s -> {
+			    .as(operationStream -> operationStream.publishOn(asyncGroup)
+			                                          .delay(Duration.ofMillis(100))
+			                                          .map(s -> s + " MODIFIED")
+			                                          .map(s -> {
 						                                         latch.countDown();
 						                                         return s;
-					                                         })))
-			       .autoConnect()
-			       .take(Duration.ofSeconds(2))
-			       .log("parallelStream")
-			       .subscribe(System.out::println);
+			                                          }))
+			    .take(Duration.ofSeconds(2))
+			    .log("parallelStream")
+			    .subscribe(System.out::println);
 		}
 
 		latch.await(15, TimeUnit.SECONDS);

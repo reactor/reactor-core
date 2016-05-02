@@ -21,7 +21,6 @@ import reactor.core.publisher.Computations
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
-import static reactor.core.publisher.EmitterProcessor.create
 import static reactor.core.publisher.Flux.*
 import static reactor.core.subscriber.Subscribers.unbounded
 
@@ -63,16 +62,16 @@ class ReactiveStateSpec extends Specification {
 
 	when: "processors"
 
-	def proc1 = create()
-	def proc2 = create()
+	def proc1 = EmitterProcessor.create()
+	def proc2 = EmitterProcessor.create()
 	def sub1 = unbounded()
 	def sub2 = unbounded()
 	def sub3 = unbounded()
-	def group = EmitterProcessor.async(Computations.single())
+	def _group = EmitterProcessor.create()
 	proc1.log(" test").subscribe(sub1)
-	group.subscribe(sub2)
+	_group.publishOn(Computations.single()).subscribe(sub2)
 	proc1.log(" test").subscribe(sub3)
-	proc1.log(" test").subscribe(group)
+	proc1.log(" test").subscribe(_group)
 	def zip = zip(pub3, proc2)
 
 	t = ReactiveStateUtils.scan(zip)
@@ -92,7 +91,7 @@ class ReactiveStateSpec extends Specification {
 	t.nodes
 
 	cleanup:
-	group?.onComplete()
+	_group?.onComplete()
   }
 
 }

@@ -121,7 +121,7 @@ Flux.yield(sink -> {
 
 ## Hot Publishing : Processors
 
-The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded and replayable buffers, aka RingBuffer.
+The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
 
 ### Pub-Sub : EmitterProcessor
 
@@ -136,14 +136,21 @@ emitter.subscribe(System.out::println);
 sink.submit(3); //output : 3
 sink.finish();
 ```
+
+### Pub-Sub Replay : ReplayProcessor
+
+[A caching broadcaster](http://projectreactor.io/core/docs/api/?reactor/core/publisher/ReplayProcessor.html) that will safely handle
+asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
+
 Replay capacity in action:
 ```java
-EmitterProcessor<Integer> replayer = EmitterProcessor.replay();
+ReplayProcessor<Integer> replayer = ReplayProcessor.create();
 SignalEmitter<Integer> sink = replayer.connectEmitter();
 sink.submit(1);
 sink.submit(2);
 replayer.subscribe(System.out::println); //output 1, 2
-sink.submit(3); //output : 3
+replayer.subscribe(System.out::println); //output 1, 2
+sink.submit(3); //output : ...3 ...3
 sink.finish();
 ```
 
