@@ -22,6 +22,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.*;
 import reactor.core.queue.QueueSupplier;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.*;
 import reactor.core.util.*;
 
@@ -60,7 +61,7 @@ public final class UnicastProcessor<T>
 	 * @return a serializing {@link FluxProcessor}
 	 */
 	public static <T> UnicastProcessor<T> create(Queue<T> queue) {
-		return create(queue, null);
+		return create(queue, () -> {});
 	}
 
 	/**

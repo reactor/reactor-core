@@ -30,7 +30,9 @@
  * {@link org.reactivestreams.Processor} extending {@link reactor.core.publisher.FluxProcessor} are available:
  * <ul>
  *         <li>A synchronous/non-opinionated pub-sub replaying capable event emitter :
- *         {@link reactor.core.publisher.EmitterProcessor} and {@link reactor.core.publisher.EmitterProcessor#replay}</li>
+ *         {@link reactor.core.publisher.EmitterProcessor},
+ *         {@link reactor.core.publisher.ReplayProcessor} and </li>
+ *         {@link reactor.core.publisher.UnicastProcessor}</li>
  *          </li>
  *         <li>A dedicated parallel pub-sub event buffering broadcaster :
  *         {@link reactor.core.publisher.TopicProcessor}</li>

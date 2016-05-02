@@ -1352,7 +1352,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Map this {@link Mono} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
-	 * {@link T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal.
 	 *
 	 * <p>
@@ -2572,7 +2572,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 	/**
 	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@link T} associated data for the eventual item from this {@link Mono}
+	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp1.png" alt="">

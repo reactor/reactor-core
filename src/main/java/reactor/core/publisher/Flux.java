@@ -2529,7 +2529,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Map this {@link Flux} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
-	 * {@link T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal OR between two next signals.
 	 *
 	 * <p>
@@ -4701,7 +4701,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@link T} associated data for each item from this {@link Flux}
+	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
