@@ -602,7 +602,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public int capacity() {
-			return size;
+			return limit;
 		}
 
 		@Override
