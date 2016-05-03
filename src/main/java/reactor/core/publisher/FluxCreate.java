@@ -39,7 +39,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
 		try {
-			SignalEmitter<T> session = new FirstRequestSignalEmitter<>(yield, subscriber);
+			SignalEmitter<T> session = new RequestSignalEmitter<>(yield, subscriber);
 			session.start();
 
 		}
@@ -48,7 +48,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 		}
 	}
 
-	static final class FirstRequestSignalEmitter<T> extends SignalEmitter<T> {
+	static final class RequestSignalEmitter<T> extends SignalEmitter<T> {
 
 		final Consumer<? super SignalEmitter<T>> yield;
 
@@ -56,10 +56,10 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 		private volatile int running;
 
 		@SuppressWarnings("rawtypes")
-        private final static AtomicIntegerFieldUpdater<FirstRequestSignalEmitter> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(FirstRequestSignalEmitter.class, "running");
+        private final static AtomicIntegerFieldUpdater<RequestSignalEmitter> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(RequestSignalEmitter.class, "running");
 
-		public FirstRequestSignalEmitter(Consumer<? super SignalEmitter<T>> yield, Subscriber<? super T> actual) {
+		public RequestSignalEmitter(Consumer<? super SignalEmitter<T>> yield, Subscriber<? super T> actual) {
 			super(actual, false);
 			this.yield = yield;
 		}
@@ -70,8 +70,17 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 			    return;
 			}
             super.request(n);
-			if (RUNNING.compareAndSet(this, 0, 1)) {
-				yield.accept(this);
+			if(RUNNING.getAndIncrement(this) == 0L){
+				int missed = 1;
+
+				for(;;) {
+					yield.accept(this);
+
+					missed = RUNNING.addAndGet(this, -missed);
+					if(missed == 0) {
+						break;
+					}
+				}
 			}
 		}
 	}

@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.TopicProcessor;
-import reactor.core.publisher.AbstractReactorTest;
 
 /**
  * https://github.com/reactor/reactor/issues/500
@@ -93,6 +93,9 @@ public class FizzBuzzTests extends AbstractReactorTest {
 			  while (s.requestedFromDownstream() != 0) {
 				  if(!s.isCancelled()) {
 					  s.onNext(System.currentTimeMillis());
+				  }
+				  else{
+					  break;
 				  }
 			  }
 		  }), (t1, t2) -> String.format("%s : %s", t1, t2));

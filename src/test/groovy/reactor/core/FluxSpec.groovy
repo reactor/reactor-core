@@ -1989,7 +1989,7 @@ class FluxSpec extends Specification {
 				aSubscriber.emit('Three')
 				aSubscriber.emit('Two')
 				aSubscriber.emit('One')
-				aSubscriber.failWith(new Exception())
+				aSubscriber.fail(new Exception())
 				aSubscriber.emit('Zero')
 			}
 
@@ -2067,7 +2067,7 @@ class FluxSpec extends Specification {
 			res = []
 			myFlux = Flux.create { aSubscriber ->
 				aSubscriber.emit('Three')
-				aSubscriber.failWith(new Exception())
+				aSubscriber.fail(new Exception())
 			}
 
 		and:

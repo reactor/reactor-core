@@ -51,67 +51,25 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 public class SignalEmitter<E>
-		implements Producer, Subscriber<E>, Subscription, Backpressurable, Introspectable, Cancellable, Requestable,
+		implements Producer, Subscription, Backpressurable, Introspectable, Cancellable, Requestable,
 		           Consumer<E>,
 		           Closeable {
 
 	/**
-	 * An acknowledgement signal returned by {@link #emit}.
-	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
-	 *
-	 */
-	public enum Emission {
-		FAILED, BACKPRESSURED, OK, CANCELLED;
-
-		public boolean isBackpressured(){
-			return this == BACKPRESSURED;
-		}
-		public boolean isOk(){
-			return this == OK;
-		}
-		public boolean isFailed(){
-			return this == FAILED;
-		}
-		public boolean isCancelled(){
-			return this == CANCELLED;
-		}
-	}
-
-	private static final Predicate NEVER = new Predicate(){
-		@Override
-		public boolean test(Object o) {
-			return false;
-		}
-	};
-
-	final Subscriber<? super E> actual;
-	final boolean               blockOnNext;
-
-	@SuppressWarnings("unused")
-	volatile     long                                  requested = 0L;
-	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<SignalEmitter> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(SignalEmitter.class, "requested");
-
-	Throwable uncaughtException;
-
-	volatile boolean cancelled;
-
-	/**
-	 *
-	 * Create a
-	 * {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
-	 *
-	 * The subscriber will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
-	 * this call.
+	 * Create a {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link
+	 * org.reactivestreams.Processor}.
+	 * <p>
+	 * . The {@link Subscriber#onNext(Object)} will be blocking if overrun (under capacity).
 	 *
 	 * @param subscriber the decorated {@link Subscriber}
 	 * @param <E> the reified {@link Subscriber} type
 	 *
-	 * @return a new pre-subscribed {@link SignalEmitter}
+	 * @return a new {@link SignalEmitter}
 	 */
-	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber) {
-		return create(subscriber, true);
+	public static <E> SignalEmitter<E> blocking(Subscriber<? super E> subscriber) {
+		SignalEmitter<E> sub = new SignalEmitter<>(subscriber, true);
+		sub.start();
+		return sub;
 	}
 
 	/**
@@ -139,40 +97,54 @@ public class SignalEmitter<E>
 	}
 
 	/**
-	 * Create a {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link
-	 * org.reactivestreams.Processor}.
-	 * <p>
-	 * . The {@link Subscriber#onNext(Object)} will be blocking if overrun (under capacity).
+	 *
+	 * Create a
+	 * {@link SignalEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
+	 *
+	 * The subscriber will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
+	 * this call.
 	 *
 	 * @param subscriber the decorated {@link Subscriber}
 	 * @param <E> the reified {@link Subscriber} type
 	 *
-	 * @return a new {@link SignalEmitter}
+	 * @return a new pre-subscribed {@link SignalEmitter}
 	 */
-	public static <E> SignalEmitter<E> blocking(Subscriber<? super E> subscriber) {
-		SignalEmitter<E> sub = new SignalEmitter<>(subscriber, true);
-		sub.start();
-		return sub;
+	public static <E> SignalEmitter<E> create(Subscriber<? super E> subscriber) {
+		return create(subscriber, true);
 	}
+	final Subscriber<? super E> actual;
+	final boolean               blockOnNext;
+	@SuppressWarnings("unused")
+	volatile     long                                  requested = 0L;
+	Throwable uncaughtException;
+
+	volatile boolean cancelled;
 
 	protected SignalEmitter(Subscriber<? super E> actual, boolean blockOnNext) {
 		this.actual = actual;
 		this.blockOnNext = blockOnNext;
 	}
 
-	/**
-	 * Subscribe the decorated subscriber
-	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link SignalEmitter} might be
-	 * cancelled as per Reactive Streams Specification enforce.
-	 */
-	public void start() {
-		try {
-			actual.onSubscribe(this);
+	@Override
+	public void accept(E e) {
+		while (emit(e) == Emission.BACKPRESSURED) {
+			LockSupport.parkNanos(1L);
 		}
-		catch (Throwable t) {
-			uncaughtException = t;
-			EmptySubscription.error(actual, t);
-		}
+	}
+
+	@Override
+	public void cancel() {
+		cancelled = true;
+	}
+
+	@Override
+	public void close() throws IOException {
+		finish();
+	}
+
+	@Override
+	public Subscriber<? super E> downstream() {
+		return actual;
 	}
 
 	/**
@@ -217,14 +189,14 @@ public class SignalEmitter<E>
 
 	/**
 	 *
-	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link SignalEmitter#failWith(Throwable)}
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link SignalEmitter#fail(Throwable)}
 	 * might fail itself with an
 	 * unchecked exception if an error has already been recorded or it
 	 * has previously been terminated via {@link #cancel()}, {@link #finish()} or {@link #onComplete()}.
 	 *
 	 * @param error the exception to signal
 	 */
-	public void failWith(Throwable error) {
+	public void fail(Throwable error) {
 		if (uncaughtException == null) {
 			uncaughtException = error;
 			if(!cancelled) {
@@ -274,6 +246,135 @@ public class SignalEmitter<E>
 			uncaughtException = t;
 			return Emission.FAILED;
 		}
+	}
+
+	@Override
+	public long getCapacity() {
+		return Backpressurable.class.isAssignableFrom(actual.getClass()) ? ((Backpressurable) actual).getCapacity() :
+				Long.MAX_VALUE;
+	}
+
+	@Override
+	public Throwable getError() {
+		return uncaughtException;
+	}
+
+	@Override
+	public long getPending() {
+		return -1L;
+	}
+
+	/**
+	 * @return true if the
+	 * {@link SignalEmitter} has received one of {@link Subscriber#onComplete()} or {@link Subscription#cancel()}
+	 */
+	public boolean hasEnded() {
+		return cancelled;
+	}
+
+	/**
+	 * @return true if the {@link SignalEmitter} has observed any error
+	 */
+	public boolean hasFailed() {
+		return uncaughtException != null;
+	}
+
+	/**
+	 * @return true if the decorated {@link Subscriber} is actively demanding
+	 */
+	public boolean hasRequested() {
+		return !cancelled && requested != 0L;
+	}
+
+	@Override
+	public boolean isCancelled() {
+		return cancelled;
+	}
+
+	/**
+	 * @see Subscriber#onComplete()
+	 */
+	public void onComplete() {
+		finish();
+	}
+
+	/**
+	 * @see Subscriber#onError(Throwable)
+	 */
+	public void onError(Throwable t) {
+		fail(t);
+	}
+
+	/**
+	 * @see Subscriber#onNext(Object)
+	 */
+	public void onNext(E e) {
+		Emission emission = emit(e);
+		if(emission.isCancelled()){
+			Exceptions.onNextDropped(e);
+		}
+		if(emission.isOk()){
+			return;
+		}
+		if(emission.isBackpressured()){
+			if(blockOnNext){
+				while ((emission = emit(e)) == Emission.BACKPRESSURED) {
+					LockSupport.parkNanos(1L);
+				}
+				if(emission.isCancelled()){
+					Exceptions.onNextDropped(e);
+				}
+				if(emission.isOk()){
+					return;
+				}
+				else {
+					throw Exceptions.failWithOverflow();
+				}
+			}
+			else {
+				throw Exceptions.failWithOverflow();
+			}
+		}
+		if(emission.isFailed()){
+			if(uncaughtException != null) {
+				actual.onError(uncaughtException);
+				return;
+			}
+			throw new IllegalStateException("Cached error cannot be null");
+		}
+	}
+
+	@Override
+	public void request(long n) {
+		if (BackpressureUtils.checkRequest(n, actual)) {
+			BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+		}
+	}
+
+	@Override
+	public long requestedFromDownstream() {
+		return requested;
+	}
+
+	/**
+	 * Subscribe the decorated subscriber
+	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link SignalEmitter} might be
+	 * cancelled as per Reactive Streams Specification enforce.
+	 */
+	public void start() {
+		try {
+			actual.onSubscribe(this);
+		}
+		catch (Throwable t) {
+			uncaughtException = t;
+			EmptySubscription.error(actual, t);
+		}
+	}
+	/**
+	 * Marks the emitter as terminated without completing downstream
+	 */
+	public void stop() {
+		cancelled = true;
 	}
 
 	/**
@@ -367,135 +468,6 @@ public class SignalEmitter<E>
 		return res == Emission.OK ? unit.convert(System.currentTimeMillis() - start, TimeUnit.MILLISECONDS) : -1L;
 	}
 
-	/**
-	 * @return true if the decorated {@link Subscriber} is actively demanding
-	 */
-	public boolean hasRequested() {
-		return !cancelled && requested != 0L;
-	}
-
-	@Override
-	public long requestedFromDownstream() {
-		return requested;
-	}
-
-	/**
-	 * @return true if the {@link SignalEmitter} has observed any error
-	 */
-	public boolean hasFailed() {
-		return uncaughtException != null;
-	}
-
-	/**
-	 * @return true if the
-	 * {@link SignalEmitter} has received one of {@link Subscriber#onComplete()} or {@link Subscription#cancel()}
-	 */
-	public boolean hasEnded() {
-		return cancelled;
-	}
-
-	@Override
-	public Throwable getError() {
-		return uncaughtException;
-	}
-
-	@Override
-	public void request(long n) {
-		if (BackpressureUtils.checkRequest(n, actual)) {
-			BackpressureUtils.getAndAddCap(REQUESTED, this, n);
-		}
-	}
-
-	@Override
-	public void cancel() {
-		cancelled = true;
-	}
-
-	@Override
-	public void accept(E e) {
-		while (emit(e) == Emission.BACKPRESSURED) {
-			LockSupport.parkNanos(1L);
-		}
-	}
-
-	@Override
-	public long getCapacity() {
-		return Backpressurable.class.isAssignableFrom(actual.getClass()) ? ((Backpressurable) actual).getCapacity() :
-				Long.MAX_VALUE;
-	}
-
-	@Override
-	public Subscriber<? super E> downstream() {
-		return actual;
-	}
-
-	@Override
-	public void close() throws IOException {
-		finish();
-	}
-
-	@Override
-	public void onSubscribe(Subscription s) {
-		s.request(Long.MAX_VALUE);
-	}
-
-	@Override
-	public void onNext(E e) {
-		Emission emission = emit(e);
-		if(emission.isCancelled()){
-			Exceptions.onNextDropped(e);
-		}
-		if(emission.isOk()){
-			return;
-		}
-		if(emission.isBackpressured()){
-			if(blockOnNext){
-				while ((emission = emit(e)) == Emission.BACKPRESSURED) {
-					LockSupport.parkNanos(1L);
-				}
-				if(emission.isCancelled()){
-					Exceptions.onNextDropped(e);
-				}
-				if(emission.isOk()){
-					return;
-				}
-				else {
-					throw Exceptions.failWithOverflow();
-				}
-			}
-			else {
-				throw Exceptions.failWithOverflow();
-			}
-		}
-		if(emission.isFailed()){
-			if(uncaughtException != null) {
-				actual.onError(uncaughtException);
-				return;
-			}
-			throw new IllegalStateException("Cached error cannot be null");
-		}
-	}
-
-	@Override
-	public void onError(Throwable t) {
-		actual.onError(t);
-	}
-
-	@Override
-	public void onComplete() {
-		actual.onComplete();
-	}
-
-	@Override
-	public boolean isCancelled() {
-		return cancelled;
-	}
-
-	@Override
-	public long getPending() {
-		return -1L;
-	}
-
 	@Override
 	public String toString() {
 		return "SignalEmitter{" +
@@ -504,4 +476,34 @@ public class SignalEmitter<E>
 				", cancelled=" + cancelled +
 				'}';
 	}
+
+//
+	/**
+	 * An acknowledgement signal returned by {@link #emit}.
+	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
+	 *
+	 */
+	public enum Emission {
+		FAILED, BACKPRESSURED, OK, CANCELLED;
+
+		public boolean isBackpressured(){
+			return this == BACKPRESSURED;
+		}
+
+		public boolean isCancelled(){
+			return this == CANCELLED;
+		}
+
+		public boolean isFailed(){
+			return this == FAILED;
+		}
+
+		public boolean isOk(){
+			return this == OK;
+		}
+	}
+	static final Predicate NEVER = o -> false;
+	@SuppressWarnings("rawtypes")
+	static final AtomicLongFieldUpdater<SignalEmitter> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(SignalEmitter.class, "requested");
 }
