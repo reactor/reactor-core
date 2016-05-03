@@ -74,6 +74,9 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 				int missed = 1;
 
 				for(;;) {
+					if(isCancelled()){
+						return;
+					}
 					yield.accept(this);
 
 					missed = RUNNING.addAndGet(this, -missed);
