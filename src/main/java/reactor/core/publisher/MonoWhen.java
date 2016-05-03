@@ -33,7 +33,7 @@ import reactor.core.util.*;
  *
  * @param <T> the source value types
  */
-final class MonoWhen<T> extends Mono<T[]> implements Fuseable {
+final class MonoWhen<T> extends Mono<T[]>  {
 
     final boolean delayError;
     
