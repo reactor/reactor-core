@@ -17,23 +17,60 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.scheduler.*;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
-import reactor.core.state.*;
-import reactor.core.subscriber.*;
-import reactor.core.tuple.*;
-import reactor.core.util.*;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Introspectable;
+import reactor.core.subscriber.LambdaSubscriber;
+import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.SubscriberWithContext;
+import reactor.core.subscriber.Subscribers;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
+import reactor.core.tuple.Tuple3;
+import reactor.core.tuple.Tuple4;
+import reactor.core.tuple.Tuple5;
+import reactor.core.tuple.Tuple6;
+import reactor.core.util.Exceptions;
+import reactor.core.util.Logger;
+import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -1004,8 +1041,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> FluxProcessor<Publisher<? extends T>, T> switchOnNext() {
-		Processor<Publisher<? extends T>, Publisher<? extends T>> emitter =
-				ReplayProcessor.create();
+		UnicastProcessor<Publisher<? extends T>> emitter = UnicastProcessor.create();
 		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.wrap(emitter, switchOnNext(emitter));
 		return p;
 	}
@@ -1095,6 +1131,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
 		return new FluxUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
 	}
+
 	/**
 	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
 	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
@@ -1110,6 +1147,49 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> yield(Consumer<? super SignalEmitter<T>> sessionConsumer) {
 		return new FluxYieldingEmitter<>(sessionConsumer);
 	}
+
+	/**
+	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
+	 * signals.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
+	 *
+	 * @param onStart callback invoked on each {@link Subscriber} start
+	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
+	 * @param <T> The type of the data sequence
+	 * @param <D> The type of the resource generated on start
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	public static <T, D> Flux<T> yield(Callable<? extends D> onStart, Consumer<? super
+			SignalEmitter<T>> sessionConsumer) {
+		return yield(onStart, sessionConsumer, r -> {});
+	}
+
+	/**
+	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
+	 * signals.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
+	 * <p>
+	 * @param onStart callback invoked on each {@link Subscriber} start
+	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
+	 * @param onEnd callback invoked on each {@link Subscriber} termination
+	 * (cancel/complete/error
+	 * @param <T> The type of the data sequence
+	 * @param <D> The type of the resource generated on start
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	public static <T, D> Flux<T> yield(Callable<? extends D> onStart, Consumer<? super
+			SignalEmitter<T>> sessionConsumer, Consumer<? super D> onTerminated) {
+		return using(onStart, r -> new FluxYieldingEmitter<>(sessionConsumer),
+				onTerminated);
+	}
+
+
 
 	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations

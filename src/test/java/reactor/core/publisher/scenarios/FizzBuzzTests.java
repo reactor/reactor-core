@@ -44,10 +44,10 @@ public class FizzBuzzTests extends AbstractReactorTest {
 		final Timer timer = new Timer();
 		AtomicLong globalCounter = new AtomicLong();
 
-		Mono<List<Object>> c = Flux.generate((demand, subscriber) -> {
-			System.out.println("demand is " + demand);
+		Mono<List<Object>> c = Flux.yield(subscriber -> {
+			System.out.println("demand is " + subscriber.requestedFromDownstream());
 			if (!subscriber.isCancelled()) {
-				for (int i = 0; i < demand; i++) {
+				while ( subscriber.requestedFromDownstream() != 0) {
 					long curr = globalCounter.incrementAndGet();
 					if (curr % 5 == 0 && curr % 3 == 0) subscriber.onNext("FizBuz "+curr+" \r\n");
 					else if (curr % 3 == 0) subscriber.onNext("Fiz "+curr);
@@ -89,8 +89,8 @@ public class FizzBuzzTests extends AbstractReactorTest {
 
 
 		Flux<String> stream2 = ring
-				.zipWith(Flux.generate((d, s) -> {
-			  for (int i = 0; i < d; i++) {
+				.zipWith(Flux.yield(s -> {
+			  while (s.requestedFromDownstream() != 0) {
 				  if(!s.isCancelled()) {
 					  s.onNext(System.currentTimeMillis());
 				  }

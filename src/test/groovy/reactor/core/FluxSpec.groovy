@@ -1595,14 +1595,14 @@ class FluxSpec extends Specification {
 	def 'Creating Stream from publisher factory'() {
 		given:
 			'a source flux with a given publisher'
-			def s = Flux.generate(
-					{ long n, SubscriberWithContext<String, Void> sub ->
+			def s = Flux.yield(
+					{ println Thread.currentThread().name + ' start' },
+					{  sub ->
 						(1..3).each {
 							sub.onNext("test$it")
 						}
 						sub.onComplete()
 					},
-					{ println Thread.currentThread().name + ' start' },
 					{ println Thread.currentThread().name + ' end' }
 			)
 					.log()
