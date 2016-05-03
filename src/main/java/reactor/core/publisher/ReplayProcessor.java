@@ -261,6 +261,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		} else {
 			if(!BackpressureUtils.validate(subscription, s)) {
 				s.cancel();
+				return;
 			}
 			subscription = s;
 			s.request(Long.MAX_VALUE);
