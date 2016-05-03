@@ -19,6 +19,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.util.BackpressureUtils;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -41,9 +43,11 @@ final class MonoIgnoreElements<T> extends MonoSource<T, T> {
 		source.subscribe(new IgnoreElementsSubscriber<>(s));
 	}
 
-	static final class IgnoreElementsSubscriber<T> implements Subscriber<T>, Producer {
-
+	static final class IgnoreElementsSubscriber<T> implements Subscriber<T>, Producer, Subscription,
+	                                                          Receiver {
 		final Subscriber<? super T> actual;
+
+		Subscription s;
 
 		public IgnoreElementsSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
@@ -51,8 +55,13 @@ final class MonoIgnoreElements<T> extends MonoSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			actual.onSubscribe(s);
-			s.request(Long.MAX_VALUE);
+			if (BackpressureUtils.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
+
+				s.request(Long.MAX_VALUE);
+			}
 		}
 
 		@Override
@@ -73,6 +82,21 @@ final class MonoIgnoreElements<T> extends MonoSource<T, T> {
 		@Override
 		public Object downstream() {
 			return actual;
+		}
+
+		@Override
+		public void request(long n) {
+			// requests Long.MAX_VALUE anyway
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
 		}
 	}
 }

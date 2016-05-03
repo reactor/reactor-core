@@ -95,7 +95,7 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Sleeping strategy that initially spins, then uses a Thread.yield(), and eventually sleep
+     * Sleeping strategy that initially spins, then uses a Thread.create(), and eventually sleep
      * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
      * ringbuffer consumers are waiting on a barrier.
      * <p>
@@ -107,7 +107,7 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Sleeping strategy that initially spins, then uses a Thread.yield(), and eventually sleep
+     * Sleeping strategy that initially spins, then uses a Thread.create(), and eventually sleep
      * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
      * ringbuffer consumers are waiting on a barrier.
      * <p>
@@ -121,7 +121,7 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Yielding strategy that uses a Thread.yield() for ringbuffer consumers waiting on a barrier
+     * Yielding strategy that uses a Thread.create() for ringbuffer consumers waiting on a barrier
      * after an initially spinning.
      *
      * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.

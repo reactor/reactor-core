@@ -86,7 +86,8 @@ You can create low-latency [event loop resources](http://projectreactor.io/core/
 Scheduler async = Computations.parallel();
 Scheduler io = Computations.concurrent();
 
-Flux.create( sub -> sub.onNext(System.currentTimeMillis()) )
+Mono.fromCallable( () -> System.currentTimeMillis() )
+	.repeat()
     .publishOn(async)
     .log("foo.bar")
     .flatMap(time ->
@@ -103,10 +104,10 @@ Note that `ExecutorService` is also a supported argument for `publishOn` and `su
 too much a cost for some CPU, `ExecutorService` based scheduling may have a more relaxed use.
 ```
 ## Hot Publishing : SignalEmitter
-To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.connectEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.yield(emitter -> {}) :
+To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.connectEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.create(emitter -> {}) :
 
 ```java
-Flux.yield(sink -> {
+Flux.create(sink -> {
         while(sink.hasRequested()){
             Emission status = sink.emit("Non blocking and returning emission status");
             long latency = sink.submit("Blocking until emitted and returning latency");

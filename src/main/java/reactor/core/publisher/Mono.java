@@ -47,7 +47,7 @@ import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.*;
+import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.tuple.Tuple3;
@@ -1992,11 +1992,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Flux<Long> iterations;
 
 			if(maxRepeat == Integer.MAX_VALUE) {
-                AtomicLong counter = new AtomicLong();
-				iterations = Flux
-					.generate((range, subscriber) -> LongStream
-						.range(0, range)
-						.forEach(l -> subscriber.onNext(counter.getAndIncrement())));
+				iterations = Flux.fromStream(LongStream.range(0, Long.MAX_VALUE)
+				                                       .mapToObj(Long::new));
 			} else {
 				iterations = Flux
 					.range(0, maxRepeat)
@@ -2006,14 +2003,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 			AtomicBoolean nonEmpty = new AtomicBoolean();
 
-			return Flux
-				.from(this
-					.doOnSuccess(e -> nonEmpty.lazySet(e != null)))
-				.repeatWhen(o -> repeatFactory
-					.apply(o
+			return this.doOnSuccess(e -> nonEmpty.lazySet(e != null))
+			           .flux()
+			           .repeatWhen(o -> repeatFactory.apply(o
 						.takeWhile(e -> !nonEmpty.get())
 						.zipWith(iterations, 1, (c, i) -> i)))
-				.next();
+			           .next();
 		});
 	}
 

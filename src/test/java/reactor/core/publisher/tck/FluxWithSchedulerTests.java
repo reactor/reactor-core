@@ -55,15 +55,11 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
 		EmitterProcessor<Integer> p = EmitterProcessor.create();
 
-		return new Processor<Integer, Integer>() {
-			@Override
-			public void subscribe(Subscriber<? super Integer> s) {
-				Objects.requireNonNull(s);
+		return FluxProcessor.wrap(p,
 				p.publishOn(sharedGroup)
-				 .log("grouped")
 				 .partition(2)
 				 .flatMap(stream -> stream.publishOn(asyncGroup)
-				                          .doOnNext(d -> monitorThreadUse(d))
+				                          .doOnNext(this::monitorThreadUse)
 				                          .scan((prev, next) -> next)
 				                          .map(integer -> -integer)
 				                          .filter(integer -> integer <= 0)
@@ -74,30 +70,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 				 )
 				 .publishOn(sharedGroup)
-				 .doOnError(Throwable.class, Throwable::printStackTrace)
-				 .subscribe(s);
-			}
-
-			@Override
-			public void onSubscribe(Subscription s) {
-				p.onSubscribe(s);
-			}
-
-			@Override
-			public void onNext(Integer integer) {
-				p.onNext(integer);
-			}
-
-			@Override
-			public void onError(Throwable t) {
-				p.onError(t);
-			}
-
-			@Override
-			public void onComplete() {
-				p.onComplete();
-			}
-		};
+				 .doOnError(Throwable.class, Throwable::printStackTrace));
 	}
 
 	@Override

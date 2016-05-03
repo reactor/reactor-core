@@ -39,7 +39,7 @@ public class FluxSubscribeOnTest {
 	public void classic() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		FluxArrayTest.range(1, 1000).subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.range(1, 1000).subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -52,7 +52,7 @@ public class FluxSubscribeOnTest {
 	public void classicBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		FluxArrayTest.range(1, 1000).log().subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.range(1, 1000).log().subscribeOn(Computations.concurrent()).subscribe(ts);
 		
 		Thread.sleep(100);
 		

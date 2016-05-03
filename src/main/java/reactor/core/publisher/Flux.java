@@ -59,7 +59,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
-import reactor.core.subscriber.SubscriberWithContext;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
@@ -464,65 +463,60 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
-	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
+	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
+	 * signals.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
 	 * <p>
-	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
+	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
 	 * @param <T> The type of the data sequence
 	 *
-	 * @return a new {@link Flux}
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T> Flux<T> create(Consumer<SubscriberWithContext<T, Void>> requestConsumer) {
-		return create(requestConsumer, null, null);
+	public static <T> Flux<T> create(Consumer<? super SignalEmitter<T>> sessionConsumer) {
+		return new FluxCreate<>(sessionConsumer);
 	}
 
 	/**
-	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
-	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
-	 * The argument {@code contextFactory} is executed once by new subscriber to generate a context shared by every
-	 * request calls.
+	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
+	 * signals.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
-	 * <p>
-	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
-	 * @param contextFactory A {@link Function} called for every new subscriber returning an immutable context (IO
-	 * connection...)
-	 * @param <T> The type of the data sequence
-	 * @param <C> The type of contextual information to be read by the requestConsumer
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
 	 *
-	 * @return a new {@link Flux}
+	 * @param onStart callback invoked on each {@link Subscriber} start
+	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
+	 * @param <T> The type of the data sequence
+	 * @param <D> The type of the resource generated on start
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
-			Function<Subscriber<? super T>, C> contextFactory) {
-		return create(requestConsumer, contextFactory, null);
+	public static <T, D> Flux<T> create(Callable<? extends D> onStart, Consumer<? super
+			SignalEmitter<T>> sessionConsumer) {
+		return create(onStart, sessionConsumer, r -> {});
 	}
 
 	/**
-	 * Create a {@link Flux} reacting on each available {@link Subscriber} read derived with the passed {@link
-	 * Consumer}. If a previous request is still running, avoid recursion and extend the previous request iterations.
-	 * The argument {@code contextFactory} is executed once by new subscriber to generate a context shared by every
-	 * request calls. The argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel,
-	 * onComplete, onError).
+	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
+	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
+	 * signals.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generateforeach.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
 	 * <p>
-	 * @param requestConsumer A {@link Consumer} invoked when available read with the target subscriber
-	 * @param contextFactory A {@link Function} called once for every new subscriber returning an immutable context (IO
-	 * connection...)
-	 * @param shutdownConsumer A {@link Consumer} called once everytime a subscriber terminates: cancel, onComplete(),
-	 * onError()
+	 * @param onStart callback invoked on each {@link Subscriber} start
+	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
+	 * @param onTerminated callback invoked on each {@link Subscriber} termination
+	 * (cancel/complete/error
 	 * @param <T> The type of the data sequence
-	 * @param <C> The type of contextual information to be read by the requestConsumer
+	 * @param <D> The type of the resource generated on start
 	 *
-	 * @return a new {@link Flux}
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, C> Flux<T> create(Consumer<SubscriberWithContext<T, C>> requestConsumer,
-			Function<Subscriber<? super T>, C> contextFactory,
-			Consumer<C> shutdownConsumer) {
-		Objects.requireNonNull(requestConsumer, "A data producer must be provided");
-		return new FluxGenerate.FluxForEach<>(requestConsumer, contextFactory, shutdownConsumer);
+	public static <T, D> Flux<T> create(Callable<? extends D> onStart, Consumer<? super
+			SignalEmitter<T>> sessionConsumer, Consumer<? super D> onTerminated) {
+		return using(onStart, r -> new FluxCreate<>(sessionConsumer),
+				onTerminated);
 	}
 	
 	/**
@@ -664,48 +658,54 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}. The argument {@code
-	 * contextFactory} is executed once by new subscriber to generate a context shared by every request calls. The
-	 * argument {@code shutdownConsumer} is executed once by subscriber termination event (cancel, onComplete,
-	 * onError).
+	 * Generate signals one-by-one via a function callback.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
 	 * <p>
-	 * @param requestConsumer A {@link BiConsumer} with left argument request and right argument target subscriber
-	 * @param contextFactory A {@link Function} called once for every new subscriber returning an immutable context (IO
-	 * connection...)
-	 * @param shutdownConsumer A {@link Consumer} called once everytime a subscriber terminates: cancel, onComplete(),
-	 * onError()
-	 * @param <T> The type of the data sequence
-	 * @param <C> The type of contextual information to be read by the requestConsumer
+	 *
+	 * @param <T> the value type emitted
+	 * @param <S> the custom state per subscriber
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, C> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
-			Function<Subscriber<? super T>, C> contextFactory,
-			Consumer<C> shutdownConsumer) {
-
-		return new FluxGenerate<>(new FluxGenerate.RecursiveConsumer<>(requestConsumer),
-				contextFactory,
-				shutdownConsumer);
+	public static <T, S> Flux<T> generate(BiFunction<S, GenerateOutput<T>, S> generator) {
+		return new FluxGenerate<>(generator);
 	}
 
 	/**
-	 * Create a {@link Flux} reacting on requests with the passed {@link BiConsumer}
+	 * Generate signals one-by-one via a function callback.
+	 * The {@code stateSupplier} may return {@code null}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
+	 * <p>
 	 *
-	 * @param requestConsumer A {@link BiConsumer} with left argument request and right argument target subscriber
-	 * @param <T>             The type of the data sequence
+	 * @param <T> the value type emitted
+	 * @param <S> the custom state per subscriber
+	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
-	 *
 	 */
-	public static <T> Flux<T> generate(BiConsumer<Long, SubscriberWithContext<T, Void>> requestConsumer) {
-		if (requestConsumer == null) throw new IllegalArgumentException("Supplier must be provided");
-		return generate(requestConsumer, null, null);
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator) {
+		return new FluxGenerate<T, S>(stateSupplier, generator);
 	}
 
+	/**
+	 * Generate signals one-by-one via a function callback.
+	 * The {@code stateSupplier} may return {@code null} but your {@code stateConsumer} should be prepared to
+	 * handle it.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
+	 * <p>
+	 *
+	 * @param <T> the value type emitted
+	 * @param <S> the custom state per subscriber
+	 *
+	 * @return a Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator, Consumer<? super S> stateConsumer) {
+		return new FluxGenerate<>(stateSupplier, generator, stateConsumer);
+	}
 
 	/**
 	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
@@ -1131,65 +1131,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
 		return new FluxUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
 	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 * <p>
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param <T> The type of the data sequence
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T> Flux<T> yield(Consumer<? super SignalEmitter<T>> sessionConsumer) {
-		return new FluxYieldingEmitter<>(sessionConsumer);
-	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 *
-	 * @param onStart callback invoked on each {@link Subscriber} start
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param <T> The type of the data sequence
-	 * @param <D> The type of the resource generated on start
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T, D> Flux<T> yield(Callable<? extends D> onStart, Consumer<? super
-			SignalEmitter<T>> sessionConsumer) {
-		return yield(onStart, sessionConsumer, r -> {});
-	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 * <p>
-	 * @param onStart callback invoked on each {@link Subscriber} start
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param onEnd callback invoked on each {@link Subscriber} termination
-	 * (cancel/complete/error
-	 * @param <T> The type of the data sequence
-	 * @param <D> The type of the resource generated on start
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T, D> Flux<T> yield(Callable<? extends D> onStart, Consumer<? super
-			SignalEmitter<T>> sessionConsumer, Consumer<? super D> onTerminated) {
-		return using(onStart, r -> new FluxYieldingEmitter<>(sessionConsumer),
-				onTerminated);
-	}
-
-
 
 	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
@@ -4497,19 +4438,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		else {
 			return take(0);
 		}
-	}
-
-	/**
-	 * Emit the last value this {@link Flux} emitted before its completion.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takelast.png" alt="">
-	 *
-	 * @return a terminating {@link Flux} sequence of 1
-	 *
-	 */
-	public final Flux<T> takeLast() {
-		return takeLast(1);
 	}
 
 	/**

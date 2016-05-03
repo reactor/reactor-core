@@ -16,8 +16,6 @@
 
 package reactor.core.publisher.tck;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -41,9 +39,7 @@ public class FluxVerification extends PublisherVerification<Long> {
 
 	@Override
 	public Publisher<Long> createPublisher(long elements) {
-		return Flux.<Long, AtomicLong>create(s -> {
-			long cursor = s.context()
-			               .getAndIncrement();
+		return Flux.<Long, Long>generate(() -> 0L, (cursor, s) -> {
 			if(cursor < elements && cursor < elements) {
 				s.onNext(cursor);
 			}
@@ -51,7 +47,8 @@ public class FluxVerification extends PublisherVerification<Long> {
 				s.onComplete();
 			}
 
-		}, s -> new AtomicLong(0L), null)
+			return cursor + 1;
+		})
 
 				.map(data -> data * 10)
 				.map( data -> data / 10)

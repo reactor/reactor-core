@@ -16,29 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
 
 public class FluxArrayTest {
-
-	static Flux<Integer> range(int start, int count) {
-		return Flux.create(s -> {
-			int c = s.context()
-			          .getAndIncrement();
-
-			if (c == start + count) {
-				s.onComplete();
-			}
-			else {
-				s.onNext(c);
-				if(c + 1 == start + count){
-					s.onComplete();
-				}
-			}
-		}, s -> new AtomicInteger(start));
-	}
 
 	@Test(expected = NullPointerException.class)
 	public void arrayNull() {

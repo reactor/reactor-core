@@ -28,11 +28,11 @@ import reactor.core.util.EmptySubscription;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class FluxYieldingEmitter<T> extends Flux<T> implements Introspectable {
+final class FluxCreate<T> extends Flux<T> implements Introspectable {
 
 	final Consumer<? super SignalEmitter<T>> onSubscribe;
 
-	public FluxYieldingEmitter(Consumer<? super SignalEmitter<T>> onSubscribe) {
+	public FluxCreate(Consumer<? super SignalEmitter<T>> onSubscribe) {
 		this.onSubscribe = onSubscribe;
 	}
 

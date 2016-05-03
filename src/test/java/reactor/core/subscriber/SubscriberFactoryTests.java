@@ -21,7 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.tck.SubscriberWhiteboxVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * @author Stephane Maldini
@@ -79,9 +79,9 @@ public class SubscriberFactoryTests extends SubscriberWhiteboxVerification<Long>
 	@org.junit.Test
 	public void someTest() {
 
-		Flux.create(sub ->
-			sub.onNext(random.nextLong())
-		).subscribe(Subscribers.unbounded(
+		Mono.fromCallable(random::nextLong)
+		    .repeat()
+		    .subscribe(Subscribers.unbounded(
 		  (data, sub) -> {
 			  System.out.println(data);
 			  sub.cancel();

@@ -13,305 +13,349 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.*;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.subscriber.SubscriberWithContext;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveStateUtils;
+
+import reactor.core.flow.*;
+import reactor.core.util.*;
+import reactor.core.flow.Fuseable.*;
 
 /**
- * A Reactive Streams {@link Publisher} factory which callbacks on start, request and shutdown <p>
- * The Publisher will directly forward all the signals passed to the subscribers and complete when onComplete is called.
- * <p> Create such publisher with the provided factory, E.g.:
- * <pre>
- * {@code
- * PublisherFactory.generate((n, sub) -> {
- *  for(int i = 0; i < n; i++){
- *    sub.onNext(i);
- *  }
- * }
- * }
- * </pre>
+ * Generate signals one-by-one via a function callback.
+ * <p>
+ * <p>
+ * The {@code stateSupplier} may return {@code null} but your {@code stateConsumer} should be prepared to
+ * handle it.
  *
- * @author Stephane Maldini
- * @since 2.0.2, 2.5
+ * @param <T> the value type emitted
+ * @param <S> the custom state per subscriber
  */
-class FluxGenerate<T, C> extends Flux<T> implements Introspectable {
 
-	final           Function<Subscriber<? super T>, C>            contextFactory;
-	protected final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
-	protected final Consumer<C>                                   shutdownConsumer;
+/**
+ * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @since 2.5
+ */
+final class FluxGenerate<T, S> 
+extends Flux<T> {
 
-	protected FluxGenerate(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
-			Function<Subscriber<? super T>, C> contextFactory,
-			Consumer<C> shutdownConsumer) {
-		this.requestConsumer = requestConsumer;
-		this.contextFactory = contextFactory;
-		this.shutdownConsumer = shutdownConsumer;
+	final Callable<S> stateSupplier;
+
+	final BiFunction<S, GenerateOutput<T>, S> generator;
+
+	final Consumer<? super S> stateConsumer;
+
+	public FluxGenerate(BiFunction<S, GenerateOutput<T>, S> generator) {
+		this(() -> null, generator, s -> {
+		});
+	}
+
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator) {
+		this(stateSupplier, generator, s -> {
+		});
+	}
+
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator,
+							 Consumer<? super S> stateConsumer) {
+		this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier");
+		this.generator = Objects.requireNonNull(generator, "generator");
+		this.stateConsumer = Objects.requireNonNull(stateConsumer, "stateConsumer");
 	}
 
 	@Override
-	final public void subscribe(final Subscriber<? super T> subscriber) {
+	public void subscribe(Subscriber<? super T> s) {
+		S state;
+
 		try {
-			final C context = contextFactory != null ? contextFactory.apply(subscriber) : null;
-			subscriber.onSubscribe(createSubscription(subscriber, context));
+			state = stateSupplier.call();
+		} catch (Throwable e) {
+			EmptySubscription.error(s, e);
+			return;
 		}
-		catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
-			EmptySubscription.error(subscriber, throwable);
-		}
+		s.onSubscribe(new GenerateSubscription<>(s, state, generator, stateConsumer));
 	}
 
-	protected Subscription createSubscription(Subscriber<? super T> subscriber, C context) {
-		return new SubscriberProxy<>(this, subscriber, context, requestConsumer, shutdownConsumer);
-	}
+	static final class GenerateSubscription<T, S>
+	  implements QueueSubscription<T>, GenerateOutput<T> {
 
-	static final class FluxForEach<T, C> extends FluxGenerate<T, C> implements Receiver {
+		final Subscriber<? super T> actual;
 
-		final Consumer<SubscriberWithContext<T, C>> forEachConsumer;
+		final BiFunction<S, GenerateOutput<T>, S> generator;
 
-		public FluxForEach(Consumer<SubscriberWithContext<T, C>> forEachConsumer, Function<Subscriber<? super
-				T>, C> contextFactory, Consumer<C> shutdownConsumer) {
-			super(null, contextFactory, shutdownConsumer);
-			this.forEachConsumer = forEachConsumer;
+		final Consumer<? super S> stateConsumer;
+
+		volatile boolean cancelled;
+
+		S state;
+
+		boolean terminate;
+
+		boolean hasValue;
+		
+		boolean outputFused;
+		
+		T generatedValue;
+		
+		Throwable generatedError;
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED = 
+			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
+
+		public GenerateSubscription(Subscriber<? super T> actual, S state,
+											 BiFunction<S, GenerateOutput<T>, S> generator, Consumer<? super
+		  S> stateConsumer) {
+			this.actual = actual;
+			this.state = state;
+			this.generator = generator;
+			this.stateConsumer = stateConsumer;
 		}
 
 		@Override
-		protected Subscription createSubscription(Subscriber<? super T> subscriber, C context) {
-			return new SubscriberProxy<>(this,
-					subscriber,
-					context,
-					new ForEachBiConsumer<>(forEachConsumer),
-					shutdownConsumer);
-		}
-
-		@Override
-		public Object upstream() {
-			return forEachConsumer;
-		}
-
-		@Override
-		public String toString() {
-			return forEachConsumer.toString();
-		}
-	}
-
-	final static class ForEachBiConsumer<T, C> implements BiConsumer<Long, SubscriberWithContext<T, C>> {
-
-		private final Consumer<SubscriberWithContext<T, C>> requestConsumer;
-
-		private volatile long pending = 0L;
-
-		private final static AtomicLongFieldUpdater<ForEachBiConsumer> PENDING_UPDATER =
-				AtomicLongFieldUpdater.newUpdater(ForEachBiConsumer.class, "pending");
-
-		public ForEachBiConsumer(Consumer<SubscriberWithContext<T, C>> requestConsumer) {
-			this.requestConsumer = requestConsumer;
-		}
-
-		@Override
-		public void accept(Long n, SubscriberWithContext<T, C> sub) {
-
-			if (n == Long.MAX_VALUE) {
-				while (!sub.isCancelled()) {
-					requestConsumer.accept(sub);
-				}
+		public void onNext(T t) {
+			if (terminate) {
 				return;
 			}
-
-			if (BackpressureUtils.getAndAddCap(PENDING_UPDATER, this, n) > 0) {
+			if (hasValue) {
+				onError(new IllegalStateException("More than one call to onNext"));
 				return;
 			}
-
-			long demand = n;
-			do {
-				long requestCursor = 0L;
-				while ((demand == Long.MAX_VALUE || requestCursor++ < demand) && !sub.isCancelled()) {
-					requestConsumer.accept(sub);
-				}
+			if (t == null) {
+				onError(new NullPointerException("The generator produced a null value"));
+				return;
 			}
-			while ((demand == Long.MAX_VALUE || (demand =
-					PENDING_UPDATER.addAndGet(this, -demand)) > 0L) && !sub.isCancelled());
-
-		}
-
-	}
-
-	final static class RecursiveConsumer<T, C> implements BiConsumer<Long, SubscriberWithContext<T, C>> {
-
-		private final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
-
-		@SuppressWarnings("unused")
-		private volatile int running = 0;
-
-		private final static AtomicIntegerFieldUpdater<RecursiveConsumer> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(RecursiveConsumer.class, "running");
-
-		@SuppressWarnings("unused")
-		private volatile long pending = 0L;
-
-		private final static AtomicLongFieldUpdater<RecursiveConsumer> PENDING_UPDATER =
-				AtomicLongFieldUpdater.newUpdater(RecursiveConsumer.class, "pending");
-
-		public RecursiveConsumer(BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer) {
-			this.requestConsumer = requestConsumer;
-		}
-
-		@Override
-		public void accept(Long n, SubscriberWithContext<T, C> sub) {
-			BackpressureUtils.getAndAddCap(PENDING_UPDATER, this, n);
-			if (RUNNING.getAndIncrement(this) == 0) {
-				int missed = 1;
-				long r;
-				for (; ; ) {
-					if (sub.isCancelled()) {
-						return;
-					}
-
-					r = PENDING_UPDATER.getAndSet(this, 0L);
-					if (r == Long.MAX_VALUE) {
-						requestConsumer.accept(Long.MAX_VALUE, sub);
-						return;
-					}
-
-					if (r != 0L) {
-						requestConsumer.accept(r, sub);
-					}
-
-					missed = RUNNING.addAndGet(this, -missed);
-					if (missed == 0) {
-						break;
-					}
-				}
+			hasValue = true;
+			if (outputFused) {
+				generatedValue = t;
+			} else {
+				actual.onNext(t);
 			}
-
-		}
-
-	}
-
-	private final static class SubscriberProxy<T, C> extends SubscriberWithContext<T, C>
-			implements Subscription, Receiver, Completable, Introspectable {
-
-		private final BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer;
-
-		private final Consumer<C> shutdownConsumer;
-
-		private final Publisher<T> source;
-
-		public SubscriberProxy(Publisher<T> source,
-				Subscriber<? super T> subscriber,
-				C context,
-				BiConsumer<Long, SubscriberWithContext<T, C>> requestConsumer,
-				Consumer<C> shutdownConsumer) {
-			super(context, subscriber);
-			this.source = source;
-			this.requestConsumer = requestConsumer;
-			this.shutdownConsumer = shutdownConsumer;
 		}
 
 		@Override
-		public Publisher<T> upstream() {
-			return source;
+		public void onError(Throwable e) {
+			if (terminate) {
+				return;
+			}
+			terminate = true;
+			if (outputFused) {
+				generatedError = e;
+			} else {
+				actual.onError(e);
+			}
 		}
 
 		@Override
-		public String getName() {
-			return ReactiveStateUtils.getName(requestConsumer);
+		public void onComplete() {
+			if (terminate) {
+				return;
+			}
+			terminate = true;
+			if (!outputFused) {
+				actual.onComplete();
+			}
+		}
+
+		@Override
+		public void stop() {
+			if (terminate) {
+				return;
+			}
+			terminate = true;
 		}
 
 		@Override
 		public void request(long n) {
-			if (isCancelled()) {
-				return;
-			}
-
-			if (BackpressureUtils.checkRequest(n, this)) {
-				try {
-					requestConsumer.accept(n, this);
+			if (BackpressureUtils.validate(n)) {
+				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+					if (n == Long.MAX_VALUE) {
+						fastPath();
+					} else {
+						slowPath(n);
+					}
 				}
-				catch (Throwable t) {
-					onError(t);
+			}
+		}
+
+		void fastPath() {
+			S s = state;
+
+			final BiFunction<S, GenerateOutput<T>, S> g = generator;
+
+			for (; ; ) {
+
+				if (cancelled) {
+					cleanup(s);
+					return;
+				}
+
+				try {
+					s = g.apply(s, this);
+				} catch (Throwable e) {
+					cleanup(s);
+
+					actual.onError(e);
+					return;
+				}
+				if (terminate || cancelled) {
+					cleanup(s);
+					return;
+				}
+				if (!hasValue) {
+					cleanup(s);
+
+					actual.onError(new IllegalStateException("The generator didn't call any of the " +
+					  "GenerateOutput method"));
+					return;
+				}
+
+				hasValue = false;
+			}
+		}
+
+		void slowPath(long n) {
+			S s = state;
+
+			long e = 0L;
+
+			final BiFunction<S, GenerateOutput<T>, S> g = generator;
+
+			for (; ; ) {
+				while (e != n) {
+
+					if (cancelled) {
+						cleanup(s);
+						return;
+					}
+
+					try {
+						s = g.apply(s, this);
+					} catch (Throwable ex) {
+						cleanup(s);
+
+						actual.onError(ex);
+						return;
+					}
+					if (terminate || cancelled) {
+						cleanup(s);
+						return;
+					}
+					if (!hasValue) {
+						cleanup(s);
+
+						actual.onError(new IllegalStateException("The generator didn't call any of the " +
+						  "GenerateOutput method"));
+						return;
+					}
+
+					e++;
+					hasValue = false;
+				}
+
+				n = requested;
+
+				if (n == e) {
+					state = s;
+					n = REQUESTED.addAndGet(this, -e);
+					if (n == 0L) {
+						return;
+					}
 				}
 			}
 		}
 
 		@Override
 		public void cancel() {
-			if (TERMINAL_UPDATER.compareAndSet(this, 0, 1)) {
-				doShutdown();
-			}
-		}
+			if (!cancelled) {
+				cancelled = true;
 
-		@Override
-		public void onError(Throwable t) {
-			if (TERMINAL_UPDATER.compareAndSet(this, 0, 1)) {
-				doShutdown();
-				if (Exceptions.CancelException.class != t.getClass()) {
-					subscriber.onError(t);
-				}
-			}
-			else{
-				Exceptions.onErrorDropped(t);
-			}
-		}
-
-		@Override
-		public void onComplete() {
-			if (TERMINAL_UPDATER.compareAndSet(this, 0, 1)) {
-				doShutdown();
-				try {
-					subscriber.onComplete();
-				}
-				catch (Throwable t) {
-					Exceptions.throwIfFatal(t);
-					subscriber.onError(t);
+				if (REQUESTED.getAndIncrement(this) == 0) {
+					cleanup(state);
 				}
 			}
 		}
 
-		private void doShutdown() {
-			if (shutdownConsumer == null) {
-				return;
-			}
-
+		void cleanup(S s) {
 			try {
-				shutdownConsumer.accept(context);
+				state = null;
+
+				stateConsumer.accept(s);
+			} catch (Throwable e) {
+				Exceptions.onErrorDropped(e);
 			}
-			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				subscriber.onError(t);
+		}
+		
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & Fuseable.SYNC) != 0 && (requestedMode & Fuseable.THREAD_BARRIER) == 0) {
+				outputFused = true;
+				return Fuseable.SYNC;
 			}
+			return Fuseable.NONE;
 		}
-
+		
 		@Override
-		public int getMode() {
-			return 0;
-		}
+		public T poll() {
+			if (terminate) {
+				return null;
+			}
 
+			S s = state;
+			
+			try {
+				s = generator.apply(s, this);
+			} catch (final Throwable ex) {
+				cleanup(s);
+				throw ex;
+			}
+			
+			Throwable e = generatedError;
+			if (e != null) {
+				cleanup(s);
+				
+				generatedError = null;
+				Exceptions.bubble(e);
+				return null;
+			}
+			
+			if (!hasValue) {
+				cleanup(s);
+				
+				if (!terminate) {
+					throw new IllegalStateException("The generator didn't call any of the " +
+						"GenerateOutput method");
+				}
+				return null;
+			}
+			
+			T v = generatedValue;
+			generatedValue = null;
+			hasValue = false;
+
+			state = s;
+			return v;
+		}
+		
 		@Override
-		public void onSubscribe(Subscription s) {
-			throw new UnsupportedOperationException(" the delegate subscriber is already subscribed");
+		public boolean isEmpty() {
+			return terminate;
 		}
-
+		
 		@Override
-		public String toString() {
-			return source.toString();
+		public int size() {
+			return isEmpty() ? 0 : -1;
 		}
-
+		
+		@Override
+		public void clear() {
+			generatedError = null;
+			generatedValue = null;
+		}
 	}
 }

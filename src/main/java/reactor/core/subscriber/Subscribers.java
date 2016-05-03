@@ -32,11 +32,8 @@ import org.reactivestreams.Subscription;
  * Create such publisher with the provided factory, E.g.:
  * <pre>
  * {@code
- * Flux.create(sub ->
- *    sub.onNext("hello")
- * ).subscribe( Subscribers.unbounded(
- *    System.out::println
- * ));
+ * Flux.just("hello")
+ *     .subscribe( Subscribers.unbounded(System.out::println) );
  * }
  * </pre>
  *

@@ -41,9 +41,10 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.subscriber.SignalEmitter;
-import reactor.core.scheduler.Timer;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Timer;
+import reactor.core.subscriber.SignalEmitter;
 
 /**
  * @author Stephane Maldini
@@ -136,10 +137,9 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		} else {
 			final Random random = new Random();
 
-			return Flux
-			  .<Integer>generate((n, s) -> s.onNext(random.nextInt()))
-			  .log("random-publisher")
-			  .map(Math::abs);
+			return Mono.fromCallable(random::nextInt)
+			           .repeat()
+			           .map(Math::abs);
 		}
 	}
 

@@ -35,7 +35,7 @@ public class FluxResumeTest {
 	public void normal() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new FluxResume<>(FluxArrayTest.range(1, 10), v -> FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxResume<>(Flux.range(1, 10), v -> Flux.range(11, 10)).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertNoError()
@@ -46,7 +46,7 @@ public class FluxResumeTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new FluxResume<>(FluxArrayTest.range(1, 10), v -> FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxResume<>(Flux.range(1, 10), v -> Flux.range(11, 10)).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -75,7 +75,7 @@ public class FluxResumeTest {
 	public void error() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new FluxResume<>(Flux.error(new RuntimeException("forced failure")), v -> FluxArrayTest.range
+		new FluxResume<>(Flux.error(new RuntimeException("forced failure")), v -> Flux.range
 		  (11, 10)).subscribe(ts);
 
 		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
@@ -87,7 +87,7 @@ public class FluxResumeTest {
 	public void errorBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new FluxResume<>(Flux.error(new RuntimeException("forced failure")), v -> FluxArrayTest.range
+		new FluxResume<>(Flux.error(new RuntimeException("forced failure")), v -> Flux.range
 		  (11, 10)).subscribe(ts);
 
 		ts.assertNoValues()
@@ -121,7 +121,7 @@ public class FluxResumeTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new FluxResume<>(tp, v -> FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxResume<>(tp, v -> Flux.range(11, 10)).subscribe(ts);
 
 		tp.onNext(1);
 		tp.onNext(2);
@@ -143,7 +143,7 @@ public class FluxResumeTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>(10);
 
-		new FluxResume<>(tp, v -> FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxResume<>(tp, v -> Flux.range(11, 10)).subscribe(ts);
 
 		tp.onNext(1);
 		tp.onNext(2);

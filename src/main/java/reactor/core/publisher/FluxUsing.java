@@ -60,9 +60,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 	final boolean eager;
 
 	public FluxUsing(Callable<S> resourceSupplier,
-						  Function<? super S, ? extends Publisher<? extends T>> sourceFactory, Consumer<? super S>
-								  resourceCleanup,
-						  boolean eager) {
+			Function<? super S, ? extends Publisher<? extends T>> sourceFactory, Consumer<? super S>
+			resourceCleanup,
+			boolean eager) {
 		this.resourceSupplier = Objects.requireNonNull(resourceSupplier, "resourceSupplier");
 		this.sourceFactory = Objects.requireNonNull(sourceFactory, "sourceFactory");
 		this.resourceCleanup = Objects.requireNonNull(resourceCleanup, "resourceCleanup");
@@ -120,18 +120,11 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		}
 
 		if (p instanceof Fuseable) {
-			p.subscribe(new UsingFuseableSubscriber<>(s,
-					resourceCleanup,
-					resource,
-					eager));
-		}
-		else if (s instanceof ConditionalSubscriber) {
-			p.subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					resourceCleanup,
-					resource,
-					eager));
-		}
-		else {
+			p.subscribe(new UsingFuseableSubscriber<>(s, resourceCleanup, resource, eager));
+		} else
+		if (s instanceof ConditionalSubscriber) {
+			p.subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, resourceCleanup, resource, eager));
+		} else {
 			p.subscribe(new UsingSubscriber<>(s, resourceCleanup, resource, eager));
 		}
 	}
@@ -152,7 +145,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<UsingSubscriber> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(UsingSubscriber.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(UsingSubscriber.class, "wip");
 
 		public UsingSubscriber(Subscriber<? super T> actual, Consumer<? super S> resourceCleanup, S
 				resource, boolean eager) {
@@ -213,7 +206,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onError(t);
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}
@@ -232,7 +225,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onComplete();
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}
@@ -280,15 +273,12 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<UsingFuseableSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(UsingFuseableSubscriber.class,
-						"wip");
+				AtomicIntegerFieldUpdater.newUpdater(UsingFuseableSubscriber.class, "wip");
 
 		int mode;
 
-		public UsingFuseableSubscriber(Subscriber<? super T> actual,
-				Consumer<? super S> resourceCleanup,
-				S resource,
-				boolean eager) {
+		public UsingFuseableSubscriber(Subscriber<? super T> actual, Consumer<? super S> resourceCleanup, S
+				resource, boolean eager) {
 			this.actual = actual;
 			this.resourceCleanup = resourceCleanup;
 			this.resource = resource;
@@ -312,8 +302,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		void cleanup() {
 			try {
 				resourceCleanup.accept(resource);
-			}
-			catch (Throwable e) {
+			} catch (Throwable e) {
 				Exceptions.onErrorDropped(e);
 			}
 		}
@@ -322,7 +311,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
-				this.s = (QueueSubscription<T>) s;
+				this.s = (QueueSubscription<T>)s;
 
 				actual.onSubscribe(this);
 			}
@@ -335,11 +324,10 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void onError(Throwable t) {
-			if (eager) {
+			if (eager && WIP.compareAndSet(this, 0, 1)) {
 				try {
 					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
+				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
 					_e.addSuppressed(t);
@@ -349,18 +337,17 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onError(t);
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}
 
 		@Override
 		public void onComplete() {
-			if (eager) {
+			if (eager && WIP.compareAndSet(this, 0, 1)) {
 				try {
 					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
+				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					actual.onError(Exceptions.unwrap(e));
 					return;
@@ -369,7 +356,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onComplete();
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}
@@ -389,7 +376,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 			T v = s.poll();
 
 			if (v == null && mode == SYNC) {
-				resourceCleanup.accept(resource);
+				if (WIP.compareAndSet(this, 0, 1)) {
+					resourceCleanup.accept(resource);
+				}
 			}
 			return v;
 		}
@@ -423,13 +412,10 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<UsingConditionalSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(UsingConditionalSubscriber.class,
-						"wip");
+				AtomicIntegerFieldUpdater.newUpdater(UsingConditionalSubscriber.class, "wip");
 
-		public UsingConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Consumer<? super S> resourceCleanup,
-				S resource,
-				boolean eager) {
+		public UsingConditionalSubscriber(ConditionalSubscriber<? super T> actual, Consumer<? super S> resourceCleanup, S
+				resource, boolean eager) {
 			this.actual = actual;
 			this.resourceCleanup = resourceCleanup;
 			this.resource = resource;
@@ -453,8 +439,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		void cleanup() {
 			try {
 				resourceCleanup.accept(resource);
-			}
-			catch (Throwable e) {
+			} catch (Throwable e) {
 				Exceptions.onErrorDropped(e);
 			}
 		}
@@ -480,11 +465,10 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void onError(Throwable t) {
-			if (eager) {
+			if (eager && WIP.compareAndSet(this, 0, 1)) {
 				try {
 					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
+				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
 					_e.addSuppressed(t);
@@ -494,18 +478,17 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onError(t);
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}
 
 		@Override
 		public void onComplete() {
-			if (eager) {
+			if (eager && WIP.compareAndSet(this, 0, 1)) {
 				try {
 					resourceCleanup.accept(resource);
-				}
-				catch (Throwable e) {
+				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					actual.onError(Exceptions.unwrap(e));
 					return;
@@ -514,7 +497,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 			actual.onComplete();
 
-			if (!eager) {
+			if (!eager && WIP.compareAndSet(this, 0, 1)) {
 				cleanup();
 			}
 		}

@@ -25,7 +25,6 @@ import reactor.core.publisher.Computations
 import reactor.core.publisher.ReplayProcessor
 import reactor.core.publisher.Signal
 import reactor.core.scheduler.Scheduler
-import reactor.core.subscriber.SubscriberWithContext
 import reactor.core.test.TestSubscriber
 import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
@@ -228,31 +227,6 @@ class FluxSpec extends Specification {
 		then:
 			'it is available'
 			result == ['test-ok', 'test2-ok', 'test3-ok']
-	}
-
-	def 'A deferred Flux with a generated value makes that value available immediately'() {
-		given:
-			String test = ""
-			'a composable with an initial value'
-			def stream = Flux.<String> generate{ n, s -> s.onNext test }
-
-		when:
-			'the value is retrieved'
-			test = "test"
-			def value = stream.tap()
-			value.subscribe()
-
-		then:
-			'it is available'
-			value.get() == 'test'
-
-		when:
-			'nothing is provided'
-		Flux.<String> generate(null)
-
-		then:
-			"error is thrown"
-			thrown(IllegalArgumentException)
 	}
 
   def "Read Queues from Publishers"() {
@@ -1575,7 +1549,7 @@ class FluxSpec extends Specification {
 	def 'Creating Stream from publisher'() {
 		given:
 			'a source flux with a given publisher'
-			def s = Flux.<String> yield {
+			def s = Flux.<String> create {
 				it.onNext('test1')
 				it.onNext('test2')
 				it.onNext('test3')
@@ -1595,7 +1569,7 @@ class FluxSpec extends Specification {
 	def 'Creating Stream from publisher factory'() {
 		given:
 			'a source flux with a given publisher'
-			def s = Flux.yield(
+			def s = Flux.create(
 					{ println Thread.currentThread().name + ' start' },
 					{  sub ->
 						(1..3).each {
@@ -1757,7 +1731,7 @@ class FluxSpec extends Specification {
 	def 'Caching Stream from publisher'() {
 		given:
 			'a slow source flux'
-			def s = Flux.<Integer> yield {
+			def s = Flux.<Integer> create {
 				it.submit 1
 				sleep 200
 				it.submit 2
@@ -1888,7 +1862,7 @@ class FluxSpec extends Specification {
 		given:
 			'a source and a collected flux'
 			def random = new Random()
-			def source = Flux.yield {
+			def source = Flux.create {
 				it.submit random.nextInt()
 			}.publishOn(asyncGroup)
 
@@ -2011,7 +1985,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by an error'
 			def res = []
-			def myFlux = Flux.yield { aSubscriber ->
+			def myFlux = Flux.create { aSubscriber ->
 				aSubscriber.emit('Three')
 				aSubscriber.emit('Two')
 				aSubscriber.emit('One')
@@ -2021,7 +1995,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'A fallback flux will emit values and complete'
-			def myFallback = Flux.yield { aSubscriber ->
+			def myFallback = Flux.create { aSubscriber ->
 				aSubscriber.emit('0')
 				aSubscriber.emit('1')
 				aSubscriber.emit('2')
@@ -2046,7 +2020,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by an error'
 			def res = []
-			def myFlux = Flux.yield { aSubscriber ->
+			def myFlux = Flux.create { aSubscriber ->
 				aSubscriber.onNext('Three')
 				aSubscriber.onNext('Two')
 				aSubscriber.onNext('One')
@@ -2069,7 +2043,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by complete'
 			List res = []
-			def myFlux = Flux.yield { aSubscriber ->
+			def myFlux = Flux.create { aSubscriber ->
 				aSubscriber.emit('Three')
 				aSubscriber.emit('Two')
 				aSubscriber.emit('One')
@@ -2091,7 +2065,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by complete'
 			res = []
-			myFlux = Flux.yield { aSubscriber ->
+			myFlux = Flux.create { aSubscriber ->
 				aSubscriber.emit('Three')
 				aSubscriber.failWith(new Exception())
 			}
@@ -2113,7 +2087,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by complete'
 			def res = []
-			def myFlux = Flux.yield { aSubscriber ->
+			def myFlux = Flux.create { aSubscriber ->
 				aSubscriber.onNext(Signal.next(1))
 				aSubscriber.onNext(Signal.next(2))
 				aSubscriber.onNext(Signal.next(3))
@@ -2137,7 +2111,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by an error'
 			def res = []
-			def myFlux = Flux.yield { aSubscriber ->
+			def myFlux = Flux.create { aSubscriber ->
 				aSubscriber.onNext('Three')
 				aSubscriber.onNext('Two')
 				aSubscriber.onNext('One')
@@ -2145,7 +2119,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'Another flux will emit values and complete'
-			def myFallback = Flux.yield { aSubscriber ->
+			def myFallback = Flux.create { aSubscriber ->
 				aSubscriber.onNext('0')
 				aSubscriber.onNext('1')
 				aSubscriber.onNext('2')
@@ -2169,7 +2143,7 @@ class FluxSpec extends Specification {
 		when:
 			'A source flux emits next signals followed by an error'
 			def res = []
-			def myFlux = Flux.<Integer> yield { aSubscriber ->
+			def myFlux = Flux.<Integer> create { aSubscriber ->
 				aSubscriber.onNext(1)
 				aSubscriber.onNext(2)
 				aSubscriber.onNext(3)
@@ -2429,7 +2403,7 @@ class FluxSpec extends Specification {
 		when:
 			'when composable with an initial value'
 			def counter = 0
-			def value = Flux.yield {
+			def value = Flux.create {
 				counter++
 				it.onError(new RuntimeException("always fails $counter"))
 			}.retryWhen { attempts ->
@@ -2472,7 +2446,7 @@ class FluxSpec extends Specification {
 		when:
 			'when composable with an initial value'
 			def counter = 0
-		Flux.yield {
+		Flux.create {
 				counter++
 				it.onComplete()
 			}.log('repeat').repeatWhen { attempts ->
@@ -2492,7 +2466,7 @@ class FluxSpec extends Specification {
 		when:
 			'when composable with an initial value'
 			def counter = 0
-		Flux.yield {
+		Flux.create {
 				counter++
 				if(counter == 4){
 				  it.onNext('hey')

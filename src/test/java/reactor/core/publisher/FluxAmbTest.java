@@ -37,7 +37,7 @@ public class FluxAmbTest {
 	public void firstWinner() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new FluxAmb<>(FluxArrayTest.range(1, 10), FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxAmb<>(Flux.range(1, 10), Flux.range(11, 10)).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		  .assertComplete()
@@ -48,7 +48,7 @@ public class FluxAmbTest {
 	public void firstWinnerBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(5);
 
-		new FluxAmb<>(FluxArrayTest.range(1, 10), FluxArrayTest.range(11, 10)).subscribe(ts);
+		new FluxAmb<>(Flux.range(1, 10), Flux.range(11, 10)).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
 		  .assertNotComplete()
@@ -59,7 +59,7 @@ public class FluxAmbTest {
 	public void secondWinner() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new FluxAmb<>(FluxNever.instance(), FluxArrayTest.range(11, 10).log()).subscribe(ts);
+		new FluxAmb<>(FluxNever.instance(), Flux.range(11, 10).log()).subscribe(ts);
 
 		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 		  .assertComplete()

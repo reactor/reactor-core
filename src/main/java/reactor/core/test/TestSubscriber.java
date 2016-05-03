@@ -302,6 +302,28 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 		return this;
 	}
 
+	public final TestSubscriber<T> assertErrorMessage(String message) {
+		int s = errors.size();
+		if (s == 0) {
+			assertionError("No error", null);
+		}
+		if (s == 1) {
+			if (!Objects.equals(message,
+					errors.get(0)
+					      .getMessage())) {
+				assertionError("Error class incompatible: expected = \"" + message + "\", actual = \"" + errors.get(
+						0)
+				                                                                                               .getMessage() + "\"",
+						null);
+			}
+		}
+		if (s > 1) {
+			assertionError("Multiple errors: " + s, null);
+		}
+
+		return this;
+	}
+
 	/**
 	 * Assert an error signal has been received.
 	 * @param expectation A method that can verify the exception contained in the error signal
@@ -497,20 +519,12 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	public final TestSubscriber<T> awaitAndAssertNextValuesWith(Consumer<T>... expectations) {
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
-		await(valuesTimeout,
-				new Supplier<String>() {
-					@Override
-					public String get() {
-						return String.format("%d out of %d next values received within %d ms",
-						valueCount - nextValueAssertedCount, expectedValueCount, valuesTimeout.toMillis());
-					}
-				},
-				new Supplier<Boolean>() {
-					@Override
-					public Boolean get() {
-						return valueCount == (nextValueAssertedCount + expectedValueCount);
-					}
-				});
+		await(valuesTimeout, () -> {
+			return String.format("%d out of %d next values received within %d ms",
+					valueCount - nextValueAssertedCount,
+					expectedValueCount,
+					valuesTimeout.toMillis());
+		}, () -> valueCount == (nextValueAssertedCount + expectedValueCount));
 		List<T> nextValuesSnapshot;
 		List<T> empty = new ArrayList<>();
 		for(;;){
@@ -545,13 +559,12 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 		final List<Consumer<T>> expectations = new ArrayList<>();
 		for (int i = 0; i < expectedNum; i++) {
 			final T expectedValue = values[i];
-			expectations.add(new Consumer<T>() {
-				@Override
-				public void accept(T actualValue) {
-					if (!actualValue.equals(expectedValue)) {
-						throw new AssertionError(
-								String.format("Expected Next signal: %s, but got: %s", expectedValue, actualValue));
-					}
+			expectations.add(actualValue -> {
+				if (!actualValue.equals(expectedValue)) {
+					throw new AssertionError(String.format(
+							"Expected Next signal: %s, but got: %s",
+							expectedValue,
+							actualValue));
 				}
 			});
 		}
@@ -798,12 +811,44 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 //	 Non public methods
 //	 ==============================================================================================================
 
-	private final String valueAndClass(Object o) {
+	final String valueAndClass(Object o) {
 		if (o == null) {
 			return null;
 		}
 		return o + " (" + o.getClass()
 		  .getSimpleName() + ")";
+	}
+
+	/**
+	 * Prepares and throws an AssertionError exception based on the message, cause, the
+	 * active state and the potential errors so far.
+	 *
+	 * @param message the message
+	 * @param cause the optional Throwable cause
+	 *
+	 * @throws AssertionError as expected
+	 */
+	final void assertionError(String message, Throwable cause) {
+		StringBuilder b = new StringBuilder();
+
+		if (cdl.getCount() != 0) {
+			b.append("(active) ");
+		}
+		b.append(message);
+
+		List<Throwable> err = errors;
+		if (!err.isEmpty()) {
+			b.append(" (+ ")
+			 .append(err.size())
+			 .append(" errors)");
+		}
+		AssertionError e = new AssertionError(b.toString(), cause);
+
+		for (Throwable t : err) {
+			e.addSuppressed(t);
+		}
+
+		throw e;
 	}
 
 }
