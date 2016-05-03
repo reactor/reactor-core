@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 
@@ -32,7 +33,7 @@ import reactor.core.subscriber.DeferredScalarSubscriber;
  */
 final class MonoCompletableFuture<T>
 extends Mono<T>
-        implements Receiver {
+        implements Receiver, Fuseable {
 
     final CompletableFuture<? extends T> future;
 

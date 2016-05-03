@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.Exceptions;
@@ -39,7 +40,7 @@ import reactor.core.util.Exceptions;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Receiver, Callable<T> {
+		implements Receiver, Callable<T>, Fuseable {
 
 	final Callable<? extends T> callable;
 

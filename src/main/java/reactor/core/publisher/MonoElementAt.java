@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
@@ -37,7 +38,7 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoElementAt<T> extends MonoSource<T, T> {
+final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 
 	final long index;
 

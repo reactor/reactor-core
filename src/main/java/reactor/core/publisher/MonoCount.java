@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
@@ -33,7 +34,7 @@ import reactor.core.util.BackpressureUtils;
  *
  * @since 2.5
  */
-final class MonoCount<T> extends MonoSource<T, Long> {
+final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 
 	public MonoCount(Publisher<? extends T> source) {
 		super(source);

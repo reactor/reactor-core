@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
+import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.tuple.*;
 import reactor.core.util.*;
@@ -32,7 +33,7 @@ import reactor.core.util.*;
  *
  * @param <T> the source value types
  */
-final class MonoWhen<T> extends Mono<T[]> {
+final class MonoWhen<T> extends Mono<T[]> implements Fuseable {
 
     final boolean delayError;
     

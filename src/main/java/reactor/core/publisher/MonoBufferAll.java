@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
+import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 import rx.exceptions.Exceptions;
@@ -31,7 +32,8 @@ import rx.exceptions.Exceptions;
  * @param <T> the source value type
  * @param <C> the collection type that takes any supertype of T
  */
-final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource<T, C> {
+final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource<T, C>
+        implements Fuseable {
 
     final Supplier<C> collectionSupplier;
     

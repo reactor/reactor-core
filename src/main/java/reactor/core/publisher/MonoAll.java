@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
@@ -40,7 +41,7 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoAll<T> extends MonoSource<T, Boolean> {
+final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable{
 
 	final Predicate<? super T> predicate;
 

@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
@@ -114,5 +115,10 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		public Object connectedInput() {
 			return value;
 		}
+
+		@Override
+		        public int requestFusion(int requestedMode) {
+			            return Fuseable.NONE; // prevent fusion because of the upstream
+			        }
 	}
 }

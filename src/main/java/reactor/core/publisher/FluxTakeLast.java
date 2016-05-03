@@ -22,6 +22,7 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
@@ -39,7 +40,7 @@ import reactor.core.util.BackpressureUtils;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxTakeLast<T> extends FluxSource<T, T> {
+final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 	final int n;
 
@@ -56,7 +57,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		if (n == 0) {
 			source.subscribe(new TakeLastZeroSubscriber<>(s));
 		} else if (n == 1) {
-			source.subscribe(new TakeLastOneSubscriber<>(s));
+			source.subscribe(new FluxTakeLastOne.TakeLastOneSubscriber<>(s));
 		} else {
 			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}
@@ -119,60 +120,6 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 			s.cancel();
 		}
 		
-		@Override
-		public Object upstream() {
-			return s;
-		}
-	}
-
-	static final class TakeLastOneSubscriber<T>
-			extends DeferredScalarSubscriber<T, T>
-			implements Receiver {
-
-		Subscription s;
-
-		public TakeLastOneSubscriber(Subscriber<? super T> actual) {
-			super(actual);
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
-				this.s = s;
-
-				subscriber.onSubscribe(this);
-
-				s.request(Long.MAX_VALUE);
-			}
-
-		}
-
-		@Override
-		public void onNext(T t) {
-			value = t;
-		}
-
-		@Override
-		public void onComplete() {
-			T v = value;
-			if (v == null) {
-				subscriber.onComplete();
-				return;
-			}
-			complete(v);
-		}
-
-		@Override
-		public void cancel() {
-			super.cancel();
-			s.cancel();
-		}
-
-		@Override
-		public void setValue(T value) {
-			// value is always in a field
-		}
-
 		@Override
 		public Object upstream() {
 			return s;

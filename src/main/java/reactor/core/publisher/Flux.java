@@ -4420,6 +4420,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Emit the last value this {@link Flux} emitted before its completion.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takelast.png" alt="">
+	 *
+	 * @return a terminating {@link Flux} sequence of 1
+	 *
+	 */
+	public final Flux<T> takeLast() {
+		return takeLast(1);
+	}
+
+	/**
 	 * Emit the last N values this {@link Flux} emitted before its completion.
 	 *
 	 * <p>
@@ -4431,6 +4444,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> takeLast(int n) {
+		if(n == 1){
+			return new FluxTakeLastOne<>(this);
+		}
 		return new FluxTakeLast<>(this, n);
 	}
 

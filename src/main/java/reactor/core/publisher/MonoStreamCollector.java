@@ -21,6 +21,7 @@ import java.util.stream.Collector;
 
 import org.reactivestreams.*;
 
+import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -37,7 +38,7 @@ import reactor.core.util.*;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> {
+final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fuseable {
 	
 	final Collector<T, A, R> collector;
 

@@ -21,13 +21,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 
 /**
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoFuture<T> extends Mono<T> {
+final class MonoFuture<T> extends Mono<T> implements Fuseable {
 	
 	final Future<? extends T> future;
 	
