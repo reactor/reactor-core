@@ -30,16 +30,16 @@ import reactor.core.util.EmptySubscription;
  */
 final class FluxCreate<T> extends Flux<T> implements Introspectable {
 
-	final Consumer<? super SignalEmitter<T>> onSubscribe;
+	final Consumer<? super SignalEmitter<T>> yield;
 
-	public FluxCreate(Consumer<? super SignalEmitter<T>> onSubscribe) {
-		this.onSubscribe = onSubscribe;
+	public FluxCreate(Consumer<? super SignalEmitter<T>> yield) {
+		this.yield = yield;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
 		try {
-			SignalEmitter<T> session = new YieldingSignalEmitter<>(onSubscribe, subscriber);
+			SignalEmitter<T> session = new FirstRequestSignalEmitter<>(yield, subscriber);
 			session.start();
 
 		}
@@ -48,20 +48,20 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 		}
 	}
 
-	static final class YieldingSignalEmitter<T> extends SignalEmitter<T> {
+	static final class FirstRequestSignalEmitter<T> extends SignalEmitter<T> {
 
-		final Consumer<? super SignalEmitter<T>> onSubscribe;
+		final Consumer<? super SignalEmitter<T>> yield;
 
 		@SuppressWarnings("unused")
 		private volatile int running;
 
 		@SuppressWarnings("rawtypes")
-        private final static AtomicIntegerFieldUpdater<YieldingSignalEmitter> RUNNING =
-				AtomicIntegerFieldUpdater.newUpdater(YieldingSignalEmitter.class, "running");
+        private final static AtomicIntegerFieldUpdater<FirstRequestSignalEmitter> RUNNING =
+				AtomicIntegerFieldUpdater.newUpdater(FirstRequestSignalEmitter.class, "running");
 
-		public YieldingSignalEmitter(Consumer<? super SignalEmitter<T>> onSubscribe, Subscriber<? super T> actual) {
+		public FirstRequestSignalEmitter(Consumer<? super SignalEmitter<T>> yield, Subscriber<? super T> actual) {
 			super(actual, false);
-			this.onSubscribe = onSubscribe;
+			this.yield = yield;
 		}
 
 		@Override
@@ -71,10 +71,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 			}
             super.request(n);
 			if (RUNNING.compareAndSet(this, 0, 1)) {
-
-				onSubscribe.accept(this);
-
-				running = 0;
+				yield.accept(this);
 			}
 		}
 	}
