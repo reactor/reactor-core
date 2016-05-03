@@ -94,8 +94,8 @@ final class GlobalTimer extends Timer implements Introspectable {
 		while (null == t) {
 				t = new GlobalTimer();
 				if (!GLOBAL_TIMER.compareAndSet(context, null, t)) {
-					t = context.timer;
 					t._cancel();
+					t = context.timer;
 				}
 				else{
 					t.start();

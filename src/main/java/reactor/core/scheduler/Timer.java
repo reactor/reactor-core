@@ -274,6 +274,9 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	@Override
 	public void shutdown() {
 		this.loop.interrupt();
+		if(executor instanceof ExecutorService){
+			((ExecutorService)executor).shutdown();
+		}
 	}
 
 	/**
