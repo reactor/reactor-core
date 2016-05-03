@@ -733,8 +733,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * @return this
 	 */
 	public final TestSubscriber<T> assertFusionEnabled() {
-		if (establishedFusionMode == Fuseable.SYNC
-				|| establishedFusionMode == Fuseable.ASYNC) {
+		if (establishedFusionMode != Fuseable.SYNC
+				&& establishedFusionMode != Fuseable.ASYNC) {
 			throw new AssertionError("Fusion was not enabled");
 		}
 		return this;
