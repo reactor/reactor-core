@@ -492,8 +492,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, D> Flux<T> create(Callable<? extends D> onStart, Consumer<? super
-			SignalEmitter<T>> sessionConsumer) {
+	public static <T, D> Flux<T> create(Callable<? extends D> onStart, BiConsumer<?
+			super D, ? super SignalEmitter<T>> sessionConsumer) {
 		return create(onStart, sessionConsumer, r -> {});
 	}
 
@@ -513,9 +513,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, D> Flux<T> create(Callable<? extends D> onStart, Consumer<? super
-			SignalEmitter<T>> sessionConsumer, Consumer<? super D> onTerminated) {
-		return using(onStart, r -> new FluxCreate<>(sessionConsumer),
+	public static <T, D> Flux<T> create(Callable<? extends D> onStart, BiConsumer<?
+			super D, ? super SignalEmitter<T>> sessionConsumer, Consumer<? super D>
+			onTerminated) {
+		return using(onStart, r -> new FluxCreate<>(s -> sessionConsumer.accept(r, s)),
 				onTerminated);
 	}
 	

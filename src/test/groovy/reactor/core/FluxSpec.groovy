@@ -1571,7 +1571,7 @@ class FluxSpec extends Specification {
 			'a source flux with a given publisher'
 			def s = Flux.create(
 					{ println Thread.currentThread().name + ' start' },
-					{  sub ->
+					{  v, sub  ->
 						(1..3).each {
 							sub.onNext("test$it")
 						}
