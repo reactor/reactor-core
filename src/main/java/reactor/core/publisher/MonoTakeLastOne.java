@@ -16,13 +16,14 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.*;
+import reactor.core.flow.Fuseable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.
  *
  * @param <T> the value type
  */
-final class MonoTakeLastOne<T> extends MonoSource<T, T> {
+final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 
     public MonoTakeLastOne(Publisher<? extends T> source) {
         super(source);
@@ -30,6 +31,6 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new FluxTakeLast.TakeLastOneSubscriber<>(s));
+        source.subscribe(new FluxTakeLastOne.TakeLastOneSubscriber<>(s));
     }
 }
