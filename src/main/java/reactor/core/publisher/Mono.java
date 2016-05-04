@@ -1810,6 +1810,18 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Detaches the both the child {@link Subscriber} and the {@link Subscription} on
+	 * termination or cancellation.
+	 * <p>This should help with odd retention scenarios when running
+	 * with non-reactor {@link Subscriber}.
+	 *
+	 * @return a detachable {@link Mono}
+	 */
+	public final Mono<T> onTerminateDetach() {
+		return MonoSource.wrap(new FluxDetach<>(this));
+	}
+
+	/**
 	 * Shares a {@link Mono} for the duration of a function that may transform it and
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.

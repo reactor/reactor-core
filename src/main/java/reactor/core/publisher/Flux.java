@@ -3290,6 +3290,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return switchOnError(just(fallbackValue));
 	}
 
+	/**
+	 * Detaches the both the child {@link Subscriber} and the {@link Subscription} on
+	 * termination or cancellation.
+	 * <p>This should help with odd retention scenarios when running
+	 * with non-reactor {@link Subscriber}.
+	 *
+	 * @return a detachable {@link Flux}
+	 */
+	public final Flux<T> onTerminateDetach() {
+		return new FluxDetach<>(this);
+	}
 
 	/**
 	 * Re-route incoming values into a dynamically created {@link Flux} for each unique key evaluated by the given
