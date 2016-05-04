@@ -53,23 +53,6 @@ public class SubmissionEmitter<E>
 		           Closeable {
 
 	/**
-	 * Create a {@link SubmissionEmitter} to safely signal a target {@link Subscriber} or {@link
-	 * org.reactivestreams.Processor}.
-	 * <p>
-	 * . The {@link Subscriber#onNext(Object)} will be blocking if overrun (under capacity).
-	 *
-	 * @param subscriber the decorated {@link Subscriber}
-	 * @param <E> the reified {@link Subscriber} type
-	 *
-	 * @return a new {@link SubmissionEmitter}
-	 */
-	public static <E> SubmissionEmitter<E> blocking(Subscriber<? super E> subscriber) {
-		SubmissionEmitter<E> sub = new SubmissionEmitter<>(subscriber, true);
-		sub.start();
-		return sub;
-	}
-
-	/**
 	 *
 	 * Create a
 	 * {@link SubmissionEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
@@ -86,7 +69,7 @@ public class SubmissionEmitter<E>
 	 * @return a new {@link SubmissionEmitter}
 	 */
 	public static <E> SubmissionEmitter<E> create(Subscriber<? super E> subscriber, boolean autostart) {
-		SubmissionEmitter<E> sub = new SubmissionEmitter<>(subscriber, false);
+		SubmissionEmitter<E> sub = new SubmissionEmitter<>(subscriber);
 		if (autostart) {
 			sub.start();
 		}
@@ -110,16 +93,14 @@ public class SubmissionEmitter<E>
 		return create(subscriber, true);
 	}
 	final Subscriber<? super E> actual;
-	final boolean               blockOnNext;
 	@SuppressWarnings("unused")
 	volatile     long                                  requested = 0L;
 	Throwable uncaughtException;
 
 	volatile boolean cancelled;
 
-	protected SubmissionEmitter(Subscriber<? super E> actual, boolean blockOnNext) {
+	protected SubmissionEmitter(Subscriber<? super E> actual) {
 		this.actual = actual;
-		this.blockOnNext = blockOnNext;
 	}
 
 	@Override

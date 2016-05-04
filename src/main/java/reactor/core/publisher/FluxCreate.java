@@ -61,7 +61,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 				AtomicIntegerFieldUpdater.newUpdater(RequestSignalEmitter.class, "running");
 
 		public RequestSignalEmitter(Consumer<? super SignalEmitter<T>> yield, Subscriber<? super T> actual) {
-			super(actual, false);
+			super(actual);
 			this.yield = yield;
 		}
 
