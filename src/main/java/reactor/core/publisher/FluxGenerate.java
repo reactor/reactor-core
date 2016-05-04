@@ -333,8 +333,7 @@ extends Flux<T> {
 				cleanup(s);
 				
 				generatedError = null;
-				Exceptions.bubble(e);
-				return null;
+				throw Exceptions.bubble(e);
 			}
 			
 			if (!hasValue) {
@@ -354,7 +353,12 @@ extends Flux<T> {
 			state = s;
 			return v;
 		}
-		
+
+		@Override
+		public Throwable getError() {
+			return generatedError;
+		}
+
 		@Override
 		public boolean isEmpty() {
 			return terminate;
