@@ -4475,8 +4475,26 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Relay values from this {@link Flux} until the given {@link Predicate} matches.
+	 * Unlike {@link #takeWhile}, this will include the matched data.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntil.png" alt="">
+	 *
+	 * @param predicate the {@link Predicate} to signal when to stop replaying signal
+	 * from this {@link Flux}
+	 *
+	 * @return an eventually limited {@link Flux}
+	 *
+	 */
+	public final Flux<T> takeUntil(Predicate<? super T> predicate) {
+		return new FluxTakeUntilPredicate<>(this, predicate);
+	}
+
+	/**
 	 * Relay values while a predicate returns
 	 * {@literal FALSE} for the values (checked before each value is delivered).
+	 * Unlike {@link #takeUntil}, this will exclude the matched data.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takewhile.png" alt="">
