@@ -44,7 +44,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Timer;
-import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.SubmissionEmitter;
 
 /**
  * @author Stephane Maldini
@@ -226,7 +226,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		Processor<Integer, Integer> processor = createProcessor(1024);
 
 		EmitterProcessor<Integer> stream = EmitterProcessor.create();
-		SignalEmitter<Integer> session = SignalEmitter.create(stream);
+		SubmissionEmitter<Integer> session = SubmissionEmitter.create(stream);
 		stream.subscribe(processor);
 		if(Flux.class.isAssignableFrom(processor.getClass())) {
 			System.out.println(((Flux)processor).debug());

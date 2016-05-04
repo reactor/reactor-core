@@ -1550,10 +1550,10 @@ class FluxSpec extends Specification {
 		given:
 			'a source flux with a given publisher'
 			def s = Flux.<String> create {
-				it.onNext('test1')
-				it.onNext('test2')
-				it.onNext('test3')
-				it.onComplete()
+				it.emit('test1')
+				it.emit('test2')
+				it.emit('test3')
+				it.complete()
 			}.log()
 
 		when:
@@ -1573,9 +1573,9 @@ class FluxSpec extends Specification {
 					{ println Thread.currentThread().name + ' start' },
 					{  v, sub  ->
 						(1..3).each {
-							sub.onNext("test$it")
+							sub.emit("test$it")
 						}
-						sub.onComplete()
+						sub.complete()
 					},
 					{ println Thread.currentThread().name + ' end' }
 			)
@@ -2021,10 +2021,10 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.onNext('Three')
-				aSubscriber.onNext('Two')
-				aSubscriber.onNext('One')
-				aSubscriber.onError(new Exception())
+				aSubscriber.emit('Three')
+				aSubscriber.emit('Two')
+				aSubscriber.emit('One')
+				aSubscriber.fail(new Exception())
 			}
 
 		and:
@@ -2088,10 +2088,10 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by complete'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.onNext(Signal.next(1))
-				aSubscriber.onNext(Signal.next(2))
-				aSubscriber.onNext(Signal.next(3))
-				aSubscriber.onNext(Signal.complete())
+				aSubscriber.emit(Signal.next(1))
+				aSubscriber.emit(Signal.next(2))
+				aSubscriber.emit(Signal.next(3))
+				aSubscriber.emit(Signal.complete())
 			}
 
 		and:
@@ -2112,18 +2112,18 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.onNext('Three')
-				aSubscriber.onNext('Two')
-				aSubscriber.onNext('One')
+				aSubscriber.emit('Three')
+				aSubscriber.emit('Two')
+				aSubscriber.emit('One')
 			}
 
 		and:
 			'Another flux will emit values and complete'
 			def myFallback = Flux.create { aSubscriber ->
-				aSubscriber.onNext('0')
-				aSubscriber.onNext('1')
-				aSubscriber.onNext('2')
-				aSubscriber.onComplete()
+				aSubscriber.emit('0')
+				aSubscriber.emit('1')
+				aSubscriber.emit('2')
+				aSubscriber.complete()
 			}
 
 		and:
@@ -2144,10 +2144,10 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.<Integer> create { aSubscriber ->
-				aSubscriber.onNext(1)
-				aSubscriber.onNext(2)
-				aSubscriber.onNext(3)
-				aSubscriber.onComplete()
+				aSubscriber.emit(1)
+				aSubscriber.emit(2)
+				aSubscriber.emit(3)
+				aSubscriber.complete()
 			}
 
 		and:
@@ -2405,7 +2405,7 @@ class FluxSpec extends Specification {
 			def counter = 0
 			def value = Flux.create {
 				counter++
-				it.onError(new RuntimeException("always fails $counter"))
+				it.fail(new RuntimeException("always fails $counter"))
 			}.retryWhen { attempts ->
 			  attempts.log('zipWith').zipWith(Flux.range(1, 3), { t1, t2 -> t2 }).flatMap { i ->
 					println "delay retry by " + i + " second(s)"
@@ -2448,7 +2448,7 @@ class FluxSpec extends Specification {
 			def counter = 0
 		Flux.create {
 				counter++
-				it.onComplete()
+				it.complete()
 			}.log('repeat').repeatWhen { attempts ->
 				attempts.zipWith(Flux.range(1, 3)) { t1, t2 -> t2 }.flatMap { i ->
 					println "delay repeat by " + i + " second(s)"
@@ -2469,9 +2469,9 @@ class FluxSpec extends Specification {
 		Flux.create {
 				counter++
 				if(counter == 4){
-				  it.onNext('hey')
+				  it.emit('hey')
 				}
-				it.onComplete()
+				it.complete()
 			}.repeatWhen { attempts ->
 				attempts.log('repeat').takeWhile{ println it; it == 0L }.flatMap { i ->
 					println "delay repeat by 1 second"

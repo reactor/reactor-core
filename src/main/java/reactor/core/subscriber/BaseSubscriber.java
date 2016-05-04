@@ -44,22 +44,22 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	}
 
 	/**
-	 * Create a {@link SignalEmitter} and attach it via {@link #onSubscribe(Subscription)}.
+	 * Create a {@link SubmissionEmitter} and attach it via {@link #onSubscribe(Subscription)}.
 	 *
-	 * @return a new subscribed {@link SignalEmitter}
+	 * @return a new subscribed {@link SubmissionEmitter}
 	 */
-	default SignalEmitter<T> connectEmitter() {
+	default SubmissionEmitter<T> connectEmitter() {
 		return connectEmitter(true);
 	}
 
 	/**
-	 * Prepare a {@link SignalEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * Prepare a {@link SubmissionEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
 	 * set to true.
 	 *
-	 * @return a new {@link SignalEmitter}
+	 * @return a new {@link SubmissionEmitter}
 	 */
-	default SignalEmitter<T> connectEmitter(boolean autostart) {
-		return SignalEmitter.create(this, autostart);
+	default SubmissionEmitter<T> connectEmitter(boolean autostart) {
+		return SubmissionEmitter.create(this, autostart);
 	}
 
 	@Override

@@ -57,8 +57,8 @@ import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
@@ -669,7 +669,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(BiFunction<S, GenerateOutput<T>, S> generator) {
+	public static <T, S> Flux<T> generate(BiFunction<S, SignalEmitter<T>, S> generator) {
 		return new FluxGenerate<>(generator);
 	}
 
@@ -686,7 +686,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
 		return new FluxGenerate<T, S>(stateSupplier, generator);
 	}
 
@@ -704,7 +704,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator, Consumer<? super S> stateConsumer) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator, Consumer<? super S> stateConsumer) {
 		return new FluxGenerate<>(stateSupplier, generator, stateConsumer);
 	}
 

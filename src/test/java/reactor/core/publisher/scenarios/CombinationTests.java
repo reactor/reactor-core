@@ -38,7 +38,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Logger;
@@ -107,7 +107,7 @@ public class CombinationTests {
 			         latch.countDown();
 		         }));
 
-		SignalEmitter<Integer> session = processor.connectEmitter();
+		SubmissionEmitter<Integer> session = processor.connectEmitter();
 		long emission = session.submit(1);
 		if (emission == -1L) {
 			throw new IllegalStateException("Negatime " + emission);
@@ -144,7 +144,7 @@ public class CombinationTests {
 			         }, null, d -> latch.countDown()));
 		}
 
-		SignalEmitter<Integer> session = processor.connectEmitter();
+		SubmissionEmitter<Integer> session = processor.connectEmitter();
 
 		for (int i = 0; i < n; i++) {
 			while (!session.emit(i)

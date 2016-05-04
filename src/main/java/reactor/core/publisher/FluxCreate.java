@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.util.EmptySubscription;
 
 /**
@@ -39,7 +40,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
 		try {
-			SignalEmitter<T> session = new RequestSignalEmitter<>(yield, subscriber);
+			SubmissionEmitter<T> session = new RequestSignalEmitter<>(yield, subscriber);
 			session.start();
 
 		}
@@ -48,7 +49,7 @@ final class FluxCreate<T> extends Flux<T> implements Introspectable {
 		}
 	}
 
-	static final class RequestSignalEmitter<T> extends SignalEmitter<T> {
+	static final class RequestSignalEmitter<T> extends SubmissionEmitter<T> {
 
 		final Consumer<? super SignalEmitter<T>> yield;
 

@@ -177,7 +177,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 	/*public static void main(String... args) throws Exception {
 		AbstractFluxVerification s = new FluxWithSchedulerTests();
 		Processor p = s.createProcessor(256);
-		SignalEmitter sess = SignalEmitter.create(p);
+		SubmissionEmitter sess = SubmissionEmitter.create(p);
 		p.subscribe(Subscribers.unbounded());
 		Nexus nexus = Nexus.create.withSystemStats();
 		nexus.monitor(p);

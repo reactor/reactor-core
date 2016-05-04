@@ -63,7 +63,7 @@ import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SignalEmitter;
+import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.util.Exceptions;
@@ -288,7 +288,7 @@ public class FluxTests extends AbstractReactorTest {
 		Random random = ThreadLocalRandom.current();
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
-		SignalEmitter<String> s = SignalEmitter.create(d);
+		SubmissionEmitter<String> s = SubmissionEmitter.create(d);
 		Flux<Integer> tasks = d.publishOn(asyncGroup)
 		                          .partition(8)
 		                          .flatMap(stream -> stream.publishOn(asyncGroup)
@@ -392,7 +392,7 @@ public class FluxTests extends AbstractReactorTest {
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
-		SignalEmitter<Integer> s = SignalEmitter.create(d);
+		SubmissionEmitter<Integer> s = SubmissionEmitter.create(d);
 
 		Cancellation c = d.publishOn(asyncGroup)
 		             .partition(8)
@@ -927,7 +927,7 @@ public class FluxTests extends AbstractReactorTest {
 		ExecutorService pool = Executors.newCachedThreadPool(ExecutorUtils.newNamedFactory("tee", null, null, true));
 
 		Flux<Point> points = Flux.<Double, Random>generate(Random::new, (r, sub) -> {
-			sub.onNext(r.nextDouble());
+			sub.emit(r.nextDouble());
 			return r;
 		}).log("points")
 		  .buffer(2)

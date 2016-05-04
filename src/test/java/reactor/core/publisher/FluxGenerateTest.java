@@ -47,7 +47,7 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.onComplete();
+			o.complete();
 			return s;
 		}).subscribe(ts);
 
@@ -75,8 +75,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.onNext(1);
-			o.onComplete();
+			o.emit(1);
+			o.complete();
 			return s;
 		}).subscribe(ts);
 
@@ -90,7 +90,7 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.onError(new RuntimeException("forced failure"));
+			o.fail(new RuntimeException("forced failure"));
 			return s;
 		}).subscribe(ts);
 
@@ -107,8 +107,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.onNext(1);
-			o.onComplete();
+			o.emit(1);
+			o.complete();
 			return s;
 		}).subscribe(ts);
 
@@ -129,9 +129,9 @@ public class FluxGenerateTest {
 
 		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
 			if (s < 11) {
-				o.onNext(s);
+				o.emit(s);
 			} else {
-				o.onComplete();
+				o.complete();
 			}
 			return s + 1;
 		}).subscribe(ts);
@@ -147,9 +147,9 @@ public class FluxGenerateTest {
 
 		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
 			if (s < 11) {
-				o.onNext(s);
+				o.emit(s);
 			} else {
-				o.onComplete();
+				o.complete();
 			}
 			return s + 1;
 		}).subscribe(ts);
@@ -179,7 +179,7 @@ public class FluxGenerateTest {
 		new FluxGenerate<Integer, Integer>(() -> {
 			throw new RuntimeException("forced failure");
 		}, (s, o) -> {
-			o.onNext(1);
+			o.emit(1);
 			return s;
 		}).subscribe(ts);
 
@@ -207,8 +207,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Integer>((s, o) -> {
-			o.onError(new RuntimeException("forced failure"));
-			o.onError(new RuntimeException("forced failure"));
+			o.fail(new RuntimeException("forced failure"));
+			o.fail(new RuntimeException("forced failure"));
 			return s;
 		}).subscribe(ts);
 
@@ -223,8 +223,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Integer>((s, o) -> {
-			o.onComplete();
-			o.onComplete();
+			o.complete();
+			o.complete();
 			return s;
 		}).subscribe(ts);
 
@@ -238,8 +238,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Integer>((s, o) -> {
-			o.onNext(1);
-			o.onNext(1);
+			o.emit(1);
+			o.emit(1);
 			return s;
 		}).subscribe(ts);
 
@@ -255,7 +255,7 @@ public class FluxGenerateTest {
 		AtomicInteger stateConsumer = new AtomicInteger();
 
 		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
-			o.onComplete();
+			o.complete();
 			return s;
 		}, stateConsumer::set).subscribe(ts);
 
@@ -276,9 +276,9 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.onNext(s.next());
+				  o.emit(s.next());
 			  } else {
-				  o.onComplete();
+				  o.complete();
 			  }
 			  return s;
 		  }).subscribe(ts);
@@ -298,9 +298,9 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.onNext(s.next());
+				  o.emit(s.next());
 			  } else {
-				  o.onComplete();
+				  o.complete();
 			  }
 			  return s;
 		  }).subscribe(ts);
@@ -338,9 +338,9 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.onNext(s.next());
+				  o.emit(s.next());
 			  } else {
-				  o.onComplete();
+				  o.complete();
 			  }
 			  return s;
 		  }).subscribe(ts);
@@ -362,9 +362,9 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.onNext(s.next());
+				  o.emit(s.next());
 			  } else {
-				  o.onComplete();
+				  o.complete();
 			  }
 			  return s;
 		  }).subscribe(ts);

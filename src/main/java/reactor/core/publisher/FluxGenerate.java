@@ -23,6 +23,7 @@ import java.util.function.*;
 import org.reactivestreams.Subscriber;
 
 import reactor.core.flow.*;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.*;
 import reactor.core.flow.Fuseable.*;
 
@@ -46,21 +47,21 @@ extends Flux<T> {
 
 	final Callable<S> stateSupplier;
 
-	final BiFunction<S, GenerateOutput<T>, S> generator;
+	final BiFunction<S, SignalEmitter<T>, S> generator;
 
 	final Consumer<? super S> stateConsumer;
 
-	public FluxGenerate(BiFunction<S, GenerateOutput<T>, S> generator) {
+	public FluxGenerate(BiFunction<S, SignalEmitter<T>, S> generator) {
 		this(() -> null, generator, s -> {
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator) {
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
 		this(stateSupplier, generator, s -> {
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, GenerateOutput<T>, S> generator,
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator,
 							 Consumer<? super S> stateConsumer) {
 		this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier");
 		this.generator = Objects.requireNonNull(generator, "generator");
@@ -81,11 +82,11 @@ extends Flux<T> {
 	}
 
 	static final class GenerateSubscription<T, S>
-	  implements QueueSubscription<T>, GenerateOutput<T> {
+	  implements QueueSubscription<T>, SignalEmitter<T> {
 
 		final Subscriber<? super T> actual;
 
-		final BiFunction<S, GenerateOutput<T>, S> generator;
+		final BiFunction<S, SignalEmitter<T>, S> generator;
 
 		final Consumer<? super S> stateConsumer;
 
@@ -104,12 +105,23 @@ extends Flux<T> {
 		Throwable generatedError;
 
 		volatile long requested;
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED = 
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
 		public GenerateSubscription(Subscriber<? super T> actual, S state,
-											 BiFunction<S, GenerateOutput<T>, S> generator, Consumer<? super
+											 BiFunction<S, SignalEmitter<T>, S> generator, Consumer<? super
 		  S> stateConsumer) {
 			this.actual = actual;
 			this.state = state;
@@ -118,17 +130,17 @@ extends Flux<T> {
 		}
 
 		@Override
-		public void onNext(T t) {
+		public Emission emit(T t) {
 			if (terminate) {
-				return;
+				return Emission.CANCELLED;
 			}
 			if (hasValue) {
-				onError(new IllegalStateException("More than one call to onNext"));
-				return;
+				fail(new IllegalStateException("More than one call to onNext"));
+				return Emission.FAILED;
 			}
 			if (t == null) {
-				onError(new NullPointerException("The generator produced a null value"));
-				return;
+				fail(new NullPointerException("The generator produced a null value"));
+				return Emission.FAILED;
 			}
 			hasValue = true;
 			if (outputFused) {
@@ -136,10 +148,11 @@ extends Flux<T> {
 			} else {
 				actual.onNext(t);
 			}
+			return Emission.OK;
 		}
 
 		@Override
-		public void onError(Throwable e) {
+		public void fail(Throwable e) {
 			if (terminate) {
 				return;
 			}
@@ -152,7 +165,7 @@ extends Flux<T> {
 		}
 
 		@Override
-		public void onComplete() {
+		public void complete() {
 			if (terminate) {
 				return;
 			}
@@ -186,7 +199,7 @@ extends Flux<T> {
 		void fastPath() {
 			S s = state;
 
-			final BiFunction<S, GenerateOutput<T>, S> g = generator;
+			final BiFunction<S, SignalEmitter<T>, S> g = generator;
 
 			for (; ; ) {
 
@@ -211,7 +224,7 @@ extends Flux<T> {
 					cleanup(s);
 
 					actual.onError(new IllegalStateException("The generator didn't call any of the " +
-					  "GenerateOutput method"));
+					  "SignalEmitter method"));
 					return;
 				}
 
@@ -224,7 +237,7 @@ extends Flux<T> {
 
 			long e = 0L;
 
-			final BiFunction<S, GenerateOutput<T>, S> g = generator;
+			final BiFunction<S, SignalEmitter<T>, S> g = generator;
 
 			for (; ; ) {
 				while (e != n) {
@@ -250,7 +263,7 @@ extends Flux<T> {
 						cleanup(s);
 
 						actual.onError(new IllegalStateException("The generator didn't call any of the " +
-						  "GenerateOutput method"));
+						  "SignalEmitter method"));
 						return;
 					}
 
@@ -329,7 +342,7 @@ extends Flux<T> {
 				
 				if (!terminate) {
 					throw new IllegalStateException("The generator didn't call any of the " +
-						"GenerateOutput method");
+						"SignalEmitter method");
 				}
 				return null;
 			}
