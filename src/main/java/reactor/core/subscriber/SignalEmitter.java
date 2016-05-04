@@ -35,17 +35,17 @@ public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cance
                                           Requestable {
 
 	/**
-	 * @see {@link Subscriber#onComplete()}
+	 * @see Subscriber#onComplete()
 	 */
 	void complete();
 
 	/**
-	 * @see {@link Subscriber#onNext(Object)}
+	 * @see Subscriber#onNext(Object)
 	 */
 	Emission emit(T t);
 
 	/**
-	 * @see {@link Subscriber#onError(Throwable)}
+	 * @see Subscriber#onError(Throwable)
 	 */
 	void fail(Throwable e);
 

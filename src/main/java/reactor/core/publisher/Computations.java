@@ -289,7 +289,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * It provides for reference counting when the containing {@link Computations} is used as a worker factory
 	 * itself.
 	 * If reference count returns to 0 it will automatically createWorker
-	 * {@link Scheduler.Worker#shutdown()}.
+	 * {@link reactor.core.scheduler.Scheduler.Worker#shutdown()}.
 	 * <p>
 	 * Note: If the schedulerFactory generates a {@link Processor} it will be subscribed once.
 	 *
@@ -310,7 +310,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * {@link Supplier}
 	 * once each.
 	 * <p>
-	 * It provides for reference counting on {@link Computations#createWorker()} and {@link Scheduler.Worker#shutdown()}
+	 * It provides for reference counting on {@link Computations#createWorker()} and {@link reactor.core.scheduler.Scheduler.Worker#shutdown()}
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
 	 * {@link Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
@@ -332,7 +332,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * Create a {@link Computations} pool of N {@literal parallelSchedulers} size calling the {@link Processor} {@link
 	 * Supplier} once each.
 	 * <p>
-	 * It provides for reference counting on {@link Computations#createWorker()} and {@link Scheduler.Worker#shutdown()} If
+	 * It provides for reference counting on {@link Computations#createWorker()} and {@link reactor.core.scheduler.Scheduler.Worker#shutdown()} If
 	 * autoShutdown is given true and reference count returns to 0 it will automatically call {@link
 	 * Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
