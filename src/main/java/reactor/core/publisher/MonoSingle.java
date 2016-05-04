@@ -182,8 +182,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 					subscriber.onError(new NoSuchElementException("Source was empty"));
 				}
 			} else if (c == 1) {
-				subscriber.onNext(value);
-				subscriber.onComplete();
+				complete(value);
 			}
 		}
 
