@@ -3705,6 +3705,39 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxRepeatWhen<>(this, whenFactory);
 	}
 
+
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}. Will
+	 * retain up to {@link PlatformDependent#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
+	 * replayed.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png"
+	 * alt="">
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replay() {
+		return replay(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+	}
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}.
+	 * Will retain up to the given history size onNext signals. Completion and Error will also be
+	 * replayed.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png" alt="">
+	 *
+	 * @param history number of events retained in history excluding complete and error
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 *
+	 */
+	public final ConnectableFlux<T> replay(int history) {
+		return process(ReplayProcessor.create(history));
+	}
+
 	/**
 	 * Re-subscribes to this {@link Flux} sequence if it signals any error
 	 * either indefinitely.
