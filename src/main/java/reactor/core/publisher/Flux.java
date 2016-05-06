@@ -2288,53 +2288,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxDematerialize<>(thiz);
 	}
 
-	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
-	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
-	 * fast async event loops.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 * <p>
-	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
-	 *
-	 * @return a {@link Flux} producing asynchronously
-	 */
-	public final Flux<T> publishOn(Scheduler scheduler) {
-		return publishOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
-	}
-
-	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
-	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
-	 * fast async event loops.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 * <p>
-	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
-	 * @param prefetch the asynchronous boundary capacity
-	 *
-	 * @return a {@link Flux} producing asynchronously
-	 */
-	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
-		if (this instanceof Fuseable.ScalarCallable) {
-            @SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
-            return new FluxSubscribeOnValue<>(value, scheduler);
-		}
-
-		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
-	}
 
 	/**
 	 * For each {@link Subscriber}, tracks this {@link Flux} values that have been seen and
@@ -3532,6 +3485,53 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new MonoProcessor<>(this);
 	}
 
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
+	 * fast async event loops.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 *
+	 * @return a {@link Flux} producing asynchronously
+	 */
+	public final Flux<T> publishOn(Scheduler scheduler) {
+		return publishOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
+	 * fast async event loops.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param prefetch the asynchronous boundary capacity
+	 *
+	 * @return a {@link Flux} producing asynchronously
+	 */
+	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
+		if (this instanceof Fuseable.ScalarCallable) {
+			@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
+			return new FluxSubscribeOnValue<>(value, scheduler);
+		}
+
+		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
+	}
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
