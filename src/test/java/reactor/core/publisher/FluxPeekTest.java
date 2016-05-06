@@ -210,7 +210,7 @@ public class FluxPeekTest {
 		Throwable err = new Exception("test");
 
 		new FluxPeek<>(new FluxJust<>(1),
-				null, d -> Exceptions.propagate(err),
+				null, d -> {throw Exceptions.propagate(err);},
 				null,
 				null,
 				null,
@@ -225,7 +225,7 @@ public class FluxPeekTest {
 
 		try {
 			new FluxPeek<>(new FluxJust<>(1),
-					null, d -> Exceptions.bubble(err),
+					null, d -> {throw Exceptions.bubble(err);},
 					null,
 					null,
 					null,
