@@ -49,6 +49,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 
 	final Consumer<? super T> onNextCall;
 
+	final Consumer<? super T> onAfterNextCall;
+
 	final Consumer<? super Throwable> onErrorCall;
 
 	final Runnable onCompleteCall;
@@ -60,7 +62,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 	final Runnable onCancelCall;
 
 	public FluxPeekFuseable(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-						 Consumer<? super T> onNextCall, Consumer<? super Throwable> onErrorCall, Runnable
+						 Consumer<? super T> onNextCall, Consumer<? super T>
+			onAfterNextCall, Consumer<? super Throwable> onErrorCall, Runnable
 						   onCompleteCall,
 						 Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
 		super(source);
@@ -69,6 +72,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 		}
 		
 		this.onSubscribeCall = onSubscribeCall;
+		this.onAfterNextCall = onAfterNextCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
@@ -163,6 +167,22 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 						Exceptions.throwIfFatal(e);
 						onError(Exceptions.unwrap(e));
 						return;
+					}
+				}
+				if(parent.onAfterNextCall() != null){
+					try{
+						actual.onNext(t);
+						return;
+					}
+					finally {
+						try {
+							parent.onAfterNextCall().accept(t);
+						}
+						catch (Throwable e) {
+							cancel();
+							Exceptions.throwIfFatal(e);
+							onError(Exceptions.unwrap(e));
+						}
 					}
 				}
 				actual.onNext(t);
@@ -367,6 +387,22 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 						return;
 					}
 				}
+				if(parent.onAfterNextCall() != null){
+					try{
+						actual.onNext(t);
+						return;
+					}
+					finally {
+						try {
+							parent.onAfterNextCall().accept(t);
+						}
+						catch (Throwable e) {
+							cancel();
+							Exceptions.throwIfFatal(e);
+							onError(Exceptions.unwrap(e));
+						}
+					}
+				}
 				actual.onNext(t);
 			} else 
 			if (sourceMode == ASYNC) {
@@ -386,6 +422,22 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 						Exceptions.throwIfFatal(e);
 						onError(Exceptions.unwrap(e));
 						return true;
+					}
+				}
+
+				if(parent.onAfterNextCall() != null){
+					try{
+						return actual.tryOnNext(t);
+					}
+					finally {
+						try {
+							parent.onAfterNextCall().accept(t);
+						}
+						catch (Throwable e) {
+							cancel();
+							Exceptions.throwIfFatal(e);
+							onError(Exceptions.unwrap(e));
+						}
 					}
 				}
 				return actual.tryOnNext(t);
@@ -528,6 +580,11 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 	@Override
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
+	}
+
+	@Override
+	public Consumer<? super T> onAfterNextCall() {
+		return onAfterNextCall;
 	}
 
 	@Override

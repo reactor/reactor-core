@@ -2354,6 +2354,23 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Triggered after the {@link Flux} emits an item.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
+	 * <p>
+	 * @param onNext the callback to call after {@link Subscriber#onNext}
+	 *
+	 * @return an observed  {@link Flux}
+	 */
+	public final Flux<T> doAfterNext(Consumer<? super T> onNext) {
+		if (this instanceof Fuseable) {
+			return new FluxPeekFuseable<>(this, null, null, onNext, null, null, null,
+					null, null);
+		}
+		return new FluxPeek<>(this, null, null, onNext, null, null, null, null, null);
+	}
+
+	/**
 	 * Triggered after the {@link Flux} terminates, either by completing downstream successfully or with an error.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doafterterminate.png" alt="">
@@ -2364,9 +2381,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, null, null, afterTerminate, null, null);
+			return new FluxPeekFuseable<>(this, null, null, null, null, null,
+					afterTerminate, null, null);
 		}
-		return new FluxPeek<>(this, null, null, null, null, afterTerminate, null, null);
+		return new FluxPeek<>(this, null, null, null, null, null, afterTerminate, null, null);
 	}
 
 	/**
@@ -2380,9 +2398,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, null, null, null, null, onCancel);
+			return new FluxPeekFuseable<>(this, null, null, null, null, null, null, null, onCancel);
 		}
-		return new FluxPeek<>(this, null, null, null, null, null, null, onCancel);
+		return new FluxPeek<>(this, null, null, null, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -2396,9 +2414,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, null, onComplete, null, null, null);
+			return new FluxPeekFuseable<>(this, null, null, null, null, onComplete, null, null, null);
 		}
-		return new FluxPeek<>(this, null, null, null, onComplete, null, null, null);
+		return new FluxPeek<>(this, null, null, null, null, onComplete, null, null, null);
 	}
 
 	/**
@@ -2412,9 +2430,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnError(Consumer<Throwable> onError) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, onError, null, null, null, null);
+			return new FluxPeekFuseable<>(this, null, null, null, onError, null, null, null, null);
 		}
-		return new FluxPeek<>(this, null, null, onError, null, null, null, null);
+		return new FluxPeek<>(this, null, null, null, onError, null, null, null, null);
 	}
 
 	/**
@@ -2448,9 +2466,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, onNext, null, null, null, null, null);
+			return new FluxPeekFuseable<>(this, null, onNext, null, null, null, null,
+					null, null);
 		}
-		return new FluxPeek<>(this, null, onNext, null, null, null, null, null);
+		return new FluxPeek<>(this, null, onNext, null, null, null, null, null, null);
 	}
 
 	/**
@@ -2465,9 +2484,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, null, null, null, consumer, null);
+			return new FluxPeekFuseable<>(this, null, null, null, null, null, null, consumer, null);
 		}
-		return new FluxPeek<>(this, null, null, null, null, null, consumer, null);
+		return new FluxPeek<>(this, null, null, null, null, null, null, consumer, null);
 	}
 
 	/**
@@ -2481,9 +2500,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null);
+			return new FluxPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null, null);
 		}
-		return new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null);
+		return new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null, null);
 	}
 
 	/**
@@ -2497,9 +2516,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, null, null, onTerminate, null, null, null);
+			return new FluxPeekFuseable<>(this, null, null, null, null, onTerminate, null, null, null);
 		}
-		return new FluxPeek<>(this, null, null, null, onTerminate, null, null, null);
+		return new FluxPeek<>(this, null, null, null, null, onTerminate, null, null, null);
 	}
 
 	/**

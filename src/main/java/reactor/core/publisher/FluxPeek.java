@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
 import java.util.function.Consumer;
@@ -45,14 +44,15 @@ import reactor.core.util.Exceptions;
 
 /**
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
- *
  * @since 2.5
  */
-final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publisher.FluxPeekHelper<T> {
+final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
 	final Consumer<? super T> onNextCall;
+
+	final Consumer<? super T> onAfterNextCall;
 
 	final Consumer<? super Throwable> onErrorCall;
 
@@ -64,16 +64,14 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source,
-			Consumer<? super Subscription> onSubscribeCall,
-			Consumer<? super T> onNextCall,
-			Consumer<? super Throwable> onErrorCall,
-			Runnable onCompleteCall,
-			Runnable onAfterTerminateCall,
-			LongConsumer onRequestCall,
-			Runnable onCancelCall) {
+	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
+						 Consumer<? super T> onNextCall, Consumer<? super T> onAfterNextCall,
+			Consumer<? super Throwable> onErrorCall, Runnable
+						   onCompleteCall,
+						 Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
+		this.onAfterNextCall = onAfterNextCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
@@ -83,19 +81,20 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new PeekFuseableSubscriber<>(s, this));
 			return;
 		}
 		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new PeekConditionalSubscriber<>((ConditionalSubscriber<? super T>) s, this));
+			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
+			ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>)s;
+			source.subscribe(new PeekConditionalSubscriber<>(s2, this));
 			return;
 		}
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
-
+	
 	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer {
 
 		final Subscriber<? super T> actual;
@@ -111,10 +110,9 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 		@Override
 		public void request(long n) {
-			if (parent.onRequestCall() != null) {
+			if(parent.onRequestCall() != null) {
 				try {
-					parent.onRequestCall()
-					      .accept(n);
+					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
 					cancel();
@@ -127,10 +125,9 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 		@Override
 		public void cancel() {
-			if (parent.onCancelCall() != null) {
+			if(parent.onCancelCall() != null) {
 				try {
-					parent.onCancelCall()
-					      .run();
+					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
@@ -144,10 +141,9 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (parent.onSubscribeCall() != null) {
+			if(parent.onSubscribeCall() != null) {
 				try {
-					parent.onSubscribeCall()
-					      .accept(s);
+					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
 					s.cancel();
@@ -162,10 +158,9 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 		@Override
 		public void onNext(T t) {
-			if (parent.onNextCall() != null) {
+			if(parent.onNextCall() != null) {
 				try {
-					parent.onNextCall()
-					      .accept(t);
+					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
 					cancel();
@@ -174,31 +169,47 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 					return;
 				}
 			}
+
+			if(parent.onAfterNextCall() != null){
+				try{
+					actual.onNext(t);
+					return;
+				}
+				finally {
+					try {
+						parent.onAfterNextCall().accept(t);
+					}
+					catch (Throwable e) {
+						cancel();
+						Exceptions.throwIfFatal(e);
+						onError(Exceptions.unwrap(e));
+					}
+				}
+			}
+
+
 			actual.onNext(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (parent.onErrorCall() != null) {
+			if(parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				parent.onErrorCall().accept(t);
 			}
 
 			actual.onError(t);
 
-			if (parent.onAfterTerminateCall() != null) {
+			if(parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall()
-					      .run();
+					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
 					e.addSuppressed(Exceptions.unwrap(t));
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
+					if(parent.onErrorCall() != null) {
+						parent.onErrorCall().accept(_e);
 					}
 					actual.onError(_e);
 				}
@@ -207,10 +218,9 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 		@Override
 		public void onComplete() {
-			if (parent.onCompleteCall() != null) {
+			if(parent.onCompleteCall() != null) {
 				try {
-					parent.onCompleteCall()
-					      .run();
+					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
@@ -221,17 +231,15 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 
 			actual.onComplete();
 
-			if (parent.onAfterTerminateCall() != null) {
+			if(parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall()
-					      .run();
+					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Exceptions.unwrap(e);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
+					if(parent.onErrorCall() != null) {
+						parent.onErrorCall().accept(_e);
 					}
 					actual.onError(_e);
 				}
@@ -254,33 +262,50 @@ final class FluxPeek<T> extends FluxSource<T, T> implements reactor.core.publish
 		return onSubscribeCall;
 	}
 
+
+
 	@Override
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
+
+
 
 	@Override
 	public Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
+
+
 	@Override
 	public Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
+
+
 
 	@Override
 	public Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
+
+
 	@Override
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
+
+
 	@Override
 	public Runnable onCancelCall() {
 		return onCancelCall;
+	}
+
+	@Override
+	public Consumer<? super T> onAfterNextCall() {
+		return onAfterNextCall;
 	}
 }

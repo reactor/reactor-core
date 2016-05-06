@@ -22,13 +22,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.test.TestSubscriber;
+import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 public class FluxPeekTest {
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		new FluxPeek<>(null, null, null, null, null, null, null, null);
+		new FluxPeek<>(null, null, null, null, null, null, null, null, null);
 	}
 
 	@Test
@@ -37,6 +40,7 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
+		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -45,7 +49,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(new FluxJust<>(1),
 		  onSubscribe::set,
-		  onNext::set,
+		  onNext::set, onAfterNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -55,6 +59,7 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertEquals((Integer) 1, onNext.get());
+		Assert.assertEquals((Integer) 1, onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertTrue(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -68,15 +73,16 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
+		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.error(new RuntimeException("forced failure")),
+		new FluxPeek<>(new MonoError<Integer>(new RuntimeException("forced failure")),
 		  onSubscribe::set,
-		  onNext::set,
+		  onNext::set, onAfterNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -86,6 +92,7 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
+		Assert.assertNull(onAfterNext.get());
 		Assert.assertTrue(onError.get() instanceof RuntimeException);
 		Assert.assertFalse(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -99,15 +106,16 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
+		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.empty(),
+		new FluxPeek<>(MonoEmpty.instance(),
 		  onSubscribe::set,
-		  onNext::set,
+		  onNext::set, onAfterNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -117,6 +125,7 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
+		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertTrue(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -130,6 +139,7 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
+		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -138,7 +148,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(FluxNever.instance(),
 		  onSubscribe::set,
-		  onNext::set,
+		  onNext::set, onAfterNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -148,6 +158,7 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
+		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertFalse(onComplete.get());
 		Assert.assertFalse(onAfterComplete.get());
@@ -161,6 +172,7 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
+		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -169,7 +181,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(FluxNever.instance(),
 		  onSubscribe::set,
-		  onNext::set,
+		  onNext::set, onAfterNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -179,6 +191,7 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
+		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertFalse(onComplete.get());
 		Assert.assertFalse(onAfterComplete.get());
@@ -197,28 +210,26 @@ public class FluxPeekTest {
 		Throwable err = new Exception("test");
 
 		new FluxPeek<>(new FluxJust<>(1),
-				null,
-				d -> { throw Exceptions.propagate(err); },
-				null,
+				null, d -> Exceptions.propagate(err),
 				null,
 				null,
 				null,
+				null, null,
 				null
 		).subscribe(ts);
 
 		//nominal error path (DownstreamException)
-		ts.assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("test")));
+		ts.assertErrorMessage("test");
 
 		ts = new TestSubscriber<>();
 
 		try {
 			new FluxPeek<>(new FluxJust<>(1),
-					null,
-					d -> { throw Exceptions.bubble(err); },
-					null,
+					null, d -> Exceptions.bubble(err),
 					null,
 					null,
 					null,
+					null, null,
 					null).subscribe(ts);
 
 			Assert.fail();
@@ -228,4 +239,112 @@ public class FluxPeekTest {
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
 		}
 	}
+
+	@Test
+	public void syncFusionAvailable() {
+		TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+		Flux.range(1, 2)
+		    .doOnNext(v -> {
+		    })
+		    .subscribe(ts);
+
+		Subscription s = ts.upstream();
+		Assert.assertTrue("Non-fuseable upstream: " + s,
+				s instanceof Fuseable.QueueSubscription);
+	}
+
+	@Test
+	public void asyncFusionAvailable() {
+		TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+		new UnicastProcessor<Integer>(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
+		})
+		                                                                  .subscribe(ts);
+
+		Subscription s = ts.upstream();
+		Assert.assertTrue("Non-fuseable upstream" + s,
+				s instanceof Fuseable.QueueSubscription);
+	}
+
+	@Test
+	public void conditionalFusionAvailable() {
+		TestSubscriber<Object> ts = new TestSubscriber<>();
+
+		FluxSource.wrap(u -> {
+			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
+				EmptySubscription.error(u,
+						new IllegalArgumentException("The subscriber is not conditional: " + u));
+			}
+			else {
+				EmptySubscription.complete(u);
+			}
+		})
+		    .doOnNext(v -> {
+		    })
+		    .filter(v -> true)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertNoValues()
+		  .assertComplete();
+	}
+
+	@Test
+	public void conditionalFusionAvailableWithFuseable() {
+		TestSubscriber<Object> ts = new TestSubscriber<>();
+
+		FluxSource.wrap(u -> {
+			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
+				EmptySubscription.error(u,
+						new IllegalArgumentException("The subscriber is not conditional: " + u));
+			}
+			else {
+				EmptySubscription.complete(u);
+			}
+		})
+		    .doOnNext(v -> {
+		    })
+		    .filter(v -> true)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertNoValues()
+		  .assertComplete();
+	}
+
+	@Test
+	public void syncCompleteCalled() {
+		AtomicBoolean onComplete = new AtomicBoolean();
+
+		TestSubscriber<Object> ts = new TestSubscriber<>();
+
+		Flux.range(1, 2)
+		    .doOnComplete(() -> onComplete.set(true))
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertValues(1, 2)
+		  .assertComplete();
+
+		Assert.assertTrue("onComplete not called back", onComplete.get());
+	}
+
+	@Test
+	public void syncdoAfterTerminateCalled() {
+		AtomicBoolean onTerminate = new AtomicBoolean();
+
+		TestSubscriber<Object> ts = new TestSubscriber<>();
+
+		Flux.range(1, 2)
+		    .doAfterTerminate(() -> onTerminate.set(true))
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertValues(1, 2)
+		  .assertComplete();
+
+		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
+
 }

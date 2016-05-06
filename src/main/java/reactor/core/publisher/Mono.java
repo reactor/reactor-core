@@ -1212,13 +1212,34 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/dematerialize1.png" alt="">
 	 * @param <X> the dematerialized type
-	 * 
+	 *
 	 * @return a dematerialized {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
 	public final <X> Mono<X> dematerialize() {
 		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
 		return MonoSource.wrap(new FluxDematerialize<>(thiz));
+	}
+
+	/**
+	 * Triggered after the {@link Mono} emits a data successfully.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
+	 * <p>
+	 * @param onNext the callback to call after {@link Subscriber#onNext}
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> doAfterNext(Consumer<? super T> onNext) {
+		if (this instanceof Fuseable) {
+			return new MonoPeekFuseable<>(this, null, null, onNext, null,
+					null,
+					null, null, null);
+		}
+		return new MonoPeek<>(this, null, null, onNext, null, null, null,
+				null,
+				null);
 	}
 
 	/**
@@ -1254,10 +1275,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, null, null, null, null, onCancel));
+			return new MonoPeekFuseable<>(this, null, null, null, null, null, null, null, onCancel);
 		}
-		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, null, onCancel));
+		return new MonoPeek<>(this, null, null, null, null, null, null, null, onCancel);
 	}
+
 
 	/**
 	 * Triggered when the {@link Mono} emits a data successfully.
@@ -1265,18 +1287,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
 	 * <p>
-	 * @param onNext the callback to call on
-	 * {@link Subscriber#onNext} or {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext}
+	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, onNext, null, null,
-					null, null, null));
+			return new MonoPeekFuseable<>(this, null, onNext, null, null, null,
+					null, null, null);
 		}
-		return MonoSource.wrap(new FluxPeek<>(this, null, onNext, null, null, null, null,
-				null));
+		return new MonoPeek<>(this, null, onNext, null, null, null, null, null,
+				null);
 	}
 
 	/**
@@ -1312,9 +1333,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, onError, null, null, null, null));
+			return new MonoPeekFuseable<>(this, null, null, null, onError, null, null, null, null);
 		}
-		return MonoSource.wrap(new FluxPeek<>(this, null, null, onError, null, null, null, null));
+		return new MonoPeek<>(this, null, null, null, onError, null, null, null, null);
 	}
 
 	/**
@@ -1329,9 +1350,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, null, null, null, null, consumer, null));
+			return new MonoPeekFuseable<>(this, null, null, null, null, null, null, consumer, null);
 		}
-		return MonoSource.wrap(new FluxPeek<>(this, null, null, null, null, null, consumer, null));
+		return new MonoPeek<>(this, null, null, null, null, null, null, consumer, null);
 	}
 
 	/**
@@ -1346,9 +1367,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		if (this instanceof Fuseable) {
-			return MonoSource.wrap(new FluxPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null));
+			return new MonoPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null, null);
 		}
-		return MonoSource.wrap(new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null));
+		return new MonoPeek<>(this, onSubscribe, null, null, null, null, null, null, null);
 	}
 
 	/**
