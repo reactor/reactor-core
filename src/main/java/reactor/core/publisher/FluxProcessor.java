@@ -69,7 +69,4 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		}
 	}
 
-	protected FluxProcessor() {
-	}
-
 }

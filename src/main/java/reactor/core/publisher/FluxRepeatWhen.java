@@ -205,7 +205,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	implements Subscriber<Object>, Loopback {
 		RepeatWhenMainSubscriber<?> main;
 
-		final EmitterProcessor<Long> completionSignal = EmitterProcessor.create();
+		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();
 
 		@Override
 		public void onSubscribe(Subscription s) {

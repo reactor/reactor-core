@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-
 import reactor.core.subscriber.Subscribers;
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.EmptySubscription;
@@ -201,7 +200,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 	implements Subscriber<Object>, Loopback {
 		RetryWhenMainSubscriber<?> main;
 
-		final EmitterProcessor<Throwable> completionSignal = EmitterProcessor.create();
+		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
 
 		@Override
 		public void onSubscribe(Subscription s) {
