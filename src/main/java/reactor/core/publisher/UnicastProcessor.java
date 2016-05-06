@@ -111,6 +111,12 @@ public final class UnicastProcessor<T>
 
 	volatile boolean enableOperatorFusion;
 
+	@Override
+	public UnicastProcessor<T> connect() {
+		onSubscribe(EmptySubscription.INSTANCE);
+		return this;
+	}
+
 	UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;

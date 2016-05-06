@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
@@ -32,8 +33,8 @@ import reactor.core.util.ExecutorUtils;
  *
  * @author Stephane Maldini
  */
-public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Cancellable, reactor.core.flow.Receiver {
+abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+		implements Cancellable, Receiver {
 
 	protected final ExecutorService executor;
 	protected final ClassLoader     contextClassLoader;
@@ -139,14 +140,6 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	@Override
 	public boolean isCancelled() {
 		return cancelled;
-	}
-
-	/**
-	 * @return true if the classLoader marker is detected in the current thread
-	 */
-	public final boolean isInContext() {
-		return Thread.currentThread()
-		             .getContextClassLoader() == contextClassLoader;
 	}
 
 	@Override
