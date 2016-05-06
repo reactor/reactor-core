@@ -33,7 +33,7 @@ import reactor.core.util.ExecutorUtils;
  *
  * @author Stephane Maldini
  */
-abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements Cancellable, Receiver {
 
 	protected final ExecutorService executor;
