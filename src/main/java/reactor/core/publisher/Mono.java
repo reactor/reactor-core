@@ -1260,6 +1260,26 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Triggered when the {@link Mono} emits a data successfully.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonnext.png" alt="">
+	 * <p>
+	 * @param onNext the callback to call on
+	 * {@link Subscriber#onNext} or {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext}
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
+		if (this instanceof Fuseable) {
+			return MonoSource.wrap(new FluxPeekFuseable<>(this, null, onNext, null, null,
+					null, null, null));
+		}
+		return MonoSource.wrap(new FluxPeek<>(this, null, onNext, null, null, null, null,
+				null));
+	}
+
+	/**
 	 * Triggered when the {@link Mono} completes successfully.
 	 *
 	 * <ul>
@@ -1270,7 +1290,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonsuccess.png" alt="">
 	 * <p>
-	 * @param onSuccess the callback to call on
+	 * @param onSuccess the callback to call on, argument is null if the {@link Mono}
+	 * completes without data
 	 * {@link Subscriber#onNext} or {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext}
 	 *
 	 * @return a new {@link Mono}
