@@ -34,7 +34,7 @@ public class FluxPublishTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		range(1, 5).publish(o -> zip(a -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
+		range(1, 5).publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		           .subscribe(ts);
 
 		ts.assertValues(1 + 2, 2 + 3, 3 + 4, 4 + 5)
@@ -48,7 +48,8 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		range(1, 5).hide()
-		           .publish(o -> zip(a -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
+		           .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o
+				           .skip(1)))
 		           .subscribe(ts);
 
 		ts.assertValues(1 + 2, 2 + 3, 3 + 4, 4 + 5)
@@ -64,7 +65,7 @@ public class FluxPublishTest {
 		UnicastProcessor<Integer> up =
 				new UnicastProcessor<>(QueueSupplier.<Integer>get(16).get());
 
-		up.publish(o -> zip(a -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
+		up.publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		  .subscribe(ts);
 
 		up.onNext(1);
