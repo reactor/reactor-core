@@ -34,7 +34,6 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);
 	static final Supplier WAITING_XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true, false);
 	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true, false);
-	static final Supplier WAITING_ONE_SUPPLIER     = new QueueSupplier<>(1, true, true);
 
 	final long    batchSize;
 	final boolean waiting;
@@ -94,19 +93,6 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> one() {
 		return (Supplier<Queue<T>>) ONE_SUPPLIER;
-	}
-
-	/**
-	 *
-	 * @param <T> the reified {@link Queue} generic type
-	 * @return a bounded {@link Queue} {@link Supplier}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> one(boolean waiting) {
-		if (!waiting) {
-			return (Supplier<Queue<T>>) ONE_SUPPLIER;
-		}
-		return WAITING_ONE_SUPPLIER;
 	}
 
 	/**
@@ -194,12 +180,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return new SpscLinkedArrayQueue<>(PlatformDependent.SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
+			if(waiting){
+				throw new IllegalArgumentException("Cannot create blocking queues of " +
+						"size one");
+			}
 			return new OneQueue<>();
 		}
 		else if(waiting) {
 			return RingBuffer.blockingBoundedQueue(
-					multiproducer ? RingBuffer.<T>createSingleProducer((int) batchSize) :
-							RingBuffer .<T>createMultiProducer((int) batchSize),
+					multiproducer ? RingBuffer.createSingleProducer((int) batchSize) :
+							RingBuffer .createMultiProducer((int) batchSize),
 					-1L);
 		}
 		else{
