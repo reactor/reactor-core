@@ -2377,7 +2377,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(Mono<V> other) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+//		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+	    if (this instanceof MonoConcatIgnore) {
+            MonoConcatIgnore<T> a = (MonoConcatIgnore<T>) this;
+	        return a.shift(other);
+	    }
+	    return new MonoConcatIgnore<>(new Mono[] { this }, other);
 	}
 
 	/**
@@ -2394,7 +2399,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+//		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+	    return then(defer(sourceSupplier));
 	}
 
 	/**
