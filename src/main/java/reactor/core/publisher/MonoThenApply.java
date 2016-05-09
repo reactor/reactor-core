@@ -16,17 +16,19 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.queue.QueueSupplier;
-import reactor.core.util.PlatformDependent;
+import org.reactivestreams.*;
+
+import reactor.core.flow.Fuseable;
+import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.util.*;
 
 /**
- * Peeks out values that make a filter function return false.
+ * Given a Mono source, applies a function on its single item and continues
+ * with that Mono instance, emitting its final result.
  *
  * @param <T> the value type
  */
@@ -35,7 +37,7 @@ import reactor.core.util.PlatformDependent;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoThenApply<T, R> extends MonoSource<T, R> {
+final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
@@ -52,11 +54,172 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> {
 			return;
 		}
 
-		source.subscribe(new FluxFlatMap.FlatMapMain<>(s,
-				mapper,
-				false,
-				Integer.MAX_VALUE,
-				QueueSupplier.one(), PlatformDependent.SMALL_BUFFER_SIZE,
-				QueueSupplier.one()));
+		MonoThenApplyManager<T, R> manager = new MonoThenApplyManager<>(s, mapper);
+		s.onSubscribe(manager);
+		
+		source.subscribe(manager);
+	}
+	
+	static final class MonoThenApplyManager<T, R> extends DeferredScalarSubscriber<T, R> {
+
+	    final Function<? super T, ? extends Mono<? extends R>> mapper;
+
+	    final SecondSubscriber<R> second;
+	    
+	    boolean done;
+	    
+        volatile Subscription s;
+        @SuppressWarnings("rawtypes")
+        static final AtomicReferenceFieldUpdater<MonoThenApplyManager, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(MonoThenApplyManager.class, Subscription.class, "s");
+	    
+        public MonoThenApplyManager(Subscriber<? super R> subscriber, Function<? super T, ? extends Mono<? extends R>> mapper) {
+            super(subscriber);
+            this.mapper = mapper;
+            this.second = new SecondSubscriber<>(this);
+        }
+	    
+        @Override
+        public void onSubscribe(Subscription s) {
+            if (BackpressureUtils.setOnce(S, this, s)) {
+                s.request(Long.MAX_VALUE);
+            }
+        }
+        
+        @Override
+        public void onNext(T t) {
+            if (done) {
+                Exceptions.onNextDropped(t);
+                return;
+            }
+            done = true;
+            
+            Mono<? extends R> m;
+            
+            try {
+                m = mapper.apply(t);
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                onError(ex);
+                return;
+            }
+            
+            if (m == null) {
+                subscriber.onError(new NullPointerException("The mapper returned a null Mono"));
+                return;
+            }
+            
+            if (m instanceof Callable) {
+                @SuppressWarnings("unchecked")
+                Callable<R> c = (Callable<R>) m;
+                
+                R v;
+                try {
+                    v = c.call();
+                } catch (Throwable ex) {
+                    Exceptions.throwIfFatal(ex);
+                    onError(ex);
+                    return;
+                }
+                
+                if (v == null) {
+                    subscriber.onComplete();
+                } else {
+                    complete(v);
+                }
+                return;
+            }
+            
+            m.subscribe(second);
+        }
+        
+        @Override
+        public void onError(Throwable t) {
+            if (done) {
+                Exceptions.onErrorDropped(t);
+                return;
+            }
+            done = true;
+            subscriber.onError(t);
+        }
+        
+        @Override
+        public void onComplete() {
+            if (done) {
+                return;
+            }
+            done = true;
+            subscriber.onComplete();
+        }
+        
+        @Override
+        public void cancel() {
+            super.cancel();
+            second.cancel();
+        }
+        
+        void secondError(Throwable ex) {
+            subscriber.onError(ex);
+        }
+        
+        void secondComplete() {
+            subscriber.onComplete();
+        }
+        
+        static final class SecondSubscriber<R> implements Subscriber<R> {
+
+            final MonoThenApplyManager<?, R> parent;
+            
+            volatile Subscription s;
+            @SuppressWarnings("rawtypes")
+            static final AtomicReferenceFieldUpdater<SecondSubscriber, Subscription> S =
+                    AtomicReferenceFieldUpdater.newUpdater(SecondSubscriber.class, Subscription.class, "s");
+            
+            boolean done;
+            
+            public SecondSubscriber(MonoThenApplyManager<?, R> parent) {
+                this.parent = parent;
+            }
+            
+            @Override
+            public void onSubscribe(Subscription s) {
+                if (BackpressureUtils.setOnce(S, this, s)) {
+                    s.request(Long.MAX_VALUE);
+                }
+            }
+
+            @Override
+            public void onNext(R t) {
+                if (done) {
+                    Exceptions.onNextDropped(t);
+                    return;
+                }
+                this.parent.complete(t);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                if (done) {
+                    Exceptions.onNextDropped(t);
+                    return;
+                }
+                done = true;
+                this.parent.secondError(t);
+            }
+
+            @Override
+            public void onComplete() {
+                if (done) {
+                    return;
+                }
+                done = true;
+                this.parent.secondComplete();
+            }
+            
+            void cancel() {
+                BackpressureUtils.terminate(S, this);
+            }
+            
+        }
 	}
 }

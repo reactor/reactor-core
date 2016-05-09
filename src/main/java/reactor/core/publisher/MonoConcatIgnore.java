@@ -24,8 +24,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
-import rx.exceptions.Exceptions;
+import reactor.core.util.*;
 
 /**
  * Concatenates a several Mono sources with a final Mono source by
@@ -223,6 +222,8 @@ final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable {
         @SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<MonoConcatAcceptSubscriber, Subscription> S =
                 AtomicReferenceFieldUpdater.newUpdater(MonoConcatAcceptSubscriber.class, Subscription.class, "s");
+
+        boolean done;
         
         public MonoConcatAcceptSubscriber(MonoConcatIgnoreManager<T> parent) {
             this.parent = parent;
@@ -237,17 +238,30 @@ final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable {
         
         @Override
         public void onNext(T t) {
+            if (done) {
+                Exceptions.onNextDropped(t);
+                return;
+            }
+            done = true;
             this.parent.complete(t);
         }
         
         @Override
         public void onError(Throwable t) {
+            if (done) {
+                Exceptions.onErrorDropped(t);
+                return;
+            }
+            done = true;
             this.parent.onError(t);
         }
         
         @Override
         public void onComplete() {
-            // don't care about this
+            if (done) {
+                return;
+            }
+            this.parent.onComplete();
         }
         
         void cancel() {
