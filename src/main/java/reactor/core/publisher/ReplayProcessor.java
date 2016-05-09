@@ -166,10 +166,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		if (add(rp)) {
 			if (rp.cancelled) {
 				remove(rp);
+				return;
 			}
-		} else {
-			buffer.drain(rp);
 		}
+		buffer.drain(rp);
 	}
 
 	@Override

@@ -31,7 +31,7 @@ import reactor.core.util.Exceptions;
 public class FluxPeekTest {
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		new FluxPeek<>(null, null, null, null, null, null, null, null, null);
+		new FluxPeek<>(null, null, null, null, null, null, null, null);
 	}
 
 	@Test
@@ -40,7 +40,6 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
-		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -49,7 +48,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(new FluxJust<>(1),
 		  onSubscribe::set,
-		  onNext::set, onAfterNext::set,
+		  onNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -59,7 +58,6 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertEquals((Integer) 1, onNext.get());
-		Assert.assertEquals((Integer) 1, onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertTrue(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -73,16 +71,15 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
-		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new MonoError<Integer>(new RuntimeException("forced failure")),
+		new FluxPeek<>(new MonoError<>(new RuntimeException("forced failure")),
 		  onSubscribe::set,
-		  onNext::set, onAfterNext::set,
+		  onNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -92,7 +89,6 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
-		Assert.assertNull(onAfterNext.get());
 		Assert.assertTrue(onError.get() instanceof RuntimeException);
 		Assert.assertFalse(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -106,7 +102,6 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
-		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -115,7 +110,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(MonoEmpty.instance(),
 		  onSubscribe::set,
-		  onNext::set, onAfterNext::set,
+		  onNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -125,7 +120,6 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
-		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertTrue(onComplete.get());
 		Assert.assertTrue(onAfterComplete.get());
@@ -139,7 +133,6 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
-		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -148,7 +141,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(FluxNever.instance(),
 		  onSubscribe::set,
-		  onNext::set, onAfterNext::set,
+		  onNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -158,7 +151,6 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
-		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertFalse(onComplete.get());
 		Assert.assertFalse(onAfterComplete.get());
@@ -172,7 +164,6 @@ public class FluxPeekTest {
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
-		AtomicReference<Integer> onAfterNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
 		AtomicLong onRequest = new AtomicLong();
@@ -181,7 +172,7 @@ public class FluxPeekTest {
 
 		new FluxPeek<>(FluxNever.instance(),
 		  onSubscribe::set,
-		  onNext::set, onAfterNext::set,
+		  onNext::set,
 		  onError::set,
 		  () -> onComplete.set(true),
 		  () -> onAfterComplete.set(true),
@@ -191,7 +182,6 @@ public class FluxPeekTest {
 
 		Assert.assertNotNull(onSubscribe.get());
 		Assert.assertNull(onNext.get());
-		Assert.assertNull(onAfterNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertFalse(onComplete.get());
 		Assert.assertFalse(onAfterComplete.get());
@@ -213,7 +203,6 @@ public class FluxPeekTest {
 				null, d -> {throw Exceptions.propagate(err);},
 				null,
 				null,
-				null,
 				null, null,
 				null
 		).subscribe(ts);
@@ -226,7 +215,6 @@ public class FluxPeekTest {
 		try {
 			new FluxPeek<>(new FluxJust<>(1),
 					null, d -> {throw Exceptions.bubble(err);},
-					null,
 					null,
 					null,
 					null, null,
