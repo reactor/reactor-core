@@ -155,6 +155,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
         @Override
         public void cancel() {
             super.cancel();
+            BackpressureUtils.terminate(S, this);
             second.cancel();
         }
         
