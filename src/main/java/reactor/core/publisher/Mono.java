@@ -585,30 +585,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Stream the values from a
-	 * Publisher resolved for each {@link Subscriber} and invoke a callback if the
-	 * sequence terminates or
-	 * the Subscriber cancels.
-	 * <p>
-	 * Eager resource cleanup happens just before the source termination and exceptions
-	 * raised by the cleanup Runnable
-	 * may override the terminal even.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using.png"
-	 * alt="">
-	 *
-	 * @param sourceSupplier a {@link Mono} factory
-	 * @param resourceCleanup invoked on completion
-	 * @param <T> emitted type
-	 *
-	 * @return new {@link Mono}
-	 */
-	public static <T> Mono<T> using(Supplier<? extends
-			Mono<? extends T>> sourceSupplier, Runnable resourceCleanup) {
-		return using(Flux.NOOP_CALLABLE, d -> sourceSupplier.get(), d -> resourceCleanup.run(), true);
-	}
-
-	/**
 	 * Return a {@link Mono} that will never signal any data, error or completion signal.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/never.png" alt="">
