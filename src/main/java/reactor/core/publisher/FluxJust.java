@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Receiver;
@@ -57,7 +56,6 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 
 	final T value;
 
-	@SuppressWarnings("unchecked")
 	public FluxJust(T value) {
 		this.value = Objects.requireNonNull(value, "value");
 	}
@@ -88,7 +86,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		return value;
 	}
 
-	static final class WeakScalarSubscription<T> implements QueueSubscription, Receiver, Completable {
+	static final class WeakScalarSubscription<T> implements QueueSubscription<T>, Receiver, Completable {
 
 		boolean terminado;
 		final T                     value;
