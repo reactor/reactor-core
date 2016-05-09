@@ -24,7 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -545,17 +544,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
-	 * @param sourceSupplier a {@link Publisher} factory derived from the supplied resource
+	 * @param sourceSupplier a {@link Mono} factory derived from the supplied resource
 	 * @param resourceCleanup invoked on completion
 	 * @param eager true to clean before terminating downstream subscribers
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new Stream
+	 * @return new {@link Mono}
 	 */
 	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
 			super D, ? extends
-			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
+			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
 		return new MonoUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
 	}
 
@@ -571,41 +570,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
-	 * @param sourceSupplier a {@link Publisher} factory derived from the supplied resource
+	 * @param sourceSupplier a {@link Mono} factory derived from the supplied resource
 	 * @param resourceCleanup invoked on completion
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new {@link Flux}
+	 * @return new {@link Mono}
 	 */
 	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
 			super D, ? extends
-			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
+			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
 		return using(resourceSupplier, sourceSupplier, resourceCleanup, true);
-	}
-
-	/**
-	 * Stream the values from a
-	 * Publisher resolved for each {@link Subscriber} and invoke a callback if the
-	 * sequence terminates or
-	 * the Subscriber cancels.
-	 * <p>
-	 * Eager resource cleanup happens just before the source termination and exceptions
-	 * raised by the cleanup Runnable
-	 * may override the terminal even.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using.png"
-	 * alt="">
-	 *
-	 * @param sourceSupplier a {@link Publisher} factory
-	 * @param resourceCleanup invoked on completion
-	 * @param <T> emitted type
-	 *
-	 * @return new {@link Flux}
-	 */
-	public static <T> Mono<T> using(Supplier<? extends
-			Publisher<? extends T>> sourceSupplier, Runnable resourceCleanup) {
-		return using(Flux.NOOP_CALLABLE, d -> sourceSupplier.get(), d -> resourceCleanup.run(), true);
 	}
 
 	/**
@@ -1043,7 +1018,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(Mono<V> other) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+		return new MonoThenSupply<V>(false, this, other);
 	}
 
 	/**
@@ -1061,7 +1036,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+		return new MonoThenSupply<V>(false, this, defer(sourceSupplier));
 	}
 
 	/**
@@ -2359,8 +2334,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} containing the merged values
 	 */
-	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
-		return MonoSource.wrap(flatMap(transformer));
+	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
+			transformer) {
+		return new MonoThenApply<>(this, transformer);
 	}
 
 	/**
@@ -2375,9 +2351,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(Mono<V> other) {
-//		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+//        return new MonoThenSupply<>(false, this, other);
 	    if (this instanceof MonoConcatIgnore) {
             MonoConcatIgnore<T> a = (MonoConcatIgnore<T>) this;
 	        return a.shift(other);
@@ -2397,9 +2372,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
-//		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+//        return new MonoThenSupply<>(false, this, defer(sourceSupplier));
 	    return then(defer(sourceSupplier));
 	}
 
@@ -2451,10 +2425,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> thenOrError(final Supplier<? extends Mono<V>>
 			sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
+		return new MonoThenSupply<>(true, this, defer(sourceSupplier));
 	}
 
 	/**

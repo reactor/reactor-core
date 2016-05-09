@@ -58,30 +58,6 @@ public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cance
 	void stop();
 
 	/**
-	 * @deprecated use #complete()
-	 */
-	@Deprecated
-	default void onComplete(){
-		complete();
-	}
-
-	/**
-	 * @deprecated use #emit or #tryEmit
-	 */
-	@Deprecated
-	default void onNext(T t){
-		tryEmit(t);
-	}
-
-	/**
-	 * @deprecated use #fail
-	 */
-	@Deprecated
-	default void onError(Throwable t){
-		fail(t);
-	}
-
-	/**
 	 * Try emitting or throw an unchecked exception.
 	 *
 	 * @see #emit(Object)
