@@ -50,7 +50,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
-		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper)) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, true)) {
 			return;
 		}
 
