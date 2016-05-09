@@ -4615,7 +4615,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Publisher<Void> other) {
-		return MonoSource.wrap(concat(then(), other));
+		return new MonoThenSupply<>(false, this, MonoSource.wrap(other));
 	}
 
 	/**
@@ -4631,7 +4631,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
-		return MonoSource.wrap(concat(then(), defer(afterSupplier)));
+		return new MonoThenSupply<>(false, this, MonoSource.wrap(defer(afterSupplier)));
 	}
 
 	/**
@@ -4665,7 +4665,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
-		return (Flux<V>)concat(ignoreElements(), defer(afterSupplier));
+		return thenMany(defer(afterSupplier));
 	}
 
 	/**

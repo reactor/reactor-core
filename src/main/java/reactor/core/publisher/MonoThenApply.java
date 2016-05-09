@@ -35,11 +35,11 @@ import reactor.core.util.PlatformDependent;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoThen<T, R> extends MonoSource<T, R> {
+final class MonoThenApply<T, R> extends MonoSource<T, R> {
 
 	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-	public MonoThen(Publisher<? extends T> source, Function<? super T, ? extends
+	public MonoThenApply(Publisher<? extends T> source, Function<? super T, ? extends
 			Mono<? extends R>> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");

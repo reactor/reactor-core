@@ -24,7 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -1019,7 +1018,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(Mono<V> other) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+		return new MonoThenSupply<V>(false, this, other);
 	}
 
 	/**
@@ -1037,7 +1036,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+		return new MonoThenSupply<V>(false, this, defer(sourceSupplier));
 	}
 
 	/**
@@ -2337,7 +2336,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {
-		return new MonoThen<>(this, transformer);
+		return new MonoThenApply<>(this, transformer);
 	}
 
 	/**
@@ -2352,9 +2351,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(Mono<V> other) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), other));
+		return new MonoThenSupply<>(false, this, other);
 	}
 
 	/**
@@ -2369,9 +2367,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(false, ignoreElement(), defer(sourceSupplier)));
+		return new MonoThenSupply<>(false, this, defer(sourceSupplier));
 	}
 
 	/**
@@ -2422,10 +2419,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Mono<V> thenOrError(final Supplier<? extends Mono<V>>
 			sourceSupplier) {
-		return (Mono<V>)MonoSource.wrap(new FluxConcatArray<>(true, ignoreElement(), defer(sourceSupplier)));
+		return new MonoThenSupply<>(true, this, defer(sourceSupplier));
 	}
 
 	/**
