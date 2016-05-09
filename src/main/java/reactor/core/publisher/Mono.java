@@ -545,17 +545,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
-	 * @param sourceSupplier a {@link Publisher} factory derived from the supplied resource
+	 * @param sourceSupplier a {@link Mono} factory derived from the supplied resource
 	 * @param resourceCleanup invoked on completion
 	 * @param eager true to clean before terminating downstream subscribers
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new Stream
+	 * @return new {@link Mono}
 	 */
 	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
 			super D, ? extends
-			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
+			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
 		return new MonoUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
 	}
 
@@ -571,16 +571,16 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
-	 * @param sourceSupplier a {@link Publisher} factory derived from the supplied resource
+	 * @param sourceSupplier a {@link Mono} factory derived from the supplied resource
 	 * @param resourceCleanup invoked on completion
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new {@link Flux}
+	 * @return new {@link Mono}
 	 */
 	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
 			super D, ? extends
-			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
+			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
 		return using(resourceSupplier, sourceSupplier, resourceCleanup, true);
 	}
 
@@ -597,14 +597,14 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using.png"
 	 * alt="">
 	 *
-	 * @param sourceSupplier a {@link Publisher} factory
+	 * @param sourceSupplier a {@link Mono} factory
 	 * @param resourceCleanup invoked on completion
 	 * @param <T> emitted type
 	 *
-	 * @return new {@link Flux}
+	 * @return new {@link Mono}
 	 */
 	public static <T> Mono<T> using(Supplier<? extends
-			Publisher<? extends T>> sourceSupplier, Runnable resourceCleanup) {
+			Mono<? extends T>> sourceSupplier, Runnable resourceCleanup) {
 		return using(Flux.NOOP_CALLABLE, d -> sourceSupplier.get(), d -> resourceCleanup.run(), true);
 	}
 
