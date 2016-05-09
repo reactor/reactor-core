@@ -521,6 +521,43 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 	
 	/**
+	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
+	 * the FluxEmitter API.
+	 * <p>
+	 * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+	 * and not worry about cancellation and backpressure. For example:
+	 * 
+     * <pre><code>
+     * Flux.&lt;String&gt;createEmitter(emitter -&gt; {
+     *     // setup backpressure mode, default is BUFFER
+     *     
+     *     emitter.setBackpressureHandling(FluxEmitter.BackpressureHandling.LATEST);
+     *     
+     *     ActionListener al = e -&gt; {
+     *         emitter.next(textField.getText());
+     *     };
+     *     // without cancellation support:
+     *     
+     *     button.addActionListener(al);
+     *     
+     *     // with cancellation support:
+     *     
+     *     button.addActionListener(al);
+     *     emitter.setCancellation(() -> {
+     *         button.removeListener(al);
+     *     });
+     * }); 
+     * <code></pre>
+     *  
+	 * @param <T> the value type
+	 * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
+	 * @return a {@link Flux}
+	 */
+	public static <T> Flux<T> createEmitter(Consumer<? super FluxEmitter<T>> emitter) {
+	    return new FluxCreateEmitter<>(emitter);
+	}
+	
+	/**
 	 * Supply a {@link Publisher} everytime subscribe is called on the returned flux. The passed {@link Supplier}
 	 * will be invoked and it's up to the developer to choose to return a new instance of a {@link Publisher} or reuse
 	 * one effecitvely behaving like {@link #from(Publisher)}.
