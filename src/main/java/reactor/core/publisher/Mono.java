@@ -2335,8 +2335,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono} containing the merged values
 	 */
-	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
-		return MonoSource.wrap(flatMap(transformer));
+	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
+			transformer) {
+		return new MonoThen<>(this, transformer);
 	}
 
 	/**
