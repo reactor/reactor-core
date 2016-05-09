@@ -88,7 +88,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		return value;
 	}
 
-	static final class WeakScalarSubscription<T> implements Subscription, Receiver, Completable {
+	static final class WeakScalarSubscription<T> implements QueueSubscription, Receiver, Completable {
 
 		boolean terminado;
 		final T                     value;
@@ -130,6 +130,39 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		@Override
 		public Object upstream() {
 			return value;
+		}
+
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & Fuseable.SYNC) != 0) {
+				return Fuseable.SYNC;
+			}
+			return 0;
+		}
+
+		@Override
+		public T poll() {
+			if (!terminado) {
+				terminado = true;
+				return value;
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return !terminado;
+		}
+
+		@Override
+		public int size() {
+			return isEmpty() ? 0 : 1;
+		}
+
+		@Override
+		public void clear() {
+			terminado = true;
 		}
 	}
 }
