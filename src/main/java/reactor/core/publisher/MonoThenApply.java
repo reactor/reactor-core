@@ -195,6 +195,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                     Exceptions.onNextDropped(t);
                     return;
                 }
+                done = true;
                 this.parent.complete(t);
             }
 

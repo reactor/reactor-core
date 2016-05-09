@@ -85,7 +85,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	volatile List<T> values = new LinkedList<>();
 
-	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
+	@SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
 			PlatformDependent.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
 
 	final List<Throwable> errors = new LinkedList<>();
