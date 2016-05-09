@@ -4613,7 +4613,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Publisher<Void> other) {
-		return new MonoThenSupply<>(false, this, MonoSource.wrap(other));
+		return MonoSource.wrap(concat(then(), other));
 	}
 
 	/**
@@ -4629,7 +4629,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
-		return new MonoThenSupply<>(false, this, MonoSource.wrap(defer(afterSupplier)));
+		return then(defer(afterSupplier));
 	}
 
 	/**
@@ -4664,24 +4664,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
 		return thenMany(defer(afterSupplier));
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
-	 * alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 */
-	@SuppressWarnings("unchecked")
-	public final <V> Flux<V> thenManyAndError(Supplier<? extends Publisher<V>>
-			afterSupplier) {
-		return (Flux<V>)new FluxConcatArray<>(true, ignoreElements(), defer(afterSupplier));
 	}
 
 	/**

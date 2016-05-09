@@ -1018,7 +1018,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(Mono<V> other) {
-		return new MonoThenSupply<V>(false, this, other);
+		return then(other);
 	}
 
 	/**
@@ -1036,7 +1036,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@Deprecated
 	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return new MonoThenSupply<V>(false, this, defer(sourceSupplier));
+		return then(sourceSupplier);
 	}
 
 	/**
@@ -2352,11 +2352,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> then(Mono<V> other) {
-		if (this instanceof MonoConcatIgnore) {
-            MonoConcatIgnore<T> a = (MonoConcatIgnore<T>) this;
+		if (this instanceof MonoThenSupply) {
+            MonoThenSupply<T> a = (MonoThenSupply<T>) this;
             return a.shift(other);
 		}
-		return new MonoConcatIgnore<>(new Mono[] { this }, other);
+		return new MonoThenSupply<>(new Mono[] { this }, other);
 	}
 
 	/**
@@ -2407,23 +2407,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <V> Flux<V> thenMany(final Supplier<? extends Mono<V>> sourceSupplier) {
 		return thenMany(defer(sourceSupplier));
-	}
-
-	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens1.png" alt="">
-	 *
-	 * @param <V> the element type of the supplied Mono
-	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 */
-	public final <V> Mono<V> thenOrError(final Supplier<? extends Mono<V>>
-			sourceSupplier) {
-		return new MonoThenSupply<>(true, this, defer(sourceSupplier));
 	}
 
 	/**

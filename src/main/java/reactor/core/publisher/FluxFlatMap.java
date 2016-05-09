@@ -1228,7 +1228,8 @@ abstract class SpscFreeListTracker<T> {
 	}
 }
 
-final class SuppressFuseableSubscriber<T> implements Subscriber<T>, Fuseable.QueueSubscription<T> {
+final class SuppressFuseableSubscriber<T> implements Producer, Receiver, Subscriber<T>,
+                                                     Fuseable.QueueSubscription<T> {
 
 	final Subscriber<? super T> actual;
 
@@ -1296,5 +1297,15 @@ final class SuppressFuseableSubscriber<T> implements Subscriber<T>, Fuseable.Que
 	@Override
 	public int size() {
 		return 0;
+	}
+
+	@Override
+	public Object downstream() {
+		return actual;
+	}
+
+	@Override
+	public Object upstream() {
+		return s;
 	}
 }
