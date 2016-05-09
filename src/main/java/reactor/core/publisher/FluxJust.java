@@ -52,7 +52,8 @@ import reactor.core.util.Exceptions;
  *
  * @author Stephane Maldini
  */
-final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Loopback {
+final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Fuseable,
+		Loopback {
 
 	final T value;
 

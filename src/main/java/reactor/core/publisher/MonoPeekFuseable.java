@@ -42,8 +42,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 
 	final Consumer<? super T> onNextCall;
 
-	final Consumer<? super T> onAfterNextCall;
-
 	final Consumer<? super Throwable> onErrorCall;
 
 	final Runnable onCompleteCall;
@@ -57,7 +55,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 	public MonoPeekFuseable(Publisher<? extends T> source,
 			Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
-			Consumer<? super T> onAfterNextCall,
 			Consumer<? super Throwable> onErrorCall,
 			Runnable onCompleteCall,
 			Runnable onAfterTerminateCall,
@@ -70,7 +67,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 		}
 
 		this.onSubscribeCall = onSubscribeCall;
-		this.onAfterNextCall = onAfterNextCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
@@ -97,11 +93,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 	@Override
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
-	}
-
-	@Override
-	public Consumer<? super T> onAfterNextCall() {
-		return onAfterNextCall;
 	}
 
 	@Override

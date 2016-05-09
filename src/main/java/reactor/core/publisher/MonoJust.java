@@ -29,7 +29,7 @@ import reactor.core.util.ScalarSubscription;
  */
 final class MonoJust<T> 
 extends Mono<T>
-		implements Fuseable.ScalarCallable<T>, Receiver {
+		implements Fuseable.ScalarCallable<T>, Receiver, Fuseable {
 
 	final T value;
 

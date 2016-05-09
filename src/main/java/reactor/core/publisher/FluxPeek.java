@@ -52,8 +52,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 
 	final Consumer<? super T> onNextCall;
 
-	final Consumer<? super T> onAfterNextCall;
-
 	final Consumer<? super Throwable> onErrorCall;
 
 	final Runnable onCompleteCall;
@@ -65,13 +63,12 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 	final Runnable onCancelCall;
 
 	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-						 Consumer<? super T> onNextCall, Consumer<? super T> onAfterNextCall,
+						 Consumer<? super T> onNextCall,
 			Consumer<? super Throwable> onErrorCall, Runnable
 						   onCompleteCall,
 						 Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
-		this.onAfterNextCall = onAfterNextCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
@@ -169,25 +166,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					return;
 				}
 			}
-
-			if(parent.onAfterNextCall() != null){
-				try{
-					actual.onNext(t);
-					return;
-				}
-				finally {
-					try {
-						parent.onAfterNextCall().accept(t);
-					}
-					catch (Throwable e) {
-						cancel();
-						Exceptions.throwIfFatal(e);
-						onError(Exceptions.unwrap(e));
-					}
-				}
-			}
-
-
 			actual.onNext(t);
 		}
 
@@ -302,10 +280,5 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 	@Override
 	public Runnable onCancelCall() {
 		return onCancelCall;
-	}
-
-	@Override
-	public Consumer<? super T> onAfterNextCall() {
-		return onAfterNextCall;
 	}
 }

@@ -44,8 +44,7 @@ extends Mono<Object>
 
 	@Override
 	public void subscribe(Subscriber<? super Object> s) {
-		s.onSubscribe(EmptySubscription.INSTANCE);
-		s.onComplete();
+		EmptySubscription.complete(s);
 	}
 
 	/**
