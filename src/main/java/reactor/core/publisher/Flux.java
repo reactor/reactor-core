@@ -4268,9 +4268,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
 	public final Cancellation subscribe() {
-		LambdaSubscriber<T> s = new LambdaSubscriber<>();
-		subscribe(s);
-		return s;
+		return subscribe(null, null, null);
 	}
 
 

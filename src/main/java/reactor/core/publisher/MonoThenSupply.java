@@ -77,23 +77,4 @@ final class MonoThenSupply<T> extends Mono<T> implements MultiReceiver {
 		}
 	}
 
-	/**
-	 * Returns a new instance which has the additional source to be merged together with
-	 * the current array of sources.
-	 * <p>
-	 * This operation doesn't change the current MonoMerge instance.
-	 *
-	 * @param source the new source to merge with the others
-	 *
-	 * @return the new MonoThenSupply instance
-	 */
-	public MonoThenSupply<T> concatAdditionalSourceLast(Mono<? extends T> source) {
-		int n = array.length;
-		@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];
-		System.arraycopy(array, 0, newArray, 0, n);
-		newArray[n] = source;
-
-		return new MonoThenSupply<>(delayError, newArray);
-	}
-
 }
