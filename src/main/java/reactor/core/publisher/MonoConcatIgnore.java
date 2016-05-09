@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.*;
@@ -23,6 +26,7 @@ import java.util.concurrent.atomic.*;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Fuseable;
+import reactor.core.flow.MultiReceiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -33,7 +37,7 @@ import reactor.core.util.*;
  *
  * @param <T> the final value type
  */
-final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable {
+final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver {
 
     final Mono<?>[] ignore;
     
@@ -50,6 +54,18 @@ final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable {
         s.onSubscribe(manager);
         
         manager.drain();
+    }
+
+    @Override
+    public Iterator<?> upstreams() {
+        List<Mono<?>> r = Arrays.asList(ignore);
+        r.add(last);
+        return r.iterator();
+    }
+
+    @Override
+    public long upstreamCount() {
+        return ignore.length + 1;
     }
     
     /**
@@ -157,7 +173,7 @@ final class MonoConcatIgnore<T> extends Mono<T> implements Fuseable {
                 if (WIP.decrementAndGet(this) == 0) {
                     break;
                 }
-            };
+            }
         }
         
         @Override

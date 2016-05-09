@@ -91,7 +91,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
-		if (trySubscribeScalarMap(source, s, mapper)) {
+		if (trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
 
@@ -111,13 +111,16 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	 * @param source the source publisher
 	 * @param s the end consumer
 	 * @param mapper the mapper function
+	 * @param fuseableExpected if true, the parent class was marked Fuseable thus the mapping
+	 * output has to signal onSubscribe with a QueueSubscription
 	 * @return true if the optimization worked
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, R> boolean trySubscribeScalarMap(
 			Publisher<? extends T> source,
 			Subscriber<? super R> s,
-			Function<? super T, ? extends Publisher<? extends R>> mapper) {
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			boolean fuseableExpected) {
 		if (source instanceof Callable) {
 			T t;
 
@@ -166,7 +169,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					EmptySubscription.complete(s);
 				}
 			} else {
-				p.subscribe(s);
+				if (!fuseableExpected || p instanceof Fuseable) {
+					p.subscribe(s);
+				} else {
+					p.subscribe(new SuppressFuseableSubscriber<>(s));
+				}
 			}
 
 			return true;
@@ -1218,5 +1225,76 @@ abstract class SpscFreeListTracker<T> {
 
 	protected final boolean isEmpty() {
 		return size == 0;
+	}
+}
+
+final class SuppressFuseableSubscriber<T> implements Subscriber<T>, Fuseable.QueueSubscription<T> {
+
+	final Subscriber<? super T> actual;
+
+	Subscription s;
+
+	public SuppressFuseableSubscriber(Subscriber<? super T> actual) {
+		this.actual = actual;
+
+	}
+
+	@Override
+	public void onSubscribe(Subscription s) {
+		if (BackpressureUtils.validate(this.s, s)) {
+			this.s = s;
+
+			actual.onSubscribe(this);
+		}
+	}
+
+	@Override
+	public void onNext(T t) {
+		actual.onNext(t);
+	}
+
+	@Override
+	public void onError(Throwable t) {
+		actual.onError(t);
+	}
+
+	@Override
+	public void onComplete() {
+		actual.onComplete();
+	}
+
+	@Override
+	public void request(long n) {
+		s.request(n);
+	}
+
+	@Override
+	public void cancel() {
+		s.cancel();
+	}
+
+	@Override
+	public int requestFusion(int requestedMode) {
+		return Fuseable.NONE;
+	}
+
+	@Override
+	public T poll() {
+		return null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return false;
+	}
+
+	@Override
+	public void clear() {
+
+	}
+
+	@Override
+	public int size() {
+		return 0;
 	}
 }
