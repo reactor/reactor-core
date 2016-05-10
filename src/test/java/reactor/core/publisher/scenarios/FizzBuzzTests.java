@@ -46,8 +46,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 
 		Mono<List<Object>> c = Flux.create(subscriber -> {
 			System.out.println("demand is " + subscriber.requestedFromDownstream());
-			if (!subscriber.isCancelled()) {
-				while ( subscriber.requestedFromDownstream() != 0) {
+			while (!subscriber.isCancelled()) {
 					long curr = globalCounter.incrementAndGet();
 					if (curr % 5 == 0 && curr % 3 == 0) subscriber.next("FizBuz "+curr+" \r\n");
 					else if (curr % 3 == 0) subscriber.next("Fiz "+curr);
@@ -58,7 +57,6 @@ public class FizzBuzzTests extends AbstractReactorTest {
 						subscriber.complete();
 						return;
 					}
-				}
 			}
 		}).log("oooo")
 		                                      .flatMap((s) -> Flux.create((sub) -> timer.schedule(new TimerTask() {
