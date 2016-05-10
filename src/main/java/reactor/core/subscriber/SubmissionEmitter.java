@@ -40,7 +40,7 @@ import reactor.core.util.Exceptions;
  * safely sent to
  * the delegate
  * {@link Subscriber} by using {@link #submit} to block on backpressure (missing demand) or {@link #emit} to
- * never block and return instead an {@link SignalEmitter.Emission} status.
+ * never block and return instead an {@link SubmissionEmitter.Emission} status.
  *
  * The emitter is itself a {@link Subscriber} that will request an unbounded value if subscribed.
  *
@@ -171,13 +171,13 @@ public class SubmissionEmitter<E>
 
 	/**
 	 * A non-blocking {@link Subscriber#onNext(Object)} that will return a status 
-	 * {@link SignalEmitter.Emission}. The status will
+	 * {@link SubmissionEmitter.Emission}. The status will
 	 * indicate if the decorated
 	 * subscriber is backpressuring this {@link SubmissionEmitter} and if it has previously been terminated successfully or
 	 * not.
 	 *
 	 * @param data the data to signal
-	 * @return an {@link SignalEmitter.Emission} status
+	 * @return an {@link SubmissionEmitter.Emission} status
 	 */
 	public Emission emit(E data) {
 		if (uncaughtException != null) {
@@ -242,10 +242,10 @@ public class SubmissionEmitter<E>
 
 	/**
 	 * Try emitting {@link #complete()} to the decorated {@link Subscriber}. The completion might not return a
-	 * successful {@link SignalEmitter.Emission#isOk()} if this {@link SubmissionEmitter} was previously terminated or the delegate
+	 * successful {@link SubmissionEmitter.Emission#isOk()} if this {@link SubmissionEmitter} was previously terminated or the delegate
 	 * failed consuming the signal.
 	 *
-	 * @return an {@link SignalEmitter.Emission} status
+	 * @return an {@link SubmissionEmitter.Emission} status
 	 */
 	public Emission finish() {
 		if (uncaughtException != null) {
