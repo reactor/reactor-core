@@ -130,17 +130,18 @@ extends Flux<T> {
 		}
 
 		@Override
-		public Emission emit(T t) {
+		public void next(T t) {
 			if (terminate) {
-				return Emission.CANCELLED;
+				Exceptions.onNextDropped(t);
+				return;
 			}
 			if (hasValue) {
 				fail(new IllegalStateException("More than one call to onNext"));
-				return Emission.FAILED;
+				return;
 			}
 			if (t == null) {
 				fail(new NullPointerException("The generator produced a null value"));
-				return Emission.FAILED;
+				return;
 			}
 			hasValue = true;
 			if (outputFused) {
@@ -148,7 +149,6 @@ extends Flux<T> {
 			} else {
 				actual.onNext(t);
 			}
-			return Emission.OK;
 		}
 
 		@Override

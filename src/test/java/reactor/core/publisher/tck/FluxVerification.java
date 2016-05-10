@@ -41,7 +41,7 @@ public class FluxVerification extends PublisherVerification<Long> {
 	public Publisher<Long> createPublisher(long elements) {
 		return Flux.<Long, Long>generate(() -> 0L, (cursor, s) -> {
 			if(cursor < elements && cursor < elements) {
-				s.emit(cursor);
+				s.next(cursor);
 			}
 			else if(cursor == elements){
 				s.complete();

@@ -28,10 +28,10 @@ public class FluxYieldTest {
         TestSubscriber<Integer> ts = new TestSubscriber<>();
         
         Flux<Integer> source = Flux.<Signal<Integer>>create(e -> {
-            e.emit(Signal.next(1));
-            e.emit(Signal.next(2));
-            e.emit(Signal.next(3));
-            e.emit(Signal.complete());
+            e.next(Signal.next(1));
+            e.next(Signal.next(2));
+            e.next(Signal.next(3));
+            e.next(Signal.complete());
         }).dematerialize();
         
         source.subscribe(ts);

@@ -51,6 +51,30 @@ public class SubmissionEmitter<E>
 		implements Producer, Subscription,
 		           Consumer<E>, SignalEmitter<E>,
 		           Closeable {
+	/**
+	 * An acknowledgement signal returned by {@link #emit}.
+	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
+	 *
+	 */
+	public enum Emission {
+		FAILED, BACKPRESSURED, OK, CANCELLED;
+
+		public boolean isBackpressured(){
+			return this == BACKPRESSURED;
+		}
+
+		public boolean isCancelled(){
+			return this == CANCELLED;
+		}
+
+		public boolean isFailed(){
+			return this == FAILED;
+		}
+
+		public boolean isOk(){
+			return this == OK;
+		}
+	}
 
 	/**
 	 *
@@ -125,6 +149,26 @@ public class SubmissionEmitter<E>
 		return actual;
 	}
 
+	@Override
+	public void next(E t) {
+		Emission emission = emit(t);
+		if(emission.isOk()) {
+			return;
+		}
+		if(emission.isBackpressured()){
+			BackpressureUtils.reportMoreProduced();
+			return;
+		}
+		if(emission.isCancelled()){
+			Exceptions.onNextDropped(t);
+			return;
+		}
+		if(getError() != null){
+			throw Exceptions.bubble(getError());
+		}
+		throw new IllegalStateException("Emission has failed");
+	}
+
 	/**
 	 * A non-blocking {@link Subscriber#onNext(Object)} that will return a status 
 	 * {@link SignalEmitter.Emission}. The status will
@@ -135,7 +179,6 @@ public class SubmissionEmitter<E>
 	 * @param data the data to signal
 	 * @return an {@link SignalEmitter.Emission} status
 	 */
-	@Override
 	public Emission emit(E data) {
 		if (uncaughtException != null) {
 			return Emission.FAILED;

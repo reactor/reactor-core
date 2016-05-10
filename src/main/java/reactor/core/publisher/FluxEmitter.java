@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import reactor.core.flow.Cancellation;
+import reactor.core.subscriber.SignalEmitter;
 
 /**
  * Wrapper API around a downstream Subscriber for emittin any number of
@@ -26,7 +27,7 @@ import reactor.core.flow.Cancellation;
  * before emitting any signal.
  * @param <T> the value type
  */
-public interface FluxEmitter<T> {
+public interface FluxEmitter<T> extends SignalEmitter<T>  {
     
     enum BackpressureHandling {
         IGNORE,
@@ -37,14 +38,6 @@ public interface FluxEmitter<T> {
     }
     
     void setBackpressureHandling(BackpressureHandling mode);
-    
-    void next(T value);
-    
-    void fail(Throwable error);
-    
-    void complete();
-    
-    void stop();
     
     void setCancellation(Cancellation c);
 }

@@ -404,7 +404,7 @@ class FluxSpec extends Specification {
 		when:
 			'a Consumer is registered'
 			def values = []
-			stream.consume { values << it }
+			stream.subscribe { values << it }
 
 		then:
 			'the initial values are passed'
@@ -434,7 +434,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'the flux is consumed'
-			stream.consume { values << it }
+			stream.subscribe { values << it }
 
 		then:
 			'the initial values are passed'
@@ -455,7 +455,7 @@ class FluxSpec extends Specification {
 
 		and:
 			'the flux is consumed'
-			stream.consume { values << it }
+			stream.subscribe { values << it }
 
 		then:
 			'the initial values are passed'
@@ -1385,7 +1385,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def value = null
 
-			source.log('w').window(2).consume {
+			source.log('w').window(2).subscribe {
 				value = it.log().buffer(2).tap()
 			  	value.subscribe()
 			}
@@ -1426,8 +1426,8 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def promise = MonoProcessor.create()
 
-			source.publishOn(asyncGroup).log("prewindow").window(Duration.ofSeconds(10)).consume {
-				it.log().buffer(2).consume { promise.onNext(it) }
+			source.publishOn(asyncGroup).log("prewindow").window(Duration.ofSeconds(10)).subscribe {
+				it.log().buffer(2).subscribe { promise.onNext(it) }
 			}
 
 
@@ -1471,8 +1471,8 @@ class FluxSpec extends Specification {
 
 			source.groupBy { pojo ->
 				pojo.id
-			}.consume { stream ->
-				stream.consume { pojo ->
+			}.subscribe { stream ->
+				stream.subscribe { pojo ->
 					if (result[pojo.id]) {
 						result[pojo.id] << pojo.title
 					} else {
@@ -1511,8 +1511,8 @@ class FluxSpec extends Specification {
 			def latch = new CountDownLatch(6)
 
 			def partitionFlux = source.publishOn(asyncGroup).partition()
-			partitionFlux.consume { stream ->
-				stream.cast(SimplePojo).consume { pojo ->
+			partitionFlux.subscribe { stream ->
+				stream.cast(SimplePojo).subscribe { pojo ->
 					if (result[pojo.id]) {
 						result[pojo.id] << pojo.title
 					} else {
@@ -1550,9 +1550,9 @@ class FluxSpec extends Specification {
 		given:
 			'a source flux with a given publisher'
 			def s = Flux.<String> create {
-				it.emit('test1')
-				it.emit('test2')
-				it.emit('test3')
+				it.next('test1')
+				it.next('test2')
+				it.next('test3')
 				it.complete()
 			}.log()
 
@@ -1569,16 +1569,12 @@ class FluxSpec extends Specification {
 	def 'Creating Stream from publisher factory'() {
 		given:
 			'a source flux with a given publisher'
-			def s = Flux.create(
-					{ println Thread.currentThread().name + ' start' },
-					{  v, sub  ->
+			def s = Flux.create {  sub  ->
 						(1..3).each {
-							sub.emit("test$it")
+							sub.next("test$it")
 						}
 						sub.complete()
-					},
-					{ println Thread.currentThread().name + ' end' }
-			)
+					}
 					.log()
 					.subscribeOn(Computations.concurrent("work", 8, 4))
 
@@ -1664,7 +1660,7 @@ class FluxSpec extends Specification {
 		when:
 			'consuming periodic'
 			def i = []
-			c = Flux.interval(0, 1000).log().consume {
+			c = Flux.interval(0, 1000).log().subscribe {
 				i << it
 			}
 			sleep(2500)
@@ -1732,12 +1728,12 @@ class FluxSpec extends Specification {
 		given:
 			'a slow source flux'
 			def s = Flux.<Integer> create {
-				it.submit 1
+				it.next 1
 				sleep 200
-				it.submit 2
+				it.next 2
 				sleep 200
-				it.submit 3
-				it.finish()
+				it.next 3
+				it.complete()
 			}.log('beforeCache')
 					.cache()
 					.log('afterCache')
@@ -1863,12 +1859,12 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def random = new Random()
 			def source = Flux.create {
-				it.submit random.nextInt()
+				it.next random.nextInt()
 			}.publishOn(asyncGroup)
 
 			def values = []
 
-			source.delay(Duration.ofMillis(200)).consume {
+			source.delay(Duration.ofMillis(200)).subscribe {
 				values << it
 			}
 
@@ -1986,21 +1982,19 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit('Three')
-				aSubscriber.emit('Two')
-				aSubscriber.emit('One')
+				aSubscriber.next('Three')
+				aSubscriber.next('Two')
+				aSubscriber.next('One')
 				aSubscriber.fail(new Exception())
-				aSubscriber.emit('Zero')
 			}
 
 		and:
 			'A fallback flux will emit values and complete'
 			def myFallback = Flux.create { aSubscriber ->
-				aSubscriber.emit('0')
-				aSubscriber.emit('1')
-				aSubscriber.emit('2')
-				aSubscriber.finish()
-				aSubscriber.emit('3')
+				aSubscriber.next('0')
+				aSubscriber.next('1')
+				aSubscriber.next('2')
+				aSubscriber.complete()
 			}
 
 		and:
@@ -2021,9 +2015,9 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit('Three')
-				aSubscriber.emit('Two')
-				aSubscriber.emit('One')
+				aSubscriber.next('Three')
+				aSubscriber.next('Two')
+				aSubscriber.next('One')
 				aSubscriber.fail(new Exception())
 			}
 
@@ -2044,10 +2038,10 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by complete'
 			List res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit('Three')
-				aSubscriber.emit('Two')
-				aSubscriber.emit('One')
-				aSubscriber.finish()
+				aSubscriber.next('Three')
+				aSubscriber.next('Two')
+				aSubscriber.next('One')
+				aSubscriber.complete()
 			}
 
 		and:
@@ -2066,7 +2060,7 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by complete'
 			res = []
 			myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit('Three')
+				aSubscriber.next('Three')
 				aSubscriber.fail(new Exception())
 			}
 
@@ -2088,10 +2082,10 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by complete'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit(Signal.next(1))
-				aSubscriber.emit(Signal.next(2))
-				aSubscriber.emit(Signal.next(3))
-				aSubscriber.emit(Signal.complete())
+				aSubscriber.next(Signal.next(1))
+				aSubscriber.next(Signal.next(2))
+				aSubscriber.next(Signal.next(3))
+				aSubscriber.next(Signal.complete())
 			}
 
 		and:
@@ -2112,17 +2106,17 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.create { aSubscriber ->
-				aSubscriber.emit('Three')
-				aSubscriber.emit('Two')
-				aSubscriber.emit('One')
+				aSubscriber.next('Three')
+				aSubscriber.next('Two')
+				aSubscriber.next('One')
 			}
 
 		and:
 			'Another flux will emit values and complete'
 			def myFallback = Flux.create { aSubscriber ->
-				aSubscriber.emit('0')
-				aSubscriber.emit('1')
-				aSubscriber.emit('2')
+				aSubscriber.next('0')
+				aSubscriber.next('1')
+				aSubscriber.next('2')
 				aSubscriber.complete()
 			}
 
@@ -2144,9 +2138,9 @@ class FluxSpec extends Specification {
 			'A source flux emits next signals followed by an error'
 			def res = []
 			def myFlux = Flux.<Integer> create { aSubscriber ->
-				aSubscriber.emit(1)
-				aSubscriber.emit(2)
-				aSubscriber.emit(3)
+				aSubscriber.next(1)
+				aSubscriber.next(2)
+				aSubscriber.next(3)
 				aSubscriber.complete()
 			}
 
@@ -2317,13 +2311,13 @@ class FluxSpec extends Specification {
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
-			head.publishOn(asyncGroup).partition(3).consume {
+			head.publishOn(asyncGroup).partition(3).subscribe {
 				s ->
 					s
 							.publishOn(asyncGroup)
 							.map { it }
 							.buffer(batchSize)
-							.consume { List<Integer> ints ->
+							.subscribe { List<Integer> ints ->
 						println ints.size()
 						sum.addAndGet(ints.size())
 						latch.countDown()
@@ -2469,7 +2463,7 @@ class FluxSpec extends Specification {
 		Flux.create {
 				counter++
 				if(counter == 4){
-				  it.emit('hey')
+				  it.next('hey')
 				}
 				it.complete()
 			}.repeatWhen { attempts ->

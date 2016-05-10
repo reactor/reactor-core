@@ -103,16 +103,29 @@ io.shutdown();
 Note that `ExecutorService` is also a supported argument for `publishOn` and `subscribeOn`. `Computations` might be
 too much a cost for some CPU, `ExecutorService` based scheduling may have a more relaxed use.
 ```
-## Hot Publishing : SignalEmitter
-To bridge a Subscriber or Processor into an outside context that is taking care of producing non concurrently, use [SignalEmitter.create(Subscriber)](http://projectreactor.io/core/docs/api/?reactor/core/subscriber/SignalEmitter.html), the common [FluxProcessor.connectEmitter()](http://projectreactor.io/core/docs/api/?reactor/core/publisher/FluxProcessor.html) or Flux.create(emitter -> {}) :
+## Hot Publishing : SignalEmitter, FluxEmitter, MonoEmitter
+To bridge a Subscriber or Processor into an outside context that is taking care of
+producing non concurrently, use `Flux#create`, `Mono#create`, or
+`BaseSubscriber#connectEmitter()` available on any `Processor`.
 
 ```java
-Flux.create(sink -> {
-        while(sink.hasRequested()){
-            Emission status = sink.emit("Non blocking and returning emission status");
-            long latency = sink.submit("Blocking until emitted and returning latency");
-        }
-        sink.finish();
+Flux.create(emitter -> {
+         // setup backpressure mode, default is BUFFER
+
+         emitter.setBackpressureHandling(FluxEmitter.BackpressureHandling.LATEST);
+
+         ActionListener al = e -> {
+            emitter.next(textField.getText());
+         };
+
+         // without cancellation support:
+         button.addActionListener(al);
+
+         // with cancellation support:
+         button.addActionListener(al);
+         emitter.setCancellation(() -> {
+         	button.removeListener(al);
+         });
     })
     .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))

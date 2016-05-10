@@ -461,64 +461,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return new FluxConcatArray<>(false, sources);
 	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 * <p>
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param <T> The type of the data sequence
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T> Flux<T> create(Consumer<? super SignalEmitter<T>> sessionConsumer) {
-		return new FluxCreate<>(sessionConsumer);
-	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 *
-	 * @param onStart callback invoked on each {@link Subscriber} start
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param <T> The type of the data sequence
-	 * @param <D> The type of the resource generated on start
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T, D> Flux<T> create(Callable<? extends D> onStart, BiConsumer<?
-			super D, ? super SignalEmitter<T>> sessionConsumer) {
-		return create(onStart, sessionConsumer, r -> {});
-	}
-
-	/**
-	 * Create a {@link Flux} reacting on subscribe with the passed {@link Consumer}. The argument {@code
-	 * sessionConsumer} is executed once by new subscriber to generate a {@link SignalEmitter} context ready to accept
-	 * signals.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/yield.png" alt="">
-	 * <p>
-	 * @param onStart callback invoked on each {@link Subscriber} start
-	 * @param sessionConsumer A {@link Consumer} called once everytime a subscriber subscribes
-	 * @param onTerminated callback invoked on each {@link Subscriber} termination
-	 * (cancel/complete/error
-	 * @param <T> The type of the data sequence
-	 * @param <D> The type of the resource generated on start
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 */
-	public static <T, D> Flux<T> create(Callable<? extends D> onStart, BiConsumer<?
-			super D, ? super SignalEmitter<T>> sessionConsumer, Consumer<? super D>
-			onTerminated) {
-		return using(onStart, r -> new FluxCreate<>(s -> sessionConsumer.accept(r, s)),
-				onTerminated);
-	}
 	
 	/**
 	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
@@ -528,7 +470,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * and not worry about cancellation and backpressure. For example:
 	 * 
      * <pre><code>
-     * Flux.&lt;String&gt;createEmitter(emitter -&gt; {
+     * Flux.&lt;String&gt;create(emitter -&gt; {
      *     // setup backpressure mode, default is BUFFER
      *     
      *     emitter.setBackpressureHandling(FluxEmitter.BackpressureHandling.LATEST);
@@ -553,8 +495,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<T> createEmitter(Consumer<? super FluxEmitter<T>> emitter) {
-	    return new FluxCreateEmitter<>(emitter);
+	public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter) {
+	    return new FluxCreate<>(emitter);
 	}
 	
 	/**

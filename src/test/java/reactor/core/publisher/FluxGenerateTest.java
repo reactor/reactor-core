@@ -75,7 +75,7 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.emit(1);
+			o.next(1);
 			o.complete();
 			return s;
 		}).subscribe(ts);
@@ -107,7 +107,7 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.emit(1);
+			o.next(1);
 			o.complete();
 			return s;
 		}).subscribe(ts);
@@ -129,7 +129,7 @@ public class FluxGenerateTest {
 
 		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
 			if (s < 11) {
-				o.emit(s);
+				o.next(s);
 			} else {
 				o.complete();
 			}
@@ -147,7 +147,7 @@ public class FluxGenerateTest {
 
 		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
 			if (s < 11) {
-				o.emit(s);
+				o.next(s);
 			} else {
 				o.complete();
 			}
@@ -179,7 +179,7 @@ public class FluxGenerateTest {
 		new FluxGenerate<Integer, Integer>(() -> {
 			throw new RuntimeException("forced failure");
 		}, (s, o) -> {
-			o.emit(1);
+			o.next(1);
 			return s;
 		}).subscribe(ts);
 
@@ -238,8 +238,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
 		new FluxGenerate<Integer, Integer>((s, o) -> {
-			o.emit(1);
-			o.emit(1);
+			o.next(1);
+			o.next(1);
 			return s;
 		}).subscribe(ts);
 
@@ -276,7 +276,7 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.emit(s.next());
+				  o.next(s.next());
 			  } else {
 				  o.complete();
 			  }
@@ -298,7 +298,7 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.emit(s.next());
+				  o.next(s.next());
 			  } else {
 				  o.complete();
 			  }
@@ -338,7 +338,7 @@ public class FluxGenerateTest {
 		  () -> list.iterator(),
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.emit(s.next());
+				  o.next(s.next());
 			  } else {
 				  o.complete();
 			  }
@@ -358,11 +358,10 @@ public class FluxGenerateTest {
 		
 		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-		Flux.<Integer, Iterator<Integer>>generate(
-		  () -> list.iterator(),
+		Flux.<Integer, Iterator<Integer>>generate(list::iterator,
 		  (s, o) -> {
 			  if (s.hasNext()) {
-				  o.emit(s.next());
+				  o.next(s.next());
 			  } else {
 				  o.complete();
 			  }

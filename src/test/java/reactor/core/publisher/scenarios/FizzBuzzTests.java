@@ -49,10 +49,10 @@ public class FizzBuzzTests extends AbstractReactorTest {
 			if (!subscriber.isCancelled()) {
 				while ( subscriber.requestedFromDownstream() != 0) {
 					long curr = globalCounter.incrementAndGet();
-					if (curr % 5 == 0 && curr % 3 == 0) subscriber.emit("FizBuz "+curr+" \r\n");
-					else if (curr % 3 == 0) subscriber.emit("Fiz "+curr);
-					else if (curr % 5 == 0) subscriber.emit("Buz "+curr);
-					else subscriber.emit(String.valueOf(curr) + " ");
+					if (curr % 5 == 0 && curr % 3 == 0) subscriber.next("FizBuz "+curr+" \r\n");
+					else if (curr % 3 == 0) subscriber.next("Fiz "+curr);
+					else if (curr % 5 == 0) subscriber.next("Buz "+curr);
+					else subscriber.next(String.valueOf(curr) + " ");
 
 					if (globalCounter.get() > numOfItems) {
 						subscriber.complete();
@@ -64,7 +64,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 		                                      .flatMap((s) -> Flux.create((sub) -> timer.schedule(new TimerTask() {
 			  @Override
 			  public void run() {
-				  sub.emit(s);
+				  sub.next(s);
 				  sub.complete();
 			  }
 		  }, 10)))
@@ -92,7 +92,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 				.zipWith(Flux.create(s -> {
 			  while (s.requestedFromDownstream() != 0) {
 				  if(!s.isCancelled()) {
-					  s.emit(System.currentTimeMillis());
+					  s.next(System.currentTimeMillis());
 				  }
 				  else{
 					  break;

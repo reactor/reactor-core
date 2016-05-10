@@ -927,7 +927,7 @@ public class FluxTests extends AbstractReactorTest {
 		ExecutorService pool = Executors.newCachedThreadPool(ExecutorUtils.newNamedFactory("tee", null, null, true));
 
 		Flux<Point> points = Flux.<Double, Random>generate(Random::new, (r, sub) -> {
-			sub.emit(r.nextDouble());
+			sub.next(r.nextDouble());
 			return r;
 		}).log("points")
 		  .buffer(2)

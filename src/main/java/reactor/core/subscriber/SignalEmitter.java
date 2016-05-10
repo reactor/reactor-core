@@ -40,14 +40,17 @@ public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cance
 	void complete();
 
 	/**
-	 * @see Subscriber#onNext(Object)
-	 */
-	Emission emit(T t);
-
-	/**
 	 * @see Subscriber#onError(Throwable)
 	 */
 	void fail(Throwable e);
+
+	/**
+	 * Try emitting, might throw an unchecked exception.
+	 * @see Subscriber#onNext(Object)
+	 *
+	 * @throws RuntimeException
+	 */
+	void next(T t);
 
 	/**
 	 * Indicate there won't be any further signals delivered by
@@ -56,54 +59,4 @@ public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cance
 	 * Call to this method will also trigger the state consumer.
 	 */
 	void stop();
-
-	/**
-	 * Try emitting or throw an unchecked exception.
-	 *
-	 * @see #emit(Object)
-	 * @throws RuntimeException
-	 */
-	default void tryEmit(T t) {
-		Emission emission = emit(t);
-		if(emission.isOk()) {
-			return;
-		}
-		if(emission.isBackpressured()){
-			BackpressureUtils.reportMoreProduced();
-			return;
-		}
-		if(emission.isCancelled()){
-			Exceptions.onNextDropped(t);
-			return;
-		}
-		if(getError() != null){
-			throw Exceptions.bubble(getError());
-		}
-		throw new IllegalStateException("Emission has failed");
-	}
-
-	/**
-	 * An acknowledgement signal returned by {@link #emit}.
-	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
-	 *
-	 */
-	enum Emission {
-		FAILED, BACKPRESSURED, OK, CANCELLED;
-
-		public boolean isBackpressured(){
-			return this == BACKPRESSURED;
-		}
-
-		public boolean isCancelled(){
-			return this == CANCELLED;
-		}
-
-		public boolean isFailed(){
-			return this == FAILED;
-		}
-
-		public boolean isOk(){
-			return this == OK;
-		}
-	}
 }
