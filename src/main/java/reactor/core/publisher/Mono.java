@@ -1628,6 +1628,27 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return get(timeout.toMillis());
 	}
 
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @param waitStrategy a {@link WaitStrategy} to use for waiting on the result. e.g
+	 * . {@code WaitStrategy.busySprin()} will trade off cpu cycles for lower latency.
+	 *
+	 * @return T the result
+	 */
+	public T get(WaitStrategy waitStrategy) {
+		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).get(PlatformDependent.DEFAULT_TIMEOUT);
+	}
+
 	@Override
 	public final long getCapacity() {
 		return 1L;
@@ -2202,23 +2223,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		s.connect();
 		return s;
-	}
-
-	/**
-	 * Start the chain and request unbounded demand.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded1.png" alt="">
-	 * <p>
-	 *
-	 * @param waitStrategy a blocking {@link WaitStrategy} for eventual
-	 * {@link MonoProcessor#get} use.
-	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
-	 */
-	public final MonoProcessor<T> subscribe(WaitStrategy waitStrategy) {
-		MonoProcessor<T> p = new MonoProcessor<>(this, waitStrategy);
-		p.connect();
-		return p;
 	}
 
 	/**
