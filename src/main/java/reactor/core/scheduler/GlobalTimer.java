@@ -39,7 +39,7 @@ final class GlobalTimer extends Timer implements Introspectable {
 		Timer timer = context.timer;
 
 		if (timer == null) {
-			timer = new Timer(50, 64, WaitStrategy.sleeping());
+			timer = new Timer(50, 64, WaitStrategy.parking());
 			timer.start();
 		}
 		return timer;
@@ -56,7 +56,7 @@ final class GlobalTimer extends Timer implements Introspectable {
 	static final GlobalContext context = new GlobalContext();
 
 	GlobalTimer() {
-		super("global-timer", 50, DEFAULT_WHEEL_SIZE, WaitStrategy.sleeping(), null);
+		super("global-timer", 50, DEFAULT_WHEEL_SIZE, WaitStrategy.parking(), null);
 	}
 
 	void _cancel() {

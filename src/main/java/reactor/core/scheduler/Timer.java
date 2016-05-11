@@ -119,7 +119,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	 *                   return a new {@link Timer}
 	 */
 	public static Timer create(String name, int resolution, int bufferSize) {
-		Timer timer = new Timer(name, resolution, bufferSize, WaitStrategy.sleeping(), null);
+		Timer timer = new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
 		timer.start();
 		return timer;
 	}

@@ -30,11 +30,12 @@ public abstract class WaitStrategy
 {
 
     final static WaitStrategy YIELDING  = new Yielding();
+    final static WaitStrategy PARKING   = new Parking();
     final static WaitStrategy SLEEPING  = new Sleeping();
     final static WaitStrategy BUSY_SPIN = new BusySpin();
 
     /**
-     * Blocking strategy that uses a lock and condition variable for ringbuffer consumer waiting on a barrier.
+     * Blocking strategy that uses a lock and condition variable for consumer waiting on a barrier.
      *
      * This strategy can be used when throughput and low-latency are not as important as CPU resource.
      */
@@ -43,7 +44,7 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Busy Spin strategy that uses a busy spin loop for ringbuffer consumers waiting on a barrier.
+     * Busy Spin strategy that uses a busy spin loop for consumers waiting on a barrier.
      *
      * This strategy will use CPU resource to avoid syscalls which can introduce latency jitter.  It is best
      * used when threads can be bound to specific CPU cores.
@@ -62,7 +63,33 @@ public abstract class WaitStrategy
     }
 
     /**
-     * <p>Phased wait strategy for waiting ringbuffer consumers on a barrier.</p>
+     * Parking strategy that initially spins, then uses a Thread.yield(), and eventually sleep
+     * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
+     * consumers are waiting on a barrier.
+     * <p>
+     * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
+     * periods.
+     */
+    public static WaitStrategy parking() {
+        return PARKING;
+    }
+
+    /**
+     * Parking strategy that initially spins, then uses a Thread.yield(), and eventually
+     * sleep (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the
+     * OS and JVM will allow while the consumers are waiting on a barrier.
+     * <p>
+     * This strategy is a good compromise between performance and CPU resource. Latency
+     * spikes can occur after quiet periods.
+     *
+     * @param retries the spin cycle count before parking
+     */
+    public static WaitStrategy parking(int retries) {
+        return new Parking(retries);
+    }
+
+    /**
+     * <p>Phased wait strategy for waiting consumers on a barrier.</p>
      * <p>
      * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource. Spins, then
      * yields, then waits using the configured fallback WaitStrategy.</p>
@@ -88,40 +115,15 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Block by sleeping in a loop
+     * Block by parking in a loop
      */
     public static WaitStrategy phasedOffSleep(long spinTimeout, long yieldTimeout, TimeUnit units) {
-        return phasedOff(spinTimeout, yieldTimeout, units, sleeping(0));
+        return phasedOff(spinTimeout, yieldTimeout, units, parking(0));
     }
 
     /**
-     * Sleeping strategy that initially spins, then uses a Thread.create(), and eventually sleep
-     * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
-     * ringbuffer consumers are waiting on a barrier.
-     * <p>
-     * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
-     * periods.
-     */
-    public static WaitStrategy sleeping() {
-        return SLEEPING;
-    }
-
-    /**
-     * Sleeping strategy that initially spins, then uses a Thread.create(), and eventually sleep
-     * (<code>LockSupport.parkNanos(1)</code>) for the minimum number of nanos the OS and JVM will allow while the
-     * ringbuffer consumers are waiting on a barrier.
-     * <p>
-     * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
-     * periods.
-     *
-     * @param retries the spin cycle count before parking
-     */
-    public static WaitStrategy sleeping(int retries) {
-        return new Sleeping(retries);
-    }
-
-    /**
-     * Yielding strategy that uses a Thread.create() for ringbuffer consumers waiting on a barrier
+     * Yielding strategy that uses a Thread.yield() for consumers waiting on a 
+     * barrier
      * after an initially spinning.
      *
      * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
@@ -131,7 +133,18 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Implementations should signal the waiting ringbuffer consumers that the cursor has advanced.
+     * Yielding strategy that uses a Thread.sleep(1) for consumers waiting on a
+     * barrier
+     * after an initially spinning.
+     *
+     * This strategy will incur up a latency of 1ms and save a maximum CPU resources.
+     */
+    public static WaitStrategy sleeping() {
+        return SLEEPING;
+    }
+
+    /**
+     * Implementations should signal the waiting consumers that the cursor has advanced.
      */
     public void signalAllWhenBlocking() {
     }
@@ -217,6 +230,24 @@ public abstract class WaitStrategy
             while ((availableSequence = cursor.getAsLong()) < sequence)
             {
                 barrier.run();
+            }
+
+            return availableSequence;
+        }
+    }
+
+    final static class Sleeping extends WaitStrategy {
+
+        @Override
+        public long waitFor(final long sequence,
+                LongSupplier cursor,
+                final Runnable barrier)
+                throws Exceptions.AlertException, InterruptedException {
+            long availableSequence;
+
+            while ((availableSequence = cursor.getAsLong()) < sequence) {
+                barrier.run();
+                Thread.sleep(1);
             }
 
             return availableSequence;
@@ -350,17 +381,17 @@ public abstract class WaitStrategy
         }
     }
 
-    final static class Sleeping extends WaitStrategy {
+    final static class Parking extends WaitStrategy {
 
         private static final int DEFAULT_RETRIES = 200;
 
         private final int retries;
 
-        Sleeping() {
+        Parking() {
             this(DEFAULT_RETRIES);
         }
 
-        Sleeping(int retries) {
+        Parking(int retries) {
             this.retries = retries;
         }
 
