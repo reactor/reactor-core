@@ -56,6 +56,7 @@ import reactor.core.tuple.Tuple6;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ReactiveStateUtils;
+import reactor.core.util.WaitStrategy;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -2201,6 +2202,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		}
 		s.connect();
 		return s;
+	}
+
+	/**
+	 * Start the chain and request unbounded demand.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded1.png" alt="">
+	 * <p>
+	 *
+	 * @param waitStrategy a blocking {@link WaitStrategy} for eventual
+	 * {@link MonoProcessor#get} use.
+	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
+	 */
+	public final MonoProcessor<T> subscribe(WaitStrategy waitStrategy) {
+		MonoProcessor<T> p = new MonoProcessor<>(this, waitStrategy);
+		p.connect();
+		return p;
 	}
 
 	/**

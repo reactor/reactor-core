@@ -17,7 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -37,6 +39,7 @@ import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.ScalarSubscription;
+import reactor.core.util.WaitStrategy;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -66,7 +69,23 @@ public final class MonoProcessor<O> extends Mono<O>
 	public static <T> MonoProcessor<T> create() {
 		return new MonoProcessor<>(null);
 	}
+
+	/**
+	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
+	 * the eventual result for 1 or N subscribers.
+	 *
+	 * @param waitStrategy a {@link WaitStrategy} for blocking {@link #get} strategy
+	 * @param <T> type of the expected value
+	 *
+	 * @return A {@link MonoProcessor}.
+	 */
+	public static <T> MonoProcessor<T> create(WaitStrategy waitStrategy) {
+		return new MonoProcessor<>(null, waitStrategy);
+	}
+
 	final Publisher<? extends O> source;
+	final WaitStrategy waitStrategy;
+
 	Subscription subscription;
 	volatile Processor<O, O> processor;
 	volatile O               value;
@@ -77,7 +96,12 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile int             connected;
 
 	MonoProcessor(Publisher<? extends O> source) {
+		this(source, WaitStrategy.sleeping());
+	}
+
+	MonoProcessor(Publisher<? extends O> source, WaitStrategy waitStrategy) {
 		this.source = source;
+		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 	}
 
 	@Override
@@ -132,11 +156,18 @@ public final class MonoProcessor<O> extends Mono<O>
 				getOrStart();
 			}
 
-			long delay = System.currentTimeMillis() + timeout;
+			long delay = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout,
+					TimeUnit.MILLISECONDS);
 
-			for (; ; ) {
-				int endState = this.state;
-				switch (endState) {
+			try {
+				long endState = waitStrategy.waitFor(STATE_SUCCESS_VALUE, () ->
+						state,	() -> {
+					if (delay < System.nanoTime()) {
+						throw Exceptions.CancelException.INSTANCE;
+					}
+				});
+
+				switch ((int)endState) {
 					case STATE_SUCCESS_VALUE:
 						return value;
 					case STATE_ERROR:
@@ -147,11 +178,11 @@ public final class MonoProcessor<O> extends Mono<O>
 					case STATE_COMPLETE_NO_VALUE:
 						return null;
 				}
-				if (delay < System.currentTimeMillis()) {
-					cancel();
-					throw new IllegalStateException("Timeout on Mono blocking read");
-				}
-				Thread.sleep(1);
+				throw new IllegalStateException("Mono has been cancelled");
+			}
+			catch (Exceptions.CancelException ce) {
+				cancel();
+				throw new IllegalStateException("Timeout on Mono blocking read");
 			}
 		}
 		catch (InterruptedException ie) {
@@ -253,6 +284,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
+				waitStrategy.signalAllWhenBlocking();
 				break;
 			}
 			state = this.state;
@@ -292,6 +324,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, finalState)) {
+				waitStrategy.signalAllWhenBlocking();
 				break;
 			}
 			state = this.state;
