@@ -82,6 +82,19 @@ public class FluxResumeTest {
 		  .assertNoError()
 		  .assertComplete();
 	}
+	@Test
+	public void errorMap() {
+		TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
+				" " +
+				"failure")).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError()
+		  .assertErrorMessage("forced failure")
+		  .assertNotComplete();
+	}
 
 	@Test
 	public void errorBackpressured() {

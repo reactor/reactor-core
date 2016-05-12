@@ -1801,6 +1801,19 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
+	 * <p>
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
+		return otherwise(e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1869,7 +1882,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#onErrorResumeWith
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
-		return MonoSource.wrap(new FluxResume<>(this, fallback));
+		return new MonoResume<>(this, fallback);
 	}
 
 	/**
@@ -1884,7 +1897,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return MonoSource.wrap(new FluxSwitchIfEmpty<>(this, alternate));
+		return new MonoSwitchIfEmpty<>(this, alternate);
 	}
 
 	/**

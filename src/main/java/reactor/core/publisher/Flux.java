@@ -2973,6 +2973,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> log(String category, Level level, int options) {
 		return new FluxLog<>(this, category, level, options);
 	}
+
 	/**
 	 * Transform the items emitted by this {@link Flux} by applying a function to each item.
 	 * <p>
@@ -2988,6 +2989,20 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return new FluxMapFuseable<>(this, mapper);
 		}
 		return new FluxMap<>(this, mapper);
+	}
+
+
+	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
+	 * <p>
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
+		return onErrorResumeWith(e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
