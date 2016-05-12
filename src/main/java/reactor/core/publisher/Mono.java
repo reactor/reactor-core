@@ -1252,7 +1252,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
-		return MonoSource.wrap(new FluxDelaySubscription<>(this, subscriptionDelay));
+		return new MonoDelaySubscription<>(this, subscriptionDelay);
 	}
 
 	/**
@@ -1270,7 +1270,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public final <X> Mono<X> dematerialize() {
 		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
-		return MonoSource.wrap(new FluxDematerialize<>(thiz));
+		return new MonoDematerialize<>(thiz);
 	}
 
 	/**
