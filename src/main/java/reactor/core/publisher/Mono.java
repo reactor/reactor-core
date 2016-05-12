@@ -1904,7 +1904,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Subscribe to a returned fallback value when any error occurs.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisejust.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisereturn.png" alt="">
 	 * <p>
 	 * @param fallback the value to emit if an error occurs
 	 *
@@ -1912,7 +1912,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @see Flux#onErrorReturn
 	 */
-	public final Mono<T> otherwiseJust(final T fallback) {
+	public final Mono<T> otherwiseReturn(final T fallback) {
 		return otherwise(throwable -> just(fallback));
 	}
 
@@ -2486,7 +2486,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
-		final Mono<Long> _timer = Mono.delay(timeout).otherwiseJust(0L);
+		final Mono<Long> _timer = Mono.delay(timeout).otherwiseReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> never();
 
 		if(fallback == null) {

@@ -4708,7 +4708,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		final TimedScheduler timer = Objects.requireNonNull(getTimer(), "Cannot use default timer as no environment has been " +
 				"provided to this " + "Stream");
 
-		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseJust(0L);
+		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
 		if(fallback == null) {
