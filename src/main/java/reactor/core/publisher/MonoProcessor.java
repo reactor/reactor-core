@@ -22,6 +22,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.LongSupplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
@@ -56,7 +57,7 @@ import reactor.core.util.WaitStrategy;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, Cancellation, Subscription, Cancellable, Receiver, Producer,
-		           Prefetchable, MonoEmitter<O> {
+		           Prefetchable, MonoEmitter<O>, LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -160,8 +161,7 @@ public final class MonoProcessor<O> extends Mono<O>
 					TimeUnit.MILLISECONDS);
 
 			try {
-				long endState = waitStrategy.waitFor(STATE_SUCCESS_VALUE, () ->
-						state,	() -> {
+				long endState = waitStrategy.waitFor(STATE_SUCCESS_VALUE, this,	() -> {
 					if (delay < System.nanoTime()) {
 						throw Exceptions.CancelException.INSTANCE;
 					}
@@ -348,6 +348,18 @@ public final class MonoProcessor<O> extends Mono<O>
 				drainLoop();
 			}
 		}
+	}
+
+	/**
+	 * Returns the internal state from -1 Cancelled to 5 errored, beyond 3 included is
+	 * fulfilled.
+	 *
+	 * @return the internal state from -1 Cancelled to 5 errored, beyond 3 included is
+	 * fulfilled.
+	 */
+	@Override
+	public long getAsLong() {
+		return state;
 	}
 
 	@Override
