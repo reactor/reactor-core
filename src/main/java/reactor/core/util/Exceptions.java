@@ -105,7 +105,7 @@ public enum Exceptions {
 		if(t instanceof UpstreamException){
 			return (UpstreamException) t;
 		}
-		throw new UpstreamException(t);
+		return new UpstreamException(t);
 	}
 
 	/**
@@ -215,10 +215,11 @@ public enum Exceptions {
 	 * @param t the exception to wrap
 	 */
 	public static Throwable unwrap(Throwable t) {
-		if (t instanceof ReactiveException) {
-			return t.getCause();
+		Throwable _t = t;
+		while(_t instanceof ReactiveException) {
+			_t = _t.getCause();
 		}
-		return t;
+		return _t;
 	}
 
 	/**
