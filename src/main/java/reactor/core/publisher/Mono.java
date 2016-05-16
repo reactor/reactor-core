@@ -1882,7 +1882,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#onErrorResumeWith
 	 */
 	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
-		return new MonoResume<>(this, fallback);
+		return new MonoOtherwise<>(this, fallback);
 	}
 
 	/**

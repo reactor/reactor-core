@@ -32,11 +32,11 @@ import org.reactivestreams.Subscriber;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoResume<T> extends MonoSource<T, T> {
+final class MonoOtherwise<T> extends MonoSource<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-	public MonoResume(Publisher<? extends T> source,
+	public MonoOtherwise(Publisher<? extends T> source,
 						   Function<? super Throwable, ? extends Mono<? extends T>>
 								   nextFactory) {
 		super(source);
