@@ -217,34 +217,6 @@ class ProcessorsSpec extends Specification {
 			r.shutdown()
 	}
 
-	def "Dispatchers can be shutdown awaiting tasks to complete"() {
-
-		given:
-			"a Reactor with a ThreadPoolExecutorDispatcher"
-			def serviceRB = Computations.concurrent("rbWork", 32)
-		def r = serviceRB.createWorker()
-			long start = System.currentTimeMillis()
-			def hello = ""
-			def latch = new CountDownLatch(1)
-			def c = { String ev ->
-				hello = ev
-				Thread.sleep(1000)
-			  	latch.countDown()
-			} as Consumer<String>
-
-		when:
-			"the Dispatcher is shutdown and tasks are awaited"
-		r.schedule { c.accept("Hello World!") }
-			def success = serviceRB.awaitAndShutdown(5, TimeUnit.SECONDS)
-			long end = System.currentTimeMillis()
-		then:
-			"the Consumer was run, this thread was blocked, and the Dispatcher is shut down"
-			hello == "Hello World!"
-			success
-			(end - start) >= 1000
-
-	}
-
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:

@@ -80,7 +80,7 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  * @author Anatoly Kadyshev
  */
-public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements Backpressurable, MultiProducer {
+public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
@@ -245,7 +245,14 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                Supplier<E> signalSupplier) {
-		return new TopicProcessor<E>(name, null, bufferSize, strategy, false, true,
+		return new TopicProcessor<E>(name,
+				null,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				false,
+				true,
 				signalSupplier);
 	}
 
@@ -266,7 +273,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new TopicProcessor<E>(name, null, bufferSize, strategy, false,
+		return new TopicProcessor<E>(name,
+				null,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				false,
 				autoCancel, null);
 	}
 
@@ -303,7 +316,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new TopicProcessor<E>(null, service, bufferSize, strategy, false,
+		return new TopicProcessor<E>(null,
+				service,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				false,
 				autoCancel, null);
 	}
 
@@ -452,8 +471,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	 */
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy) {
-		return new TopicProcessor<E>(name, null, bufferSize, strategy, true, true,
-				null);
+		return share(name, bufferSize, strategy, null);
 	}
 
 	/**
@@ -472,8 +490,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	 */
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               Supplier<E> signalSupplier) {
-		return new TopicProcessor<E>(name, null, bufferSize,
-				null, true, true, signalSupplier);
+		return share(name, bufferSize, null, signalSupplier);
 	}
 
 	/**
@@ -494,7 +511,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> share(String name, int bufferSize, WaitStrategy waitStrategy,
 	                                               Supplier<E> signalSupplier) {
 		return new TopicProcessor<E>(name, null, bufferSize,
-				waitStrategy, true, true, signalSupplier);
+				waitStrategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						waitStrategy,
+				true,
+				true,
+				signalSupplier);
 	}
 
 	/**
@@ -516,7 +538,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new TopicProcessor<E>(name, null, bufferSize, strategy, true,
+		return new TopicProcessor<E>(name,
+				null,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				true,
 				autoCancel, null);
 	}
 
@@ -557,52 +585,30 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new TopicProcessor<E>(null, service, bufferSize, strategy, true,
+		return new TopicProcessor<E>(null,
+				service,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				true,
 				autoCancel, null);
 	}
 
 	final RingBufferReceiver barrier;
 
-	final RingBuffer<Slot<E>> ringBuffer;
-
 	final Sequence minimum;
-
-	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 
 	private TopicProcessor(String name, ExecutorService executor, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
 	                            boolean autoCancel, final Supplier<E> signalSupplier) {
-		super(name, executor, autoCancel);
-
-		if (!RingBuffer.isPowerOfTwo(bufferSize) ){
-			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
-		}
-
-		Supplier<Slot<E>> factory = () -> {
+		super(name, bufferSize, executor, autoCancel, shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
 				signal.value = signalSupplier.get();
 			}
 			return signal;
-		};
-
-		Runnable spinObserver = () -> {
-			if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
-				throw Exceptions.AlertException.INSTANCE;
-			}
-		};
-
-		WaitStrategy strategy = waitStrategy == null ?
-				WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
-				waitStrategy;
-		if (shared) {
-			this.ringBuffer = RingBuffer
-					.createMultiProducer(factory, bufferSize, strategy, spinObserver);
-		}
-		else {
-			this.ringBuffer = RingBuffer
-					.createSingleProducer(factory, bufferSize, strategy, spinObserver);
-		}
+		}, waitStrategy);
 
 		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newBarrier();
@@ -663,14 +669,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	}
 
 	@Override
-	public void onNext(E o) {
-		super.onNext(o);
-		RingBuffer.onNext(o, ringBuffer);
-	}
-
-	@Override
 	protected void doError(Throwable t) {
-		readWait.signalAllWhenBlocking();
 		barrier.signal();
 		//ringBuffer.markAsTerminated();
 
@@ -678,7 +677,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 
 	@Override
 	protected void doComplete() {
-		readWait.signalAllWhenBlocking();
 		barrier.signal();
 		//ringBuffer.markAsTerminated();
 	}
@@ -694,11 +692,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 			return concat(bufferIterable, Flux.error(error));
 		}
 		return bufferIterable;
-	}
-
-	@Override
-	public boolean isConcurrent() {
-		return false;
 	}
 
 	@Override
@@ -726,12 +719,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	}
 
 	@Override
-	protected void cancel(Subscription subscription) {
-		super.cancel(subscription);
-		readWait.signalAllWhenBlocking();
-	}
-
-	@Override
 	public String toString() {
 		return "TopicProcessor{" +
 				"barrier=" + barrier +
@@ -740,28 +727,15 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	}
 
 	@Override
-	public long getAvailableCapacity() {
-		return ringBuffer.remainingCapacity();
-	}
-
-	@Override
-	public long getCapacity() {
-		return ringBuffer.getCapacity();
-	}
-
-	@Override
-	public boolean isStarted() {
-		return super.isStarted() || ringBuffer.getAsLong() != -1;
-	}
-
-	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
-	}
-
-	@Override
 	public long downstreamCount() {
 		return ringBuffer.getSequenceReceivers().length - (isStarted() ? 1 : 0);
+	}
+
+	@Override
+	public void run() {
+		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
+			throw Exceptions.AlertException.INSTANCE;
+		}
 	}
 
 	/**

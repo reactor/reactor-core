@@ -40,7 +40,7 @@
  *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
  *         <li>{@link reactor.core.publisher.FluxProcessor} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
  * </ul>
- * Reactor offers a few management API via the subclassed {@link reactor.core.publisher.EventLoopProcessor} for the underlying {@link
+ * Reactor offers a few management API for the underlying {@link
  * java.util.concurrent.Executor} in use, in addition to the state accessors like
  * {@link reactor.core.state.Backpressurable}.
  * <p>

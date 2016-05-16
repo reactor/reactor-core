@@ -15,47 +15,86 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Receiver;
+import reactor.core.queue.RingBuffer;
+import reactor.core.queue.Slot;
+import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.ExecutorUtils;
+import reactor.core.util.WaitStrategy;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
  *
  * @author Stephane Maldini
  */
-abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Cancellable, Receiver {
+abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
+		implements Cancellable, Receiver, Runnable, MultiProducer, Backpressurable {
 
-	protected final ExecutorService executor;
-	protected final ClassLoader     contextClassLoader;
-	protected final String          name;
-	protected final boolean         autoCancel;
+	final ExecutorService executor;
+	final ClassLoader     contextClassLoader;
+	final String          name;
+	final boolean         autoCancel;
+
+	final RingBuffer<Slot<IN>> ringBuffer;
+	final WaitStrategy readWait = WaitStrategy.liteBlocking();
+	
 	Subscription upstreamSubscription;
 	volatile        boolean         cancelled;
 	volatile        int             terminated;
 	volatile        Throwable       error;
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
-	protected EventLoopProcessor(String name, ExecutorService executor,
-			boolean autoCancel) {
+
+	EventLoopProcessor(String name,
+			int bufferSize,
+			ExecutorService executor,
+			boolean autoCancel,
+			boolean multiproducers,
+			Supplier<Slot<IN>> factory,
+			WaitStrategy strategy) {
+
+		if (!RingBuffer.isPowerOfTwo(bufferSize)) {
+			throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
+		}
+		
 		this.autoCancel = autoCancel;
+
 		contextClassLoader = new EventLoopContext();
+
 		this.name = null != name ? name : getClass().getSimpleName();
+
 		if (executor == null) {
 			this.executor = ExecutorUtils.singleUse(name, contextClassLoader);
 		}
 		else {
 			this.executor = executor;
+		}
+
+		if (multiproducers) {
+			this.ringBuffer = RingBuffer.createMultiProducer(factory,
+					bufferSize,
+					strategy,
+					this);
+		}
+		else {
+			this.ringBuffer = RingBuffer.createSingleProducer(factory,
+					bufferSize,
+					strategy,
+					this);
 		}
 	}
 
@@ -64,21 +103,21 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	 *
 	 * @return {@literal true} if this {@code Resource} is alive and can be used, {@literal false} otherwise.
 	 */
-	public boolean alive() {
+	final public boolean alive() {
 		return 0 == terminated;
 	}
 
 	/**
 	 * Block until all submitted tasks have completed, then do a normal {@link #shutdown()}.
 	 */
-	public boolean awaitAndShutdown() {
+	final public boolean awaitAndShutdown() {
 		return awaitAndShutdown(-1, TimeUnit.SECONDS);
 	}
 
 	/**
 	 * Block until all submitted tasks have completed, then do a normal {@link #shutdown()}.
 	 */
-	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
+	final public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
 		try {
 			shutdown();
 			return executor.awaitTermination(timeout, timeUnit);
@@ -102,7 +141,7 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that have
 	 * not yet been executed.
 	 */
-	public Flux<IN> forceShutdown() {
+	final public Flux<IN> forceShutdown() {
 		int t = terminated;
 		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();
@@ -114,71 +153,86 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	 * @return a snapshot number of available onNext before starving the resource
 	 */
 	public long getAvailableCapacity() {
-		return getCapacity();
+		return ringBuffer.remainingCapacity();
+	}
+
+
+	@Override
+	public Iterator<?> downstreams() {
+		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
 	}
 
 	@Override
-	public final Throwable getError() {
+	final public Throwable getError() {
 		return error;
 	}
 
 	@Override
-	public int getMode() {
+	final public int getMode() {
 		return UNIQUE;
 	}
 
 	@Override
-	public String getName() {
+	final public String getName() {
 		return "/Processors/" + name;
 	}
 
 	@Override
-	public int hashCode() {
+	final public int hashCode() {
 		return contextClassLoader.hashCode();
 	}
 
 	@Override
-	public boolean isCancelled() {
+	final public boolean isCancelled() {
 		return cancelled;
 	}
 
 	@Override
-	public boolean isStarted() {
-		return upstreamSubscription != null;
+	final public boolean isStarted() {
+		return upstreamSubscription != null || ringBuffer.getAsLong() != -1;
 	}
 
 	@Override
-	public boolean isTerminated() {
+	final public boolean isTerminated() {
 		return terminated > 0;
 	}
 
 	@Override
-	public Object key() {
+	final public Object key() {
 		return contextClassLoader.hashCode();
 	}
 
 	@Override
-	public final void onComplete() {
+	final public void onComplete() {
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			upstreamSubscription = null;
 			ExecutorUtils.shutdownIfSingleUse(executor);
+			readWait.signalAllWhenBlocking();
 			doComplete();
 		}
 	}
 
 	@Override
-	public final void onError(Throwable t) {
+	final public void onError(Throwable t) {
 		super.onError(t);
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			error = t;
 			upstreamSubscription = null;
 			ExecutorUtils.shutdownIfSingleUse(executor);
+			readWait.signalAllWhenBlocking();
 			doError(t);
 		}
 	}
 
+
 	@Override
-	public void onSubscribe(final Subscription s) {
+	final public void onNext(IN o) {
+		super.onNext(o);
+		RingBuffer.onNext(o, ringBuffer);
+	}
+
+	@Override
+	final public void onSubscribe(final Subscription s) {
 		if (BackpressureUtils.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
@@ -198,7 +252,7 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
 	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
 	 */
-	public void shutdown() {
+	final public void shutdown() {
 		try {
 			onComplete();
 			executor.shutdown();
@@ -210,15 +264,21 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public Subscription upstream() {
+	final public Subscription upstream() {
 		return upstreamSubscription;
 	}
+	
+	@Override
+	final public long getCapacity() {
+		return ringBuffer.getCapacity();
+	}
 
-	protected void cancel(Subscription subscription) {
+	final void cancel() {
 		cancelled = true;
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			ExecutorUtils.shutdownIfSingleUse(executor);
 		}
+		readWait.signalAllWhenBlocking();
 	}
 
 	protected void doComplete() {
@@ -235,7 +295,7 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		if (subs == 0) {
 			if (subscription != null && autoCancel) {
 				upstreamSubscription = null;
-				cancel(subscription);
+				cancel();
 			}
 			return subs;
 		}
@@ -248,7 +308,8 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
 	}
 
-	final boolean startSubscriber(Subscriber<? super OUT> subscriber, Subscription subscription){
+	final boolean startSubscriber(Subscriber<? super IN> subscriber,
+			Subscription subscription) {
 		try {
 			Thread.currentThread()
 			      .setContextClassLoader(contextClassLoader);
@@ -268,10 +329,10 @@ abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 			            .getContextClassLoader());
 		}
 	}
-	protected static final int SHUTDOWN = 1;
-	protected static final int                                           FORCED_SHUTDOWN  = 2;
-	protected static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
+	static final int SHUTDOWN = 1;
+	static final int                                           FORCED_SHUTDOWN  = 2;
+	static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
-	protected final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
+	final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 }

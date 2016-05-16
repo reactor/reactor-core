@@ -72,7 +72,7 @@ import reactor.core.util.WaitStrategy;
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  */
-public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implements Backpressurable, MultiProducer {
+public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
 	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
@@ -238,7 +238,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	 */
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(name, null, bufferSize, strategy, false,
+		return new WorkQueueProcessor<E>(name,
+				null,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				false,
 				autoCancel);
 	}
 
@@ -274,7 +278,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(null, executor, bufferSize, strategy, false,
+		return new WorkQueueProcessor<E>(null,
+				executor,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				false,
 				autoCancel);
 	}
 
@@ -443,7 +451,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	 */
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(name, null, bufferSize, strategy, true,
+		return new WorkQueueProcessor<E>(name,
+				null,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				true,
 				autoCancel);
 	}
 
@@ -482,16 +494,15 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(null, executor, bufferSize, strategy, true,
+		return new WorkQueueProcessor<E>(null,
+				executor,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				true,
 				autoCancel);
 	}
 
-	private static final Supplier FACTORY = new Supplier<Slot>() {
-		@Override
-		public Slot get() {
-			return new Slot<>();
-		}
-	};
+	private static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
 
 	/**
 	 * Instance
@@ -503,15 +514,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	final Sequence retrySequence =
 			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
-	final RingBuffer<Slot<E>> ringBuffer;
-
 	volatile RingBuffer<Slot<E>> retryBuffer;
 
 	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer>
 			RETRY_REF = PlatformDependent
 			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
 
-	final WaitStrategy readWait = WaitStrategy.liteBlocking();
 	final WaitStrategy writeWait;
 
 	volatile int replaying = 0;
@@ -524,37 +532,16 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	private WorkQueueProcessor(String name, ExecutorService executor, int bufferSize,
 	                                WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
-		super(name, executor, autoCancel);
+		super(name,
+				bufferSize,
+				executor,
+				autoCancel,
+				share,
+				(Supplier<Slot<E>>) FACTORY,
+				waitStrategy);
 
-		if (!RingBuffer.isPowerOfTwo(bufferSize) ){
-			throw new IllegalArgumentException("bufferSize must be a power of 2 : "+bufferSize);
-		}
+		this.writeWait = waitStrategy;
 
-		Supplier<Slot<E>> factory = (Supplier<Slot<E>>) FACTORY;
-
-		Runnable spinObserver = new Runnable() {
-			@Override
-			public void run() {
-				if (!alive()) {
-					throw Exceptions.AlertException.INSTANCE;
-				}
-			}
-		};
-
-		WaitStrategy strategy = waitStrategy == null ?
-				WaitStrategy.liteBlocking() :
-				waitStrategy;
-
-		this.writeWait = strategy;
-
-		if (share) {
-			this.ringBuffer = RingBuffer
-					.createMultiProducer(factory, bufferSize, strategy, spinObserver);
-		}
-		else {
-			this.ringBuffer = RingBuffer
-					.createSingleProducer(factory, bufferSize, strategy, spinObserver);
-		}
 		ringBuffer.addGatingSequence(workSequence);
 
 	}
@@ -600,21 +587,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	}
 
 	@Override
-	public void onNext(E o) {
-		super.onNext(o);
-		RingBuffer.onNext(o, ringBuffer);
-	}
-
-	@Override
 	protected void doError(Throwable t) {
-		readWait.signalAllWhenBlocking();
 		writeWait.signalAllWhenBlocking();
 		//ringBuffer.markAsTerminated();
 	}
 
 	@Override
 	protected void doComplete() {
-		readWait.signalAllWhenBlocking();
 		writeWait.signalAllWhenBlocking();
 		//ringBuffer.markAsTerminated();
 	}
@@ -636,22 +615,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	}
 
 	@Override
-	protected void cancel(Subscription subscription) {
-		super.cancel(subscription);
-		readWait.signalAllWhenBlocking();
-	}
-
-	@Override
-	public boolean isStarted() {
-		return super.isStarted() || ringBuffer.getAsLong() != -1;
-	}
-
-	@Override
-	public long getAvailableCapacity() {
-		return ringBuffer.remainingCapacity();
-	}
-
-	@Override
 	public String toString() {
 		return "WorkQueueProcessor{" +
 				", ringBuffer=" + ringBuffer +
@@ -659,16 +622,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 				", workSequence=" + workSequence +
 				", retrySequence=" + retrySequence +
 				'}';
-	}
-
-	@Override
-	public long getCapacity() {
-		return ringBuffer.getCapacity();
-	}
-
-	@Override
-	public boolean isConcurrent() {
-		return true;
 	}
 
 	@Override
@@ -690,15 +643,16 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 		return retry;
 	}
 
-
-	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
-	}
-
 	@Override
 	public long downstreamCount() {
 		return ringBuffer.getSequenceReceivers().length - 1;
+	}
+
+	@Override
+	public void run() {
+		if (!alive()) {
+			throw Exceptions.AlertException.INSTANCE;
+		}
 	}
 
 	/**
