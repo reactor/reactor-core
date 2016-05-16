@@ -667,7 +667,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E, E> implem
 	}
 
 	@Override
-	public boolean isWork() {
+	public boolean isConcurrent() {
 		return true;
 	}
 

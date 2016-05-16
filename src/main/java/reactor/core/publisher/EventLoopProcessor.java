@@ -33,7 +33,7 @@ import reactor.core.util.ExecutorUtils;
  *
  * @author Stephane Maldini
  */
-public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		implements Cancellable, Receiver {
 
 	protected final ExecutorService executor;
@@ -151,11 +151,6 @@ public abstract class EventLoopProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	public boolean isTerminated() {
 		return terminated > 0;
 	}
-
-	/**
-	 * @return true if the attached Subscribers will read exclusive sequences (akin to work-queue pattern)
-	 */
-	public abstract boolean isWork();
 
 	@Override
 	public Object key() {

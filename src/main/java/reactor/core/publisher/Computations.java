@@ -16,11 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -702,37 +699,6 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	}
 
 	/**
-	 * Blocking shutdown of the internal {@link EventLoopProcessor} with {@link Processor#onComplete()}. If the
-	 * processor doesn't implement.
-	 *
-	 * The method will only return after shutdown has been confirmed, waiting undefinitely so.
-	 *
-	 * @return true if successfully shutdown
-	 */
-	public final boolean awaitAndShutdown() {
-		return awaitAndShutdown(-1, TimeUnit.SECONDS);
-	}
-
-	/**
-	 * Blocking shutdown of the internal {@link EventLoopProcessor} with {@link Processor#onComplete()}. If the
-	 * processor doesn't implement
-	 * {@link EventLoopProcessor} or if it is synchronous, throw an {@link UnsupportedOperationException}.
-	 * @param timeout the time un given unit to wait for
-	 * @param timeUnit the unit
-	 *
-	 * @return true if successfully shutdown
-	 */
-	public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (processorWorker.processor instanceof EventLoopProcessor && !((EventLoopProcessor) processorWorker.processor).awaitAndShutdown(timeout,
-					timeUnit)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
 	 * Return a worker reference to this {@link Computations}, incrementing use count by 1
 	 *
 	 * @return a new {@link reactor.core.scheduler.Scheduler.Worker} reference
@@ -754,30 +720,10 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 		return workerPool.length;
 	}
 
-	/**
-	 * Non-blocking forced shutdown of the internal {@link Processor} with {@link Processor#onComplete()}
-	 * @return the current pending tasks if supported or throw an unchecked {@link UnsupportedOperationException}.
-	 */
-	@SuppressWarnings("unchecked")
-	public Flux<Runnable> forceShutdown() {
-		List<Flux<Runnable>> finish = new ArrayList<>(workerPool.length);
-		for (ProcessorWorker worker : workerPool) {
-			if (worker.processor instanceof EventLoopProcessor) {
-				finish.add(((EventLoopProcessor<Runnable, Runnable>) worker.processor).forceShutdown());
-			}
-			else {
-				throw new UnsupportedOperationException(
-						"Underlying Processor is null or doesn't implement EventLoopProcessor");
-			}
-		}
-		return Flux.merge(finish);
-
-	}
-
 	@Override
 	public boolean isTerminated() {
 		for (ProcessorWorker processorWorker : workerPool) {
-			if (!(processorWorker.processor instanceof EventLoopProcessor && ((EventLoopProcessor) processorWorker.processor).isTerminated())) {
+			if (!(processorWorker.processor instanceof FluxProcessor && ((FluxProcessor) processorWorker.processor).isTerminated())) {
 				return false;
 			}
 		}
@@ -787,7 +733,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	@Override
 	public boolean isStarted() {
 		for (ProcessorWorker processorWorker : workerPool) {
-			if (!(processorWorker.processor instanceof EventLoopProcessor && ((EventLoopProcessor) processorWorker.processor).isStarted())) {
+			if (!(processorWorker.processor instanceof FluxProcessor && ((FluxProcessor) processorWorker.processor).isStarted())) {
 				return false;
 			}
 		}

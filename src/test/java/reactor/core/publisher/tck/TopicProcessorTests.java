@@ -22,9 +22,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.publisher.EventLoopProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.test.TestSubscriber;
 
@@ -56,7 +54,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 	@Test
 	public void testShutdown() {
 		for (int i = 0; i < 1000; i++) {
-			EventLoopProcessor dispatcher = TopicProcessor.create("rb-test-shutdown", 16);
+			TopicProcessor dispatcher = TopicProcessor.create("rb-test-shutdown", 16);
 			dispatcher.awaitAndShutdown();
 		}
 	}

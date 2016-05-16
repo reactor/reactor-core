@@ -697,7 +697,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E, E> implements
 	}
 
 	@Override
-	public boolean isWork() {
+	public boolean isConcurrent() {
 		return false;
 	}
 
