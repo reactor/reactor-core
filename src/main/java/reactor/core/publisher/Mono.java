@@ -2181,7 +2181,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> retry(long numRetries) {
-		return MonoSource.wrap(new FluxRetry<>(this, numRetries));
+		return new MonoRetry<>(this, numRetries);
 	}
 
 	/**
@@ -2506,12 +2506,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
 		final Mono<Long> _timer = Mono.delay(timeout).otherwiseReturn(0L);
-		final Function<T, Publisher<Long>> rest = o -> never();
 
 		if(fallback == null) {
-			return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest));
+			return new MonoTimeout<>(this, _timer);
 		}
-		return MonoSource.wrap(new FluxTimeout<>(this, _timer, rest, fallback));
+		return new MonoTimeout<>(this, _timer, fallback);
 	}
 
 	/**
@@ -2528,7 +2527,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout) {
-		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never()));
+		return new MonoTimeout<>(this, firstTimeout);
 	}
 
 	/**
@@ -2548,7 +2547,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Mono<? extends T> fallback) {
-		return MonoSource.wrap(new FluxTimeout<>(this, firstTimeout, t -> never(), fallback));
+		return new MonoTimeout<>(this, firstTimeout, fallback);
 	}
 
 
