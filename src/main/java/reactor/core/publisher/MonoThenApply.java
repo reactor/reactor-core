@@ -208,7 +208,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             @Override
             public void onError(Throwable t) {
                 if (done) {
-                    Exceptions.onNextDropped(t);
+                    Exceptions.onErrorDropped(t);
                     return;
                 }
                 done = true;
