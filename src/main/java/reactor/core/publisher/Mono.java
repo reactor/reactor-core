@@ -264,7 +264,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration, TimedScheduler timer) {
-		return new MonoTimer(duration, TimeUnit.MILLISECONDS, timer);
+		return new MonoDelay(duration, TimeUnit.MILLISECONDS, timer);
 	}
 
 	/**
@@ -311,7 +311,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<Void> empty(Publisher<T> source) {
-		return (Mono<Void>)new MonoIgnoreElements<>(source);
+		return (Mono<Void>)new MonoIgnoreThen<>(source);
 	}
 
 	/**
@@ -481,7 +481,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new completable {@link Mono}.
 	 */
 	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
-		return new MonoIgnoreElements<>(source);
+		return new MonoIgnoreThen<>(source);
 	}
 
 
@@ -1290,7 +1290,15 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
-		return new MonoSuccess<>(this, null, null, afterTerminate);
+		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
+		if (this instanceof Fuseable) {
+			return new MonoPeekFuseable<>(this, null,  afterSuccess, afterSuccess.errorConsumer,
+					null, afterSuccess, null,
+					null);
+		}
+		return new MonoPeek<>(this, null, afterSuccess, afterSuccess.errorConsumer,
+				null,
+				afterSuccess, null, null);
 	}
 
 	/**
@@ -1349,7 +1357,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
-		return new MonoSuccess<>(this, onSuccess, null, null);
+		MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
+		if (this instanceof Fuseable) {
+			return new MonoPeekFuseable<>(this, null,  _onSuccess, null, _onSuccess, null,
+					null,
+					null);
+		}
+		return new MonoPeek<>(this, null, _onSuccess, null,  _onSuccess, null, null, null);
 	}
 
 	/**
@@ -1420,7 +1434,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
-		return new MonoSuccess<>(this, null, onTerminate, null);
+		MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
+		Consumer<Throwable> error = e -> onTerminate.accept(null, e);
+		if (this instanceof Fuseable) {
+			return new MonoPeekFuseable<>(this, null,  onSuccess, error, onSuccess, null, null,
+					null);
+		}
+		return new MonoPeek<>(this, null, onSuccess, error,  onSuccess, null, null, null);
 	}
 
 	/**
@@ -1897,7 +1917,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return new MonoSwitchIfEmpty<>(this, alternate);
+		return new MonoOtherwiseIfEmpty<>(this, alternate);
 	}
 
 	/**
@@ -2123,7 +2143,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			AtomicBoolean nonEmpty = new AtomicBoolean();
 
 			return this.doOnSuccess(e -> nonEmpty.lazySet(e != null))
-			           .flux()
 			           .repeatWhen(o -> repeatFactory.apply(o
 						.takeWhile(e -> !nonEmpty.get())
 						.zipWith(iterations, 1, (c, i) -> i)))
@@ -2574,9 +2593,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> where(final Predicate<? super T> tester) {
 		if (this instanceof Fuseable) {
-			return new MonoFilterFuseable<>(this, tester);
+			return new MonoWhereFuseable<>(this, tester);
 		}
-		return new MonoFilter<>(this, tester);
+		return new MonoWhere<>(this, tester);
 	}
 
 }

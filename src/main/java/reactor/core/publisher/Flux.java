@@ -1475,7 +1475,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@Deprecated
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> after() {
-		return (Mono<Void>) new MonoIgnoreElements<>(this);
+		return (Mono<Void>) new MonoIgnoreThen<>(this);
 	}
 
 	/**
@@ -4590,7 +4590,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then() {
-		return (Mono<Void>) new MonoIgnoreElements<>(this);
+		return (Mono<Void>) new MonoIgnoreThen<>(this);
 	}
 
 	/**

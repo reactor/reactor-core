@@ -36,7 +36,7 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoTimer extends Mono<Long> {
+final class MonoDelay extends Mono<Long> {
 
 	final TimedScheduler timedScheduler;
 	
@@ -44,7 +44,7 @@ final class MonoTimer extends Mono<Long> {
 	
 	final TimeUnit unit;
 	
-	public MonoTimer(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
+	public MonoDelay(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
 		this.delay = delay;
 		this.unit = Objects.requireNonNull(unit, "unit");
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");

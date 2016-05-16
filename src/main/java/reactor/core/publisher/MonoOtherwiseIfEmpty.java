@@ -32,11 +32,11 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoSwitchIfEmpty<T> extends MonoSource<T, T> {
+final class MonoOtherwiseIfEmpty<T> extends MonoSource<T, T> {
 
     final Mono<? extends T> other;
 
-	public MonoSwitchIfEmpty(Mono<? extends T> source, Mono<? extends T> other) {
+	public MonoOtherwiseIfEmpty(Mono<? extends T> source, Mono<? extends T> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 	}
