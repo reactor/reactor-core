@@ -61,12 +61,12 @@ class FluxSpec extends Specification {
 
 		when:
 			'the value is retrieved'
-			def value = stream.tap()
-			value.subscribe()
+			def value
+			stream.subscribe{ value = it }
 
 		then:
 			'it is available'
-			value.get() == 'test'
+			value == 'test'
 	}
 
 	def 'A deferred Flux with an initial value makes that value available once if broadcasted'() {
@@ -76,15 +76,15 @@ class FluxSpec extends Specification {
 
 		when:
 			'the value is retrieved'
-			def value = stream.tap()
-			value.subscribe()
-			def value2 = stream.tap()
-			value2.subscribe()
+			def value
+			stream.subscribe{ value = it }
+			def value2
+			stream.subscribe{ value2 = it }
 
 		then:
 			'it is available in value 1 but value 2 has subscribed after dispatching'
-			value.get() == 'test'
-			!value2.get()
+			value == 'test'
+			!value2
 	}
 
 	def 'A Flux can propagate the error using await'() {
@@ -175,14 +175,10 @@ class FluxSpec extends Specification {
 			'the complete signal is observed and flux is retrieved'
 			def value = null
 
-			def tap = stream.doAfterTerminate {
+			stream.doAfterTerminate {
 				println 'test'
 				value = true
-			}.tap()
-
-			tap.subscribe()
-
-			println tap.debug()
+			}.subscribe{ value = it }
 
 		then:
 			'it is available'
@@ -257,18 +253,18 @@ class FluxSpec extends Specification {
 
 		when:
 			'the first value is retrieved'
-			def first = s.everyFirst(5).tap()
-			first.subscribe()
+			def first
+			s.everyFirst(5).subscribe{ first = it }
 
 		and:
 			'the last value is retrieved'
-			def last = s.every(5).tap()
-			last.subscribe()
+			def last
+			s.every(5).subscribe{ last = it }
 
 		then:
 			'first and last'
-			first.get() == 1
-			last.get() == 5
+			first == 1
+			last == 5
 	}
 
 	def 'A Flux can sample values over time'() {
@@ -466,8 +462,8 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with a registered consumer'
 			def composable = EmitterProcessor.<Integer> create().connect()
-			def value = composable.tap()
-			value.subscribe()
+			def value
+			composable.subscribe{ value = it }
 
 		when:
 			'a value is accepted'
@@ -475,7 +471,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is passed to the consumer'
-			value.get() == 1
+			value == 1
 
 		when:
 			'another value is accepted'
@@ -483,7 +479,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'it too is passed to the consumer'
-			value.get() == 2
+			value == 2
 	}
 
 	def 'Accepted errors are passed to a registered Consumer'() {
@@ -491,7 +487,7 @@ class FluxSpec extends Specification {
 			'a composable with a registered consumer of RuntimeExceptions'
 			Flux composable = EmitterProcessor.<Integer> create().connect()
 			def errors = 0
-			def tail = composable.doOnError(RuntimeException) { errors++ }.subscribe()
+			composable.doOnError(RuntimeException) { errors++ }.subscribe()
 
 		when:
 			'A RuntimeException is accepted'
@@ -520,13 +516,13 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept list of Strings'
-			def tap = composable.tap()
-			tap.subscribe()
+			def tap
+			composable.subscribe{ tap = it }
 			d.onNext(['a', 'b', 'c'])
 
 		then:
 			'its value is the last of the initial values'
-			tap.get() == 'c'
+			tap == 'c'
 
 	}
 
@@ -538,8 +534,8 @@ class FluxSpec extends Specification {
 
 		when:
 			'the expected accept count is set and that number of values is accepted'
-			def tap = composable.every(3).log().tap()
-			tap.subscribe()
+			def tap
+			composable.every(3).log().subscribe{ tap = it }
 			println composable.debug()
 			d.onNext(1)
 			d.onNext(2)
@@ -547,19 +543,18 @@ class FluxSpec extends Specification {
 
 		then:
 			"last's value is now that of the last value"
-			tap.get() == 3
+			tap == 3
 
 		when:
 			'the expected accept count is set and that number of values is accepted'
-			tap = composable.every(3).tap()
-			tap.subscribe()
+			composable.every(3).subscribe{ tap = it }
 			d.onNext(1)
 			d.onNext(2)
 			d.onNext(3)
 
 		then:
 			"last's value is now that of the last value"
-			tap.get() == 3
+			tap == 3
 	}
 
 	def "A Flux's values can be mapped"() {
@@ -570,13 +565,13 @@ class FluxSpec extends Specification {
 
 		when:
 			'the source accepts a value'
-			def value = mapped.tap()
-			value.subscribe()
+			def value
+			mapped.subscribe{ value = it }
 			source.onNext(1)
 
 		then:
 			'the value is mapped'
-			value.get() == 2
+			value == 2
 	}
 
 	def "Stream's values can be exploded"() {
@@ -612,8 +607,9 @@ class FluxSpec extends Specification {
 
 			def source3 = EmitterProcessor.<Integer> create().connect()
 
-			def tap = Flux.merge(source1, source2, source3).log().buffer(3).log().tap()
-			tap.subscribe()
+			def tap
+			Flux.merge(source1, source2, source3).log().buffer(3)
+					.log().subscribe{ tap = it}
 
 		when:
 			'the sources accept a value'
@@ -625,7 +621,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the values are all collected from source1 flux'
-			tap.get() == [1, 2, 3]
+			tap == [1, 2, 3]
 	}
 
 
@@ -635,8 +631,8 @@ class FluxSpec extends Specification {
 			def source1 = EmitterProcessor.<Integer> create().connect()
 			def source2 = EmitterProcessor.<Integer> create().connect()
 			def zippedFlux = Flux.zip(source1, source2, (BiFunction) { t1, t2 -> println t1; t1 + t2 }).log()
-			def tap = zippedFlux.tap()
-			tap.subscribe()
+			def tap
+			zippedFlux.subscribe{ tap = it }
 
 		when:
 			'the sources accept a value'
@@ -645,22 +641,18 @@ class FluxSpec extends Specification {
 			source2.onNext(3)
 			source2.onNext(4)
 
-			println tap.debug()
-
 		then:
 			'the values are all collected from source1 flux'
-			tap.get() == 3
+			tap == 3
 
 		when:
 			'the sources accept the missing value'
 			source2.onNext(5)
 			source1.onNext(6)
 
-			println tap.debug()
-
 		then:
 			'the values are all collected from source1 flux'
-			tap.get() == 9
+			tap == 9
 	}
 
 	def "Multiple iterable Stream's values can be zipped"() {
@@ -900,14 +892,13 @@ class FluxSpec extends Specification {
 
 		when:
 			'the source accepts an even value'
-			def value = filtered.tap()
-			value.subscribe()
-			println value.debug()
+			def value
+			filtered.subscribe{ value = it }
 			source.onNext(2)
 
 		then:
 			'it passes through'
-			value.get() == 2
+			value == 2
 
 		when:
 			'the source accepts an odd value'
@@ -915,30 +906,29 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is blocked by the filter'
-			value.get() == 2
+			value == 2
 
 
 		when:
 			'simple filter'
 			def anotherSource = EmitterProcessor.<Boolean> create().connect()
-			def tap = anotherSource.filter{ it }.tap()
-			tap.subscribe()
+			def tap
+			anotherSource.filter{ it }.subscribe{ tap = it }
 			anotherSource.onNext(true)
 
 		then:
 			'it is accepted by the filter'
-			tap.get()
+			tap
 
 		when:
 			'simple filter nominal case'
 			anotherSource = EmitterProcessor.<Boolean> create().connect()
-			tap = anotherSource.filter{ it }.tap()
-			tap.subscribe()
+			anotherSource.filter{ it }.subscribe{ tap = it }
 			anotherSource.onNext(false)
 
 		then:
-			'it is not accepted by the filter'
-			!tap.get()
+			'it is not accepted by the filter (previous value held)'
+			tap
 	}
 
 	def "When a mapping function throws an exception, the mapped composable accepts the error"() {
@@ -1140,8 +1130,8 @@ class FluxSpec extends Specification {
 			'a composable with a reduce function'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.scan(new Reduction())
-			def value = reduced.tap()
-			value.subscribe()
+			def value
+			reduced.subscribe{ value = it }
 
 		when:
 			'the first value is accepted'
@@ -1149,7 +1139,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the reduction is available'
-			value.get() == 1
+			value == 1
 
 		when:
 			'the second value is accepted'
@@ -1157,17 +1147,16 @@ class FluxSpec extends Specification {
 
 		then:
 			'the updated reduction is available'
-			value.get() == 2
+			value == 2
 
 		when:
 			'use an initial value'
-			value = source.scan(4, new Reduction()).tap()
-			value.subscribe()
+			source.scan(4, new Reduction()).subscribe{ value = it }
 			source.onNext(1)
 
 		then:
 			'the updated reduction is available'
-			value.get() == 4
+			value == 4
 	}
 
 
@@ -1385,9 +1374,10 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def value = null
 
-			source.log('w').window(2).subscribe {
-				value = it.log().buffer(2).tap()
-			  	value.subscribe()
+			source.log('w').window(2).subscribe { s ->
+				s.log().buffer(2).subscribe{
+				  value = it
+				}
 			}
 
 
@@ -1397,27 +1387,24 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list is not yet available'
-			value
-			value.get() == null
+			!value
 
 		when:
 			'the second value is accepted'
 			source.onNext(2)
-			println value.debug()
 
 		then:
 			'the collected list contains the first and second elements'
-			value.get() == [1, 2]
+			value == [1, 2]
 
 		when:
 			'2 more values are accepted'
 			source.onNext(3)
 			source.onNext(4)
-			println value.debug()
 
 		then:
 			'the collected list contains the first and second elements'
-			value.get() == [3, 4]
+			value == [3, 4]
 	}
 
 	def 'Window will re-route N elements over time to a fresh nested stream'() {
@@ -1828,8 +1815,8 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(2).log().delay(Duration.ofMillis(300))
-			def value = reduced.tap()
-			value.subscribe()
+			def value
+			reduced.subscribe{ value = it }
 
 		when:
 			'the first values are accepted on the source'
@@ -1841,7 +1828,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list is available'
-			value.get() == [1, 2]
+			value == [1, 2]
 
 		when:
 			'the second value is accepted'
@@ -1851,7 +1838,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list contains the first and second elements'
-			value.get() == [3, 4]
+			value == [3, 4]
 	}
 
 	def 'Throttle will generate demand every specified period'() {
@@ -1883,9 +1870,7 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(5, Duration.ofMillis(600))
-			def value = reduced.tap()
-			value.subscribe()
-			println value.debug()
+			def ts = new TestSubscriber().bindTo(reduced)
 
 		when:
 			'the first values are accepted on the source'
@@ -1894,24 +1879,17 @@ class FluxSpec extends Specification {
 			source.onNext(1)
 			source.onNext(1)
 			source.onNext(1)
-			println value.debug()
 			sleep(2000)
-			println value.debug()
 
-		then:
-			'the collected list is not yet available'
-			value.get() == [1, 1, 1, 1, 1]
-
-		when:
+		and:
 			'the second value is accepted'
 			source.onNext(2)
 			source.onNext(2)
 			sleep(2000)
-			println value.debug()
 
 		then:
 			'the collected list contains the first and second elements'
-			value.get() == [2, 2]
+			ts.assertValues([1, 1, 1, 1, 1], [2, 2])
 
 	}
 
@@ -1921,12 +1899,11 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create()
 			def reduced = source.timeout(Duration.ofMillis(1500))
 			def error = null
-			def value = reduced.onErrorResumeWith(){
+			def value
+			reduced.onErrorResumeWith(){
 				error = it
 			  Flux.just(-5)
-			}.tap()
-			value.subscribe()
-			println value.debug()
+			}.subscribe{ value = it }
 
 		when:
 			'the first values are accepted on the source, paused just enough to refresh globalTimer until 6'
@@ -1944,7 +1921,7 @@ class FluxSpec extends Specification {
 		then:
 			'last value known is 5 and flux is in error state'
 			error in TimeoutException
-			value.get() == -5
+			value == -5
 	}
 
 	def 'Timeout can be bound to a stream and fallback'() {
@@ -1953,11 +1930,10 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.timeout(Duration.ofMillis(1500), Flux.just(10))
 			def error = null
-			def value = reduced.doOnError(TimeoutException) {
+			def value
+			reduced.doOnError(TimeoutException) {
 				error = it
-			}.tap()
-			value.subscribe()
-			println value.debug()
+			}.subscribe{ value = it  }
 
 		when:
 			'the first values are accepted on the source, paused just enough to refresh globalTimer until 6'
@@ -1969,12 +1945,11 @@ class FluxSpec extends Specification {
 			source.onNext(5)
 			sleep(2000)
 			source.onNext(6)
-			println value.debug()
 
 		then:
 			'last value known is 10 as the flux has used its fallback'
 			!error
-			value.get() == 10
+			value == 10
 	}
 
 	def 'Errors can have a fallback'() {
@@ -2281,8 +2256,8 @@ class FluxSpec extends Specification {
 					.map { timeWindow -> timeWindow.size() }
 					.doAfterTerminate { latch.countDown() }
 
-			def value = reduced.tap()
-			value.subscribe()
+			def value
+			reduced.subscribe{ value = it }
 			println source.debug()
 
 		when:
@@ -2292,12 +2267,11 @@ class FluxSpec extends Specification {
 			}
 			source.onComplete()
 			latch.await(10, TimeUnit.SECONDS)
-			println value.get()
 			println source.debug()
 
 		then:
 			'the average elapsed time between 2 signals is greater than throttled time'
-			value.get() > 1
+			value > 1
 
 	}
 
@@ -2550,20 +2524,20 @@ class FluxSpec extends Specification {
 
 		when:
 			'take to the first 2 elements'
-			def value = stream.take(2).tap()
-	  		value.subscribe()
+			def value
+			stream.take(2).subscribe{ value = it }
 
 		then:
 			'the second is the last available'
-			value.get() == 'test2'
+			value == 'test2'
 
 		when:
 			'take until test2 is seen'
 			def stream2 = EmitterProcessor.create().connect()
-			def value2 = stream2.log().takeWhile {
+			def value2
+			stream2.log().takeWhile {
 				'test2' != it
-			}.tap()
-			value2.subscribe()
+			}.subscribe{ value2 = it }
 
 
 		stream2.onNext('test1')
@@ -2572,7 +2546,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the second is the last available'
-			value2.get() == 'test1'
+			value2 == 'test1'
 	}
 
 

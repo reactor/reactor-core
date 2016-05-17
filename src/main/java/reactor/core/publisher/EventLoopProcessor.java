@@ -56,6 +56,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	volatile        boolean         cancelled;
 	volatile        int             terminated;
 	volatile        Throwable       error;
+
 	@SuppressWarnings("unused")
 	volatile       int                                                  subscriberCount  = 0;
 

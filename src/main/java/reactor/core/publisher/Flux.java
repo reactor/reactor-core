@@ -4566,21 +4566,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Create a {@link FluxTap} that maintains a reference to the last value seen by this {@link Flux}. The {@link FluxTap} is
-	 * continually updated when new values pass through the {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tap.png" alt="">
-	 *
-	 * @return a peekable {@link FluxTap}
-	 */
-	public final FluxTap<T> tap() {
-		return FluxTap.tap(this);
-	}
-
-
-
-	/**
 	 * Return a {@code Mono<Void>} that completes when this {@link Flux} completes.
 	 * This will actively ignore the sequence and only replay completion or error signals.
 	 * <p>
