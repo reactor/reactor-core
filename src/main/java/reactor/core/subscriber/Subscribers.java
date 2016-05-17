@@ -111,9 +111,6 @@ public enum Subscribers{
 	 * Create a {@link Subscriber} reacting onNext, onError and onComplete. The subscriber will automatically
 	 * request Long.MAX_VALUE onSubscribe.
 	 * <p>
-	 * The argument {@code subscriptionHandler} is executed once by new subscriber to generate a context shared by
-	 * every
-	 * request calls.
 	 *
 	 * @param dataConsumer     A {@link Consumer} with argument onNext data
 	 * @param errorConsumer    A {@link Consumer} called onError
@@ -140,51 +137,41 @@ public enum Subscribers{
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
 	public static <T> Subscriber<T> create(final Consumer<? super Subscription> subscriptionHandler) {
-		return create((Function<Subscription, Void>) subscription -> {
-			subscriptionHandler.accept(subscription);
-			return null;
-		}, null, null, null);
+		return create(subscriptionHandler, null, null, null);
 	}
 
 	/**
-	 * Create a {@link Subscriber} reacting onSubscribe and onNext, eventually sharing a context.
-	 * The argument {@code subscriptionHandler} is executed once onSubscribe to generate a context shared by every
-	 * onNext calls.
+	 * Create a {@link Subscriber} reacting onSubscribe and onNext
 	 *
-	 * @param subscriptionHandler A {@link Function} called once for every new subscription returning an immutable
+	 * @param subscriptionHandler A {@link Consumer} called once for every new
+	 * subscription
 	 *                            context
 	 * @param dataConsumer        A {@link BiConsumer} with left argument onNext data and right argument upstream
 	 *                            subscription
-	 *                            (IO connection...)
 	 * @param <T>                 The type of the data sequence
-	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
-			BiConsumer<T, SubscriptionWithContext<C>> dataConsumer) {
+	public static <T> Subscriber<T> create(Consumer<? super Subscription> subscriptionHandler,
+			BiConsumer<? super T, ? super Subscription> dataConsumer) {
 		return create(subscriptionHandler, dataConsumer, null, null);
 	}
 
 	/**
 	 * Create a {@link Subscriber} reacting onNext, onError.
 	 * <p>
-	 * The argument {@code subscriptionHandler} is executed onSubscribe to
-	 * request initial data on the subscription and eventually generate a context shared by every
-	 * request calls.
 	 *
-	 * @param subscriptionHandler A {@link Function} called once for every new subscription returning an immutable
+	 * @param subscriptionHandler A {@link Consumer} called once for every new
+	 * subscription
 	 *                            context
 	 * @param dataConsumer        A {@link BiConsumer} with left argument onNext data and right argument upstream
 	 *                            subscription
-	 *                            (IO connection...)
 	 * @param errorConsumer       A {@link Consumer} called onError
 	 * @param <T>                 The type of the data sequence
-	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
-			BiConsumer<T, SubscriptionWithContext<C>> dataConsumer,
-			BiConsumer<Throwable, C> errorConsumer) {
+	public static <T> Subscriber<T> create(Consumer<? super Subscription> subscriptionHandler,
+			BiConsumer<? super T, ? super Subscription> dataConsumer,
+			Consumer<? super Throwable> errorConsumer) {
 		return create(subscriptionHandler, dataConsumer, errorConsumer, null);
 	}
 
@@ -202,19 +189,17 @@ public enum Subscribers{
 	 * @param subscriptionHandler A {@link Function} called once for every new subscription returning an immutable
 	 *                            context
 	 *                            (IO connection...)
-	 * @param errorConsumer       A {@link BiConsumer} called onError with the actual error as left operand and a given
-	 *                            context as right operand
-	 * @param completeConsumer    A {@link Consumer} called onComplete with the actual context if any
+	 * @param errorConsumer       A {@link BiConsumer} called onError with the actual error
+	 * @param completeConsumer    A {@link Runnable} called onComplete with the actual
 	 * @param <T>                 The type of the data sequence
-	 * @param <C>                 The type of contextual information to be read by the requestConsumer
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T, C> Subscriber<T> create(Function<? super Subscription, C> subscriptionHandler,
-			BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
-			BiConsumer<Throwable, C> errorConsumer,
-			Consumer<C> completeConsumer) {
+	public static <T> Subscriber<T> create(Consumer<? super Subscription> subscriptionHandler,
+			BiConsumer<? super T, ? super Subscription> dataConsumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
 
-		return new SubscriberWithSubscriptionContext<T, C>(dataConsumer, subscriptionHandler, errorConsumer, completeConsumer);
+		return new OpeningSubscriber<>(dataConsumer, subscriptionHandler, errorConsumer, completeConsumer);
 	}
 
 	/**
@@ -255,7 +240,7 @@ public enum Subscribers{
 	 * @param <T>          The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer) {
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, ? super Subscription> dataConsumer) {
 		return unbounded(dataConsumer, null, null);
 	}
 
@@ -269,8 +254,8 @@ public enum Subscribers{
 	 * @param <T>           The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
-			Consumer<Throwable> errorConsumer) {
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, ? super Subscription> dataConsumer,
+			Consumer<? super Throwable> errorConsumer) {
 		return unbounded(dataConsumer, errorConsumer, null);
 	}
 
@@ -285,24 +270,20 @@ public enum Subscribers{
 	 * @param dataConsumer     A {@link BiConsumer} with left argument onNext data and right argument upstream
 	 *                         subscription
 	 * @param errorConsumer    A {@link Consumer} called onError
-	 * @param completeConsumer A {@link Consumer} called onComplete with the actual context if any
+	 * @param completeConsumer A {@link Runnable} called onComplete
 	 * @param <T>              The type of the data sequence
 	 * @return a fresh Reactive Streams subscriber ready to be subscribed
 	 */
-	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, SubscriptionWithContext<Void>> dataConsumer,
-			final Consumer<Throwable> errorConsumer,
-			Consumer<Void> completeConsumer) {
-		return create(
-				UNBOUNDED_REQUEST_FUNCTION,
-				dataConsumer,
-				errorConsumer != null ?
-						(BiConsumer<Throwable, Void>) (throwable, aVoid) -> errorConsumer.accept(throwable) : null,
+	public static <T> Subscriber<T> unbounded(BiConsumer<? super T, ? super Subscription> dataConsumer,
+			final Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
+		return create(UNBOUNDED_REQUEST,
+				dataConsumer, errorConsumer,
 				completeConsumer
 		);
 	}
-	private static final Function<Subscription, Void> UNBOUNDED_REQUEST_FUNCTION = subscription -> {
-		subscription.request(Long.MAX_VALUE);
-		return null;
-	};
+
+	private static final Consumer<Subscription> UNBOUNDED_REQUEST =
+			subscription -> subscription.request(Long.MAX_VALUE);
 
 }

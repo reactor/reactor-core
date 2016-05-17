@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
@@ -28,29 +27,23 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
+ * A Subscriber with a safe Subscription callback
  * @author Stephane Maldini
  */
-final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>,
-                                                                                         Backpressurable, Receiver {
+final class OpeningSubscriber<T> implements BaseSubscriber<T>,
+                                            Backpressurable, Receiver {
 
-	protected final Function<? super Subscription, C>                 subscriptionHandler;
-	protected final BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer;
-	protected final BiConsumer<Throwable, C>                  errorConsumer;
-	protected final Consumer<C>                               completeConsumer;
+	final Consumer<? super Subscription>              subscriptionHandler;
+	final BiConsumer<? super T, ? super Subscription> dataConsumer;
+	final Consumer<? super Throwable>                 errorConsumer;
+	final Runnable                                    completeConsumer;
 
-	private SubscriptionWithContext<C> subscriptionWithContext;
+	Subscription subscription;
 
-	/**
-	 *
-	 * @param dataConsumer
-	 * @param subscriptionHandler
-	 * @param errorConsumer
-	 * @param completeConsumer
-	 */
-	SubscriberWithSubscriptionContext(BiConsumer<? super T, SubscriptionWithContext<C>> dataConsumer,
-			Function<? super Subscription, C> subscriptionHandler,
-			BiConsumer<Throwable, C> errorConsumer,
-			Consumer<C> completeConsumer) {
+	OpeningSubscriber(BiConsumer<? super T, ? super Subscription> dataConsumer,
+			Consumer<? super Subscription> subscriptionHandler,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer) {
 
 		this.subscriptionHandler = Objects.requireNonNull(subscriptionHandler, "A subscription handler must be provided");
 		this.dataConsumer = dataConsumer;
@@ -60,42 +53,22 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 
 	@Override
 	public Object upstream() {
-		return subscriptionWithContext;
+		return subscription;
 	}
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(subscriptionWithContext, s)) {
+		if (BackpressureUtils.validate(subscription, s)) {
 			try {
-				final AtomicLong proxyRequest = new AtomicLong();
-				final C context = subscriptionHandler.apply(new Subscription() {
-					@Override
-					public void request(long n) {
-						if (subscriptionWithContext == null && proxyRequest.get() != Long.MIN_VALUE) {
-							BackpressureUtils.addAndGet(proxyRequest, n);
-						}
-						else if (subscriptionWithContext != null) {
-							subscriptionWithContext.request(n);
-						}
-					}
+				this.subscription = s;
+				final RefSubscription proxyRequest = new RefSubscription();
+				subscriptionHandler.accept(proxyRequest);
 
-					@Override
-					public void cancel() {
-						if (subscriptionWithContext == null) {
-							proxyRequest.set(Long.MIN_VALUE);
-						}
-						else {
-							subscriptionWithContext.cancel();
-						}
-					}
-				});
-
-				this.subscriptionWithContext = SubscriptionWithContext.create(s, context);
 				if (proxyRequest.compareAndSet(Long.MIN_VALUE, 0)) {
-					subscriptionWithContext.cancel();
+					subscription.cancel();
 				}
 				else if (proxyRequest.get() > 0) {
-					subscriptionWithContext.request(proxyRequest.get());
+					subscription.request(proxyRequest.get());
 				}
 			}
 			catch (Throwable throwable) {
@@ -112,7 +85,7 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 
 		if (dataConsumer != null) {
 			try {
-				dataConsumer.accept(t, subscriptionWithContext);
+				dataConsumer.accept(t, subscription);
 			}
 			catch (Exceptions.CancelException ce) {
 				throw ce;
@@ -128,7 +101,7 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 		BaseSubscriber.super.onError(t);
 
 		if (errorConsumer != null) {
-			errorConsumer.accept(t, subscriptionWithContext != null ? subscriptionWithContext.context() : null);
+			errorConsumer.accept(t);
 		}
 		else {
 			Exceptions.onErrorDropped(t);
@@ -139,7 +112,7 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 	public void onComplete() {
 		if (completeConsumer != null) {
 			try {
-				completeConsumer.accept(subscriptionWithContext != null ? subscriptionWithContext.context() : null);
+				completeConsumer.run();
 			}
 			catch (Throwable t) {
 				onError(t);
@@ -155,5 +128,28 @@ final class SubscriberWithSubscriptionContext<T, C> implements BaseSubscriber<T>
 	@Override
 	public long getCapacity() {
 		return Long.MAX_VALUE;
+	}
+
+	final class RefSubscription extends AtomicLong implements Subscription {
+
+		@Override
+		public void request(long n) {
+			if (subscription == null && get() != Long.MIN_VALUE) {
+				BackpressureUtils.addAndGet(this, n);
+			}
+			else if (subscription != null) {
+				subscription.request(n);
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (subscription == null) {
+				set(Long.MIN_VALUE);
+			}
+			else {
+				subscription.cancel();
+			}
+		}
 	}
 }

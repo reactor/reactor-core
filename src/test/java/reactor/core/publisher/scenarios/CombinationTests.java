@@ -101,7 +101,6 @@ public class CombinationTests {
 				         //IGNORE
 			         }
 			         s.request(1L);
-			         return null;
 		         }, (d, s) -> {
 			         count.incrementAndGet();
 			         latch.countDown();
@@ -134,14 +133,12 @@ public class CombinationTests {
 		Scheduler c = Computations.single();
 		for (int i = 0; i < subs; i++) {
 			processor.publishOn(c)
-			         .subscribe(Subscribers.create(s -> {
-				         s.request(1L);
-				         return null;
-			         }, (d, s) -> {
+			         .subscribe(Subscribers.create(s -> s.request(1L),
+					         (d, s) -> {
 //				         System.out.println(d);
 				         s.request(1L);
 				         latch.countDown();
-			         }, null, d -> latch.countDown()));
+			         }, null, latch::countDown));
 		}
 
 		SubmissionEmitter<Integer> session = processor.connectEmitter();
@@ -210,7 +207,8 @@ public class CombinationTests {
 		System.out.println(ReactiveStateUtils.scan(p)
 		                                     .toString());
 
-		Subscriber<SensorData> s = Subscribers.unbounded((d, sub) -> latch.countDown(), null, n -> latch.countDown());
+		Subscriber<SensorData> s = Subscribers.unbounded((d, sub) -> latch.countDown(), null,
+				latch::countDown);
 		p.subscribe(s);
 		Thread.sleep(1000);
 		System.out.println(ReactiveStateUtils.scan(s)
@@ -286,8 +284,7 @@ public class CombinationTests {
 
 		sensorDataProcessor.publishOn(Computations.single())
 		                   .subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
-				null,
-				n -> latch.countDown()));
+				null, latch::countDown));
 
 		Flux.zip(Flux.just(new SensorData(2L, 12.0f)), Flux.just(new SensorData(1L, 14.0f)), this::computeMin)
 		    .log("zip3")
@@ -302,7 +299,8 @@ public class CombinationTests {
 	@SuppressWarnings("unchecked")
 	private void awaitLatch(Publisher<?> tail, CountDownLatch latch) throws Exception {
 		if (tail != null) {
-			tail.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(), null, n -> latch.countDown()));
+			tail.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(), null,
+					latch::countDown));
 		}
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			throw new Exception("Never completed: (" + latch.getCount() + ") ");

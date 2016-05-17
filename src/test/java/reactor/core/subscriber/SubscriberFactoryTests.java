@@ -42,32 +42,21 @@ public class SubscriberFactoryTests extends SubscriberWhiteboxVerification<Long>
 
 	@Override
 	public Subscriber<Long> createSubscriber(final WhiteboxSubscriberProbe<Long> probe) {
-		return Subscribers.create(
-		  subscription -> {
-			  probe.registerOnSubscribe(new SubscriberPuppet() {
+		return Subscribers.create(subscription -> probe.registerOnSubscribe(new SubscriberPuppet() {
 
-				  @Override
-				  public void triggerRequest(long elements) {
-					  subscription.request(elements);
-				  }
+					@Override
+					public void triggerRequest(long elements) {
+						subscription.request(elements);
+					}
 
-				  @Override
-				  public void signalCancel() {
-					  subscription.cancel();
-				  }
-			  });
-			  //subscription.request(1);
-			  return probe;
-		  },
-		  (data, subscription) -> {
-			  subscription.context().registerOnNext(data);
-			  //subscription.request(1);
-		  },
-		  (error, context) -> {
+					@Override
+					public void signalCancel() {
+						subscription.cancel();
+					}
+				}), (data, subscription) -> probe.registerOnNext(data), error -> {
 			  error.printStackTrace();
-			  context.registerOnError(error);
-		  },
-		  BlackboxProbe::registerOnComplete
+					probe.registerOnError(error);
+		  }, () -> probe.registerOnComplete()
 		);
 	}
 

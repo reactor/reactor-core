@@ -24,11 +24,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
+import reactor.core.util.Exceptions;
 
 /**
  * @author Stephane Maldini
@@ -80,7 +80,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 		processor.subscribe(Subscribers.unbounded((d, sub) -> {
 			errorCount.incrementAndGet();
-			sub.abort();
+			throw Exceptions.failWithCancel();
 		}));
 
 		Flux.from(processor).doOnNext(
@@ -98,7 +98,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 			if( i % 100 == 0) {
 				processor.subscribe(Subscribers.unbounded((d, sub) -> {
 					errorCount.incrementAndGet();
-					sub.abort();
+					throw Exceptions.failWithCancel();
 				}));
 			}
 		}
