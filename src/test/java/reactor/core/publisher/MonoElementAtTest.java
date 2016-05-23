@@ -51,7 +51,7 @@ public class MonoElementAtTest {
 	public void normal() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(new FluxRange(1, 10), 0).subscribe(ts);
+		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -62,7 +62,7 @@ public class MonoElementAtTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(new FluxRange(1, 10), 0).subscribe(ts);
+		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -79,7 +79,7 @@ public class MonoElementAtTest {
 	public void normal2() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(new FluxRange(1, 10), 4).subscribe(ts);
+		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
 		ts.assertValues(5)
 		  .assertNoError()
@@ -90,7 +90,7 @@ public class MonoElementAtTest {
 	public void normal5Backpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(new FluxRange(1, 10), 4).subscribe(ts);
+		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -107,7 +107,7 @@ public class MonoElementAtTest {
 	public void normal3() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(new FluxRange(1, 10), 9).subscribe(ts);
+		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
 		ts.assertValues(10)
 		  .assertNoError()
@@ -118,7 +118,7 @@ public class MonoElementAtTest {
 	public void normal3Backpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(new FluxRange(1, 10), 9).subscribe(ts);
+		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -135,7 +135,7 @@ public class MonoElementAtTest {
 	public void empty() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(Mono.<Integer>empty(), 0).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(IndexOutOfBoundsException.class)
@@ -146,7 +146,7 @@ public class MonoElementAtTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(Mono.empty(), 0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -157,7 +157,7 @@ public class MonoElementAtTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(Mono.empty(), 0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -174,7 +174,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefault() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(new FluxRange(1, 10), 20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -185,7 +185,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoElementAt<>(new FluxRange(1, 10), 20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -202,7 +202,7 @@ public class MonoElementAtTest {
 	public void defaultReturnsNull() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(Mono.<Integer>empty(), 0, () -> null).subscribe(ts);
+		Flux.<Integer>empty().elementAtOrDefault(0, () -> null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -213,7 +213,7 @@ public class MonoElementAtTest {
 	public void defaultThrows() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoElementAt<>(Mono.<Integer>empty(), 0, () -> {
+		Flux.<Integer>empty().elementAtOrDefault(0, () -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 

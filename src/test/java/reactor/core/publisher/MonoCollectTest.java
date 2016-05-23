@@ -46,7 +46,7 @@ public class MonoCollectTest {
 	public void normal() {
 		TestSubscriber<ArrayList<Integer>> ts = new TestSubscriber<>();
 
-		new MonoCollect<>(new FluxRange(1, 10), ArrayList<Integer>::new, (a, b) -> a.add(b)).subscribe(ts);
+		Flux.range(1, 10).collect(ArrayList<Integer>::new, (a, b) -> a.add(b)).subscribe(ts);
 
 		ts.assertValues(new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
@@ -57,7 +57,7 @@ public class MonoCollectTest {
 	public void normalBackpressured() {
 		TestSubscriber<ArrayList<Integer>> ts = new TestSubscriber<>(0);
 
-		new MonoCollect<>(new FluxRange(1, 10), ArrayList<Integer>::new, (a, b) -> a.add(b)).subscribe(ts);
+		Flux.range(1, 10).collect(ArrayList<Integer>::new, ArrayList::add).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -74,7 +74,7 @@ public class MonoCollectTest {
 	public void supplierThrows() {
 		TestSubscriber<Object> ts = new TestSubscriber<>();
 
-		new MonoCollect<>(new FluxRange(1, 10), () -> {
+		Flux.range(1, 10).collect(() -> {
 			throw new RuntimeException("forced failure");
 		}, (a, b) -> {
 		}).subscribe(ts);
@@ -90,7 +90,7 @@ public class MonoCollectTest {
 	public void supplierReturnsNull() {
 		TestSubscriber<Object> ts = new TestSubscriber<>();
 
-		new MonoCollect<>(new FluxRange(1, 10), () -> null, (a, b) -> {
+		Flux.range(1, 10).collect(() -> null, (a, b) -> {
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -102,7 +102,7 @@ public class MonoCollectTest {
 	public void actionThrows() {
 		TestSubscriber<Object> ts = new TestSubscriber<>();
 
-		new MonoCollect<>(new FluxRange(1, 10), () -> 1, (a, b) -> {
+		Flux.range(1, 10).collect(() -> 1, (a, b) -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 

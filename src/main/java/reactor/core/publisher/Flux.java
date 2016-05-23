@@ -2572,7 +2572,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Mono<Boolean> exists(Predicate<? super T> predicate) {
-		return new MonoAny<>(this, predicate);
+		return new MonoExist<>(this, predicate);
 	}
 
 	/**

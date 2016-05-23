@@ -41,7 +41,7 @@ public class MonoReduceTest {
 	public void normal() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoReduce<>(new FluxRange(1, 10), () -> 0, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
 
 		ts.assertValues(10)
 		  .assertComplete()
@@ -52,7 +52,7 @@ public class MonoReduceTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoReduce<>(new FluxRange(1, 10), () -> 0, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -69,7 +69,7 @@ public class MonoReduceTest {
 	public void supplierThrows() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoReduce<Integer, Integer>(new FluxRange(1, 10), () -> {
+		Flux.range(1, 10).<Integer>reduceWith(() -> {
 			throw new RuntimeException("forced failure");
 		}, (a, b) -> b).subscribe(ts);
 
@@ -83,7 +83,7 @@ public class MonoReduceTest {
 	public void accumulatorThrows() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoReduce<>(new FluxRange(1, 10), () -> 0, (a, b) -> {
+		Flux.range(1, 10).<Integer>reduceWith(() -> 0, (a, b) -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
@@ -97,7 +97,7 @@ public class MonoReduceTest {
 	public void supplierReturnsNull() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoReduce<Integer, Integer>(new FluxRange(1, 10), () -> null, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10).<Integer>reduceWith(() -> null, (a, b) -> b).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -108,7 +108,7 @@ public class MonoReduceTest {
 	public void accumulatorReturnsNull() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoReduce<>(new FluxRange(1, 10), () -> 0, (a, b) -> null).subscribe(ts);
+		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()

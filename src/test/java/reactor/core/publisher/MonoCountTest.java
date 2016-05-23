@@ -29,7 +29,7 @@ public class MonoCountTest {
 	public void normal() {
 		TestSubscriber<Long> ts = new TestSubscriber<>();
 
-		new MonoCount<>(new FluxRange(1, 10)).subscribe(ts);
+		Flux.range(1, 10).count().subscribe(ts);
 
 		ts.assertValues(10L)
 		  .assertComplete()
@@ -39,7 +39,7 @@ public class MonoCountTest {
 	public void normalBackpressured() {
 		TestSubscriber<Long> ts = new TestSubscriber<>(0);
 
-		new MonoCount<>(new FluxRange(1, 10)).subscribe(ts);
+		Flux.range(1, 10).count().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()

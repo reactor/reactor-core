@@ -43,7 +43,7 @@ public class MonoSingleTest {
 	public void defaultReturnsNull() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.<Integer>empty(), () -> null).subscribe(ts);
+		Flux.<Integer>empty().singleOrDefault(() -> null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -54,7 +54,7 @@ public class MonoSingleTest {
 	public void defaultThrows() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.<Integer>empty(), () -> {
+		Flux.<Integer>empty().singleOrDefault(() -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
@@ -70,7 +70,7 @@ public class MonoSingleTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.just(1)).subscribe(ts);
+		Flux.just(1).single().subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -81,7 +81,7 @@ public class MonoSingleTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoSingle<>(Mono.just(1)).subscribe(ts);
+		Flux.just(1).single().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -99,7 +99,7 @@ public class MonoSingleTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.<Integer>empty()).subscribe(ts);
+		Flux.<Integer>empty().single().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NoSuchElementException.class)
@@ -110,7 +110,7 @@ public class MonoSingleTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(Mono.empty(), () -> 1).subscribe(ts);
+		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -121,7 +121,7 @@ public class MonoSingleTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoSingle<>(Mono.empty(), () -> 1).subscribe(ts);
+		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -139,7 +139,7 @@ public class MonoSingleTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		new MonoSingle<>(new FluxRange(1, 10)).subscribe(ts);
+		Flux.range(1, 10).single().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(IndexOutOfBoundsException.class)
@@ -151,7 +151,7 @@ public class MonoSingleTest {
 
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		new MonoSingle<>(new FluxRange(1, 10)).subscribe(ts);
+		Flux.range(1, 10).single().subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

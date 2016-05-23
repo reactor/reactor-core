@@ -373,6 +373,22 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoCallable<>(supplier);
 	}
 
+	/**
+	 * Create a {@link Mono} producing the value for the {@link Mono} using the given supplier.
+	 * Producing {@code null} will be considered as {@link #empty()}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcallable.png" alt="">
+	 * <p>
+	 * @param supplier {@link Callable} that will produce the value
+	 * @param <T> type of the expected value
+	 *
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCallableOrEmpty(Callable<? extends T> supplier) {
+		return new MonoCallableOrEmpty<>(supplier);
+	}
+
 
 	/**
 	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
