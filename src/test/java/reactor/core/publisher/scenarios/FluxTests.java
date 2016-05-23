@@ -1076,7 +1076,7 @@ public class FluxTests extends AbstractReactorTest {
 		             .partition(parallelStreams)
 		             .log("batched-inner")
 		             .subscribe(innerStream -> innerStream.publishOn(asyncGroup)
-		                                                .doOnError(Exception.class, Throwable::printStackTrace)
+		                                                .doOnError(Throwable::printStackTrace)
 		                                                .subscribe(i -> latch.countDown()));
 
 		streamBatcher.onNext(12);

@@ -70,7 +70,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 				 )
 				 .publishOn(sharedGroup)
-				 .doOnError(Throwable.class, Throwable::printStackTrace));
+				 .doOnError(Throwable::printStackTrace));
 	}
 
 	@Override

@@ -65,7 +65,7 @@ public class FluxAndProcessorTests extends AbstractFluxVerification {
 		                                      .doOnNext(array -> cumulatedJoin.getAndIncrement())
 		                                      .subscribeWith(TopicProcessor.create("fluxion-raw-join", bufferSize))
 		                                      .as(Flux::from)
-		                                      .doOnError(Throwable.class, Throwable::printStackTrace));
+		                                      .doOnError(Throwable::printStackTrace));
 	}
 
 	@Override

@@ -57,8 +57,8 @@ import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
-import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.LambdaSubscriber;
+import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
@@ -968,23 +968,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static <T> Flux<T> never() {
 		return FluxNever.instance();
-	}
-
-	/**
-	 * Create a {@link Flux} that will fallback to the produced {@link Publisher} given an onError signal.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png" alt="">
-	 * <p>
-	 * @param <T> the {@link Subscriber} type target
-	 * @param source the source sequence
-	 * @param fallback the function called with the Throwable signal the source sequence produced that should return a fallback sequence
-	 *
-	 * @return a resilient {@link Flux}
-	 */
-	public static <T> Flux<T> onErrorResumeWith(
-			Publisher<? extends T> source,
-			Function<Throwable, ? extends Publisher<? extends T>> fallback) {
-		return new FluxResume<>(source, fallback);
 	}
 
 	/**
@@ -2411,10 +2394,30 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Flux<T> doOnError(Class<E> exceptionType,
-			final Consumer<E> onError) {
-		return doOnError( t -> { if(exceptionType.isAssignableFrom(t.getClass())){
-			onError.accept((E)t);
-		}});
+			final Consumer<? super E> onError) {
+		Objects.requireNonNull(exceptionType, "type");
+		return doOnError(exceptionType::isInstance, (Consumer<Throwable>)onError);
+	}
+
+	/**
+	 * Triggered when the {@link Flux} completes with an error matching the given exception.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+	 *
+	 * @param predicate the matcher for exceptions to handle
+	 * @param onError the error handler for each error
+	 *
+	 * @return an observed  {@link Flux}
+	 *
+	 */
+	public final Flux<T> doOnError(Predicate<? super Throwable> predicate,
+			final Consumer<? super Throwable> onError) {
+		Objects.requireNonNull(predicate, "predicate");
+		return doOnError(t -> {
+			if (predicate.test(t)) {
+				onError.accept(t);
+			}
+		});
 	}
 
 	/**
@@ -2874,24 +2877,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return Mono.ignoreElements(this);
 	}
 
-	/**
-	 * Returns the appropriate Mono instance for a known Supplier Flux.
-	 * 
-	 * @param supplier the supplier Flux
-	 * @return the mono representing that Flux
-	 */
-	Mono<T> convertToMono(Callable<T> supplier) {
-	    if (supplier instanceof Fuseable.ScalarCallable) {
-            Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
-
-            T v = scalarCallable.call();
-            if (v == null) {
-                return Mono.empty();
-            }
-            return Mono.just(v);
-	    }
-	    return new MonoCallable<>(supplier);
-	}
 	
 	/**
 	 * Signal the last element observed before complete signal.
@@ -2993,15 +2978,52 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * Transform the error emitted by this {@link Flux} by applying a function if the
+	 * error matches the given type, otherwise let the error flows.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
 	 * <p>
 	 * @param mapper the error transforming {@link Function}
+	 * @param <E> the error type
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final Flux<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
+	@SuppressWarnings("unchecked")
+	public final <E extends Throwable> Flux<T> mapError(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
+		return mapError(type::isInstance, (Function<Throwable, Throwable>)mapper);
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function if the
+	 * error matches the given predicate, otherwise let the error flows.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResumeWith(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
+	 * alt="">
+	 * <p>
+	 *
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResumeWith(e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -3213,6 +3235,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> onBackpressureLatest() {
 		return new FluxLatest<>(this);
 	}
+
 	/**
 	 * Subscribe to a returned fallback publisher when any error occurs.
 	 * <p>
@@ -3222,8 +3245,49 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<T> onErrorResumeWith(Function<Throwable, ? extends Publisher<? extends T>> fallback) {
+	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
 		return new FluxResume<>(this, fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param type the error type to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
+	 * sequence
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
+			Function<? super E, ? extends Publisher<? extends T>> fallback) {
+		Objects.requireNonNull(type, "type");
+		return onErrorResumeWith(type::isInstance,
+				(Function<? super Throwable, Publisher<? extends T>>)fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
+	 * sequence
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final Flux<T> onErrorResumeWith(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
+		Objects.requireNonNull(predicate, "predicate");
+		return onErrorResumeWith(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
 
 	/**
@@ -3237,6 +3301,40 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> onErrorReturn(T fallbackValue) {
 		return switchOnError(just(fallbackValue));
+	}
+
+	/**
+	 * Fallback to the given value if an error of a given type is observed on this
+	 * {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * @param type the error type to match
+	 * @param fallbackValue alternate value on fallback
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
+			T fallbackValue) {
+		return switchOnError(type, just(fallbackValue));
+	}
+
+	/**
+	 * Fallback to the given value if an error matching the given predicate is
+	 * observed on this
+	 * {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * @param predicate the error predicate to match
+	 * @param fallbackValue alternate value on fallback
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final <E extends Throwable> Flux<T> onErrorReturn(Predicate<? super Throwable>
+			predicate, T
+			fallbackValue) {
+		return switchOnError(predicate, just(fallbackValue));
 	}
 
 	/**
@@ -4441,6 +4539,43 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Subscribe to the given fallback {@link Publisher} if an error matching the given
+	 * type is observed on this {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
+	 * <p>
+	 *
+	 * @param type the error type to match to fallback
+	 * @param fallback the alternate {@link Publisher}
+	 * @param <E> the error type
+	 *
+	 * @return an alternating {@link Flux} on source onError
+	 */
+	public final <E extends Throwable> Flux<T> switchOnError(Class<E> type,
+			Publisher<? extends T> fallback) {
+		return onErrorResumeWith(type, t -> fallback);
+	}
+
+
+	/**
+	 * Subscribe to the given fallback {@link Publisher} if an error matching the given
+	 * predicate is observed on this {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
+	 * <p>
+	 *
+	 * @param predicate the predicate to match an error
+	 * @param fallback the alternate {@link Publisher}
+	 *
+	 * @return an alternating {@link Flux} on source onError
+	 */
+	public final Flux<T> switchOnError(Predicate<? super Throwable> predicate,
+			Publisher<? extends	T> fallback) {
+		return onErrorResumeWith(predicate, t -> fallback);
+	}
+
+
+	/**
 	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonerror.png" alt="">
@@ -5456,15 +5591,35 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxZipIterable<>(this, iterable, zipper);
 	}
 
-	final int getPrefetchOrDefault(int defaultPrefetch){
+	final int getPrefetchOrDefault(int defaultPrefetch) {
 		long c = getCapacity();
-		if(c < 0L){
+		if (c < 0L) {
 			return defaultPrefetch;
 		}
-		if(c >= Integer.MAX_VALUE){
+		if (c >= Integer.MAX_VALUE) {
 			return Integer.MAX_VALUE;
 		}
-		return (int)c;
+		return (int) c;
+	}
+
+	/**
+	 * Returns the appropriate Mono instance for a known Supplier Flux.
+	 *
+	 * @param supplier the supplier Flux
+	 *
+	 * @return the mono representing that Flux
+	 */
+	static <T> Mono<T> convertToMono(Callable<T> supplier) {
+		if (supplier instanceof Fuseable.ScalarCallable) {
+			Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
+
+			T v = scalarCallable.call();
+			if (v == null) {
+				return Mono.empty();
+			}
+			return Mono.just(v);
+		}
+		return new MonoCallable<>(supplier);
 	}
 
 	@SuppressWarnings("rawtypes")
