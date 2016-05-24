@@ -1514,6 +1514,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Test the result if any of this {@link Mono} and replay it if predicate returns true.
+	 * Otherwise complete without value.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/where.png" alt="">
+	 * <p>
+	 * @param tester the predicate to evaluate
+	 *
+	 * @return a filtered {@link Mono}
+	 */
+	public final Mono<T> filter(final Predicate<? super T> tester) {
+		if (this instanceof Fuseable) {
+			return new MonoWhereFuseable<>(this, tester);
+		}
+		return new MonoWhere<>(this, tester);
+	}
+
+	/**
 	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 *
@@ -2755,12 +2773,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param tester the predicate to evaluate
 	 *
 	 * @return a filtered {@link Mono}
+	 * @deprecated use #filter directly
 	 */
+	@Deprecated
 	public final Mono<T> where(final Predicate<? super T> tester) {
-		if (this instanceof Fuseable) {
-			return new MonoWhereFuseable<>(this, tester);
-		}
-		return new MonoWhere<>(this, tester);
+		return filter(tester);
 	}
 
 }
