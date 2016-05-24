@@ -1802,7 +1802,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache() {
-		return cache(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+		return process(ReplayProcessor.create(PlatformDependent.SMALL_BUFFER_SIZE, true))
+				.autoConnect();
 	}
 
 	/**

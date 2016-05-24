@@ -117,8 +117,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
-	 * @param historySize
-	 * @param  unbounded
+	 * @param historySize maximum items retained if bounded, or link size if unbounded
+	 * @param  unbounded true if "unlimited" data store must be supplied
 	 *
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
