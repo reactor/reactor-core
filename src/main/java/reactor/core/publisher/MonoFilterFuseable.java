@@ -32,12 +32,12 @@ import reactor.core.flow.Fuseable;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoWhereFuseable<T> extends MonoSource<T, T>
+final class MonoFilterFuseable<T> extends MonoSource<T, T>
 		implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
-	public MonoWhereFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	public MonoFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		if (!(source instanceof Fuseable)) {
 			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");

@@ -34,11 +34,11 @@ import reactor.core.publisher.FluxFilterFuseable.*;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class MonoWhere<T> extends MonoSource<T, T> {
+final class MonoFilter<T> extends MonoSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public MonoWhere(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	public MonoFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}

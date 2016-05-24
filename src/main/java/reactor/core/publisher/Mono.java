@@ -45,7 +45,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.tuple.Tuple;
@@ -1526,9 +1525,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
 		if (this instanceof Fuseable) {
-			return new MonoWhereFuseable<>(this, tester);
+			return new MonoFilterFuseable<>(this, tester);
 		}
-		return new MonoWhere<>(this, tester);
+		return new MonoFilter<>(this, tester);
 	}
 
 	/**
