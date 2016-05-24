@@ -21,9 +21,7 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.tuple.*;
 import reactor.core.util.*;
 
 /**

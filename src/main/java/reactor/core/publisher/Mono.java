@@ -86,8 +86,7 @@ import reactor.core.util.WaitStrategy;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable,
-                                         Completable {
+public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable {
 
 	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
 

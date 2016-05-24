@@ -57,7 +57,8 @@ import reactor.core.util.WaitStrategy;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, Cancellation, Subscription, Cancellable, Receiver, Producer,
-		           Prefetchable, MonoEmitter<O>, LongSupplier {
+		           Prefetchable, MonoEmitter<O>, LongSupplier,
+		           reactor.core.state.Completable {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit

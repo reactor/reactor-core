@@ -33,7 +33,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 final class MonoError<T> 
-extends Mono<T> {
+extends Mono<T> implements reactor.core.state.Completable {
 
 	final Supplier<? extends Throwable> supplier;
 

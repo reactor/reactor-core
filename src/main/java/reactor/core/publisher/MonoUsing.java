@@ -17,16 +17,13 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
