@@ -2978,6 +2978,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 
 	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
+	 * alt="">
+	 * <p>
+	 *
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResumeWith(e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
 	 * Transform the error emitted by this {@link Flux} by applying a function if the
 	 * error matches the given type, otherwise let the error flows.
 	 * <p>
@@ -3010,21 +3025,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResumeWith(predicate, e -> Mono.error(mapper.apply(e)));
-	}
-
-	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
-	 * alt="">
-	 * <p>
-	 *
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a transformed {@link Flux}
-	 */
-	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResumeWith(e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**

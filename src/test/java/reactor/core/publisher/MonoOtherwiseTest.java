@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
 
-public class FluxResumeTest {
+public class MonoOtherwiseTest {
 /*
 	@Test
 	public void constructors() {
@@ -35,11 +36,11 @@ public class FluxResumeTest {
 	public void normal() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		Flux.range(1, 10)
-		    .onErrorResumeWith(v -> Flux.range(11, 10))
+		Mono.just(1)
+		    .otherwise(v -> Mono.just(2))
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -48,8 +49,8 @@ public class FluxResumeTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		Flux.range(1, 10)
-		    .onErrorResumeWith(v -> Flux.range(11, 10))
+		Mono.just(1)
+		    .otherwise(v -> Mono.just(2))
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -58,19 +59,7 @@ public class FluxResumeTest {
 
 		ts.request(2);
 
-		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(5);
-
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -79,10 +68,11 @@ public class FluxResumeTest {
 	public void error() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
-		  (11, 10)).subscribe(ts);
+		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
+				2))
+		                                                           .subscribe(ts);
 
-		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+		ts.assertValues(2)
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -91,8 +81,8 @@ public class FluxResumeTest {
 	public void errorFiltered() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		Flux.<Integer>error(new RuntimeException("forced failure"))
-				.onErrorResumeWith(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
+		Mono.<Integer>error(new RuntimeException("forced failure"))
+				.otherwise(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
 				.subscribe(ts);
 
 		ts.assertValues(2)
@@ -104,9 +94,10 @@ public class FluxResumeTest {
 	public void errorMap() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
+		Mono.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
 				" " +
-				"failure")).subscribe(ts);
+				"failure"))
+		                                    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError()
@@ -118,8 +109,9 @@ public class FluxResumeTest {
 	public void errorBackpressured() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
-		  (11, 10)).subscribe(ts);
+		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
+				2))
+		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -127,72 +119,7 @@ public class FluxResumeTest {
 
 		ts.request(2);
 
-		ts.assertValues(11, 12)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(5);
-
-		ts.assertValues(11, 12, 13, 14, 15, 16, 17)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-
-		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
-		  .assertNoError()
-		  .assertComplete();
-	}
-
-	@Test
-	public void someFirst() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
-
-		tp.connect();
-
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
-
-		tp.onErrorResumeWith(v -> Flux.range(11, 10))
-		  .subscribe(ts);
-
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
-
-		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
-		  .assertNoError()
-		  .assertComplete();
-	}
-
-	@Test
-	public void someFirstBackpressured() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create();
-
-		tp.connect();
-
-		TestSubscriber<Integer> ts = new TestSubscriber<>(10);
-
-		tp.onErrorResumeWith(v -> Flux.range(11, 10))
-		  .subscribe(ts);
-
-		tp.onNext(1);
-		tp.onNext(2);
-		tp.onNext(3);
-		tp.onNext(4);
-		tp.onNext(5);
-		tp.onError(new RuntimeException("forced failure"));
-
-		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15)
-		  .assertNotComplete()
-		  .assertNoError();
-
-		ts.request(10);
-
-		ts.assertValues(1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
-		  .assertNoError()
+		ts.assertValues(2)
 		  .assertComplete();
 	}
 
@@ -200,21 +127,23 @@ public class FluxResumeTest {
 	public void nextFactoryThrows() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> {
+		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> {
 			throw new RuntimeException("forced failure 2");
-		}).subscribe(ts);
+		})
+		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure 2")));
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
+		                                           .contains("forced failure 2")));
 	}
 
 	@Test
 	public void nextFactoryReturnsNull() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> null)
+		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> null)
 		                                                           .subscribe(ts);
 
 		ts.assertNoValues()

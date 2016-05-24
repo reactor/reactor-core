@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -1399,6 +1400,46 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new MonoPeek<>(this, null, null, onError, null, null, null, null);
 	}
 
+
+	/**
+	 * Triggered when the {@link Mono} completes with an error matching the given exception type.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+	 *
+	 * @param exceptionType the type of exceptions to handle
+	 * @param onError the error handler for each error
+	 * @param <E> type of the error to handle
+	 *
+	 * @return an observed  {@link Mono}
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E extends Throwable> Mono<T> doOnError(Class<E> exceptionType,
+			final Consumer<? super E> onError) {
+		Objects.requireNonNull(exceptionType, "type");
+		return doOnError(exceptionType::isInstance, (Consumer<Throwable>)onError);
+	}
+
+	/**
+	 * Triggered when the {@link Mono} completes with an error matching the given exception.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerrorw.png" alt="">
+	 *
+	 * @param predicate the matcher for exceptions to handle
+	 * @param onError the error handler for each error
+	 *
+	 * @return an observed  {@link Mono}
+	 *
+	 */
+	public final Mono<T> doOnError(Predicate<? super Throwable> predicate,
+			final Consumer<? super Throwable> onError) {
+		Objects.requireNonNull(predicate, "predicate");
+		return doOnError(t -> {
+			if (predicate.test(t)) {
+				onError.accept(t);
+			}
+		});
+	}
 	/**
 	 * Attach a {@link LongConsumer} to this {@link Mono} that will observe any request to this {@link Mono}.
 	 *
@@ -1850,6 +1891,41 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Transform the error emitted by this {@link Mono} by applying a function if the
+	 * error matches the given type, otherwise let the error flows.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
+	 * <p>
+	 * @param mapper the error transforming {@link Function}
+	 * @param <E> the error type
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
+		return mapError(type::isInstance, (Function<Throwable, Throwable>)mapper);
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Mono} by applying a function if the
+	 * error matches the given predicate, otherwise let the error flows.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
+		return otherwise(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -1917,8 +1993,50 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @see Flux#onErrorResumeWith
 	 */
-	public final Mono<T> otherwise(Function<Throwable, ? extends Mono<? extends T>> fallback) {
+	public final Mono<T> otherwise(Function<? super Throwable, ? extends Mono<? extends
+			T>> fallback) {
 		return new MonoOtherwise<>(this, fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param type the error type to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Mono}
+	 * sequence
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	@SuppressWarnings("unchecked")
+	public final <E extends Throwable> Mono<T> otherwise(Class<E> type,
+			Function<? super E, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(type, "type");
+		return otherwise(type::isInstance,
+				(Function<? super Throwable, Mono<? extends T>>)fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Mono}
+	 * sequence
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> otherwise(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(predicate, "predicate");
+		return otherwise(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
 
 	/**
@@ -1950,6 +2068,39 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> otherwiseReturn(final T fallback) {
 		return otherwise(throwable -> just(fallback));
+	}
+
+	/**
+	 * Fallback to the given value if an error of a given type is observed on this
+	 * {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * @param type the error type to match
+	 * @param fallbackValue alternate value on fallback
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
+			T fallbackValue) {
+		return otherwise(type, throwable -> just(fallbackValue));
+	}
+
+	/**
+	 * Fallback to the given value if an error matching the given predicate is
+	 * observed on this
+	 * {@link Flux}
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * @param predicate the error predicate to match
+	 * @param fallbackValue alternate value on fallback
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final <E extends Throwable> Mono<T> otherwiseReturn(Predicate<? super
+			Throwable> predicate, T fallbackValue) {
+		return otherwise(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**
