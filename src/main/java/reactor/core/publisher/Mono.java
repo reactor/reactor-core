@@ -103,11 +103,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <T> The type of the function result.
 	 *
 	 * @return a {@link Mono}.
+	 * @deprecated use #first
 	 */
 	@SafeVarargs
 	@SuppressWarnings("varargs")
+	@Deprecated
 	public static <T> Mono<T> any(Mono<? extends T>... monos) {
-		return MonoSource.wrap(new FluxAmb<>(monos));
+		return first(monos);
 	}
 
 	/**
@@ -326,6 +328,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public static <T> Mono<T> error(Throwable error) {
 		return new MonoError<>(error);
+	}
+
+	/**
+	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
+	 * <p>
+	 * @param monos The deferred monos to use.
+	 * @param <T> The type of the function result.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SafeVarargs
+	@SuppressWarnings("varargs")
+	public static <T> Mono<T> first(Mono<? extends T>... monos) {
+		return MonoSource.wrap(new FluxAmb<>(monos));
 	}
 
 	/**
