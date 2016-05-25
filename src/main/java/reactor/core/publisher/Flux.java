@@ -4331,9 +4331,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 * @deprecated use #toStream
 	 */
+	@Deprecated
 	public Stream<T> stream() {
-		return stream(getPrefetchOrDefault(Integer.MAX_VALUE));
+		return toStream();
 	}
 
 	/**
@@ -4344,11 +4346,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 * @deprecated use #toStream
 	 */
+	@Deprecated
 	public Stream<T> stream(int batchSize) {
-		final Supplier<Queue<T>> provider;
-		provider = QueueSupplier.get(batchSize);
-		return new BlockingIterable<>(this, batchSize, provider).stream();
+		return toStream(batchSize);
 	}
 
 	/**
@@ -5185,6 +5187,33 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			}
 			values.add(valueExtractor.apply(d));
 		});
+	}
+
+	/**
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
+	 *
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 */
+	public Stream<T> toStream() {
+		return stream(getPrefetchOrDefault(Integer.MAX_VALUE));
+	}
+
+	/**
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 *
+	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tostream.png" alt="">
+	 *
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 */
+	public Stream<T> toStream(int batchSize) {
+		final Supplier<Queue<T>> provider;
+		provider = QueueSupplier.get(batchSize);
+		return new BlockingIterable<>(this, batchSize, provider).stream();
 	}
 
 	/**
