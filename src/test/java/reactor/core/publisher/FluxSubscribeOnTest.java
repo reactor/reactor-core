@@ -16,10 +16,12 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.test.TestSubscriber;
 
 public class FluxSubscribeOnTest {
@@ -29,7 +31,7 @@ public class FluxSubscribeOnTest {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxPublishOn.class);
 		
 		ctb.addRef("source", Flux.never());
-		ctb.addRef("executor", Computations.concurrent());
+		ctb.addRef("executor", Schedulers.single());
 		ctb.addRef("schedulerFactory", (Callable<? extends Consumer<Runnable>>)() -> r -> { });
 		
 		ctb.test();
@@ -39,7 +41,7 @@ public class FluxSubscribeOnTest {
 	public void classic() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 
-		Flux.range(1, 1000).subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.range(1, 1000).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -52,7 +54,7 @@ public class FluxSubscribeOnTest {
 	public void classicBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 
-		Flux.range(1, 1000).log().subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.range(1, 1000).log().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -81,7 +83,7 @@ public class FluxSubscribeOnTest {
 	public void classicJust() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.just(1).subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -94,7 +96,7 @@ public class FluxSubscribeOnTest {
 	public void classicJustBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.just(1).subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		Thread.sleep(100);
 		
@@ -115,7 +117,7 @@ public class FluxSubscribeOnTest {
 	public void classicEmpty() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.<Integer>empty().subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -128,7 +130,7 @@ public class FluxSubscribeOnTest {
 	public void classicEmptyBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
 		
-		Flux.<Integer>empty().subscribeOn(Computations.concurrent()).subscribe(ts);
+		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
 		ts.await(Duration.ofSeconds(5));
 		
@@ -143,7 +145,7 @@ public class FluxSubscribeOnTest {
 		
 		AtomicInteger count = new AtomicInteger();
 		
-		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(Computations.concurrent());
+		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(ForkJoinPool.commonPool());
 		
 		Assert.assertEquals(0, count.get());
 		

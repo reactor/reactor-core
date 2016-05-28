@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Cancellation;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -38,6 +37,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
@@ -91,7 +91,8 @@ public class CombinationTests {
 		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
 		AtomicInteger count = new AtomicInteger();
 		CountDownLatch latch = new CountDownLatch(1);
-		processor.publishOn(Computations.concurrent())
+		Scheduler scheduler = Schedulers.parallel();
+		processor.publishOn(scheduler)
 		         .subscribe(Subscribers.create(s -> {
 			         try {
 				         System.out.println("test" + Thread.currentThread());
@@ -121,6 +122,7 @@ public class CombinationTests {
 		latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue("latch : " + count, count.get() == 1);
 		Assert.assertTrue("time : " + emission, emission >= 0);
+		scheduler.shutdown();
 	}
 
 	@Test
@@ -130,7 +132,7 @@ public class CombinationTests {
 		int n = 100_000;
 		int subs = 4;
 		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
-		Scheduler c = Computations.single();
+		Scheduler c = Schedulers.single();
 		for (int i = 0; i < subs; i++) {
 			processor.publishOn(c)
 			         .subscribe(Subscribers.create(s -> s.request(1L),
@@ -158,6 +160,7 @@ public class CombinationTests {
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue( "latch : " + latch.getCount(), waited);
+		c.shutdown();
 	}
 
 	public Flux<SensorData> sensorOdd() {
@@ -281,8 +284,9 @@ public class CombinationTests {
 		int elements = 1;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
 		EmitterProcessor<SensorData> sensorDataProcessor = EmitterProcessor.create();
+		Scheduler scheduler = Schedulers.single();
 
-		sensorDataProcessor.publishOn(Computations.single())
+		sensorDataProcessor.publishOn(scheduler)
 		                   .subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
 				null, latch::countDown));
 
@@ -294,6 +298,7 @@ public class CombinationTests {
 		                                     .toString());
 
 		awaitLatch(null, latch);
+		scheduler.shutdown();
 	}
 
 	@SuppressWarnings("unchecked")

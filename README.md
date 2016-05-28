@@ -77,14 +77,16 @@ Tuple2<Long, Long> nowAndLater =
 ## Schedulers
 
 Reactor uses a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Scheduler.html) as a
-contract for `Runnable` execution. It provides some guarantees required by Reactive Streams flows like FIFO execution.
+contract for arbitrary task execution. It provides some guarantees required by Reactive
+Streams flows like FIFO execution.
 
-You can create low-latency [event loop resources](http://projectreactor.io/core/docs/api/?reactor/core/publisher/Computations.html) to share with multiple Subscribers for producing flows
-(subscribeOn) or receiving flows (publishOn) :
+You can create efficient [schedulers](http://projectreactor
+.io/core/docs/api/?reactor/core/schedulers/Schedulers.html) to jump thread on the
+producing flows (subscribeOn) or receiving flows (publishOn) :
 
 ```java
-Scheduler async = Computations.parallel();
-Scheduler io = Computations.concurrent();
+Scheduler async = Schedulers.newSingle();
+Scheduler io = Schedulers.newParallel();
 
 Mono.fromCallable( () -> System.currentTimeMillis() )
 	.repeat()
@@ -100,8 +102,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 async.shutdown();
 io.shutdown();
 
-Note that `ExecutorService` is also a supported argument for `publishOn` and `subscribeOn`. `Computations` might be
-too much a cost for some CPU, `ExecutorService` based scheduling may have a more relaxed use.
+Note that `ExecutorService` is also a supported argument for `publishOn` and `subscribeOn`.
 ```
 ## Hot Publishing : SignalEmitter, FluxEmitter, MonoEmitter
 To bridge a Subscriber or Processor into an outside context that is taking care of

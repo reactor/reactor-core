@@ -16,8 +16,8 @@
 
 /**
  * Provide for
- * {@link reactor.core.publisher.Flux}, {@link reactor.core.publisher.Mono} composition API and {@link reactor.core.publisher.FluxProcessor}
- * implementations
+ * {@link reactor.core.publisher.Flux}, {@link reactor.core.publisher.Mono} composition
+ * API and {@link org.reactivestreams.Processor} implementations
  *
  * <h2>Flux</h2>
  * A typed N-elements or zero sequence {@link org.reactivestreams.Publisher} with core reactive extensions.
@@ -40,27 +40,8 @@
  *         {@link reactor.core.publisher.WorkQueueProcessor}</li>
  *         <li>{@link reactor.core.publisher.FluxProcessor} itself offers factories to build arbitrary {@link org.reactivestreams.Processor}</li>
  * </ul>
- * Reactor offers a few management API for the underlying {@link
- * java.util.concurrent.Executor} in use, in addition to the state accessors like
- * {@link reactor.core.state.Backpressurable}.
  * <p>
- ** <h2>Schedulers</h2>
- * Scheduling in Reactor is a couple of general concepts shared by reactive operators
- * "{@link reactor.core.publisher.Flux#publishOn publishOn}" and
- * "{@link reactor.core.publisher.Flux#subscribeOn subscribeOn}".
- * <ul>
- *     <li>Scheduler: a
- *     {@link java.util.function.Consumer} of {@link java.lang.Runnable} accepting tasks to run or {@literal null} as a
- *     terminal signal used for cleanup logic</li>
- *     <li>Scheduler Factory: a {@link java.util.concurrent.Callable} generating schedulers. A major implementation
- *     of it is {@link reactor.core.publisher.Computations}, a reference-counting worker generator that release
- *     resources automatically after worker terminaisons.
- *     </li>
- * </ul>
- * The key difference between asynchronous processors and schedulers is their natural ability to be shared where
- * {@link org.reactivestreams.Processor} are bound to a single logical producer by {@link org.reactivestreams.Subscription}.
- * Thus, when no dedicated threading is required (hot or critical data pipeline), it is recommended to consider
- * schedulers + publishOn/subscribeOn over processors.
+ **
  * @author Stephane Maldini
  */
 package reactor.core.publisher;

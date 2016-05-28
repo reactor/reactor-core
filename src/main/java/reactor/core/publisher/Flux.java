@@ -53,6 +53,7 @@ import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
@@ -3353,14 +3354,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	/**
 	 * Re-route incoming values into a dynamically created {@link Flux} for each unique key evaluated by the given
 	 * key mapper. The hashcode of the incoming data will be used for partitionning over
-	 * {@link Computations#DEFAULT_POOL_SIZE} number of partitions. That
-	 * means that at any point of time at most {@link Computations#DEFAULT_POOL_SIZE} number of streams will be
+	 * {@link PlatformDependent#DEFAULT_POOL_SIZE} number of partitions. That
+	 * means that at any point of time at most {@link PlatformDependent#DEFAULT_POOL_SIZE} number of streams will be
 	 * created.
 	 *
 	 * <p> Partition resolution happens accordingly to the positive modulo of the current hashcode over
 	 * the
 	 * number of
-	 * buckets {@link Computations#DEFAULT_POOL_SIZE}: <code>bucket = o.hashCode() % buckets;</code>
+	 * buckets {@link PlatformDependent#DEFAULT_POOL_SIZE}: <code>bucket = o.hashCode() % buckets;</code>
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/partition.png" alt="">
 	 *
@@ -3368,7 +3369,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a partitioning {@link Flux} whose values are {@link GroupedFlux} of all active partionned sequences
 	 */
 	public final Flux<GroupedFlux<Integer, T>> partition() {
-		return partition(Computations.DEFAULT_POOL_SIZE);
+		return partition(PlatformDependent.DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -3586,12 +3587,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
-	 * fast async event loops.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
@@ -3607,12 +3606,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 * It naturally combines with {@link Computations#single} and {@link Computations#parallel} which implement
-	 * fast async event loops.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.publishOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 * @param prefetch the asynchronous boundary capacity
@@ -3634,7 +3631,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe() }
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 *
@@ -3651,7 +3648,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
 	 * <p>
-	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe() }
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 * @param prefetch the asynchronous boundary capacity
@@ -3659,7 +3656,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(ExecutorService executorService, int prefetch) {
-		return publishOn(new ExecutorServiceScheduler(executorService), prefetch);
+		return publishOn(Schedulers.fromExecutorService(executorService), prefetch);
 	}
 
 	/**
@@ -4439,15 +4436,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Consumer} {@link Runnable} factory like {@link Computations}.
+	 * {@link Scheduler}
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
-	 * It naturally combines with {@link Computations#concurrent} which implements work-queue thread dispatching.
 	 *
 	 * <p>
-	 * {@code flux.subscribeOn(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeOn(Schedulers.single()).subscribe() }
 	 *
 	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
 	 *
@@ -4467,14 +4463,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
 	 * <p>
-	 * {@code flux.subscribeOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeOn(ForkJoinPool.commonPool()).subscribe() }
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 *
 	 * @return a {@link Flux} requesting asynchronously
 	 */
 	public final Flux<T> subscribeOn(ExecutorService executorService) {
-		return subscribeOn(new ExecutorServiceScheduler(executorService));
+		return subscribeOn(Schedulers.fromExecutorService(executorService));
 	}
 
 	/**

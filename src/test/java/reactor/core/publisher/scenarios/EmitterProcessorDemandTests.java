@@ -30,11 +30,11 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.BackpressureUtils;
 
@@ -57,7 +57,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	@Ignore
 	public void test() {
-		Scheduler asyncGroup = Computations.parallel("parallel", 128, 1);
+		Scheduler asyncGroup = Schedulers.single();
 		FluxProcessor<String, String> emitter = EmitterProcessor.create();
 
 		CountDownLatch requestReceived = new CountDownLatch(1);

@@ -87,18 +87,6 @@ public enum ExecutorUtils {
 	 * observing reactive stream terminal error, completion and cancel signals.
 	 *
 	 * @param name The prefix given to created threads
-	 *
-	 * @return a new {@link ExecutorService} derived from {@link Executors#newCachedThreadPool}
-	 */
-	public static ExecutorService singleUse(String name) {
-		return singleUse(name, null);
-	}
-
-	/**
-	 * Create and mark an unbounded cached {@link ExecutorService} as an auto-closable service in particular when
-	 * observing reactive stream terminal error, completion and cancel signals.
-	 *
-	 * @param name The prefix given to created threads
 	 * @param contextClassLoader An arbitrary classloader to assign to the created threads
 	 *
 	 * @return a new {@link ExecutorService} derived from {@link Executors#newCachedThreadPool}

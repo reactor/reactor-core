@@ -25,6 +25,7 @@ import reactor.core.publisher.Computations
 import reactor.core.publisher.ReplayProcessor
 import reactor.core.publisher.Signal
 import reactor.core.scheduler.Scheduler
+import reactor.core.scheduler.Schedulers
 import reactor.core.test.TestSubscriber
 import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
@@ -45,7 +46,7 @@ class FluxSpec extends Specification {
 
 	void setupSpec() {
 		Timer.global()
-		asyncGroup = Computations.parallel("flux-spec", 128, 4, null, null, false)
+		asyncGroup = Schedulers.newParallel("flux-spec", 4, false)
 	}
 
 	def cleanupSpec() {

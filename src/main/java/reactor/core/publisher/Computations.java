@@ -63,23 +63,18 @@ import reactor.core.util.WaitStrategy;
  * 
  * @author Stephane Maldini
  */
+@Deprecated
 public final class Computations implements Scheduler, MultiProducer, Completable {
 
 	static final Logger log = Logger.getLogger(Computations.class);
-
-	/**
-	 * Default number of processors available to the runtime on init (min 4)
-	 * @see Runtime#availableProcessors()
-	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
-	                                                            .availableProcessors(), 4);
 
 	/**
 	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed
+	 * once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
@@ -89,7 +84,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 */
 	public static Scheduler parallel() {
 		return parallel("parallel", PlatformDependent.MEDIUM_BUFFER_SIZE,
-				DEFAULT_POOL_SIZE, true);
+				PlatformDependent.DEFAULT_POOL_SIZE, true);
 	}
 
 	/**
@@ -97,7 +92,8 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed
+	 * once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
@@ -116,7 +112,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *  "non-blocking" tasks.
 	 *
 	 * <p>
-	 * It uses N given {@link #DEFAULT_POOL_SIZE} x {@link TopicProcessor} subscribed once each by a
+	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed once each by a
 	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
@@ -128,7 +124,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @return a new {@link Computations} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name, int bufferSize) {
-		return parallel(name, bufferSize, DEFAULT_POOL_SIZE);
+		return parallel(name, bufferSize, PlatformDependent.DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -360,16 +356,18 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link PlatformDependent#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
 	 * to mitigate consuming rate difference.
 	 *
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
+	 * @deprecated use {@link #parallel()}
 	 */
+	@Deprecated
 	public static Scheduler concurrent() {
-		return concurrent("concurrent", PlatformDependent.MEDIUM_BUFFER_SIZE, DEFAULT_POOL_SIZE, true);
+		return concurrent("concurrent", PlatformDependent.MEDIUM_BUFFER_SIZE, PlatformDependent.DEFAULT_POOL_SIZE, true);
 	}
 
 	/**
@@ -377,7 +375,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link PlatformDependent#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will be relatively large {@link PlatformDependent#MEDIUM_BUFFER_SIZE}
 	 * to mitigate consuming rate difference.
@@ -386,6 +384,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
 	 */
+	@Deprecated
 	public static Scheduler concurrent(String name) {
 		return concurrent(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
 	}
@@ -395,7 +394,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link PlatformDependent#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
 	 * mitigate consuming rate difference.
@@ -405,8 +404,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
 	 */
+	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize) {
-		return concurrent(name, bufferSize, DEFAULT_POOL_SIZE);
+		return concurrent(name, bufferSize, PlatformDependent.DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -425,6 +425,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
 	 */
+	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize, int concurrency) {
 		return concurrent(name, bufferSize, concurrency, null, null, false);
 	}
@@ -445,7 +446,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
+	 * @deprecated use {@link #parallel()}
 	 */
+	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize, int concurrency, boolean autoShutdown) {
 		return concurrent(name, bufferSize, concurrency, null, null, autoShutdown);
 	}
@@ -467,7 +470,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
+	 * @deprecated use {@link #parallel()}
 	 */
+	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize,
 			int concurrency, Consumer<Throwable> uncaughtExceptionHandler, Runnable shutdownHandler) {
 		return concurrent(name, bufferSize, concurrency, uncaughtExceptionHandler, shutdownHandler, false);
@@ -492,7 +497,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
+	 * @deprecated use {@link #parallel()}
 	 */
+	@Deprecated
 	public static Scheduler concurrent(final String name,
 			final int bufferSize,
 			int concurrency,
@@ -508,7 +515,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * and "blocking" IO (e.g. blocking http createWorker, file write...).
 	 *
 	 * <p>
-	 * It uses a single {@link WorkQueueProcessor} with {@link Computations#DEFAULT_POOL_SIZE} subscribers that will
+	 * It uses a single {@link WorkQueueProcessor} with {@link PlatformDependent#DEFAULT_POOL_SIZE} subscribers that will
 	 * compete to execute the
 	 * {@link Runnable} tasks. The task backlog will should be relatively large given {@literal bufferSize} to 
 	 * mitigate consuming rate difference.
@@ -522,7 +529,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
 	 * @return a new {@link Computations} tuned for slow tasks
+	 * @deprecated use {@link #parallel()}
 	 */
+	@Deprecated
 	public static Scheduler concurrent(final String name,
 			final int bufferSize,
 			int concurrency,

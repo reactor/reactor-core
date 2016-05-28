@@ -89,6 +89,12 @@ public enum PlatformDependent {
 	 */
 	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
 			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
+	/**
+	 * Default number of processors available to the runtime on init (min 4)
+	 * @see Runtime#availableProcessors()
+	 */
+	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
+	                                                            .availableProcessors(), 4);
 
 	private static final boolean HAS_UNSAFE                      = hasUnsafe0();
 
