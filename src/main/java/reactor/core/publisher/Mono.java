@@ -44,7 +44,6 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
@@ -235,7 +234,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration) {
-		return delay(duration, Timer.global());
+		return delay(duration, Schedulers.timer());
 	}
 
 	/**

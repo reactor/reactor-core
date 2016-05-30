@@ -25,20 +25,22 @@ import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.util.Exceptions;
 
 /**
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class SchedulerConcurrentTests extends AbstractProcessorVerification {
+public class SchedulerComputationTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-
+		Scheduler scheduler = Schedulers.newComputation("shared-work", 2, bufferSize);
 		EmitterProcessor<Long> e = EmitterProcessor.create();
-		return FluxProcessor.wrap(e, e.publishOn(Computations.concurrent("shared-work", bufferSize, 2, Throwable::printStackTrace, () ->
-		{})));
+		return FluxProcessor.wrap(e,
+				e.publishOn(scheduler)
+				 .doAfterTerminate(scheduler::shutdown));
 	}
 
 	@Override
@@ -56,7 +58,7 @@ public class SchedulerConcurrentTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		Scheduler serviceRB = Computations.parallel("rbWork", 32, 1);
+		Scheduler serviceRB = Schedulers.newComputation("rbWork", 1, 32);
 		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();

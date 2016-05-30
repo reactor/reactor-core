@@ -27,7 +27,6 @@ import reactor.core.publisher.Signal
 import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
 import reactor.core.test.TestSubscriber
-import reactor.core.scheduler.Timer
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Shared
 import spock.lang.Specification
@@ -45,12 +44,10 @@ class FluxSpec extends Specification {
 	Scheduler asyncGroup
 
 	void setupSpec() {
-		Timer.global()
 		asyncGroup = Schedulers.newParallel("flux-spec", 4, false)
 	}
 
 	def cleanupSpec() {
-		Timer.unregisterGlobal()
 		asyncGroup.shutdown()
 		asyncGroup = null
 	}

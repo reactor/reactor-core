@@ -16,9 +16,7 @@
 
 /**
  * {@link reactor.core.scheduler.Scheduler} and  {@link reactor.core.scheduler.TimedScheduler} contract and static
- * factory methods in {@link reactor.core.scheduler.Timer}. Used for
- * scheduling {@link reactor.core.publisher.Mono#delay},
- * {@link reactor.core.publisher.Flux#interval}, timeout handling or polling tasks.
+ * factory methods in {@link reactor.core.scheduler.Schedulers}.
  *
  * @author Stephane Maldini
  */

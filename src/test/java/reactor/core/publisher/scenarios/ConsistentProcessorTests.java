@@ -35,7 +35,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
-import reactor.core.scheduler.Timer;
+import reactor.core.scheduler.Schedulers;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -220,7 +220,7 @@ public class ConsistentProcessorTests {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			Timer.global().schedule(() -> finish(s), 5000, TimeUnit.MILLISECONDS);
+			Schedulers.timer().schedule(() -> finish(s), 5000, TimeUnit.MILLISECONDS);
 			s.request(Long.MAX_VALUE);
 		}
 

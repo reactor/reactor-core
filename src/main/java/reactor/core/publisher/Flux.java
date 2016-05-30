@@ -55,7 +55,6 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.Timer;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
@@ -700,7 +699,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long period) {
-		return interval(period, Timer.global());
+		return interval(period, Schedulers.timer());
 	}
 
 	/**
@@ -764,7 +763,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long delay, long period) {
-		return interval(delay, period, Timer.global());
+		return interval(delay, period, Schedulers.timer());
 	}
 
 	/**
@@ -2775,7 +2774,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return any available {@link TimedScheduler}
 	 */
 	public TimedScheduler getTimer() {
-		return Timer.global();
+		return Schedulers.timer();
 	}
 
 

@@ -21,24 +21,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
+import reactor.core.state.Completable;
 import reactor.core.util.Exceptions;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
  * and is suited for parallel work.
  */
-final class ParallelScheduler implements Scheduler {
-
-    static final AtomicLong COUNTER = new AtomicLong();
-
-    static final ThreadFactory THREAD_FACTORY = r -> {
-        Thread t = new Thread(r, "ParallelScheduler-" + COUNTER.incrementAndGet());
-        return t;
-    };
+final class ParallelScheduler implements Scheduler, Completable {
 
     final int n;
     
@@ -58,15 +51,7 @@ final class ParallelScheduler implements Scheduler {
     
     int roundRobin;
 
-    public ParallelScheduler(int n, String name, boolean daemon) {
-       this(n, r -> {
-           Thread t = new Thread(r, name + COUNTER.incrementAndGet());
-           t.setDaemon(daemon);
-           return t;
-       });
-    }
-    
-    public ParallelScheduler(int n, ThreadFactory factory) {
+    ParallelScheduler(int n, ThreadFactory factory) {
         if (n <= 0) {
             throw new IllegalArgumentException("n > 0 required but it was " + n);
         }
@@ -75,7 +60,7 @@ final class ParallelScheduler implements Scheduler {
         init(n);
     }
     
-    private void init(int n) {
+    void init(int n) {
         ExecutorService[] a = new ExecutorService[n];
         for (int i = 0; i < n; i++) {
             a[i] = Executors.newSingleThreadExecutor(factory);
@@ -83,12 +68,14 @@ final class ParallelScheduler implements Scheduler {
         EXECUTORS.lazySet(this, a);
     }
     
-    public int parallelism() {
-        return n;
-    }
-    
+    @Override
     public boolean isStarted() {
         return executors != SHUTDOWN;
+    }
+
+    @Override
+    public boolean isTerminated() {
+        return executors == SHUTDOWN;
     }
 
     @Override

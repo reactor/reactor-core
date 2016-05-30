@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Timer;
 
 /**
  * @author Stephane Maldini
@@ -31,24 +30,20 @@ import reactor.core.scheduler.Timer;
 public abstract class AbstractReactorTest {
 
 	protected static Scheduler      asyncGroup;
-	protected static Scheduler ioGroup;
-	protected static Timer          timer;
+	protected static Scheduler      ioGroup;
 
 	protected final Map<Thread, AtomicLong> counters = new ConcurrentHashMap<>();
 
 	@BeforeClass
 	public static void loadEnv() {
-		timer = Timer.global();
 		ioGroup = Computations.concurrent("work", 2048, 4, Throwable::printStackTrace, null, false);
 		asyncGroup = Computations.parallel("parallel", 2048, 4, Throwable::printStackTrace, null, false);
 	}
 
 	@AfterClass
 	public static void closeEnv() {
-		timer = null;
 		ioGroup.shutdown();
 		asyncGroup.shutdown();
-		//Timer.unregisterGlobal();
 	}
 
 	static {

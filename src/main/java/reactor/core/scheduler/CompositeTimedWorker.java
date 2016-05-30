@@ -29,14 +29,14 @@ import reactor.core.util.Exceptions;
 final class CompositeTimedWorker implements TimedWorker {
     
     final TimedWorker actual;
-    
-    HashSet<CompositeTimedWorker.TimedTask> tasks;
+
+    OpenHashSet<CompositeTimedWorker.TimedTask> tasks;
     
     volatile boolean terminated;
     
     public CompositeTimedWorker(TimedWorker actual) {
         this.actual = actual;
-        this.tasks = new HashSet<>();
+        this.tasks = new OpenHashSet<>();
     }
     
     @Override
@@ -133,15 +133,18 @@ final class CompositeTimedWorker implements TimedWorker {
             return;
         }
         terminated = true;
-        HashSet<TimedTask> set;
+        OpenHashSet<TimedTask> set;
         synchronized (this) {
             set = tasks;
             tasks = null;
         }
-        
+
         if (set != null) {
-            for (TimedTask tt : set) {
-                tt.cancelFuture();
+            Object[] array = set.rawKeys();
+            for (Object tt : array) {
+                if (tt != null) {
+                    ((TimedTask)tt).cancelFuture();
+                }
             }
         }
     }

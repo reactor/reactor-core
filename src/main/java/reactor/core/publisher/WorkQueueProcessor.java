@@ -16,10 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -28,7 +27,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
@@ -42,7 +40,6 @@ import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ExecutorUtils;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
@@ -239,7 +236,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
 		return new WorkQueueProcessor<E>(name,
-				null,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
 				false,
@@ -452,7 +448,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
 		return new WorkQueueProcessor<E>(name,
-				null,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
 				true,
@@ -528,12 +523,25 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			AtomicIntegerFieldUpdater
 					.newUpdater(WorkQueueProcessor.class, "replaying");
 
-	@SuppressWarnings("unchecked")
-	private WorkQueueProcessor(String name, ExecutorService executor, int bufferSize,
-	                                WaitStrategy waitStrategy, boolean share,
-	                                boolean autoCancel) {
-		super(name,
+	WorkQueueProcessor(String name,
+			int bufferSize,
+			WaitStrategy waitStrategy,
+			boolean share,
+			boolean autoCancel) {
+		this(new EventLoopFactory(name, autoCancel),
+				null,
 				bufferSize,
+				waitStrategy,
+				share,
+				autoCancel);
+	}
+
+	@SuppressWarnings("unchecked")
+	WorkQueueProcessor(ThreadFactory threadFactory,
+			ExecutorService executor,
+			int bufferSize, WaitStrategy waitStrategy, boolean share,
+	                                boolean autoCancel) {
+		super(bufferSize, threadFactory,
 				executor,
 				autoCancel,
 				share,
@@ -600,7 +608,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	protected void requestTask(Subscription s) {
-		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false).newThread(RingBuffer.createRequestTask(s,
+		new Thread(RingBuffer.createRequestTask(s,
 				() -> {
 					if (!alive()) {
 						if (cancelled) {
@@ -611,7 +619,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						}
 					}
 				}, null,
-				ringBuffer::getMinimumGatingSequence, readWait, this, (int)ringBuffer.getCapacity())).start();
+				ringBuffer::getMinimumGatingSequence,
+				readWait,
+				this,
+				(int) ringBuffer.getCapacity()), name + "[request-task]").start();
 	}
 
 	@Override

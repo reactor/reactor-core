@@ -55,7 +55,7 @@ class ProcessorsSpec extends Specification {
 			@Override
 			void onSubscribe(Subscription s) {
 				this.s = s
-				println name + " " + Thread.currentThread().name + ": subscribe: " + s
+				println name + " " + Thread.currentThread().name + ": subscribe: " + s.toString()
 				s.request(1)
 			}
 
@@ -109,7 +109,7 @@ class ProcessorsSpec extends Specification {
 
 		when:
 			latch = new CountDownLatch(elems)
-			bc = TopicProcessor.<String> create(executorService)
+			bc = TopicProcessor.<String> create("test", 16)
 			bc.subscribe(sub('spec2', latch))
 			bc.connect()
 

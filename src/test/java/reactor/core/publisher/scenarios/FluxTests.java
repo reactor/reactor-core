@@ -29,8 +29,6 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
@@ -67,7 +65,6 @@ import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ExecutorUtils;
 import reactor.core.util.Logger;
 import reactor.core.util.ReactiveStateUtils;
 
@@ -924,15 +921,13 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	@Ignore
 	public void testDiamond() throws InterruptedException, IOException {
-		ExecutorService pool = Executors.newCachedThreadPool(ExecutorUtils.newNamedFactory("tee", null, null, true));
-
 		Flux<Point> points = Flux.<Double, Random>generate(Random::new, (r, sub) -> {
 			sub.next(r.nextDouble());
 			return r;
 		}).log("points")
 		  .buffer(2)
 		  .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
-		  .subscribeWith(TopicProcessor.create(pool, 32));
+		  .subscribeWith(TopicProcessor.create("tee", 32));
 
 		Flux<InnerSample> innerSamples = points.log("inner-1")
 		                                          .filter(Point::isInner)

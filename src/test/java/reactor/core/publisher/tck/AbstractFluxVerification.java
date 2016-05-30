@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
@@ -38,11 +37,9 @@ import org.reactivestreams.Subscription;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Timer;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.util.PlatformDependent;
 
@@ -67,12 +64,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 	@Override
 	public ExecutorService publisherExecutorService() {
 		return executorService;
-	}
-
-	@BeforeClass
-	@Before
-	public void setup() {
-		Timer.global();
 	}
 
 	@AfterClass

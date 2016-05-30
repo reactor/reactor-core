@@ -28,7 +28,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Timer;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * @author Stephane Maldini
@@ -77,7 +77,7 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 
 	@BeforeClass
 	public void setup() {
-		Timer.global();
+		Schedulers.timer();
 	}
 
 	@AfterClass

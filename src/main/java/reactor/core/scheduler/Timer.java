@@ -103,7 +103,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	 *                   return a new {@link Timer}
 	 */
 	public static Timer create(int resolution, int bufferSize) {
-		return create("reactor-timer", resolution, bufferSize);
+		return create("timer", resolution, bufferSize);
 	}
 
 	/**
@@ -129,7 +129,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	 * it is preferrable to fetch them out of the critical path.
 	 * <p>
 	 * The global timer will also ignore {@link Timer#shutdown()} calls and should be cleaned using {@link
-	 * #unregisterGlobal()}.
+	 * Schedulers#shutdownNow()} ()}.
 	 * <p>
 	 * The default globalTimer is a {@link Timer}. It is suitable for non blocking periodic
 	 * work
@@ -137,43 +137,8 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	 *
 	 * @return the globalTimer, usually a {@link Timer}
 	 */
-	public static Timer global() {
-		return GlobalTimer.get();
-	}
-
-	/**
-	 * The returned timer SHOULD always be cancelled after use, however global timer will ignore it.
-	 *
-	 * @return eventually the global timer or if not set a fresh timer.
-	 */
-	public static Timer globalOrNew() {
-		return GlobalTimer.globalOrNew();
-	}
-
-	/**
-	 * The returned timer MIGHT be NULL if no global timer set.
-	 *
-	 * @return eventually the global timer or if not NULL.
-	 */
-	public static Timer globalOrNull() {
-		return GlobalTimer.available() ? GlobalTimer.get() : null;
-	}
-
-	/**
-	 * Read if the context timer has been set
-	 *
-	 * @return true if context timer is initialized
-	 */
-	public static boolean hasGlobal() {
-		return GlobalTimer.available();
-	}
-
-	/**
-	 * Clean current global timer references and cancel the respective {@link Timer}.
-	 * A new global timer can be assigned later with {@link #global()}.
-	 */
-	public static void unregisterGlobal() {
-		GlobalTimer.unregister();
+	public static TimedScheduler global() {
+		return Schedulers.timer();
 	}
 
 	final ThreadWorker loop;

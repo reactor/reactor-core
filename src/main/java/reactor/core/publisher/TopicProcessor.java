@@ -16,10 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -27,12 +26,12 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.RingBufferReceiver;
 import reactor.core.queue.Slot;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
@@ -41,7 +40,6 @@ import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ExecutorUtils;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
 import reactor.core.util.WaitStrategy;
@@ -246,7 +244,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	                                                WaitStrategy strategy,
 	                                                Supplier<E> signalSupplier) {
 		return new TopicProcessor<E>(name,
-				null,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -274,7 +271,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	                                                WaitStrategy strategy,
 	                                                boolean autoCancel) {
 		return new TopicProcessor<E>(name,
-				null,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -324,6 +320,30 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						strategy,
 				false,
 				autoCancel, null);
+	}
+
+	/**
+	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
+	 * workers and is suited for non blocking work.
+	 *
+	 * @param parallelism Number of pooled workers.
+	 * @param bufferSize backlog size to be used by event loops.
+	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
+	 * {@link Scheduler}
+	 *
+	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * ExecutorService-based workers and is suited for parallel work
+	 */
+	public static Scheduler newComputation(int parallelism,
+			int bufferSize,
+			ThreadFactory threadFactory) {
+		return asScheduler(() -> new TopicProcessor<>(threadFactory,
+				null,
+				bufferSize,
+				WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS),
+				true,
+				false,
+				null), parallelism, false);
 	}
 
 	/**
@@ -508,9 +528,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> TopicProcessor<E> share(String name, int bufferSize, WaitStrategy waitStrategy,
-	                                               Supplier<E> signalSupplier) {
-		return new TopicProcessor<E>(name, null, bufferSize,
+	public static <E> TopicProcessor<E> share(String name, int bufferSize,
+			WaitStrategy waitStrategy,
+			Supplier<E> signalSupplier) {
+		return new TopicProcessor<E>(name, bufferSize,
 				waitStrategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
 						waitStrategy,
@@ -539,7 +560,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	                                               WaitStrategy strategy,
 	                                               boolean autoCancel) {
 		return new TopicProcessor<E>(name,
-				null,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -599,10 +619,26 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	final Sequence minimum;
 
-	private TopicProcessor(String name, ExecutorService executor, int bufferSize,
+	TopicProcessor(String name, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
 	                            boolean autoCancel, final Supplier<E> signalSupplier) {
-		super(name, bufferSize, executor, autoCancel, shared, () -> {
+		this(new EventLoopFactory(name, autoCancel),
+				null,
+				bufferSize,
+				waitStrategy,
+				shared,
+				autoCancel,
+				signalSupplier);
+	}
+
+	TopicProcessor(ThreadFactory threadFactory,
+			ExecutorService executor,
+			int bufferSize,
+			WaitStrategy waitStrategy,
+			boolean shared,
+			boolean autoCancel,
+			final Supplier<E> signalSupplier) {
+		super(bufferSize, threadFactory, executor, autoCancel, shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
 				signal.value = signalSupplier.get();
@@ -703,19 +739,19 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	protected void requestTask(Subscription s) {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
-		ExecutorUtils.newNamedFactory(name+"[request-task]", null, null, false)
-		             .newThread(RingBuffer.createRequestTask(s, () -> {
-			             if (!alive()) {
-				             if(cancelled){
-					             throw Exceptions.CancelException.INSTANCE;
-				             }
-				             else {
-					             throw Exceptions.AlertException.INSTANCE;
-				             }
-			             }
-		             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
-						minimum.getAsLong() :
-						ringBuffer.getMinimumGatingSequence(minimum), readWait, this, (int)ringBuffer.getCapacity())).start();
+		new Thread(RingBuffer.createRequestTask(s, () -> {
+					             if (!alive()) {
+						             if(cancelled){
+							             throw Exceptions.CancelException.INSTANCE;
+						             }
+						             else {
+							             throw Exceptions.AlertException.INSTANCE;
+						             }
+					             }
+				             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
+								minimum.getAsLong() :
+								ringBuffer.getMinimumGatingSequence(minimum), readWait, this, (int)ringBuffer.getCapacity()),
+				name+"[request-task]").start();
 	}
 
 	@Override

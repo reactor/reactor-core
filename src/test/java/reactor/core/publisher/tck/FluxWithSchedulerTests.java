@@ -17,21 +17,18 @@
 package reactor.core.publisher.tck;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 import org.junit.Test;
 import org.reactivestreams.Processor;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * @author Stephane Maldini
@@ -48,9 +45,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 		Flux<String> otherStream = Flux.just("test", "test2", "test3");
 		System.out.println("Providing new downstream");
 
-		Scheduler asyncGroup =
-				Computations.parallel("fluxion-p-tck", bufferSize, 2,
-						Throwable::printStackTrace, () -> System.out.println("EEEEE"));
+		Scheduler asyncGroup = Schedulers.newParallel("flux-p-tck", 2);
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
 		EmitterProcessor<Integer> p = EmitterProcessor.create();
@@ -70,6 +65,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 				 )
 				 .publishOn(sharedGroup)
+				 .doAfterTerminate(asyncGroup::shutdown)
 				 .doOnError(Throwable::printStackTrace));
 	}
 
@@ -128,8 +124,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 	@BeforeClass
 	public static void setupGlobal(){
 		System.out.println("test ");
-		sharedGroup = Computations.parallel("fluxion-tck", 32, 2,
-				Throwable::printStackTrace, null, false);
+		sharedGroup = Schedulers.newParallel("fluxion-tck", 2);
 	}
 
 	@org.junit.AfterClass

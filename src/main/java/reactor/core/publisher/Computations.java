@@ -16,57 +16,26 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.MultiProducer;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.util.Exceptions;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
 
 /**
- * {@link Computations} provide event-loop based {@link Scheduler} useable by
- * {@link Flux#publishOn publishOn} or {@link Mono#subscribeOn subscribeOn}.
- * <p>
- * Based on this scheduling contract, a
- * {@link Computations} offers a {@link reactor.core.scheduler.Scheduler.Worker} mutualized pool and will round-robin
- * assignation via {@link #createWorker()}.
- *  {@link Computations} also maintains a reference count on how many worker have been generated. Therefore it will
- * automatically shutdown the required resources after all references have been released, e.g. when all {@link Flux}
- * using
- * {@link Flux#publishOn publishOn} have been cancelled, completed or errored. The shutdown can also be {@link Computations#shutdown manual}
- * by setting the factories {@literal autoshutdown} to false.
- * <p>
- *   {@link Computations} offers ready-to-use pool configurations :
- *    <ul>
- *        <li>{@link #parallel} : Optimized for fast {@link Runnable} executions </li>
- *        <li>{@link #concurrent} : Optimized for slow {@link Runnable} executions </li>
- *        <li>{@link #single} : Optimized for low-latency {@link Runnable} executions </li>
- *        <li>{@link #create create} : Arbitrary group creation. </li>
- *    </ul>
- *
- * <p>
- * 
+ * @deprecated Use {@link Schedulers}
  * @author Stephane Maldini
  */
 @Deprecated
-public final class Computations implements Scheduler, MultiProducer, Completable {
-
-	static final Logger log = Logger.getLogger(Computations.class);
+public final class Computations {
 
 	/**
 	 * An Async factory is  a worker factory with sensible defaults for for "fast" or
@@ -75,12 +44,12 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * <p>
 	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed
 	 * once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel() {
 		return parallel("parallel", PlatformDependent.MEDIUM_BUFFER_SIZE,
@@ -94,14 +63,14 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * <p>
 	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed
 	 * once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name) {
 		return parallel(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
@@ -113,7 +82,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given current number of CPU (max 4) x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -121,7 +90,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name, int bufferSize) {
 		return parallel(name, bufferSize, PlatformDependent.DEFAULT_POOL_SIZE);
@@ -133,7 +102,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -143,7 +112,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link TopicProcessor}
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name, int bufferSize, int parallelSchedulers) {
 		return parallel(name, bufferSize, parallelSchedulers, null, null, false);
@@ -155,7 +124,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -166,7 +135,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * {@link TopicProcessor}
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name,
 			int bufferSize,
@@ -181,7 +150,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -193,7 +162,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(String name,
 			int bufferSize,
@@ -209,7 +178,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -222,7 +191,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(final String name,
 			final int bufferSize,
@@ -240,7 +209,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * <p>
 	 * It uses N given {@literal parallelSchedulers} x {@link TopicProcessor} subscribed once each by a
-	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link #createWorker} will
+	 * subscriber executing its partition of {@link Runnable} tasks. Each worker generation {@link Scheduler#createWorker} will
 	 * round robin over the pooled list of {@link TopicProcessor}. Due to its partitioned design, sensitivity to
 	 * consuming rate difference is found mitigated which is suited for rapid firing worker request from dynamic
 	 * flows.
@@ -254,7 +223,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link Computations} tuned for fast tasks
+	 * @return a new {@link Scheduler} tuned for fast tasks
 	 */
 	public static Scheduler parallel(final String name,
 			final int bufferSize,
@@ -264,14 +233,18 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 			boolean autoShutdown,
 			final Supplier<? extends WaitStrategy> waitStrategy) {
 
-		return create(new Supplier<Processor<Runnable, Runnable>>() {
-			int i = 1;
+		return Schedulers.newParallel(parallelSchedulers, new ThreadFactory() {
+			AtomicInteger i = new AtomicInteger();
+
 			@Override
-			public Processor<Runnable, Runnable> get() {
-				return TopicProcessor.share(name+(parallelSchedulers > 1 ? "-"+(i++) : ""), bufferSize, waitStrategy
-						.get(), false);
+			public Thread newThread(Runnable r) {
+				Thread t = new Thread(r, name + i.incrementAndGet());
+				t.setDaemon(autoShutdown);
+				t.setUncaughtExceptionHandler((thread, e) -> uncaughtExceptionHandler.accept(
+						e));
+				return t;
 			}
-		}, parallelSchedulers, uncaughtExceptionHandler, shutdownHandler, autoShutdown);
+		});
 	}
 
 
@@ -290,9 +263,10 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param parallelSchedulers Parallel schedulers subscribed once each to their respective internal
 	 * {@link Runnable} {@link Subscriber}
 	 *
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
-	public static Scheduler create(Processor<Runnable, Runnable> processor, int
+	@Deprecated
+	public static Scheduler create(EventLoopProcessor<Runnable> processor, int
 			parallelSchedulers) {
 		return create(() -> processor, parallelSchedulers, false);
 	}
@@ -303,7 +277,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * {@link Supplier}
 	 * once each.
 	 * <p>
-	 * It provides for reference counting on {@link Computations#createWorker()} and {@link reactor.core.scheduler.Scheduler.Worker#shutdown()}
+	 * It provides for reference counting on {@link Scheduler#createWorker()} and {@link reactor.core.scheduler.Scheduler.Worker#shutdown()}
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically call
 	 * {@link Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
@@ -313,9 +287,10 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * {@link Runnable} {@link Subscriber}
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
-	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
+	@Deprecated
+	public static Scheduler create(Supplier<? extends EventLoopProcessor<Runnable>> processors,
 			int parallelSchedulers,
 			boolean autoShutdown) {
 		return create(processors, parallelSchedulers, null, null, autoShutdown);
@@ -325,7 +300,8 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * Create a {@link Computations} pool of N {@literal parallelSchedulers} size calling the {@link Processor} {@link
 	 * Supplier} once each.
 	 * <p>
-	 * It provides for reference counting on {@link Computations#createWorker()} and {@link reactor.core.scheduler.Scheduler.Worker#shutdown()} If
+	 * It provides for reference counting on {@link Scheduler#createWorker()} and 
+	 * {@link reactor.core.scheduler.Scheduler.Worker#shutdown()} If
 	 * autoShutdown is given true and reference count returns to 0 it will automatically call {@link
 	 * Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
 	 * <p>
@@ -337,18 +313,17 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
-	public static Scheduler create(Supplier<? extends Processor<Runnable, Runnable>> processors,
+	@Deprecated
+	public static Scheduler create(Supplier<? extends EventLoopProcessor<Runnable>> processors,
 			int parallelSchedulers,
 			Consumer<Throwable> uncaughtExceptionHandler,
 			Runnable shutdownHandler,
 			boolean autoShutdown) {
-		return new Computations(processors,
+		return EventLoopProcessor.asScheduler(processors,
 				parallelSchedulers,
-				autoShutdown,
-				uncaughtExceptionHandler,
-				shutdownHandler);
+				autoShutdown);
 	}
 
 	/**
@@ -362,7 +337,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * to mitigate consuming rate difference.
 	 *
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 * @deprecated use {@link #parallel()}
 	 */
 	@Deprecated
@@ -382,7 +357,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 */
 	@Deprecated
 	public static Scheduler concurrent(String name) {
@@ -402,7 +377,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 */
 	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize) {
@@ -423,7 +398,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param bufferSize Task backlog size, risk-off more memory for lower producer latency
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 */
 	@Deprecated
 	public static Scheduler concurrent(String name, int bufferSize, int concurrency) {
@@ -445,7 +420,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param concurrency Parallel workers to subscribe to the internal {@link WorkQueueProcessor}
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 * @deprecated use {@link #parallel()}
 	 */
 	@Deprecated
@@ -469,7 +444,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param uncaughtExceptionHandler Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 * @deprecated use {@link #parallel()}
 	 */
 	@Deprecated
@@ -496,7 +471,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param shutdownHandler Callback signalled when a {@link Subscriber} thread terminates
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 * @deprecated use {@link #parallel()}
 	 */
 	@Deprecated
@@ -528,7 +503,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link Computations} tuned for slow tasks
+	 * @return a new {@link Scheduler} tuned for slow tasks
 	 * @deprecated use {@link #parallel()}
 	 */
 	@Deprecated
@@ -540,8 +515,9 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 			boolean autoShutdown,
 			WaitStrategy waitStrategy) {
 
-		Processor<Runnable, Runnable> p = WorkQueueProcessor.share(name, bufferSize, waitStrategy, false);
-		return new Computations(() -> p, concurrency, autoShutdown, uncaughtExceptionHandler, shutdownHandler);
+		EventLoopProcessor<Runnable> p =
+				WorkQueueProcessor.share(name, bufferSize, waitStrategy, false);
+		return EventLoopProcessor.asScheduler(() -> p, concurrency, autoShutdown);
 	}
 
 	/**
@@ -553,7 +529,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * Due to its single-backlog/single-thread design, sensitivity to task execution time difference will not be
 	 * mitigated.
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single() {
 		return single("single", PlatformDependent.MEDIUM_BUFFER_SIZE, true);
@@ -570,7 +546,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 *
 	 * @param name Group name derived for thread identification
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name) {
 		return single(name, PlatformDependent.MEDIUM_BUFFER_SIZE);
@@ -588,7 +564,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param name Group name derived for thread identification
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize) {
 		return single(name, bufferSize, null, null, false, SINGLE_WAIT_STRATEGY);
@@ -607,7 +583,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, boolean autoShutdown) {
 		return single(name, bufferSize, null, null, autoShutdown, SINGLE_WAIT_STRATEGY);
@@ -626,7 +602,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param bufferSize N x Task backlog size, risk-off more memory for lower producer latency
 	 * @param waitStrategy a {@link WaitStrategy} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, WaitStrategy waitStrategy) {
 		return single(name, bufferSize, null, null, false, () -> waitStrategy);
@@ -646,7 +622,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param errorC Unsignalled exceptions consumer, extremely fatal situtions if invoked
 	 * @param shutdownC Callback signalled when a {@link Subscriber} thread terminates
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize, Consumer<Throwable> errorC,
 			Runnable shutdownC) {
@@ -669,7 +645,7 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param autoShutdown true if this {@link Computations} should automatically shutdown its resources
 	 * @param waitStrategy a {@link WaitStrategy} {@link Supplier} to trade-off cpu use for task consumer latency
 	 *
-	 * @return a new {@link Computations} tuned for low latency tasks
+	 * @return a new {@link Scheduler} tuned for low latency tasks
 	 */
 	public static Scheduler single(String name, int bufferSize,
 			Consumer<Throwable> errorC,
@@ -678,21 +654,21 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	}
 
 	/**
-	 * Creates an arbitrary single {@link Computations} wrapper around a given {@link Processor} of {@link Runnable}.
+	 * Creates an arbitrary single {@link Scheduler} wrapper around a given {@link Processor} of {@link Runnable}.
 	 * Provides for reference counting when the containing {@link Computations} is supplied as a factory.
 	 * When reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
 	 * It will be subscribed once.
 	 *
 	 * @param processor the {@link Processor} to decorate
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
-	public static Scheduler single(Processor<Runnable, Runnable> processor) {
+	public static Scheduler single(EventLoopProcessor<Runnable> processor) {
 		return single(processor, false);
 	}
 
 	/**
-	 * Creates an arbitrary single {@link Computations} wrapper around a given {@link Processor} of {@link Runnable}.
+	 * Creates an arbitrary single {@link Scheduler} wrapper around a given {@link Processor} of {@link Runnable}.
 	 * Provides for reference counting when the containing {@link Computations} is supplied as a factory.
 	 * If autoShutdown is given true and reference count returns to 0 it will automatically createWorker {@link Processor#onComplete()}.
 	 * <p>
@@ -701,97 +677,13 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 	 * @param processor the {@link Processor} to decorate
 	 * @param autoShutdown true to automatically shutdown the inner worker
 	 *
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
-	public static Scheduler single(final Processor<Runnable, Runnable> processor, boolean autoShutdown) {
+	public static Scheduler single(final EventLoopProcessor<Runnable> processor,
+			boolean autoShutdown) {
 		return create(() -> processor, 1, autoShutdown);
 	}
-
-	/**
-	 * Return a worker reference to this {@link Computations}, incrementing use count by 1
-	 *
-	 * @return a new {@link reactor.core.scheduler.Scheduler.Worker} reference
-	 */
-	@Override
-	public Worker createWorker() {
-		references.incrementAndGet();
-		return next();
-	}
-
-	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(workerPool)
-		             .iterator();
-	}
-
-	@Override
-	public long downstreamCount() {
-		return workerPool.length;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (!(processorWorker.processor instanceof FluxProcessor && ((FluxProcessor) processorWorker.processor).isTerminated())) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	@Override
-	public boolean isStarted() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (!(processorWorker.processor instanceof FluxProcessor && ((FluxProcessor) processorWorker.processor).isStarted())) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	@Override
-	public Cancellation schedule(Runnable task) {
-		next().processor.onNext(task);
-		return NOOP_CANCEL;
-	}
-
-	@Override
-	public void shutdown() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (processorWorker.processor instanceof EventLoopProcessor) {
-				((EventLoopProcessor) processorWorker.processor).shutdown();
-			}
-			else {
-				processorWorker.processor.onComplete();
-			}
-		}
-	}
-
-	ProcessorWorker next() {
-		int size = workerPool.length;
-		if (size == 1) {
-			return workerPool[0];
-		}
-
-		int index;
-		for (; ; ) {
-			index = this.index;
-			if (index == Integer.MAX_VALUE) {
-				if (INDEX.compareAndSet(this, Integer.MAX_VALUE, 0)) {
-					index = 0;
-					break;
-				}
-				continue;
-			}
-
-			if (INDEX.compareAndSet(this, index, index + 1)) {
-				break;
-			}
-		}
-
-		return workerPool[index % size];
-	}
-
+	
 	/* INTERNAL */
 
 	static final Supplier<? extends WaitStrategy> DEFAULT_WAIT_STRATEGY =
@@ -799,221 +691,4 @@ public final class Computations implements Scheduler, MultiProducer, Completable
 
 	static final Supplier<? extends WaitStrategy> SINGLE_WAIT_STRATEGY =
 			() -> WaitStrategy.phasedOffLiteLock(500, 50, TimeUnit.MILLISECONDS);
-
-	static final AtomicIntegerFieldUpdater<Computations> INDEX =
-			AtomicIntegerFieldUpdater.newUpdater(Computations.class, "index");
-
-	final ProcessorWorker[] workerPool;
-	final AtomicInteger references = new AtomicInteger(0);
-
-	volatile int index = 0;
-
-	@SuppressWarnings("unchecked")
-	protected Computations(Supplier<? extends Processor<Runnable, Runnable>> processorSupplier,
-			int parallelSchedulers,
-			boolean autoShutdown,
-			Consumer<Throwable> uncaughtExceptionHandler,
-			Runnable shutdownHandler) {
-
-		if (parallelSchedulers < 1) {
-			throw new IllegalArgumentException("Cannot create group pools from null or negative parallel argument");
-		}
-
-		this.workerPool = new ProcessorWorker[parallelSchedulers];
-
-		for (int i = 0; i < parallelSchedulers; i++) {
-			workerPool[i] = new ProcessorWorker(processorSupplier.get(),
-					autoShutdown,
-					uncaughtExceptionHandler,
-					shutdownHandler,
-					references);
-			workerPool[i].start();
-		}
-	}
-
-	final static Cancellation NOOP_CANCEL = () -> {
-	};
-
-	final static class ProcessorWorker implements Subscriber<Runnable>, Loopback, Worker, Introspectable {
-
-		final Consumer<Throwable>           uncaughtExceptionHandler;
-		final Runnable                      shutdownHandler;
-		final Processor<Runnable, Runnable> processor;
-		final boolean                       autoShutdown;
-		final AtomicInteger                 references;
-
-		LinkedArrayNode head;
-		LinkedArrayNode tail;
-		boolean         running;
-
-		Thread thread;
-
-		ProcessorWorker(final Processor<Runnable, Runnable> processor,
-				boolean autoShutdown,
-				Consumer<Throwable> uncaughtExceptionHandler,
-				Runnable shutdownHandler,
-				AtomicInteger references) {
-			this.processor = processor;
-			this.autoShutdown = autoShutdown;
-			this.uncaughtExceptionHandler = uncaughtExceptionHandler;
-			this.shutdownHandler = shutdownHandler;
-			this.references = references;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			thread = Thread.currentThread();
-			s.request(Long.MAX_VALUE);
-		}
-
-		@Override
-		public void onNext(Runnable task) {
-			try {
-				running = true;
-				task.run();
-
-				//tail recurse
-				LinkedArrayNode n = head;
-
-				while ( n != null ){
-					for(int i = 0; i < n.count; i++){
-						n.array[i].run();
-					}
-					n = n.next;
-				}
-
-				head = null;
-				tail = null;
-
-				running = false;
-			}
-			catch (Exceptions.CancelException ce) {
-				//IGNORE
-			}
-			catch (Throwable t) {
-				routeError(t);
-			}
-		}
-
-		@Override
-		public Cancellation schedule(Runnable task) {
-			try {
-				if (Thread.currentThread() == thread && running) {
-					tail(task);
-					return NOOP_CANCEL;
-				}
-
-				processor.onNext(task);
-				return NOOP_CANCEL;
-			}
-			catch (Exceptions.CancelException ce) {
-				//IGNORE
-			}
-			catch (Throwable t) {
-				if (processor != null) {
-					processor.onError(t);
-				}
-				else if (uncaughtExceptionHandler != null) {
-					uncaughtExceptionHandler.accept(t);
-				}
-			} return REJECTED;
-		}
-
-		@Override
-		public void shutdown() {
-			if (references.decrementAndGet() <= 0 && autoShutdown) {
-				processor.onComplete();
-			}
-		}
-
-		void start() {
-			processor.subscribe(this);
-		}
-
-		void tail(Runnable task) {
-			LinkedArrayNode t = tail;
-
-			if (t == null) {
-				t = new LinkedArrayNode(task);
-
-				head = t;
-				tail = t;
-			}
-			else {
-				if (t.count == LinkedArrayNode.DEFAULT_CAPACITY) {
-					LinkedArrayNode n = new LinkedArrayNode(task);
-
-					t.next = n;
-					tail = n;
-				}
-				else {
-					t.array[t.count++] = task;
-				}
-			}
-		}
-
-		void routeError(Throwable t) {
-			if (uncaughtExceptionHandler != null) {
-				uncaughtExceptionHandler.accept(t);
-			}
-			else {
-				log.error("Unrouted exception", t);
-			}
-		}
-
-		@Override
-		public Object connectedInput() {
-			return processor;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return processor;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			thread = null;
-			if (uncaughtExceptionHandler != null) {
-				uncaughtExceptionHandler.accept(t);
-			}
-			Exceptions.throwIfFatal(t);
-
-			//TODO support resubscribe ?
-			throw new UnsupportedOperationException("No error handler provided for this Computations", t);
-		}
-
-		@Override
-		public void onComplete() {
-			thread = null;
-			if (shutdownHandler != null) {
-				shutdownHandler.run();
-			}
-		}
-	}
-
-	/**
-	 * Node in a linked array list that is only appended.
-	 */
-	static final class LinkedArrayNode {
-
-		static final int DEFAULT_CAPACITY = 16;
-
-		final Runnable[] array;
-		int count;
-
-		LinkedArrayNode next;
-
-		@SuppressWarnings("unchecked")
-		LinkedArrayNode(Runnable value) {
-			array = new Runnable[DEFAULT_CAPACITY];
-			array[0] = value;
-			count = 1;
-		}
-	}
 }

@@ -22,7 +22,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.Timer;
 import reactor.core.util.PlatformDependent;
 
 /**
@@ -34,11 +33,6 @@ import reactor.core.util.PlatformDependent;
 final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 	final TimedScheduler timer;
-
-	public FluxWindowTimeOrSize(Publisher<T> source, Timer timer, int backlog) {
-		super(source, backlog, true, true, true);
-		this.timer = timer;
-	}
 
 	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, TimedScheduler timer) {
 		super(source, backlog, true, true, true, timespan, timer);
