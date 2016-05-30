@@ -416,8 +416,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * @param completableFuture {@link CompletableFuture} that will produce the value
 	 * @param <T> type of the expected value
-	 *
 	 * @return A {@link Mono}.
+	 * @deprecated Use {@link #fromFuture(CompletableFuture)} instead.
 	 */
 	public static <T> Mono<T> fromCompletableFuture(CompletableFuture<? extends T> completableFuture) {
 		return new MonoCompletableFuture<>(completableFuture);
@@ -425,19 +425,17 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 
 	/**
-	 * Build a {@link Mono} that will only emit the result of the future and then complete.
-	 * The future will be polled for an unbounded amount of time on {@code subscribe()}.
+	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
-	 *
-	 * @param future the future to poll value from
-	 * @param <T> the value type of the Future and the retuned Mono instance
-	 * @return a new {@link Mono}
-	 * @deprecated Try to avoid using this method because it invokes {@link Future#get()} blocking method. Try to use {@link #fromCompletableFuture(CompletableFuture)} or {@link MonoProcessor#create()} + callback when possible.
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcompletablefuture.png" alt="">
+	 * <p>
+	 * @param future {@link CompletableFuture} that will produce the value
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<T> fromFuture(Future<? extends T> future) {
-		return new MonoFuture<>(future);
+	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
+		return new MonoCompletableFuture<>(future);
 	}
 
 	/**
@@ -451,6 +449,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param future the future to poll value from
 	 * @param timeout the timeout in milliseconds
 	 * @return a new {@link Mono}
+	 * @deprecated Use {@link #fromFuture(CompletableFuture)} or {@link MonoProcessor#create()} + callback instead.
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future, long timeout) {
 		return new MonoFuture<>(future, timeout);
@@ -467,6 +466,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param duration the duration to wait for the result of the future before failing with onError
 	 * @param <T> the value type of the Future and the retuned Mono instance
 	 * @return a new {@link Mono}
+	 * @deprecated Use {@link #fromFuture(CompletableFuture)} or {@link MonoProcessor#create()} + callback instead.
 	 */
 	public static <T> Mono<T> fromFuture(Future<? extends T> future, Duration duration) {
 		return fromFuture(future, duration.toMillis());
@@ -2776,8 +2776,23 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 *
 	 * @return a {@link CompletableFuture}
+	 * @deprecated Use {@link #toFuture()} instead.
 	 */
 	public final CompletableFuture<T> toCompletableFuture() {
+		return toFuture();
+	}
+
+	/**
+	 * Transform this {@link Mono} into a {@link CompletableFuture} completing on onNext or onComplete and failing on
+	 * onError.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tocompletablefuture.png" alt="">
+	 * <p>
+	 *
+	 * @return a {@link CompletableFuture}
+	 */
+	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
