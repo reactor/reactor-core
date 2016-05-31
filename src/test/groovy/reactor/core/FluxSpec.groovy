@@ -366,7 +366,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking for existence of values > 2 and the result of the check is collected'
-			def tap = s.exists { it > 2 }.log().get()
+			def tap = s.any { it > 2 }.log().get()
 
 		then:
 			'collected should be true'
@@ -375,7 +375,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking for existence of values > 5 and the result of the check is collected'
-			tap = s.exists { it > 5 }.get()
+			tap = s.any { it > 5 }.get()
 
 		then:
 			'collected should be false'
@@ -384,7 +384,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking always true predicate on empty flux and collecting the result'
-			tap = Flux.empty().exists { true }.get();
+			tap = Flux.empty().any { true }.get();
 
 		then:
 			'collected should be false'

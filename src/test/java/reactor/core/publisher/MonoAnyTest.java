@@ -20,23 +20,23 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.test.TestSubscriber;
 
-public class MonoExistTest {
+public class MonoAnyTest {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new MonoExist<>(null, v -> true);
+		new MonoAny<>(null, v -> true);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void predicateNull() {
-		new MonoExist<>(null, null);
+		new MonoAny<>(null, null);
 	}
 
 	@Test
 	public void normal() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>();
 
-		Flux.range(1, 10).exists(v -> true).subscribe(ts);
+		Flux.range(1, 10).any(v -> true).subscribe(ts);
 
 		ts.assertValues(true)
 		  .assertComplete()
@@ -47,7 +47,7 @@ public class MonoExistTest {
 	public void normalBackpressured() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>(0);
 
-		Flux.range(1, 10).exists(v -> true).subscribe(ts);
+		Flux.range(1, 10).any(v -> true).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -64,7 +64,7 @@ public class MonoExistTest {
 	public void none() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>();
 
-		Flux.range(1, 10).exists(v -> false).subscribe(ts);
+		Flux.range(1, 10).any(v -> false).subscribe(ts);
 
 		ts.assertValues(false)
 		  .assertComplete()
@@ -75,7 +75,7 @@ public class MonoExistTest {
 	public void noneBackpressured() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>(0);
 
-		Flux.range(1, 10).exists(v -> false).subscribe(ts);
+		Flux.range(1, 10).any(v -> false).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -92,7 +92,7 @@ public class MonoExistTest {
 	public void someMatch() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>();
 
-		Flux.range(1, 10).exists(v -> v < 6).subscribe(ts);
+		Flux.range(1, 10).any(v -> v < 6).subscribe(ts);
 
 		ts.assertValues(true)
 		  .assertComplete()
@@ -103,7 +103,7 @@ public class MonoExistTest {
 	public void someMatchBackpressured() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>(0);
 
-		Flux.range(1, 10).exists(v -> v < 6).subscribe(ts);
+		Flux.range(1, 10).any(v -> v < 6).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -120,7 +120,7 @@ public class MonoExistTest {
 	public void predicateThrows() {
 		TestSubscriber<Boolean> ts = new TestSubscriber<>();
 
-		Flux.range(1, 10).exists(v -> {
+		Flux.range(1, 10).any(v -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 

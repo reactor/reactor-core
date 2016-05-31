@@ -41,11 +41,11 @@ import reactor.core.util.Exceptions;
  * {@see https://github.com/reactor/reactive-streams-commons}
  * @since 2.5
  */
-final class MonoExist<T> extends MonoSource<T, Boolean> implements Fuseable {
+final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
-	public MonoExist(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	public MonoAny(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}

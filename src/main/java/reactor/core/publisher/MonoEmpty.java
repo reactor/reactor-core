@@ -24,7 +24,7 @@ import reactor.core.util.EmptySubscription;
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
  * <p>
- * This Publisher is effectively stateless and only a single instance exists.
+ * This Publisher is effectively stateless and only a single instance any.
  * Use the {@link #instance()} method to obtain a properly type-parametrized view of it.
  */
 

@@ -1442,6 +1442,26 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Emit a single boolean true if any of the values of this {@link Flux} sequence match
+	 * the predicate.
+	 * <p>
+	 * The implementation uses short-circuit logic and completes with true if
+	 * the predicate matches a value.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/exists.png" alt="">
+	 *
+	 * @param predicate predicate tested upon values
+	 *
+	 * @return a new {@link Flux} with <code>true</code> if any value satisfies a predicate and <code>false</code>
+	 * otherwise
+	 *
+	 */
+	public final Mono<Boolean> any(Predicate<? super T> predicate) {
+		return new MonoAny<>(this, predicate);
+	}
+
+	/**
 	 * Accumulate this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
 	 * onComplete.
 	 *
@@ -2781,26 +2801,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Emit a single boolean true if any of the values of this {@link Flux} sequence match
-	 * the predicate.
-	 * <p>
-	 * The implementation uses short-circuit logic and completes with true if
-	 * the predicate matches a value.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/exists.png" alt="">
-	 *
-	 * @param predicate predicate tested upon values
-	 *
-	 * @return a new {@link Flux} with <code>true</code> if any value satisfies a predicate and <code>false</code>
-	 * otherwise
-	 *
-	 */
-	public final Mono<Boolean> exists(Predicate<? super T> predicate) {
-		return new MonoExist<>(this, predicate);
-	}
-
-	/**
 	 * Evaluate each accepted value against the given {@link Predicate}. If the predicate test succeeds, the value is
 	 * passed into the new {@link Flux}. If the predicate test fails, the value is ignored and a request of 1 is
 	 * emitted.
@@ -3079,7 +3079,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Mono<Boolean> hasElement(T value) {
-		return exists(t -> Objects.equals(value, t));
+		return any(t -> Objects.equals(value, t));
 	}
 
 	/**

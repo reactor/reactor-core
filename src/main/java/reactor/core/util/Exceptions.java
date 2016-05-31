@@ -286,7 +286,7 @@ public enum Exceptions {
 		public static final AlertException INSTANCE = new AlertException();
 
 		/**
-		 * Private constructor so only a single instance exists.
+		 * Private constructor so only a single instance any.
 		 */
 		private AlertException() {
 		}
