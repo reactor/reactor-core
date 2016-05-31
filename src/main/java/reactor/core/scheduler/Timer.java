@@ -39,8 +39,6 @@ import reactor.core.util.*;
  */
 public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
-	public static final int DEFAULT_WHEEL_SIZE = 512;
-
 	/**
 	 * Create a new {@link Timer} using the default resolution (50MS) and backlog size (64). All times
 	 * will
