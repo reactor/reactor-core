@@ -35,6 +35,7 @@ import java.time.Duration
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
+import java.util.function.Predicate
 import java.util.function.Supplier
 
 import static reactor.core.publisher.Flux.error
@@ -362,11 +363,11 @@ class FluxSpec extends Specification {
 	def 'A Flux can check if there is a value satisfying a predicate'() {
 		given:
 			'a composable with values 1 to 5'
-			Flux s = Flux.fromIterable([1, 2, 3, 4, 5])
+			def s = Flux.fromIterable([1, 2, 3, 4, 5])
 
 		when:
 			'checking for existence of values > 2 and the result of the check is collected'
-			def tap = s.any { it > 2 }.log().get()
+			def tap = s.any({ it > 2 } as Predicate<Integer>).log().get()
 
 		then:
 			'collected should be true'
@@ -375,7 +376,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking for existence of values > 5 and the result of the check is collected'
-			tap = s.any { it > 5 }.get()
+			tap = s.any ({ it > 5 } as Predicate<Integer>).get()
 
 		then:
 			'collected should be false'
@@ -384,7 +385,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking always true predicate on empty flux and collecting the result'
-			tap = Flux.empty().any { true }.get();
+			tap = Flux.empty().any ({ true } as Predicate).get();
 
 		then:
 			'collected should be false'
