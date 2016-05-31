@@ -41,18 +41,27 @@ import reactor.core.util.ReactiveStateUtils;
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
  * asynchronous cancellation and requesting.
- * <p>
- * You can extend this class but only the onNext, onError and onComplete can be overridden.
- * <p>
+ *
+ * <p> Creating a new instance with {@code new TestSubscriber<>()} creates a subscriber
+ * that automatically requests an unbounded number of values. If you want to control more
+ * finely how data are requested, you can use for example {@code new TestSubscriber<>(0)}
+ * and then call {@link #request(long)} when you need. Subscription can be performed using
+ * either {@link #bindTo(Publisher)} or {@link Publisher#subscribe(Subscriber)}.
+ * If you are testing asynchronous publishers, don't forget to use one of the
+ * {@code await*()} methods to wait for the data to assert.
+ *
+ * <p> You can extend this class but only the onNext, onError and onComplete can be overridden.
  * You can call {@link #request(long)} and {@link #cancel()} from any thread or from within
  * the overridable methods but you should avoid calling the assertXXX methods asynchronously.
  *
  * <p>Usage:
  * <pre>
  * {@code
+ * Publisher<String> publisher = ...
  * TestSubscriber<String> ts = new TestSubscriber<>();
- * Publisher<String> publisher = new FooPublisher<>();
- * ts.bindTo(publisher).assertValues("ABC", "DEF").assertComplete();
+ * ts.bindTo(publisher)
+ *   .await()
+ *   .assertValues("ABC", "DEF");
  * }
  * </pre>
  *
