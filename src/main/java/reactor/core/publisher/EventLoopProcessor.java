@@ -72,7 +72,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param autoShutdown true if this {@link Scheduler} should automatically shutdown
 	 * its resources
 	 *
-	 * @return a new {@link Computations}
+	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler asScheduler(Supplier<? extends EventLoopProcessor<Runnable>> processors,
 			int paralellism,
@@ -647,7 +647,7 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 
 			//TODO support resubscribe ?
 			throw new UnsupportedOperationException(
-					"No error handler provided for this Computations",
+					"No error handler provided for this EventLoop worker",
 					t);
 		}
 

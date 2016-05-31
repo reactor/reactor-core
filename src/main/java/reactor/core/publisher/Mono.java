@@ -2168,8 +2168,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Function} worker like {@link Computations}.
-	 *
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon1.png" alt="">
 	 * <p> <p>
