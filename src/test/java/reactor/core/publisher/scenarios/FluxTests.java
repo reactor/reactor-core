@@ -193,7 +193,7 @@ public class FluxTests extends AbstractReactorTest {
 	public void testStreamBatchesResults() {
 		Flux<String> stream = Flux.just("1", "2", "3", "4", "5");
 		Mono<List<Integer>> s = stream.map(STRING_2_INTEGER)
-		                                .toList();
+		                                .asList();
 
 		final AtomicInteger batchCount = new AtomicInteger();
 		final AtomicInteger count = new AtomicInteger();
@@ -462,7 +462,7 @@ public class FluxTests extends AbstractReactorTest {
 		                          .flatMap(self -> self.groupBy(w -> w.t1)
 		                                           .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c))))
 		                          .log("elapsed")
-		                          .toSortedList((a, b) -> a.t1.compareTo(b.t1))
+		                          .asSortedList((a, b) -> a.t1.compareTo(b.t1))
 		                          .flatMap(Flux::fromIterable)
 		                          .reduce(-1L, (acc, next) -> acc > 0l ? ((next.t1 + acc) / 2) : next.t1)
 		                          .log("reduced-elapsed")
@@ -496,7 +496,7 @@ public class FluxTests extends AbstractReactorTest {
 				                                     keys.get(7) == KeyEvent.VK_RIGHT &&
 				                                     keys.get(8) == KeyEvent.VK_B &&
 				                                     keys.get(9) == KeyEvent.VK_A)
-		                                     .toList();
+		                                     .asList();
 
 		keyboardStream.onNext(KeyEvent.VK_UP);
 		keyboardStream.onNext(KeyEvent.VK_UP);
@@ -1386,7 +1386,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final Mono<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
 		                                                 .log("resultStream")
-		                                                 .toList()
+		                                                 .asList()
 		                                                 .doOnTerminate((v, e) -> doneSemaphore.release())
 		                                                 .subscribe();
 

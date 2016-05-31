@@ -69,7 +69,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 		                                      .useCapacity(batchSize)
 		                                      .log()
 		                                      .take(numOfItems + 1)
-		                                      .toList();
+		                                      .asList();
 
 		c.get();
 	}

@@ -101,42 +101,19 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
     static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 
 	/**
-	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 * <p> <p>
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The source type of the data sequence
-	 *
-	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
+	 * @deprecated use {@link #firstEmitting}
 	 */
-	@SuppressWarnings({"unchecked", "varargs"})
-	@SafeVarargs
+	@Deprecated
 	public static <I> Flux<I> amb(Publisher<? extends I>... sources) {
-		return new FluxAmb<>(sources);
+		return firstEmitting(sources);
 	}
 
 	/**
-	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 * <p> <p>
-	 *
-	 * @param sources The competing source publishers
-	 * @param <I> The source type of the data sequence
-	 *
-	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
+	 * @deprecated use {@link #firstEmitting}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <I> Flux<I> amb(Iterable<? extends Publisher<? extends I>> sources) {
-		if (sources == null) {
-			return empty();
-		}
-
-		return new FluxAmb<>(sources);
+		return firstEmitting(sources);
 	}
 
 	/**
@@ -558,6 +535,45 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
 		return new FluxError<>(throwable, whenRequested);
+	}
+
+	/**
+	 * Select the fastest source who emitted first onNext or onComplete or onError
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <p> <p>
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
+	 */
+	@SuppressWarnings({"unchecked", "varargs"})
+	@SafeVarargs
+	public static <I> Flux<I> firstEmitting(Publisher<? extends I>... sources) {
+		return new FluxFirstEmitting<>(sources);
+	}
+
+	/**
+	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <p> <p>
+	 *
+	 * @param sources The competing source publishers
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
+	 */
+	@SuppressWarnings("unchecked")
+	public static <I> Flux<I> firstEmitting(Iterable<? extends Publisher<? extends I>> sources) {
+		if (sources == null) {
+			return empty();
+		}
+
+		return new FluxFirstEmitting<>(sources);
 	}
 
 	/**
@@ -1426,6 +1442,226 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Accumulate this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
+	 *
+	 * @return a {@link Mono} of all values from this {@link Flux}
+	 *
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final Mono<List<T>> asList() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+				T v = scalarCallable.call();
+				if (v == null) {
+					return new MonoSupplier<>(LIST_SUPPLIER);
+				}
+				return Mono.just(v).map(u -> {
+					List<T> list = (List<T>)LIST_SUPPLIER.get();
+					list.add(u);
+					return list;
+				});
+
+			}
+			return new MonoCallable<>((Callable<T>)this).map(u -> {
+				List<T> list = (List<T>)LIST_SUPPLIER.get();
+				list.add(u);
+				return list;
+			});
+		}
+		return new MonoBufferAll<>(this, LIST_SUPPLIER);
+	}
+
+
+	/**
+	 * Accumulate and sort this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
+	 *
+	 * @return a {@link Mono} of all sorted values from this {@link Flux}
+	 *
+	 */
+	public final Mono<List<T>> asSortedList() {
+		return asSortedList(null);
+	}
+
+	/**
+	 * Accumulate and sort using the given comparator this
+	 * {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
+	 * onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
+	 *
+	 * @param comparator a {@link Comparator} to sort the items of this sequences
+	 *
+	 * @return a {@link Mono} of all sorted values from this {@link Flux}
+	 *
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public final Mono<List<T>> asSortedList(Comparator<? super T> comparator) {
+		return asList().map(list -> {
+			// Note: this assumes the list emitted by buffer() is mutable
+			if (comparator != null) {
+				Collections.sort(list, comparator);
+			} else {
+				Collections.sort((List<Comparable>)list);
+			}
+			return list;
+		});
+	}
+
+	/**
+	 * Convert all this
+	 * {@link Flux} sequence into a hashed map where the key is extracted by the given {@link Function} and the
+	 * value will be the most recent emitted item for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param <K> the key extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final <K> Mono<Map<K, T>> asMap(Function<? super T, ? extends K> keyExtractor) {
+		return asMap(keyExtractor, identityFunction());
+	}
+
+	/**
+	 * Convert all this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * the most recent extracted item for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 */
+	public final <K, V> Mono<Map<K, V>> asMap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
+		return asMap(keyExtractor, valueExtractor, () -> new HashMap<>());
+	}
+
+	/**
+	 * Convert all this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
+	 * be the most recent extracted item for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
+	 *
+	 */
+	public final <K, V> Mono<Map<K, V>> asMap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
+			Supplier<Map<K, V>> mapSupplier) {
+		Objects.requireNonNull(keyExtractor, "Key extractor is null");
+		Objects.requireNonNull(valueExtractor, "Value extractor is null");
+		Objects.requireNonNull(mapSupplier, "Map supplier is null");
+		return collect(mapSupplier, (m, d) -> m.put(keyExtractor.apply(d), valueExtractor.apply(d)));
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * all the emitted item for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 */
+	@SuppressWarnings("unchecked")
+	public final <K> Mono<Map<K, Collection<T>>> asMultimap(Function<? super T, ? extends K> keyExtractor) {
+		return asMultimap(keyExtractor, identityFunction());
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
+	 * all the extracted items for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 */
+	public final <K, V> Mono<Map<K, Collection<V>>> asMultimap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
+		return asMultimap(keyExtractor, valueExtractor, () -> new HashMap<>());
+	}
+
+	/**
+	 * Convert this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
+	 * be all the extracted items for this key.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 *
+	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
+	 * @param valueExtractor a {@link Function} to select the data to store from each item
+	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
+	 *
+	 * @param <K> the key extracted from each value of this Flux instance
+	 * @param <V> the value extracted from each value of this Flux instance
+	 *
+	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
+	 *
+	 */
+	public final <K, V> Mono<Map<K, Collection<V>>> asMultimap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
+			Supplier<Map<K, Collection<V>>> mapSupplier) {
+		Objects.requireNonNull(keyExtractor, "Key extractor is null");
+		Objects.requireNonNull(valueExtractor, "Value extractor is null");
+		Objects.requireNonNull(mapSupplier, "Map supplier is null");
+		return collect(mapSupplier, (m, d) -> {
+			K key = keyExtractor.apply(d);
+			Collection<V> values = m.get(key);
+			if(values == null){
+				values = new ArrayList<>();
+				m.put(key, values);
+			}
+			values.add(valueExtractor.apply(d));
+		});
+	}
+
+	/**
 	 *
 	 * Emit a single boolean true if all values of this sequence match
 	 * the {@link Predicate}.
@@ -1499,27 +1735,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return (Flux<V>)concat(ignoreElements(), defer(afterSupplier));
 	}
 
-
 	/**
-	 * Emit from the fastest first sequence between this publisher and the given publisher
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
-	 * <p>
-	 * @param other the {@link Publisher} to race with
-	 *
-	 * @return the fastest sequence
+	 * @deprecated use #firstEmitingWith
 	 */
+	@Deprecated
 	public final Flux<T> ambWith(Publisher<? extends T> other) {
-		if (this instanceof FluxAmb) {
-			FluxAmb<T> publisherAmb = (FluxAmb<T>) this;
-			
-			FluxAmb<T> result = publisherAmb.ambAdditionalSource(other);
-			if (result != null) {
-				return result;
-			}
-		}
-		return amb(this, other);
+		return firstEmittingWith(other);
 	}
 
 	/**
@@ -2598,6 +2819,27 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new FluxFilter<>(this, p);
 	}
 
+	/**
+	 * Emit from the fastest first sequence between this publisher and the given publisher
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <p>
+	 * @param other the {@link Publisher} to race with
+	 *
+	 * @return the fastest sequence
+	 */
+	public final Flux<T> firstEmittingWith(Publisher<? extends T> other) {
+		if (this instanceof FluxFirstEmitting) {
+			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
+
+			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
+		return firstEmitting(this, other);
+	}
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
@@ -4965,223 +5207,29 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return new BlockingIterable<>(this, batchSize, provider);
 	}
 
+
 	/**
-	 * Accumulate this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
-	 * onComplete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
-	 *
-	 * @return a {@link Mono} of all values from this {@link Flux}
-	 *
-	 *
+	 * @deprecated use #asList
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public final Mono<List<T>> toList() {
-        if (this instanceof Callable) {
-            if (this instanceof Fuseable.ScalarCallable) {
-                Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
-
-                T v = scalarCallable.call();
-                if (v == null) {
-                    return new MonoSupplier<>(LIST_SUPPLIER);
-                }
-                return Mono.just(v).map(u -> {
-                    List<T> list = (List<T>)LIST_SUPPLIER.get();
-                    list.add(u);
-                    return list;
-                });
-
-            }
-            return new MonoCallable<>((Callable<T>)this).map(u -> {
-                List<T> list = (List<T>)LIST_SUPPLIER.get();
-                list.add(u);
-                return list;
-            });
-        }
-        return new MonoBufferAll<>(this, LIST_SUPPLIER);
+		return asList();
 	}
 
 	/**
-	 * Accumulate and sort this {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
-	 * onComplete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
-	 *
-	 * @return a {@link Mono} of all sorted values from this {@link Flux}
-	 *
+	 * @deprecated use {@link #asSortedList()}
 	 */
+	@Deprecated
 	public final Mono<List<T>> toSortedList() {
-		return toSortedList(null);
+		return asSortedList(null);
 	}
 
 	/**
-	 * Accumulate and sort using the given comparator this
-	 * {@link Flux} sequence in a {@link List} that is emitted to the returned {@link Mono} on
-	 * onComplete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
-	 *
-	 * @param comparator a {@link Comparator} to sort the items of this sequences
-	 *
-	 * @return a {@link Mono} of all sorted values from this {@link Flux}
-	 *
+	 * @deprecated use {@link #asSortedList(Comparator)}
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Deprecated
 	public final Mono<List<T>> toSortedList(Comparator<? super T> comparator) {
-		return toList().map(list -> {
-		    // Note: this assumes the list emitted by buffer() is mutable
-		    if (comparator != null) {
-		        Collections.sort(list, comparator);
-		    } else {
-		        Collections.sort((List<Comparable>)list);
-		    }
-		    return list;
-		});
-	}
-
-	/**
-	 * Convert all this
-	 * {@link Flux} sequence into a hashed map where the key is extracted by the given {@link Function} and the
-	 * value will be the most recent emitted item for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 * @param <K> the key extracted from each value of this Flux instance
-	 * 
-	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
-	 *
-	 */
-	@SuppressWarnings("unchecked")
-	public final <K> Mono<Map<K, T>> toMap(Function<? super T, ? extends K> keyExtractor) {
-		return toMap(keyExtractor, identityFunction());
-	}
-
-	/**
-	 * Convert all this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
-	 * the most recent extracted item for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 * @param valueExtractor a {@link Function} to select the data to store from each item
-	 * 
-	 * @param <K> the key extracted from each value of this Flux instance
-	 * @param <V> the value extracted from each value of this Flux instance
-	 *
-	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
-	 *
-	 */
-	public final <K, V> Mono<Map<K, V>> toMap(Function<? super T, ? extends K> keyExtractor,
-			Function<? super T, ? extends V> valueExtractor) {
-		return toMap(keyExtractor, valueExtractor, () -> new HashMap<>());
-	}
-
-	/**
-	 * Convert all this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
-	 * be the most recent extracted item for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 * @param valueExtractor a {@link Function} to select the data to store from each item
-	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
-	 *
-	 * @param <K> the key extracted from each value of this Flux instance
-	 * @param <V> the value extracted from each value of this Flux instance
-	 *
-	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
-	 *
-	 */
-	public final <K, V> Mono<Map<K, V>> toMap(
-			final Function<? super T, ? extends K> keyExtractor,
-			final Function<? super T, ? extends V> valueExtractor,
-			Supplier<Map<K, V>> mapSupplier) {
-		Objects.requireNonNull(keyExtractor, "Key extractor is null");
-		Objects.requireNonNull(valueExtractor, "Value extractor is null");
-		Objects.requireNonNull(mapSupplier, "Map supplier is null");
-		return collect(mapSupplier, (m, d) -> m.put(keyExtractor.apply(d), valueExtractor.apply(d)));
-	}
-
-	/**
-	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
-	 * all the emitted item for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 *
-	 * @param <K> the key extracted from each value of this Flux instance
-	 *
-	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
-	 *
-	 */
-	@SuppressWarnings("unchecked")
-	public final <K> Mono<Map<K, Collection<T>>> toMultimap(Function<? super T, ? extends K> keyExtractor) {
-		return toMultimap(keyExtractor, identityFunction());
-	}
-
-	/**
-	 * Convert this {@link Flux} sequence into a hashed map where the key is extracted by the given function and the value will be
-	 * all the extracted items for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 * @param valueExtractor a {@link Function} to select the data to store from each item
-	 *
-	 * @param <K> the key extracted from each value of this Flux instance
-	 * @param <V> the value extracted from each value of this Flux instance
-	 *
-	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
-	 *
-	 */
-	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(Function<? super T, ? extends K> keyExtractor,
-			Function<? super T, ? extends V> valueExtractor) {
-		return toMultimap(keyExtractor, valueExtractor, () -> new HashMap<>());
-	}
-
-	/**
-	 * Convert this {@link Flux} sequence into a supplied map where the key is extracted by the given function and the value will
-	 * be all the extracted items for this key.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
-	 *
-	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
-	 * @param valueExtractor a {@link Function} to select the data to store from each item
-	 * @param mapSupplier a {@link Map} factory called for each {@link Subscriber}
-	 *
-	 * @param <K> the key extracted from each value of this Flux instance
-	 * @param <V> the value extracted from each value of this Flux instance
-	 *
-	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
-	 *
-	 */
-	public final <K, V> Mono<Map<K, Collection<V>>> toMultimap(
-			final Function<? super T, ? extends K> keyExtractor,
-			final Function<? super T, ? extends V> valueExtractor,
-			Supplier<Map<K, Collection<V>>> mapSupplier) {
-		Objects.requireNonNull(keyExtractor, "Key extractor is null");
-		Objects.requireNonNull(valueExtractor, "Value extractor is null");
-		Objects.requireNonNull(mapSupplier, "Map supplier is null");
-		return collect(mapSupplier, (m, d) -> {
-			K key = keyExtractor.apply(d);
-			Collection<V> values = m.get(key);
-			if(values == null){
-				values = new ArrayList<>();
-				m.put(key, values);
-			}
-			values.add(valueExtractor.apply(d));
-		});
+		return asSortedList(comparator);
 	}
 
 	/**
@@ -5193,7 +5241,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> toStream() {
-		return stream(getPrefetchOrDefault(Integer.MAX_VALUE));
+		return toStream(getPrefetchOrDefault(Integer
+				.MAX_VALUE));
 	}
 
 	/**

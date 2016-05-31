@@ -204,8 +204,8 @@ public class CombinationTests {
 		int elements = 40;
 		CountDownLatch latch = new CountDownLatch(elements / 2 + 1);
 
-		Publisher<SensorData> p = Flux.amb(sensorOdd(), sensorEven())
-		                              .log("amb");
+		Publisher<SensorData> p = Flux.firstEmitting(sensorOdd(), sensorEven())
+		                              .log("firstEmitting");
 
 		System.out.println(ReactiveStateUtils.scan(p)
 		                                     .toString());

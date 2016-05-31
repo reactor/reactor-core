@@ -124,7 +124,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> any(Iterable<? extends Mono<? extends T>> monos) {
-		return MonoSource.wrap(new FluxAmb<>(monos));
+		return MonoSource.wrap(new FluxFirstEmitting<>(monos));
 	}
 
 	/**
@@ -344,7 +344,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SafeVarargs
 	@SuppressWarnings("varargs")
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return MonoSource.wrap(new FluxAmb<>(monos));
+		return MonoSource.wrap(new FluxFirstEmitting<>(monos));
 	}
 
 	/**

@@ -41,7 +41,7 @@ import reactor.core.util.BackpressureUtils;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxAmb<T> 
+final class FluxFirstEmitting<T>
 extends Flux<T>
 		implements MultiReceiver {
 
@@ -50,12 +50,12 @@ extends Flux<T>
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	public FluxAmb(Publisher<? extends T>... array) {
+	public FluxFirstEmitting(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	public FluxAmb(Iterable<? extends Publisher<? extends T>> iterable) {
+	public FluxFirstEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
@@ -160,12 +160,12 @@ extends Flux<T>
 	 * Returns a new instance which has the additional source to be amb'd together with
 	 * the current array of sources.
 	 * <p>
-	 * This operation doesn't change the current FluxAmb instance.
+	 * This operation doesn't change the current FluxFirstEmitting instance.
 	 * 
 	 * @param source the new source to merge with the others
-	 * @return the new FluxAmb instance or null if the Amb runs with an Iterable
+	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
 	 */
-	public FluxAmb<T> ambAdditionalSource(Publisher<? extends T> source) {
+	public FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked")
@@ -173,7 +173,7 @@ extends Flux<T>
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 			
-			return new FluxAmb<>(newArray);
+			return new FluxFirstEmitting<>(newArray);
 		}
 		return null;
 	}

@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import reactor.core.test.TestSubscriber;
 
-public class FluxAmbWithTest {
+public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void noStackOverflow() {
@@ -30,7 +30,7 @@ public class FluxAmbWithTest {
 		Flux<Integer> result = source;
 		
 		for (int i = 0; i < n; i++) {
-			result = result.ambWith(source);
+			result = result.firstEmittingWith(source);
 		}
 		
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
@@ -46,8 +46,8 @@ public class FluxAmbWithTest {
 	public void dontBreakAmb() {
 		TestSubscriber<Integer> ts = new TestSubscriber<>();
 		
-		Flux.amb(Flux.just(1), Flux.just(2)).ambWith(Flux.just(3))
-		.subscribe(ts);
+		Flux.firstEmitting(Flux.just(1), Flux.just(2)).firstEmittingWith(Flux.just(3))
+		    .subscribe(ts);
 
 		
 		ts.assertValues(1)
