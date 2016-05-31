@@ -115,6 +115,8 @@ public class TestSubscriberTests {
 		}
 		catch (AssertionError e) {
 			Assert.assertNotNull(e);
+			Assert.assertEquals("Error class incompatible: expected = class java.io.IOException, " +
+								"actual = java.lang.IllegalStateException", e.getMessage());
 		}
 		catch(Throwable e) {
 			Assert.fail();

@@ -303,7 +303,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 			Throwable e = errors.get(0);
 			if (!clazz.isInstance(e)) {
 				throw new AssertionError("Error class incompatible: expected = " +
-						clazz.getSimpleName() + ", actual = " + clazz, null);
+						clazz + ", actual = " + e, null);
 			}
 		}
 		if (s > 1) {
