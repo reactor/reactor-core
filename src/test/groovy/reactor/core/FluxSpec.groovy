@@ -35,6 +35,7 @@ import java.time.Duration
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
+import java.util.function.Supplier
 
 import static reactor.core.publisher.Flux.error
 
@@ -1752,14 +1753,14 @@ class FluxSpec extends Specification {
 			nexts[3] + nexts[4] + nexts[5] < 50
 	}
 
-	def 'Creating Mono from future'() {
+	def 'Creating Mono from CompletableFuture'() {
 		given:
 			'a source flux pre-completed'
 			def executorService = Executors.newSingleThreadExecutor()
 
-			def future = executorService.submit({
+			def future = CompletableFuture.supplyAsync({
 				'hello future'
-			} as Callable<String>)
+			} as Supplier<String>, executorService)
 
 			def s = Mono.fromFuture(future).as{ Flux.from(it) }
 
@@ -1780,29 +1781,6 @@ class FluxSpec extends Specification {
 			!errors
 			nexts[0] == 'hello future'
 			counted
-
-		when: 'timeout'
-			latch = new CountDownLatch(1)
-
-			future = executorService.submit({
-				sleep(2000)
-				'hello future too long'
-			} as Callable<String>)
-
-			s = Mono.fromFuture(future, Duration.ofMillis(100)).publishOn(asyncGroup).as{ Flux.from(it) }
-			nexts = []
-			errors = []
-
-			s.subscribe(
-					{ nexts << 'never ever' },
-					{ errors << it; latch.countDown() }
-			)
-
-		then:
-			'error dispatching works'
-			latch.await(2, TimeUnit.SECONDS)
-			errors[0] in TimeoutException
-			!nexts
 
 		cleanup:
 			executorService.shutdown()

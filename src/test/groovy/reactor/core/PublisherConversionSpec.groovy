@@ -92,7 +92,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1 to read queue"
 	def obs = CompletableFuture.completedFuture([1])
-	def pub = Mono.fromCompletableFuture(obs)
+	def pub = Mono.fromFuture(obs)
 	def queue = new TestSubscriber()
 
 	when: "read the queue"
@@ -105,7 +105,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1 to completable future"
 	def newPub = Mono.just(1)
-	obs = newPub.toCompletableFuture()
+	obs = newPub.toFuture()
 	def v = obs.get()
 
 	then: "queues values correct"
