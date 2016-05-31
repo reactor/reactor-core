@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * @author Stephane Maldini
@@ -36,8 +37,8 @@ public abstract class AbstractReactorTest {
 
 	@BeforeClass
 	public static void loadEnv() {
-		ioGroup = Computations.concurrent("work", 2048, 4, Throwable::printStackTrace, null, false);
-		asyncGroup = Computations.parallel("parallel", 2048, 4, Throwable::printStackTrace, null, false);
+		ioGroup = Schedulers.newParallel("work", 4);
+		asyncGroup = Schedulers.newComputation("parallel", 4, 2048);
 	}
 
 	@AfterClass

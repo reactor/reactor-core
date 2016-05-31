@@ -366,7 +366,7 @@ public class Schedulers {
 	 * @param factoryClass an arbitrary type with static methods matching {@link
 	 * #newComputation} signature(s).
 	 */
-	public static void setComputationsFactory(Class<?> factoryClass) {
+	public static void setComputationFactory(Class<?> factoryClass) {
 		Objects.requireNonNull(factoryClass, "factoryClass");
 		try {
 			Method m = factoryClass.getDeclaredMethod(NEW_COMPUTATION,
@@ -442,7 +442,7 @@ public class Schedulers {
 			Class<?> factory = Schedulers.class.getClassLoader()
 			                                   .loadClass(
 					                                   "reactor.core.publisher.TopicProcessor");
-			setComputationsFactory(factory);
+			setComputationFactory(factory);
 		}
 		catch (Exception e) {
 			throw Exceptions.bubble(e);
