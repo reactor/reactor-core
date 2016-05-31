@@ -143,6 +143,25 @@ public class TestSubscriberTests {
 		ts.awaitAndAssertNextValues("2");
 	}
 
+	@Test(expected = AssertionError.class)
+	public void awaitAndAssertNotEnoughValues() {
+		TestSubscriber<String> ts = new TestSubscriber<>(1);
+		Flux.just("1", "2").log().subscribe(ts);
+		ts.awaitAndAssertNextValues("1", "2");
+	}
+
+	@Test
+	public void awaitAndAssertAsyncValues() {
+		TestSubscriber<String> ts = new TestSubscriber<>();
+		Flux.interval(Duration.ofMillis(100)).map(l -> "foo " + l).subscribe(ts);
+		try {
+		    Thread.sleep(500);
+		} catch(InterruptedException ex) {
+		    Thread.currentThread().interrupt();
+		}
+		ts.awaitAndAssertNextValues("foo 0", "foo 1", "foo 2");
+	}
+
 	@Test
 	public void awaitAndAssertValuesWith() {
 		TestSubscriber<Long> ts = new TestSubscriber<>(1);

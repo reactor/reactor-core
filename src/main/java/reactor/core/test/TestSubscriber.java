@@ -525,7 +525,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 					valueCount - nextValueAssertedCount,
 					expectedValueCount,
 					valuesTimeout.toMillis());
-		}, () -> valueCount == (nextValueAssertedCount + expectedValueCount));
+		}, () -> valueCount >= (nextValueAssertedCount + expectedValueCount));
 		List<T> nextValuesSnapshot;
 		List<T> empty = new ArrayList<>();
 		for(;;){
@@ -534,7 +534,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 				break;
 			}
 		}
-		if (nextValuesSnapshot.size() != expectedValueCount) {
+		if (nextValuesSnapshot.size() < expectedValueCount) {
 			throw new AssertionError(String.format("Expected %d number of signals but received %d",
 					expectedValueCount,
 					nextValuesSnapshot.size()));
