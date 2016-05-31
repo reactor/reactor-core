@@ -307,7 +307,7 @@ public class Schedulers {
 	 * <p>
 	 * return a new {@link Timer}
 	 */
-	public static Timer newTimer(String name) {
+	public static TimedScheduler newTimer(String name) {
 		return newTimer(name, 50);
 	}
 
@@ -319,9 +319,9 @@ public class Schedulers {
 	 * @param name timer thread prefix
 	 * @param resolution resolution of this timer in milliseconds
 	 *                   <p>
-	 *                   return a new {@link Timer}
+	 *                   return a new {@link TimedScheduler}
 	 */
-	public static Timer newTimer(String name, int resolution) {
+	public static TimedScheduler newTimer(String name, int resolution) {
 		return newTimer(name, resolution, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
@@ -335,10 +335,12 @@ public class Schedulers {
 	 * @param bufferSize size of the wheel supporting the Timer, the larger the wheel, the less the lookup time is
 	 *                   for sparse timeouts.
 	 *                   <p>
-	 *                   return a new {@link Timer}
+	 *                   return a new {@link TimedScheduler}
 	 */
-	public static Timer newTimer(String name, int resolution, int bufferSize) {
-		return new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
+	public static TimedScheduler newTimer(String name, int resolution, int bufferSize) {
+		Timer t = new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
+		t.start();
+		return t;
 	}
 
 	/**
@@ -478,7 +480,6 @@ public class Schedulers {
 		final String    key;
 
 		CachedScheduler(String key, Scheduler cached) {
-			cached.start();
 			this.cached = cached;
 			this.key = key;
 		}
