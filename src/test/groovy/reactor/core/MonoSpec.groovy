@@ -597,7 +597,7 @@ class MonoSpec extends Specification {
 
 	and: "setting a value"
 	p1.onNext 'not a number'
-	p2.get(1_000)
+	p2.block(1_000)
 
 	then: 'No value'
 	thrown(RuntimeException)

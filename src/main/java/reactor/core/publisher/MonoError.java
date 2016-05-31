@@ -56,7 +56,7 @@ extends Mono<T> implements reactor.core.state.Completable {
 	}
 
 	@Override
-	public T get() {
+	public T block() {
 		throw Exceptions.propagate(getError());
 	}
 

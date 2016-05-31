@@ -20,7 +20,6 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
@@ -80,7 +79,7 @@ extends Mono<T>
 	}
 	
 	@Override
-	public T get() {
+	public T block() {
         return supplier.get();
 	}
 	

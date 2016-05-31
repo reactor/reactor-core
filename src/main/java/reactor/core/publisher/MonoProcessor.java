@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +75,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
 	 * the eventual result for 1 or N subscribers.
 	 *
-	 * @param waitStrategy a {@link WaitStrategy} for blocking {@link #get} strategy
+	 * @param waitStrategy a {@link WaitStrategy} for blocking {@link #block} strategy
 	 * @param <T> type of the expected value
 	 *
 	 * @return A {@link MonoProcessor}.
@@ -149,7 +148,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * not completed
 	 */
 	@Override
-	public O get(long timeout) {
+	public O block(long timeout) {
 		try {
 			if (!isPending()) {
 				return peek();
@@ -191,20 +190,6 @@ public final class MonoProcessor<O> extends Mono<O>
 
 			throw new IllegalStateException("Thread Interruption on Mono blocking read");
 		}
-	}
-
-	/**
-	 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
-	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
-	 *
-	 * @param timeout the timeout value
-	 *
-	 * @return the value of this {@code MonoProcessor} or {@code null} if the timeout is reached and the {@code MonoProcessor} has
-	 * not completed
-	 */
-	@Override
-	public O get(Duration timeout) {
-		return get(timeout.toMillis());
 	}
 
 	@Override

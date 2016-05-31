@@ -592,7 +592,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the value is mapped'
-			value.get(5_000) == 2
+			value.block(5_000) == 2
 	}
 
 	def "Multiple Stream's values can be merged"() {

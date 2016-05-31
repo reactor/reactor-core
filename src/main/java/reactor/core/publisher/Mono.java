@@ -1075,6 +1075,85 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @return T the result
+	 */
+	public T block() {
+		return block(PlatformDependent.DEFAULT_TIMEOUT);
+	}
+
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.util.Exceptions.CancelException}
+	 *
+	 * @return T the result
+	 */
+	public T block(long timeout) {
+		if(this instanceof Callable){
+			return block();
+		}
+		return subscribe().block(timeout);
+	}
+
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.util.Exceptions.CancelException}
+	 *
+	 * @return T the result
+	 */
+	public T block(Duration timeout) {
+		return block(timeout.toMillis());
+	}
+
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 *
+	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
+	 * <p>
+	 *
+	 * @param waitStrategy a {@link WaitStrategy} to use for waiting on the result. e.g
+	 * . {@code WaitStrategy.busySprin()} will trade off cpu cycles for lower latency.
+	 *
+	 * @return T the result
+	 */
+	public T block(WaitStrategy waitStrategy) {
+		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).block(PlatformDependent.DEFAULT_TIMEOUT);
+	}
+
+	/**
 	 * Cast the current {@link Mono} produced type into a target produced type.
 	 *
 	 * <p>
@@ -1683,82 +1762,24 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
-	 * <p>
-	 *
-	 * @return T the result
+	 * @deprecated use #block
 	 */
 	public T get() {
-		return get(PlatformDependent.DEFAULT_TIMEOUT);
+		return block();
 	}
 
 	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
-	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
-	 * <p>
-	 *
-	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.util.Exceptions.CancelException}
-	 *
-	 * @return T the result
+	 * @deprecated use #block
 	 */
 	public T get(long timeout) {
-		if(this instanceof Callable){
-			return get();
-		}
-		return subscribe().get(timeout);
+		return block(timeout);
 	}
 
 	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
-	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
-	 * <p>
-	 *
-	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.util.Exceptions.CancelException}
-	 *
-	 * @return T the result
+	 * @deprecated use #block
 	 */
 	public T get(Duration timeout) {
-		return get(timeout.toMillis());
-	}
-
-	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
-	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/get.png" alt="">
-	 * <p>
-	 *
-	 * @param waitStrategy a {@link WaitStrategy} to use for waiting on the result. e.g
-	 * . {@code WaitStrategy.busySprin()} will trade off cpu cycles for lower latency.
-	 *
-	 * @return T the result
-	 */
-	public T get(WaitStrategy waitStrategy) {
-		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).get(PlatformDependent.DEFAULT_TIMEOUT);
+		return block(timeout.toMillis());
 	}
 
 	@Override

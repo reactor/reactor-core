@@ -43,7 +43,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public T get() {
+	public T block() {
 		return value;
 	}
 
