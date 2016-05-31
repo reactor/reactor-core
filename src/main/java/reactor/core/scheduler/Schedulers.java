@@ -300,6 +300,48 @@ public class Schedulers {
 	}
 
 	/**
+	 * Create a new {@link Timer} using the default resolution (50MS) and backlog size (64). All times
+	 * will
+	 * rounded up to the closest multiple of this resolution.
+	 * @param name timer thread prefix
+	 * <p>
+	 * return a new {@link Timer}
+	 */
+	public static Timer newTimer(String name) {
+		return newTimer(name, 50);
+	}
+
+	/**
+	 * Create a new {@link Timer} using the the given timer {@code resolution} and backlog size (64). All times
+	 * will
+	 * rounded up to the closest multiple of this resolution.
+	 *
+	 * @param name timer thread prefix
+	 * @param resolution resolution of this timer in milliseconds
+	 *                   <p>
+	 *                   return a new {@link Timer}
+	 */
+	public static Timer newTimer(String name, int resolution) {
+		return newTimer(name, resolution, PlatformDependent.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code bufferSize}. All times
+	 * will
+	 * rounded up to the closest multiple of this resolution.
+	 *
+	 * @param name timer thread prefix
+	 * @param resolution resolution of this timer in milliseconds
+	 * @param bufferSize size of the wheel supporting the Timer, the larger the wheel, the less the lookup time is
+	 *                   for sparse timeouts.
+	 *                   <p>
+	 *                   return a new {@link Timer}
+	 */
+	public static Timer newTimer(String name, int resolution, int bufferSize) {
+		return new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
+	}
+
+	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
 	 * workers and is suited for parallel work.
 	 *
@@ -376,10 +418,7 @@ public class Schedulers {
 	 */
 	public static TimedScheduler timer() {
 		return cachedSchedulers.computeIfAbsent(TIMER,
-				k -> new CachedTimedScheduler(k,
-						new Timer(50,
-								PlatformDependent.SMALL_BUFFER_SIZE,
-								WaitStrategy.parking())))
+				k -> new CachedTimedScheduler(k, newTimer(k)))
 		                       .asTimedScheduler();
 	}
 
