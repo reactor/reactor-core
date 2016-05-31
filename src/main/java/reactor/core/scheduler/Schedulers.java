@@ -300,45 +300,45 @@ public class Schedulers {
 	}
 
 	/**
-	 * Create a new {@link Timer} using the default resolution (50MS) and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
+	 * Create a new hash-wheel based {@link TimedScheduler} using the default resolution
+	 * (50MS).
+	 * All times
+	 * will rounded up to the closest multiple of this resolution.
 	 * @param name timer thread prefix
-	 * <p>
-	 * return a new {@link Timer}
+	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name) {
 		return newTimer(name, 50);
 	}
 
 	/**
-	 * Create a new {@link Timer} using the the given timer {@code resolution} and backlog size (64). All times
+	 * Create a new hash-wheel based {@link TimedScheduler} using the the given timer {@code resolution} and backlog size (64). All times
 	 * will
 	 * rounded up to the closest multiple of this resolution.
 	 *
 	 * @param name timer thread prefix
 	 * @param resolution resolution of this timer in milliseconds
-	 *                   <p>
-	 *                   return a new {@link TimedScheduler}
+	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name, int resolution) {
 		return newTimer(name, resolution, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
-	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code bufferSize}. All times
+	 * Create a new hash-wheel based {@link TimedScheduler} using the given timer {@code resolution} and
+	 * {@code bufferSize}. All times
 	 * will
 	 * rounded up to the closest multiple of this resolution.
 	 *
 	 * @param name timer thread prefix
 	 * @param resolution resolution of this timer in milliseconds
-	 * @param bufferSize size of the wheel supporting the Timer, the larger the wheel, the less the lookup time is
+	 * @param bufferSize size of the wheel supporting the timer, the larger the wheel,
+	 * the less the lookup time is
 	 *                   for sparse timeouts.
-	 *                   <p>
-	 *                   return a new {@link TimedScheduler}
+	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name, int resolution, int bufferSize) {
-		Timer t = new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
+		HashWheelTimer t = new HashWheelTimer(name, resolution, bufferSize, WaitStrategy.parking(), null);
 		t.start();
 		return t;
 	}
@@ -411,12 +411,10 @@ public class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. Will cache the returned schedulers for subsequent {@link
-	 * #single} calls until shutdown.
+	 * Create or reuse a hash-wheel based {@link TimedScheduler} with a resolution of 50MS
+	 * All times will rounded up to the closest multiple of this resolution.
 	 *
-	 * @return a cached {@link Scheduler} that hosts a single-threaded
-	 * ExecutorService-based worker
+	 * @return a cached hash-wheel based {@link TimedScheduler}
 	 */
 	public static TimedScheduler timer() {
 		return cachedSchedulers.computeIfAbsent(TIMER,

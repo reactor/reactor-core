@@ -15,18 +15,19 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.Test;
 import reactor.core.scheduler.TimedScheduler.TimedWorker;
 
-public class TimerTest {
+public class HashWheelTimerTest {
 
     @Test
     public void independentWorkers() throws InterruptedException {
-        Timer timer = Timer.create();
+        TimedScheduler timer = Schedulers.newTimer("test-timer");
         
         try {
             TimedWorker w1 = timer.createWorker();
@@ -57,7 +58,7 @@ public class TimerTest {
 
     @Test
     public void massCancel() throws InterruptedException {
-        Timer timer = Timer.create();
+        TimedScheduler timer = Schedulers.newTimer("test-timer");
         
         try {
             TimedWorker w1 = timer.createWorker();

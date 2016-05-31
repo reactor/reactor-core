@@ -33,7 +33,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 
 		given:
 			"a new globalTimer"
-			def timer = new Timer(10, 8, WaitStrategy.busySpin())
+			def timer = new HashWheelTimer(10, 8, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(10)
 
@@ -64,7 +64,7 @@ class HashWheelTimerBusySpinStrategy extends Specification {
 		given:
 			"a new globalTimer"
 			def delay = 500
-			def timer = new Timer(10, 512, WaitStrategy.busySpin())
+			def timer = new HashWheelTimer(10, 512, WaitStrategy.busySpin())
 			timer.start()
 			def latch = new CountDownLatch(1)
 			def start = System.currentTimeMillis()

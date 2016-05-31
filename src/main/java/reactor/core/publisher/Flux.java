@@ -4458,7 +4458,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> skip(Duration timespan) {
 		if(!timespan.isZero()) {
-			TimedScheduler timer = Objects.requireNonNull(getTimer(), "Timer can't be found, try assigning an environment to the flux");
+			TimedScheduler timer = Objects.requireNonNull(getTimer(), "HashWheelTimer can't be found, try assigning an environment to the flux");
 			return skipUntil(Mono.delay(timespan, timer));
 		}
 		else{
@@ -4866,7 +4866,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> take(Duration timespan) {
 		if (!timespan.isZero()) {
-			TimedScheduler timer = Objects.requireNonNull(getTimer(), "Timer can't be found, try assigning an environment to the flux");
+			TimedScheduler timer = Objects.requireNonNull(getTimer(), "HashWheelTimer can't be found, try assigning an environment to the flux");
 			return takeUntil(Mono.delay(timespan, timer));
 		}
 		else {

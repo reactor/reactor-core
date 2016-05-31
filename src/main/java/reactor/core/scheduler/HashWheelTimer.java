@@ -27,7 +27,7 @@ import reactor.core.state.*;
 import reactor.core.util.*;
 
 /**
- * Hash Wheel Timer, as per the paper: <p> Hashed and hierarchical timing wheels: http://www.cs.columbia.edu/~nahum/w6998/papers/ton97-timing-wheels.pdf
+ * Hash Wheel HashWheelTimer, as per the paper: <p> Hashed and hierarchical timing wheels: http://www.cs.columbia.edu/~nahum/w6998/papers/ton97-timing-wheels.pdf
  * <p> More comprehensive slides, explaining the paper can be found here: http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt
  * <p> Hash Wheel timer is an approximated timer that allows performant execution of larger amount of tasks with better
  * performance compared to traditional scheduling.
@@ -37,107 +37,7 @@ import reactor.core.util.*;
  * @author Stephane Maldini
  * @since 1.0, 2.0, 2.5
  */
-public class Timer implements Introspectable, Cancellable, TimedScheduler {
-
-	/**
-	 * Create a new {@link Timer} using the default resolution (50MS) and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 * <p>
-	 * return a new {@link Timer}
-	 */
-	public static Timer create() {
-		return create(50);
-	}
-
-	/**
-	 * Create a new {@link Timer} using the default resolution (50MS) and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 * @param name timer thread prefix
-	 * <p>
-	 * return a new {@link Timer}
-	 */
-	public static Timer create(String name) {
-		return create(name, 50);
-	}
-
-	/**
-	 * Create a new {@link Timer} using the the given timer {@code resolution} and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 *
-	 * @param resolution resolution of this timer in milliseconds
-	 *                   <p>
-	 *                   return a new {@link Timer}
-	 */
-	public static Timer create(int resolution) {
-		return create(resolution, 64);
-	}
-
-	/**
-	 * Create a new {@link Timer} using the the given timer {@code resolution} and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 *
-	 * @param name timer thread prefix
-	 * @param resolution resolution of this timer in milliseconds
-	 *                   <p>
-	 *                   return a new {@link Timer}
-	 */
-	public static Timer create(String name, int resolution) {
-		return create(name, resolution, 64);
-	}
-
-	/**
-	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code bufferSize}. All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 *
-	 * @param resolution resolution of this timer in milliseconds
-	 * @param bufferSize size of the wheel supporting the Timer, the larger the wheel, the less the lookup time is
-	 *                   for sparse timeouts.
-	 *                   <p>
-	 *                   return a new {@link Timer}
-	 */
-	public static Timer create(int resolution, int bufferSize) {
-		return create("timer", resolution, bufferSize);
-	}
-
-	/**
-	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code bufferSize}. All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
-	 *
-	 * @param name timer thread prefix
-	 * @param resolution resolution of this timer in milliseconds
-	 * @param bufferSize size of the wheel supporting the Timer, the larger the wheel, the less the lookup time is
-	 *                   for sparse timeouts.
-	 *                   <p>
-	 *                   return a new {@link Timer}
-	 */
-	public static Timer create(String name, int resolution, int bufferSize) {
-		Timer timer = new Timer(name, resolution, bufferSize, WaitStrategy.parking(), null);
-		timer.start();
-		return timer;
-	}
-
-	/**
-	 * Obtain the default global timer from the current context. The globalTimer is created lazily so
-	 * it is preferrable to fetch them out of the critical path.
-	 * <p>
-	 * The global timer will also ignore {@link Timer#shutdown()} calls and should be cleaned using {@link
-	 * Schedulers#shutdownNow()} ()}.
-	 * <p>
-	 * The default globalTimer is a {@link Timer}. It is suitable for non blocking periodic
-	 * work
-	 * such as  eventing, memory access, lock-free code, dispatching...
-	 *
-	 * @return the globalTimer, usually a {@link Timer}
-	 */
-	public static TimedScheduler global() {
-		return Schedulers.timer();
-	}
+final class HashWheelTimer implements Introspectable, Cancellable, TimedScheduler {
 
 	final ThreadWorker loop;
 	final Executor     executor;
@@ -147,46 +47,46 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	volatile long subscriptions;
 
 	/**
-	 * Create a new {@code Timer} using the given timer {@code res} and {@code wheelSize}. All times will rounded up to
+	 * Create a new {@code HashWheelTimer} using the given timer {@code res} and {@code wheelSize}. All times will rounded up to
 	 * the closest multiple of this resolution.
 	 *
 	 * @param res resolution of this timer in milliseconds
-	 * @param wheelSize size of the Ring Buffer supporting the Timer, the larger the wheel, the less the lookup time is
+	 * @param wheelSize size of the Ring Buffer supporting the HashWheelTimer, the larger the wheel, the less the lookup time is
 	 * for sparse timeouts. Sane default is 512.
 	 * @param waitStrategy strategy for waiting for the next tick
 	 */
-	Timer(int res, int wheelSize, WaitStrategy waitStrategy) {
+	HashWheelTimer(int res, int wheelSize, WaitStrategy waitStrategy) {
 		this(DEFAULT_TIMER_NAME, res, wheelSize, waitStrategy, null, SYSTEM_NOW);
 	}
 
 	/**
-	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code wheelSize}. All times will rounded
+	 * Create a new {@code HashWheelTimer} using the given timer {@code resolution} and {@code wheelSize}. All times will rounded
 	 * up to the closest multiple of this resolution.
 	 *
 	 * @param name name for daemon thread factory to be displayed
 	 * @param res resolution of this timer in milliseconds
-	 * @param wheelSize size of the Ring Buffer supporting the Timer, the larger the wheel, the less the lookup time is
+	 * @param wheelSize size of the Ring Buffer supporting the HashWheelTimer, the larger the wheel, the less the lookup time is
 	 * for sparse timeouts. Sane default is 512.
 	 * @param strategy strategy for waiting for the next tick
 	 * @param exec {@code Executor} instance to submit tasks to
 	 */
-	Timer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec) {
+	HashWheelTimer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec) {
 		this(name, res, wheelSize, strategy, exec, SYSTEM_NOW);
 	}
 
 	/**
-	 * Create a new {@code Timer} using the given timer {@code resolution} and {@code wheelSize}. All times will rounded
+	 * Create a new {@code HashWheelTimer} using the given timer {@code resolution} and {@code wheelSize}. All times will rounded
 	 * up to the closest multiple of this resolution.
 	 *
 	 * @param name name for daemon thread factory to be displayed
 	 * @param res resolution of this timer in milliseconds
-	 * @param wheelSize size of the Ring Buffer supporting the Timer, the larger the wheel, the less the lookup time is
+	 * @param wheelSize size of the Ring Buffer supporting the HashWheelTimer, the larger the wheel, the less the lookup time is
 	 * for sparse timeouts. Sane default is 512.
 	 * @param strategy strategy for waiting for the next tick
 	 * @param exec {@code Executor} instance to submit tasks to
 	 * @param timeResolver {@code LongSupplier} supplier returning current time in milliseconds every time it's called
 	 */
-	Timer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec, LongSupplier timeResolver) {
+	HashWheelTimer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec, LongSupplier timeResolver) {
 		if (exec == null) {
 			this.executor = Executors.newFixedThreadPool(1,
 					ExecutorUtils.newNamedFactory(name + "-run",
@@ -232,7 +132,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	}
 
 	/**
-	 * Cancel current Timer
+	 * Cancel current HashWheelTimer
 	 */
 	@Override
 	public void shutdown() {
@@ -243,7 +143,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	}
 
 	/**
-	 * Start the Timer, may throw an IllegalStateException if already started.
+	 * Start the HashWheelTimer, may throw an IllegalStateException if already started.
 	 */
 	@Override
 	public void start() {
@@ -252,7 +152,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 			loop.wheel.publish(0);
 		}
 		else {
-			throw new IllegalStateException("Timer already started");
+			throw new IllegalStateException("HashWheelTimer already started");
 		}
 	}
 
@@ -264,15 +164,15 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 	static void checkResolution(long time, long resolution) {
 		if (time % resolution != 0) {
 			throw Exceptions.bubble(new IllegalArgumentException(
-					"Period must be a multiple of Timer resolution (e.g. period % resolution == 0 ). " +
-							"Resolution for this Timer is: " + resolution + "ms"));
+					"Period must be a multiple of HashWheelTimer resolution (e.g. period % resolution == 0 ). " +
+							"Resolution for this HashWheelTimer is: " + resolution + "ms"));
 		}
 	}
 
 	final static class ThreadWorker extends Thread implements TimedWorker {
 
 		final RingBuffer<Set<HashWheelTask>> wheel;
-		final Timer                          parent;
+		final HashWheelTimer                 parent;
 		final LongSupplier                   timeMillisResolver;
 		final WaitStrategy                   waitStrategy;
 		final int                            resolution;
@@ -282,7 +182,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 				LongSupplier timeMillisResolver,
 				int wheelSize,
 				WaitStrategy waitStrategy,
-				Timer parent) {
+				HashWheelTimer parent) {
 			super(name);
 			this.parent = parent;
 			this.resolution = resolution;
@@ -420,7 +320,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 		@Override
 		public String toString() {
-			return String.format("Timer { Buffer Size: %d, Resolution: %d }", wheel.getCapacity(), resolution);
+			return String.format("HashWheelTimer { Buffer Size: %d, Resolution: %d }", wheel.getCapacity(), resolution);
 		}
 
 		/**
@@ -492,7 +392,7 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 
 		@Override
 		public final String toString() {
-			return String.format("Timer { Rounds left: %d, Status: %d }", rounds, status);
+			return String.format("HashWheelTimer { Rounds left: %d, Status: %d }", rounds, status);
 		}
 
 		abstract IntervalTask asInterval();
@@ -573,11 +473,11 @@ public class Timer implements Introspectable, Cancellable, TimedScheduler {
 		final static int STATUS_EMITTED   = 2;
 	}
 
-	static final String                        DEFAULT_TIMER_NAME = "hash-wheel-timer";
-	static final int                           STATUS_CANCELLED   = -1;
-	static final int                           STATUS_READY       = 0;
-	static final AtomicLongFieldUpdater<Timer> SUBSCRIPTIONS      =
-			AtomicLongFieldUpdater.newUpdater(Timer.class, "subscriptions");
+	static final String                                 DEFAULT_TIMER_NAME = "hash-wheel-timer";
+	static final int                                    STATUS_CANCELLED   = -1;
+	static final int                                    STATUS_READY       = 0;
+	static final AtomicLongFieldUpdater<HashWheelTimer> SUBSCRIPTIONS      =
+			AtomicLongFieldUpdater.newUpdater(HashWheelTimer.class, "subscriptions");
 
 	final static LongSupplier SYSTEM_NOW = System::currentTimeMillis;
 }
