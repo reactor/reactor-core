@@ -38,7 +38,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Observable.range(1, 1000)
 	def pub = DependencyUtils.convertToPublisher(obs)
-	def queue = new TestSubscriber()
+	def queue = TestSubscriber.create()
 
 
 	when: "read the queue"
@@ -67,7 +67,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Single.just(1)
 	def pub = Mono.from(DependencyUtils.convertToPublisher(obs))
-	def queue = new TestSubscriber()
+	def queue = TestSubscriber.create()
 
 	when: "read the queue"
 	pub.subscribe(queue)
@@ -93,7 +93,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1 to read queue"
 	def obs = CompletableFuture.completedFuture([1])
 	def pub = Mono.fromFuture(obs)
-	def queue = new TestSubscriber()
+	def queue = TestSubscriber.create()
 
 	when: "read the queue"
 	pub.subscribe(queue)

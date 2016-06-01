@@ -37,7 +37,7 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = new TestSubscriber()
+	def s = TestSubscriber.create()
 	pub.onErrorReturn(100000).subscribe(s)
 
 	then: "queues values correct"
@@ -56,7 +56,7 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = new TestSubscriber()
+	def s = TestSubscriber.create()
 	pub.switchOnError(fromIterable(9999..10002)).subscribe(s)
 
 	then: "queues values correct"

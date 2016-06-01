@@ -107,7 +107,7 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<String> str = EmitterProcessor.create();
 
 		str.publishOn(asyncGroup)
-		   .subscribe(new TestSubscriber());
+		   .subscribe(new FooSubscriber());
 
 		System.out.println(str.debug());
 
@@ -1244,7 +1244,7 @@ public class FluxTests extends AbstractReactorTest {
 		return list;
 	}
 
-	class TestSubscriber implements Subscriber<String> {
+	class FooSubscriber implements Subscriber<String> {
 
 		private final Logger log = Logger.getLogger(getClass());
 

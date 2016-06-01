@@ -2157,7 +2157,7 @@ class FluxSpec extends Specification {
 	def source = EmitterProcessor.<Integer> create().connect()
 
 	def value = null
-	def tail = new TestSubscriber<>(5)
+	def tail = TestSubscriber.create(5)
 
 	source
 			.log("block")
@@ -2365,7 +2365,7 @@ class FluxSpec extends Specification {
 				  println attempts.debug()
 				Mono.delay(i * 1000)
 				}
-			}.subscribeWith(new TestSubscriber<>())
+			}.subscribeWith(TestSubscriber.create())
 			println value.debug()
 
 		then:
