@@ -1211,6 +1211,7 @@ public class FluxTests extends AbstractReactorTest {
 		long elapsed = System.nanoTime();
 
 		Cancellation ctrl = Flux.interval(Duration.ofMillis(delayMS))
+		                        .log("test")
 		                                            .map((signal) -> {
 			                      return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - elapsed);
 		                      })
