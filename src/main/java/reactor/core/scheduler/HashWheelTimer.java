@@ -89,10 +89,13 @@ final class HashWheelTimer implements Introspectable, Cancellable, TimedSchedule
 	HashWheelTimer(String name, int res, int wheelSize, WaitStrategy strategy, Executor exec, LongSupplier timeResolver) {
 		if (exec == null) {
 			this.executor = Executors.newFixedThreadPool(1,
-					ExecutorUtils.newNamedFactory(name + "-run",
-							new ClassLoader(Thread.currentThread()
-							                      .getContextClassLoader()) {
-							}));
+					r -> {
+						Thread t = new Thread(r, name + "-run");
+						t.setContextClassLoader(new ClassLoader(Thread.currentThread()
+						                                              .getContextClassLoader()) {
+						});
+						return t;
+					});
 		}
 		else {
 			this.executor = exec;

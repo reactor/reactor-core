@@ -43,7 +43,6 @@ import reactor.core.state.Introspectable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ExecutorUtils;
 import reactor.core.util.Logger;
 import reactor.core.util.ReactiveStateUtils;
 import reactor.core.util.WaitStrategy;
