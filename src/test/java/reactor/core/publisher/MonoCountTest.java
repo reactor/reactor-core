@@ -27,7 +27,7 @@ public class MonoCountTest {
 	}
 
 	public void normal() {
-		TestSubscriber<Long> ts = new TestSubscriber<>();
+		TestSubscriber<Long> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).count().subscribe(ts);
 
@@ -37,7 +37,7 @@ public class MonoCountTest {
 	}
 
 	public void normalBackpressured() {
-		TestSubscriber<Long> ts = new TestSubscriber<>(0);
+		TestSubscriber<Long> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).count().subscribe(ts);
 

@@ -30,7 +30,7 @@ public class UnicastProcessorTest {
         
         up.subscribe();
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         up.subscribe(ts);
         

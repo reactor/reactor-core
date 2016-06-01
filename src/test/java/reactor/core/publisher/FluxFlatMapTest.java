@@ -42,7 +42,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 2)).subscribe(ts);
 		
@@ -53,7 +53,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 2)).subscribe(ts);
 		
@@ -76,7 +76,7 @@ public class FluxFlatMapTest {
 	
 	@Test
 	public void mainError() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure"))
 		.flatMap(v -> new FluxJust<>(v)).subscribe(ts);
@@ -89,7 +89,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void innerError() {
-		TestSubscriber<Object> ts = new TestSubscriber<>(0);
+		TestSubscriber<Object> ts = TestSubscriber.create(0);
 
 		new FluxJust<>(1).flatMap(v -> Flux.error(new RuntimeException("forced failure"))).subscribe(ts);
 		
@@ -101,7 +101,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void normalQueueOpt() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(v -> new FluxArray<>(v, v + 1)).subscribe(ts);
 		
@@ -112,7 +112,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void normalQueueOptBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(v -> new FluxArray<>(v, v + 1)).subscribe(ts);
 		
@@ -135,7 +135,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void nullValue() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(v -> new FluxArray<>((Integer)null)).subscribe(ts);
 		
@@ -146,7 +146,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void mainEmpty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>empty().flatMap(v -> new FluxJust<>(v)).subscribe(ts);
 		
@@ -157,7 +157,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void innerEmpty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 1000).flatMap(v -> Flux.<Integer>empty()).subscribe(ts);
 		
@@ -168,7 +168,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapOfJust() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
 		
@@ -179,7 +179,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapOfMixed() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(
 				v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v)))
@@ -192,7 +192,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapOfMixedBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v))).subscribe(ts);
 		
@@ -215,7 +215,7 @@ public class FluxFlatMapTest {
 	
 	@Test
 	public void flatMapOfMixedBackpressured1() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v))).subscribe(ts);
 		
@@ -238,7 +238,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapOfJustBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
 		
@@ -261,7 +261,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapOfJustBackpressured1() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
 		
@@ -285,7 +285,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void testMaxConcurrency1() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 1_000_000).flatMap(Flux::just, 1, 32).subscribe(ts);
 		
@@ -296,7 +296,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void singleSubscriberOnly() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		AtomicInteger emission = new AtomicInteger();
 		
@@ -334,7 +334,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void flatMapUnbounded() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		AtomicInteger emission = new AtomicInteger();
 		
@@ -370,7 +370,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void syncFusionIterable() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		List<Integer> list = new ArrayList<>();
 		for (int i = 0; i < 1000; i++) {
@@ -386,7 +386,7 @@ public class FluxFlatMapTest {
 	
 	@Test
 	public void syncFusionRange() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 1000)).subscribe(ts);
 		
@@ -397,7 +397,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void syncFusionArray() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Integer[] array = new Integer[1000];
 		Arrays.fill(array, 777);
@@ -411,7 +411,7 @@ public class FluxFlatMapTest {
 
 	@Test
 	public void innerMapSyncFusion() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 1000).flatMap(v -> Flux.range(1, 1000).map(w -> w + 1)).subscribe(ts);
 

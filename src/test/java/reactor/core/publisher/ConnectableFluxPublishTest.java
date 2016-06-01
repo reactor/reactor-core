@@ -37,8 +37,8 @@ public class ConnectableFluxPublishTest {
 	
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
+		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		TestSubscriber<Integer> ts2 = TestSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
 		
@@ -68,8 +68,8 @@ public class ConnectableFluxPublishTest {
 	
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
+		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
 		
@@ -123,8 +123,8 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void normalAsyncFused() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
+		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		TestSubscriber<Integer> ts2 = TestSubscriber.create();
 		
 		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
@@ -162,8 +162,8 @@ public class ConnectableFluxPublishTest {
 	
 	@Test
 	public void normalBackpressuredAsyncFused() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
+		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
 
 		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
@@ -225,8 +225,8 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void normalHidden() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>();
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>();
+		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		TestSubscriber<Integer> ts2 = TestSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
 		
@@ -256,8 +256,8 @@ public class ConnectableFluxPublishTest {
 	
 	@Test
 	public void normalHiddenBackpressured() {
-		TestSubscriber<Integer> ts1 = new TestSubscriber<>(0);
-		TestSubscriber<Integer> ts2 = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
+		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
 		
@@ -311,7 +311,7 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void disconnect() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -336,7 +336,7 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void disconnectBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -358,7 +358,7 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -381,7 +381,7 @@ public class ConnectableFluxPublishTest {
 
 	@Test
 	public void fusedMapInvalid() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).publish();
 		

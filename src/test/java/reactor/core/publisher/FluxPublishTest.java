@@ -32,7 +32,7 @@ public class FluxPublishTest {
 	@Test
 	public void subsequentSum() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		range(1, 5).publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		           .subscribe(ts);
@@ -45,7 +45,7 @@ public class FluxPublishTest {
 	@Test
 	public void subsequentSumHidden() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		range(1, 5).hide()
 		           .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o
@@ -60,7 +60,7 @@ public class FluxPublishTest {
 	@Test
 	public void subsequentSumAsync() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				new UnicastProcessor<>(QueueSupplier.<Integer>get(16).get());
@@ -82,7 +82,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void cancelComposes() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
 
@@ -98,7 +98,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void cancelComposes2() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
 
@@ -110,7 +110,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void pairWise() {
-		TestSubscriber<Tuple2<Integer, Integer>> ts = new TestSubscriber<>();
+		TestSubscriber<Tuple2<Integer, Integer>> ts = TestSubscriber.create();
 
 		range(1, 9).compose(o -> zip(o, o.skip(1)))
 		           .subscribe(ts);
@@ -128,7 +128,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void innerCanFuse() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
 
 		Flux.never()

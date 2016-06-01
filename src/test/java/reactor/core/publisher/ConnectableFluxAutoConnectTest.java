@@ -63,12 +63,12 @@ public class ConnectableFluxAutoConnectTest {
 		Assert.assertNull(cancel.get());
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 		
-		p.subscribe(new TestSubscriber<>());
+		p.subscribe(TestSubscriber.create());
 		
 		Assert.assertNull(cancel.get());
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 
-		p.subscribe(new TestSubscriber<>());
+		p.subscribe(TestSubscriber.create());
 
 		Assert.assertNotNull(cancel.get());
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);

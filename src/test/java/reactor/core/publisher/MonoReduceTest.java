@@ -39,7 +39,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
 
@@ -50,7 +50,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
 
@@ -67,7 +67,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void supplierThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).<Integer>reduceWith(() -> {
 			throw new RuntimeException("forced failure");
@@ -81,7 +81,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void accumulatorThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).<Integer>reduceWith(() -> 0, (a, b) -> {
 			throw new RuntimeException("forced failure");
@@ -95,7 +95,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void supplierReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).<Integer>reduceWith(() -> null, (a, b) -> b).subscribe(ts);
 
@@ -106,7 +106,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void accumulatorReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> null).subscribe(ts);
 

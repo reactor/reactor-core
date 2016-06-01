@@ -34,7 +34,7 @@ public class FluxJustTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
 
         Flux.just(1).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class FluxJustTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
         Flux.just(1).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class FluxJustTest {
 
     @Test
     public void fused() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         ts.requestedFusionMode(Fuseable.ANY);
         
         Flux.just(1).subscribe(ts);

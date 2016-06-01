@@ -35,7 +35,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void firstWinner() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>(Flux.range(1, 10), Flux.range(11, 10)).subscribe(ts);
 
@@ -46,7 +46,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void firstWinnerBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(5);
+		TestSubscriber<Integer> ts = TestSubscriber.create(5);
 
 		new FluxFirstEmitting<>(Flux.range(1, 10), Flux.range(11, 10)).subscribe(ts);
 
@@ -57,7 +57,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void secondWinner() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>(FluxNever.instance(), Flux.range(11, 10).log()).subscribe(ts);
 
@@ -68,7 +68,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void secondEmitsError() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		RuntimeException ex = new RuntimeException("forced failure");
 
@@ -81,7 +81,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void singleArrayNullSource() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>((Publisher<Object>) null).subscribe(ts);
 
@@ -92,7 +92,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void arrayOneIsNullSource() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>(FluxNever.instance(), null, FluxNever.instance()).subscribe
 		  (ts);
@@ -104,7 +104,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void singleIterableNullSource() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>(Arrays.asList((Publisher<Object>) null)).subscribe(ts);
 
@@ -115,7 +115,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void iterableOneIsNullSource() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		new FluxFirstEmitting<>(Arrays.asList(FluxNever.instance(), (Publisher<Object>) null, FluxNever.instance
 		  ())).subscribe(ts);

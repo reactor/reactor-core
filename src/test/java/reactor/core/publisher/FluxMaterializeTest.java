@@ -23,7 +23,7 @@ public class FluxMaterializeTest {
 
     @Test
     public void completeOnlyBackpressured() {
-        TestSubscriber<Signal<Integer>> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Signal<Integer>> ts = TestSubscriber.create(0L);
         
         Flux.<Integer>empty().materialize()
         .subscribe(ts);
@@ -41,7 +41,7 @@ public class FluxMaterializeTest {
 
     @Test
     public void errorOnlyBackpressured() {
-        TestSubscriber<Signal<Integer>> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Signal<Integer>> ts = TestSubscriber.create(0L);
 
         RuntimeException ex = new RuntimeException();
         

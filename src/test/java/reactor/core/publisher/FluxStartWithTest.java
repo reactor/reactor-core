@@ -33,7 +33,7 @@ public class FluxStartWithTest {
 			result = result.startWith(source);
 		}
 		
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -55,7 +55,7 @@ public class FluxStartWithTest {
 			result = result.startWith(add);
 		}
 		
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -77,7 +77,7 @@ public class FluxStartWithTest {
 			result = result.startWith(add);
 		}
 		
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -89,7 +89,7 @@ public class FluxStartWithTest {
 	
 	@Test
 	public void dontBreakFluxArrayConcatMap() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.just(1, 2).concatMap(Flux::just).startWith(Flux.just(3))
 		.subscribe(ts);

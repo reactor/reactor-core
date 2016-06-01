@@ -396,7 +396,7 @@ public class CombinationTests {
 
 	@Before
 	public void anotherBefore() {
-		ts = new TestSubscriber<Long>();
+		ts = TestSubscriber.create();
 		emitter1 = ReplayProcessor.create();
 		emitter2 = ReplayProcessor.create();
 		emitter1.connect();

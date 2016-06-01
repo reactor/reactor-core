@@ -29,7 +29,7 @@ public class MonoCallableTest {
 
     @Test
     public void callableReturnsNull() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
 
         Mono.<Integer>fromCallable(() -> null).subscribe(ts);
 
@@ -40,7 +40,7 @@ public class MonoCallableTest {
 
     @Test
     public void callableEmptyReturnsNull() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
 
         Mono.<Integer>fromCallableOrEmpty(() -> null).subscribe(ts);
 
@@ -50,7 +50,7 @@ public class MonoCallableTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
 
         Mono.fromCallable(() -> 1).subscribe(ts);
 
@@ -61,7 +61,7 @@ public class MonoCallableTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
         Mono.fromCallable(() -> 1).subscribe(ts);
 
@@ -78,7 +78,7 @@ public class MonoCallableTest {
 
     @Test
     public void callableThrows() {
-        TestSubscriber<Object> ts = new TestSubscriber<>();
+        TestSubscriber<Object> ts = TestSubscriber.create();
 
         Mono.fromCallable(() -> {
             throw new IOException("forced failure");

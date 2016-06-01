@@ -39,7 +39,7 @@ public class FluxSubscribeOnTest {
 	
 	@Test
 	public void classic() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 1000).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -52,7 +52,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 1000).log().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -81,7 +81,7 @@ public class FluxSubscribeOnTest {
 	
 	@Test
 	public void classicJust() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -94,7 +94,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicJustBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -115,7 +115,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicEmpty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -128,7 +128,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicEmptyBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
 		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
 		
@@ -149,7 +149,7 @@ public class FluxSubscribeOnTest {
 		
 		Assert.assertEquals(0, count.get());
 		
-		p.subscribeWith(new TestSubscriber<>()).await();
+		p.subscribeWith(TestSubscriber.create()).await();
 		
 		Assert.assertEquals(1, count.get());
 	}}

@@ -32,7 +32,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeAll() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> false).subscribe(ts);
 
@@ -43,7 +43,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeAllBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> false).subscribe(ts);
 
@@ -66,7 +66,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeSome() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
 
@@ -77,7 +77,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeSomeBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
 
@@ -100,7 +100,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void stopImmediately() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> true).subscribe(ts);
 
@@ -111,7 +111,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void stopImmediatelyBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> true).subscribe(ts);
 
@@ -128,7 +128,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> {
 			throw new RuntimeException("forced failure");

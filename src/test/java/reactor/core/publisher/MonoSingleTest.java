@@ -41,7 +41,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void defaultReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().singleOrDefault(() -> null).subscribe(ts);
 
@@ -52,7 +52,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void defaultThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().singleOrDefault(() -> {
 			throw new RuntimeException("forced failure");
@@ -68,7 +68,7 @@ public class MonoSingleTest {
 	@Test
 	public void normal() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.just(1).single().subscribe(ts);
 
@@ -79,7 +79,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.just(1).single().subscribe(ts);
 
@@ -97,7 +97,7 @@ public class MonoSingleTest {
 	@Test
 	public void empty() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().single().subscribe(ts);
 
@@ -108,7 +108,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void emptyDefault() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
 
@@ -119,7 +119,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void emptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
 
@@ -137,7 +137,7 @@ public class MonoSingleTest {
 	@Test
 	public void multi() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).single().subscribe(ts);
 
@@ -149,7 +149,7 @@ public class MonoSingleTest {
 	@Test
 	public void multiBackpressured() {
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).single().subscribe(ts);
 

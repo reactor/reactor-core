@@ -78,7 +78,7 @@ public class EmitterProcessorDemandTests {
 
 		Flux.from(publisher).subscribeOn(asyncGroup).subscribe(emitter);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>();
+		TestSubscriber<String> subscriber = TestSubscriber.create();
 		emitter.subscribe(subscriber);
 
 		int i = 0;
@@ -134,7 +134,7 @@ public class EmitterProcessorDemandTests {
 
 		publisher.subscribe(emitter);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>();
+		TestSubscriber<String> subscriber = TestSubscriber.create();
 		emitter.subscribe(subscriber);
 
 		String buffer = "Hello";
@@ -153,7 +153,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	public void testRed() {
 		FluxProcessor<String, String> processor = EmitterProcessor.create();
-		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
+		TestSubscriber<String> subscriber = TestSubscriber.create(1);
 		processor.subscribe(subscriber);
 
 		Flux.fromIterable(DATA)
@@ -166,7 +166,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	public void testGreen() {
 		FluxProcessor<String, String> processor = EmitterProcessor.create();
-		TestSubscriber<String> subscriber = new TestSubscriber<>(1);
+		TestSubscriber<String> subscriber = TestSubscriber.create(1);
 		processor.subscribe(subscriber);
 
 		Flux.fromIterable(DATA)
@@ -184,10 +184,10 @@ public class EmitterProcessorDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		TestSubscriber<String> first = new TestSubscriber<>(0);
+		TestSubscriber<String> first = TestSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
 
-		TestSubscriber<String> second = new TestSubscriber<>(0);
+		TestSubscriber<String> second = TestSubscriber.create(0);
 		processor.log("after-2").subscribe(second);
 
 		second.request(1);
@@ -204,12 +204,12 @@ public class EmitterProcessorDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		TestSubscriber<String> first = new TestSubscriber<>(1);
+		TestSubscriber<String> first = TestSubscriber.create(1);
 		processor.subscribe(first);
 
 		first.awaitAndAssertNextValues("1");
 
-		TestSubscriber<String> second = new TestSubscriber<>(3);
+		TestSubscriber<String> second = TestSubscriber.create(3);
 		processor.subscribe(second);
 
 		second.awaitAndAssertNextValues("2", "3", "4");
@@ -251,7 +251,7 @@ public class EmitterProcessorDemandTests {
 		}
 
 		public void doRun() throws Exception {
-			TestSubscriber<String> subscriber = new TestSubscriber<>(5);
+			TestSubscriber<String> subscriber = TestSubscriber.create(5);
 			processor.subscribe(subscriber);
 			barrier.await();
 

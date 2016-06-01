@@ -36,7 +36,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -67,7 +67,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -98,7 +98,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -129,7 +129,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void never() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -160,7 +160,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void neverCancel() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -195,7 +195,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void callbackError(){
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Throwable err = new Exception("test");
 
@@ -210,7 +210,7 @@ public class FluxPeekTest {
 		//nominal error path (DownstreamException)
 		ts.assertErrorMessage("test");
 
-		ts = new TestSubscriber<>();
+		ts = TestSubscriber.create();
 
 		try {
 			new FluxPeek<>(new FluxJust<>(1),
@@ -230,7 +230,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void syncFusionAvailable() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doOnNext(v -> {
@@ -244,7 +244,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void asyncFusionAvailable() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new UnicastProcessor<Integer>(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
 		})
@@ -257,7 +257,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void conditionalFusionAvailable() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
@@ -280,7 +280,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void conditionalFusionAvailableWithFuseable() {
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
@@ -305,7 +305,7 @@ public class FluxPeekTest {
 	public void syncCompleteCalled() {
 		AtomicBoolean onComplete = new AtomicBoolean();
 
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doOnComplete(() -> onComplete.set(true))
@@ -322,7 +322,7 @@ public class FluxPeekTest {
 	public void syncdoAfterTerminateCalled() {
 		AtomicBoolean onTerminate = new AtomicBoolean();
 
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doAfterTerminate(() -> onTerminate.set(true))

@@ -39,7 +39,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> a + b).subscribe
 		  (ts);
@@ -51,7 +51,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> a + b).subscribe
 		  (ts);
@@ -81,7 +81,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void otherIsNever() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxWithLatestFrom<>(new FluxRange(1, 10), Flux.<Integer>empty(), (a, b) -> a + b)
 		  .subscribe(ts);
@@ -93,7 +93,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void otherIsEmpty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxWithLatestFrom<>(new FluxRange(1, 10), Flux.<Integer>empty(), (a, b) -> a + b)
 		  .subscribe(ts);
@@ -105,7 +105,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void combinerReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> (Integer) null)
 		  .subscribe(ts);
@@ -117,7 +117,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void combinerThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxWithLatestFrom<Integer, Integer, Integer>(
 		  new FluxRange(1, 10), new FluxJust<>(10),

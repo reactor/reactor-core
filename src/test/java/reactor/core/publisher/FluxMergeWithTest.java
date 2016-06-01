@@ -33,7 +33,7 @@ public class FluxMergeWithTest {
 			result = result.mergeWith(source);
 		}
 		
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -55,7 +55,7 @@ public class FluxMergeWithTest {
 			result = result.mergeWith(add);
 		}
 		
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -77,7 +77,7 @@ public class FluxMergeWithTest {
 			result = result.mergeWith(add);
 		}
 		
-		TestSubscriber<Object> ts = new TestSubscriber<>();
+		TestSubscriber<Object> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -89,7 +89,7 @@ public class FluxMergeWithTest {
 	
 	@Test
 	public void dontBreakFluxArrayFlatmap() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.just(1, 2).flatMap(Flux::just).mergeWith(Flux.just(3))
 		.subscribe(ts);

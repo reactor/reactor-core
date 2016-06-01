@@ -33,7 +33,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10)
 		    .onErrorResumeWith(v -> Flux.range(11, 10))
@@ -46,7 +46,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .onErrorResumeWith(v -> Flux.range(11, 10))
@@ -77,7 +77,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
 		  (11, 10)).subscribe(ts);
@@ -89,7 +89,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void errorFiltered() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure"))
 				.onErrorResumeWith(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
@@ -102,7 +102,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void errorMap() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
 				" " +
@@ -116,7 +116,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void errorBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
 		  (11, 10)).subscribe(ts);
@@ -150,7 +150,7 @@ public class FluxResumeTest {
 
 		tp.connect();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		tp.onErrorResumeWith(v -> Flux.range(11, 10))
 		  .subscribe(ts);
@@ -173,7 +173,7 @@ public class FluxResumeTest {
 
 		tp.connect();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<>(10);
+		TestSubscriber<Integer> ts = TestSubscriber.create(10);
 
 		tp.onErrorResumeWith(v -> Flux.range(11, 10))
 		  .subscribe(ts);
@@ -198,7 +198,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void nextFactoryThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> {
 			throw new RuntimeException("forced failure 2");
@@ -212,7 +212,7 @@ public class FluxResumeTest {
 
 	@Test
 	public void nextFactoryReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> null)
 		                                                           .subscribe(ts);

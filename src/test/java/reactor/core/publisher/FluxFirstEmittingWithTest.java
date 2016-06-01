@@ -33,7 +33,7 @@ public class FluxFirstEmittingWithTest {
 			result = result.firstEmittingWith(source);
 		}
 		
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -44,7 +44,7 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void dontBreakAmb() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
 		Flux.firstEmitting(Flux.just(1), Flux.just(2)).firstEmittingWith(Flux.just(3))
 		    .subscribe(ts);

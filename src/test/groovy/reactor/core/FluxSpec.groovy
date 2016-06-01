@@ -109,7 +109,7 @@ class FluxSpec extends Specification {
 		when:
 			'cumulated request of Long MAX'
 			long test = Long.MAX_VALUE / 2l
-			def controls = new TestSubscriber<>(0).bindTo(stream)
+			def controls = TestSubscriber.subscribe(stream, 0)
 			controls.request(test)
 			controls.request(test)
 			controls.request(1)
@@ -1855,7 +1855,7 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(5, Duration.ofMillis(600))
-			def ts = new TestSubscriber().bindTo(reduced)
+			def ts = TestSubscriber.subscribe(reduced)
 
 		when:
 			'the first values are accepted on the source'
@@ -2125,7 +2125,7 @@ class FluxSpec extends Specification {
 
 			def value = null
 			def s = source.log("drop").onBackpressureDrop().doOnNext { value = it }.log('overflow-drop-test')
-			def tail = new TestSubscriber<>(0).bindTo(s)
+			def tail = TestSubscriber.subscribe(s, 0)
 
 
 			tail.request(5)

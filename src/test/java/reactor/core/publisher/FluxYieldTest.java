@@ -25,7 +25,7 @@ public class FluxYieldTest {
     @Test
     public void yieldSome() {
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         Flux<Integer> source = Flux.<Signal<Integer>>create(e -> {
             e.next(Signal.next(1));
