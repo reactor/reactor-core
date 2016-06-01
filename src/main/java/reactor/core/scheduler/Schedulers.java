@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +63,33 @@ public class Schedulers {
 								Runtime.getRuntime()
 								       .availableProcessors(),
 								true)));
+	}
+
+	/**
+	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
+	 * Runnables for async operators.
+	 *
+	 * @param executor an {@link Executor}
+	 *
+	 * @return a new {@link Scheduler}
+	 */
+	public static Scheduler fromExecutor(Executor executor) {
+		return fromExecutor(executor, false);
+	}
+
+
+	/**
+	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
+	 * Runnables for async operators.
+	 *
+	 * @param executor an {@link Executor}
+	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"
+	 * that already conflate {@link Runnable} executions (publishOn, subscribeOn...)
+	 *
+	 * @return a new {@link Scheduler}
+	 */
+	public static Scheduler fromExecutor(Executor executor, boolean trampoline) {
+		return new ExecutorScheduler(executor, trampoline);
 	}
 
 	/**
@@ -408,6 +436,22 @@ public class Schedulers {
 	public static Scheduler single() {
 		return cachedSchedulers.computeIfAbsent(SINGLE,
 				k -> new CachedScheduler(k, newSingle(k, true)));
+	}
+
+	/**
+	 * Wraps a single worker of some other {@link Scheduler} and
+	 * provides {@link reactor.core.scheduler.Scheduler.Worker} services on top of it.
+	 * <p>
+	 * Use the {@link Scheduler#shutdown()} to release the wrapped worker.
+	 *
+	 * @param original a {@link Scheduler} to call upon to get the single
+	 * {@link reactor.core.scheduler.Scheduler.Worker}
+	 *
+	 * @return a wrapping {@link Scheduler} consistently returning a same worker from a
+	 * source {@link Scheduler}
+	 */
+	public static Scheduler single(Scheduler original) {
+		return new WorkerScheduler(original);
 	}
 
 	/**
