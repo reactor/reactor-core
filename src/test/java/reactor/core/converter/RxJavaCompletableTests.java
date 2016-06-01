@@ -32,8 +32,8 @@ public class RxJavaCompletableTests {
     public void shouldConvertACompletableIntoMonoVoid() throws Exception {
         Mono<Void> printableMono = converter.toPublisher(completable);
         assertThat(printableMono, is(notNullValue()));
-        new TestSubscriber<Void>()
-                .bindTo(printableMono)
+        TestSubscriber
+                .subscribe(printableMono)
                 .assertNoValues()
                 .assertComplete();
     }
@@ -44,8 +44,8 @@ public class RxJavaCompletableTests {
         Mono<Void> voidMono = converter.toPublisher(Completable.fromAction(() -> {
             throw new IllegalStateException("This should not happen"); //something internal happened
         }));
-        new TestSubscriber<Void>()
-                .bindTo(voidMono)
+        TestSubscriber
+                .subscribe(voidMono)
                 .assertNoValues()
                 .assertError(IllegalStateException.class)
                 .assertTerminated()

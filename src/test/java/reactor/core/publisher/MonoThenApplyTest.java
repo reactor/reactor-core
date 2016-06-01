@@ -8,7 +8,7 @@ public class MonoThenApplyTest {
 
     @Test
     public void normalHidden() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         Mono.just(1).hide().then(v -> Mono.just(2).hide()).subscribe(ts);
         

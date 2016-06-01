@@ -42,12 +42,22 @@ import reactor.core.util.ReactiveStateUtils;
  * A Subscriber implementation that hosts assertion tests for its state and allows
  * asynchronous cancellation and requesting.
  *
- * <p> Creating a new instance with {@code new TestSubscriber<>()} creates a subscriber
- * that automatically requests an unbounded number of values. If you want to control more
- * finely how data are requested, you can use for example {@code new TestSubscriber<>(0)}
- * and then call {@link #request(long)} when you need. Subscription can be performed using
- * either {@link #bindTo(Publisher)} or {@link Publisher#subscribe(Subscriber)}.
- * If you are testing asynchronous publishers, don't forget to use one of the
+ * <p> To create a new instance of {@link TestSubscriber}, you have the choice between
+ * these static methods:
+ * <ul>
+ *     <li>{@link TestSubscriber#subscribe(Publisher)}: create a new {@link TestSubscriber},
+ *     subscribe to it with the specified {@link Publisher} and requests an unbounded
+ *     number of elements.</li>
+ *     <li>{@link TestSubscriber#subscribe(Publisher, long)}: create a new {@link TestSubscriber},
+ *     subscribe to it with the specified {@link Publisher} and requests {@code n} elements
+ *     (can be 0 if you want no initial demand).
+ *     <li>{@link TestSubscriber#create()}: create a new {@link TestSubscriber} and requests
+ *     an unbounded number of elements.</li>
+ *     <li>{@link TestSubscriber#create(long)}: create a new {@link TestSubscriber} and
+ *     requests {@code n} elements (can be 0 if you want no initial demand).
+ * </ul>
+ *
+ * <p>If you are testing asynchronous publishers, don't forget to use one of the
  * {@code await*()} methods to wait for the data to assert.
  *
  * <p> You can extend this class but only the onNext, onError and onComplete can be overridden.
@@ -57,9 +67,8 @@ import reactor.core.util.ReactiveStateUtils;
  * <p>Usage:
  * <pre>
  * {@code
- * Publisher<String> publisher = ...
- * TestSubscriber<String> ts = new TestSubscriber<>();
- * ts.bindTo(publisher)
+ * TestSubscriber
+ *   .subscribe(publisher)
  *   .await()
  *   .assertValues("ABC", "DEF");
  * }
@@ -120,6 +129,52 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 //	 ==============================================================================================================
 
 	/**
+	 * Create a new {@link TestSubscriber} that requests an unbounded number of elements.
+	 * <p>Be sure at least a publisher has subscribed to it via {@link Publisher#subscribe(Subscriber)}
+	 * before use assert methods.
+	 * @see TestSubscriber#subscribe(Publisher)
+	 */
+	public static <T> TestSubscriber<T> create() {
+		return new TestSubscriber<>();
+	}
+
+	/**
+	 * Create a new {@link TestSubscriber} that requests initially {@code n} elements. You
+	 * can then manage the demand with {@link Subscription#request(long)}.
+	 * <p>Be sure at least a publisher has subscribed to it via {@link Publisher#subscribe(Subscriber)}
+	 * before use assert methods.
+	 * @param n Number of elements to request (can be 0 if you want no initial demand).
+	 * @see TestSubscriber{@link #subscribe(Publisher, long)}
+	 */
+	public static <T> TestSubscriber<T> create(long n) {
+		return new TestSubscriber<>(n);
+	}
+
+	/**
+	 * Create a new {@link TestSubscriber} that requests an unbounded number of elements,
+	 * and make the specified {@code publisher} subscribe to it.
+	 * @param publisher The publisher to subscribe with
+	 */
+	public static <T> TestSubscriber<T> subscribe(Publisher<T> publisher) {
+		TestSubscriber<T> subscriber = new TestSubscriber<>();
+		publisher.subscribe(subscriber);
+		return subscriber;
+	}
+
+	/**
+	 * Create a new {@link TestSubscriber} that requests initially {@code n} elements,
+	 * and make the specified {@code publisher} subscribe to it. You can then manage the
+	 * demand with {@link Subscription#request(long)}.
+	 * @param publisher The publisher to subscribe with
+	 * @param n Number of elements to request (can be 0 if you want no initial demand).
+	 */
+	public static <T> TestSubscriber<T> subscribe(Publisher<T> publisher, long n) {
+		TestSubscriber<T> subscriber = new TestSubscriber<>(n);
+		publisher.subscribe(subscriber);
+		return subscriber;
+	}
+
+	/**
 	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
 	 * not before the specified timeout, throws an {@link AssertionError} with the specified
 	 * error message supplier.
@@ -166,23 +221,17 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	}
 
 
+
+
 //	 ==============================================================================================================
-//	 Constructors
+//	 Private constructors
 //	 ==============================================================================================================
 
-	/**
-	 * Create a new {@link TestSubscriber} that requests an unbounded number of values
-	 */
-	public TestSubscriber() {
+	private TestSubscriber() {
 		 this(Long.MAX_VALUE);
 	}
 
-	/**
-	 * Create a new {@link TestSubscriber} that request {@code n} values
-	 * @param n Number of values to request (can be 0 if you want to request values later
-	 * with {@code request(long n)} method).
-	 */
-	public TestSubscriber(long n) {
+	private TestSubscriber(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
 		}
@@ -608,14 +657,6 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 //	 ==============================================================================================================
 //	 Utility methods
 //	 ==============================================================================================================
-
-	/**
-	 * Allow the specified {@code publisher} to subscribe to this {@link TestSubscriber} instance.
-	 */
-	public TestSubscriber<T> bindTo(Publisher<T> publisher) {
-		publisher.subscribe(this);
-		return this;
-	}
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available.

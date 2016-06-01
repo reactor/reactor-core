@@ -22,7 +22,7 @@ import reactor.core.test.TestSubscriber;
 public class FluxMapSignalTest {
     @Test
     public void completeOnlyBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0L);
         
         new FluxMapSignal<>(Flux.empty(), null, null, () -> 1)
         .subscribe(ts);
@@ -40,7 +40,7 @@ public class FluxMapSignalTest {
 
     @Test
     public void errorOnlyBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0L);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0L);
         
         new FluxMapSignal<>(Flux.error(new RuntimeException()), null, e -> 1, null)
         .subscribe(ts);

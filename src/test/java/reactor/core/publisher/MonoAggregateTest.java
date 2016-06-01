@@ -34,7 +34,7 @@ public class MonoAggregateTest {
 */
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10)
 		       .reduce((a, b) -> a + b)
@@ -47,7 +47,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0L);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		       .reduce((a, b) -> a + b)
@@ -66,7 +66,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void single() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.just(1)
 		       .reduce((a, b) -> a + b)
@@ -79,7 +79,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().reduce((a, b) -> a + b)
 		                        .subscribe(ts);
@@ -91,7 +91,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).reduce((a, b) -> a + b)
 		                                                              .subscribe(ts);
@@ -105,7 +105,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void aggregatorThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10)
 		       .reduce((a, b) -> {
@@ -122,7 +122,7 @@ public class MonoAggregateTest {
 
 	@Test
 	public void aggregatorReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10)
 		       .reduce((a, b) -> null)

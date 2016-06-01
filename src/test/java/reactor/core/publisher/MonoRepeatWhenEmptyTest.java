@@ -34,7 +34,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = new TestSubscriber<>();
+        TestSubscriber<String> ts = TestSubscriber.create();
 
         source
             .repeatWhenEmpty(o -> o.doOnNext(iterations::add))
@@ -56,7 +56,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = new TestSubscriber<>();
+        TestSubscriber<String> ts = TestSubscriber.create();
 
         source
             .repeatWhenEmpty(1000, o -> o.doOnNext(iterations::add))
@@ -78,7 +78,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = new TestSubscriber<>();
+        TestSubscriber<String> ts = TestSubscriber.create();
 
         source
             .repeatWhenEmpty(2, o -> o.doOnNext(iterations::add))

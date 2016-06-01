@@ -17,7 +17,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1SingleConverter.from(s);
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         m.subscribe(ts);
         
@@ -33,7 +33,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1SingleConverter.from(s);
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         m.subscribe(ts);
         
@@ -49,7 +49,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1SingleConverter.from(s);
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0);
         
         m.subscribe(ts);
         
@@ -72,7 +72,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1SingleConverter.from(s);
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         m.subscribe(ts);
         
@@ -88,7 +88,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1SingleConverter.from(s);
         
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         
         m.subscribe(ts);
         

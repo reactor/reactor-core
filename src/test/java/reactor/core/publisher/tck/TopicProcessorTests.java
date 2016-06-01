@@ -87,7 +87,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+		TestSubscriber<String> subscriber = TestSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);
@@ -109,7 +109,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+		TestSubscriber<String> subscriber = TestSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);
@@ -127,7 +127,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+		TestSubscriber<String> subscriber = TestSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		processor.forceShutdown();
@@ -181,7 +181,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+		TestSubscriber<String> subscriber = TestSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(3);
@@ -199,7 +199,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+		TestSubscriber<String> subscriber = TestSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);

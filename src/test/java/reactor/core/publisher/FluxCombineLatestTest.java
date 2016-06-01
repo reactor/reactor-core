@@ -26,7 +26,7 @@ public class FluxCombineLatestTest {
 	@Test
 	public void singleSourceIsMapped() {
 		
-		TestSubscriber<String> ts = new TestSubscriber<>();
+		TestSubscriber<String> ts = TestSubscriber.create();
 		
 		Flux.combineLatest(a -> a[0].toString(), Flux.just(1))
 		.subscribe(ts);
@@ -39,7 +39,7 @@ public class FluxCombineLatestTest {
 	@Test
 	public void iterableSingleSourceIsMapped() {
 		
-		TestSubscriber<String> ts = new TestSubscriber<>();
+		TestSubscriber<String> ts = TestSubscriber.create();
 		
 		Flux.combineLatest(Collections.singleton(Flux.just(1)), a -> a[0].toString())
 		.subscribe(ts);

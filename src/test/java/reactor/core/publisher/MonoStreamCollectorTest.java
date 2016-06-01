@@ -31,7 +31,7 @@ public class MonoStreamCollectorTest {
         Mono<List<Integer>> source = Flux.range(1, 5).collect(Collectors.toList());
 
         for (int i = 0; i < 5; i++) {
-            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+            TestSubscriber<List<Integer>> ts = TestSubscriber.create();
             source.subscribe(ts);
     
             ts.assertValues(Arrays.asList(1, 2, 3, 4, 5))
@@ -45,7 +45,7 @@ public class MonoStreamCollectorTest {
         Mono<Set<Integer>> source = Flux.just(1).repeat(5).collect(Collectors.toSet());
 
         for (int i = 0; i < 5; i++) {
-            TestSubscriber<Set<Integer>> ts = new TestSubscriber<>();
+            TestSubscriber<Set<Integer>> ts = TestSubscriber.create();
             source.subscribe(ts);
     
             ts.assertValues(Collections.singleton(1))

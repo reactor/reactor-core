@@ -49,7 +49,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
@@ -60,7 +60,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
@@ -77,7 +77,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal2() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
@@ -88,7 +88,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal5Backpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
@@ -105,7 +105,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal3() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
@@ -116,7 +116,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal3Backpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
@@ -133,7 +133,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().elementAt(0).subscribe(ts);
 
@@ -144,7 +144,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void emptyDefault() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
 
@@ -155,7 +155,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void emptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
 
@@ -172,7 +172,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void nonEmptyDefault() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
 
@@ -183,7 +183,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void nonEmptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
 
@@ -200,7 +200,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void defaultReturnsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().elementAtOrDefault(0, () -> null).subscribe(ts);
 
@@ -211,7 +211,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void defaultThrows() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.<Integer>empty().elementAtOrDefault(0, () -> {
 			throw new RuntimeException("forced failure");

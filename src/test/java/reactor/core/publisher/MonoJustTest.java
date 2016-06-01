@@ -34,7 +34,7 @@ public class MonoJustTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
 
         Mono.just(1).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class MonoJustTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+        TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
         Mono.just(1).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class MonoJustTest {
 
     @Test
     public void fused() {
-        TestSubscriber<Integer> ts = new TestSubscriber<>();
+        TestSubscriber<Integer> ts = TestSubscriber.create();
         ts.requestedFusionMode(Fuseable.ANY);
         
         Mono.just(1).subscribe(ts);

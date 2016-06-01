@@ -13,7 +13,7 @@ public class FluxNeverTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		FluxNever.<Integer>instance().subscribe(ts);
 

@@ -32,7 +32,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void nonEmpty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxSwitchIfEmpty<>(Flux.just(1, 2, 3, 4, 5), new FluxJust<>(10)).subscribe(ts);
 
@@ -43,7 +43,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void nonEmptyBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxSwitchIfEmpty<>(Flux.just(1, 2, 3, 4, 5), new FluxJust<>(10)).subscribe(ts);
 
@@ -66,7 +66,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxSwitchIfEmpty<>(Flux.empty(), new FluxJust<>(10)).subscribe(ts);
 
@@ -77,7 +77,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void emptyBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxSwitchIfEmpty<>(Flux.empty(), new FluxJust<>(10)).subscribe(ts);
 

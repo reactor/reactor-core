@@ -31,7 +31,7 @@ public class FluxDeferComposeTest {
         
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Integer> ts = TestSubscriber.create();
             
             source.subscribe(ts);
             
@@ -48,7 +48,7 @@ public class FluxDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Integer> ts = TestSubscriber.create();
             
             source.subscribe(ts);
             
@@ -66,7 +66,7 @@ public class FluxDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = new TestSubscriber<>();
+            TestSubscriber<Integer> ts = TestSubscriber.create();
             
             source.subscribe(ts);
             

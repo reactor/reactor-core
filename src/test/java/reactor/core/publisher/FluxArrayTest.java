@@ -28,7 +28,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -39,7 +39,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normalBackpressuredExact() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>(10);
+		TestSubscriber<Integer> ts = TestSubscriber.create(10);
 
 		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -79,7 +79,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void arrayContainsNull() {
-		TestSubscriber<Integer> ts = new TestSubscriber<>();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxArray<>(1, 2, 3, 4, 5, null, 7, 8, 9, 10).subscribe(ts);
 

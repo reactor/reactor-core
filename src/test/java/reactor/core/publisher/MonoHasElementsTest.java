@@ -28,7 +28,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void emptySource() {
-		TestSubscriber<Boolean> ts = new TestSubscriber<>();
+		TestSubscriber<Boolean> ts = TestSubscriber.create();
 
 		Mono.empty().hasElement().subscribe(ts);
 
@@ -39,7 +39,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void emptySourceBackpressured() {
-		TestSubscriber<Boolean> ts = new TestSubscriber<>(0);
+		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
 
 		Mono.empty().hasElement().subscribe(ts);
 
@@ -56,7 +56,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void nonEmptySource() {
-		TestSubscriber<Boolean> ts = new TestSubscriber<>();
+		TestSubscriber<Boolean> ts = TestSubscriber.create();
 
 		Flux.range(1, 10).hasElements().subscribe(ts);
 
@@ -67,7 +67,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void nonEmptySourceBackpressured() {
-		TestSubscriber<Boolean> ts = new TestSubscriber<>(0);
+		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
 
 		Flux.range(1, 10).hasElements().subscribe(ts);
 
