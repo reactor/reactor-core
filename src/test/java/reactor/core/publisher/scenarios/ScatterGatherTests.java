@@ -44,7 +44,7 @@ public class ScatterGatherTests {
 		    .collect(Result::new, Result::add)
 		    .doOnNext(Result::stop)
 		    .log("accumulated")
-		    .get();
+		    .block();
 
 		s.shutdown();
 	}

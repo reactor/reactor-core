@@ -71,7 +71,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 		                                      .take(numOfItems + 1)
 		                                      .asList();
 
-		c.get();
+		c.block();
 	}
 
 
@@ -110,7 +110,8 @@ public class FizzBuzzTests extends AbstractReactorTest {
 			else ring.onNext(String.valueOf(curr));
 		}
 
-		Assert.assertTrue("Has not returned list", p.get(Duration.ofSeconds(5)) != null);
+		Assert.assertTrue("Has not returned list", p.block(Duration.ofSeconds(5)) !=
+				null);
 
 	}
 }

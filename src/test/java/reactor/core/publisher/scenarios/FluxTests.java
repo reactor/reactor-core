@@ -52,7 +52,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -61,6 +60,7 @@ import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
@@ -181,11 +181,11 @@ public class FluxTests extends AbstractReactorTest {
 
 		assertThat("First is 1",
 				first.next()
-				     .get(),
+				     .block(),
 				is(1));
 		assertThat("Last is 5",
 				last.next()
-				    .get(),
+				    .block(),
 				is(5));
 	}
 
@@ -246,7 +246,7 @@ public class FluxTests extends AbstractReactorTest {
 		catch (Exceptions.CancelException ise) {
 			// Swallow
 		}
-		assertEquals(deferred.get(), "alpha");
+		assertEquals(deferred.block(), "alpha");
 	}
 
 	@Test
@@ -475,7 +475,7 @@ public class FluxTests extends AbstractReactorTest {
 		}
 		source.onComplete();
 
-		Assert.assertTrue(result.get(Duration.ofSeconds(5)) >= avgTime * 0.6);
+		Assert.assertTrue(result.block(Duration.ofSeconds(5)) >= avgTime * 0.6);
 	}
 
 	@Test
@@ -512,7 +512,7 @@ public class FluxTests extends AbstractReactorTest {
 		keyboardStream.onNext(KeyEvent.VK_C);
 		keyboardStream.onComplete();
 
-		List<Boolean> res = konamis.get();
+		List<Boolean> res = konamis.block();
 
 		Assert.assertTrue(res.size() == 12);
 		Assert.assertFalse(res.get(0));
@@ -705,7 +705,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		assertThat(stream.partition(2)
 		                 .count()
-		                 .get(), is(equalTo(2L)));
+		                 .block(), is(equalTo(2L)));
 	}
 
 	/**
@@ -783,7 +783,7 @@ public class FluxTests extends AbstractReactorTest {
 		long res = Flux.range(0, 1_000_000)
 		                  .flatMap(v -> Flux.range(v, 2))
 		                  .count()
-		                  .get(Duration.ofSeconds(5));
+		                  .block(Duration.ofSeconds(5));
 
 		assertTrue("Latch is " + res, res == 2_000_000);
 	}
@@ -794,7 +794,7 @@ public class FluxTests extends AbstractReactorTest {
 			Flux<String> as = Flux.just("x");
 			Flux<String> bs = Flux.just((String)null);
 
-			assertNull(Flux.zip(as, bs).next().get());
+			assertNull(Flux.zip(as, bs).next().block());
 		}
 		catch (NullPointerException npe) {
 			return;
@@ -876,7 +876,7 @@ public class FluxTests extends AbstractReactorTest {
 	 */
 	@Test
 	public void testParallelWithJava8StreamsInput() throws InterruptedException {
-		Scheduler supplier = Computations.parallel("test-p", 2048, 2);
+		Scheduler supplier = Schedulers.newParallel("test-p", 2);
 
 		int max = ThreadLocalRandom.current()
 		                           .nextInt(100, 300);
@@ -1105,8 +1105,8 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void consistentMultithreadingWithPartition() throws InterruptedException {
-		Scheduler supplier1 = Computations.parallel("groupByPool", 32, 2);
-		Scheduler supplier2 = Computations.parallel("partitionPool", 32, 5);
+		Scheduler supplier1 = Schedulers.newComputation("groupByPool", 2, 32);
+		Scheduler supplier2 = Schedulers.newComputation("partitionPool", 5, 32);
 
 		CountDownLatch latch = new CountDownLatch(10);
 
@@ -1348,8 +1348,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
+		Scheduler computation = Schedulers.newComputation("computation", 1, BACKLOG);
+		Scheduler persistence = Schedulers.newSingle("persistence");
+		Scheduler forkJoin = Schedulers.newComputation("forkJoin", 2, BACKLOG);
+
 		final Flux<List<String>> computationStream =
-				computationEmitterProcessor.publishOn(Computations.single("computation", BACKLOG))
+				computationEmitterProcessor.publishOn(computation)
 				                      .map(i -> {
 					                      final List<String> list = new ArrayList<>(i);
 					                      for (int j = 0; j < i; j++) {
@@ -1363,19 +1367,19 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> persistenceStream =
-				persistenceEmitterProcessor.publishOn(Computations.single("persistence", BACKLOG))
+				persistenceEmitterProcessor.publishOn(persistence)
 				                      .doOnNext(i -> println("Persisted: ", i))
 				                      .map(i -> Collections.singletonList("done" + i))
 				                      .log("persistence");
 
-		Flux<Integer> forkStream = forkEmitterProcessor.publishOn(Computations.single("fork", BACKLOG))
+		Flux<Integer> forkStream = forkEmitterProcessor.publishOn(forkJoin)
 		                                             .log("fork");
 
 		forkStream.subscribe(computationEmitterProcessor);
 		forkStream.subscribe(persistenceEmitterProcessor);
 
 		final Flux<List<String>> joinStream = Flux.zip(computationStream, persistenceStream, (a, b) -> Arrays.asList(a, b))
-		                                                .publishOn(Computations.single("join", BACKLOG))
+		                                                .publishOn(forkJoin)
 		                                                .map(listOfLists -> {
 			                                               listOfLists.get(0)
 			                                                          .addAll(listOfLists.get(1));
@@ -1398,9 +1402,13 @@ public class FluxTests extends AbstractReactorTest {
 		forkEmitterProcessor.onNext(3);
 		forkEmitterProcessor.onComplete();
 
-		List<String> res = listPromise.get(Duration.ofSeconds(5));
+		List<String> res = listPromise.block(Duration.ofSeconds(5));
 		System.out.println(forkEmitterProcessor.debug());
 		assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res);
+
+		forkJoin.shutdown();
+		persistence.shutdown();
+		computation.shutdown();
 	}
 
 	@Test

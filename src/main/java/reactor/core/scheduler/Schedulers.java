@@ -77,7 +77,6 @@ public class Schedulers {
 		return fromExecutor(executor, false);
 	}
 
-
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
 	 * Runnables for async operators.

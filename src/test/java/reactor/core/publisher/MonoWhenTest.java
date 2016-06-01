@@ -31,7 +31,7 @@ public class MonoWhenTest {
                 Mono.empty(), 
                 Mono.delay(Duration.ofMillis(250)).ignoreElement()
             )
-            .get());
+            .block());
     }
 
     @Test(timeout = 5000)
@@ -40,13 +40,13 @@ public class MonoWhenTest {
                 Mono.empty(), 
                 Mono.delay(Duration.ofMillis(250))
             )
-            .get());
+            .block());
     }
 
     @Test//(timeout = 5000)
     public void all2NonEmpty() {
         Assert.assertEquals(Tuple.of(0L, 0L), 
-                Mono.when(Mono.delay(150), Mono.delay(250)).get()
+                Mono.when(Mono.delay(150), Mono.delay(250)).block()
         );
     }
     
@@ -62,7 +62,7 @@ public class MonoWhenTest {
                 monos[j] = Mono.delay(Duration.ofMillis(150 + 50 * j));
             }
             
-            Object[] out = Mono.when(monos).get();
+            Object[] out = Mono.when(monos).block();
             
             Assert.assertArrayEquals(result, out);
         }

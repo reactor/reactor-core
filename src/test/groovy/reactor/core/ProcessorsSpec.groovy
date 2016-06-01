@@ -19,10 +19,10 @@ package reactor.core
 
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-import reactor.core.publisher.Computations
 import reactor.core.publisher.TopicProcessor
 import reactor.core.publisher.WorkQueueProcessor
 import reactor.core.scheduler.Scheduler
+import reactor.core.scheduler.Schedulers
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -164,7 +164,7 @@ class ProcessorsSpec extends Specification {
 	def "Dispatcher executes tasks in correct thread"() {
 
 		given:
-		def diffThread = Computations.concurrent("rbWork").createWorker()
+		def diffThread = Schedulers.newParallel('work', 2).createWorker()
 			def currentThread = Thread.currentThread()
 			Thread taskThread = null
 
@@ -191,7 +191,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer eventBus"
-			def serviceRB = Computations.single("rb", 32)
+			def serviceRB = Schedulers.newComputation("rb", 4, 32)
 		def r = serviceRB.createWorker()
 			def latch = new CountDownLatch(2)
 
@@ -220,7 +220,7 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = Computations.single("rb", 8)
+			def serviceRB = Schedulers.newComputation("rb", 1, 8)
 		def dispatcher = serviceRB.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -240,7 +240,7 @@ class ProcessorsSpec extends Specification {
 	def "WorkQueueDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRBWork = Computations.concurrent("rbWork", 1024, 8)
+			def serviceRBWork = Schedulers.newParallel("rbWork", 8)
 		def dispatcher = serviceRBWork.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
@@ -293,7 +293,7 @@ class ProcessorsSpec extends Specification {
 		 d.shutdown()
 
 		where:
-			d << [Computations.concurrent("rbWork", 1024, 4).createWorker()]
+			d << [Schedulers.newParallel("rbWork", 8).createWorker()]
 
 	}
 }
