@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.util.EmptySubscription;
 import rx.exceptions.Exceptions;
 
@@ -48,7 +47,7 @@ final class MonoRunnable extends Mono<Void> implements Supplier<Void>{
     }
     
     @Override
-    public Void get() {
+    public Void block() {
         run.run();
         return null;
     }

@@ -19,7 +19,7 @@ import org.reactivestreams.Subscriber
 import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Mono
 import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.Computations
+import reactor.core.scheduler.Schedulers
 import reactor.core.subscriber.DeferredScalarSubscriber
 import reactor.core.util.Exceptions
 import spock.lang.Specification
@@ -72,7 +72,7 @@ class MonoSpec extends Specification {
 	promise.onNext 'test'
 
 	then: "the consumer is invoked with the promise"
-	acceptedMonoProcessor == promise.get()
+	acceptedMonoProcessor == promise.block()
 	promise.success
   }
 
@@ -86,7 +86,7 @@ class MonoSpec extends Specification {
 	promise.doOnTerminate{ self, err -> acceptedMonoProcessor = self}.subscribeWith(MonoProcessor.create())
 
 	then: "the consumer is invoked with the promise"
-	acceptedMonoProcessor == promise.get()
+	acceptedMonoProcessor == promise.block()
   }
 
   def "An onSuccess consumer is called when a promise is fulfilled"() {
@@ -202,7 +202,7 @@ class MonoSpec extends Specification {
 	def promise = Mono.error(failure)
 
 	when: "getting the promise's value"
-	promise.get()
+	promise.block()
 
 	then: "the error that the promise was rejected with is thrown"
 	thrown(Exception)
@@ -213,7 +213,7 @@ class MonoSpec extends Specification {
 	def promise = Mono.just('test')
 
 	when: "getting the promise's value"
-	def value = promise.get()
+	def value = promise.block()
 
 	then: "the value used to fulfil the promise is returned"
 	value == 'test'
@@ -239,7 +239,7 @@ class MonoSpec extends Specification {
 	promise.onNext 1
 
 	then: "the mapped promise is fulfilled with the mapped value"
-	mappedMonoProcessor.get() == 2
+	mappedMonoProcessor.block() == 2
   }
 
   def "A map many can be used to bind to another MonoProcessor and compose asynchronous results "() {
@@ -253,7 +253,7 @@ class MonoSpec extends Specification {
 	println promise.debug()
 
 	then: "the mapped promise is fulfilled with the mapped value"
-	mappedMonoProcessor.get() == 2
+	mappedMonoProcessor.block() == 2
   }
 
   def "A function can be used to map an already-fulfilled MonoProcessor's value"() {
@@ -264,7 +264,7 @@ class MonoSpec extends Specification {
 	def mappedMonoProcessor = promise.map { it * 2 }
 
 	then: "the mapped promise is fulfilled with the mapped value"
-	mappedMonoProcessor.get() == 2
+	mappedMonoProcessor.block() == 2
   }
 
   def "An onSuccess consumer registered via then is called when the promise is fulfilled"() {
@@ -393,8 +393,8 @@ class MonoSpec extends Specification {
 	bc2.onNext 2
 
 	then: "the combined promise is fulfilled with both values"
-	combined.get().t1 == 1
-	combined.get().t2 == 2
+	combined.block().t1 == 1
+	combined.block().t2 == 2
 	combined.success
   }
 
@@ -459,7 +459,7 @@ class MonoSpec extends Specification {
 
   def "A combined promise through 'any' is fulfilled with the first component result when using asynchronously"() {
 	given: "two fulfilled promises"
-	def ioGroup = Computations.concurrent("promise-task", 8, 2)
+	def ioGroup = Schedulers.newParallel("promise-task", 2)
 	def promise1 = Mono.fromCallable { sleep(10000); 1 }.subscribeOn(ioGroup)
 	def promise2 = Mono.fromCallable { sleep(325); 2 }.subscribeOn(ioGroup)
 
@@ -468,7 +468,10 @@ class MonoSpec extends Specification {
 	def combined =  Mono.first(promise1, promise2).subscribeWith(MonoProcessor.create())
 
 	then: "it is fulfilled"
-	combined.get(Duration.ofMillis(3205)) == 2
+	combined.block(Duration.ofMillis(3205)) == 2
+
+	cleanup:
+	ioGroup.shutdown()
   }
 
   def "A combined promise is immediately rejected if its component promises are already rejected"() {
@@ -477,7 +480,7 @@ class MonoSpec extends Specification {
 	def promise2 = Mono.error(new Exception())
 
 	when: "a combined promise is first created"
-	Mono.when(promise1, promise2).get()
+	Mono.when(promise1, promise2).block()
 	println promise1.debug()
 	println promise2.debug()
 
@@ -501,7 +504,7 @@ class MonoSpec extends Specification {
 	promise1.onNext 1
 
 	then: "the combined promise is fulfilled"
-	combined.get(Duration.ofSeconds(1)) == [1]
+	combined.block(Duration.ofSeconds(1)) == [1]
 	combined.success
   }
 
@@ -510,13 +513,13 @@ class MonoSpec extends Specification {
 	def promise = Mono.fromCallable { 1 }
 
 	then: "it is fulfilled"
-	promise.get() == 1
+	promise.block() == 1
   }
 
   def "A promise with a Supplier that throws an exception is rejected"() {
 	when: "A promise configured with a supplier that throws an error"
 	def promise = Mono.fromCallable { throw new RuntimeException() }
-	promise.get()
+	promise.block()
 
 	then: "it is rejected"
 	thrown RuntimeException
@@ -531,7 +534,7 @@ class MonoSpec extends Specification {
 	promise.onNext 1
 
 	then: "the filtered promise is not fulfilled"
-	!filtered.get()
+	!filtered.block()
   }
 
   def "A filtered promise is fulfilled if the filter allows the value to pass through"() {
@@ -555,7 +558,7 @@ class MonoSpec extends Specification {
 
 	when: "the promise is fulfilled"
 	promise.onNext 2
-	filteredMonoProcessor.get()
+	filteredMonoProcessor.block()
 
 	then: "the filtered promise is rejected"
 	thrown RuntimeException
@@ -566,7 +569,7 @@ class MonoSpec extends Specification {
 	def promise = Mono.just(2)
 
 	when: "the promise is filtered with a filter that only accepts even values"
-	def v = promise.flux().filter { it % 2 == 0 }.next().get()
+	def v = promise.flux().filter { it % 2 == 0 }.next().block()
 
 	then: "the filtered promise is fulfilled"
 	2 == v
@@ -577,7 +580,7 @@ class MonoSpec extends Specification {
 	def promise = Mono.just(1)
 
 	when: "the promise is filtered with a filter that only accepts even values"
-	def v = promise.flux().filter { it % 2 == 0 }.next().get()
+	def v = promise.flux().filter { it % 2 == 0 }.next().block()
 
 	then: "the filtered promise is not fulfilled"
 	!v
@@ -607,10 +610,10 @@ class MonoSpec extends Specification {
   def "Can poll instead of await to automatically handle InterruptedException"() {
 	given: "a promise"
 	def p1 = MonoProcessor.<String> create()
-
+	def s = Schedulers.newSingle('test')
 	when: "p1 is consumed by p2"
 	def p2 = p1
-			.publishOn(Computations.single('test'))
+			.publishOn(s)
 			.map {
 	  println Thread.currentThread();
 	  sleep(3000);
@@ -620,16 +623,19 @@ class MonoSpec extends Specification {
 	and: "setting a value"
 	p1.onNext '1'
 	println "emitted"
-	 p2.get(Duration.ofSeconds(1))
+	p2.block(Duration.ofSeconds(1))
 
 	then: 'No value'
 	thrown IllegalStateException
 
 	when: 'polling undefinitely'
-	def v = p2.get()
+	def v = p2.block()
 
 	then: 'Value!'
 	v
+
+	cleanup:
+	s.shutdown()
   }
 
   def "MonoProcessor should handle delayed subscriptions"() {
@@ -637,7 +643,7 @@ class MonoSpec extends Specification {
 	def m = new MonoDelayedSubscription()
 
 	when: "we subscribe to that promise"
-	def v = m.get(1_000)
+	def v = m.block(1_000)
 
 	then: 'it should be subscribed to only once'
 	m.subscriptionCount.get() == 1
@@ -654,7 +660,7 @@ class MonoSpec extends Specification {
 		DeferredScalarSubscriber<Integer, Integer> sds = new DeferredScalarSubscriber<>(s);
 		// second subscription should be handled first
 		// delaying the first subscription by 100ms, second by 50ms
-		sleep((Long)(100 / (subscriptionCount.get() + 1)))
+		sleep((Long) (100 / (subscriptionCount.get() + 1)))
 		s.onSubscribe(sds);
 		def v = subscriptionCount.getAndIncrement()
 		sds.complete(v)

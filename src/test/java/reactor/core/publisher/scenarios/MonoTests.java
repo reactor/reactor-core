@@ -19,9 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.scheduler.Schedulers;
 import reactor.core.tuple.Tuple2;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -44,10 +44,10 @@ public class MonoTests {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException("Some Exception");
 			})
-			    .subscribeOn(Computations.concurrent())
+			    .subscribeOn(Schedulers.parallel())
 			    .doOnError(t -> latch1.countDown())
 			    .doOnSuccess(v -> latch2.countDown())
-			    .get();
+			    .block();
 		}
 		catch (RuntimeException re){
 
@@ -62,9 +62,9 @@ public class MonoTests {
 			Thread.sleep(400);
 			return "hello";
 		})
-		               .subscribeOn(Computations.concurrent())
+		               .subscribeOn(Schedulers.parallel())
 		               .then(() -> Mono.just("world"))
-		               .get();
+		               .block();
 		assertThat("Alternate mono not seen", h, is("world"));
 	}
 
@@ -76,7 +76,7 @@ public class MonoTests {
 		                             .or(Mono.delay(2000).log("time2").map(d -> "Spring Reactive"))
 		                             .then(t -> Mono.just(t+ " world"))
 		                             .elapsed()
-		                             .get();
+		                             .block();
 		assertThat("Alternate mono not seen", h.getT2(), is("Spring Reactive world"));
 		System.out.println(h.getT1());
 	}
