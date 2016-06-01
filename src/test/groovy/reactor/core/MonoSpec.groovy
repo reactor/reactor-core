@@ -450,7 +450,7 @@ class MonoSpec extends Specification {
 
 	when: "a combined promise is first created"
 	def combined = MonoProcessor.create()
-	Mono.any(promise1, promise2).subscribe(combined)
+	Mono.first(promise1, promise2).subscribe(combined)
 
 	then: "it is fulfilled"
 	combined.peek() == 1
@@ -465,7 +465,7 @@ class MonoSpec extends Specification {
 
 
 	when: "a combined promise is first created"
-	def combined =  Mono.any(promise1, promise2).subscribeWith(MonoProcessor.create())
+	def combined =  Mono.first(promise1, promise2).subscribeWith(MonoProcessor.create())
 
 	then: "it is fulfilled"
 	combined.get(Duration.ofMillis(3205)) == 2

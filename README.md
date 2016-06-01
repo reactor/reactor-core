@@ -59,7 +59,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 Mono in action :
 ```java
 Mono.fromCallable(System::currentTimeMillis)
-    .then(time -> Mono.any(serviceA.findRecent(time), serviceB.findRecent(time)))
+    .then(time -> Mono.first(serviceA.findRecent(time), serviceB.findRecent(time)))
     .timeout(Duration.ofSeconds(3), errorHandler::fallback)
     .doOnSuccess(r -> serviceM.incrementSuccess())
     .subscribe(System.out::println);

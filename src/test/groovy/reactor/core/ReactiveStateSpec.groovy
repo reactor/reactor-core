@@ -17,7 +17,7 @@
 package reactor.core
 
 import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.Computations
+import reactor.core.scheduler.Schedulers
 import reactor.core.util.ReactiveStateUtils
 import spock.lang.Specification
 
@@ -69,7 +69,7 @@ class ReactiveStateSpec extends Specification {
 	def sub3 = unbounded()
 	def _group = EmitterProcessor.create()
 	proc1.log(" test").subscribe(sub1)
-	_group.publishOn(Computations.single()).subscribe(sub2)
+	_group.publishOn(Schedulers.single()).subscribe(sub2)
 	proc1.log(" test").subscribe(sub3)
 	proc1.log(" test").subscribe(_group)
 	def zip = zip(pub3, proc2)

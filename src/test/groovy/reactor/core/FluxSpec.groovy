@@ -17,13 +17,7 @@ package reactor.core
 
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
-import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.Mono
-import reactor.core.publisher.Flux
-import reactor.core.publisher.MonoProcessor
-import reactor.core.publisher.Computations
-import reactor.core.publisher.ReplayProcessor
-import reactor.core.publisher.Signal
+import reactor.core.publisher.*
 import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
 import reactor.core.test.TestSubscriber
@@ -94,7 +88,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the error is retrieved after 2 sec'
-		stream.publishOn(asyncGroup).timeout(2, TimeUnit.SECONDS).next().get()
+		stream.publishOn(asyncGroup).timeout(2, TimeUnit.SECONDS).next().block()
 
 		then:
 			'an error has been thrown'
@@ -135,8 +129,8 @@ class FluxSpec extends Specification {
 
 		when:
 			'the value is retrieved'
-			def value1 = stream.asList().get()
-			def value2 = stream.asList().get()
+			def value1 = stream.asList().block()
+			def value2 = stream.asList().block()
 
 		then:
 			'it is available'
@@ -154,12 +148,12 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is available'
-			!tap.get()
+			!tap.block()
 
 		when:
 			'the error signal is observed and flux is retrieved'
 			stream = Flux.error(new Exception())
-			stream.then().get()
+			stream.then().block()
 
 		then:
 			'it is available'
@@ -198,7 +192,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is available'
-			value.get() == ['test-ok', 'test2-ok', 'test3-ok']
+			value.block() == ['test-ok', 'test2-ok', 'test3-ok']
 	}
 
 	def 'A deferred Flux can be translated into a completable queue'() {
@@ -271,12 +265,13 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with values 1 to INT_MAX inclusive'
 			def s = Flux.range(1, Integer.MAX_VALUE)
+			def scheduler = Schedulers.newParallel("work", 4)
 
 		when:
 			'the most recent value is retrieved'
 			def last = s
 					.sample(2l)
-					.subscribeOn(Computations.concurrent("work", 8, 4))
+					.subscribeOn(scheduler)
 					.publishOn(asyncGroup)
 					.log()
 					.take(1)
@@ -284,24 +279,31 @@ class FluxSpec extends Specification {
 
 		then:
 			last.get(Duration.ofSeconds(5)) > 20_000
+
+	  	cleanup:
+			scheduler.shutdown()
 	}
 
 	def 'A Flux can sample values over time with consumeOn'() {
 		given:
 			'a composable with values 1 to INT_MAX inclusive'
 			def s = Flux.range(1, Integer.MAX_VALUE)
+			def scheduler = Schedulers.newParallel("test", 4)
 
 		when:
 			'the most recent value is retrieved'
 			def last =
 			s
 					.take(Duration.ofSeconds(4))
-					.subscribeOn(Computations.concurrent("work", 8, 4))
+					.subscribeOn(scheduler)
 					.last()
 					.subscribeWith(MonoProcessor.create())
 
 		then:
-			last.get() > 20_000
+			last.block() > 20_000
+
+	  	cleanup:
+			scheduler.shutdown()
 	}
 
 	def 'A Flux can be enforced to dispatch values distinct from their immediate predecessors'() {
@@ -315,7 +317,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'collected must remove duplicates'
-			tap.get() == [1, 2, 3]
+			tap.block() == [1, 2, 3]
 	}
 
 	def 'A Flux can be enforced to dispatch values with keys distinct from their immediate predecessors keys'() {
@@ -329,7 +331,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'collected must remove duplicates'
-			tap.get() == [2, 3, 2, 5]
+			tap.block() == [2, 3, 2, 5]
 	}
 
 	def 'A Flux can be enforced to dispatch distinct values'() {
@@ -343,7 +345,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'collected should be without duplicates'
-			tap.get() == [1, 2, 3, 4]
+			tap.block() == [1, 2, 3, 4]
 	}
 
 	def 'A Flux can be enforced to dispatch values having distinct keys'() {
@@ -357,7 +359,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'collected should be without duplicates'
-			tap.get() == [1, 2, 3]
+			tap.block() == [1, 2, 3]
 	}
 
 	def 'A Flux can check if there is a value satisfying a predicate'() {
@@ -367,7 +369,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking for existence of values > 2 and the result of the check is collected'
-			def tap = s.any({ it > 2 } as Predicate<Integer>).log().get()
+			def tap = s.any({ it > 2 } as Predicate<Integer>).log().block()
 
 		then:
 			'collected should be true'
@@ -376,7 +378,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking for existence of values > 5 and the result of the check is collected'
-			tap = s.any ({ it > 5 } as Predicate<Integer>).get()
+			tap = s.any ({ it > 5 } as Predicate<Integer>).block()
 
 		then:
 			'collected should be false'
@@ -385,7 +387,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking always true predicate on empty flux and collecting the result'
-			tap = Flux.empty().any ({ true } as Predicate).get();
+			tap = Flux.empty().any ({ true } as Predicate).block();
 
 		then:
 			'collected should be false'
@@ -668,7 +670,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the values are all collected from source1 flux'
-			tap.get() == [[1, 2], [3, 4], [5, 6]]
+			tap.block() == [[1, 2], [3, 4], [5, 6]]
 
 		when:
 			'the sources are zipped in a flat map'
@@ -680,7 +682,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the values are all collected from source1 flux'
-			tap.get() == [[1, 2], [3, 2], [5, 2], [7, 2], [9, 2]]
+			tap.block() == [[1, 2], [3, 2], [5, 2], [7, 2], [9, 2]]
 	}
 
 
@@ -838,7 +840,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element at index 2 is requested'
-			def tap = s.elementAt(2).get()
+			def tap = s.elementAt(2).block()
 
 		then:
 			'3 is emitted'
@@ -854,7 +856,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element with index > number of values is requested'
-			s.elementAt(10).doOnError(errorConsumer).get()
+			s.elementAt(10).doOnError(errorConsumer).block()
 
 		then:
 			'error is thrown'
@@ -869,7 +871,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element at index 2 is requested'
-			def tap = s.elementAtOrDefault(2, {-1}).get()
+			def tap = s.elementAtOrDefault(2, {-1}).block()
 
 		then:
 			'3 is emitted'
@@ -877,7 +879,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element with index > number of values is requested'
-			tap = s.elementAtOrDefault(10, {-1}).get()
+			tap = s.elementAtOrDefault(10, {-1}).block()
 
 		then:
 			'-1 is emitted'
@@ -954,9 +956,9 @@ class FluxSpec extends Specification {
 		given:
 			'a source composable and a async downstream'
 			def source = ReplayProcessor.<Integer> create().connect()
-
+			def scheduler = Schedulers.newParallel("test", 2)
 			def res = source
-					.subscribeOn(Computations.concurrent("test",32,2))
+					.subscribeOn(scheduler)
 					.delaySubscription(1L)
 					.log("streamed")
 					.map { it * 2 }
@@ -975,7 +977,10 @@ class FluxSpec extends Specification {
 
 		then:
 			'the res is passed on'
-			res.get() == [2, 4, 6, 8]
+			res.block() == [2, 4, 6, 8]
+
+		cleanup:
+		  scheduler.shutdown()
 	}
 
 	def "When a filter function throws an exception, the filtered composable accepts the error"() {
@@ -1004,7 +1009,7 @@ class FluxSpec extends Specification {
 		when:
 			'a reduce function is registered'
 			def reduced = source.reduce(new Reduction())
-			def value = reduced.get()
+			def value = reduced.block()
 
 		then:
 			'the resulting composable holds the reduced value'
@@ -1012,7 +1017,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'use an initial value'
-			value = source.reduce(2, new Reduction()).get()
+			value = source.reduce(2, new Reduction()).block()
 
 		then:
 			'the updated reduction is available'
@@ -1027,7 +1032,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'a consumer is registered'
-			def values = reduced.get()
+			def values = reduced.block()
 
 		then:
 			'the consumer only receives the final value'
@@ -1176,7 +1181,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the list contains the first element'
-			value.get() == [1]
+			value.block() == [1]
 	}
 
 	def 'Collect will accumulate a list of accepted values and pass it to a consumer'() {
@@ -1194,7 +1199,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list contains the first and second elements'
-			value.get() == [1, 2]
+			value.block() == [1, 2]
 	}
 
 
@@ -1209,7 +1214,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get() == [[1, 2], [4, 5], [7, 8]]
+			res.block() == [[1, 2], [4, 5], [7, 8]]
 
 		when:
 			'overlapping buffers'
@@ -1217,7 +1222,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected overlapping lists are available'
-			res.get() == [[1, 2, 3], [3, 4, 5], [5, 6, 7], [7, 8]]
+			res.block() == [[1, 2, 3], [3, 4, 5], [5, 6, 7], [7, 8]]
 
 
 		when:
@@ -1253,7 +1258,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get() == [[1, 2, 3], [5, 6]]
+			res.block() == [[1, 2, 3], [5, 6]]
 
 		when:
 			'overlapping buffers'
@@ -1280,7 +1285,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected overlapping lists are available'
-			res.get() == [[3, 5], [5], [6]]
+			res.block() == [[3, 5], [5], [6]]
 	}
 
 	def 'Window will reroute multiple stream of accepted values and pass it to a consumer'() {
@@ -1294,7 +1299,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get() == [[1, 2], [4, 5], [7, 8]]
+			res.block() == [[1, 2], [4, 5], [7, 8]]
 
 		when:
 			'overlapping buffers'
@@ -1302,7 +1307,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected overlapping lists are available'
-			res.get() == [[1, 2, 3], [3, 4, 5], [5, 6, 7], [7, 8]]
+			res.block() == [[1, 2, 3], [3, 4, 5], [5, 6, 7], [7, 8]]
 
 
 		when:
@@ -1313,7 +1318,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get() == [[1, 2], [4, 5], [7, 8]]
+			res.block() == [[1, 2], [4, 5], [7, 8]]
 
 	}
 
@@ -1339,7 +1344,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get() == [[1, 2, 3], [5, 6]]
+			res.block() == [[1, 2, 3], [5, 6]]
 
 		when:
 			'overlapping buffers'
@@ -1365,7 +1370,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected overlapping lists are available'
-			res.get() == [[3, 5], [5], [6]]
+			res.block() == [[3, 5], [5], [6]]
 	}
 
 	def 'Window will re-route N elements to a fresh nested stream'() {
@@ -1434,7 +1439,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list contains the first and second elements'
-			promise.get() == [1, 2]
+			promise.block() == [1, 2]
 
 		when:
 			'2 more values are accepted'
@@ -1447,7 +1452,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected list contains the first and second elements'
-			promise.get() == [3, 4]
+			promise.block() == [3, 4]
 	}
 
 	def 'GroupBy will re-route N elements to a nested stream based on the mapped key'() {
@@ -1556,6 +1561,7 @@ class FluxSpec extends Specification {
 	def 'Creating Stream from publisher factory'() {
 		given:
 			'a source flux with a given publisher'
+			def scheduler = Schedulers.newParallel("work", 4)
 			def s = Flux.create {  sub  ->
 						(1..3).each {
 							sub.next("test$it")
@@ -1563,7 +1569,7 @@ class FluxSpec extends Specification {
 						sub.complete()
 					}
 					.log()
-					.subscribeOn(Computations.concurrent("work", 8, 4))
+					.subscribeOn(scheduler)
 
 		when:
 			'accept a value'
@@ -1573,6 +1579,8 @@ class FluxSpec extends Specification {
 		then:
 			'dispatching works'
 			result == ['test1', 'test2', 'test3']
+	  	cleanup:
+			scheduler.shutdown()
 	}
 
 
@@ -1637,7 +1645,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'consuming'
-			c.get()
+			c.block()
 			res = System.currentTimeMillis() - timeStart
 
 		then:
@@ -1666,7 +1674,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def result = s.asList().get()
+			def result = s.asList().block()
 
 		then:
 			'dispatching works'
@@ -1680,7 +1688,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def result = s.count().get()
+			def result = s.count().block()
 
 		then:
 			'dispatching works'
@@ -2212,7 +2220,7 @@ class FluxSpec extends Specification {
 				source.onNext(1)
 			}
 			sleep(1500)
-			println(((long) (value.get())) + " milliseconds on average")
+			println(((long) (value.block())) + " milliseconds on average")
 
 		then:
 			'the average elapsed time between 2 signals is greater than throttled time'
@@ -2293,7 +2301,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the flux is retrieved and a consumer is dynamically added'
-			def value = stream.nest().get()
+			def value = stream.nest().block()
 
 		then:
 			'it is available'
@@ -2337,7 +2345,7 @@ class FluxSpec extends Specification {
 				}
 			}.retry {
 				i <= 2
-			}.log().count().get()
+			}.log().count().block()
 
 		then:
 			'3 values are passed since it is a cold flux resubscribed 1 time'
@@ -2377,7 +2385,7 @@ class FluxSpec extends Specification {
 			def i = 0
 			stream = stream.repeat(2).doOnNext { i++ }.count().subscribe()
 
-			def value = stream.get()
+			def value = stream.block()
 
 			println stream.debug()
 
@@ -2438,7 +2446,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'timestamp operation is added and the flux is retrieved'
-			def value = stream.timestamp().next().get()
+			def value = stream.timestamp().next().block()
 
 		then:
 			'it is available'
@@ -2456,7 +2464,7 @@ class FluxSpec extends Specification {
 			'elapsed operation is added and the flux is retrieved'
 			def value = stream.doOnNext {
 				sleep(1000)
-			}.elapsed().next().get()
+			}.elapsed().next().block()
 
 			long totalElapsed = System.currentTimeMillis() - timestamp
 
@@ -2473,7 +2481,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'sorted operation is added and the flux is retrieved'
-			def value = stream.log().asSortedList().cache().subscribe().get()
+			def value = stream.log().asSortedList().cache().subscribe().block()
 
 		then:
 			'it is available'
@@ -2487,7 +2495,7 @@ class FluxSpec extends Specification {
 			'revese sorted operation is added and the flux is retrieved'
 			value = stream
 					.asSortedList({ a, b -> b <=> a } as Comparator<Integer>)
-					.get()
+					.block()
 
 		then:
 			'it is available'
@@ -2535,7 +2543,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'take to the first 2 elements'
-		stream.take(Duration.ofSeconds(2)).then().get()
+		stream.take(Duration.ofSeconds(2)).then().block()
 
 		then:
 			'the second is the last available'
@@ -2550,7 +2558,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'skip to the second element'
-			def value = stream.skip(1).asList().get()
+			def value = stream.skip(1).asList().block()
 
 		then:
 			'the first has been skipped'
@@ -2572,7 +2580,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the second is the last available'
-			value2.get() == ['test2', 'test3']
+			value2.block() == ['test2', 'test3']
 	}
 
 
@@ -2586,7 +2594,7 @@ class FluxSpec extends Specification {
 			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).asList()
 
 		then:
-			!promise.get()
+			!promise.block()
 	}/*
 
 	def "A Codec output can be streamed"() {

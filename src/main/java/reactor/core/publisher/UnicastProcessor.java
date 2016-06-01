@@ -225,7 +225,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onNext(T t) {
 		if (done || cancelled) {
-			Exceptions.onNextDropped(t);
+			//Exceptions.onNextDropped(t);
 			return;
 		}
 

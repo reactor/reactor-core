@@ -23,11 +23,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
-import reactor.core.publisher.Computations;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
-
+import reactor.core.scheduler.Schedulers;
 
 /**
  * @author Anatoly Kadyshev
@@ -43,12 +42,8 @@ public class SchedulerParallelTests extends AbstractProcessorVerification {
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		EmitterProcessor<Long> e = EmitterProcessor.create();
-		return FluxProcessor.wrap(e,
-				e.publishOn(Computations.<Long>single("shared-async",
-						bufferSize,
-						Throwable::printStackTrace,
-						() -> {
-						})));
+		Scheduler s = Schedulers.newSingle("shared-async");
+		return FluxProcessor.wrap(e, e.publishOn(s).doOnComplete(s::shutdown));
 
 	}
 
@@ -75,24 +70,19 @@ public class SchedulerParallelTests extends AbstractProcessorVerification {
 	}*/
 
 	@Override
-	public void required_spec109_mustIssueOnSubscribeForNonNullSubscriber() throws Throwable {
-		throw new SkipException("Computations only supports subscribe if eventually onSubscribed");
-	}
-
-	@Override
 	public long maxSupportedSubscribers() {
 		return 1L;
 	}
 
 	@Test
 	public void testDispatch() throws Exception {
-		Scheduler service = Computations.single("dispatcher", BUFFER_SIZE, t -> {
-			exceptionThrown.set(t);
-			t.printStackTrace();
-		}, () -> {});
+		Scheduler service = Schedulers.newSingle(r -> {
+			Thread t = new Thread(r, "dispatcher");
+			t.setUncaughtExceptionHandler((t1, e) -> exceptionThrown.set(e));
+			return t;
+		});
 
-		runTest(service.createWorker()).shutdown();
-		runTest(service.createWorker()).shutdown();
+		service.shutdown();
 	}
 
 	private Scheduler.Worker runTest(final Scheduler.Worker dispatcher) throws InterruptedException {
