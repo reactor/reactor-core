@@ -51,18 +51,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	public static final long     INITIAL_CURSOR_VALUE = -1L;
 
 	/**
-	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
-	 * Jr.
-	 *
-	 * @param x Value to round up
-	 *
-	 * @return The next power of 2 from x inclusive
-	 */
-	public static int ceilingNextPowerOfTwo(final int x) {
-		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
-	}
-
-	/**
 	 *
 	 * Create a
 	 * {@link Runnable} event loop that will keep monitoring a {@link LongSupplier} and compare it to a {@link RingBuffer}
@@ -107,17 +95,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
-	 * @param factory used to create the events within the ring buffer.
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @throws IllegalArgumentException if <tt>bufferSize</tt> is less than 1 or not a power of 2
-	 * @see MultiProducer
-	 */
-	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory, int bufferSize) {
-		return createMultiProducer(factory, bufferSize, WaitStrategy.busySpin());
-	}
-
-	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -143,7 +120,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			int bufferSize,
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
-		if (PlatformDependent.hasUnsafe() && isPowerOfTwo(bufferSize)) {
+		if (PlatformDependent.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			MultiProducer sequencer = new MultiProducer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<E>(factory, sequencer);
@@ -196,16 +173,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	}
 
 	/**
-	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @see MultiProducer
-	 */
-	@SuppressWarnings("unchecked")
-	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize, Runnable spinObserver) {
-		return createSingleProducer(EMITTED, bufferSize, WaitStrategy.busySpin(), spinObserver);
-	}
-
-	/**
 	 * Create a new single producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -244,7 +211,7 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 			Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (PlatformDependent.hasUnsafe() && isPowerOfTwo(bufferSize)) {
+		if (PlatformDependent.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
@@ -287,15 +254,6 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 		}
 
 		return minimum;
-	}
-
-	/**
-	 * @param x the int to test
-	 *
-	 * @return true if x is a power of 2
-	 */
-	public static boolean isPowerOfTwo(final int x) {
-		return Integer.bitCount(x) == 1;
 	}
 
 	/**

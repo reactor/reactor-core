@@ -61,7 +61,7 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
         if (bufferSize < 1) {
             throw new IllegalArgumentException("bufferSize must not be less than 1");
         }
-        if (!RingBuffer.isPowerOfTwo(bufferSize))
+        if (!QueueSupplier.isPowerOfTwo(bufferSize))
         {
             throw new IllegalArgumentException("bufferSize must be a power of 2");
         }

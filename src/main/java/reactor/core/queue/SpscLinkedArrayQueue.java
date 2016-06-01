@@ -45,7 +45,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
     static final Object NEXT = new Object();
     
     public SpscLinkedArrayQueue(int linkSize) {
-        int c = RingBuffer.ceilingNextPowerOfTwo(Math.min(2, linkSize));
+        int c = QueueSupplier.ceilingNextPowerOfTwo(Math.min(2, linkSize));
         this.producerArray = this.consumerArray = new AtomicReferenceArray<>(c + 1);
         this.mask = c - 1;
     }

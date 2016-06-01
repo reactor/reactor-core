@@ -28,17 +28,17 @@ import reactor.core.util.PlatformDependent;
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
-	static final Supplier CLQ_SUPPLIER             = new QueueSupplier<>(Long.MAX_VALUE, false, false);
-	static final Supplier ONE_SUPPLIER             = new QueueSupplier<>(1, false, true);
-	static final Supplier XSRB_SUPPLIER            = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false, false);
-	static final Supplier SMALLRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);
-	static final Supplier WAITING_XSRB_SUPPLIER    = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true, false);
-	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true, false);
-
-	final long    batchSize;
-	final boolean waiting;
-	final boolean multiproducer;
-
+	/**
+	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
+	 * Jr.
+	 *
+	 * @param x Value to round up
+	 *
+	 * @return The next power of 2 from x inclusive
+	 */
+	public static int ceilingNextPowerOfTwo(final int x) {
+		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
+	}
 
 	/**
 	 *
@@ -84,7 +84,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 		return new QueueSupplier<>(batchSize, waiting, multiproducer);
 	}
-	
+
+	/**
+	 * @param x the int to test
+	 *
+	 * @return true if x is a power of 2
+	 */
+	public static boolean isPowerOfTwo(final int x) {
+		return Integer.bitCount(x) == 1;
+	}
+
 	/**
 	 *
 	 * @param <T> the reified {@link Queue} generic type
@@ -166,6 +175,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return (Supplier<Queue<T>>) WAITING_XSRB_SUPPLIER;
 		}
 	}
+	final long    batchSize;
+	final boolean waiting;
+	final boolean multiproducer;
 
 	QueueSupplier(long batchSize, boolean waiting, boolean multiproducer) {
 		this.batchSize = batchSize;
@@ -198,15 +210,47 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	}
 
 	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
-		/** */
-        private static final long serialVersionUID = -6079491923525372331L;
-
         @Override
 		public boolean add(T t) {
 
 		    while (!offer(t));
-		    
+
 		    return true;
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends T> c) {
+			return false;
+		}
+
+		@Override
+		public void clear() {
+			set(null);
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return Objects.equals(get(), o);
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public T element() {
+			return get();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return get() == null;
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return new QueueIterator<>(this);
 		}
 
 		@Override
@@ -219,8 +263,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 
 		@Override
-		public T remove() {
-			return getAndSet(null);
+		public T peek() {
+			return get();
 		}
 
 		@Override
@@ -233,33 +277,28 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 
 		@Override
-		public T element() {
-			return get();
+		public T remove() {
+			return getAndSet(null);
 		}
 
 		@Override
-		public T peek() {
-			return get();
+		public boolean remove(Object o) {
+			return false;
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			return false;
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			return false;
 		}
 
 		@Override
 		public int size() {
 			return get() == null ? 0 : 1;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return get() == null;
-		}
-
-		@Override
-		public boolean contains(Object o) {
-			return Objects.equals(get(), o);
-		}
-
-		@Override
-		public Iterator<T> iterator() {
-			return new QueueIterator<>(this);
 		}
 
 		@Override
@@ -283,36 +322,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			}
 			return (T1[])toArray();
 		}
-
-		@Override
-		public boolean remove(Object o) {
-			return false;
-		}
-
-		@Override
-		public boolean containsAll(Collection<?> c) {
-			return false;
-		}
-
-		@Override
-		public boolean addAll(Collection<? extends T> c) {
-			return false;
-		}
-
-		@Override
-		public boolean removeAll(Collection<?> c) {
-			return false;
-		}
-
-		@Override
-		public boolean retainAll(Collection<?> c) {
-			return false;
-		}
-
-		@Override
-		public void clear() {
-			set(null);
-		}
+		/** */
+        private static final long serialVersionUID = -6079491923525372331L;
 	}
 
 	static class QueueIterator<T> implements Iterator<T> {
@@ -338,4 +349,10 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			queue.remove();
 		}
 	}
+	static final Supplier CLQ_SUPPLIER          = new QueueSupplier<>(Long.MAX_VALUE, false, false);
+	static final Supplier ONE_SUPPLIER          = new QueueSupplier<>(1, false, true);
+	static final Supplier XSRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false, false);
+	static final Supplier SMALLRB_SUPPLIER      = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);
+	static final Supplier WAITING_XSRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true, false);
+	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true, false);
 }

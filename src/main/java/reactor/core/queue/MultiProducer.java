@@ -54,7 +54,7 @@ final class MultiProducer extends RingBufferProducer
     MultiProducer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
         super(bufferSize, waitStrategy, spinObserver);
 
-        if (!RingBuffer.isPowerOfTwo(bufferSize)) {
+        if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
             throw new IllegalArgumentException("bufferSize must be a power of 2");
         }
 

@@ -25,7 +25,7 @@ package reactor.core.scheduler;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import reactor.core.queue.RingBuffer;
+import reactor.core.queue.QueueSupplier;
 
 /**
  * A simple open hash set with add, remove and clear capabilities only.
@@ -55,7 +55,7 @@ final class OpenHashSet<T> {
     @SuppressWarnings("unchecked")
     public OpenHashSet(int capacity, float loadFactor) {
         this.loadFactor = loadFactor;
-        int c = RingBuffer.ceilingNextPowerOfTwo(capacity);
+        int c = QueueSupplier.ceilingNextPowerOfTwo(capacity);
         this.mask = c - 1;
         this.maxSize = (int)(loadFactor * c);
         this.keys = (T[])new Object[c];

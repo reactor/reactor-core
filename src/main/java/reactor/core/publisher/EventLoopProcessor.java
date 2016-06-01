@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Processor;
@@ -33,6 +32,7 @@ import reactor.core.flow.Cancellation;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Receiver;
+import reactor.core.queue.QueueSupplier;
 import reactor.core.queue.RingBuffer;
 import reactor.core.queue.Slot;
 import reactor.core.scheduler.Scheduler;
@@ -104,7 +104,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			Supplier<Slot<IN>> factory,
 			WaitStrategy strategy) {
 
-		if (!RingBuffer.isPowerOfTwo(bufferSize)) {
+		if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 		}
 		
