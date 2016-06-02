@@ -67,12 +67,12 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
             producerArray = b;
             b.lazySet(offset, e);
             a.lazySet(m + 1, b);
-            PRODUCER_INDEX.lazySet(this, pi + 1);
             a.lazySet(offset, NEXT);
+            PRODUCER_INDEX.lazySet(this, pi + 1);
         } else {
             int offset = (int)pi & m;
-            PRODUCER_INDEX.lazySet(this, pi + 1);
             a.lazySet(offset, e);
+            PRODUCER_INDEX.lazySet(this, pi + 1);
         }
         
         return true;

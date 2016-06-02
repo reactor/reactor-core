@@ -309,7 +309,7 @@ public class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return new ParallelScheduler(1, new SchedulersFactory(name, daemon));
+		return new SingleScheduler(new SchedulersFactory(name, daemon));
 	}
 
 	/**
