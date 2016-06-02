@@ -56,7 +56,6 @@ public class ScatterGatherTests {
 		Scheduler s = Schedulers.parallel();
 
 		Flux.just("red", "white", "blue")
-		    .log("source")
 		    .window()
 		    .flatMap(w -> w.take(1)
 		                   .asList())

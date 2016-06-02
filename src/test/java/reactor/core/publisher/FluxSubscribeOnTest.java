@@ -41,10 +41,10 @@ public class FluxSubscribeOnTest {
 	public void classic() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 1000).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+		Flux.range(1, 1000).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
@@ -54,14 +54,14 @@ public class FluxSubscribeOnTest {
 	public void classicBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.range(1, 1000).log().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+		Flux.range(1, 1000).log().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		Thread.sleep(100);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		Thread.sleep(1000);
@@ -73,20 +73,20 @@ public class FluxSubscribeOnTest {
 		ts.request(500);
 
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
 	}
-	
+
 	@Test
 	public void classicJust() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+
+		Flux.just(1).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertValues(1)
 		.assertNoError()
 		.assertComplete();
@@ -95,19 +95,19 @@ public class FluxSubscribeOnTest {
 	@Test
 	public void classicJustBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
-		
-		Flux.just(1).subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+
+		Flux.just(1).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		Thread.sleep(100);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertValues(1)
 		.assertNoError()
 		.assertComplete();
@@ -116,11 +116,11 @@ public class FluxSubscribeOnTest {
 	@Test
 	public void classicEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+
+		Flux.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertComplete();
@@ -129,23 +129,23 @@ public class FluxSubscribeOnTest {
 	@Test
 	public void classicEmptyBackpressured() throws Exception {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
-		
-		Flux.<Integer>empty().subscribeOn(ForkJoinPool.commonPool()).subscribe(ts);
-		
+
+		Flux.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
+
 		ts.await(Duration.ofSeconds(5));
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertComplete();
 	}
 
-	
+
 	@Test
 	public void callableEvaluatedTheRightTime() {
-		
+
 		AtomicInteger count = new AtomicInteger();
-		
-		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(ForkJoinPool.commonPool());
+
+		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()));
 		
 		Assert.assertEquals(0, count.get());
 		

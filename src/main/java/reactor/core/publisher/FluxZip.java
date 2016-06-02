@@ -15,17 +15,37 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.*;
-import java.util.function.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
-import reactor.core.state.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.MultiReceiver;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Backpressurable;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Introspectable;
+import reactor.core.state.Prefetchable;
+import reactor.core.state.Requestable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.CancelledSubscription;
+import reactor.core.util.EmptySubscription;
+import reactor.core.util.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -39,21 +59,37 @@ import reactor.core.util.*;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressurable,
-																		  MultiReceiver {
+final class FluxZip<T, R> extends Flux<R>
+		implements Introspectable, Backpressurable, MultiReceiver {
 
 	final Publisher<? extends T>[] sources;
-	
+
 	final Iterable<? extends Publisher<? extends T>> sourcesIterable;
-	
+
 	final Function<? super Object[], ? extends R> zipper;
-	
+
 	final Supplier<? extends Queue<T>> queueSupplier;
-	
+
 	final int prefetch;
 
+	@SuppressWarnings("unchecked")
+	public <U> FluxZip(Publisher<? extends T> p1,
+			Publisher<? extends U> p2,
+			BiFunction<? super T, ? super U, ? extends R> zipper2,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch) {
+		this(new Publisher[]{Objects.requireNonNull(p1, "p1"),
+						Objects.requireNonNull(p2, "p2")},
+				new PairwiseZipper<R>(new BiFunction[]{
+						Objects.requireNonNull(zipper2, "zipper2")}),
+				queueSupplier,
+				prefetch);
+	}
+
 	public FluxZip(Publisher<? extends T>[] sources,
-			Function<? super Object[], ? extends R> zipper, Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
+			Function<? super Object[], ? extends R> zipper,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -63,7 +99,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
 	}
-	
+
 	public FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
 			Function<? super Object[], ? extends R> zipper, Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
 		if (prefetch <= 0) {
@@ -76,6 +112,21 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		this.prefetch = prefetch;
 	}
 
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public <U> FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+		Publisher[] oldSources = sources;
+		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
+			int oldLen = oldSources.length;
+			Publisher<? extends T>[] newSources = new Publisher[oldLen + 1];
+			System.arraycopy(oldSources, 0, newSources, 0, oldLen);
+			newSources[oldLen] = source;
+
+			Function<Object[], R> z = ((PairwiseZipper<R>) this.zipper).then(zipper);
+
+			return new FluxZip<>(newSources, z, queueSupplier, prefetch);
+		}
+		return null;
+	}
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
@@ -86,60 +137,60 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 			handleIterableMode(s, sourcesIterable);
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	void handleIterableMode(Subscriber<? super R> s, Iterable<? extends Publisher<? extends T>> sourcesIterable) {
 		Object[] scalars = new Object[8];
 		Publisher<? extends T>[] srcs = new Publisher[8];
-		
+
 		int n = 0;
 		int sc = 0;
-		
+
 		for (Publisher<? extends T> p : sourcesIterable) {
 			if (p == null) {
 				EmptySubscription.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
 				return;
 			}
-			
+
 			if (p instanceof Callable) {
-				Callable<T> supplier = (Callable<T>) p;
-				
+				Callable<T> callable = (Callable<T>) p;
+
 				T v;
-				
+
 				try {
-					v = supplier.call();
+					v = callable.call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;
 				}
-				
+
 				if (v == null) {
 					EmptySubscription.complete(s);
 					return;
 				}
-				
+
 				if (n == scalars.length) {
 					Object[] b = new Object[n + (n >> 1)];
 					System.arraycopy(scalars, 0, b, 0, n);
-					
+
 					Publisher<T>[] c = new Publisher[b.length];
 					System.arraycopy(srcs, 0, c, 0, n);
-					
+
 					scalars = b;
 					srcs = c;
 				}
-				
+
 				scalars[n] = v;
 				sc++;
 			} else {
 				if (n == srcs.length) {
 					Object[] b = new Object[n + (n >> 1)];
 					System.arraycopy(scalars, 0, b, 0, n);
-					
+
 					Publisher<T>[] c = new Publisher[b.length];
 					System.arraycopy(srcs, 0, c, 0, n);
-					
+
 					scalars = b;
 					srcs = c;
 				}
@@ -147,18 +198,18 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 			}
 			n++;
 		}
-		
+
 		if (n == 0) {
 			EmptySubscription.complete(s);
 			return;
 		}
-		
+
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
 	@SuppressWarnings("unchecked")
 	void handleArrayMode(Subscriber<? super R> s, Publisher<? extends T>[] srcs) {
-		
+
 		int n = srcs.length;
 
 		if (n == 0) {
@@ -171,15 +222,15 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 
 		for (int j = 0; j < n; j++) {
 			Publisher<? extends T> p = srcs[j];
-			
+
 			if (p == null) {
 				EmptySubscription.error(s, new NullPointerException("The sources contained a null Publisher"));
 				return;
 			}
-			
+
 			if (p instanceof Callable) {
 				Object v;
-				
+
 				try {
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
@@ -187,40 +238,40 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 					EmptySubscription.error(s, Exceptions.unwrap(e));
 					return;
 				}
-				
+
 				if (v == null) {
 					EmptySubscription.complete(s);
 					return;
 				}
-				
+
 				if (scalars == null) {
 					scalars = new Object[n];
 				}
-				
+
 				scalars[j] = v;
 				sc++;
 			}
 		}
-		
+
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
 	void handleBoth(Subscriber<? super R> s, Publisher<? extends T>[] srcs, Object[] scalars, int n, int sc) {
 		if (sc != 0) {
 			if (n != sc) {
-				ZipSingleCoordinator<T, R> coordinator = 
-						new ZipSingleCoordinator<>(s, scalars, n, zipper);
-				
+				FluxZipSingleCoordinator<T, R> coordinator =
+						new FluxZipSingleCoordinator<>(s, scalars, n, zipper);
+
 				s.onSubscribe(coordinator);
-				
+
 				coordinator.subscribe(n, sc, srcs);
 			} else {
 				DeferredScalarSubscriber<R, R> sds = new DeferredScalarSubscriber<>(s);
 
 				s.onSubscribe(sds);
-				
+
 				R r;
-				
+
 				try {
 					r = zipper.apply(scalars);
 				} catch (Throwable e) {
@@ -228,21 +279,22 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 					s.onError(e);
 					return;
 				}
-				
+
 				if (r == null) {
 					s.onError(new NullPointerException("The zipper returned a null value"));
 					return;
 				}
-				
+
 				sds.complete(r);
 			}
-			
+
 		} else {
-			
-			ZipCoordinator<T, R> coordinator = new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
-			
+
+			ZipCoordinator<T, R> coordinator =
+					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
+
 			s.onSubscribe(coordinator);
-			
+
 			coordinator.subscribe(srcs, n);
 		}
 	}
@@ -262,54 +314,59 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		return sources == null ? -1 : sources.length;
 	}
 
-	static final class ZipSingleCoordinator<T, R> extends DeferredScalarSubscriber<R, R>
+	static final class FluxZipSingleCoordinator<T, R>
+			extends DeferredScalarSubscriber<R, R>
 			implements MultiReceiver, Backpressurable {
 
 		final Function<? super Object[], ? extends R> zipper;
-		
+
 		final Object[] scalars;
-		
-		final ZipSingleSubscriber<T>[] subscribers;
-		
+
+		final FluxZipSingleSubscriber<T>[] subscribers;
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ZipSingleCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ZipSingleCoordinator.class, "wip");
-		
+		static final AtomicIntegerFieldUpdater<FluxZipSingleCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(FluxZipSingleCoordinator.class,
+						"wip");
+
 		@SuppressWarnings("unchecked")
-		public ZipSingleCoordinator(Subscriber<? super R> subscriber, Object[] scalars, int n, Function<? super Object[], ? extends R> zipper) {
+		public FluxZipSingleCoordinator(Subscriber<? super R> subscriber,
+				Object[] scalars,
+				int n,
+				Function<? super Object[], ? extends R> zipper) {
 			super(subscriber);
 			this.zipper = zipper;
 			this.scalars = scalars;
-			ZipSingleSubscriber<T>[] a = new ZipSingleSubscriber[n];
+			FluxZipSingleSubscriber<T>[] a = new FluxZipSingleSubscriber[n];
 			for (int i = 0; i < n; i++) {
 				if (scalars[i] == null) {
-					a[i] = new ZipSingleSubscriber<>(this, i);
+					a[i] = new FluxZipSingleSubscriber<>(this, i);
 				}
 			}
 			this.subscribers = a;
 		}
-		
+
 		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
 			WIP.lazySet(this, n - sc);
-			ZipSingleSubscriber<T>[] a = subscribers;
+			FluxZipSingleSubscriber<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
 				if (wip <= 0 || isCancelled()) {
 					break;
 				}
-				ZipSingleSubscriber<T> s = a[i];
+				FluxZipSingleSubscriber<T> s = a[i];
 				if (s != null) {
 					sources[i].subscribe(s);
 				}
 			}
 		}
-		
+
 		void next(T value, int index) {
 			Object[] a = scalars;
 			a[index] = value;
 			if (WIP.decrementAndGet(this) == 0) {
 				R r;
-				
+
 				try {
 					r = zipper.apply(a);
 				} catch (Throwable e) {
@@ -317,7 +374,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 					subscriber.onError(e);
 					return;
 				}
-				
+
 				if (r == null) {
 					subscriber.onError(new NullPointerException("The zipper returned a null value"));
 				} else {
@@ -325,16 +382,16 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				}
 			}
 		}
-		
+
 		void error(Throwable e, int index) {
 			if (WIP.getAndSet(this, 0) > 0) {
 				cancelAll();
 				subscriber.onError(e);
 			} else {
-			   Exceptions.onErrorDropped(e);
+				Exceptions.onErrorDropped(e);
 			}
 		}
-		
+
 		void complete(int index) {
 			if (scalars[index] == null) {
 				if (WIP.getAndSet(this, 0) > 0) {
@@ -343,7 +400,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				}
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			super.cancel();
@@ -371,28 +428,32 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		}
 
 		void cancelAll() {
-			for (ZipSingleSubscriber<T> s : subscribers) {
+			for (FluxZipSingleSubscriber<T> s : subscribers) {
 				if (s != null) {
 					s.dispose();
 				}
 			}
 		}
 	}
-	
-	static final class ZipSingleSubscriber<T> implements Subscriber<T>, Cancellable, Cancellation, Backpressurable,
-																  Completable, Introspectable, Receiver {
-		final ZipSingleCoordinator<T, ?> parent;
-		
+
+	static final class FluxZipSingleSubscriber<T>
+			implements Subscriber<T>, Cancellable, Cancellation, Backpressurable,
+			           Completable, Introspectable, Receiver {
+
+		final FluxZipSingleCoordinator<T, ?> parent;
+
 		final int index;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ZipSingleSubscriber.class, Subscription.class, "s");
-		
+		static final AtomicReferenceFieldUpdater<FluxZipSingleSubscriber, Subscription>
+				S = AtomicReferenceFieldUpdater.newUpdater(FluxZipSingleSubscriber.class,
+				Subscription.class,
+				"s");
+
 		boolean done;
 
-		public ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
+		public FluxZipSingleSubscriber(FluxZipSingleCoordinator<T, ?> parent, int index) {
 			this.parent = parent;
 			this.index = index;
 		}
@@ -485,50 +546,53 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		}
 	}
 
-	static final class ZipCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable, Backpressurable, Completable, Requestable,
-																Introspectable {
+	static final class ZipCoordinator<T, R>
+			implements Subscription, MultiReceiver, Cancellable, Backpressurable,
+			           Completable, Requestable, Introspectable {
 
 		final Subscriber<? super R> actual;
-		
+
 		final ZipInner<T>[] subscribers;
-		
+
 		final Function<? super Object[], ? extends R> zipper;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipCoordinator> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(ZipCoordinator.class, "wip");
-		
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ZipCoordinator> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ZipCoordinator.class, "requested");
-		
+
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipCoordinator, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ZipCoordinator.class, Throwable.class, "error");
-		
+				AtomicReferenceFieldUpdater.newUpdater(ZipCoordinator.class,
+						Throwable.class,
+						"error");
+
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
-		
-        final Object[] current;
-		
-		public ZipCoordinator(Subscriber<? super R> actual, 
-				Function<? super Object[], ? extends R> zipper, int n, 
+
+		final Object[] current;
+
+		public ZipCoordinator(Subscriber<? super R> actual,
+				Function<? super Object[], ? extends R> zipper,
+				int n,
 				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
 			this.actual = actual;
 			this.zipper = zipper;
-			@SuppressWarnings("unchecked")
-			ZipInner<T>[] a = new ZipInner[n];
+			@SuppressWarnings("unchecked") ZipInner<T>[] a = new ZipInner[n];
 			for (int i = 0; i < n; i++) {
-				a[i] = new ZipInner<>(this, prefetch, i, queueSupplier); 
+				a[i] = new ZipInner<>(this, prefetch, i, queueSupplier);
 			}
 			this.current = new Object[n];
 			this.subscribers = a;
 		}
-		
+
 		void subscribe(Publisher<? extends T>[] sources, int n) {
 			ZipInner<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
@@ -551,7 +615,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
 				cancelAll();
 			}
 		}
@@ -614,237 +678,244 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 				Exceptions.onErrorDropped(e);
 			}
 		}
-		
+
 		void cancelAll() {
 			for (ZipInner<T> s : subscribers) {
 				s.cancel();
 			}
 		}
-		
+
 		void drain() {
-            
-            if (WIP.getAndIncrement(this) != 0) {
-                return;
-            }
 
-            final Subscriber<? super R> a = actual;
-            final ZipInner<T>[] qs = subscribers;
-            final int n = qs.length;
-            Object[] values = current;
-            
-            int missed = 1;
-            
-            for (;;) {
-                
-                long r = requested;
-                long e = 0L;
-                
-                while (r != e) {
-                    
-                    if (cancelled) {
-                        return;
-                    }
-                    
-                    if (error != null) {
-                        cancelAll();
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
 
-                        Throwable ex = Exceptions.terminate(ERROR, this);
-                        
-                        a.onError(ex);
-                        
-                        return;
-                    }
-                    
-                    boolean empty = false;
-                    
-                    for (int j = 0; j < n; j++) {
-                        ZipInner<T> inner = qs[j];
-                        if (values[j] == null) {
-                            try {
-                                boolean d = inner.done;
-                                Queue<T> q = inner.queue;
-                                
-                                T v = q != null ? q.poll() : null;
-                                
-                                empty = v == null;
-                                if (d && empty) {
-                                    cancelAll();
-                                    
-                                    a.onComplete();
-                                    return;
-                                }
-                                if (empty) {
-                                    break;
-                                }
-                                values[j] = v;
-                            } catch (Throwable ex) {
-                                Exceptions.throwIfFatal(ex);
-                                
-                                cancelAll();
-                                
-                                Exceptions.addThrowable(ERROR, this, ex);
-                                ex = Exceptions.terminate(ERROR, this);
-                                
-                                a.onError(ex);
-                                
-                                return;
-                            }
-                        }
-                    }
+			final Subscriber<? super R> a = actual;
+			final ZipInner<T>[] qs = subscribers;
+			final int n = qs.length;
+			Object[] values = current;
 
-                    if (empty) {
-                        break;
-                    }
-                    
-                    R v;
-                    
-                    try {
-                        v = zipper.apply(values.clone());
-                    } catch (Throwable ex) {
-                        Exceptions.throwIfFatal(ex);
-                        
-                        cancelAll();
-                        
-                        Exceptions.addThrowable(ERROR, this, ex);
-                        ex = Exceptions.terminate(ERROR, this);
-                        
-                        a.onError(ex);
-                        
-                        return;
-                    }
-                    
-                    if (v == null) {
-                        cancelAll();
+			int missed = 1;
 
-                        Throwable ex = new NullPointerException("The zipper returned a null value");
-                        
-                        Exceptions.addThrowable(ERROR, this, ex);
-                        ex = Exceptions.terminate(ERROR, this);
-                        
-                        a.onError(ex);
-                        
-                        return;
-                    }
-                    
-                    a.onNext(v);
-                    
-                    e++;
-                    
-                    Arrays.fill(values, null);
-                }
-                
-                if (r == e) {
-                    if (cancelled) {
-                        return;
-                    }
-                    
-                    if (error != null) {
-                        cancelAll();
+			for (; ; ) {
 
-                        Throwable ex = Exceptions.terminate(ERROR, this);
-                        
-                        a.onError(ex);
-                        
-                        return;
-                    }
-                    
+				long r = requested;
+				long e = 0L;
 
-                    for (int j = 0; j < n; j++) {
-                        ZipInner<T> inner = qs[j];
-                        if (values[j] == null) {
-                            try {
-                                boolean d = inner.done;
-                                Queue<T> q = inner.queue;
-                                T v = q != null ? q.poll() : null;
-                                
-                                boolean empty = v == null;
-                                if (d && empty) {
-                                    cancelAll();
-                                    
-                                    a.onComplete();
-                                    return;
-                                }
-                                if (!empty) {
-                                    values[j] = v;
-                                }
-                            } catch (Throwable ex) {
-                                Exceptions.throwIfFatal(ex);
-                                
-                                cancelAll();
-                                
-                                Exceptions.addThrowable(ERROR, this, ex);
-                                ex = Exceptions.terminate(ERROR, this);
-                                
-                                a.onError(ex);
-                                
-                                return;
-                            }
-                        }
-                    }
-                    
-                }
-                
-                if (e != 0L) {
-                    
-                    for (int j = 0; j < n; j++) {
-                        ZipInner<T> inner = qs[j];
-                        inner.request(e);
-                    }
-                    
-                    if (r != Long.MAX_VALUE) {
-                        REQUESTED.addAndGet(this, -e);
-                    }
-                }
-                
-                missed = WIP.addAndGet(this, -missed);
-                if (missed == 0) {
-                    break;
-                }
-            }
-        }
+				while (r != e) {
+
+					if (cancelled) {
+						return;
+					}
+
+					if (error != null) {
+						cancelAll();
+
+						Throwable ex = Exceptions.terminate(ERROR, this);
+
+						a.onError(ex);
+
+						return;
+					}
+
+					boolean empty = false;
+
+					for (int j = 0; j < n; j++) {
+						ZipInner<T> inner = qs[j];
+						if (values[j] == null) {
+							try {
+								boolean d = inner.done;
+								Queue<T> q = inner.queue;
+
+								T v = q != null ? q.poll() : null;
+
+								empty = v == null;
+								if (d && empty) {
+									cancelAll();
+
+									a.onComplete();
+									return;
+								}
+								if (empty) {
+									break;
+								}
+								values[j] = v;
+							}
+							catch (Throwable ex) {
+								Exceptions.throwIfFatal(ex);
+
+								cancelAll();
+
+								Exceptions.addThrowable(ERROR, this, ex);
+								ex = Exceptions.terminate(ERROR, this);
+
+								a.onError(ex);
+
+								return;
+							}
+						}
+					}
+
+					if (empty) {
+						break;
+					}
+
+					R v;
+
+					try {
+						v = zipper.apply(values.clone());
+					}
+					catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+
+						cancelAll();
+
+						Exceptions.addThrowable(ERROR, this, ex);
+						ex = Exceptions.terminate(ERROR, this);
+
+						a.onError(ex);
+
+						return;
+					}
+
+					if (v == null) {
+						cancelAll();
+
+						Throwable ex = new NullPointerException(
+								"The zipper returned a null value");
+
+						Exceptions.addThrowable(ERROR, this, ex);
+						ex = Exceptions.terminate(ERROR, this);
+
+						a.onError(ex);
+
+						return;
+					}
+
+					a.onNext(v);
+
+					e++;
+
+					Arrays.fill(values, null);
+				}
+
+				if (r == e) {
+					if (cancelled) {
+						return;
+					}
+
+					if (error != null) {
+						cancelAll();
+
+						Throwable ex = Exceptions.terminate(ERROR, this);
+
+						a.onError(ex);
+
+						return;
+					}
+
+					for (int j = 0; j < n; j++) {
+						ZipInner<T> inner = qs[j];
+						if (values[j] == null) {
+							try {
+								boolean d = inner.done;
+								Queue<T> q = inner.queue;
+								T v = q != null ? q.poll() : null;
+
+								boolean empty = v == null;
+								if (d && empty) {
+									cancelAll();
+
+									a.onComplete();
+									return;
+								}
+								if (!empty) {
+									values[j] = v;
+								}
+							}
+							catch (Throwable ex) {
+								Exceptions.throwIfFatal(ex);
+
+								cancelAll();
+
+								Exceptions.addThrowable(ERROR, this, ex);
+								ex = Exceptions.terminate(ERROR, this);
+
+								a.onError(ex);
+
+								return;
+							}
+						}
+					}
+
+				}
+
+				if (e != 0L) {
+
+					for (int j = 0; j < n; j++) {
+						ZipInner<T> inner = qs[j];
+						inner.request(e);
+					}
+
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.addAndGet(this, -e);
+					}
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
 	}
-	
-	static final class ZipInner<T> implements Subscriber<T>,
-													   Backpressurable,
-													   Completable,
-													   Prefetchable, Receiver, Producer {
-		
+
+	static final class ZipInner<T>
+			implements Subscriber<T>, Backpressurable, Completable, Prefetchable,
+			           Receiver, Producer {
+
 		final ZipCoordinator<T, ?> parent;
 
 		final int prefetch;
-		
+
 		final int limit;
-		
+
 		final int index;
-		
+
 		final Supplier<? extends Queue<T>> queueSupplier;
-		
+
 		volatile Queue<T> queue;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
-		
+				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class,
+						Subscription.class,
+						"s");
+
 		long produced;
-		
+
 		volatile boolean done;
-		
+
 		int sourceMode;
-		
+
 		/** Running with regular, arbitrary source. */
 		static final int NORMAL = 0;
 		/** Running with a source that implements SynchronousSource. */
 		static final int SYNC = 1;
 		/** Running with a source that implements AsynchronousSource. */
 		static final int ASYNC = 2;
-		
+
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipInner> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ZipInner.class, "once");
-		
-		public ZipInner(ZipCoordinator<T, ?> parent, int prefetch, int index, Supplier<? extends Queue<T>> queueSupplier) {
+
+		public ZipInner(ZipCoordinator<T, ?> parent,
+				int prefetch,
+				int index,
+				Supplier<? extends Queue<T>> queueSupplier) {
 			this.parent = parent;
 			this.prefetch = prefetch;
 			this.index = index;
@@ -860,14 +931,15 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
 					int m = f.requestFusion(Fuseable.ANY);
-					
+
 					if (m == Fuseable.SYNC) {
 						sourceMode = SYNC;
 						queue = f;
 						done = true;
 						parent.drain();
 						return;
-					} else 
+					}
+					else
 					if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
@@ -882,7 +954,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 						}
 					}
 				} else {
-					
+
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable e) {
@@ -891,7 +963,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 						onError(e);
 						return;
 					}
-					
+
 				}
 				s.request(prefetch);
 			}
@@ -961,7 +1033,7 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 		void cancel() {
 			BackpressureUtils.terminate(S, this);
 		}
-		
+
 		void request(long n) {
 			if (sourceMode != SYNC) {
 				long p = produced + n;
@@ -972,6 +1044,35 @@ final class FluxZip<T, R> extends Flux<R> implements Introspectable, Backpressur
 					produced = p;
 				}
 			}
+		}
+	}
+
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	static final class PairwiseZipper<R> implements Function<Object[], R> {
+
+		final BiFunction[] zippers;
+
+		public PairwiseZipper(BiFunction[] zippers) {
+			this.zippers = zippers;
+		}
+
+		@Override
+		public R apply(Object[] args) {
+			Object o = zippers[0].apply(args[0], args[1]);
+			for (int i = 1; i < zippers.length; i++) {
+				o = zippers[i].apply(o, args[i + 1]);
+			}
+			return (R) o;
+		}
+
+		public PairwiseZipper then(BiFunction zipper) {
+			BiFunction[] zippers = this.zippers;
+			int n = zippers.length;
+			BiFunction[] newZippers = new BiFunction[n + 1];
+			System.arraycopy(zippers, 0, newZippers, 0, n);
+			newZippers[n] = zipper;
+
+			return new PairwiseZipper(newZippers);
 		}
 	}
 }

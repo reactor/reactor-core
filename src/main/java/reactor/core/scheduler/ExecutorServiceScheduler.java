@@ -15,12 +15,15 @@
  */
 package reactor.core.scheduler;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.state.Cancellable;
 import reactor.core.util.Exceptions;
 
@@ -55,18 +58,18 @@ final class ExecutorServiceScheduler implements Scheduler {
 	}
 
 	static final class ExecutorServiceWorker implements Worker {
-		
+
 		final ExecutorService executor;
-		
+
 		volatile boolean terminated;
-		
-		Collection<ScheduledRunnable> tasks;
-		
+
+		OpenHashSet<ScheduledRunnable> tasks;
+
 		public ExecutorServiceWorker(ExecutorService executor) {
 			this.executor = executor;
-			this.tasks = new LinkedList<>();
+			this.tasks = new OpenHashSet<>();
 		}
-		
+
 		@Override
 		public Cancellation schedule(Runnable t) {
 			ScheduledRunnable sr = new ScheduledRunnable(t, this);
@@ -76,7 +79,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 			return sr;
 		}
-		
+
 		boolean add(ScheduledRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
@@ -88,7 +91,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 			return false;
 		}
-		
+
 		void delete(ScheduledRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
@@ -98,11 +101,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 		}
-		
+
 		@Override
 		public void shutdown() {
 			if (!terminated) {
-				Collection<ScheduledRunnable> coll;
+				OpenHashSet<ScheduledRunnable> coll;
 				synchronized (this) {
 					if (terminated) {
 						return;
@@ -111,23 +114,26 @@ final class ExecutorServiceScheduler implements Scheduler {
 					tasks = null;
 					terminated = true;
 				}
-				for (ScheduledRunnable sr : coll) {
-					sr.cancelFuture();
+
+				Object[] a = coll.keys;
+
+				for (Object o : a) {
+					((ScheduledRunnable)o).cancelFuture();
 				}
 			}
 		}
 	}
-	
+
 	static final class ScheduledRunnable
-	extends AtomicReference<Future<?>>
-	implements Runnable, Cancellable, Cancellation {
+			extends AtomicReference<Future<?>>
+			implements Runnable, Cancellable, Cancellation {
 		/** */
 		private static final long serialVersionUID = 2284024836904862408L;
-		
+
 		final Runnable task;
-		
+
 		final ExecutorServiceWorker parent;
-		
+
 		volatile Thread current;
 		static final AtomicReferenceFieldUpdater<ScheduledRunnable, Thread> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Thread.class, "current");
@@ -136,7 +142,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			this.task = task;
 			this.parent = parent;
 		}
-		
+
 		@Override
 		public void run() {
 			CURRENT.lazySet(this, Thread.currentThread());
@@ -160,11 +166,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 				CURRENT.lazySet(this, null);
 			}
 		}
-		
+
 		void doCancel(Future<?> a) {
 			a.cancel(Thread.currentThread() != current);
 		}
-		
+
 		void cancelFuture() {
 			for (;;) {
 				Future<?> a = get();
@@ -179,13 +185,13 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 		}
-		
+
 		@Override
 		public boolean isCancelled() {
 			Future<?> f = get();
 			return f == FINISHED || f == CANCELLED_FUTURE;
 		}
-		
+
 		@Override
 		public void dispose() {
 			for (;;) {
@@ -203,7 +209,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 		}
 
-		
+
 		void setFuture(Future<?> f) {
 			for (;;) {
 				Future<?> a = get();
@@ -219,7 +225,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 		}
-		
+
 		@Override
 		public String toString() {
 			return "ScheduledRunnable[cancelled=" + get() + ", task=" + task + "]";
