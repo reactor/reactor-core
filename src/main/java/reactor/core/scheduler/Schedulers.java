@@ -450,7 +450,7 @@ public class Schedulers {
 	 * source {@link Scheduler}
 	 */
 	public static Scheduler single(Scheduler original) {
-		return new WorkerScheduler(original);
+		return new SingleWorkerScheduler(original);
 	}
 
 	/**

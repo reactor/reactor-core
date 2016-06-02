@@ -25,11 +25,11 @@ import reactor.core.flow.Cancellation;
  * <p>
  * Use the shutdown() to release the wrapped worker.
  */
-final class WorkerScheduler implements Scheduler, Executor {
+final class SingleWorkerScheduler implements Scheduler, Executor {
 
     final Worker main;
     
-    public WorkerScheduler(Scheduler actual) {
+    public SingleWorkerScheduler(Scheduler actual) {
         this.main = actual.createWorker();
     }
     
