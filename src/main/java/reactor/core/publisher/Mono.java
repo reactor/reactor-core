@@ -2211,17 +2211,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 * <p>
-	 * {@code mono.publishOn(ForkJoinPool.commonPool()).subscribe(Subscribers.unbounded()) }
-	 *
-	 * @param executorService an {@link ExecutorService}
-	 *
-	 * @return a {@link Mono} producing asynchronously
+	 * @deprecated use {@code publishOn(Schedulers.fromExecutorService(ex))}
 	 */
+	@Deprecated
 	public final Mono<T> publishOn(ExecutorService executorService) {
 		return publishOn(Schedulers.fromExecutorService(executorService));
 	}
@@ -2557,17 +2549,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Run the requests to this Publisher {@link Mono} on supplied {@link ExecutorService}.
-	 * <p>
-	 * {@code mono.subscribeOn(ForkJoinPool.commonPool()).subscribe() }
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon1.png" alt="">
-	 * <p>
-	 * @param executorService an {@link ExecutorService}
-	 *
-	 * @return an asynchronously requesting {@link Mono}
+	 * @deprecated use {@code subscribeOn(Schedulers.fromExecutorService(ex))}
 	 */
+	@Deprecated
 	public final Mono<T> subscribeOn(ExecutorService executorService) {
 		return subscribeOn(Schedulers.fromExecutorService(executorService));
 	}

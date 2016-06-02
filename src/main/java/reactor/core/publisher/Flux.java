@@ -3867,35 +3867,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link ExecutorService}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 * <p>
-	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe() }
-	 *
-	 * @param executorService an {@link ExecutorService}
-	 *
-	 * @return a {@link Flux} producing asynchronously
+	 * @deprecated use {@code publishOn(Schedulers.fromExecutorService(ex))}
 	 */
+	@Deprecated
 	public final Flux<T> publishOn(ExecutorService executorService) {
 		return publishOn(executorService, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
-	 * <p>
-	 * {@code flux.publishOn(ForkJoinPool.commonPool()).subscribe() }
-	 *
-	 * @param executorService an {@link ExecutorService}
-	 * @param prefetch the asynchronous boundary capacity
-	 *
-	 * @return a {@link Flux} producing asynchronously
+	 * @deprecated use {@code publishOn(Schedulers.fromExecutorService(ex), prefetch)}
 	 */
+	@Deprecated
 	public final Flux<T> publishOn(ExecutorService executorService, int prefetch) {
 		return publishOn(Schedulers.fromExecutorService(executorService), prefetch);
 	}
@@ -4700,16 +4682,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Run subscribe, onSubscribe and request on a supplied {@link ExecutorService}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeon.png" alt="">
-	 * <p>
-	 * {@code flux.subscribeOn(ForkJoinPool.commonPool()).subscribe() }
-	 *
-	 * @param executorService an {@link ExecutorService}
-	 *
-	 * @return a {@link Flux} requesting asynchronously
+	 * @deprecated use {@code subscribeOn(Schedulers.fromExecutorService(ex))}
 	 */
+	@Deprecated
 	public final Flux<T> subscribeOn(ExecutorService executorService) {
 		return subscribeOn(Schedulers.fromExecutorService(executorService));
 	}
@@ -5297,6 +5272,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public Flux<T> useTimer(TimedScheduler timer) {
 		return FluxConfig.withTimer(this, timer);
 
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by cancel
+	 * signals they receive.
+	 * e.g. {@code window().flatMap(w -> w.take(3))} will delimit window every 3.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowcancel.png" alt="">
+	 *
+	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by cancel
+	 * signals
+	 */
+	public final Flux<Flux<T>> window() {
+		return new FluxWindowOnCancel<>(this, QueueSupplier.get(getPrefetchOrDefault
+				(PlatformDependent.MEDIUM_BUFFER_SIZE)));
 	}
 
 	/**

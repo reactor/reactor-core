@@ -26,6 +26,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.core.test.TestSubscriber;
 
 public class ScatterGatherTests {
 
@@ -45,6 +46,24 @@ public class ScatterGatherTests {
 		    .doOnNext(Result::stop)
 		    .log("accumulated")
 		    .block();
+
+		s.shutdown();
+	}
+
+	@Test
+	public void test2() throws Exception {
+
+		Scheduler s = Schedulers.parallel();
+
+		Flux.just("red", "white", "blue")
+		    .log("source")
+		    .window()
+		    .flatMap(w -> w.take(1)
+		                   .asList())
+		    .log("merged")
+		    .subscribeWith(TestSubscriber.create())
+		    .assertComplete()
+		    .assertValueCount(3);
 
 		s.shutdown();
 	}
