@@ -99,25 +99,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
 	 * <p>
-	 * @param monos The deferred monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated use #first
-	 */
-	@SafeVarargs
-	@SuppressWarnings("varargs")
-	@Deprecated
-	public static <T> Mono<T> any(Mono<? extends T>... monos) {
-		return first(monos);
-	}
-
-	/**
-	 * Pick the first result coming from any of the given monos and populate a new {@literal Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
-	 * <p>
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
 	 *
@@ -1025,56 +1006,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/after1.png" alt="">
-	 * <p>
-	 * @return a {@link Mono} igoring its payload (actively dropping)
-	 * @deprecated use {@link #then}
-	 */
-	@Deprecated
-	public final Mono<Void> after() {
-		return empty(this);
-	}
-
-	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
-	 *
-	 * @param other a {@link Mono} to emit from after termination
-	 * @param <V> the element type of the supplied Mono
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 * @deprecated use {@link #then}
-	 */
-	@Deprecated
-	public final <V> Mono<V> after(Mono<V> other) {
-		return then(other);
-	}
-
-	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/afters1.png" alt="">
-	 *
-	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
-	 * @param <V> the element type of the supplied Mono
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 * @deprecated use {@link #then}
-	 */
-	@Deprecated
-	public final <V> Mono<V> after(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return then(sourceSupplier);
-	}
-
-	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
@@ -1094,7 +1025,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -1117,7 +1048,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -1137,7 +1068,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each get() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in
+	 * other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -1204,73 +1136,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
-	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
-	 * {@link #doOnError(java.util.function.Consumer)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe1.png" alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
-	 * @deprecated use {@link #subscribe}
-	 */
-	@Deprecated
-	public final Cancellation consume(Consumer<? super T> consumer) {
-		return subscribe(consumer, null, null);
-	}
-
-	/**
-	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
-	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
-	 * {@link #doOnError(java.util.function.Consumer)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror1.png" alt="">
-	 *
-	 * @param consumer the consumer to invoke on each next signal
-	 * @param errorConsumer the consumer to invoke on error signal
-	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
-	 * @deprecated use {@link #subscribe}
-	 */
-	@Deprecated
-	public final Cancellation consume(Consumer<? super T> consumer, Consumer<? super
-			Throwable> errorConsumer) {
-		return consume(consumer, errorConsumer, null);
-	}
-
-	/**
-	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
-	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
-	 * {@link #doOnError(java.util.function.Consumer)}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete1.png" alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 * @param errorConsumer the consumer to invoke on error signal
-	 * @param completeConsumer the consumer to invoke on complete signal
-	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
-	 * @deprecated use {@link #subscribe}
-	 */
-	@Deprecated
-	public final Cancellation consume(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer) {
-		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer));
-	}
-
-
-	/**
 	 * Concatenate emissions of this {@link Mono} with the provided {@link Publisher} (no interleave).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
@@ -1308,7 +1173,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
 	    if (this instanceof Fuseable.ScalarCallable) {
-            T v = get();
+            T v = block();
 	        if (v == null) {
 	            return Mono.just(defaultV);
 	        }
@@ -1750,7 +1615,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
     public final Flux<T> flux() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
-	            T v = get();
+	            T v = block();
 	            if (v == null) {
 	                return Flux.empty();
 	            }
@@ -1764,6 +1629,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * @deprecated use #block
 	 */
+	@Deprecated
 	public T get() {
 		return block();
 	}
@@ -1771,6 +1637,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * @deprecated use #block
 	 */
+	@Deprecated
 	public T get(long timeout) {
 		return block(timeout);
 	}
@@ -1778,6 +1645,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * @deprecated use #block
 	 */
+	@Deprecated
 	public T get(Duration timeout) {
 		return block(timeout.toMillis());
 	}
@@ -2034,7 +1902,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see #any
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
-		return any(this, other);
+		return first(this, other);
 	}
 
 	/**
@@ -2204,20 +2072,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public final Mono<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
-			T value = get();
+			T value = block();
 			return  new MonoSubscribeOnValue<>(value, scheduler);
 		}
 		return new MonoPublishOn<>(this, scheduler);
 	}
-
-	/**
-	 * @deprecated use {@code publishOn(Schedulers.fromExecutorService(ex))}
-	 */
-	@Deprecated
-	public final Mono<T> publishOn(ExecutorService executorService) {
-		return publishOn(Schedulers.fromExecutorService(executorService));
-	}
-
 
 	/**
 	 * Repeatedly subscribe to the source completion of the previous subscription.
@@ -2542,18 +2401,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
-			T value = get();
+			T value = block();
 			return new MonoSubscribeOnValue<>(value, scheduler);
 		}
 		return new MonoSubscribeOn<>(this, scheduler);
-	}
-
-	/**
-	 * @deprecated use {@code subscribeOn(Schedulers.fromExecutorService(ex))}
-	 */
-	@Deprecated
-	public final Mono<T> subscribeOn(ExecutorService executorService) {
-		return subscribeOn(Schedulers.fromExecutorService(executorService));
 	}
 
 	/**
@@ -2796,23 +2647,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
-	}
-
-	/**
-	 * Test the result if any of this {@link Mono} and replay it if predicate returns true.
-	 * Otherwise complete without value.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/where.png" alt="">
-	 * <p>
-	 * @param tester the predicate to evaluate
-	 *
-	 * @return a filtered {@link Mono}
-	 * @deprecated use #filter directly
-	 */
-	@Deprecated
-	public final Mono<T> where(final Predicate<? super T> tester) {
-		return filter(tester);
 	}
 
 }

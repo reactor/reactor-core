@@ -55,7 +55,7 @@ public class ScatterGatherTests {
 		Flux.just("red", "white", "blue")
 		    .window()
 		    .flatMap(w -> w.take(1)
-		                   .asList())
+		                   .collectList())
 		    .log("merged")
 		    .subscribeWith(TestSubscriber.create())
 		    .assertComplete()

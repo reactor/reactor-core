@@ -129,8 +129,8 @@ class FluxSpec extends Specification {
 
 		when:
 			'the value is retrieved'
-			def value1 = stream.asList().block()
-			def value2 = stream.asList().block()
+			def value1 = stream.collectList().block()
+			def value2 = stream.collectList().block()
 
 		then:
 			'it is available'
@@ -186,7 +186,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the flux is retrieved'
-			def value = stream.map { it + '-ok' }.asList()
+			def value = stream.map { it + '-ok' }.collectList()
 
 			println value.debug()
 
@@ -313,7 +313,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinctUntilChanged().asList().subscribe()
+			def tap = s.distinctUntilChanged().collectList().subscribe()
 
 		then:
 			'collected must remove duplicates'
@@ -327,7 +327,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinctUntilChanged { it % 2 == 0 }.asList().subscribe()
+			def tap = s.distinctUntilChanged { it % 2 == 0 }.collectList().subscribe()
 
 		then:
 			'collected must remove duplicates'
@@ -341,7 +341,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinct().asList().subscribe()
+			def tap = s.distinct().collectList().subscribe()
 
 		then:
 			'collected should be without duplicates'
@@ -355,7 +355,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the values are filtered and result is collected'
-			def tap = s.distinct { it % 3 }.asList().subscribe()
+			def tap = s.distinct { it % 3 }.collectList().subscribe()
 
 		then:
 			'collected should be without duplicates'
@@ -666,7 +666,7 @@ class FluxSpec extends Specification {
 		when:
 			'the sources are zipped'
 			def zippedFlux = Flux.zip(odds.log('left'), even.log('right'), (BiFunction) { t1, t2 -> [t1, t2] })
-			def tap = zippedFlux.log().asList()
+			def tap = zippedFlux.log().collectList()
 
 		then:
 			'the values are all collected from source1 flux'
@@ -677,7 +677,7 @@ class FluxSpec extends Specification {
 			zippedFlux = odds.log('before-flatmap').flatMap {
 				Flux.zip(Flux.just(it), even, (BiFunction) { t1, t2 -> [t1, t2] }).log('second-fm')
 			}
-			tap = zippedFlux.log('after-zip').asList()
+			tap = zippedFlux.log('after-zip').collectList()
 
 
 		then:
@@ -1169,7 +1169,7 @@ class FluxSpec extends Specification {
 		given:
 			'a composable'
 			def source = EmitterProcessor.<Integer> create().connect()
-			def reduced = source.asList()
+			def reduced = source.collectList()
 	  		def value = reduced.subscribe()
 
 		when:
@@ -1303,7 +1303,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'overlapping buffers'
-			res = numbers.log("n").window(3, 2).log('w').flatMap { it.log('b').asList() }.asList()
+			res = numbers.log("n").window(3, 2).log('w').flatMap { it.log('b').collectList() }.collectList()
 
 		then:
 			'the collected overlapping lists are available'
@@ -1313,8 +1313,8 @@ class FluxSpec extends Specification {
 		when:
 			'non overlapping buffers'
 			res = numbers.delay(Duration.ofMillis(100)).window(Duration.ofMillis(200), Duration.ofMillis(300))
-					.flatMap{ it.log('fm').asList() }
-					.asList().cache()
+					.flatMap{ it.log('fm').collectList() }
+					.collectList().cache()
 
 		then:
 			'the collected lists are available'
@@ -1351,8 +1351,8 @@ class FluxSpec extends Specification {
 			numbers = EmitterProcessor.<Integer> create().connect()
 			def bucketOpening = EmitterProcessor.<Integer> create().connect()
 			res = numbers.log("w").window(bucketOpening.log("bucket")) { boundaryFlux.log('boundary') }.flatMap { it
-					.log('fm').asList() }
-					.asList().cache()
+					.log('fm').collectList() }
+					.collectList().cache()
 
 			res.subscribe()
 
@@ -1550,7 +1550,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def result = s.asList().get(Duration.ofSeconds(5))
+			def result = s.collectList().block(Duration.ofSeconds(5))
 			//println s.debug()
 
 		then:
@@ -1573,7 +1573,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def result = s.asList().get(Duration.ofSeconds(5))
+			def result = s.collectList().block(Duration.ofSeconds(5))
 			//println s.debug()
 
 		then:
@@ -1627,7 +1627,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def res = s.asList().get(Duration.ofSeconds(5))
+			def res = s.collectList().block(Duration.ofSeconds(5))
 			//println s.debug()
 
 		then:
@@ -1674,7 +1674,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			def result = s.asList().block()
+			def result = s.collectList().block()
 
 		then:
 			'dispatching works'
@@ -2481,7 +2481,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'sorted operation is added and the flux is retrieved'
-			def value = stream.log().asSortedList().cache().subscribe().block()
+			def value = stream.log().collectSortedList().cache().subscribe().block()
 
 		then:
 			'it is available'
@@ -2494,7 +2494,7 @@ class FluxSpec extends Specification {
 		and:
 			'revese sorted operation is added and the flux is retrieved'
 			value = stream
-					.asSortedList({ a, b -> b <=> a } as Comparator<Integer>)
+					.collectSortedList({ a, b -> b <=> a } as Comparator<Integer>)
 					.block()
 
 		then:
@@ -2558,7 +2558,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'skip to the second element'
-			def value = stream.skip(1).asList().block()
+			def value = stream.skip(1).collectList().block()
 
 		then:
 			'the first has been skipped'
@@ -2569,7 +2569,7 @@ class FluxSpec extends Specification {
 			stream = ReplayProcessor.create().connect()
 			def value2 = stream.skipWhile {
 				'test1' == it
-			}.log("test").asList()
+			}.log("test").collectList()
 
 			stream.subscribe()
 
@@ -2591,7 +2591,7 @@ class FluxSpec extends Specification {
 					.publishOn(asyncGroup)
 
 		when:
-			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).asList()
+			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).collectList()
 
 		then:
 			!promise.block()
@@ -2610,7 +2610,7 @@ class FluxSpec extends Specification {
 		when: "data flux is decoded"
 			def res = Streams.just(data1, data2, data3)
 					.decode(codec)
-					.asList()
+					.collectList()
 					.await(5, TimeUnit.SECONDS)
 
 		then: "the buffers have been correctly decoded"

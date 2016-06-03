@@ -65,7 +65,7 @@ public class PopularTagTests extends AbstractReactorTest {
 		         .window(Duration.ofSeconds(2))
 		         .flatMap(s -> s.groupBy(w -> w)
 		                       .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c)))
-		                       .asSortedList((a, b) -> -a.t2.compareTo(b.t2))
+		                       .collectSortedList((a, b) -> -a.t2.compareTo(b.t2))
 		                        .flatMap(Flux::fromIterable)
 		                       .take(10)
 		                       .doAfterTerminate(() -> LOG.info("------------------------ window terminated" +

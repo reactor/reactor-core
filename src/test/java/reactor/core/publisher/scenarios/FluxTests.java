@@ -193,7 +193,7 @@ public class FluxTests extends AbstractReactorTest {
 	public void testStreamBatchesResults() {
 		Flux<String> stream = Flux.just("1", "2", "3", "4", "5");
 		Mono<List<Integer>> s = stream.map(STRING_2_INTEGER)
-		                                .asList();
+		                                .collectList();
 
 		final AtomicInteger batchCount = new AtomicInteger();
 		final AtomicInteger count = new AtomicInteger();
@@ -462,7 +462,7 @@ public class FluxTests extends AbstractReactorTest {
 		                          .flatMap(self -> self.groupBy(w -> w.t1)
 		                                           .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c))))
 		                          .log("elapsed")
-		                          .asSortedList((a, b) -> a.t1.compareTo(b.t1))
+		                          .collectSortedList((a, b) -> a.t1.compareTo(b.t1))
 		                          .flatMap(Flux::fromIterable)
 		                          .reduce(-1L, (acc, next) -> acc > 0l ? ((next.t1 + acc) / 2) : next.t1)
 		                          .log("reduced-elapsed")
@@ -496,7 +496,7 @@ public class FluxTests extends AbstractReactorTest {
 				                                     keys.get(7) == KeyEvent.VK_RIGHT &&
 				                                     keys.get(8) == KeyEvent.VK_B &&
 				                                     keys.get(9) == KeyEvent.VK_A)
-		                                     .asList();
+		                                     .collectList();
 
 		keyboardStream.onNext(KeyEvent.VK_UP);
 		keyboardStream.onNext(KeyEvent.VK_UP);
@@ -1173,7 +1173,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                .publishOn(asyncGroup);
 
 		// The following works:
-		//List<Flux<Object>> list = Arrays.asList(s1);
+		//List<Flux<Object>> list = Arrays.collectList(s1);
 		// The following fails:
 		List<Flux<Object>> list = Arrays.asList(s1, s2);
 
@@ -1391,7 +1391,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final Mono<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
 		                                                 .log("resultStream")
-		                                                 .asList()
+		                                                 .collectList()
 		                                                 .doOnTerminate((v, e) -> doneSemaphore.release())
 		                                                 .subscribe();
 
