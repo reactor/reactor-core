@@ -44,11 +44,11 @@ import reactor.core.util.Exceptions;
  * <p>
  * This scheduler is not restartable (may be later).
  */
-final class CachedScheduler implements Scheduler {
+final class ElasticScheduler implements Scheduler {
     static final AtomicLong COUNTER = new AtomicLong();
 
     static final ThreadFactory EVICTOR_FACTORY = r -> {
-        Thread t = new Thread(r, "io-evictor-" + COUNTER.incrementAndGet());
+        Thread t = new Thread(r, "elastic-evictor-" + COUNTER.incrementAndGet());
         t.setDaemon(true);
         return t;
     };
@@ -73,7 +73,7 @@ final class CachedScheduler implements Scheduler {
     
     volatile boolean shutdown;
     
-    public CachedScheduler(ThreadFactory factory, int ttlSeconds) {
+    public ElasticScheduler(ThreadFactory factory, int ttlSeconds) {
         this.ttlSeconds = ttlSeconds;
         this.factory = factory;
         this.cache = new ConcurrentLinkedQueue<>();
@@ -196,13 +196,13 @@ final class CachedScheduler implements Scheduler {
 
         final ExecutorService executor;
 
-        final CachedScheduler parent;
+        final ElasticScheduler parent;
 
         volatile boolean shutdown;
         
         OpenHashSet<CachedTask> tasks;
         
-        public CachedWorker(ExecutorService executor, CachedScheduler parent) {
+        public CachedWorker(ExecutorService executor, ElasticScheduler parent) {
             this.executor = executor;
             this.parent = parent;
             this.tasks = new OpenHashSet<>();

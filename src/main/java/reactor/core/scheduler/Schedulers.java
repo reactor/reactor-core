@@ -57,7 +57,7 @@ public class Schedulers {
 	 * Event-Loop based workers
 	 */
 	public static Scheduler computation() {
-		return managedSchedulers.computeIfAbsent(COMPUTATION, k -> new ManagedScheduler(k,
+		return cachedSchedulers.computeIfAbsent(COMPUTATION, k -> new CachedScheduler(k,
 						newComputation(k,
 								(Runtime.getRuntime()
 								        .availableProcessors() + 1) / 2,
@@ -116,10 +116,10 @@ public class Schedulers {
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
-	public static Scheduler io() {
-		return managedSchedulers.computeIfAbsent(IO,
-				k -> new ManagedScheduler(k,
-						newIO(k, CachedScheduler.DEFAULT_TTL_SECONDS, true)));
+	public static Scheduler elastic() {
+		return cachedSchedulers.computeIfAbsent(ELASTIC,
+				k -> new CachedScheduler(k,
+						newElastic(k, ElasticScheduler.DEFAULT_TTL_SECONDS, true)));
 	}
 
 	/**
@@ -213,7 +213,7 @@ public class Schedulers {
 			int bufferSize,
 			boolean daemon) {
 		return newComputation(parallelism,
-				bufferSize, new SchedulersFactory(name, daemon, new AtomicLong()));
+				bufferSize, new SchedulerFactory(name, daemon, new AtomicLong()));
 	}
 
 	/**
@@ -259,8 +259,8 @@ public class Schedulers {
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
-	public static Scheduler newIO(String name) {
-		return newIO(name, CachedScheduler.DEFAULT_TTL_SECONDS);
+	public static Scheduler newElastic(String name) {
+		return newElastic(name, ElasticScheduler.DEFAULT_TTL_SECONDS);
 	}
 
 	/**
@@ -277,8 +277,8 @@ public class Schedulers {
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
-	public static Scheduler newIO(String name, int ttlSeconds) {
-		return newIO(name, ttlSeconds, false);
+	public static Scheduler newElastic(String name, int ttlSeconds) {
+		return newElastic(name, ttlSeconds, false);
 	}
 
 	/**
@@ -297,10 +297,10 @@ public class Schedulers {
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
-	public static Scheduler newIO(String name, int ttlSeconds, boolean daemon) {
-		return new CachedScheduler(new SchedulersFactory(name,
+	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
+		return new ElasticScheduler(new SchedulerFactory(name,
 				daemon,
-				CachedScheduler.COUNTER), ttlSeconds);
+				ElasticScheduler.COUNTER), ttlSeconds);
 	}
 
 	/**
@@ -319,8 +319,8 @@ public class Schedulers {
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down.
 	 */
-	public static Scheduler newIO(int ttlSeconds, ThreadFactory threadFactory) {
-		return new CachedScheduler(threadFactory, ttlSeconds);
+	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
+		return new ElasticScheduler(threadFactory, ttlSeconds);
 	}
 
 	/**
@@ -364,7 +364,7 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(String name, int parallelism, boolean daemon) {
-		return new ParallelScheduler(parallelism, new SchedulersFactory(name, daemon,
+		return new ParallelScheduler(parallelism, new SchedulerFactory(name, daemon,
 				ParallelScheduler.COUNTER));
 	}
 
@@ -408,7 +408,7 @@ public class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return new SingleScheduler(new SchedulersFactory(name, daemon,
+		return new SingleScheduler(new SchedulerFactory(name, daemon,
 				SingleScheduler.COUNTER));
 	}
 
@@ -478,8 +478,8 @@ public class Schedulers {
 	 * workers
 	 */
 	public static Scheduler parallel() {
-		return managedSchedulers.computeIfAbsent(PARALLEL,
-				k -> new ManagedScheduler(k,
+		return cachedSchedulers.computeIfAbsent(PARALLEL,
+				k -> new CachedScheduler(k,
 						newParallel(k,
 								Runtime.getRuntime()
 								       .availableProcessors(),
@@ -512,12 +512,12 @@ public class Schedulers {
 	 * Clear any cached {@link Scheduler} and call shutdown on them.
 	 */
 	public static void shutdownNow() {
-		List<ManagedScheduler> schedulers;
-		Collection<ManagedScheduler> view = managedSchedulers.values();
+		List<CachedScheduler> schedulers;
+		Collection<CachedScheduler> view = cachedSchedulers.values();
 		for (; ; ) {
 			schedulers = new ArrayList<>(view);
 			view.clear();
-			schedulers.forEach(ManagedScheduler::_shutdown);
+			schedulers.forEach(CachedScheduler::_shutdown);
 			if (view.isEmpty()) {
 				return;
 			}
@@ -533,8 +533,8 @@ public class Schedulers {
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
-		return managedSchedulers.computeIfAbsent(SINGLE,
-				k -> new ManagedScheduler(k, newSingle(k, true)));
+		return cachedSchedulers.computeIfAbsent(SINGLE,
+				k -> new CachedScheduler(k, newSingle(k, true)));
 	}
 
 	/**
@@ -560,23 +560,23 @@ public class Schedulers {
 	 * @return a cached hash-wheel based {@link TimedScheduler}
 	 */
 	public static TimedScheduler timer() {
-		return managedSchedulers.computeIfAbsent(TIMER,
-				k -> new ManagedTimedScheduler(k, newTimer(k)))
-		                        .asTimedScheduler();
+		return cachedSchedulers.computeIfAbsent(TIMER,
+				k -> new CachedTimedScheduler(k, newTimer(k)))
+		                       .asTimedScheduler();
 	}
 
 	// Internals
 
 	static final String COMPUTATION     = "computation";
+	static final String ELASTIC         = "elastic";
 	static final String NEW_COMPUTATION = "newComputation";
 	static final String PARALLEL        = "parallel";
-	static final String IO              = "io";
 	static final String SINGLE          = "single";
 	static final String TIMER           = "timer";
 
-	static final AtomicReference<Method>                 COMPUTATION_FACTORY =
+	static final AtomicReference<Method>                COMPUTATION_FACTORY =
 			new AtomicReference<>();
-	static final ConcurrentMap<String, ManagedScheduler> managedSchedulers   =
+	static final ConcurrentMap<String, CachedScheduler> cachedSchedulers    =
 			new ConcurrentHashMap<>();
 
 	static {
@@ -591,13 +591,13 @@ public class Schedulers {
 		}
 	}
 
-	static final class SchedulersFactory implements ThreadFactory, Introspectable {
+	static final class SchedulerFactory implements ThreadFactory, Introspectable {
 
 		final String     name;
 		final boolean    daemon;
 		final AtomicLong COUNTER;
 
-		SchedulersFactory(String name, boolean daemon, AtomicLong counter) {
+		SchedulerFactory(String name, boolean daemon, AtomicLong counter) {
 			this.name = name;
 			this.daemon = daemon;
 			this.COUNTER = counter;
@@ -616,12 +616,12 @@ public class Schedulers {
 		}
 	}
 
-	static class ManagedScheduler implements Scheduler {
+	static class CachedScheduler implements Scheduler {
 
 		final Scheduler cached;
 		final String    key;
 
-		ManagedScheduler(String key, Scheduler cached) {
+		CachedScheduler(String key, Scheduler cached) {
 			this.cached = cached;
 			this.key = key;
 		}
@@ -654,11 +654,12 @@ public class Schedulers {
 		}
 	}
 
-	static final class ManagedTimedScheduler extends ManagedScheduler implements TimedScheduler {
+	static final class CachedTimedScheduler extends CachedScheduler
+			implements TimedScheduler {
 
 		final TimedScheduler cachedTimed;
 
-		ManagedTimedScheduler(String key, TimedScheduler cachedTimed) {
+		CachedTimedScheduler(String key, TimedScheduler cachedTimed) {
 			super(key, cachedTimed);
 			this.cachedTimed = cachedTimed;
 		}

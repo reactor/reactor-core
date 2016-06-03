@@ -38,7 +38,7 @@ public class ScatterGatherTests {
 		    .flatMap(value -> Mono.fromCallable(() -> {
 								    Thread.sleep(1000);
 								    return value;
-							    }).subscribeOn(Schedulers.io()))
+							    }).subscribeOn(Schedulers.elastic()))
 		    .log("merged")
 		    .collect(Result::new, Result::add)
 		    .doOnNext(Result::stop)

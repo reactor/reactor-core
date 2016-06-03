@@ -30,7 +30,7 @@ public class SchedulerIOTests extends AbstractProcessorVerification {
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		EmitterProcessor<Long> e = EmitterProcessor.create();
-		return FluxProcessor.wrap(e, e.publishOn(Schedulers.io()));
+		return FluxProcessor.wrap(e, e.publishOn(Schedulers.elastic()));
 	}
 
 	@Override
