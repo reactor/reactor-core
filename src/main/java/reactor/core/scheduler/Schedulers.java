@@ -59,8 +59,8 @@ public class Schedulers {
 	public static Scheduler computation() {
 		return managedSchedulers.computeIfAbsent(COMPUTATION, k -> new ManagedScheduler(k,
 						newComputation(k,
-								Runtime.getRuntime()
-								       .availableProcessors(),
+								(Runtime.getRuntime()
+								        .availableProcessors() + 1) / 2,
 								true)));
 	}
 
