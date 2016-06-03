@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
@@ -32,6 +33,8 @@ import reactor.core.util.Exceptions;
  * and is suited for parallel work.
  */
 final class ParallelScheduler implements Scheduler, Completable {
+
+    static final AtomicLong COUNTER = new AtomicLong();
 
     final int n;
     
