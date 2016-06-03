@@ -30,7 +30,7 @@ public class FluxFirstEmittingTest {
 
 	@Test(expected = NullPointerException.class)
 	public void iterableNull() {
-		Flux.firstEmitting((Iterable<Publisher<Integer>>) null);
+		new FluxFirstEmitting<>((Iterable<Publisher<Integer>>) null);
 	}
 
 	@Test

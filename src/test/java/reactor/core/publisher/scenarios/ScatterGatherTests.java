@@ -33,21 +33,18 @@ public class ScatterGatherTests {
 	@Test
 	public void test() throws Exception {
 
-		Scheduler s = Schedulers.parallel();
-
 		Flux.just("red", "white", "blue")
 		    .log("source")
 		    .flatMap(value -> Mono.fromCallable(() -> {
 								    Thread.sleep(1000);
 								    return value;
-							    }).subscribeOn(s), 2)
+							    }).subscribeOn(Schedulers.io()))
 		    .log("merged")
 		    .collect(Result::new, Result::add)
 		    .doOnNext(Result::stop)
 		    .log("accumulated")
-		    .block();
-
-		s.shutdown();
+		    .toFuture()
+			.get();
 	}
 
 	@Test
