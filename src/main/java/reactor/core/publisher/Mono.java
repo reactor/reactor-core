@@ -1507,7 +1507,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return flatMap(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
+		return new MonoFlatten<>(this, mapper);
 	}
 
 	/**
@@ -1523,17 +1523,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <R> the merged sequence type
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
+	 * @deprecated the single generated source can be streamed directly without prefetching and queueing
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper, int prefetch) {
-		return new FluxFlatMap<>(
-				this,
-				mapper,
-				false,
-				Integer.MAX_VALUE,
-				QueueSupplier.one(),
-				prefetch,
-				QueueSupplier.get(prefetch)
-		);
+		return flatMap(mapper);
 	}
 
 	/**
@@ -1584,7 +1577,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return flatMapIterable(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
+		return new FluxFlattenIterable<>(this, mapper, Integer.MAX_VALUE, QueueSupplier.one());
 	}
 
 	/**
@@ -1600,10 +1593,10 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
+	 * @deprecated prefetch amount is meaningless with a Mono source
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
-		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return flatMapIterable(mapper);
 	}
 
 	/**
