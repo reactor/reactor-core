@@ -4678,7 +4678,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
 	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethenms.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
@@ -4695,7 +4695,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
 	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethenms.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
 	 * alt="">
 	 *
 	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
