@@ -278,7 +278,7 @@ class FluxSpec extends Specification {
 					.next()
 
 		then:
-			last.get(Duration.ofSeconds(5)) > 20_000
+			last.block(Duration.ofSeconds(5)) > 20_000
 
 	  	cleanup:
 			scheduler.shutdown()
@@ -1233,7 +1233,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the collected lists are available'
-			res.get(Duration.ofSeconds(5)) == [[1, 2], [4, 5], [7, 8]]
+			res.block(Duration.ofSeconds(5)) == [[1, 2], [4, 5], [7, 8]]
 	}
 
 
@@ -1595,9 +1595,9 @@ class FluxSpec extends Specification {
 
 		when:
 			'accept a value'
-			res << s.next().get(Duration.ofSeconds(5))
-			res << s.next().get(Duration.ofSeconds(5))
-			res << s.next().get(Duration.ofSeconds(5))
+			res << s.next().block(Duration.ofSeconds(5))
+			res << s.next().block(Duration.ofSeconds(5))
+			res << s.next().block(Duration.ofSeconds(5))
 			//println s.debug()
 
 		then:
