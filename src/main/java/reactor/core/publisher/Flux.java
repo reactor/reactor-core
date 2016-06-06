@@ -5246,6 +5246,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		if (this instanceof FluxZip) {
+			@SuppressWarnings("unchecked")
 			FluxZip<T, V> o = (FluxZip<T, V>) this;
 			Flux<V> result = o.zipAdditionalSource(source2, combinator);
 			if (result != null) {

@@ -26,7 +26,7 @@ import rx.exceptions.Exceptions;
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
-final class MonoRunnable extends Mono<Void> implements Supplier<Void>{
+final class MonoRunnable extends Mono<Void> {
 
     final Runnable run;
     

@@ -536,7 +536,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
 	 * Consumer may override the terminal even.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using1.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using.png"
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
@@ -563,7 +563,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
 	 * may override the terminal even.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using1.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/using.png"
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe
