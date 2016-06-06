@@ -2120,7 +2120,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
 	 *
-	 * Errors will be delayed after the current concat backlog.
+	 * Errors will be delayed after all concated sources terminate.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
@@ -2137,6 +2137,32 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			extends V>> mapper, int prefetch) {
 		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END);
+	}
+
+	/**
+	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
+	 * ordering and concatenate emissions instead of merging (no interleave).
+	 *
+	 * Errors will be delayed after the current concat backlog if delayUntilEnd is
+	 * false or after all sources if delayUntilEnd is true.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatmap.png" alt="">
+	 *
+	 *
+	 * @param mapper the function to transform this sequence of T into concatenated sequences of V
+	 * @param delayUntilEnd delay error until all sources have been consumed instead of
+	 * after the current source
+	 * @param prefetch the inner source produced demand
+	 * @param <V> the produced concatenated type
+	 *
+	 * @return a concatenated {@link Flux}
+	 *
+	 */
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
+			extends V>> mapper, boolean delayUntilEnd, int prefetch) {
+		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
+				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY);
 	}
 
 	/**
