@@ -31,9 +31,9 @@
  * <ul>
  *         <li>A synchronous/non-opinionated pub-sub replaying capable event emitter :
  *         {@link reactor.core.publisher.EmitterProcessor},
- *         {@link reactor.core.publisher.ReplayProcessor} and </li>
- *         {@link reactor.core.publisher.UnicastProcessor}</li>
- *          </li>
+ *         {@link reactor.core.publisher.ReplayProcessor},
+ *         {@link reactor.core.publisher.UnicastProcessor} and
+ *         {@link reactor.core.publisher.DirectProcessor}</li>
  *         <li>A dedicated parallel pub-sub event buffering broadcaster :
  *         {@link reactor.core.publisher.TopicProcessor}</li>
  *         <li>A dedicated parallel work queue distribution for slow consumers :

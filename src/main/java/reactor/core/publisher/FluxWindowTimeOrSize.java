@@ -46,18 +46,13 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 	final static class Window<T> extends Flux<T> implements Subscriber<T>, Subscription, Producer {
 
-		final protected FluxProcessor<T, T> processor;
+		final protected UnicastProcessor<T> processor;
 		final protected TimedScheduler      timer;
 
 		protected int count = 0;
 
 		public Window(TimedScheduler timer) {
-			this(timer, PlatformDependent.SMALL_BUFFER_SIZE);
-		}
-
-		public Window(TimedScheduler timer, int size) {
-			this.processor = EmitterProcessor.create(size);
-			this.processor.onSubscribe(this);
+			this.processor = UnicastProcessor.create();
 			this.timer = timer;
 		}
 
