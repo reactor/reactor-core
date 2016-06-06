@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1507,26 +1506,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new MonoFlatten<>(this, mapper);
-	}
-
-	/**
-	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
-	 * <p>
-	 * @param mapper the
-	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
-	 * @param prefetch the inner source request size
-	 * @param <R> the merged sequence type
-	 *
-	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
-	 * @deprecated the single generated source can be streamed directly without prefetching and queueing
-	 */
-	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper, int prefetch) {
-		return flatMap(mapper);
+		return new MonoFlatMap<>(this, mapper);
 	}
 
 	/**
@@ -2042,9 +2022,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <R> Mono<R> publish(Function<? super Flux<T>, ? extends Mono<? extends
+	public final <R> Mono<R> publish(Function<? super Mono<T>, ? extends Mono<? extends
 			R>> transform) {
-		return MonoSource.wrap(new FluxPublish<>(this, transform, Integer.MAX_VALUE,
+		return MonoSource.wrap(new FluxPublish<>(this, f -> transform.apply(from(f)),
+				Integer
+				.MAX_VALUE,
 				QueueSupplier
 				.one()));
 	}

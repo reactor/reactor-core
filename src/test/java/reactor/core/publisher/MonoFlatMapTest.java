@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import reactor.core.test.TestSubscriber;
 
-public class MonoFlattenTest {
+public class MonoFlatMapTest {
 
     @Test
     public void normal() {

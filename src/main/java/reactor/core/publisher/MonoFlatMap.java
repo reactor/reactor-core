@@ -23,12 +23,12 @@ import org.reactivestreams.*;
 
 import reactor.core.util.*;
 
-final class MonoFlatten<T, R> extends Flux<R> {
+final class MonoFlatMap<T, R> extends Flux<R> {
     final Mono<? extends T> source;
     
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
     
-    public MonoFlatten(Mono<? extends T> source, Function<? super T, ? extends Publisher<? extends R>> mapper) {
+    public MonoFlatMap(Mono<? extends T> source, Function<? super T, ? extends Publisher<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
