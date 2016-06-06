@@ -2742,7 +2742,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency, int prefetch) {
-		return flatMap(mapper, concurrency, prefetch, false);
+		return flatMap(mapper, false, concurrency, prefetch);
 	}
 
 	/**
@@ -2755,16 +2755,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param delayError should any error be delayed after current merge backlog
 	 * @param concurrency the maximum in-flight elements from this {@link Flux} sequence
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
-	 * @param delayError should any error be delayed after current merge backlog
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
 	 *
 	 */
-	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
-			concurrency, int prefetch, boolean delayError) {
+	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
+			V>> mapper, boolean delayError, int concurrency, int prefetch) {
 		return new FluxFlatMap<>(
 				this,
 				mapper,
