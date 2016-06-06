@@ -1916,7 +1916,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * Fallback to the given value if an error of a given type is observed on this
 	 * {@link Flux}
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisereturn.png" alt="">
 	 * @param type the error type to match
 	 * @param fallbackValue alternate value on fallback
 	 * @param <E> the error type
@@ -1933,7 +1933,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * observed on this
 	 * {@link Flux}
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onerrorreturn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisereturn.png" alt="">
 	 * @param predicate the error predicate to match
 	 * @param fallbackValue alternate value on fallback
 	 * @param <E> the error type
