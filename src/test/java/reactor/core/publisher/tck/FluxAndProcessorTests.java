@@ -50,7 +50,10 @@ public class FluxAndProcessorTests extends AbstractFluxVerification {
 
 		BiFunction<Integer, String, Integer> combinator = (t1, t2) -> t1;
 		return FluxProcessor.wrap(p, p
-		                                      .multiplex(2, stream -> stream.scan((prev, next) -> next)
+		                                      .groupBy(k -> k % 2 == 0).flatMap(stream
+						-> stream.scan(
+				                                      (prev,
+				                                      next) -> next)
 		                                                                   .map(integer -> -integer)
 		                                                                   .filter(integer -> integer <= 0)
 		                                                                   .every(1)

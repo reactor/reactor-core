@@ -525,7 +525,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Select the fastest source who emitted first onNext or onComplete or onError
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
 	 * <p> <p>
 	 *
 	 * @param sources The competing source publishers
@@ -543,7 +543,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Select the fastest source who won the "ambiguous" race and emitted first onNext or onComplete or onError
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
 	 * <p> <p>
 	 *
 	 * @param sources The competing source publishers
@@ -666,7 +666,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
-		return new FluxGenerate<T, S>(stateSupplier, generator);
+		return new FluxGenerate<>(stateSupplier, generator);
 	}
 
 	/**
@@ -1433,7 +1433,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * the predicate matches a value.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/exists.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/any.png" alt="">
 	 *
 	 * @param predicate predicate tested upon values
 	 *
@@ -1735,7 +1735,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}. Will
-	 * retain up to {@link PlatformDependent#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
+	 * retain up an unbounded volume of onNext signals. Completion and Error will also be
 	 * replayed.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png"
@@ -1824,7 +1824,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tolist.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectlist.png" alt="">
 	 *
 	 * @return a {@link Mono} of all values from this {@link Flux}
 	 *
@@ -1862,7 +1862,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectsortedlist.png" alt="">
 	 *
 	 * @return a {@link Mono} of all sorted values from this {@link Flux}
 	 *
@@ -1877,7 +1877,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tosortedlist.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectsortedlist.png" alt="">
 	 *
 	 * @param comparator a {@link Comparator} to sort the items of this sequences
 	 *
@@ -1903,7 +1903,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * value will be the most recent emitted item for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param <K> the key extracted from each value of this Flux instance
@@ -1921,7 +1921,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * the most recent extracted item for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
@@ -1942,7 +1942,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * be the most recent extracted item for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
@@ -1969,7 +1969,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * all the emitted item for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmultimap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 *
@@ -1988,7 +1988,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * all the extracted items for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmultimap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
@@ -2009,7 +2009,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * be all the extracted items for this key.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/tomultimap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/collectmultimap.png" alt="">
 	 *
 	 * @param keyExtractor a {@link Function} to route items into a keyed {@link Collection}
 	 * @param valueExtractor a {@link Function} to select the data to store from each item
@@ -2098,25 +2098,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png"
-	 * alt="">
-	 *
-	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
-	 *
-	 * @return a concatenated {@link Flux}
-	 */
-	@SuppressWarnings("unchecked")
-	public final Flux<T> concatWith(Publisher<? extends T> other) {
-		if (this instanceof FluxConcatArray) {
-			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
-			return fluxConcatArray.concatAdditionalSourceLast(other);
-		}
-		return new FluxConcatArray<>(false, this, other);
-	}
-
-	/**
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
 	 *
@@ -2197,6 +2178,25 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch) {
 		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+	}
+
+	/**
+	 * Concatenate emissions of this {@link Flux} with the provided {@link Publisher} (no interleave).
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png"
+	 * alt="">
+	 *
+	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
+	 *
+	 * @return a concatenated {@link Flux}
+	 */
+	@SuppressWarnings("unchecked")
+	public final Flux<T> concatWith(Publisher<? extends T> other) {
+		if (this instanceof FluxConcatArray) {
+			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+			return fluxConcatArray.concatAdditionalSourceLast(other);
+		}
+		return new FluxConcatArray<>(false, this, other);
 	}
 
 	/**
@@ -2668,11 +2668,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Emit from the fastest first sequence between this publisher and the given publisher
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/amb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/firstemitting.png" alt="">
 	 * <p>
 	 * @param other the {@link Publisher} to race with
 	 *
 	 * @return the fastest sequence
+	 * @see #firstEmitting
 	 */
 	public final Flux<T> firstEmittingWith(Publisher<? extends T> other) {
 		if (this instanceof FluxFirstEmitting) {
@@ -2915,7 +2916,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * the constant matches a value.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/exists.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/haselement.png" alt="">
 	 *
 	 * @param value constant compared to incoming signals
 	 *
@@ -3145,87 +3146,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 		return merge(this, other);
 	}
-
-	/**
-	 * Make this
-	 * {@link Flux} subscribed N concurrency times for each child {@link Subscriber}. In effect, if this {@link Flux}
-	 * is a cold replayable source, duplicate sequences will be emitted to the passed {@link GroupedFlux} partition
-	 * . If this {@link Flux} is a hot sequence, {@link GroupedFlux} partitions might observe different values, e
-	 * .g. subscribing to a {@link reactor.core.publisher.WorkQueueProcessor}.
-	 * <p>Each partition is merged back using {@link #flatMap flatMap} and the result sequence might be interleaved.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multiplex.png" alt="">
-	 * 
-	 * @param concurrency the concurrency level of the operation
-	 * @param fn the indexed via
-	 * {@link GroupedFlux#key()} sequence transformation to be merged in the returned {@link Flux}
-	 * @param <V> the type of the return value of the transformation function
-	 *
-	 * @return a merged {@link Flux} produced from N concurrency transformed sequences
-	 *
-	 */
-	public final <V> Flux<V> multiplex(int concurrency,
-			final Function<GroupedFlux<Integer, T>, Publisher<V>> fn) {
-		if(concurrency <= 0){
-			throw new IllegalArgumentException( "Must subscribe once at least, concurrency set to " + concurrency);
-		}
-
-		Publisher<V> pub;
-		final List<Publisher<? extends V>> publisherList = new ArrayList<>(concurrency);
-
-		for (int i = 0; i < concurrency; i++) {
-			final int index = i;
-			pub = fn.apply(new MultiplexGroupedFlux<>(index, this));
-
-			if (concurrency == 1) {
-				return from(pub);
-			}
-			else {
-				publisherList.add(pub);
-			}
-		}
-
-		return Flux.merge(publisherList);
-	}
-	
-	/**
-	 * An indexed GroupedFlux instance, delegating to a source Flux.
-	 *
-	 * @param <T> the value type
-	 */
-	static final class MultiplexGroupedFlux<T> extends GroupedFlux<Integer, T> {
-
-	    final int index;
-	    
-	    final Flux<T> source;
-
-	    public MultiplexGroupedFlux(int index, Flux<T> source) {
-	        this.index = index;
-	        this.source = source;
-	    }
-
-	    @Override
-	    public Integer key() {
-	        return index;
-	    }
-
-	    @Override
-	    public long getCapacity() {
-	        return source.getCapacity();
-	    }
-
-	    @Override
-	    public TimedScheduler getTimer() {
-	        return source.getTimer();
-	    }
-
-	    @Override
-	    public void subscribe(Subscriber<? super T> s) {
-	        source.subscribe(s);
-	    }
-	}
-
 
 	/**
 	 * Emit the current instance of the {@link Flux}.
@@ -3495,7 +3415,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * depending on the {@link Processor}.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
 	 *
 	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
 	 *
@@ -3518,7 +3438,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
 	 *
 	 * @param processorSupplier the {@link Processor} {@link Supplier} to call, subscribe to this {@link Flux} and
 	 * share.
@@ -3545,7 +3465,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
 	 *
 	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
 	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
@@ -3573,7 +3493,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/multicastp.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
 	 *
 	 * @param processorSupplier the {@link Processor} {@link Supplier} to createWorker, subscribe to this {@link Flux} and
 	 * share.
@@ -3856,7 +3776,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * retain up to {@link PlatformDependent#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
 	 * replayed.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png"
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
 	 * alt="">
 	 *
 	 * @return a replaying {@link ConnectableFlux}
@@ -3871,9 +3791,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * replayed.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png" alt="">
 	 *
-	 * @param history number of events retained in history excluding complete and error
+	 * @param history number of events retained in history excluding complete and
+	 * error
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 *
@@ -4679,7 +4600,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Unlike {@link #takeWhile}, this will include the matched data.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntilp.png" alt="">
 	 *
 	 * @param predicate the {@link Predicate} to signal when to stop replaying signal
 	 * from this {@link Flux}
@@ -4757,7 +4678,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
 	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethenms.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
@@ -4774,7 +4695,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
 	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethenms.png"
 	 * alt="">
 	 *
 	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
