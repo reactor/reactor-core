@@ -132,7 +132,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Create a new {@link TestSubscriber} that requests an unbounded number of elements.
 	 * <p>Be sure at least a publisher has subscribed to it via {@link Publisher#subscribe(Subscriber)}
 	 * before use assert methods.
-	 * @see TestSubscriber#subscribe(Publisher)
+	 * @see #subscribe(Publisher)
 	 */
 	public static <T> TestSubscriber<T> create() {
 		return new TestSubscriber<>();
@@ -144,7 +144,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * <p>Be sure at least a publisher has subscribed to it via {@link Publisher#subscribe(Subscriber)}
 	 * before use assert methods.
 	 * @param n Number of elements to request (can be 0 if you want no initial demand).
-	 * @see TestSubscriber{@link #subscribe(Publisher, long)}
+	 * @see #subscribe(Publisher, long)
 	 */
 	public static <T> TestSubscriber<T> create(long n) {
 		return new TestSubscriber<>(n);
