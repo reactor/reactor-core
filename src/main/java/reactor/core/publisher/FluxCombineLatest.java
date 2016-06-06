@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
@@ -36,7 +37,6 @@ import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
@@ -51,9 +51,9 @@ import reactor.core.util.Exceptions;
  * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
  * @since 2.5
  */
-final class FluxCombineLatest<T, R>
-		extends Flux<R>
-		implements MultiReceiver {
+final class FluxCombineLatest<T, R> 
+extends Flux<R>
+		implements MultiReceiver, Fuseable {
 
 	final Publisher<? extends T>[] array;
 
@@ -204,7 +204,8 @@ final class FluxCombineLatest<T, R>
 		coordinator.subscribe(a, n);
 	}
 	
-	static final class CombineLatestCoordinator<T, R> implements Subscription, MultiReceiver, Cancellable {
+	static final class CombineLatestCoordinator<T, R> 
+	implements QueueSubscription<R>, MultiReceiver, Cancellable {
 
 		final Subscriber<? super R> actual;
 		
@@ -215,6 +216,8 @@ final class FluxCombineLatest<T, R>
 		final Queue<SourceAndArray> queue;
 		
 		final Object[] latest;
+		
+		boolean outputFused;
 
 		int nonEmptySources;
 		
@@ -258,7 +261,7 @@ final class FluxCombineLatest<T, R>
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -358,11 +361,48 @@ final class FluxCombineLatest<T, R>
 			}
 		}
 		
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
+		void drainOutput() {
+			final Subscriber<? super R> a = actual;
+			final Queue<SourceAndArray> q = queue;
 			
+			int missed = 1;
+			
+			for (;;) {
+				
+				if (cancelled) {
+					q.clear();
+					return;
+				}
+				
+				Throwable ex = error;
+				if (ex != null) {
+					q.clear();
+					
+					a.onError(ex);
+					return;
+				}
+				
+				boolean d = done;
+				
+				boolean empty = q.isEmpty();
+				
+				if (!empty) {
+					a.onNext(null);
+				}
+				
+				if (d && empty) {
+					a.onComplete();
+					return;
+				}
+				
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+		
+		void drainAsync() {
 			final Subscriber<? super R> a = actual;
 			final Queue<SourceAndArray> q = queue;
 			
@@ -427,6 +467,18 @@ final class FluxCombineLatest<T, R>
 			}
 		}
 		
+		void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+			
+			if (outputFused) {
+				drainOutput();
+			} else {
+				drainAsync();
+			}
+		}
+		
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
 				cancelAll();
@@ -458,6 +510,42 @@ final class FluxCombineLatest<T, R>
 				inner.cancel();
 			}
 		}
+		
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & THREAD_BARRIER) != 0) {
+				return NONE;
+			}
+			int m = requestedMode & ASYNC;
+			outputFused = m != 0;
+			return m;
+		}
+		
+		@Override
+		public R poll() {
+			SourceAndArray e = queue.poll();
+			if (e == null) {
+				return null;
+			}
+			R r = combiner.apply(e.array);
+			e.source.requestOne();
+			return r;
+		}
+		
+		@Override
+		public void clear() {
+			queue.clear();
+		}
+		
+		@Override
+		public boolean isEmpty() {
+			return queue.isEmpty();
+		}
+		
+		@Override
+		public int size() {
+			return queue.size();
+		}
 	}
 	
 	static final class CombineLatestInner<T>
@@ -466,6 +554,8 @@ final class FluxCombineLatest<T, R>
 		final CombineLatestCoordinator<T, ?> parent;
 
 		final int index;
+
+		final int prefetch;
 		
 		final int limit;
 		
@@ -474,52 +564,20 @@ final class FluxCombineLatest<T, R>
 		static final AtomicReferenceFieldUpdater<CombineLatestInner, Subscription> S =
 		  AtomicReferenceFieldUpdater.newUpdater(CombineLatestInner.class, Subscription.class, "s");
 
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<CombineLatestInner> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(CombineLatestInner.class, "requested");
-
 		int produced;
 		
 		
-		public CombineLatestInner(CombineLatestCoordinator<T, ?> parent, int index, int bufferSize) {
+		public CombineLatestInner(CombineLatestCoordinator<T, ?> parent, int index, int prefetch) {
 			this.parent = parent;
 			this.index = index;
-			this.requested = bufferSize;
-			this.limit = bufferSize - (bufferSize >> 2);
+			this.prefetch = prefetch;
+			this.limit = prefetch - (prefetch >> 2);
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			Objects.requireNonNull(s, "s");
-			Subscription a = this.s;
-			if (a == CancelledSubscription.INSTANCE) {
-				s.cancel();
-				return;
-			}
-			if (a != null) {
-				s.cancel();
-				BackpressureUtils.reportSubscriptionSet();
-				return;
-			}
-
-			if (S.compareAndSet(this, null, s)) {
-
-				long r = REQUESTED.getAndSet(this, 0L);
-
-				if (r != 0L) {
-					s.request(r);
-				}
-
-				return;
-			}
-
-			a = this.s;
-
-			if (a != CancelledSubscription.INSTANCE) {
-				s.cancel();
-			} else {
-				BackpressureUtils.reportSubscriptionSet();
+			if (BackpressureUtils.setOnce(S, this, s)) {
+				s.request(prefetch);
 			}
 		}
 
@@ -539,13 +597,7 @@ final class FluxCombineLatest<T, R>
 		}
 		
 		public void cancel() {
-			Subscription a = s;
-			if (a != CancelledSubscription.INSTANCE) {
-				a = S.getAndSet(this, CancelledSubscription.INSTANCE);
-				if (a != null && a != CancelledSubscription.INSTANCE) {
-					a.cancel();
-				}
-			}
+			BackpressureUtils.terminate(S, this);
 		}
 		
 		public void requestOne() {
@@ -553,22 +605,7 @@ final class FluxCombineLatest<T, R>
 			int p = produced + 1;
 			if (p == limit) {
 				produced = 0;
-				Subscription a = s;
-				if (a != null) {
-					a.request(p);
-				} else {
-					BackpressureUtils.getAndAddCap(REQUESTED, this, p);
-
-					a = s;
-
-					if (a != null) {
-						long r = REQUESTED.getAndSet(this, 0L);
-
-						if (r != 0L) {
-							a.request(r);
-						}
-					}
-				}
+				s.request(p);
 			} else {
 				produced = p;
 			}
@@ -582,7 +619,7 @@ final class FluxCombineLatest<T, R>
 
 		@Override
 		public long requestedFromDownstream() {
-			return requested;
+			return produced;
 		}
 
 		@Override

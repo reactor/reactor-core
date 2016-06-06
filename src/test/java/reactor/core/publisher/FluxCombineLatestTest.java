@@ -19,6 +19,7 @@ import java.util.Collections;
 
 import org.junit.Test;
 
+import reactor.core.flow.Fuseable;
 import reactor.core.test.TestSubscriber;
 
 public class FluxCombineLatestTest {
@@ -47,5 +48,33 @@ public class FluxCombineLatestTest {
 		ts.assertValues("1")
 		.assertNoError()
 		.assertComplete();
+	}
+
+	@Test
+	public void fused() {
+		DirectProcessor<Integer> dp1 = new DirectProcessor<>();
+		DirectProcessor<Integer> dp2 = new DirectProcessor<>();
+
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		ts.requestedFusionMode(Fuseable.ANY);
+
+		Flux.combineLatest(dp1, dp2, (a, b) -> a + b)
+		  .subscribe(ts);
+
+		dp1.onNext(1);
+		dp1.onNext(2);
+
+		dp2.onNext(10);
+		dp2.onNext(20);
+		dp2.onNext(30);
+
+		dp1.onNext(3);
+
+		dp1.onComplete();
+		dp2.onComplete();
+
+		ts.assertFuseableSource()
+		  .assertFusionMode(Fuseable.ASYNC)
+		  .assertValues(12, 22, 32, 33);
 	}
 }
