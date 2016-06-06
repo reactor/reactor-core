@@ -23,7 +23,7 @@ import org.reactivestreams.*;
 
 import reactor.core.util.*;
 
-public final class MonoFlatten<T, R> extends Flux<R> {
+final class MonoFlatten<T, R> extends Flux<R> {
     final Mono<? extends T> source;
     
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
