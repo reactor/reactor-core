@@ -1510,7 +1510,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		);
 	}
 
-
 	/**
 	 * Transform the items emitted by this {@link Mono} into {@link Iterable}, then flatten the elements from those by
 	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
@@ -1529,24 +1528,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return new FluxFlattenIterable<>(this, mapper, Integer.MAX_VALUE, QueueSupplier.one());
 	}
 
-	/**
-	 * Transform the items emitted by this {@link Mono} into {@link Iterable}, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Iterable}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
-	 *
-	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
-	 * @param prefetch the maximum in-flight elements from the inner {@link Iterable} sequence
-	 * @param <R> the merged output sequence type
-	 *
-	 * @return a merged {@link Flux}
-	 * @deprecated prefetch amount is meaningless with a Mono source
-	 */
-	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
-		return flatMapIterable(mapper);
-	}
 
 	/**
 	 * Convert this {@link Mono} to a {@link Flux}
