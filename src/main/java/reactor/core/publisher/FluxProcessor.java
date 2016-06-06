@@ -38,6 +38,23 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Completable, BaseSubscriber<IN> {
 
 	/**
+	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
+	 * The {@link Flux} will complete once both the publishers source and the last switched to {@link Publisher} have
+	 * completed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/switchonnext.png" alt="">
+	 *
+	 * @param <T> the produced type
+	 * @return a {@link FluxProcessor} accepting publishers and producing T
+	 */
+	public static <T> FluxProcessor<Publisher<? extends T>, T> switchOnNext() {
+		UnicastProcessor<Publisher<? extends T>> emitter = UnicastProcessor.create();
+		FluxProcessor<Publisher<? extends T>, T> p = FluxProcessor.wrap(emitter, switchOnNext(emitter));
+		return p;
+	}
+
+	/**
 	 * Transform a receiving {@link Subscriber} and a producing {@link Publisher} in a logical {@link FluxProcessor}.
 	 * The link between the passed upstream and returned downstream will not be created automatically, e.g. not
 	 * subscribed together. A {@link Processor} might choose to have orthogonal sequence input and output.
