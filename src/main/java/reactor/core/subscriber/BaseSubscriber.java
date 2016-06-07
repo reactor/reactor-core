@@ -26,6 +26,8 @@ import reactor.core.util.Exceptions;
  *
  * @author Stephane Maldini
  * @since 2.5
+ * 
+ * @param <T> the value type observed
  */
 public interface BaseSubscriber<T> extends Subscriber<T> {
 
@@ -37,6 +39,8 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 * subscriber.
 	 *
 	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
+	 * 
+	 * @return this
 	 */
 	default BaseSubscriber<T> connect() {
 		onSubscribe(EmptySubscription.INSTANCE);
@@ -56,6 +60,7 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 * Prepare a {@link SubmissionEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
 	 * set to true.
 	 *
+	 * @param autostart automatically start?
 	 * @return a new {@link SubmissionEmitter}
 	 */
 	default SubmissionEmitter<T> connectEmitter(boolean autostart) {

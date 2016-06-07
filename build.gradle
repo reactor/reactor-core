@@ -34,7 +34,7 @@ description = 'Non-Blocking Reactive Foundation for the JVM'
 group = 'io.projectreactor'
 
 ext {
-  gradleVersion = '2.8'
+  gradleVersion = '2.12'
   gradleScriptDir = "${rootProject.projectDir}/gradle"
 
   // Languages
@@ -47,7 +47,7 @@ ext {
   // Libraries
   jacksonDatabindVersion = '2.5.1'
   jsonPathVersion = '2.0.0'
-  rxJavaVersion = '1.1.3'
+  rxJavaVersion = '1.1.5'
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
@@ -85,7 +85,7 @@ if (project.hasProperty('platformVersion')) {
   }
 }
 
-[compileJava, compileTestJava]*.options*.compilerArgs = ["-Xlint:varargs",
+[compileJava, compileTestJava]*.options*.compilerArgs = ["-Xlint:-varargs", // intentionally disabled
 														 "-Xlint:cast",
 														 "-Xlint:classfile",
 														 "-Xlint:dep-ann",

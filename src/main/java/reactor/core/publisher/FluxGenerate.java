@@ -22,10 +22,10 @@ import java.util.function.*;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.flow.*;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Fuseable.QueueSubscription;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.*;
-import reactor.core.flow.Fuseable.*;
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -39,7 +39,7 @@ import reactor.core.flow.Fuseable.*;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 2.5
  */
 final class FluxGenerate<T, S> 
@@ -173,14 +173,6 @@ extends Flux<T> {
 			if (!outputFused) {
 				actual.onComplete();
 			}
-		}
-
-		@Override
-		public void stop() {
-			if (terminate) {
-				return;
-			}
-			terminate = true;
 		}
 
 		@Override

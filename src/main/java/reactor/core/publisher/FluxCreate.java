@@ -24,8 +24,8 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.flow.*;
 import reactor.core.flow.Fuseable.QueueSubscription;
+import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.*;
 
 /**
@@ -38,13 +38,16 @@ final class FluxCreate<T> extends Flux<T> {
     
     final Consumer<? super FluxEmitter<T>> emitter;
     
-    public FluxCreate(Consumer<? super FluxEmitter<T>> emitter) {
+    final BackpressureHandling backpressure;
+    
+    public FluxCreate(Consumer<? super FluxEmitter<T>> emitter, BackpressureHandling backpressure) {
         this.emitter = Objects.requireNonNull(emitter, "emitter");
+        this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
     }
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DefaultFluxEmitter<T> dfe = new DefaultFluxEmitter<>(s);
+        DefaultFluxEmitter<T> dfe = new DefaultFluxEmitter<>(s, backpressure);
         s.onSubscribe(dfe);
         
         try {
@@ -60,7 +63,7 @@ final class FluxCreate<T> extends Flux<T> {
 
         final Subscriber<? super T> actual; 
         
-        BackpressureHandling handling;
+        final BackpressureHandling handling;
         
         boolean caughtUp;
         
@@ -92,18 +95,10 @@ final class FluxCreate<T> extends Flux<T> {
         
         static final Cancellation CANCELLED = () -> { };
         
-        public DefaultFluxEmitter(Subscriber<? super T> actual) {
+        public DefaultFluxEmitter(Subscriber<? super T> actual, BackpressureHandling handling) {
             this.actual = actual;
             this.queue = QueueSupplier.<T>unbounded().get();
-            this.handling = BackpressureHandling.BUFFER;
-        }
-        
-        @Override
-        public void setBackpressureHandling(FluxEmitter.BackpressureHandling mode) {
-            this.handling = mode;
-            if (mode != BackpressureHandling.BUFFER) {
-                this.queue = null;
-            }
+            this.handling = handling;
         }
         
         @Override
@@ -225,11 +220,6 @@ final class FluxCreate<T> extends Flux<T> {
                 drainLatest();
                 break;
             }
-        }
-        
-        @Override
-        public void stop() {
-            cancel();
         }
         
         boolean drain() {

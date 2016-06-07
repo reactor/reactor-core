@@ -43,7 +43,6 @@ final class HashWheelTimer implements Introspectable, Cancellable, TimedSchedule
 	final Executor     executor;
 	final AtomicBoolean started = new AtomicBoolean();
 
-	@SuppressWarnings("unused")
 	volatile long subscriptions;
 
 	/**
@@ -337,7 +336,8 @@ final class HashWheelTimer implements Introspectable, Cancellable, TimedSchedule
 
 	}
 
-	static abstract class HashWheelTask
+	@SuppressWarnings("rawtypes")
+    static abstract class HashWheelTask
 			implements Runnable, Cancellation, Comparable, Cancellable, Producer, Introspectable {
 
 		final    Runnable task;

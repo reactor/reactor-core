@@ -15,14 +15,13 @@
  */
 package reactor.core.util;
 
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * Static Helpers to decorate an error with an associated data
  * <p>
  *
- * @see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @author Stephane Maldini
  * @since 2.0
  */
@@ -35,7 +34,12 @@ public enum Exceptions {
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
 
 	/**
-	 * Signal a desynchronization of demand and timer
+	 * Signal a desynchronization of demand and timer.
+	 * @param <T> the parent instance type
+	 * @param field the target field updater
+	 * @param instance the parent instance for the field
+	 * @param exception the Throwable to add.
+	 * @return true if added, false if the field contained the {@link #TERMINATED} instance.
 	 */
 	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, Throwable> field,
 			T instance,
@@ -138,6 +142,7 @@ public enum Exceptions {
 	 * Take an unsignalled exception that is masking anowher one due to callback failure.
 	 *
 	 * @param e the exception to handle
+	 * @param root the optional root cause to suppress
 	 */
 	public static void onErrorDropped(Throwable e, Throwable root) {
 		if(root != null) {
@@ -156,8 +161,9 @@ public enum Exceptions {
 	}
 
 	/**
-	 * An unexpected event is about to be dropped
+	 * An unexpected event is about to be dropped.
 	 *
+	 * @param <T> the dropped value type
 	 * @param t the dropping data
 	 */
 	public static <T> void onNextDropped(T t) {
@@ -213,6 +219,7 @@ public enum Exceptions {
 	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
 	 *
 	 * @param t the exception to wrap
+	 * @return the unwrapped exception
 	 */
 	public static Throwable unwrap(Throwable t) {
 		Throwable _t = t;
@@ -226,8 +233,10 @@ public enum Exceptions {
 	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
 	 */
 	public static class ReactiveException extends RuntimeException {
-
-		public ReactiveException(Throwable cause) {
+		/** */
+        private static final long serialVersionUID = -3853731900001499819L;
+        
+        public ReactiveException(Throwable cause) {
 			super(cause);
 		}
 
@@ -329,7 +338,6 @@ public enum Exceptions {
 	 *
 	 * @author Stephane Maldini
 	 */
-	@SuppressWarnings("serial")
 	public static final class InsufficientCapacityException extends RuntimeException {
 
 		private static final long serialVersionUID = 2491425227432776145L;

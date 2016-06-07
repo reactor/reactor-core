@@ -63,7 +63,6 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param list Build an unbounded tuple
 	 * @return The new {@link TupleN}.
 	 */
-	@SuppressWarnings("rawtypes")
 	public static Tuple of(Object[] list) {
 		if(list == null) return empty();
 		switch (list.length){
@@ -91,7 +90,6 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param list Build an unbounded tuple
 	 * @return The new {@link TupleN}.
 	 */
-	@SuppressWarnings("rawtypes")
 	public static TupleN of(List<?> list) {
 		return new TupleN(list.toArray());
 	}
@@ -106,7 +104,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple2}.
 	 */
 	public static <T1, T2> Tuple2<T1, T2> of(T1 t1, T2 t2) {
-		return new Tuple2<T1, T2>(2, t1, t2);
+		return new Tuple2<>(2, t1, t2);
 	}
 
 	/**
@@ -121,7 +119,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple3}.
 	 */
 	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(T1 t1, T2 t2, T3 t3) {
-		return new Tuple3<T1, T2, T3>(3, t1, t2, t3);
+		return new Tuple3<>(3, t1, t2, t3);
 	}
 
 	/**
@@ -138,7 +136,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple4}.
 	 */
 	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(T1 t1, T2 t2, T3 t3, T4 t4) {
-		return new Tuple4<T1, T2, T3, T4>(4, t1, t2, t3, t4);
+		return new Tuple4<>(4, t1, t2, t3, t4);
 	}
 
 	/**
@@ -157,7 +155,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple5}.
 	 */
 	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
-		return new Tuple5<T1, T2, T3, T4, T5>(5, t1, t2, t3, t4, t5);
+		return new Tuple5<>(5, t1, t2, t3, t4, t5);
 	}
 
 	/**
@@ -179,7 +177,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6
 	  t6) {
-		return new Tuple6<T1, T2, T3, T4, T5, T6>(6, t1, t2, t3, t4, t5, t6);
+		return new Tuple6<>(6, t1, t2, t3, t4, t5, t6);
 	}
 
 	/**
@@ -203,7 +201,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5,
 	                                                                                 T6 t6, T7 t7) {
-		return new Tuple7<T1, T2, T3, T4, T5, T6, T7>(7, t1, t2, t3, t4, t5, t6, t7);
+		return new Tuple7<>(7, t1, t2, t3, t4, t5, t6, t7);
 	}
 
 	/**
@@ -241,24 +239,19 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Function<Object[], Tuple> fnAny() {
-		return (Function<Object[], Tuple>) empty;
+		return empty;
 	}
 
 	/**
 	 * A converting function from Object array to {@link TupleN} to R.
 	 *
 	 * @param <R> The type of the return value.
+	 * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <R> Function<Object[], R> fnAny(final Function<Tuple, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.fnAny()
-				                           .apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.fnAny().apply(objects));
 	}
 
 	/**
@@ -271,7 +264,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2> Function<Object[], Tuple2<T1, T2>> fn2() {
-		return (Function<Object[], Tuple2<T1, T2>>) empty;
+		return empty;
 	}
 
 
@@ -286,7 +279,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3> Function<Object[], Tuple3<T1, T2, T3>> fn3() {
-		return (Function<Object[], Tuple3<T1, T2, T3>>) empty;
+		return empty;
 	}
 
 	/**
@@ -296,16 +289,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T2> The type of the second value.
 	 * @param <T3> The type of the third value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, R> Function<Object[], R> fn3(final Function<Tuple3<T1, T2, T3>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3>fn3().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3>fn3().apply(objects));
 	}
 
 	/**
@@ -320,7 +309,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4> Function<Object[], Tuple4<T1, T2, T3, T4>> fn4() {
-		return (Function<Object[], Tuple4<T1, T2, T3, T4>>) empty;
+		return empty;
 	}
 
 	/**
@@ -331,16 +320,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T3> The type of the third value.
 	 * @param <T4> The type of the fourth value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, R> Function<Object[], R> fn4(final Function<Tuple4<T1, T2, T3, T4>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4>fn4().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4>fn4().apply(objects));
 	}
 
 	/**
@@ -356,7 +341,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5> Function<Object[], Tuple5<T1, T2, T3, T4, T5>> fn5() {
-		return (Function<Object[], Tuple5<T1, T2, T3, T4, T5>>) empty;
+		return empty;
 	}
 
 	/**
@@ -368,16 +353,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T4> The type of the fourth value.
 	 * @param <T5> The type of the fifth value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, R> Function<Object[], R> fn5(final Function<Tuple5<T1, T2, T3, T4, T5>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5>fn5().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5>fn5().apply(objects));
 	}
 
 	/**
@@ -394,7 +375,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5, T6> Function<Object[], Tuple6<T1, T2, T3, T4, T5, T6>> fn6() {
-		return (Function<Object[], Tuple6<T1, T2, T3, T4, T5, T6>>) empty;
+		return empty;
 	}
 
 	/**
@@ -407,16 +388,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T5> The type of the fifth value.
 	 * @param <T6> The type of the sixth value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, R> Function<Object[], R> fn6(final Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
 	}
 
 	/**
@@ -434,7 +411,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5, T6, T7> Function<Object[], Tuple7<T1, T2, T3, T4, T5, T6, T7>> fn7() {
-		return (Function<Object[], Tuple7<T1, T2, T3, T4, T5, T6, T7>>) empty;
+		return empty;
 	}
 
 	/**
@@ -448,16 +425,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T6> The type of the sixth value.
 	 * @param <T7> The type of the seventh value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Object[], R> fn7(final Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
 	}
 
 	/**
@@ -476,7 +449,7 @@ public class Tuple implements Iterable, Serializable, Function {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5, T6, T7, T8> Function<Object[], Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> fn8() {
-		return (Function<Object[], Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>>) empty;
+		return empty;
 	}
 
 	/**
@@ -491,16 +464,12 @@ public class Tuple implements Iterable, Serializable, Function {
 	 * @param <T7> The type of the seventh value.
      * @param <T8> The type of the eighth value.
 	 * @param <R> The type of the return value.
+     * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to {@link Tuple8}.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Object[], R> fn8(final Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> delegate) {
-		return new Function<Object[], R>() {
-			@Override
-			public R apply(Object[] objects) {
-				return delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
-			}
-		};
+		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
 	}
 
 	/**
@@ -554,7 +523,6 @@ public class Tuple implements Iterable, Serializable, Function {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Tuple apply(Object o) {
 		return of((Object[])o);
 	}

@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
@@ -33,7 +32,7 @@ import reactor.core.flow.MultiReceiver;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class FluxMerge<T> extends Flux<T> implements MultiReceiver {
@@ -70,7 +69,6 @@ final class FluxMerge<T> extends Flux<T> implements MultiReceiver {
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		@SuppressWarnings("unchecked")
 		FluxFlatMap.FlatMapMain<Publisher<? extends T>, T> merger = new FluxFlatMap.FlatMapMain<>(
 				s, identityFunction(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
 				innerQueueSupplier);

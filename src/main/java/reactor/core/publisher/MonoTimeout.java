@@ -34,7 +34,7 @@ import reactor.core.subscriber.Subscribers;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
@@ -43,7 +43,8 @@ final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
 
 	final Publisher<? extends T> other;
 
-	final static Function NEVER = e -> Flux.never();
+	@SuppressWarnings("rawtypes")
+    final static Function NEVER = e -> Flux.never();
 
 	public MonoTimeout(Publisher<? extends T> source,
 			Publisher<U> firstTimeout) {

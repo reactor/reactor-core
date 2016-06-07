@@ -35,7 +35,7 @@ import reactor.core.scheduler.Schedulers;
 @org.testng.annotations.Test
 public class SchedulerParallelTests extends AbstractProcessorVerification {
 
-	private final int             BUFFER_SIZE     = 8;
+	//private final int             BUFFER_SIZE     = 8;
 	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
 	private final int             N               = 17;
 
@@ -85,7 +85,7 @@ public class SchedulerParallelTests extends AbstractProcessorVerification {
 		service.shutdown();
 	}
 
-	private Scheduler.Worker runTest(final Scheduler.Worker dispatcher) throws InterruptedException {
+	Scheduler.Worker runTest(final Scheduler.Worker dispatcher) throws InterruptedException {
 		CountDownLatch tasksCountDown = new CountDownLatch(N);
 
 		dispatcher.schedule(() -> {

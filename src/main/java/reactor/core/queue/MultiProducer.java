@@ -27,9 +27,10 @@ import sun.misc.Unsafe;
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
  * Suitable for use for sequencing across multiple publisher threads.</p>
  *
- * <p> * <p>Note on {@link RingBufferProducer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link RingBufferProducer#next()}, to determine the highest available sequence that can be read, then
- * {@link RingBufferProducer#getHighestPublishedSequence(long, long)} should be used.
+ * <p> 
+ * <p>Note on {@code RingBufferProducer.getCursor()}:  With this sequencer the cursor value is updated after the call
+ * to {@code RingBufferProducer.next()}, to determine the highest available sequence that can be read, then
+ * {@code RingBufferProducer.getHighestPublishedSequence(long, long)} should be used.
  */
 final class MultiProducer extends RingBufferProducer
 {
@@ -65,7 +66,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#hasAvailableCapacity(int)
+     * See {@code RingBufferProducer.hasAvailableCapacity(int)}.
      */
     @Override
     public boolean hasAvailableCapacity(final int requiredCapacity) {
@@ -89,7 +90,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#claim(long)
+     * See {@code RingBufferProducer.claim(long)}.
      */
     @Override
     public void claim(long sequence)
@@ -98,7 +99,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#next()
+     * See {@code RingBufferProducer.next()}.
      */
     @Override
     public long next()
@@ -107,7 +108,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#next(int)
+     * See {@code RingBufferProducer.next(int)}.
      */
     @Override
     public long next(int n)
@@ -154,7 +155,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#tryNext()
+     * See {@code RingBufferProducer.tryNext()}.
      */
     @Override
     public long tryNext() throws Exceptions.InsufficientCapacityException
@@ -163,7 +164,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#tryNext(int)
+     * See {@code RingBufferProducer.tryNext(int)}.
      */
     @Override
     public long tryNext(int n) throws Exceptions.InsufficientCapacityException
@@ -192,7 +193,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#remainingCapacity()
+     * See {@code RingBufferProducer.remainingCapacity()}.
      */
     @Override
     public long remainingCapacity()
@@ -200,7 +201,7 @@ final class MultiProducer extends RingBufferProducer
         return getBufferSize() - getPending();
     }
     /**
-     * @see RingBufferProducer#getPending()
+     * See {@code RingBufferProducer.getPending()}.
      */
     @Override
     public long getPending()
@@ -229,7 +230,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#publish(long)
+     * See {@code RingBufferProducer.publish(long)}.
      */
     @Override
     public void publish(final long sequence)
@@ -239,7 +240,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#publish(long, long)
+     * See {@code RingBufferProducer.publish(long, long)}.
      */
     @Override
     public void publish(long lo, long hi)
@@ -282,7 +283,7 @@ final class MultiProducer extends RingBufferProducer
     }
 
     /**
-     * @see RingBufferProducer#isAvailable(long)
+     * See {@code RingBufferProducer.isAvailable(long)}
      */
     @Override
     public boolean isAvailable(long sequence)

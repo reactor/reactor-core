@@ -34,6 +34,7 @@ public interface Sequence extends LongSupplier
      *
      * @return The current value of the sequence.
      */
+    @Override
     long getAsLong();
 
     /**

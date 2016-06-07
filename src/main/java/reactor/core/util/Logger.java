@@ -59,7 +59,7 @@ public abstract class Logger {
 
 	/**
 	 * Try getting an appropriate
-	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logging}.
+	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logger}.
 	 *
 	 * @param name the category or logger name to assign
 	 *
@@ -71,7 +71,7 @@ public abstract class Logger {
 
 	/**
 	 * Try getting an appropriate
-	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logging}.
+	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logger}.
 	 *
 	 * @param klass the source {@link Class} to derive the name from.
 	 *
@@ -652,7 +652,6 @@ public abstract class Logger {
 
 	private static class GlobalExtension implements Extension {
 
-		@SuppressWarnings("unused")
 		private volatile Extension extension;
 		private          Extension cachedExtension;
 

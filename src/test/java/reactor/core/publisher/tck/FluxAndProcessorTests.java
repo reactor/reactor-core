@@ -95,6 +95,7 @@ public class FluxAndProcessorTests extends AbstractFluxVerification {
 	}
 
 	@Test
+    @Override
 	public void testHotIdentityProcessor() throws InterruptedException {
 //		for(int i = 0; i < 1000; i++)
 		try {
@@ -106,7 +107,8 @@ public class FluxAndProcessorTests extends AbstractFluxVerification {
 		}
 	}
 
-	@Test
+    @Test
+    @Override
 	public void testColdIdentityProcessor() throws InterruptedException {
 		//for (int i = 0; i < 1000; i++) {
 		try {

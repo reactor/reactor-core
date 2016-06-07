@@ -35,6 +35,7 @@ import rx.SingleSubscriber;
  * @author Stephane Maldini
  * @since 2.5
  */
+@SuppressWarnings("rawtypes")
 public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 
 	static final RxJava1SingleConverter INSTANCE = new RxJava1SingleConverter();
@@ -62,7 +63,7 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 		return Single.create(new PublisherAsSingle<>(o));
 	}
 
-	@SuppressWarnings("rawtypes")
+    @SuppressWarnings("unchecked")
     @Override
 	public Mono toPublisher(Object o) { 
 	    if (o instanceof Single) {
@@ -221,7 +222,6 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	        T value;
 	        
 	        volatile int state;
-	        @SuppressWarnings("rawtypes")
             static final AtomicIntegerFieldUpdater<SingleAsMonoSubscriber> STATE =
 	                AtomicIntegerFieldUpdater.newUpdater(SingleAsMonoSubscriber.class, "state");
 	        

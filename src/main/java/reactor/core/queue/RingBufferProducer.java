@@ -107,6 +107,7 @@ abstract class RingBufferProducer {
 	 * Get the minimum sequence value from all of the gating sequences
 	 * added to this ringBuffer.
 	 *
+	 * @param excludeSequence to exclude from search
 	 * @return The minimum gating sequence or the cursor sequence if
 	 * no sequences have been added.
 	 */
@@ -216,7 +217,7 @@ abstract class RingBufferProducer {
 	/**
 	 * Attempt to claim the next n events in sequence for publishing.  Will return the
 	 * highest numbered slot if there is at least <code>requiredCapacity</code> slots
-	 * available.  Have a look at {@link RingBufferProducer#next()} for a description on how to
+	 * available.  Have a look at {@code RingBufferProducer.next()} for a description on how to
 	 * use this method.
 	 *
 	 * @param n the number of sequences to claim
@@ -242,7 +243,7 @@ abstract class RingBufferProducer {
 
 	/**
 	 *
-	 * @return
+	 * @return the wait strategy
 	 */
 	public WaitStrategy getWaitStrategy() {
 		return waitStrategy;
@@ -250,7 +251,7 @@ abstract class RingBufferProducer {
 
 	/**
 	 *
-	 * @return
+	 * @return the gating sequences array
 	 */
 	public Sequence[] getGatingSequences() {
 		return gatingSequences;

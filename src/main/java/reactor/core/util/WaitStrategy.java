@@ -38,6 +38,7 @@ public abstract class WaitStrategy
      * Blocking strategy that uses a lock and condition variable for consumer waiting on a barrier.
      *
      * This strategy can be used when throughput and low-latency are not as important as CPU resource.
+     * @return the wait strategy
      */
     public static WaitStrategy blocking() {
         return new Blocking();
@@ -48,6 +49,7 @@ public abstract class WaitStrategy
      *
      * This strategy will use CPU resource to avoid syscalls which can introduce latency jitter.  It is best
      * used when threads can be bound to specific CPU cores.
+     * @return the wait strategy
      */
     public static WaitStrategy busySpin() {
         return BUSY_SPIN;
@@ -57,6 +59,7 @@ public abstract class WaitStrategy
      * Variation of the {@link #blocking()} that attempts to elide conditional wake-ups when the lock is uncontended.
      * Shows performance improvements on microbenchmarks.  However this wait strategy should be considered experimental
      * as I have not full proved the correctness of the lock elision code.
+     * @return the wait strategy
      */
     public static WaitStrategy liteBlocking() {
         return new LiteBlocking();
@@ -69,6 +72,7 @@ public abstract class WaitStrategy
      * <p>
      * This strategy is a good compromise between performance and CPU resource. Latency spikes can occur after quiet
      * periods.
+     * @return the wait strategy
      */
     public static WaitStrategy parking() {
         return PARKING;
@@ -83,6 +87,7 @@ public abstract class WaitStrategy
      * spikes can occur after quiet periods.
      *
      * @param retries the spin cycle count before parking
+     * @return the wait strategy
      */
     public static WaitStrategy parking(int retries) {
         return new Parking(retries);
@@ -94,7 +99,11 @@ public abstract class WaitStrategy
      * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource. Spins, then
      * yields, then waits using the configured fallback WaitStrategy.</p>
      *
+     * @param spinTimeout the spin timeout
+     * @param yieldTimeout the yield timeout
+     * @param units the time unit
      * @param delegate the target wait strategy to fallback on
+     * @return the wait strategy
      */
     public static WaitStrategy phasedOff(long spinTimeout, long yieldTimeout, TimeUnit units, WaitStrategy delegate) {
         return new PhasedOff(spinTimeout, yieldTimeout, units, delegate);
@@ -102,6 +111,10 @@ public abstract class WaitStrategy
 
     /**
      * Block with wait/notifyAll semantics
+     * @param spinTimeout the spin timeout
+     * @param yieldTimeout the yield timeout
+     * @param units the time unit
+     * @return the wait strategy
      */
     public static WaitStrategy phasedOffLiteLock(long spinTimeout, long yieldTimeout, TimeUnit units) {
         return phasedOff(spinTimeout, yieldTimeout, units, liteBlocking());
@@ -109,6 +122,10 @@ public abstract class WaitStrategy
 
     /**
      * Block with wait/notifyAll semantics
+     * @param spinTimeout the spin timeout
+     * @param yieldTimeout the yield timeout
+     * @param units the time unit
+     * @return the wait strategy
      */
     public static WaitStrategy phasedOffLock(long spinTimeout, long yieldTimeout, TimeUnit units) {
         return phasedOff(spinTimeout, yieldTimeout, units, blocking());
@@ -116,6 +133,10 @@ public abstract class WaitStrategy
 
     /**
      * Block by parking in a loop
+     * @param spinTimeout the spin timeout
+     * @param yieldTimeout the yield timeout
+     * @param units the time unit
+     * @return the wait strategy
      */
     public static WaitStrategy phasedOffSleep(long spinTimeout, long yieldTimeout, TimeUnit units) {
         return phasedOff(spinTimeout, yieldTimeout, units, parking(0));
@@ -127,6 +148,7 @@ public abstract class WaitStrategy
      * after an initially spinning.
      *
      * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
+     * @return the wait strategy
      */
     public static WaitStrategy yielding() {
         return YIELDING;
@@ -138,6 +160,7 @@ public abstract class WaitStrategy
      * after an initially spinning.
      *
      * This strategy will incur up a latency of 1ms and save a maximum CPU resources.
+     * @return the wait strategy
      */
     public static WaitStrategy sleeping() {
         return SLEEPING;

@@ -32,6 +32,9 @@ import reactor.core.util.ReactiveStateUtils;
  *
  * @author Stephane Maldini
  * @since 2.0.4
+ * 
+ * @param <I> the input value type
+ * @param <O> the output value type
  */
 public class SubscriberBarrier<I, O>
 		implements BaseSubscriber<I>, Subscription, Backpressurable, Completable, Receiver, Producer {

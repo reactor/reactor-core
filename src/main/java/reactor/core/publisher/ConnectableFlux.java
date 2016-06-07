@@ -25,7 +25,7 @@ import reactor.core.flow.Cancellation;
  *
  * @see #process
  * @see #publish
- * @see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @param <T> the input and output value type
  * @since 2.5
  */

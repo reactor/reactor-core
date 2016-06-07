@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -307,7 +306,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
 		return MonoSource.wrap(new FluxFirstEmitting<>(monos));
 	}
@@ -386,23 +384,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static <T> Mono<T> fromCallableOrEmpty(Callable<? extends T> supplier) {
 		return new MonoCallableOrEmpty<>(supplier);
 	}
-
-
-	/**
-	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
-	 * <p>
-	 * @param completableFuture {@link CompletableFuture} that will produce the value
-	 * @param <T> type of the expected value
-	 * @return A {@link Mono}.
-	 * @deprecated Use {@link #fromFuture(CompletableFuture)} instead.
-	 */
-	public static <T> Mono<T> fromCompletableFuture(CompletableFuture<? extends T> completableFuture) {
-		return new MonoCompletableFuture<>(completableFuture);
-	}
-
 
 	/**
 	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
@@ -595,7 +576,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a));
 	}
@@ -617,7 +598,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
 		return new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
 	}
@@ -641,7 +622,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -670,7 +651,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -702,7 +683,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -725,7 +706,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	@SuppressWarnings({"unchecked","varargs"})
 	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
 		return new MonoWhen<>(false, monos);
 	}
@@ -744,7 +724,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return new MonoWhen<>(true, p1, p2).map(a -> (Tuple2)Tuple.of(a));
 	}
@@ -765,7 +745,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
 		return new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
 	}
@@ -788,7 +768,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -816,7 +796,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -847,7 +827,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> whenDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
@@ -870,7 +850,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	@SuppressWarnings({"unchecked","varargs"})
 	public static <T> Mono<T[]> whenDelayError(Mono<? extends T>... monos) {
 		return new MonoWhen<>(true, monos);
 	}
@@ -890,8 +869,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	@SuppressWarnings({"varargs", "unchecked"})
-	private static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
+	public static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
 		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
 	}
 
@@ -908,7 +886,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
 		return new MonoWhen<>(false, monos);
 	}
@@ -928,7 +905,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T, V> Mono<V> zip(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
 		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
@@ -1112,7 +1088,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		return Flux.concat(this, other);
 	}
@@ -1494,7 +1469,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
-	@SuppressWarnings("unchecked")
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
@@ -1719,6 +1693,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
 	 * <p>
+	 * @param type the type to match
 	 * @param mapper the error transforming {@link Function}
 	 * @param <E> the error type
 	 *
@@ -1772,7 +1747,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be at most 1
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		return Flux.merge(this, other);
 	}
@@ -1970,7 +1944,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return an asynchronously producing {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
 			T value = block();

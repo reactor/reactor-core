@@ -19,10 +19,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscriptionSubscriber;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -33,7 +29,7 @@ import reactor.core.util.Exceptions;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class MonoDelaySubscription<T, U> extends MonoSource<T, T> {

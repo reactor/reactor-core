@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Cancellation;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -301,7 +300,6 @@ public class CombinationTests {
 		scheduler.shutdown();
 	}
 
-	@SuppressWarnings("unchecked")
 	private void awaitLatch(Publisher<?> tail, CountDownLatch latch) throws Exception {
 		if (tail != null) {
 			tail.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(), null,
@@ -433,7 +431,7 @@ public class CombinationTests {
 		int elements = 40;
 		CountDownLatch latch = new CountDownLatch(elements / 2 - 2);
 
-		Cancellation tail = Flux.combineLatest(
+		Flux.combineLatest(
 				sensorOdd().cache().delay(Duration.ofMillis(100)),
 				sensorEven().cache().delay(Duration.ofMillis(200)),
 				this::computeMin)

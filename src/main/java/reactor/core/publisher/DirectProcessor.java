@@ -32,7 +32,6 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
-import reactor.core.util.PlatformDependent;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.

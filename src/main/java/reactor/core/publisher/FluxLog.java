@@ -74,7 +74,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		private final long   uniqueId;
 		final private Level  level;
 
-		private final FluxLog parent;
+		private final FluxLog<IN> parent;
 
 		public LoggerBarrier(FluxLog<IN> parent, long uniqueId, Subscriber<? super IN> subscriber) {
 			super(subscriber);

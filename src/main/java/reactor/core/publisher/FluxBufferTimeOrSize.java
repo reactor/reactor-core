@@ -40,7 +40,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 
 	final static class BufferAction<T> extends BatchAction<T, List<T>> {
 
-		private final List<T> values = new ArrayList<T>();
+		private final List<T> values = new ArrayList<>();
 
 		public BufferAction(Subscriber<? super List<T>> actual,
 				int maxSize,
@@ -83,7 +83,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 					if (values.isEmpty()) {
 						return;
 					}
-					toSend = new ArrayList<T>(values);
+					toSend = new ArrayList<>(values);
 					values.clear();
 				}
 			}
@@ -91,7 +91,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 				if (values.isEmpty()) {
 					return;
 				}
-				toSend = new ArrayList<T>(values);
+				toSend = new ArrayList<>(values);
 				values.clear();
 			}
 			subscriber.onNext(toSend);

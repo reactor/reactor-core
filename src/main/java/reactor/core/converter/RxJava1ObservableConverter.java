@@ -34,6 +34,7 @@ import rx.internal.util.ScalarSynchronousObservable;
  * @author Stephane Maldini
  * @since 2.5
  */
+@SuppressWarnings("rawtypes")
 public final class RxJava1ObservableConverter extends PublisherConverter<Observable> {
 
 	static final RxJava1ObservableConverter INSTANCE = new RxJava1ObservableConverter();
@@ -49,7 +50,6 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 	}
 
 	@Override
-    @SuppressWarnings("rawtypes")
 	public Observable fromPublisher(final Publisher<?> pub) {
 	    if (pub instanceof Fuseable.ScalarCallable) {
             Fuseable.ScalarCallable scalarCallable = (Fuseable.ScalarCallable) pub;

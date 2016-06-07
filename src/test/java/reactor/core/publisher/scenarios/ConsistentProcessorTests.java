@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -49,8 +48,6 @@ public class ConsistentProcessorTests {
 	private Processor<String, String> processor;
 	private Processor<String, String> workProcessor;
 
-	private AtomicInteger integer = new AtomicInteger();
-
 	@Test
 	@Ignore
 	public void testMultipleConsumersMultipleTimes() throws Exception {
@@ -62,14 +59,14 @@ public class ConsistentProcessorTests {
 		int fulltotalints = 0;
 		int iter = 10;
 
-		List<Integer> total = new ArrayList<Integer>();
+		List<Integer> total = new ArrayList<>();
 		for (int t = 0; t < iter; t++) {
 			List<List<String>> clientDatas = getClientDatas(threads, sender, count);
 
 			assertThat(clientDatas.size(), is(threads));
 
-			List<String> numbersNoEnds = new ArrayList<String>();
-			List<Integer> numbersNoEndsInt = new ArrayList<Integer>();
+			List<String> numbersNoEnds = new ArrayList<>();
+			List<Integer> numbersNoEndsInt = new ArrayList<>();
 			for (int i = 0; i < clientDatas.size(); i++) {
 				List<String> datas = clientDatas.get(i);
 				assertThat(datas, notNullValue());
@@ -127,8 +124,8 @@ public class ConsistentProcessorTests {
 	}
 
 	public Set<Integer> findDuplicates(List<Integer> listContainingDuplicates) {
-		final Set<Integer> setToReturn = new HashSet<Integer>();
-		final Set<Integer> set1 = new HashSet<Integer>();
+		final Set<Integer> setToReturn = new HashSet<>();
+		final Set<Integer> set1 = new HashSet<>();
 
 		for (Integer yourInt : listContainingDuplicates) {
 			if (!set1.add(yourInt)) {
@@ -153,10 +150,11 @@ public class ConsistentProcessorTests {
 	private List<List<String>> getClientDatas(int threadCount, final Sender sender, int count) throws Exception {
 		final CountDownLatch promiseLatch = new CountDownLatch(threadCount);
 
-		final ArrayList<List<String>> datas = new ArrayList<List<String>>();
+		final ArrayList<List<String>> datas = new ArrayList<>();
 
 
 		Runnable srunner = new Runnable() {
+		    @Override
 			public void run() {
 				try {
 					sender.sendNext(count);
@@ -173,6 +171,7 @@ public class ConsistentProcessorTests {
 
 		for (int i = 0; i < threadCount; ++i) {
 			Runnable runner = new Runnable() {
+			    @Override
 				public void run() {
 					try {
 						Thread.sleep(r.nextInt(2000) + 500);

@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -133,6 +134,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * <p>Be sure at least a publisher has subscribed to it via {@link Publisher#subscribe(Subscriber)}
 	 * before use assert methods.
 	 * @see #subscribe(Publisher)
+	 * @param <T> the observed value type
+	 * @return a fresh TestSubscriber instance
 	 */
 	public static <T> TestSubscriber<T> create() {
 		return new TestSubscriber<>();
@@ -145,6 +148,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * before use assert methods.
 	 * @param n Number of elements to request (can be 0 if you want no initial demand).
 	 * @see #subscribe(Publisher, long)
+     * @param <T> the observed value type
+     * @return a fresh TestSubscriber instance
 	 */
 	public static <T> TestSubscriber<T> create(long n) {
 		return new TestSubscriber<>(n);
@@ -154,6 +159,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Create a new {@link TestSubscriber} that requests an unbounded number of elements,
 	 * and make the specified {@code publisher} subscribe to it.
 	 * @param publisher The publisher to subscribe with
+     * @param <T> the observed value type
+     * @return a fresh TestSubscriber instance
 	 */
 	public static <T> TestSubscriber<T> subscribe(Publisher<T> publisher) {
 		TestSubscriber<T> subscriber = new TestSubscriber<>();
@@ -167,6 +174,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * demand with {@link Subscription#request(long)}.
 	 * @param publisher The publisher to subscribe with
 	 * @param n Number of elements to request (can be 0 if you want no initial demand).
+     * @param <T> the observed value type
+     * @return a fresh TestSubscriber instance
 	 */
 	public static <T> TestSubscriber<T> subscribe(Publisher<T> publisher, long n) {
 		TestSubscriber<T> subscriber = new TestSubscriber<>(n);
@@ -178,10 +187,13 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
 	 * not before the specified timeout, throws an {@link AssertionError} with the specified
 	 * error message supplier.
+	 * @param timeout the timeout duration
+	 * @param errorMessageSupplier the error message supplier
+	 * @param conditionSupplier condition to break out of the wait loop
 	 * @throws AssertionError
 	 */
 	public static void await(Duration timeout, Supplier<String> errorMessageSupplier,
-			Supplier<Boolean> conditionSupplier) {
+			BooleanSupplier conditionSupplier) {
 
 		Objects.requireNonNull(errorMessageSupplier);
 		Objects.requireNonNull(conditionSupplier);
@@ -190,7 +202,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 		long timeoutNs = timeout.toNanos();
 		long startTime = System.nanoTime();
 		do {
-			if (conditionSupplier.get()) {
+			if (conditionSupplier.getAsBoolean()) {
 				return;
 			}
 			try {
@@ -209,15 +221,18 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it does
 	 * not before the specified timeout, throw an {@link AssertionError} with the specified
 	 * error message.
+     * @param timeout the timeout duration
+     * @param errorMessage the error message
+     * @param conditionSupplier condition to break out of the wait loop
 	 * @throws AssertionError
 	 */
-	public static void await(Duration timeout, final String errorMessage, Supplier<Boolean> resultSupplier) {
+	public static void await(Duration timeout, final String errorMessage, BooleanSupplier conditionSupplier) {
 		await(timeout, new Supplier<String>() {
 			@Override
 			public String get() {
 				return errorMessage;
 			}
-		}, resultSupplier);
+		}, conditionSupplier);
 	}
 
 
@@ -245,6 +260,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Configure the timeout in seconds for waiting next values to be received (3 seconds
 	 * by default).
+	 * @param timeout the new default value timeout duration
+	 * @return this
 	 */
 	public final TestSubscriber<T> configureValuesTimeout(Duration timeout) {
 		this.valuesTimeout = timeout;
@@ -255,6 +272,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Enable or disabled the values storage. It is enabled by default, and can be disable
 	 * in order to be able to perform performance benchmarks or tests with a huge amount
 	 * values.
+	 * @param enabled enable value storage?
+     * @return this
 	 */
 	public final TestSubscriber<T> configureValuesStorage(boolean enabled) {
 		this.valuesStorage = enabled;
@@ -267,6 +286,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert subscription occurred (once).
+     * @return this
 	 */
 	public final TestSubscriber<T> assertSubscribed() {
 		int s = subscriptionCount;
@@ -283,6 +303,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert no subscription occurred.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertNotSubscribed() {
 		int s = subscriptionCount;
@@ -299,6 +320,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert a complete successfully signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertComplete() {
 		int c = completionCount;
@@ -313,6 +335,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert no complete successfully signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertNotComplete() {
 		int c = completionCount;
@@ -327,6 +350,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert an error signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertError() {
 		int s = errors.size();
@@ -342,6 +366,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Assert an error signal has been received.
 	 * @param clazz The class of the exception contained in the error signal
+     * @return this
 	 */
 	public final TestSubscriber<T> assertError(Class<? extends Throwable> clazz) {
 		 int s = errors.size();
@@ -387,6 +412,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Assert an error signal has been received.
 	 * @param expectation A method that can verify the exception contained in the error signal
 	 * and throw an exception (like an {@link AssertionError}) if the exception is not valid.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertErrorWith(Consumer<? super Throwable> expectation) {
 		int s = errors.size();
@@ -404,6 +430,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert no error signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertNoError() {
 		int s = errors.size();
@@ -420,6 +447,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert either complete successfully or error signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertTerminated() {
 		if (cdl.getCount() != 0) {
@@ -430,6 +458,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert no complete successfully or error signal has been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertNotTerminated() {
 		if (cdl.getCount() == 0) {
@@ -440,6 +469,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert {@code n} values has been received.
+	 * @param n the expected value count
+     * @return this
 	 */
 	public final TestSubscriber<T> assertValueCount(long n) {
 		if (valueCount != n) {
@@ -450,6 +481,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Assert no values have been received.
+     * @return this
 	 */
 	public final TestSubscriber<T> assertNoValues() {
 		if (valueCount != 0) {
@@ -463,9 +495,9 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * use this method.
 	 * @param expectedValues the values to assert
 	 * @see #configureValuesStorage(boolean)
+     * @return this
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public final TestSubscriber<T> assertValues(T... expectedValues) {
 		return assertValueSequence(Arrays.asList(expectedValues));
 	}
@@ -476,6 +508,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * @param expectations One or more methods that can verify the values and throw a
 	 * exception (like an {@link AssertionError}) if the value is not valid.
 	 * @see #configureValuesStorage(boolean)
+     * @return this
 	 */
 	@SafeVarargs
 	public final TestSubscriber<T> assertValuesWith(Consumer<T>... expectations) {
@@ -499,6 +532,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * use this method.
 	 * @param expectedSequence the values to assert
 	 * @see #configureValuesStorage(boolean)
+     * @return this
 	 */
 	public final TestSubscriber<T> assertValueSequence(Iterable<? extends T> expectedSequence) {
 		if (!valuesStorage) {
@@ -536,6 +570,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Blocking method that waits until a complete successfully or error signal is received.
+     * @return this
 	 */
 	public final TestSubscriber<T> await() {
 		if (cdl.getCount() == 0) {
@@ -553,6 +588,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Blocking method that waits until a complete successfully or error signal is received
 	 * or until a timeout occurs.
 	 * @param timeout The timeout value
+     * @return this
 	 */
 	public final TestSubscriber<T> await(Duration timeout) {
 		if (cdl.getCount() == 0) {
@@ -573,6 +609,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * (n is the number of expectations provided) to assert them.
 	 * @param expectations One or more methods that can verify the values and throw a
 	 * exception (like an {@link AssertionError}) if the value is not valid.
+     * @return this
 	 */
 	@SafeVarargs
 	public final TestSubscriber<T> awaitAndAssertNextValuesWith(Consumer<T>... expectations) {
@@ -610,6 +647,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	 * Blocking method that waits until {@code n} next values have been received
 	 * (n is the number of values provided) to assert them.
 	 * @param values the values to assert
+     * @return this
 	 */
 	@SafeVarargs
 	@SuppressWarnings("unchecked")
@@ -634,6 +672,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	/**
 	 * Blocking method that waits until {@code n} next values have been received.
 	 * @param n the value count to assert
+     * @return this
 	 */
 	public final TestSubscriber<T> awaitAndAssertNextValueCount(final long n) {
 		await(valuesTimeout,
@@ -644,12 +683,8 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 						valueCount - nextValueAssertedCount, n, valuesTimeout.toMillis());
 					}
 				},
-				new Supplier<Boolean>() {
-					@Override
-					public Boolean get() {
-						return valueCount == (nextValueAssertedCount + n);
-					}
-				});
+				() -> valueCount == (nextValueAssertedCount + n)
+				);
 		nextValueAssertedCount += n;
 		return this;
 	}
@@ -660,6 +695,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available.
+	 * @return the debug graph
 	 */
 	public ReactiveStateUtils.Graph debug(){
 		return ReactiveStateUtils.scan(this);

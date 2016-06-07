@@ -17,10 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Loopback;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -29,7 +26,7 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class MonoOtherwiseIfEmpty<T> extends MonoSource<T, T> {

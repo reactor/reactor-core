@@ -114,7 +114,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 	@Override
 	public Publisher<Integer> createHelperPublisher(long elements) {
 		if (elements < 100 && elements > 0) {
-			List<Integer> list = new ArrayList<Integer>();
+			List<Integer> list = new ArrayList<>();
 			for (int i = 1; i <= elements; i++) {
 				list.add(i);
 			}
@@ -152,7 +152,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		createHelperPublisher(10).subscribe(processor);
 
 		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux)processor).debug());
+			System.out.println(((Flux<?>)processor).debug());
 		}
 		List<Integer> list = new ArrayList<>();
 
@@ -192,7 +192,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 
 		latch.await(8, TimeUnit.SECONDS);
 		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux)processor).debug());
+			System.out.println(((Flux<?>)processor).debug());
 		}
 
 		long count = latch.getCount();
@@ -220,7 +220,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		SubmissionEmitter<Integer> session = SubmissionEmitter.create(stream);
 		stream.subscribe(processor);
 		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux)processor).debug());
+			System.out.println(((Flux<?>)processor).debug());
 		}
 
 		processor.subscribe(new Subscriber<Integer>() {

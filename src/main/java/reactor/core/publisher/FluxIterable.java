@@ -29,7 +29,6 @@ import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * Emits the contents of an Iterable source.
@@ -38,7 +37,7 @@ import reactor.core.util.BackpressureUtils;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class FluxIterable<T> 

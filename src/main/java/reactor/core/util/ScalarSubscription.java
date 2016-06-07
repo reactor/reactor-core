@@ -23,7 +23,13 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 
-public final class ScalarSubscription<T> implements Fuseable.QueueSubscription, Producer, Receiver {
+/**
+ * Represents a fuseable Subscription that emits a single constant value 
+ * synchronously to a Subscriber or consumer.
+ *
+ * @param <T> the value type
+ */
+public final class ScalarSubscription<T> implements Fuseable.QueueSubscription<T>, Producer, Receiver {
 
 	final Subscriber<? super T> actual;
 
