@@ -595,7 +595,7 @@ public class Schedulers {
 			if (cachedSchedulers.putIfAbsent(key, s) == null) {
 				return s;
 			}
-			s.shutdown();
+			s._shutdown();
 		}
 	}
 
