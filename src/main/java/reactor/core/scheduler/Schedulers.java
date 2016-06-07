@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import reactor.core.flow.Cancellation;
 import reactor.core.state.Introspectable;
@@ -57,22 +58,9 @@ public class Schedulers {
 	 * Event-Loop based workers
 	 */
 	public static Scheduler computation() {
-	    String key = COMPUTATION;
-	    for (;;) {
-	        CachedScheduler s = cachedSchedulers.get(key);
-	        if (s != null) {
-	            return s;
-	        }
-	        s = new CachedScheduler(key,
-                    newComputation(key,
-                            (Runtime.getRuntime()
+		return cache(COMPUTATION, () -> newComputation(COMPUTATION, (Runtime.getRuntime()
                                     .availableProcessors() + 1) / 2,
                             true));
-	        if (cachedSchedulers.putIfAbsent(key, s) == null) {
-	            return s;
-	        }
-	        s.shutdown();
-	    }
 	}
 
 	/**
@@ -128,19 +116,8 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler elastic() {
-	    String key = ELASTIC;
-	    for (;;) {
-            CachedScheduler s = cachedSchedulers.get(key);
-            if (s != null) {
-                return s;
-            }
-            s = new CachedScheduler(key,
-                    newElastic(key, ElasticScheduler.DEFAULT_TTL_SECONDS, true));
-            if (cachedSchedulers.putIfAbsent(key, s) == null) {
-                return s;
-            }
-            s.shutdown();
-        }
+		return cache(ELASTIC,
+				() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true));
 	}
 
 	/**
@@ -499,22 +476,11 @@ public class Schedulers {
 	 * workers
 	 */
 	public static Scheduler parallel() {
-	    String key = PARALLEL;
-        for (;;) {
-            CachedScheduler s = cachedSchedulers.get(key);
-            if (s != null) {
-                return s;
-            }
-            s = new CachedScheduler(key,
-                    newParallel(key,
-                            Runtime.getRuntime()
-                                   .availableProcessors(),
-                            true));
-            if (cachedSchedulers.putIfAbsent(key, s) == null) {
-                return s;
-            }
-            s.shutdown();
-        }
+		return cache(PARALLEL,
+				() -> newParallel(PARALLEL,
+						Runtime.getRuntime()
+						       .availableProcessors(),
+						true));
 	}
 
 	/**
@@ -564,8 +530,7 @@ public class Schedulers {
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
-		return cachedSchedulers.computeIfAbsent(SINGLE,
-				k -> new CachedScheduler(k, newSingle(k, true)));
+		return cache(SINGLE, () -> newSingle(SINGLE, true));
 	}
 
 	/**
@@ -591,9 +556,7 @@ public class Schedulers {
 	 * @return a cached hash-wheel based {@link TimedScheduler}
 	 */
 	public static TimedScheduler timer() {
-		return cachedSchedulers.computeIfAbsent(TIMER,
-				k -> new CachedTimedScheduler(k, newTimer(k)))
-		                       .asTimedScheduler();
+		return cache(TIMER, () -> newTimer(TIMER)).asTimedScheduler();
 	}
 
 	// Internals
@@ -619,6 +582,20 @@ public class Schedulers {
 		}
 		catch (Exception e) {
 			throw Exceptions.bubble(e);
+		}
+	}
+
+	static CachedScheduler cache(String key, Supplier<Scheduler> schedulerSupplier) {
+		for (; ; ) {
+			CachedScheduler s = cachedSchedulers.get(key);
+			if (s != null) {
+				return s;
+			}
+			s = new CachedScheduler(key, schedulerSupplier.get());
+			if (cachedSchedulers.putIfAbsent(key, s) == null) {
+				return s;
+			}
+			s.shutdown();
 		}
 	}
 
