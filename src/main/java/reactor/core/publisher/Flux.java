@@ -50,6 +50,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
+import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -83,7 +84,8 @@ import reactor.core.util.ReactiveStateUtils;
  *
  * <p>If it is known that the underlying {@link Publisher} will emit 0 or 1 element, {@link Mono} should be used
  * instead.
- *
+ * @param <T> the element type of this Reactive Streams {@link Publisher}
+ * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @author David Karnok
@@ -114,7 +116,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced combinations , 2.5
 	 */
-	@SuppressWarnings("varargs")
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, Publisher<? extends T>... sources) {
 		return combineLatest(combinator, PlatformDependent.XS_BUFFER_SIZE, sources);
@@ -136,7 +137,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced combinations , 2.5
 	 */
-	@SuppressWarnings({"unchecked", "varargs"})
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, int prefetch,
 			Publisher<? extends T>... sources) {
@@ -319,7 +319,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced value , 2.5
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			Function<Object[], V> combinator) {
 		return combineLatest(sources, PlatformDependent.XS_BUFFER_SIZE, combinator);
@@ -341,7 +340,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link Flux} based on the produced value , 2.5
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			int prefetch,
 			Function<Object[], V> combinator) {
@@ -417,23 +415,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return new FluxConcatArray<>(false, sources);
 	}
 	
 	/**
-	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
-	 * the FluxEmitter API.
-	 * <p>
-	 * This Flux factory is useful if one wants to adapt some other a multi-valued async API
-	 * and not worry about cancellation and backpressure. For example:
-	 * 
+     * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
+     * the FluxEmitter API.
+     * <p>
+     * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+     * and not worry about cancellation and backpressure. For example:
+     * <p>
+     * Handles backpressure by buffering all signals if the downstream can't keep up.
+     * 
      * <pre><code>
      * Flux.&lt;String&gt;create(emitter -&gt; {
-     *     // setup backpressure mode, default is BUFFER
-     *     
-     *     emitter.setBackpressureHandling(FluxEmitter.BackpressureHandling.LATEST);
      *     
      *     ActionListener al = e -&gt; {
      *         emitter.next(textField.getText());
@@ -451,12 +447,47 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
      * }); 
      * <code></pre>
      *  
+     * @param <T> the value type
+     * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
+     * @return a {@link Flux}
+     */
+    public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter) {
+        return new FluxCreate<>(emitter, BackpressureHandling.BUFFER);
+    }
+    
+	/**
+	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
+	 * the FluxEmitter API.
+	 * <p>
+	 * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+	 * and not worry about cancellation and backpressure. For example:
+	 * 
+     * <pre><code>
+     * Flux.&lt;String&gt;create(emitter -&gt; {
+     *     
+     *     ActionListener al = e -&gt; {
+     *         emitter.next(textField.getText());
+     *     };
+     *     // without cancellation support:
+     *     
+     *     button.addActionListener(al);
+     *     
+     *     // with cancellation support:
+     *     
+     *     button.addActionListener(al);
+     *     emitter.setCancellation(() -> {
+     *         button.removeListener(al);
+     *     });
+     * }, FluxEmitter.BackpressureHandling.LATEST); 
+     * <code></pre>
+     *  
 	 * @param <T> the value type
+	 * @param backpressure the backpressure mode, see {@link BackpressureHandling} for the avilable backpressure modes
 	 * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter) {
-	    return new FluxCreate<>(emitter);
+	public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter, BackpressureHandling backpressure) {
+	    return new FluxCreate<>(emitter, backpressure);
 	}
 	
 	/**
@@ -532,7 +563,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
 	 */
-	@SuppressWarnings({"unchecked", "varargs"})
 	@SafeVarargs
 	public static <I> Flux<I> firstEmitting(Publisher<? extends I>... sources) {
 		return new FluxFirstEmitting<>(sources);
@@ -550,7 +580,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
 	 */
-	@SuppressWarnings("unchecked")
 	public static <I> Flux<I> firstEmitting(Iterable<? extends Publisher<? extends I>> sources) {
 		if (sources == null) {
 			return empty();
@@ -644,6 +673,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
+	 * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+	 * expected to return a (new) state.
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
@@ -661,7 +692,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
-	 *
+	 * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
+	 * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+     * expected to return a (new) state.
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
@@ -679,6 +712,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
+     * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
+     * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+     * expected to return a (new) state.
+     * @param stateConsumer called after the generator has terminated or the downstream cancelled, receiving the last
+     * state to be handled (i.e., release resources or do other cleanup).
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
@@ -828,7 +866,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <T> Flux<T> just(T... data) {
 		return fromArray(data);
 	}
@@ -927,7 +964,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <I> Flux<I> merge(Publisher<? extends I>... sources) {
 		return merge(PlatformDependent.XS_BUFFER_SIZE, sources);
 	}
@@ -945,7 +981,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
-	@SuppressWarnings({"unchecked", "varargs"})
 	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
 		if (sources == null || sources.length == 0) {
 			return empty();
@@ -1002,7 +1037,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
-	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers) {
+	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return switchOnNext(mergedPublishers, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
@@ -1019,8 +1054,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Flux<T> switchOnNext(Publisher<Publisher<? extends T>> mergedPublishers, int prefetch) {
+	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return new FluxSwitchMap<>(mergedPublishers,
 				identityFunction(),
 				QueueSupplier.get(prefetch),
@@ -1134,7 +1168,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3) {
@@ -1158,7 +1191,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4> Flux<Tuple4<T1, T2, T3, T4>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
@@ -1185,7 +1217,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5> Flux<Tuple5<T1, T2, T3, T4, T5>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
@@ -1215,7 +1246,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T1, T2, T3, T4, T5, T6> Flux<Tuple6<T1, T2, T3, T4, T5, T6>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
@@ -1237,7 +1267,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static Flux<Tuple> zip(Iterable<? extends Publisher<?>> sources) {
 		return zip(sources, Tuple.fnAny());
 	}
@@ -1310,7 +1339,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a zipped {@link Flux}
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <I, O> Flux<O> zip(
 			final Function<? super Object[], ? extends O> combinator, Publisher<? extends I>... sources) {
 		return zip(combinator, PlatformDependent.XS_BUFFER_SIZE, sources);
@@ -1332,7 +1360,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a zipped {@link Flux}
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public static <I, O> Flux<O> zip(final Function<? super Object[], ? extends O> combinator,
 			int prefetch,
 			Publisher<? extends I>... sources) {
@@ -1453,7 +1480,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a buffered {@link Mono} of at most one {@link List}
 	 */
-	@SuppressWarnings("unchecked")
     public final Flux<List<T>> buffer() {
 	    return buffer(Integer.MAX_VALUE);
 	}
@@ -1892,7 +1918,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of all last matched key-values from this {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, T>> collectMap(Function<? super T, ? extends K> keyExtractor) {
 		return collectMap(keyExtractor, identityFunction());
 	}
@@ -1959,7 +1984,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of all matched key-values from this {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <K> Mono<Map<K, Collection<T>>> collectMultimap(Function<? super T, ? extends K> keyExtractor) {
 		return collectMultimap(keyExtractor, identityFunction());
 	}
@@ -2197,13 +2221,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		if (this instanceof FluxConcatArray) {
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return new FluxConcatArray<>(false, this, other);
+		return new FluxConcatArray(false, this, other);
 	}
 
 	/**
@@ -2798,7 +2822,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
@@ -2886,7 +2909,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * 
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 */
-	@SuppressWarnings("unchecked")
 	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
 		return groupBy(keyMapper, identityFunction());
 	}
@@ -3094,6 +3116,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
 	 * <p>
+	 * @param type the class of the exception type to react to
 	 * @param mapper the error transforming {@link Function}
 	 * @param <E> the error type
 	 *
@@ -4009,7 +4032,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
-	@SuppressWarnings("unchecked")
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
 		return new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.unbounded(PlatformDependent
 				.XS_BUFFER_SIZE));
@@ -4275,7 +4297,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a prefixed {@link Flux} with given values
 	 */
 	@SafeVarargs
-	@SuppressWarnings("varargs")
 	public final Flux<T> startWith(T... values) {
 		return startWith(just(values));
 	}
@@ -4660,7 +4681,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Publisher<Void> other) {
 		return MonoSource.wrap(concat(then(), other));
 	}
@@ -4676,7 +4696,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
 		return then(defer(afterSupplier));
 	}
@@ -4710,7 +4729,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
 		return thenMany(defer(afterSupplier));
 	}
@@ -5315,7 +5333,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a zipped {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
 		return zip(Tuple.fn2(), prefetch, this, source2);
 	}
@@ -5335,7 +5352,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
-		return new FluxZipIterable<>(this, iterable, (BiFunction<T, T2, Tuple2<T, T2>>)TUPLE2_BIFUNCTION);
+		return new FluxZipIterable<>(this, iterable, TUPLE2_BIFUNCTION);
 	}
 
 	/**
@@ -5401,11 +5418,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
 	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
-	static final Function        IDENTITY_FUNCTION       = Function.identity();
+	@SuppressWarnings("rawtypes")
+    static final Function        IDENTITY_FUNCTION       = Function.identity();
 
 	@SuppressWarnings("unchecked")
 	static final <T> Function<T, T> identityFunction(){
-		return (Function<T, T>)IDENTITY_FUNCTION;
+		return IDENTITY_FUNCTION;
 	}
 
 	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
@@ -5439,6 +5457,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	@SuppressWarnings("unchecked")
 	static <O> Supplier<Set<O>> hashSetSupplier() {
-		return (Supplier<Set<O>>) SET_SUPPLIER;
+		return SET_SUPPLIER;
 	}
 }

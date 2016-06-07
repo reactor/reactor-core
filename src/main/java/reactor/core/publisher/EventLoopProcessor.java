@@ -92,8 +92,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	volatile        int             terminated;
 	volatile        Throwable       error;
 
-	@SuppressWarnings("unused")
-	volatile       int                                                  subscriberCount  = 0;
+	volatile       int                                                  subscriberCount;
 
 	EventLoopProcessor(
 			int bufferSize,
@@ -146,16 +145,20 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	/**
-	 * Block until all submitted tasks have completed, then do a normal {@link #shutdown()}.
+	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor.shutdown()}.
+	 * @return if the underlying executor terminated and false if the timeout elapsed before termination
 	 */
-	final public boolean awaitAndShutdown() {
+	public final boolean awaitAndShutdown() {
 		return awaitAndShutdown(-1, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * Block until all submitted tasks have completed, then do a normal {@link #shutdown()}.
+	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor#shutdown()}.
+	 * @param timeout the timeout value
+	 * @param timeUnit the unit for timeout
+     * @return if the underlying executor terminated and false if the timeout elapsed before termination
 	 */
-	final public boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
+	public final boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
 		try {
 			shutdown();
 			return executor.awaitTermination(timeout, timeUnit);
@@ -178,6 +181,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * Shutdown this {@code Processor}, forcibly halting any work currently executing and discarding any tasks that have
 	 * not yet been executed.
+	 * @return a Flux instance with the remaining undelivered values
 	 */
 	final public Flux<IN> forceShutdown() {
 		int t = terminated;
@@ -290,7 +294,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
 	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.
 	 */
-	final public void shutdown() {
+	public final void shutdown() {
 		try {
 			onComplete();
 			executor.shutdown();
@@ -370,16 +374,20 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	static final int SHUTDOWN = 1;
 	static final int                                           FORCED_SHUTDOWN  = 2;
-	static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
+	@SuppressWarnings("rawtypes")
+    static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
-	final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
+	@SuppressWarnings("rawtypes")
+    final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 
 }
 
 final class EventLoopFactory extends AtomicInteger implements ThreadFactory,
                                                                Introspectable {
-	final String  name;
+	/** */
+    private static final long serialVersionUID = -3202326942393105842L;
+    final String  name;
 	final boolean daemon;
 
 	EventLoopFactory(String name, boolean daemon) {
@@ -485,7 +493,6 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 
 	volatile int index = 0;
 
-	@SuppressWarnings("unchecked")
 	EventLoopScheduler(Supplier<? extends EventLoopProcessor<Runnable>> processorSupplier,
 			int parallelism,
 			boolean autoShutdown) {
@@ -668,7 +675,6 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 
 		LinkedArrayNode next;
 
-		@SuppressWarnings("unchecked")
 		LinkedArrayNode(Runnable value) {
 			array = new Runnable[DEFAULT_CAPACITY];
 			array[0] = value;

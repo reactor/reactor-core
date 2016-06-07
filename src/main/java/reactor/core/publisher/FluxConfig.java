@@ -37,13 +37,13 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 		if (source instanceof Fuseable) {
 			return new FuseableFluxConfig<>(source,
 					capacity,
-					source instanceof Flux ? ((Flux) source).getTimer() : null,
+					source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 					source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
 					                                                                               .getSimpleName());
 		}
 		return new FluxConfig<>(source,
 				capacity,
-				source instanceof Flux ? ((Flux) source).getTimer() : null,
+				source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 				source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
 				                                                                               .getSimpleName());
 	}
@@ -67,12 +67,12 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 		if (source instanceof Fuseable) {
 			return new FuseableFluxConfig<>(source,
 					source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
-					source instanceof Flux ? ((Flux) source).getTimer() : null,
+					source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 					name);
 		}
 		return new FluxConfig<>(source,
 				source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
-				source instanceof Flux ? ((Flux) source).getTimer() : null,
+				source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 				name);
 	}
 

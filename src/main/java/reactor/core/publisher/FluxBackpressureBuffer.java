@@ -32,7 +32,7 @@ final class FluxBackpressureBuffer<O> extends FluxSource<O, O> implements Fuseab
 
 	@Override
 	public void subscribe(Subscriber<? super O> s) {
-		Processor<O, O> emitter = new UnicastProcessor<O>(QueueSupplier.<O>unbounded().get());
+		Processor<O, O> emitter = new UnicastProcessor<>(QueueSupplier.<O>unbounded().get());
 		emitter.subscribe(s);
 		source.subscribe(emitter);
 	}

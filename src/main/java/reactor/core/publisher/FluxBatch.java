@@ -87,14 +87,12 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		protected final static int TERMINATED_WITH_ERROR = 2;
 		protected final static int TERMINATED_WITH_CANCEL = 3;
 
-		@SuppressWarnings("unused")
 		private volatile       int                                             terminated = NOT_TERMINATED;
 		@SuppressWarnings("rawtypes")
 		protected static final AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
 				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "terminated");
 
-		@SuppressWarnings("unused")
-		private volatile       long                                         requested = 0L;
+		private volatile       long                                         requested;
 		@SuppressWarnings("rawtypes")
 		protected static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BatchAction.class, "requested");
@@ -185,7 +183,10 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 
 		private static final Exception FAILED_SATE = new RuntimeException("Failed Subscriber"){
-			@Override
+			/** */
+            private static final long serialVersionUID = 7503907754069414227L;
+
+            @Override
 			public synchronized Throwable fillInStackTrace() {
 				return null;
 			}

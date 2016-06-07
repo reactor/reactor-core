@@ -132,7 +132,10 @@ final class OpeningSubscriber<T> implements BaseSubscriber<T>,
 
 	final class RefSubscription extends AtomicLong implements Subscription {
 
-		@Override
+		/** */
+        private static final long serialVersionUID = -5436105907521342076L;
+
+        @Override
 		public void request(long n) {
 			if (subscription == null && get() != Long.MIN_VALUE) {
 				BackpressureUtils.addAndGet(this, n);

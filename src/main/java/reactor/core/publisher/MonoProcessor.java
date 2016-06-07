@@ -129,7 +129,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final Subscriber downstream() {
+	public final Subscriber<O> downstream() {
 		return processor;
 	}
 
@@ -421,7 +421,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(final Subscriber<? super O> subscriber) {
 		for (; ; ) {
 			int endState = this.state;
@@ -497,7 +496,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (; ; ) {
 			state = this.state;
 			if (state > STATE_POST_SUBSCRIBED) {
-				Processor<O, O> p = (Processor<O, O>) PROCESSOR.getAndSet(this, NOOP_PROCESSOR);
+				Processor<O, O> p = PROCESSOR.getAndSet(this, NOOP_PROCESSOR);
 				if (p != NOOP_PROCESSOR && p != null) {
 					switch (state) {
 						case STATE_COMPLETE_NO_VALUE:
@@ -525,7 +524,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 
 			if (state == STATE_SUBSCRIBED && STATE.compareAndSet(this, STATE_SUBSCRIBED, STATE_POST_SUBSCRIBED)) {
-				Processor<O, O> p = (Processor<O, O>) PROCESSOR.get(this);
+				Processor<O, O> p = PROCESSOR.get(this);
 				if (p != null && p != NOOP_PROCESSOR) {
 					p.onSubscribe(this);
 				}
@@ -547,13 +546,14 @@ public final class MonoProcessor<O> extends Mono<O>
 				connect();
 			}
 			else {
-				out = (Processor<O, O>) PROCESSOR.get(this);
+				out = PROCESSOR.get(this);
 			}
 		}
 		return out;
 	}
 
-	final static class NoopProcessor implements Processor, Introspectable {
+	@SuppressWarnings("rawtypes")
+    final static class NoopProcessor implements Processor, Introspectable {
 
 		@Override
 		public int getMode() {
@@ -586,12 +586,16 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 	final static NoopProcessor NOOP_PROCESSOR = new NoopProcessor();
-	final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
+	@SuppressWarnings("rawtypes")
+    final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
+    @SuppressWarnings("rawtypes")
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
+    @SuppressWarnings("rawtypes")
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              CONNECTED       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
+    @SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
 			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
 	final static int       STATE_CANCELLED         = -1;

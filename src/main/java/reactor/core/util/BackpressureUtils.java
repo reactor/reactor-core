@@ -17,7 +17,6 @@
 package reactor.core.util;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -194,7 +193,8 @@ public enum BackpressureUtils {
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
 	 * Any concurrent write will "happen" before this operation.
-	 *
+	 * 
+	 * @param <T> the parent instance type
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param n    delta to add
@@ -217,6 +217,7 @@ public enum BackpressureUtils {
 	 * Concurrent addition bound to Long.MAX_VALUE.
 	 * Any concurrent write will "happen" before this operation.
 	 *
+     * @param <T> the parent instance type
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toAdd    delta to add
@@ -258,6 +259,7 @@ public enum BackpressureUtils {
 	 * Concurrent substraction bound to 0.
 	 * Any concurrent write will "happen" before this operation.
 	 *
+     * @param <T> the parent instance type
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toSub    delta to sub

@@ -2,9 +2,6 @@ package reactor.core.converter;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.tck.PublisherVerification;
-import org.reactivestreams.tck.TestEnvironment;
 import reactor.core.publisher.Mono;
 import reactor.core.test.TestSubscriber;
 import rx.Completable;

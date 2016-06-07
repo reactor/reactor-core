@@ -35,12 +35,15 @@ enum DrainUtils {
 
 	/**
 	 * Perform a potential post-completion request accounting.
-	 *
-	 * @param n
-	 * @param actual
-	 * @param queue
-	 * @param field
-	 * @param isCancelled
+	 * 
+	 * @param <T> the output value type
+	 * @param <F> the field type holding the requested amount
+	 * @param n the requested amount
+	 * @param actual the consumer of values
+	 * @param queue the queue holding the available values
+	 * @param field the field updater for the requested amount
+	 * @param instance the parent instance for the requested field
+	 * @param isCancelled callback to detect cancellation
 	 * @return true if the state indicates a completion state.
 	 */
 	public static <T, F> boolean postCompleteRequest(long n,
@@ -159,10 +162,13 @@ enum DrainUtils {
 	/**
 	 * Tries draining the queue if the source just completed.
 	 *
-	 * @param actual
-	 * @param queue
-	 * @param field
-	 * @param isCancelled
+     * @param <T> the output value type
+     * @param <F> the field type holding the requested amount
+	 * @param actual the consumer of values
+	 * @param queue the queue holding available values
+	 * @param field the field updater holding the requested amount
+	 * @param instance the parent instance of the requested field
+	 * @param isCancelled callback to detect cancellation
 	 */
 	public static <T, F> void postComplete(Subscriber<? super T> actual,
 			Queue<T> queue,
@@ -202,12 +208,15 @@ enum DrainUtils {
     /**
      * Perform a potential post-completion request accounting.
      *
-     * @param n
-     * @param actual
-     * @param queue
-     * @param field
-     * @param isCancelled
-     * @param error
+     * @param <T> the output value type
+     * @param <F> the field type holding the requested amount
+     * @param n the request amount
+     * @param actual the consumer of values
+     * @param queue the queue of available values
+     * @param field the field updater for the requested amount
+     * @param instance the parent instance of the requested field 
+     * @param isCancelled callback to detect cancellation
+     * @param error if not null, the error to signal after the queue has been drained
      * @return true if the state indicates a completion state.
      */
     public static <T, F> boolean postCompleteRequestDelayError(long n,
@@ -315,11 +324,14 @@ enum DrainUtils {
     /**
      * Tries draining the queue if the source just completed.
      *
-     * @param actual
-     * @param queue
-     * @param field
-     * @param isCancelled
-     * @param error
+     * @param <T> the output value type
+     * @param <F> the field type holding the requested amount
+     * @param actual the consumer of values
+     * @param queue the queue of available values
+     * @param field the field updater for the requested amount
+     * @param instance the parent instance of the requested field 
+     * @param isCancelled callback to detect cancellation
+     * @param error if not null, the error to signal after the queue has been drained
      */
     public static <T, F> void postCompleteDelayError(Subscriber<? super T> actual,
             Queue<T> queue,

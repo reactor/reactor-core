@@ -68,6 +68,7 @@ public enum ReactiveStateUtils {
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available
 	 * @return a new Graph
+	 * @param o the entry point
 	 */
 	public static Graph scan(Object o) {
 		return scan(o, false);
@@ -75,6 +76,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create a "Nodes" and "Links" complete representation of a given component if available
+     * @param o the entry point
+     * @param trace perform a trace?
 	 * @return a new Graph
 	 */
 	public static Graph scan(Object o, boolean trace) {
@@ -95,6 +98,7 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create a "Nodes" and "Links" downstream representation of a given component if available
+     * @param o the entry point
 	 * @return a Graph
 	 */
 	public static Graph subscan(Object o) {
@@ -103,6 +107,8 @@ public enum ReactiveStateUtils {
 
 	/**
 	 * Create a "Nodes" and "Links" downstream representation of a given component if available
+     * @param o the entry point
+     * @param trace perform a trace?
 	 * @return a Graph
 	 */
 	public static Graph subscan(Object o, boolean trace) {
@@ -549,7 +555,7 @@ public enum ReactiveStateUtils {
 			}
 		}
 
-		private void addUpstreams(Node target, Iterator o) {
+		private void addUpstreams(Node target, @SuppressWarnings("rawtypes") Iterator o) {
 			if (o == null) {
 				return;
 			}
@@ -603,7 +609,7 @@ public enum ReactiveStateUtils {
 			}
 		}
 
-		private void addDownstreams(Node source, Iterator o) {
+		private void addDownstreams(Node source, @SuppressWarnings("rawtypes") Iterator o) {
 			if (o == null) {
 				return;
 			}

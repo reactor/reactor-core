@@ -246,7 +246,7 @@ public class FluxPeekTest {
 	public void asyncFusionAvailable() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new UnicastProcessor<Integer>(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
+		new UnicastProcessor<>(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
 		})
 		                                                                  .subscribe(ts);
 

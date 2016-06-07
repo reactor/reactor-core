@@ -29,6 +29,8 @@ import reactor.core.util.SignalKind;
  * onError | (onSubscribe onNext* (onError | onComplete)?)
  *
  * @author Stephane Maldini
+ * 
+ * @param <T> the value type
  */
 public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>>, Serializable {
 	/** */
@@ -46,6 +48,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a value.
 	 *
+	 * @param <T> the value type
 	 * @param t the item to assign to the signal as its value
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
@@ -56,6 +59,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, and assigns it an error.
 	 *
+	 * @param <T> the value type
 	 * @param e the error to assign to the signal
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
@@ -65,6 +69,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
+	 * @param <T> the value type
 	 *
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
@@ -76,6 +81,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
 	 *
+	 * @param <T> the value type
 	 * @param subscription the subscription
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */

@@ -46,12 +46,11 @@ abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
  * Not safe for use from multiple threads as it does not implement any barriers.</p>
  *
- * <p>Note on {@link RingBufferProducer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link RingBufferProducer#publish(long)} is made.
+ * <p>Note on {@code RingBufferProducer.getCursor()}:  With this sequencer the cursor value is updated after the call
+ * to {@code RingBufferProducer.publish(long)} is made.
  */
 
-final class SingleProducerSequencer extends SingleProducerSequencerFields
-{
+final class SingleProducerSequencer extends SingleProducerSequencerFields {
     protected long p1, p2, p3, p4, p5, p6, p7;
 
     /**
@@ -59,25 +58,23 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
      *
      * @param bufferSize the size of the buffer that this will sequence over.
      * @param waitStrategy for those waiting on sequences.
+     * @param spinObserver the runnable to call on a spin-wait
      */
-    public SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver)
-    {
+    public SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
         super(bufferSize, waitStrategy, spinObserver);
     }
 
     /**
-     * @see RingBufferProducer#hasAvailableCapacity(int)
+     * See {@code RingBufferProducer.hasAvailableCapacity(int)}.
      */
     @Override
-    public boolean hasAvailableCapacity(final int requiredCapacity)
-    {
+    public boolean hasAvailableCapacity(final int requiredCapacity) {
         long nextValue = this.nextValue;
 
         long wrapPoint = (nextValue + requiredCapacity) - bufferSize;
         long cachedGatingSequence = this.cachedValue;
 
-        if (wrapPoint > cachedGatingSequence || cachedGatingSequence > nextValue)
-        {
+        if (wrapPoint > cachedGatingSequence || cachedGatingSequence > nextValue) {
             long minSequence = RingBuffer.getMinimumSequence(gatingSequences, nextValue);
             this.cachedValue = minSequence;
 
@@ -91,20 +88,18 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see RingBufferProducer#next()
+     * See {@code RingBufferProducer.next()}.
      */
     @Override
-    public long next()
-    {
+    public long next() {
         return next(1);
     }
 
     /**
-     * @see RingBufferProducer#next(int)
+     * See {@code RingBufferProducer.next(int)}.
      */
     @Override
-    public long next(int n)
-    {
+    public long next(int n) {
         if (n < 1)
         {
             throw new IllegalArgumentException("n must be > 0");
@@ -136,20 +131,18 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see RingBufferProducer#tryNext()
+     * See {@code RingBufferProducer.tryNext()}.
      */
     @Override
-    public long tryNext() throws Exceptions.InsufficientCapacityException
-    {
+    public long tryNext() throws Exceptions.InsufficientCapacityException {
         return tryNext(1);
     }
 
     /**
-     * @see RingBufferProducer#tryNext(int)
+     * See {@code RingBufferProducer.tryNext(int)}.
      */
     @Override
-    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
-    {
+    public long tryNext(int n) throws Exceptions.InsufficientCapacityException {
         if (n < 1)
         {
             throw new IllegalArgumentException("n must be > 0");
@@ -166,20 +159,18 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see RingBufferProducer#remainingCapacity()
+     * See {@code RingBufferProducer.remainingCapacity()}.
      */
     @Override
-    public long remainingCapacity()
-    {
+    public long remainingCapacity() {
         return getBufferSize() - getPending();
     }
 
     /**
-     * @see RingBufferProducer#getPending()
+     * See {@code RingBufferProducer.getPending()}.
      */
     @Override
-    public long getPending()
-    {
+    public long getPending() {
         long nextValue = this.nextValue;
 
         long consumed = RingBuffer.getMinimumSequence(gatingSequences, nextValue);
@@ -197,45 +188,40 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * @see RingBufferProducer#claim(long)
+     * See {@code RingBufferProducer.claim(long)}.
      */
     @Override
-    public void claim(long sequence)
-    {
+    public void claim(long sequence) {
         this.nextValue = sequence;
     }
 
     /**
-     * @see RingBufferProducer#publish(long)
+     * See {@code RingBufferProducer.publish(long)}.
      */
     @Override
-    public void publish(long sequence)
-    {
+    public void publish(long sequence) {
         cursor.set(sequence);
         waitStrategy.signalAllWhenBlocking();
     }
 
     /**
-     * @see RingBufferProducer#publish(long, long)
+     * See {@code RingBufferProducer.publish(long, long)}.
      */
     @Override
-    public void publish(long lo, long hi)
-    {
+    public void publish(long lo, long hi) {
         publish(hi);
     }
 
     /**
-     * @see RingBufferProducer#isAvailable(long)
+     * See {@code RingBufferProducer.isAvailable(long)}.
      */
     @Override
-    public boolean isAvailable(long sequence)
-    {
+    public boolean isAvailable(long sequence) {
         return sequence <= cursor.getAsLong();
     }
 
     @Override
-    public long getHighestPublishedSequence(long lowerBound, long availableSequence)
-    {
+    public long getHighestPublishedSequence(long lowerBound, long availableSequence) {
         return availableSequence;
     }
 }

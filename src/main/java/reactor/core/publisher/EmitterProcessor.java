@@ -57,6 +57,8 @@ import reactor.core.util.Sequence;
  *
  * @author Stephane Maldini
  * @since 2.5
+ * 
+ * @param <T> the input and output value type
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable,
@@ -77,6 +79,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
+     * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
@@ -87,6 +90,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
+     * @param bufferSize the internal buffer size to hold signals
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
@@ -97,6 +101,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
+     * @param bufferSize the internal buffer size to hold signals
+     * @param concurrency the concurrency level of the emission
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency) {
@@ -107,6 +113,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
+     * @param bufferSize the internal buffer size to hold signals
+     * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
@@ -117,6 +125,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
+	 * @param bufferSize the internal buffer size to hold signals
+	 * @param concurrency the concurrency level of the emission
+	 * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency, boolean autoCancel) {
@@ -159,7 +170,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	static final EmitterSubscriber<?>[] CANCELLED = new EmitterSubscriber<?>[0];
 
-	@SuppressWarnings("unused")
 	private volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
@@ -177,7 +187,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@SuppressWarnings("rawtypes")
 	static final AtomicIntegerFieldUpdater<EmitterProcessor> RUNNING =
 			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "running");
-	@SuppressWarnings("unused")
+
 	private volatile int outstanding;
 
 	@SuppressWarnings("rawtypes")
@@ -197,7 +207,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		super.subscribe(s);
-		EmitterSubscriber<T> inner = new EmitterSubscriber<T>(this, s);
+		EmitterSubscriber<T> inner = new EmitterSubscriber<>(this, s);
 		try {
 			addInner(inner);
 			if (upstreamSubscription != null) {
@@ -652,7 +662,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		boolean unbounded = false;
 
-		@SuppressWarnings("unused")
 		private volatile long requested = MASK_NOT_SUBSCRIBED;
 
 		@SuppressWarnings("rawtypes")
@@ -661,7 +670,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		volatile Sequence pollCursor;
 
-		static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
+		@SuppressWarnings("rawtypes")
+        static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
 				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
@@ -679,6 +689,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			}
 		}
 
+		@Override
 		public void cancel() {
 			done = true;
 			parent.drain();

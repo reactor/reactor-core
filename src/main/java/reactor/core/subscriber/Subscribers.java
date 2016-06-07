@@ -212,6 +212,7 @@ public enum Subscribers{
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
+	 * @param subscriber the subscriber to wrap
 	 * @return a serializing {@link Subscriber}
 	 */
 	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {

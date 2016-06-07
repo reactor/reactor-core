@@ -33,6 +33,9 @@ import reactor.core.util.Exceptions;
  *
  * @author Stephane Maldini
  * @since 2.0.2, 2.5
+ * 
+ * @param <IN> the input value type
+ * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		implements Processor<IN, OUT>, Backpressurable, Completable, BaseSubscriber<IN> {
@@ -61,7 +64,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @param <IN> the receiving type
 	 * @param <OUT> the producing type
-	 *
+	 * 
+	 * @param upstream the upstream subscriber
+	 * @param downstream the downstream publisher
 	 * @return a new blackboxed {@link FluxProcessor}
 	 */
 	public static <IN, OUT> FluxProcessor<IN, OUT> wrap(final Subscriber<IN> upstream, final Publisher<OUT> downstream) {

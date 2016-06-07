@@ -57,11 +57,22 @@ public class Schedulers {
 	 * Event-Loop based workers
 	 */
 	public static Scheduler computation() {
-		return cachedSchedulers.computeIfAbsent(COMPUTATION, k -> new CachedScheduler(k,
-						newComputation(k,
-								(Runtime.getRuntime()
-								        .availableProcessors() + 1) / 2,
-								true)));
+	    String key = COMPUTATION;
+	    for (;;) {
+	        CachedScheduler s = cachedSchedulers.get(key);
+	        if (s != null) {
+	            return s;
+	        }
+	        s = new CachedScheduler(key,
+                    newComputation(key,
+                            (Runtime.getRuntime()
+                                    .availableProcessors() + 1) / 2,
+                            true));
+	        if (cachedSchedulers.putIfAbsent(key, s) == null) {
+	            return s;
+	        }
+	        s.shutdown();
+	    }
 	}
 
 	/**
@@ -117,9 +128,19 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler elastic() {
-		return cachedSchedulers.computeIfAbsent(ELASTIC,
-				k -> new CachedScheduler(k,
-						newElastic(k, ElasticScheduler.DEFAULT_TTL_SECONDS, true)));
+	    String key = ELASTIC;
+	    for (;;) {
+            CachedScheduler s = cachedSchedulers.get(key);
+            if (s != null) {
+                return s;
+            }
+            s = new CachedScheduler(key,
+                    newElastic(key, ElasticScheduler.DEFAULT_TTL_SECONDS, true));
+            if (cachedSchedulers.putIfAbsent(key, s) == null) {
+                return s;
+            }
+            s.shutdown();
+        }
 	}
 
 	/**
@@ -478,12 +499,22 @@ public class Schedulers {
 	 * workers
 	 */
 	public static Scheduler parallel() {
-		return cachedSchedulers.computeIfAbsent(PARALLEL,
-				k -> new CachedScheduler(k,
-						newParallel(k,
-								Runtime.getRuntime()
-								       .availableProcessors(),
-								true)));
+	    String key = PARALLEL;
+        for (;;) {
+            CachedScheduler s = cachedSchedulers.get(key);
+            if (s != null) {
+                return s;
+            }
+            s = new CachedScheduler(key,
+                    newParallel(key,
+                            Runtime.getRuntime()
+                                   .availableProcessors(),
+                            true));
+            if (cachedSchedulers.putIfAbsent(key, s) == null) {
+                return s;
+            }
+            s.shutdown();
+        }
 	}
 
 	/**

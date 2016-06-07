@@ -25,8 +25,7 @@ import reactor.core.util.WaitStrategy;
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
  * using the given WaitStrategy.
  */
-public final class RingBufferReceiver implements Runnable, LongSupplier
-{
+public final class RingBufferReceiver implements Runnable, LongSupplier {
     private final WaitStrategy waitStrategy;
     private volatile boolean alerted = false;
     private final Sequence           cursorSequence;
@@ -88,8 +87,7 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
          *
          * @return value of the cursor for entries that have been published.
          */
-    public long getCursor()
-    {
+    public long getCursor() {
         return cursorSequence.getAsLong();
     }
 
@@ -98,16 +96,14 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
          *
          * @return true if in alert otherwise false.
          */
-    public boolean isAlerted()
-    {
+    public boolean isAlerted() {
         return alerted;
     }
 
     /**
          * Alert the ringbuffer consumers of a status change and stay in this status until cleared.
          */
-    public void alert()
-    {
+    public void alert() {
         alerted = true;
         waitStrategy.signalAllWhenBlocking();
     }
@@ -115,26 +111,23 @@ public final class RingBufferReceiver implements Runnable, LongSupplier
     /**
          * Signal the ringbuffer consumers.
          */
-    public void signal()
-    {
+    public void signal() {
         waitStrategy.signalAllWhenBlocking();
     }
 
     /**
          * Clear the current alert status.
          */
-    public void clearAlert()
-    {
+    public void clearAlert() {
         alerted = false;
     }
 
     /**
      * Check if an alert has been raised and throw an {@link Exceptions alert} if it has.
      *
-     * @throws RuntimeException a {@link Exceptions alert} if alert has been raised.
+     * @throws Exceptions.AlertException a {@link Exceptions alert} if alert has been raised.
      */
-    public void checkAlert() throws Exceptions.AlertException
-    {
+    public void checkAlert() throws Exceptions.AlertException {
         if (alerted)
         {
             throw Exceptions.AlertException.INSTANCE;

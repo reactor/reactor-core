@@ -328,7 +328,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	<T> void await(int count, final Publisher<T> s, Matcher<T> expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(count);
-		final AtomicReference<T> ref = new AtomicReference<T>();
+		final AtomicReference<T> ref = new AtomicReference<>();
 		s.subscribe(Subscribers.consumer(t -> {
 			ref.set(t);
 			latch.countDown();
@@ -371,6 +371,7 @@ public class FluxTests extends AbstractReactorTest {
 	/**
 	 * See #294 the consumer received more or less calls than expected Better reproducible with big thread pools, e.g.
 	 * 128 threads
+	 * @throws InterruptedException on interrupt
 	 */
 	@Test
 	public void mapNotifiesOnce() throws InterruptedException {
@@ -553,9 +554,9 @@ public class FluxTests extends AbstractReactorTest {
 		        .subscribe(stream -> stream.publishOn(asyncGroup)
 		                                 .buffer(1000 / 8, Duration.ofSeconds(1))
 		                                 .subscribe(batch -> {
-			                                 for (String i : batch) {
-				                                 latch.countDown();
-			                                 }
+			                                 for (int j = 0; j < batch.size(); j++) {
+                                                latch.countDown();
+                                            }
 		                                 }));
 
 		String[] data = new String[iterations];
@@ -697,6 +698,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	/**
 	 * See https://github.com/reactor/reactor/issues/451
+     * @throws Exception for convenience
 	 */
 	@Test
 	public void partitionByHashCodeShouldNeverCreateMoreStreamsThanSpecified() throws Exception {
@@ -710,6 +712,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	/**
 	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+	 * @throws Exception for convenience
 	 */
 	//@Test
 	public void shouldNotFlushStreamOnTimeoutPrematurelyAndShouldDoItConsistently() throws Exception {
@@ -720,6 +723,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	/**
 	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+     * @throws Exception for convenience
 	 */
 	@Test
 	public void shouldNotFlushStreamOnTimeoutPrematurely() throws Exception {
@@ -873,6 +877,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	/**
 	 * https://gist.github.com/nithril/444d8373ce67f0a8b853 Contribution by Nicolas Labrot
+	 * @throws InterruptedException on interrupt
 	 */
 	@Test
 	public void testParallelWithJava8StreamsInput() throws InterruptedException {
@@ -1282,6 +1287,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	/**
 	 * Should work with {@link Processor} but it doesn't.
+     * @throws Exception for convenience
 	 */
 	//@Test
 	public void multiplexUsingProcessors1000() throws Exception {
@@ -1339,6 +1345,7 @@ public class FluxTests extends AbstractReactorTest {
 	 *                 splitStream
 	 *             observedSplitStream
 	 * </pre>
+     * @throws Exception for convenience
 	 */
 	@Test(timeout = TIMEOUT)
 	public void multiplexUsingDispatchersAndSplit() throws Exception {

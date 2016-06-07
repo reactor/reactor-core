@@ -156,6 +156,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
+	 * @return the fresh TopicProcessor instance
 	 */
 	public static <E> TopicProcessor<E> create(String name, int bufferSize) {
 		return create(name, bufferSize, null, true);
@@ -243,7 +244,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                Supplier<E> signalSupplier) {
-		return new TopicProcessor<E>(name,
+		return new TopicProcessor<>(name,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -270,7 +271,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new TopicProcessor<E>(name,
+		return new TopicProcessor<>(name,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -312,7 +313,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return new TopicProcessor<E>(null,
+		return new TopicProcessor<>(null,
 				service,
 				bufferSize,
 				strategy == null ?
@@ -526,12 +527,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * blocking wait strategy.
 	 * buffer
 	 * @param <E> Type of processed signals
+	 * @param signalSupplier the supplier of signals
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 			WaitStrategy waitStrategy,
 			Supplier<E> signalSupplier) {
-		return new TopicProcessor<E>(name, bufferSize,
+		return new TopicProcessor<>(name, bufferSize,
 				waitStrategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
 						waitStrategy,
@@ -559,7 +561,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new TopicProcessor<E>(name,
+		return new TopicProcessor<>(name,
 				bufferSize,
 				strategy == null ?
 						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
@@ -605,7 +607,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return new TopicProcessor<E>(null,
+		return new TopicProcessor<>(null,
 				service,
 				bufferSize,
 				strategy == null ?
@@ -808,6 +810,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		/**
 		 * Construct a ringbuffer consumer that will automatically track the progress by
 		 * updating its sequence
+		 * 
+		 * @param processor the target processor
+		 * @param pendingRequest holder for the number of pending requests
+		 * @param subscriber the output Subscriber instance
 		 */
 		public TopicSubscriberLoop(TopicProcessor<T> processor,
 		                            Sequence pendingRequest,

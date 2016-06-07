@@ -235,7 +235,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(name,
+		return new WorkQueueProcessor<>(name,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
 				false,
@@ -274,7 +274,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(null,
+		return new WorkQueueProcessor<>(null,
 				executor,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
@@ -447,7 +447,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(name,
+		return new WorkQueueProcessor<>(name,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
 				true,
@@ -489,7 +489,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<E>(null,
+		return new WorkQueueProcessor<>(null,
 				executor,
 				bufferSize,
 				strategy == null ? WaitStrategy.liteBlocking() : strategy,
@@ -497,7 +497,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
-	private static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
+	@SuppressWarnings("rawtypes")
+    private static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
 
 	/**
 	 * Instance
@@ -511,15 +512,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	volatile RingBuffer<Slot<E>> retryBuffer;
 
-	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer>
+	@SuppressWarnings("rawtypes")
+    final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer>
 			RETRY_REF = PlatformDependent
 			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
 
 	final WaitStrategy writeWait;
 
-	volatile int replaying = 0;
+	volatile int replaying;
 
-	static final AtomicIntegerFieldUpdater<WorkQueueProcessor> REPLAYING =
+	@SuppressWarnings("rawtypes")
+    static final AtomicIntegerFieldUpdater<WorkQueueProcessor> REPLAYING =
 			AtomicIntegerFieldUpdater
 					.newUpdater(WorkQueueProcessor.class, "replaying");
 
@@ -545,7 +548,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				executor,
 				autoCancel,
 				share,
-				(Supplier<Slot<E>>) FACTORY,
+				FACTORY,
 				waitStrategy);
 
 		this.writeWait = waitStrategy;
@@ -564,7 +567,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		final QueueSubscriberLoop<E> signalProcessor =
-				new QueueSubscriberLoop<E>(subscriber, this);
+				new QueueSubscriberLoop<>(subscriber, this);
 		try {
 
 			incrementSubscribers();
@@ -703,6 +706,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		/**
 		 * Construct a ringbuffer consumer that will automatically track the progress by
 		 * updating its sequence
+		 * @param subscriber the output Subscriber instance
+		 * @param processor the source processor
 		 */
 		public QueueSubscriberLoop(Subscriber<? super T> subscriber,
 				WorkQueueProcessor<T> processor) {

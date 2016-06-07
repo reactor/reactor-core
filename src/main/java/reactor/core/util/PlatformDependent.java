@@ -114,16 +114,18 @@ public enum PlatformDependent {
 	/**
 	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
 	 * direct memory access.
+	 * @return true if unsafe is present
 	 */
 	public static boolean hasUnsafe() {
 		return HAS_UNSAFE;
 	}
 
 	/**
-	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
+	 * Return the {@code sun.misc.Unsafe} instance if found on the classpath and can be used for acclerated
 	 * direct memory access.
 	 *
 	 * @param <T> the Unsafe type
+	 * @return the Unsafe instance
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T getUnsafe() {
@@ -161,7 +163,7 @@ public enum PlatformDependent {
 	/**
 	 * Borrowed from Netty project which itself borrows from JCTools and various other projects.
 	 *
-	 * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>.
+	 * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>
 	 * operations which requires access to {@code sun.misc.*}.
 	 */
 	private enum UnsafeSupport {
@@ -231,7 +233,7 @@ public enum PlatformDependent {
 
 		static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(
 				Class<U> tclass, String fieldName) throws Exception {
-			return new UnsafeAtomicReferenceFieldUpdater<U, W>(tclass, fieldName);
+			return new UnsafeAtomicReferenceFieldUpdater<>(tclass, fieldName);
 		}
 
 		static ClassLoader getSystemClassLoader() {

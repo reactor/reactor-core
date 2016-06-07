@@ -39,7 +39,7 @@ import reactor.core.util.Exceptions;
  */
 
 /**
- * {@see https://github.com/reactor/reactive-streams-commons}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable{

@@ -24,7 +24,7 @@ import reactor.core.util.PlatformDependent;
 /**
  * Provide a queue adapted for a given capacity
  *
- * @param <T>
+ * @param <T> the queue element type
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
@@ -61,26 +61,26 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(long batchSize, boolean waiting, boolean multiproducer) {
 		if (batchSize > 10_000_000) {
-			return (Supplier<Queue<T>>) CLQ_SUPPLIER;
+			return CLQ_SUPPLIER;
 		}
 		if (batchSize == PlatformDependent.XS_BUFFER_SIZE) {
 			if(waiting) {
-				return (Supplier<Queue<T>>) WAITING_XSRB_SUPPLIER;
+				return WAITING_XSRB_SUPPLIER;
 			}
 			else{
-				return (Supplier<Queue<T>>) XSRB_SUPPLIER;
+				return XSRB_SUPPLIER;
 			}
 		}
 		if (batchSize == PlatformDependent.SMALL_BUFFER_SIZE) {
 			if(waiting) {
-				return (Supplier<Queue<T>>) WAITING_SMALLRB_SUPPLIER;
+				return WAITING_SMALLRB_SUPPLIER;
 			}
 			else{
-				return (Supplier<Queue<T>>) SMALLRB_SUPPLIER;
+				return SMALLRB_SUPPLIER;
 			}
 		}
 		if (batchSize == 1 && !waiting) {
-			return (Supplier<Queue<T>>) ONE_SUPPLIER;
+			return ONE_SUPPLIER;
 		}
 		return new QueueSupplier<>(batchSize, waiting, multiproducer);
 	}
@@ -101,7 +101,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> one() {
-		return (Supplier<Queue<T>>) ONE_SUPPLIER;
+		return ONE_SUPPLIER;
 	}
 
 	/**
@@ -111,7 +111,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> small() {
-		return (Supplier<Queue<T>>)SMALLRB_SUPPLIER;
+		return SMALLRB_SUPPLIER;
 	}
 
 	/**
@@ -123,10 +123,10 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> small(boolean waiting) {
 		if (!waiting) {
-			return (Supplier<Queue<T>>) SMALLRB_SUPPLIER;
+			return SMALLRB_SUPPLIER;
 		}
 		else {
-			return (Supplier<Queue<T>>) WAITING_SMALLRB_SUPPLIER;
+			return WAITING_SMALLRB_SUPPLIER;
 		}
 	}
 
@@ -137,17 +137,17 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> unbounded() {
-		return (Supplier<Queue<T>>) CLQ_SUPPLIER;
+		return CLQ_SUPPLIER;
 	}
 
 	/**
-	 *
+	 * Returns an unbounded, linked-array-based Queue.
+	 * @param linkSize the link size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
-		return  () -> new SpscArrayQueue<>(linkSize);
+		return  () -> new SpscLinkedArrayQueue<>(linkSize);
 	}
 
 	/**
@@ -157,7 +157,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> xs() {
-		return (Supplier<Queue<T>>) XSRB_SUPPLIER;
+		return XSRB_SUPPLIER;
 	}
 
 	/**
@@ -169,10 +169,10 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> xs(boolean waiting) {
 		if (!waiting) {
-			return (Supplier<Queue<T>>) XSRB_SUPPLIER;
+			return XSRB_SUPPLIER;
 		}
 		else {
-			return (Supplier<Queue<T>>) WAITING_XSRB_SUPPLIER;
+			return WAITING_XSRB_SUPPLIER;
 		}
 	}
 	final long    batchSize;
@@ -349,10 +349,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			queue.remove();
 		}
 	}
-	static final Supplier CLQ_SUPPLIER          = new QueueSupplier<>(Long.MAX_VALUE, false, false);
+	@SuppressWarnings("rawtypes")
+    static final Supplier CLQ_SUPPLIER          = new QueueSupplier<>(Long.MAX_VALUE, false, false);
+    @SuppressWarnings("rawtypes")
 	static final Supplier ONE_SUPPLIER          = new QueueSupplier<>(1, false, true);
+    @SuppressWarnings("rawtypes")
 	static final Supplier XSRB_SUPPLIER         = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, false, false);
+    @SuppressWarnings("rawtypes")
 	static final Supplier SMALLRB_SUPPLIER      = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, false, false);
+    @SuppressWarnings("rawtypes")
 	static final Supplier WAITING_XSRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.XS_BUFFER_SIZE, true, false);
+    @SuppressWarnings("rawtypes")
 	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(PlatformDependent.SMALL_BUFFER_SIZE, true, false);
 }

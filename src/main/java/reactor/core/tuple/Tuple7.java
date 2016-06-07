@@ -94,7 +94,8 @@ public class Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple6<T1, T2, T3, T4, T
 		if (!(o instanceof Tuple7)) return false;
 		if (!super.equals(o)) return false;
 
-		Tuple7 tuple7 = (Tuple7) o;
+		@SuppressWarnings("rawtypes")
+        Tuple7 tuple7 = (Tuple7) o;
 
 		return t7 != null ? t7.equals(tuple7.t7) : tuple7.t7 == null;
 

@@ -88,7 +88,8 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 		if (!(o instanceof Tuple5)) return false;
 		if (!super.equals(o)) return false;
 
-		Tuple5 tuple5 = (Tuple5) o;
+		@SuppressWarnings("rawtypes")
+        Tuple5 tuple5 = (Tuple5) o;
 
 		return t5 != null ? t5.equals(tuple5.t5) : tuple5.t5 == null;
 

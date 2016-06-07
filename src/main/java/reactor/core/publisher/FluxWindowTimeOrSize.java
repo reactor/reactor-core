@@ -22,10 +22,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.util.PlatformDependent;
 
 /**
- * WindowAction is forwarding events on a steam until {@param backlog} is reached, after that streams collected events
+ * WindowAction is forwarding events on a steam until {@code backlog} is reached, after that streams collected events
  * further, complete it and create a fresh new fluxion.
  * @author Stephane Maldini
  * @since 2.0, 2.5
@@ -41,7 +40,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> subscriber) {
-		source.subscribe(new WindowAction<T>(prepareSub(subscriber), batchSize, timespan, timer));
+		source.subscribe(new WindowAction<>(prepareSub(subscriber), batchSize, timespan, timer));
 	}
 
 	final static class Window<T> extends Flux<T> implements Subscriber<T>, Subscription, Producer {
@@ -129,7 +128,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		}
 
 		protected Flux<T> createWindowStream() {
-			Window<T> _currentWindow = new Window<T>(timer);
+			Window<T> _currentWindow = new Window<>(timer);
 			_currentWindow.onSubscribe(new Subscription(){
 
 				@Override

@@ -24,7 +24,7 @@ import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.BackpressureUtils;
 
 /**
- * {@see https://github.com/reactor/reactive-streams-commons}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseable {

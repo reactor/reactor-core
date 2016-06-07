@@ -16,12 +16,8 @@
 package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+
+import reactor.core.state.*;
 
 /**
  * Interface to generate signals to a bridged {@link Subscriber}.
@@ -41,22 +37,15 @@ public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cance
 
 	/**
 	 * @see Subscriber#onError(Throwable)
+	 * @param e the exception to signal, not null
 	 */
 	void fail(Throwable e);
 
 	/**
 	 * Try emitting, might throw an unchecked exception.
 	 * @see Subscriber#onNext(Object)
-	 *
+	 * @param t the value to emit, not null
 	 * @throws RuntimeException
 	 */
 	void next(T t);
-
-	/**
-	 * Indicate there won't be any further signals delivered by
-	 * the generator and the operator will stop calling it.
-	 * <p>
-	 * Call to this method will also trigger the state consumer.
-	 */
-	void stop();
 }

@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
+@SuppressWarnings("rawtypes")
 public class TupleN extends Tuple8 {
 
 	private static final long serialVersionUID = 666954435584703227L;

@@ -41,7 +41,7 @@ import reactor.core.util.Exceptions;
  */
 
 /**
- * {@see <a href='https://github.com/reactor/reactive-streams-commons'>https://github.com/reactor/reactive-streams-commons</a>}
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
 final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {

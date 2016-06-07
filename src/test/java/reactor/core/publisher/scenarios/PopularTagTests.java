@@ -88,7 +88,6 @@ public class PopularTagTests extends AbstractReactorTest {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void awaitLatch(Cancellation tail, CountDownLatch latch) throws Exception {
 		if (!latch.await(10, SECONDS)) {
 			throw new Exception("Never completed: (" + latch.getCount() + ") "

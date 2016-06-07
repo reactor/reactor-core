@@ -46,14 +46,15 @@ import reactor.core.util.Exceptions;
  *
  * @author Stephane Maldini
  * @since 2.5
+ * @param <E> the element type
  */
-public class SubmissionEmitter<E>
+public final class SubmissionEmitter<E>
 		implements Producer, Subscription,
 		           Consumer<E>, SignalEmitter<E>,
 		           Closeable {
 	/**
 	 * An acknowledgement signal returned by {@link #emit}.
-	 * {@link Emission#isOk()} is the only successful signal, the other define the emission failure cause.
+	 * {@link SubmissionEmitter.Emission#isOk()} is the only successful signal, the other define the emission failure cause.
 	 *
 	 */
 	public enum Emission {
@@ -117,8 +118,7 @@ public class SubmissionEmitter<E>
 		return create(subscriber, true);
 	}
 	final Subscriber<? super E> actual;
-	@SuppressWarnings("unused")
-	volatile     long                                  requested = 0L;
+	volatile     long                                  requested;
 	Throwable uncaughtException;
 
 	volatile boolean cancelled;
@@ -378,7 +378,6 @@ public class SubmissionEmitter<E>
 	 *
 	 * @return the emission latency in milliseconds or {@literal -1} if emission failed.
 	 */
-	@SuppressWarnings("unchecked")
 	public long submit(E data, long timeout, Predicate<E> dropPredicate) {
 		return submit(data, timeout, TimeUnit.MILLISECONDS, dropPredicate);
 	}
@@ -445,7 +444,8 @@ public class SubmissionEmitter<E>
 
 //
 
-	static final Predicate                                 NEVER     = o -> false;
+	@SuppressWarnings("rawtypes")
+    static final Predicate                                 NEVER     = o -> false;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<SubmissionEmitter> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(SubmissionEmitter.class, "requested");

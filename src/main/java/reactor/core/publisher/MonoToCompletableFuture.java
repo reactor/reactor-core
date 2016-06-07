@@ -72,7 +72,6 @@ final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements S
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void onComplete() {
 		if (ref.getAndSet(null) != null) {
 			complete(null);

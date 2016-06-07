@@ -57,20 +57,6 @@ public class FluxGenerateTest {
 	}
 
 	@Test
-	public void generateNever() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.stop();
-			return s;
-		}).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-	}
-
-	@Test
 	public void generateJust() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 

@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
  * @author Stephane Maldini
  * @since 2.5
  */
+@SuppressWarnings("rawtypes")
 public final class FlowPublisherConverter extends PublisherConverter<Flow.Publisher> {
 
 	static final FlowPublisherConverter INSTANCE = new FlowPublisherConverter();

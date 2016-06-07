@@ -15,7 +15,6 @@
  */
 package reactor.core.scheduler;
 
-import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 

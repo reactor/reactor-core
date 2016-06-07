@@ -21,13 +21,14 @@ import reactor.core.flow.Cancellation;
 
 /**
  * A simple reusable data container.
- * @param <T>
+ * 
+ * @param <T> the value type
  */
 public final class Slot<T> implements Serializable, Cancellation {
 
 	private static final long serialVersionUID = 5172014386416785095L;
 
-	public T value = null;
+	public T value;
 
 	@Override
 	public void dispose() {
