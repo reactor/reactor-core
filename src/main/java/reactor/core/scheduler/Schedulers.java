@@ -556,7 +556,7 @@ public class Schedulers {
 	 * @return a cached hash-wheel based {@link TimedScheduler}
 	 */
 	public static TimedScheduler timer() {
-		return cache(TIMER, () -> newTimer(TIMER)).asTimedScheduler();
+		return timedCache(TIMER, () -> newTimer(TIMER)).asTimedScheduler();
 	}
 
 	// Internals
@@ -592,6 +592,20 @@ public class Schedulers {
 				return s;
 			}
 			s = new CachedScheduler(key, schedulerSupplier.get());
+			if (cachedSchedulers.putIfAbsent(key, s) == null) {
+				return s;
+			}
+			s._shutdown();
+		}
+	}
+
+	static CachedScheduler timedCache(String key, Supplier<TimedScheduler> schedulerSupplier) {
+		for (; ; ) {
+			CachedScheduler s = cachedSchedulers.get(key);
+			if (s != null) {
+				return s;
+			}
+			s = new CachedTimedScheduler(key, schedulerSupplier.get());
 			if (cachedSchedulers.putIfAbsent(key, s) == null) {
 				return s;
 			}
