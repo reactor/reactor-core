@@ -2271,7 +2271,9 @@ class FluxSpec extends Specification {
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
 			head
+					.publishOn(asyncGroup)
 					.take(1000)
+					.hide()
 					.parallel(3)
 					.runOn(asyncGroup)
 					.map { it }
