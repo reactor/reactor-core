@@ -1502,7 +1502,7 @@ class FluxSpec extends Specification {
 			def result = [:]
 			def latch = new CountDownLatch(6)
 
-			def partitionFlux = source.publishOn(asyncGroup).partition()
+			def partitionFlux = source.publishOn(asyncGroup).parallel().groups()
 			partitionFlux.subscribe { stream ->
 				stream.cast(SimplePojo).subscribe { pojo ->
 					if (result[pojo.id]) {
@@ -2277,7 +2277,7 @@ class FluxSpec extends Specification {
 					.map { it }
 					.collect({[]}, {c, v -> c << v})
 					.subscribe { List<Integer> ints ->
-								println ints
+								println ints.size()
 								sum.addAndGet(ints.size())
 								latch.countDown()
 					}

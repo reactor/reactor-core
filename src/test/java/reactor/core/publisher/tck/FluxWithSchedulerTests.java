@@ -52,7 +52,8 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 
 		return FluxProcessor.wrap(p,
 				p.publishOn(sharedGroup)
-				 .partition(2)
+				 .parallel(2)
+				 .groups()
 				 .flatMap(stream -> stream.publishOn(asyncGroup)
 				                          .doOnNext(this::monitorThreadUse)
 				                          .scan((prev, next) -> next)
