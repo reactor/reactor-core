@@ -1,0 +1,88 @@
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package reactor.core.publisher;
+
+import java.util.Objects;
+import java.util.Queue;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.publisher.FluxConcatMap.ErrorMode;
+
+/**
+ * Concatenates the generated Publishers on each rail.
+ *
+ * @param <T> the input value type
+ * @param <R> the output value type
+ */
+final class ParallelUnorderedConcatMap<T, R> extends ParallelFlux<R> {
+
+	final ParallelFlux<T> source;
+
+	final Function<? super T, ? extends Publisher<? extends R>> mapper;
+
+	final Supplier<? extends Queue<T>> queueSupplier;
+
+	final int prefetch;
+
+	final ErrorMode errorMode;
+
+	public ParallelUnorderedConcatMap(ParallelFlux<T> source,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch,
+			ErrorMode errorMode) {
+		this.source = source;
+		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
+		this.prefetch = prefetch;
+		this.errorMode = Objects.requireNonNull(errorMode, "errorMode");
+	}
+
+	@Override
+	public boolean isOrdered() {
+		return false;
+	}
+
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super R>[] subscribers) {
+		if (!validate(subscribers)) {
+			return;
+		}
+
+		int n = subscribers.length;
+
+		@SuppressWarnings("unchecked") Subscriber<T>[] parents = new Subscriber[n];
+
+		for (int i = 0; i < n; i++) {
+			parents[i] = FluxConcatMap.subscriber(subscribers[i],
+					mapper,
+					queueSupplier,
+					prefetch,
+					errorMode);
+		}
+
+		source.subscribe(parents);
+	}
+}

@@ -2270,18 +2270,18 @@ class FluxSpec extends Specification {
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
-			head.publishOn(asyncGroup).partition(3).subscribe {
-				s ->
-					s
-							.publishOn(asyncGroup)
-							.map { it }
-							.buffer(batchSize)
-							.subscribe { List<Integer> ints ->
-						println ints.size()
-						sum.addAndGet(ints.size())
-						latch.countDown()
+			head.publishOn(asyncGroup)
+					.take(1000)
+					.parallel(3)
+					.runOn(asyncGroup)
+					.map { it }
+					.collect({[]}, {c, v -> c << v})
+					.doOnNext{ println it }
+					.subscribe { List<Integer> ints ->
+								println ints.size()
+								sum.addAndGet(ints.size())
+								latch.countDown()
 					}
-			}
 		when:
 			'values are accepted into the head'
 			(1..length).each { head.onNext(it) }

@@ -50,19 +50,22 @@ extends Flux<T>
 		this.array = Objects.requireNonNull(array, "array");
 	}
 
-	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	@SuppressWarnings("unchecked")
+	public static <T> void subscribe(Subscriber<? super T> s, T[] array) {
 		if (array.length == 0) {
 			EmptySubscription.complete(s);
 			return;
 		}
 		if (s instanceof ConditionalSubscriber) {
-			s.onSubscribe(new ArrayConditionalSubscription<>((ConditionalSubscriber<? super T>) s,
-					array));
-		}
-		else {
+			s.onSubscribe(new ArrayConditionalSubscription<>((ConditionalSubscriber<? super T>)s, array));
+		} else {
 			s.onSubscribe(new ArraySubscription<>(s, array));
 		}
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		subscribe(s, array);
 	}
 
 	static final class ArraySubscription<T>

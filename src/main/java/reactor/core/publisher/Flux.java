@@ -3431,6 +3431,60 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		});
 	}
 
+	/**
+	 * Prepare to consume this {@link Flux} on number of 'rails' matching number of CPU
+	 * in round-robin fashion.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
+	 *
+	 * @param <T> the value type
+	 *
+	 * @return a new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> parallel() {
+		return parallel(Runtime.getRuntime()
+		                       .availableProcessors());
+	}
+
+	/**
+	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * in round-robin fashion.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
+	 *
+	 * @param <T> the value type
+	 * @param parallelism the number of parallel rails
+	 * @param prefetch the number of values to prefetch from the source
+	 *
+	 * @return a new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> parallel(int parallelism) {
+		return parallel(parallelism,
+				getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+	}
+
+	/**
+	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * in round-robin fashion and use custom prefetch amount and queue
+	 * for dealing with the source {@link Flux}'s values.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
+	 *
+	 * @param <T> the value type
+	 * @param parallelism the number of parallel rails
+	 * @param prefetch the number of values to prefetch from the source
+	 *
+	 * @return a new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> parallel(int parallelism, int prefetch) {
+		return ParallelFlux.from(this,
+				parallelism,
+				prefetch,
+				QueueSupplier.get(prefetch));
+	}
 
 	/**
 	 * Prepare a

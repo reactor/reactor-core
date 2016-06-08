@@ -20,7 +20,7 @@ import reactor.core.flow.Cancellation;
 import reactor.core.subscriber.SignalEmitter;
 
 /**
- * Wrapper API around a downstream Subscriber for emittin any number of
+ * Wrapper API around a downstream Subscriber for emitting any number of
  * next signals followed by zero or one onError/onComplete.
  * <p>
  * @param <T> the value type
@@ -30,7 +30,7 @@ public interface FluxEmitter<T> extends SignalEmitter<T>  {
     /**
      * Enumeration for backpressure handling.
      */
-    public enum BackpressureHandling {
+    enum BackpressureHandling {
         /**
          * Completely ignore downstream backpressure requests.
          * <p>
