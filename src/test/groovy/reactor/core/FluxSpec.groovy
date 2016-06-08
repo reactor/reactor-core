@@ -2270,15 +2270,14 @@ class FluxSpec extends Specification {
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
-			head.publishOn(asyncGroup)
+			head
 					.take(1000)
 					.parallel(3)
 					.runOn(asyncGroup)
 					.map { it }
 					.collect({[]}, {c, v -> c << v})
-					.doOnNext{ println it }
 					.subscribe { List<Integer> ints ->
-								println ints.size()
+								println ints
 								sum.addAndGet(ints.size())
 								latch.countDown()
 					}
@@ -2290,7 +2289,7 @@ class FluxSpec extends Specification {
 		then:
 			'results contains the expected values'
 			println head.debug()
-			sum.get() == length - 1
+			sum.get() == length
 	}
 
 

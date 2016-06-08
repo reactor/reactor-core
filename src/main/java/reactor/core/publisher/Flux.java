@@ -3438,8 +3438,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
 	 *
-	 * @param <T> the value type
-	 *
 	 * @return a new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> parallel() {
@@ -3454,15 +3452,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
 	 *
-	 * @param <T> the value type
 	 * @param parallelism the number of parallel rails
-	 * @param prefetch the number of values to prefetch from the source
 	 *
 	 * @return a new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> parallel(int parallelism) {
 		return parallel(parallelism,
-				getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3473,7 +3469,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
 	 *
-	 * @param <T> the value type
 	 * @param parallelism the number of parallel rails
 	 * @param prefetch the number of values to prefetch from the source
 	 *
