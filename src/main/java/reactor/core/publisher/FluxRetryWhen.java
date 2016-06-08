@@ -58,17 +58,19 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		return -1L;
 	}
 
-	@Override
-	public void subscribe(Subscriber<? super T> s) {
-
+	static <T> void subscribe(Subscriber<? super T> s, Function<? super
+			Flux<Throwable>, ?
+			extends Publisher<? extends Object>> whenSourceFactory, Publisher<? extends
+			T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 		Subscriber<Throwable> signaller = Subscribers.serialize(other.completionSignal);
-		
+
 		signaller.onSubscribe(EmptySubscription.INSTANCE);
 
 		Subscriber<T> serial = Subscribers.serialize(s);
 
-		RetryWhenMainSubscriber<T> main = new RetryWhenMainSubscriber<>(serial, signaller, source);
+		RetryWhenMainSubscriber<T> main =
+				new RetryWhenMainSubscriber<>(serial, signaller, source);
 		other.main = main;
 
 		serial.onSubscribe(main);
@@ -77,14 +79,16 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 
 		try {
 			p = whenSourceFactory.apply(other);
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
 			s.onError(Exceptions.unwrap(e));
 			return;
 		}
 
 		if (p == null) {
-			s.onError(new NullPointerException("The whenSourceFactory returned a null Publisher"));
+			s.onError(new NullPointerException(
+					"The whenSourceFactory returned a null Publisher"));
 			return;
 		}
 
@@ -93,6 +97,11 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		if (!main.cancelled) {
 			source.subscribe(main);
 		}
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		subscribe(s, whenSourceFactory, source);
 	}
 
 	static final class RetryWhenMainSubscriber<T> extends MultiSubscriptionSubscriber<T, T> {

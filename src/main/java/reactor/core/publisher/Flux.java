@@ -3743,7 +3743,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return repeatWhen(v -> v.takeWhile(t -> predicate.getAsBoolean()));
+		return new FluxRepeatPredicate<>(this, predicate);
 	}
 
 	/**
@@ -3878,8 +3878,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
 	 */
 	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
-		Flux<Integer> one = Flux.just(1);
-		return retryWhen(v -> v.flatMap(e -> retryMatcher.test(e) ? one : Flux.<T>error(e)));
+		return new FluxRetryPredicate<>(this, retryMatcher);
 	}
 
 	/**

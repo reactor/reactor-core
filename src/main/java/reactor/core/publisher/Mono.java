@@ -1976,7 +1976,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return repeatWhen(v -> v.takeWhile(t -> predicate.getAsBoolean()));
+		return new FluxRepeatPredicate<>(this, predicate);
 	}
 
 	/**
@@ -2141,7 +2141,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a re-subscribing {@link Mono} on onError if the predicates matches.
 	 */
 	public final Mono<T> retry(Predicate<Throwable> retryMatcher) {
-		return retryWhen(v -> v.filter(retryMatcher));
+		return new MonoRetryPredicate<>(this, retryMatcher);
 	}
 
 	/**
@@ -2178,7 +2178,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onNext signal
 	 */
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
-		return MonoSource.wrap(new FluxRetryWhen<>(this, whenFactory));
+		return new MonoRetryWhen<>(this, whenFactory);
 	}
 
 	/**
