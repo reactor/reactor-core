@@ -138,6 +138,7 @@ public abstract class Logger {
 	 * A callback to observe logging statements that can be assigned globally via
 	 * {@link Logger#enableExtension(Extension)}.
 	 */
+	@FunctionalInterface
 	public interface Extension {
 
 		void log(String category, Level level, String msg, Object... arguments);
