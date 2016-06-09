@@ -88,6 +88,15 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		this.innerQueueSupplier = Objects.requireNonNull(innerQueueSupplier, "innerQueueSupplier");
 	}
 
+	public static <T, R> Subscriber<T> subscriber(
+			Subscriber<? super R> s,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			boolean delayError,
+			int maxConcurrency, Supplier<? extends Queue<R>> mainQueueSupplier,
+			int prefetch, Supplier<? extends Queue<R>> innerQueueSupplier) {
+		return new FlatMapMain<>(s, mapper, delayError, maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier);
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 

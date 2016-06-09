@@ -66,6 +66,25 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		END
 	}
 
+	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s, Function<?
+			super T, ? extends Publisher<? extends R>> mapper,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch, ErrorMode errorMode) {
+		Subscriber<T> parent = null;
+		switch (errorMode) {
+			case BOUNDARY:
+				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch,
+						false);
+				break;
+			case END:
+				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
+				break;
+			default:
+				parent = new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
+		}
+		return parent;
+	}
+
 	public FluxConcatMap(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper, 
 			Supplier<? extends Queue<T>> queueSupplier,

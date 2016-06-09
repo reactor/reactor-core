@@ -1502,7 +1502,7 @@ class FluxSpec extends Specification {
 			def result = [:]
 			def latch = new CountDownLatch(6)
 
-			def partitionFlux = source.publishOn(asyncGroup).partition()
+			def partitionFlux = source.publishOn(asyncGroup).parallel().groups()
 			partitionFlux.subscribe { stream ->
 				stream.cast(SimplePojo).subscribe { pojo ->
 					if (result[pojo.id]) {
@@ -2270,18 +2270,18 @@ class FluxSpec extends Specification {
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
-			head.publishOn(asyncGroup).partition(3).subscribe {
-				s ->
-					s
-							.publishOn(asyncGroup)
-							.map { it }
-							.buffer(batchSize)
-							.subscribe { List<Integer> ints ->
-						println ints.size()
-						sum.addAndGet(ints.size())
-						latch.countDown()
+			head
+					.publishOn(asyncGroup)
+					.take(1000)
+					.parallel(3)
+					.runOn(asyncGroup)
+					.map { it }
+					.collect({[]}, {c, v -> c << v})
+					.subscribe { List<Integer> ints ->
+								println ints.size()
+								sum.addAndGet(ints.size())
+								latch.countDown()
 					}
-			}
 		when:
 			'values are accepted into the head'
 			(1..length).each { head.onNext(it) }
@@ -2290,7 +2290,7 @@ class FluxSpec extends Specification {
 		then:
 			'results contains the expected values'
 			println head.debug()
-			sum.get() == length - 1
+			sum.get() == length
 	}
 
 

@@ -150,7 +150,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 
 		@Override
 		public boolean isEmpty() {
-			return !terminado;
+			return terminado;
 		}
 
 		@Override

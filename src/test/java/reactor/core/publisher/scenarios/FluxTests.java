@@ -287,8 +287,9 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<String> d = EmitterProcessor.create();
 		SubmissionEmitter<String> s = SubmissionEmitter.create(d);
 		Flux<Integer> tasks = d.publishOn(asyncGroup)
-		                          .partition(8)
-		                          .flatMap(stream -> stream.publishOn(asyncGroup)
+		                       .parallel(8)
+		                       .groups()
+		                       .flatMap(stream -> stream.publishOn(asyncGroup)
 		                                                  .map((String str) -> {
 			                                                  try {
 				                                                  Thread.sleep(random.nextInt(10));
@@ -393,8 +394,9 @@ public class FluxTests extends AbstractReactorTest {
 		SubmissionEmitter<Integer> s = SubmissionEmitter.create(d);
 
 		Cancellation c = d.publishOn(asyncGroup)
-		             .partition(8)
-		             .subscribe(stream -> stream.publishOn(asyncGroup)
+		                  .parallel(8)
+		                  .groups()
+		                  .subscribe(stream -> stream.publishOn(asyncGroup)
 		                                      .map(o -> {
 			                                      synchronized (internalLock) {
 
@@ -550,7 +552,8 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<String> deferred = EmitterProcessor.create();
 		deferred.connect();
 		deferred.publishOn(asyncGroup)
-		        .partition(8)
+		        .parallel(8)
+		        .groups()
 		        .subscribe(stream -> stream.publishOn(asyncGroup)
 		                                 .buffer(1000 / 8, Duration.ofSeconds(1))
 		                                 .subscribe(batch -> {
@@ -598,8 +601,9 @@ public class FluxTests extends AbstractReactorTest {
 				deferred = EmitterProcessor.create();
 				deferred.connect();
 				System.out.println(ReactiveStateUtils.scan(deferred.publishOn(asyncGroup)
-				                           .partition(2)
-				                           .subscribe(stream -> stream.publishOn(asyncGroup)
+				                                                   .parallel(2)
+				                                                   .groups()
+				                                                   .subscribe(stream -> stream.publishOn(asyncGroup)
 				                                                    .map(i -> i)
 				                                                    .scan(1, (acc, next) -> acc + next)
 				                                                    .subscribe(i -> latch.countDown())
@@ -654,7 +658,8 @@ public class FluxTests extends AbstractReactorTest {
 		switch (dispatcher) {
 			case "partitioned":
 				mapManydeferred = EmitterProcessor.create();
-				mapManydeferred.partition(4)
+				mapManydeferred.parallel(4)
+				               .groups()
 				               .subscribe(substream -> substream.publishOn(asyncGroup)
 				                                              .subscribe(i -> latch.countDown()));
 				break;
@@ -705,7 +710,8 @@ public class FluxTests extends AbstractReactorTest {
 		Flux<Integer> stream = Flux.range(-10, 20)
 		                                 .map(Integer::intValue);
 
-		assertThat(stream.partition(2)
+		assertThat(stream.parallel(2)
+		                 .groups()
 		                 .count()
 		                 .block(), is(equalTo(2L)));
 	}
@@ -746,7 +752,8 @@ public class FluxTests extends AbstractReactorTest {
 		final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
 		Map<Integer, Integer> batchesDistribution = new ConcurrentHashMap<>();
 		batchingStreamDef.publishOn(asyncGroup)
-		                 .partition(PARALLEL_STREAMS)
+		                 .parallel(PARALLEL_STREAMS)
+		                 .groups()
 		                 .subscribe(substream -> substream.hide().publishOn(asyncGroup)
 		                                                .buffer(BATCH_SIZE, Duration.ofMillis(TIMEOUT))
 		                                                .subscribe(items -> {
@@ -889,10 +896,10 @@ public class FluxTests extends AbstractReactorTest {
 
 		Flux<Integer> worker = Flux.range(0, max)
 		                                 .publishOn(asyncGroup);
-		worker.partition(2)
-		      .subscribe(s -> s.publishOn(supplier)
-		                     .map(v -> v)
-		                     .subscribe(v -> countDownLatch.countDown()));
+		worker.parallel(2)
+		      .runOn(supplier)
+		      .map(v -> v)
+		      .subscribe(v -> countDownLatch.countDown());
 
 		countDownLatch.await(10, TimeUnit.SECONDS);
 		Assert.assertEquals(0, countDownLatch.getCount());
@@ -910,7 +917,8 @@ public class FluxTests extends AbstractReactorTest {
 		                                 .publishOn(asyncGroup);
 
 		Cancellation tail = worker.log("after")
-		                          .partition(2)
+		                          .parallel(2)
+		                          .groups()
 		                          .subscribe(s -> s.log("w"+s.key())
 		                                    .publishOn(asyncGroup)
 		                                    .map(v -> v)
@@ -1073,7 +1081,8 @@ public class FluxTests extends AbstractReactorTest {
 		streamBatcher.publishOn(asyncGroup)
 		             .buffer(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
-		             .partition(parallelStreams)
+		             .parallel(parallelStreams)
+		             .groups()
 		             .log("batched-inner")
 		             .subscribe(innerStream -> innerStream.publishOn(asyncGroup)
 		                                                .doOnError(Throwable::printStackTrace)
@@ -1116,15 +1125,15 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch latch = new CountDownLatch(10);
 
 		Cancellation c = Flux.range(1, 10)
-		                                      .groupBy(n -> n % 2 == 0)
-		                                      .flatMap(stream -> stream.publishOn(supplier1)
+		                     .groupBy(n -> n % 2 == 0)
+		                     .flatMap(stream -> stream.publishOn(supplier1)
 		                                            .log("groupBy-" + stream.key()))
-		                                      .partition(5)
-		                                      .flatMap(stream -> stream.publishOn(supplier2)
-		                                            .log("partition-" + stream.key()))
-		                                      .publishOn(asyncGroup)
-		                                      .log("join")
-		                                      .subscribe(t -> {
+		                     .parallel(5)
+		                     .runOn(supplier2)
+		                     .sequential()
+		                     .publishOn(asyncGroup)
+		                     .log("join")
+		                     .subscribe(t -> {
 			                   latch.countDown();
 		                   });
 

@@ -3388,49 +3388,54 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Re-route incoming values into a dynamically created {@link Flux} for each unique key evaluated by the given
-	 * key mapper. The hashcode of the incoming data will be used for partitionning over
-	 * {@link PlatformDependent#DEFAULT_POOL_SIZE} number of partitions. That
-	 * means that at any point of time at most {@link PlatformDependent#DEFAULT_POOL_SIZE} number of streams will be
-	 * created.
+	 * Prepare to consume this {@link Flux} on number of 'rails' matching number of CPU
+	 * in round-robin fashion.
 	 *
-	 * <p> Partition resolution happens accordingly to the positive modulo of the current hashcode over
-	 * the
-	 * number of
-	 * buckets {@link PlatformDependent#DEFAULT_POOL_SIZE}: <code>bucket = o.hashCode() % buckets;</code>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/partition.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
 	 *
-	 *
-	 * @return a partitioning {@link Flux} whose values are {@link GroupedFlux} of all active partionned sequences
+	 * @return a new {@link ParallelFlux} instance
 	 */
-	public final Flux<GroupedFlux<Integer, T>> partition() {
-		return partition(PlatformDependent.DEFAULT_POOL_SIZE);
+	public final ParallelFlux<T> parallel() {
+		return parallel(Runtime.getRuntime()
+		                       .availableProcessors());
 	}
 
 	/**
-	 *
-	 * Re-route incoming values into a dynamically created {@link Flux} for each unique key evaluated by the given
-	 * key mapper. The hashcode of the incoming data will be used for partitioning over the buckets number passed. That
-	 * means that at any point of time at most {@code buckets} number of streams will be created.
-	 *
-	 * <p> Partition resolution happens accordingly to the positive modulo of the current hashcode over the
-	 * specified number of buckets: <code>bucket = o.hashCode() % buckets;</code>
+	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * in round-robin fashion.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/partition.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
 	 *
-	 * @param buckets the maximum number of buckets to partition the values across
+	 * @param parallelism the number of parallel rails
 	 *
-	 * @return a partitioning {@link Flux} whose values are {@link GroupedFlux} of all active partionned sequences
+	 * @return a new {@link ParallelFlux} instance
 	 */
-	public final Flux<GroupedFlux<Integer, T>> partition(int buckets) {
-		return groupBy(t -> {
-			int bucket = t.hashCode() % buckets;
-			return bucket < 0 ? bucket + buckets : bucket;
-		});
+	public final ParallelFlux<T> parallel(int parallelism) {
+		return parallel(parallelism,
+				PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
+	/**
+	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * in round-robin fashion and use custom prefetch amount and queue
+	 * for dealing with the source {@link Flux}'s values.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/parallel.png" alt="">
+	 *
+	 * @param parallelism the number of parallel rails
+	 * @param prefetch the number of values to prefetch from the source
+	 *
+	 * @return a new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> parallel(int parallelism, int prefetch) {
+		return ParallelFlux.from(this,
+				parallelism,
+				prefetch,
+				QueueSupplier.get(prefetch));
+	}
 
 	/**
 	 * Prepare a
