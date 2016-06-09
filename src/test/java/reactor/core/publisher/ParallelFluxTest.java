@@ -180,7 +180,6 @@ public class ParallelFluxTest {
 					    .parallel(i)
 					    .runOn(scheduler)
 					    .reduce((a, b) -> a + b)
-					    .log()
 					    .subscribe(ts);
 
 					ts.await(Duration.ofSeconds(500));
