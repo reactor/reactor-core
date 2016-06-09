@@ -75,10 +75,18 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 		throw new SkipException("optional");
 	}
 
+
+	@Override
+	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo() throws Throwable {
+		throw new SkipException("optional");
+	}
+
 	@Override
 	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException() throws Throwable {
 		throw new SkipException("optional");
 	}
+
+
 
 	/*
 
