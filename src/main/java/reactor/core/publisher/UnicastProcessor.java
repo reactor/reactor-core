@@ -143,12 +143,10 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainRegular() {
+	void drainRegular(Subscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
-		Subscriber<? super T> a = actual;
-
 
 		for (;;) {
 
@@ -191,13 +189,13 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainFused() {
+
+	void drainFused(Subscriber<? super T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
-		Subscriber<? super T> a = actual;
 
-		for (; ; ) {
+		for (;;) {
 
 			if (cancelled) {
 				q.clear();
@@ -207,14 +205,13 @@ public final class UnicastProcessor<T>
 
 			a.onNext(null);
 
-			if (done && q.isEmpty()) {
+			if (done) {
 				actual = null;
 
 				Throwable ex = error;
 				if (ex != null) {
 					a.onError(ex);
-				}
-				else {
+				} else {
 					a.onComplete();
 				}
 				return;
@@ -228,20 +225,19 @@ public final class UnicastProcessor<T>
 	}
 
 	void drain() {
-		if (actual != null) {
+		Subscriber<? super T> a = actual;
+		if (a != null) {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 
 			if (enableOperatorFusion) {
-				drainFused();
-			}
-			else {
-				drainRegular();
+				drainFused(a);
+			} else {
+				drainRegular(a);
 			}
 		}
 	}
-
 	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
 		if (cancelled) {
 			q.clear();
