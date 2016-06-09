@@ -172,25 +172,26 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
             
             drainLoop();
         }
-        
+
         void drainLoop() {
             int missed = 1;
-            
+
             JoinInnerSubscriber<T>[] s = this.subscribers;
             int n = s.length;
             Subscriber<? super T> a = this.actual;
-            
+
             for (;;) {
-                
+
                 long r = requested;
                 long e = 0;
-                
+
+                middle:
                 while (e != r) {
                     if (cancelled) {
                         cleanup();
                         return;
                     }
-                    
+
                     Throwable ex = error;
                     if (ex != null) {
                         ex = Exceptions.terminate(ERROR, this);
@@ -198,46 +199,49 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
                         a.onError(ex);
                         return;
                     }
-                    
+
                     boolean d = done == 0;
-                    
+
                     boolean empty = true;
-                    
+
                     for (int i = 0; i < n; i++) {
                         JoinInnerSubscriber<T> inner = s[i];
-                        
+
                         Queue<T> q = inner.queue;
                         if (q != null) {
                             T v = q.poll();
-                            
+
                             if (v == null) {
                                 empty &= true;
                             } else {
                                 empty &= false;
                                 a.onNext(v);
                                 inner.requestOne();
+                                if (++e == r) {
+                                    break middle;
+                                }
                             }
                         } else {
                             empty &= true;
                         }
                     }
-                    
+
                     if (d && empty) {
                         a.onComplete();
                         return;
                     }
-                    
+
                     if (empty) {
                         break;
                     }
                 }
-                
+
                 if (e == r) {
                     if (cancelled) {
                         cleanup();
                         return;
                     }
-                    
+
                     Throwable ex = error;
                     if (ex != null) {
                         ex = Exceptions.terminate(ERROR, this);
@@ -245,30 +249,31 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
                         a.onError(ex);
                         return;
                     }
-                    
+
                     boolean d = done == 0;
-                    
+
                     boolean empty = true;
-                    
+
                     for (int i = 0; i < n; i++) {
                         JoinInnerSubscriber<T> inner = s[i];
-                        
+
                         Queue<T> q = inner.queue;
-                        if (q == null || q.isEmpty()) {
-                            empty &= true;
+                        if (q != null && !q.isEmpty()) {
+                            empty = false;
+                            break;
                         }
                     }
-                    
+
                     if (d && empty) {
                         a.onComplete();
                         return;
                     }
                 }
-                
+
                 if (e != 0 && r != Long.MAX_VALUE) {
                     REQUESTED.addAndGet(this, -e);
                 }
-                
+
                 int w = wip;
                 if (w == missed) {
                     missed = WIP.addAndGet(this, -missed);

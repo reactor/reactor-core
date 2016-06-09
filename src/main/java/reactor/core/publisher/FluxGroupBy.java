@@ -581,71 +581,110 @@ implements Fuseable, Backpressurable  {
 				r.groupTerminated(key);
 			}
 		}
-		
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
-			
+
+		void drainRegular(Subscriber<? super V> a) {
 			int missed = 1;
-			
+
 			final Queue<V> q = queue;
-			Subscriber<? super V> a = actual;
-			
-			
+
 			for (;;) {
 
-				if (a != null) {
-					long r = requested;
-					long e = 0L;
-					
-					while (r != e) {
-						boolean d = done;
-						
-						V t = q.poll();
-						boolean empty = t == null;
-						
-						if (checkTerminated(d, empty, a, q)) {
-							return;
-						}
-						
-						if (empty) {
-							break;
-						}
-						
-						a.onNext(t);
-						
-						e++;
+				long r = requested;
+				long e = 0L;
+
+				while (r != e) {
+					boolean d = done;
+
+					V t = q.poll();
+					boolean empty = t == null;
+
+					if (checkTerminated(d, empty, a, q)) {
+						return;
 					}
-					
-					if (r == e) {
-						if (checkTerminated(done, q.isEmpty(), a, q)) {
-							return;
-						}
+
+					if (empty) {
+						break;
 					}
-					
-					if (e != 0) {
-						GroupByMain<?, K, V> main = parent;
-						if (main != null) {
-							main.requestInner(e);
-						}
-						if (r != Long.MAX_VALUE) {
-							REQUESTED.addAndGet(this, -e);
-						}
+
+					a.onNext(t);
+
+					e++;
+				}
+
+				if (r == e) {
+					if (checkTerminated(done, q.isEmpty(), a, q)) {
+						return;
 					}
 				}
-				
+
+				if (e != 0) {
+					FluxGroupBy.GroupByMain<?, K, V> main = parent;
+					if (main != null) {
+						main.requestInner(e);
+					}
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.addAndGet(this, -e);
+					}
+				}
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
-				
-				if (a == null) {
-					a = actual;
+			}
+		}
+
+		void drainFused(Subscriber<? super V> a) {
+			int missed = 1;
+
+			final Queue<V> q = queue;
+
+			for (;;) {
+
+				if (cancelled) {
+					q.clear();
+					actual = null;
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					actual = null;
+
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					} else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
 				}
 			}
 		}
-		
+
+		void drain() {
+			Subscriber<? super V> a = actual;
+			if (a != null) {
+				if (WIP.getAndIncrement(this) != 0) {
+					return;
+				}
+
+				if (enableOperatorFusion) {
+					drainFused(a);
+				} else {
+					drainRegular(a);
+				}
+			}
+		}
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
 				q.clear();
@@ -662,10 +701,10 @@ implements Fuseable, Backpressurable  {
 				}
 				return true;
 			}
-			
+
 			return false;
 		}
-		
+
 		public void onNext(V t) {
 			if (done || cancelled) {
 				return;
@@ -674,17 +713,7 @@ implements Fuseable, Backpressurable  {
 			Subscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
-				IllegalStateException ex = new IllegalStateException("The queue is full");
-				error = ex;
-				done = true;
-
-				doTerminate();
-
-				if (enableOperatorFusion) {
-					a.onError(ex);
-				} else {
-					drain();
-				}
+				onError(new IllegalStateException("The queue is full"));
 				return;
 			}
 			if (enableOperatorFusion) {
@@ -695,69 +724,42 @@ implements Fuseable, Backpressurable  {
 				drain();
 			}
 		}
-		
+
 		public void onError(Throwable t) {
 			if (done || cancelled) {
 				return;
 			}
-			
+
 			error = t;
 			done = true;
 
 			doTerminate();
-			
-			if (enableOperatorFusion) {
-				Subscriber<? super V> a = actual;
-				if (a != null) {
-					a.onError(t);
-				}
-			} else {
-				drain();
-			}
+
+			drain();
 		}
-		
+
 		public void onComplete() {
 			if (done || cancelled) {
 				return;
 			}
-			
+
 			done = true;
 
 			doTerminate();
-			
-			if (enableOperatorFusion) {
-				Subscriber<? super V> a = actual;
-				if (a != null) {
-					a.onComplete();
-				}
-			} else {
-				drain();
-			}
+
+			drain();
 		}
-		
+
 		@Override
 		public void subscribe(Subscriber<? super V> s) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				
+
 				s.onSubscribe(this);
 				actual = s;
 				if (cancelled) {
 					actual = null;
 				} else {
-					if (enableOperatorFusion) {
-						if (done) {
-							Throwable e = error;
-							if (e != null) {
-								s.onError(e);
-							} else {
-								s.onComplete();
-							}
-						} else {
-							s.onNext(null);
-						}
-					} else {
-						drain();
-					}
+					drain();
 				}
 			} else {
 				s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
@@ -766,21 +768,14 @@ implements Fuseable, Backpressurable  {
 
 		@Override
 		public int getMode() {
-			return INNER;
+			return Introspectable.INNER;
 		}
 
 		@Override
 		public void request(long n) {
 			if (BackpressureUtils.validate(n)) {
-				if (enableOperatorFusion) {
-					Subscriber<? super V> a = actual;
-					if (a != null) {
-						a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
-					}
-				} else {
-					BackpressureUtils.getAndAddCap(REQUESTED, this, n);
-					drain();
-				}
+				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+				drain();
 			}
 		}
 		
