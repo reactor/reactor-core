@@ -550,10 +550,12 @@ final class FluxTake<T> extends FluxSource<T, T> {
 			}
 			long r = remaining;
 			if (r == 0L) {
-				done = true;
-				if (inputMode == Fuseable.ASYNC) {
-					qs.cancel();
-					actual.onComplete();
+				if (!done) {
+					done = true;
+					if (inputMode == Fuseable.ASYNC) {
+						qs.cancel();
+						actual.onComplete();
+					}
 				}
 				return null;
 			}
@@ -561,7 +563,16 @@ final class FluxTake<T> extends FluxSource<T, T> {
 			T v = qs.poll();
 
 			if (v != null) {
-				remaining = r - 1;
+				remaining = --r;
+				if (r == 0L) {
+					if (!done) {
+						done = true;
+						if (inputMode == Fuseable.ASYNC) {
+							qs.cancel();
+							actual.onComplete();
+						}
+					}
+				}
 			}
 
 			return v;

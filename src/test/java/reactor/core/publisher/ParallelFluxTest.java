@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -179,6 +180,7 @@ public class ParallelFluxTest {
 					    .parallel(i)
 					    .runOn(scheduler)
 					    .reduce((a, b) -> a + b)
+					    .log()
 					    .subscribe(ts);
 
 					ts.await(Duration.ofSeconds(500));
@@ -240,9 +242,10 @@ public class ParallelFluxTest {
 		    .collect(as, (a, b) -> a.add(b))
 		    .sequential()
 		    .flatMapIterable(v -> v)
+		    .log()
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertContainValues(new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -257,7 +260,7 @@ public class ParallelFluxTest {
 		    .flatMap(v -> v)
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertContainValues(new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -270,7 +273,7 @@ public class ParallelFluxTest {
 		            .sequential()
 		            .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertContainValues(new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -312,7 +315,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .parallel(3)
@@ -320,15 +323,13 @@ public class ParallelFluxTest {
 		    .collect(as, (a, b) -> a.add(b))
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .sequential()
+		    .reduce(0, (a, b) -> a + b.size())
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 
 	}
 
@@ -337,7 +338,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -346,15 +347,13 @@ public class ParallelFluxTest {
 		    .collect(as, (a, b) -> a.add(b))
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .sequential()
+		    .reduce(0, (a, b) -> a + b.size())
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 	}
 
 	@Test
@@ -362,7 +361,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -372,15 +371,13 @@ public class ParallelFluxTest {
 		    .collect(as, (a, b) -> a.add(b))
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .sequential()
+		    .reduce(0, (a, b) -> a + b.size())
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 	}
 
 	@Test
@@ -388,7 +385,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -399,15 +396,13 @@ public class ParallelFluxTest {
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .groups()
 		    .flatMap(v -> v)
+		    .reduce(0, (a, b) -> b.size() + a)
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 
 	}
 
@@ -416,7 +411,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .publishOn(s)
@@ -426,15 +421,13 @@ public class ParallelFluxTest {
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .groups()
 		    .flatMap(v -> v)
+		    .reduce(0, (a, b) -> b.size() + a)
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 
 	}
 
@@ -443,10 +436,9 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 4);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 100000)
-		    .take(1000)
 		    .publishOn(s)
 		    .parallel(3)
 		    .runOn(s)
@@ -454,14 +446,12 @@ public class ParallelFluxTest {
 		    .doOnNext(v -> System.out.println(v.size()))
 		    .groups()
 		    .flatMap(v -> v)
+		    .reduce(0, (a, b) -> b.size() + a)
 		    .subscribe(ts);
 
 		ts.await(Duration.ofSeconds(5));
-		ts.assertValueCount(3)
+		ts.assertValues(100_000)
 		  .assertNoError()
-		  .assertComplete()
-		  .assertValuesWith(v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()),
-				  v -> Assert.assertEquals(100_000, v.size()));
+		  .assertComplete();
 	}
 }

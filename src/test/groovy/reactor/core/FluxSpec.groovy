@@ -2273,7 +2273,6 @@ class FluxSpec extends Specification {
 			head
 					.publishOn(asyncGroup)
 					.take(1000)
-					.hide()
 					.parallel(3)
 					.runOn(asyncGroup)
 					.map { it }
