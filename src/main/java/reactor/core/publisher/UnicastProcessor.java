@@ -15,15 +15,25 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
+import org.reactivestreams.Processor;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.queue.QueueSupplier;
-import reactor.core.state.*;
-import reactor.core.util.*;
+import reactor.core.state.Cancellable;
+import reactor.core.state.Completable;
+import reactor.core.state.Requestable;
+import reactor.core.util.BackpressureUtils;
+import reactor.core.util.EmptySubscription;
+import reactor.core.util.Exceptions;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -133,11 +143,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drain() {
-		if (WIP.getAndIncrement(this) != 0) {
-			return;
-		}
-
+	void drainRegular() {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -146,48 +152,93 @@ public final class UnicastProcessor<T>
 
 		for (;;) {
 
-			if (a != null) {
-				long r = requested;
-				long e = 0L;
+			long r = requested;
+			long e = 0L;
 
-				while (r != e) {
-					boolean d = done;
+			while (r != e) {
+				boolean d = done;
 
-					T t = q.poll();
-					boolean empty = t == null;
+				T t = q.poll();
+				boolean empty = t == null;
 
-					if (checkTerminated(d, empty, a, q)) {
-						return;
-					}
-
-					if (empty) {
-						break;
-					}
-
-					a.onNext(t);
-
-					e++;
+				if (checkTerminated(d, empty, a, q)) {
+					return;
 				}
 
-				if (r == e) {
-					if (checkTerminated(done, q.isEmpty(), a, q)) {
-						return;
-					}
+				if (empty) {
+					break;
 				}
 
-				if (e != 0 && r != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -e);
+				a.onNext(t);
+
+				e++;
+			}
+
+			if (r == e) {
+				if (checkTerminated(done, q.isEmpty(), a, q)) {
+					return;
 				}
+			}
+
+			if (e != 0 && r != Long.MAX_VALUE) {
+				REQUESTED.addAndGet(this, -e);
 			}
 
 			missed = WIP.addAndGet(this, -missed);
 			if (missed == 0) {
 				break;
 			}
-
-			if (a == null) {
-				a = actual;
 		}
+	}
+
+	void drainFused() {
+		int missed = 1;
+
+		final Queue<T> q = queue;
+		Subscriber<? super T> a = actual;
+
+		for (; ; ) {
+
+			if (cancelled) {
+				q.clear();
+				actual = null;
+				return;
+			}
+
+			a.onNext(null);
+
+			if (done && q.isEmpty()) {
+				actual = null;
+
+				Throwable ex = error;
+				if (ex != null) {
+					a.onError(ex);
+				}
+				else {
+					a.onComplete();
+				}
+				return;
+			}
+
+			missed = WIP.addAndGet(this, -missed);
+			if (missed == 0) {
+				break;
+			}
+		}
+	}
+
+	void drain() {
+		if (actual != null) {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			if (enableOperatorFusion) {
+				drainFused();
+			}
+			else {
+				drainRegular();
+			}
 		}
 	}
 
@@ -228,27 +279,11 @@ public final class UnicastProcessor<T>
 			return;
 		}
 
-		Subscriber<? super T> a = actual;
 		if (!queue.offer(t)) {
-			IllegalStateException ex = new IllegalStateException("The queue is full");
-			error = ex;
-			done = true;
-
-			doTerminate();
-			if (enableOperatorFusion) {
-				a.onError(ex);
-			} else {
-				drain();
-			}
+			onError(new IllegalStateException("The queue is full"));
 			return;
 		}
-		if (enableOperatorFusion) {
-			if (a != null) {
-				a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
-			}
-		} else {
-			drain();
-		}
+		drain();
 	}
 
 	@Override
@@ -263,14 +298,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		if (enableOperatorFusion) {
-			Subscriber<? super T> a = actual;
-			if (a != null) {
-				a.onError(t);
-			}
-		} else {
-			drain();
-		}
+		drain();
 	}
 
 	@Override
@@ -283,14 +311,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		if (enableOperatorFusion) {
-			Subscriber<? super T> a = actual;
-			if (a != null) {
-				a.onComplete();
-			}
-		} else {
-			drain();
-		}
+		drain();
 	}
 
 	@Override
@@ -301,24 +322,8 @@ public final class UnicastProcessor<T>
 			actual = s;
 			if (cancelled) {
 				actual = null;
-		} else {
-				if (enableOperatorFusion) {
-					if (done) {
-						Throwable e = error;
-						if (e != null) {
-							s.onError(e);
-						}
-						else {
-							s.onComplete();
-		}
-					}
-					else {
-						s.onNext(null);
-					}
-				}
-				else {
-					drain();
-				}
+			} else {
+				drain();
 			}
 		}
 		else {
@@ -334,16 +339,8 @@ public final class UnicastProcessor<T>
 	@Override
 	public void request(long n) {
 		if (BackpressureUtils.validate(n)) {
-			if (enableOperatorFusion) {
-				Subscriber<? super T> a = actual;
-				if (a != null) {
-					a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
-		}
-			}
-			else {
 				BackpressureUtils.addAndGet(REQUESTED, this, n);
 				drain();
-			}
 		}
 	}
 
