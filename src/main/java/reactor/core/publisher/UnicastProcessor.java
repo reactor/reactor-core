@@ -203,9 +203,11 @@ public final class UnicastProcessor<T>
 				return;
 			}
 
-			a.onNext(null);
+			boolean d = done;
 
-			if (done) {
+			actual.onNext(null);
+
+			if (d) {
 				actual = null;
 
 				Throwable ex = error;

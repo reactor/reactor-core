@@ -311,16 +311,13 @@ public class ParallelFluxTest {
 
 	@Test
 	public void collectAsyncFused() {
-		Scheduler s = Schedulers.newParallel("test", 3);
-		Supplier<List<Integer>> as = () -> new ArrayList<>();
-
 		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Scheduler scheduler = Schedulers.newParallel("test", 3);
 
 		Flux.range(1, 100000)
 		    .parallel(3)
-		    .runOn(s)
-		    .collect(as, (a, b) -> a.add(b))
-		    .doOnNext(v -> System.out.println(v.size()))
+		    .runOn(scheduler)
+		    .collect(ArrayList::new, ArrayList::add)
 		    .sequential()
 		    .reduce(0, (a, b) -> a + b.size())
 		    .subscribe(ts);

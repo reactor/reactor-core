@@ -472,9 +472,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 					return;
 				}
 
+				boolean d = done;
+
 				actual.onNext(null);
 
-				if (done) {
+				if (d) {
 					Throwable e = error;
 					if (e != null) {
 						actual.onError(e);
@@ -1007,9 +1009,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 					return;
 				}
 
+				boolean d = done;
+
 				actual.onNext(null);
 
-				if (done) {
+				if (d) {
 					Throwable e = error;
 					if (e != null) {
 						actual.onError(e);
