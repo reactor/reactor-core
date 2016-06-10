@@ -99,8 +99,8 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
             a = b;
             consumerArray = b;
         }
-        CONSUMER_INDEX.lazySet(this, ci + 1);
         a.lazySet(offset, null);
+        CONSUMER_INDEX.lazySet(this, ci + 1);
         
         return (T)o;
     }
