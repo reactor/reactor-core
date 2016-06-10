@@ -202,11 +202,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 
 			subscriber.onComplete();
 		}
-
-		@Override
-		protected boolean shouldCancelCurrent() {
-			return false;
-		}
 	}
 
 	static final class RetryWhenOtherSubscriber

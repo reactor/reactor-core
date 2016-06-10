@@ -125,6 +125,11 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		}
 
 		@Override
+		protected boolean shouldCancelCurrent() {
+			return true;
+		}
+
+		@Override
 		public void onNext(T t) {
 			timeout.cancel();
 

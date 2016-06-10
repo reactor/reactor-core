@@ -70,11 +70,6 @@ final class FluxResume<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		protected boolean shouldCancelCurrent() {
-			return false;
-		}
-
-		@Override
 		public void onSubscribe(Subscription s) {
 			if (!second) {
 				subscriber.onSubscribe(this);

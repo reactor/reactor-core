@@ -360,6 +360,6 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 	}
 
 	protected boolean shouldCancelCurrent() {
-		return true;
+		return false;
 	}
 }

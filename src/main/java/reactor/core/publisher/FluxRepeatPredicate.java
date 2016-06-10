@@ -83,11 +83,6 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		protected boolean shouldCancelCurrent() {
-			return false;
-		}
-
-		@Override
 		public void onNext(T t) {
 			produced++;
 

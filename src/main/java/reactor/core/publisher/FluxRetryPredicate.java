@@ -90,11 +90,6 @@ final class FluxRetryPredicate<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		protected boolean shouldCancelCurrent() {
-			return false;
-		}
-
-		@Override
 		public void onError(Throwable t) {
 			boolean b;
 			

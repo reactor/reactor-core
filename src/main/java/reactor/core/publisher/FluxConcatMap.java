@@ -761,11 +761,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 		
 		@Override
-		public void onSubscribe(Subscription s) {
-			set(s);
-		}
-		
-		@Override
 		public void onNext(R t) {
 			produced++;
 			

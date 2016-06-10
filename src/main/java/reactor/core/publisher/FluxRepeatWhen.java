@@ -122,11 +122,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		protected boolean shouldCancelCurrent() {
-			return false;
-		}
-
-		@Override
 		public void cancel() {
 			if (cancelled) {
 				return;
@@ -136,11 +131,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			cancelWhen();
 
 			super.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			set(s);
 		}
 
 		@Override
