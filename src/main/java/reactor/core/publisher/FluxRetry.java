@@ -103,6 +103,11 @@ final class FluxRetry<T> extends FluxSource<T, T> {
 			resubscribe();
 		}
 
+		@Override
+		protected boolean shouldCancelCurrent() {
+			return false;
+		}
+
 		void resubscribe() {
 			if (WIP.getAndIncrement(this) == 0) {
 				do {

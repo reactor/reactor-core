@@ -96,6 +96,11 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		protected boolean shouldCancelCurrent() {
+			return false;
+		}
+
+		@Override
 		public void onComplete() {
 			long r = remaining;
 			if (r != Long.MAX_VALUE) {

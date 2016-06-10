@@ -112,8 +112,8 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 		
 		if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 			Subscription a = actual;
-			
-			if (a != null) {
+
+			if (a != null && shouldCancelCurrent()) {
 				a.cancel();
 			}
 			
@@ -311,7 +311,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 				}
 
 				if (ms != null) {
-					if (a != null) {
+					if (a != null && shouldCancelCurrent()) {
 						a.cancel();
 					}
 					actual = ms;
@@ -357,5 +357,9 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 	
 	public final boolean isUnbounded() {
 		return unbounded;
+	}
+
+	protected boolean shouldCancelCurrent() {
+		return true;
 	}
 }

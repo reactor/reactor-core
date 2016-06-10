@@ -86,6 +86,11 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		protected boolean shouldCancelCurrent() {
+			return false;
+		}
+
+		@Override
 		public Object connectedInput() {
 			return null;
 		}
