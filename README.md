@@ -71,7 +71,7 @@ Tuple2<Long, Long> nowAndLater =
         Mono.when(
                 Mono.just(System.currentTimeMillis()),
                 Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
-            .get();
+            .block();
 ```
 
 ## Schedulers
@@ -80,30 +80,41 @@ Reactor uses a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/
 contract for arbitrary task execution. It provides some guarantees required by Reactive
 Streams flows like FIFO execution.
 
-You can create efficient [schedulers](http://projectreactor
+You can use or create efficient [schedulers](http://projectreactor
 .io/core/docs/api/?reactor/core/schedulers/Schedulers.html) to jump thread on the
 producing flows (subscribeOn) or receiving flows (publishOn) :
 
 ```java
-Scheduler async = Schedulers.newSingle();
-Scheduler io = Schedulers.newParallel();
 
 Mono.fromCallable( () -> System.currentTimeMillis() )
 	.repeat()
-    .publishOn(async)
+    .publishOn(Schedulers.single())
     .log("foo.bar")
     .flatMap(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
-            .subscribeOn(io)
+            .subscribeOn(Schedulers.parallel())
     , 8) //maxConcurrency 8
     .subscribe();
-
-//... a little later
-async.shutdown();
-io.shutdown();
-
-Note that `ExecutorService` is also a supported argument for `publishOn` and `subscribeOn`.
 ```
+
+## ParallelFlux
+
+[ParallelFlux](http://projectreactor.io/core/docs/api/?reactor/core/publisher/ParallelFlux
+.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
+ tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
+ use abitrary merge strategies via 'groups()'.
+
+```java
+Mono.fromCallable( () -> System.currentTimeMillis() )
+	.repeat()
+    .parallel(8) //parallelism
+    .runOn(Schedulers.parallel())
+    .doOnNext( d -> System.out.println("I'm on thread "+Thread.currentThread()) ).
+    .sequential()
+    .subscribe()
+```
+
+
 ## Hot Publishing : SignalEmitter, FluxEmitter, MonoEmitter
 To bridge a Subscriber or Processor into an outside context that is taking care of
 producing non concurrently, use `Flux#create`, `Mono#create`, or
