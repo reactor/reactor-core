@@ -227,19 +227,31 @@ public final class UnicastProcessor<T>
 	}
 
 	void drain() {
-		Subscriber<? super T> a = actual;
-		if (a != null) {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
+	    if (WIP.getAndIncrement(this) != 0) {
+            return;
+        }
 
-			if (enableOperatorFusion) {
-				drainFused(a);
-			} else {
-				drainRegular(a);
-			}
-		}
-	}
+        int missed = 1;
+        
+        for (;;) {
+            Subscriber<? super T> a = actual;
+            if (a != null) {
+    
+                if (enableOperatorFusion) {
+                    drainFused(a);
+                } else {
+                    drainRegular(a);
+                }
+                return;
+            }
+            
+            missed = WIP.addAndGet(this, -missed);
+            if (missed == 0) {
+                break;
+            }
+        }
+    }
+	
 	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
 		if (cancelled) {
 			q.clear();
