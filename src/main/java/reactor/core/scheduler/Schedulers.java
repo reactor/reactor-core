@@ -463,7 +463,8 @@ public class Schedulers {
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name, int resolution, int bufferSize) {
-		HashWheelTimer t = new HashWheelTimer(name, resolution, bufferSize, WaitStrategy.parking(), null);
+		HashWheelTimer t = new HashWheelTimer(name, resolution, bufferSize,
+				WaitStrategy.sleeping(), null);
 		t.start();
 		return t;
 	}
