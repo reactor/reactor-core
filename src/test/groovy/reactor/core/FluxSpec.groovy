@@ -1227,9 +1227,12 @@ class FluxSpec extends Specification {
 
 		when:
 			'non overlapping buffers'
-			res = numbers.delay(Duration.ofMillis(100)).log('beforeBuffer').buffer(Duration.ofMillis(200), Duration
-					.ofMillis
-					(300)).log('afterBuffer').buffer().next()
+			res = numbers.delay(Duration.ofMillis(90))
+					.log('beforeBuffer')
+					.buffer (Duration.ofMillis(200), Duration .ofMillis(300))
+					.log('afterBuffer')
+					.buffer()
+					.next()
 
 		then:
 			'the collected lists are available'
@@ -1312,7 +1315,8 @@ class FluxSpec extends Specification {
 
 		when:
 			'non overlapping buffers'
-			res = numbers.delay(Duration.ofMillis(100)).window(Duration.ofMillis(200), Duration.ofMillis(300))
+			res = numbers.delay(Duration.ofMillis(90)).window(Duration.ofMillis(200),
+					Duration.ofMillis(300))
 					.flatMap{ it.log('fm').collectList() }
 					.collectList().cache()
 
