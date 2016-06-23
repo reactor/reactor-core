@@ -35,7 +35,6 @@ import reactor.core.flow.Cancellation;
 import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.WaitStrategy;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
@@ -425,48 +424,41 @@ public class Schedulers {
 	}
 
 	/**
-	 * Create a new hash-wheel based {@link TimedScheduler} using the default resolution
-	 * (50MS).
-	 * All times
-	 * will rounded up to the closest multiple of this resolution.
+	 * Create a new {@link TimedScheduler} backed by a single threaded
+	 * {@link java.util.concurrent.ScheduledExecutorService}.
+	 *
 	 * @param name timer thread prefix
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name) {
-		return newTimer(name, 50);
+		return newTimer(name, true);
 	}
 
 	/**
-	 * Create a new hash-wheel based {@link TimedScheduler} using the the given timer {@code resolution} and backlog size (64). All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
+	 * Create a new {@link TimedScheduler} backed by a single threaded
+	 * {@link java.util.concurrent.ScheduledExecutorService}.
 	 *
-	 * @param name timer thread prefix
-	 * @param resolution resolution of this timer in milliseconds
+	 * @param name Component and thread name prefix
+	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
+	 * Scheduler#shutdown()} to exit the VM.
+	 *
 	 * @return a new {@link TimedScheduler}
 	 */
-	public static TimedScheduler newTimer(String name, int resolution) {
-		return newTimer(name, resolution, PlatformDependent.XS_BUFFER_SIZE);
+	public static TimedScheduler newTimer(String name, boolean daemon) {
+		return newTimer(new SchedulerFactory(name, daemon, SingleScheduler.COUNTER));
 	}
 
 	/**
-	 * Create a new hash-wheel based {@link TimedScheduler} using the given timer {@code resolution} and
-	 * {@code bufferSize}. All times
-	 * will
-	 * rounded up to the closest multiple of this resolution.
+	 * Create a new {@link TimedScheduler} backed by a single threaded
+	 * {@link java.util.concurrent.ScheduledExecutorService}.
 	 *
-	 * @param name timer thread prefix
-	 * @param resolution resolution of this timer in milliseconds
-	 * @param bufferSize size of the wheel supporting the timer, the larger the wheel,
-	 * the less the lookup time is
-	 *                   for sparse timeouts.
+	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
+	 * {@link Scheduler}
+	 *
 	 * @return a new {@link TimedScheduler}
 	 */
-	public static TimedScheduler newTimer(String name, int resolution, int bufferSize) {
-		HashWheelTimer t = new HashWheelTimer(name, resolution, bufferSize,
-				WaitStrategy.sleeping(), null);
-		t.start();
-		return t;
+	public static TimedScheduler newTimer(ThreadFactory threadFactory) {
+		return new SingleTimedScheduler(threadFactory);
 	}
 
 	/**
