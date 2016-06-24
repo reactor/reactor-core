@@ -31,7 +31,7 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
 
 
     @Override
-    protected Mono<Void> toPublisher(Object o) {
+    public Mono<Void> toPublisher(Object o) {
         if (o instanceof Completable) {
             return new CompletableAsMono((Completable)o);
         } else {
@@ -40,7 +40,7 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
     }
 
     @Override
-    protected Completable fromPublisher(Publisher<?> source) {
+    public Completable fromPublisher(Publisher<?> source) {
         return Completable.create(new PublisherAsCompletable(source));
     }
 
