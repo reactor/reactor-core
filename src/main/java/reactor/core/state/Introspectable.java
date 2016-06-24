@@ -45,6 +45,15 @@ public interface Introspectable {
 	int LOGGING = 0b000010000;
 
 	/**
+	 * Defined identifier or null if not available
+	 * @return defined identifier or null if not available
+	 */
+	default Object getId() {
+		return null;
+	}
+
+
+	/**
 	 * Flags determining the nature of this {@link Introspectable}, can be a combination of those, e.g. :
 	 * <pre>
 	 *     int mode = Introspectable.LOGGING | Introspectable.FACTORY
@@ -64,15 +73,6 @@ public interface Introspectable {
 		return getClass().getSimpleName();
 	}
 
-
-	/**
-	 * Defined identifier or null if not available
-	 * @return defined identifier or null if not available
-	 */
-	default Object key() {
-		return null;
-	}
-
 	/**
 	 * Current error if any, default to null
 	 * @return Current error if any, default to null
@@ -88,4 +88,15 @@ public interface Introspectable {
 	default long getPeriod(){
 		return -1L;
 	}
+
+	/**
+	 * Should this component record a stacktrace on assembly
+	 * @return true should this component record a stacktrace on assembly
+	 */
+	default boolean isTraceAssembly(){
+		return TRACE_ASSEMBLY;
+	}
+
+	boolean TRACE_ASSEMBLY              =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.assembly", "false"));
 }

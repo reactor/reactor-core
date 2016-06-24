@@ -240,7 +240,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	final public Object key() {
+	final public Object getId() {
 		return contextClassLoader.hashCode();
 	}
 

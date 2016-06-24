@@ -528,7 +528,7 @@ implements Fuseable, Backpressurable  {
 		final int limit;
 
 		@Override
-		public K key() {
+		public K getId() {
 			return key;
 		}
 		

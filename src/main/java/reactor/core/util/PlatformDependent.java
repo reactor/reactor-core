@@ -42,11 +42,7 @@ public enum PlatformDependent {
 	 */
 	public static final  boolean TRACE_CANCEL                    =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
-	/**
-	 *
-	 */
-	public static final  boolean TRACE_TIMEROVERLOW              =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.timeroverflow", "false"));
+
 	/**
 	 *
 	 */

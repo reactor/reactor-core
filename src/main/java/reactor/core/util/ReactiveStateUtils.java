@@ -355,7 +355,7 @@ public enum ReactiveStateUtils {
 			return null;
 		}
 
-		Object key = Introspectable.class.isAssignableFrom(o.getClass()) ? (((Introspectable) o).key()) : null;
+		Object key = Introspectable.class.isAssignableFrom(o.getClass()) ? (((Introspectable) o).getId()) : null;
 
 		if (key == null) {
 			return null;
@@ -371,7 +371,7 @@ public enum ReactiveStateUtils {
 	public static String getIdOrDefault(Object o) {
 		if (reactiveStateCheck(o, Introspectable.class) &&
 				(((Introspectable)o).getMode() & Introspectable.UNIQUE) == Introspectable.UNIQUE) {
-			return  ((Introspectable)o).key() != null ? ((Introspectable)o).key().toString() : ((Introspectable) o)
+			return  ((Introspectable)o).getId() != null ? ((Introspectable)o).getId().toString() : ((Introspectable) o)
 					.getName();
 		}
 		return getName(o).hashCode() + ":" + o.hashCode();

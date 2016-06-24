@@ -83,7 +83,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fu
         }
         
         @Override
-        public Integer key() {
+        public Integer getId() {
             return key;
         }
         

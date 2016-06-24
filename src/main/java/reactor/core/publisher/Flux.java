@@ -4988,7 +4988,18 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public Flux<T> useTimer(TimedScheduler timer) {
 		return FluxConfig.withTimer(this, timer);
+	}
 
+	/**
+	 * Configure a {@link Flux} and its child operators to trace mode. Errors will
+	 * therefore include original operator declaration stack.
+	 *
+	 * @param trace true if this {@link Flux} should trace on assembly.
+	 *
+	 * @return a configured flux
+	 */
+	public Flux<T> useTraceAssembly(boolean trace) {
+		return FluxConfig.withTraceAssembly(this, trace);
 	}
 
 	/**

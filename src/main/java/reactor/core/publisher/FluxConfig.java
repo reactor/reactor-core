@@ -29,9 +29,10 @@ import reactor.core.state.Introspectable;
  */
 final class FluxConfig<T> extends FluxSource<T, T> {
 
-	final long   capacity;
-	final TimedScheduler  timer;
-	final String name;
+	final long           capacity;
+	final TimedScheduler timer;
+	final String         name;
+	final boolean        traceAssembly;
 
 	static <T> Flux<T> withCapacity(Publisher<? extends T> source, long capacity) {
 		if (source instanceof Fuseable) {
@@ -39,13 +40,15 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 					capacity,
 					source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 					source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
-					                                                                               .getSimpleName());
+					                                                                               .getSimpleName(),
+					source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
 		}
 		return new FluxConfig<>(source,
 				capacity,
 				source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
 				source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
-				                                                                               .getSimpleName());
+				                                                                               .getSimpleName(),
+				source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
 	}
 
 	static <T> Flux<T> withTimer(Publisher<? extends T> source, TimedScheduler timer) {
@@ -54,13 +57,36 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 					source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
 					timer,
 					source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
-					                                                                               .getSimpleName());
+					                                                                               .getSimpleName(),
+					source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
 		}
 		return new FluxConfig<>(source,
 				source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
 				timer,
 				source instanceof Introspectable ? ((Introspectable) source).getName() : source.getClass()
-				                                                                               .getSimpleName());
+				                                                                               .getSimpleName(),
+				source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
+	}
+
+	static <T> Flux<T> withTraceAssembly(Publisher<? extends T> source, boolean trace) {
+		if (source instanceof Fuseable) {
+			return new FuseableFluxConfig<>(source,
+					source instanceof Backpressurable ?
+							((Backpressurable) source).getCapacity() : -1L,
+					source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
+					source instanceof Introspectable ?
+							((Introspectable) source).getName() : source.getClass()
+							                                            .getSimpleName(),
+					trace);
+		}
+		return new FluxConfig<>(source,
+				source instanceof Backpressurable ?
+						((Backpressurable) source).getCapacity() : -1L,
+				source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
+				source instanceof Introspectable ? ((Introspectable) source).getName() :
+						source.getClass()
+						      .getSimpleName(),
+				trace);
 	}
 
 	static <T> Flux<T> withName(Publisher<? extends T> source, String name) {
@@ -68,19 +94,26 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 			return new FuseableFluxConfig<>(source,
 					source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
 					source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
-					name);
+					name,
+					source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
 		}
 		return new FluxConfig<>(source,
 				source instanceof Backpressurable ? ((Backpressurable) source).getCapacity() : -1L,
 				source instanceof Flux ? ((Flux<?>) source).getTimer() : null,
-				name);
+				name,
+				source instanceof Introspectable && ((Introspectable) source).isTraceAssembly());
 	}
 
-	public FluxConfig(Publisher<? extends T> source, long capacity, TimedScheduler timer, String name) {
+	public FluxConfig(Publisher<? extends T> source,
+			long capacity,
+			TimedScheduler timer,
+			String name,
+			boolean trace) {
 		super(source);
 		this.capacity = capacity;
 		this.timer = timer;
 		this.name = name;
+		this.traceAssembly = trace;
 	}
 
 	@Override
@@ -96,6 +129,11 @@ final class FluxConfig<T> extends FluxSource<T, T> {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public boolean isTraceAssembly() {
+		return traceAssembly;
 	}
 }
 
@@ -104,12 +142,18 @@ final class FuseableFluxConfig<I> extends FluxSource<I, I> implements Fuseable {
 	final long           capacity;
 	final TimedScheduler timer;
 	final String         name;
+	final boolean        traceAssembly;
 
-	public FuseableFluxConfig(Publisher<? extends I> source, long capacity, TimedScheduler timer, String name) {
+	public FuseableFluxConfig(Publisher<? extends I> source,
+			long capacity,
+			TimedScheduler timer,
+			String name,
+			boolean trace) {
 		super(source);
 		this.capacity = capacity;
 		this.timer = timer;
 		this.name = name;
+		this.traceAssembly = trace;
 	}
 
 	@Override
@@ -125,5 +169,10 @@ final class FuseableFluxConfig<I> extends FluxSource<I, I> implements Fuseable {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public boolean isTraceAssembly() {
+		return traceAssembly;
 	}
 }
