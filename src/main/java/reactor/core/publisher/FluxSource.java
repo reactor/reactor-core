@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
+import reactor.core.state.Introspectable;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
@@ -42,9 +43,9 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 	 */
 	public static <I> Flux<I> wrap(Publisher<? extends I> source){
 		if(source instanceof Fuseable){
-			return new FuseableFluxSource<>(source);
+			return onAssembly(new FuseableFluxSource<>(source));
 		}
-		return new FluxSource<>(source);
+		return onAssembly(new FluxSource<>(source));
 	}
 	
 	protected FluxSource(Publisher<? extends I> source) {
@@ -53,9 +54,15 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 
 	@Override
 	public long getCapacity() {
-		return Backpressurable.class.isAssignableFrom(source.getClass()) ?
+		return source instanceof Backpressurable ?
 				((Backpressurable) source).getCapacity() :
 				-1L;
+	}
+
+	@Override
+	public boolean isTraceAssembly() {
+		return source instanceof Introspectable ? ((Introspectable)source)
+				.isTraceAssembly() : super.isTraceAssembly();
 	}
 
 	/**

@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
+import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -48,9 +49,9 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 	 */
 	public static <I> Mono<I> wrap(Publisher<? extends I> source){
 		if(source instanceof Fuseable){
-			return new FuseableMonoSource<>(source);
+			return onAssembly(new FuseableMonoSource<>(source));
 		}
-		return new MonoSource<>(source);
+		return onAssembly(new MonoSource<>(source));
 	}
 
 	protected MonoSource(Publisher<? extends I> source) {
@@ -72,6 +73,12 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 			}
 			throw rfe;
 		}
+	}
+
+	@Override
+	public boolean isTraceAssembly() {
+		return source instanceof Introspectable ? ((Introspectable)source)
+				.isTraceAssembly() : super.isTraceAssembly();
 	}
 
 	@Override

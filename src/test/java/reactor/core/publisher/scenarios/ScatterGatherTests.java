@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -62,6 +63,42 @@ public class ScatterGatherTests {
 		    .assertValueCount(3);
 
 		s.shutdown();
+	}
+
+	@Test
+	public void testTrace() throws Exception {
+
+		try {
+			Mono.fromCallable(() -> {
+				throw new RuntimeException();
+			})
+			    .useTraceAssembly(true)
+			    .map(d -> d)
+			    .block();
+		}
+		catch(Exception e){
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
+			return;
+		}
+		throw new IllegalStateException();
+	}
+
+
+	@Test
+	public void testTrace2() throws Exception {
+
+		try {
+			Mono.just(1)
+			    .useTraceAssembly(true)
+			    .map(d -> { throw new RuntimeException(); })
+			    .block();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("ScatterGatherTests.java:93"));
+			return;
+		}
+		throw new IllegalStateException();
 	}
 
 	final class Result {

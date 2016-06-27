@@ -167,7 +167,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}
 	 */
 	public static <T> Mono<T> create(Consumer<MonoEmitter<T>> callback) {
-	    return new MonoCreate<>(callback);
+	    return onAssembly(new MonoCreate<>(callback));
 	}
 	/**
 	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
@@ -183,7 +183,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} factory
 	 */
 	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
-		return new MonoDefer<>(supplier);
+		return onAssembly(new MonoDefer<>(supplier));
 	}
 
 	/**
@@ -229,7 +229,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(long duration, TimedScheduler timer) {
-		return new MonoDelay(duration, TimeUnit.MILLISECONDS, timer);
+		return onAssembly(new MonoDelay(duration, TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**
@@ -276,7 +276,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<Void> empty(Publisher<T> source) {
-		return (Mono<Void>)new MonoIgnoreThen<>(source);
+		return onAssembly((Mono<Void>)new MonoIgnoreThen<>(source));
 	}
 
 	/**
@@ -291,7 +291,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a failed {@link Mono}
 	 */
 	public static <T> Mono<T> error(Throwable error) {
-		return new MonoError<>(error);
+		return onAssembly(new MonoError<>(error));
 	}
 
 	/**
@@ -351,7 +351,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
             }
 			return empty();
 		}
-		return new MonoNext<>(source);
+		return onAssembly(new MonoNext<>(source));
 	}
 
 	/**
@@ -366,7 +366,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCallable(Callable<? extends T> supplier) {
-		return new MonoCallable<>(supplier);
+		return onAssembly(new MonoCallable<>(supplier));
 	}
 
 	/**
@@ -382,7 +382,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromCallableOrEmpty(Callable<? extends T> supplier) {
-		return new MonoCallableOrEmpty<>(supplier);
+		return onAssembly(new MonoCallableOrEmpty<>(supplier));
 	}
 
 	/**
@@ -396,7 +396,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
-		return new MonoCompletableFuture<>(future);
+		return onAssembly(new MonoCompletableFuture<>(future));
 	}
 
 	/**
@@ -411,7 +411,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return new MonoRunnable(runnable);
+		return onAssembly(new MonoRunnable(runnable));
 	}
 
 	/**
@@ -426,7 +426,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return A {@link Mono}.
 	 */
 	public static <T> Mono<T> fromSupplier(Supplier<? extends T> supplier) {
-		return new MonoSupplier<>(supplier);
+		return onAssembly(new MonoSupplier<>(supplier));
 	}
 
 
@@ -442,7 +442,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new completable {@link Mono}.
 	 */
 	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
-		return new MonoIgnoreThen<>(source);
+		return onAssembly(new MonoIgnoreThen<>(source));
 	}
 
 
@@ -458,7 +458,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> just(T data) {
-		return new MonoJust<>(data);
+		return onAssembly(new MonoJust<>(data));
 	}
 
 	/**
@@ -532,7 +532,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
 			super D, ? extends
 			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
-		return new MonoUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
+		return onAssembly(new MonoUsing<>(resourceSupplier, sourceSupplier,
+				resourceCleanup, eager));
 	}
 
 	/**
@@ -578,7 +579,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a)));
 	}
 
 	/**
@@ -600,7 +601,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of
+				(a)));
 	}
 
 	/**
@@ -627,7 +629,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple
+				.of(a)));
 	}
 
 	/**
@@ -657,7 +660,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)
+				Tuple.of(a)));
 	}
 
 	/**
@@ -690,7 +694,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
+        return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a ->
+		        (Tuple6)Tuple.of(a)));
 	}
 
 	/**
@@ -707,7 +712,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SafeVarargs
 	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return new MonoWhen<>(false, monos);
+		return onAssembly(new MonoWhen<>(false, monos));
 	}
 
 	/**
@@ -726,7 +731,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return new MonoWhen<>(true, p1, p2).map(a -> (Tuple2)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(true, p1, p2).map(a -> (Tuple2)Tuple.of(a)));
 	}
 
 	/**
@@ -747,7 +752,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a)));
 	}
 
 	/**
@@ -773,7 +778,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4)Tuple
+				.of(a)));
 	}
 
 	/**
@@ -802,7 +808,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return new MonoWhen<>(true, p1, p2, p3, p4, p5).map(a -> (Tuple5)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5).map(a -> (Tuple5)
+				Tuple.of(a)));
 	}
 
 	/**
@@ -834,7 +841,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return new MonoWhen<>(true, p1, p2, p3, p4, p5, p6).map(a -> (Tuple6)Tuple.of(a));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5, p6).map(a ->
+				(Tuple6)Tuple.of(a)));
 	}
 
 	/**
@@ -851,7 +859,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SafeVarargs
 	public static <T> Mono<T[]> whenDelayError(Mono<? extends T>... monos) {
-		return new MonoWhen<>(true, monos);
+		return onAssembly(new MonoWhen<>(true, monos));
 	}
 
 	/**
@@ -887,7 +895,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return new MonoWhen<>(false, monos);
+		return onAssembly(new MonoWhen<>(false, monos));
 	}
 
 	/**
@@ -1054,7 +1062,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a replaying {@link Mono}
 	 */
 	public final Mono<T> cache() {
-		return new MonoProcessor<>(this);
+		return onAssembly(new MonoProcessor<>(this));
 	}
 
 
@@ -1122,7 +1130,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	        }
 	        return this;
 	    }
-		return new MonoDefaultIfEmpty<>(this, defaultV);
+		return onAssembly(new MonoDefaultIfEmpty<>(this, defaultV));
 	}
 
 
@@ -1173,7 +1181,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
-		return new MonoDelaySubscription<>(this, subscriptionDelay);
+		return onAssembly(new MonoDelaySubscription<>(this, subscriptionDelay));
 	}
 
 	/**
@@ -1191,7 +1199,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	@SuppressWarnings("unchecked")
 	public final <X> Mono<X> dematerialize() {
 		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
-		return new MonoDematerialize<>(thiz);
+		return onAssembly(new MonoDematerialize<>(thiz));
 	}
 
 	/**
@@ -1213,13 +1221,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
 		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null,  afterSuccess, afterSuccess.errorConsumer,
+			return onAssembly(new MonoPeekFuseable<>(this, null,  afterSuccess, afterSuccess.errorConsumer,
 					null, afterSuccess, null,
-					null);
+					null));
 		}
-		return new MonoPeek<>(this, null, afterSuccess, afterSuccess.errorConsumer,
+		return onAssembly(new MonoPeek<>(this, null, afterSuccess, afterSuccess.errorConsumer,
 				null,
-				afterSuccess, null, null);
+				afterSuccess, null, null));
 	}
 
 	/**
@@ -1235,9 +1243,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null, null, null, null, null, null, onCancel);
+			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
+					null, null, onCancel));
 		}
-		return new MonoPeek<>(this, null, null, null, null, null, null, onCancel);
+		return onAssembly(new MonoPeek<>(this, null, null, null, null, null, null,
+				onCancel));
 	}
 
 
@@ -1253,11 +1263,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null, onNext, null, null,
-					null, null, null);
+			return onAssembly(new MonoPeekFuseable<>(this, null, onNext, null, null,
+					null, null, null));
 		}
-		return new MonoPeek<>(this, null, onNext, null, null, null, null,
-				null);
+		return onAssembly(new MonoPeek<>(this, null, onNext, null, null, null, null,
+				null));
 	}
 
 	/**
@@ -1280,11 +1290,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
 		MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null,  _onSuccess, null, _onSuccess, null,
+			return onAssembly(new MonoPeekFuseable<>(this, null,  _onSuccess, null, _onSuccess, null,
 					null,
-					null);
+					null));
 		}
-		return new MonoPeek<>(this, null, _onSuccess, null,  _onSuccess, null, null, null);
+		return onAssembly(new MonoPeek<>(this, null, _onSuccess, null,  _onSuccess,
+				null, null, null));
 	}
 
 	/**
@@ -1299,9 +1310,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null, null, onError, null, null, null, null);
+			return onAssembly(new MonoPeekFuseable<>(this, null, null, onError, null,
+					null, null, null));
 		}
-		return new MonoPeek<>(this, null, null, onError, null, null, null, null);
+		return onAssembly(new MonoPeek<>(this, null, null, onError, null, null, null,
+				null));
 	}
 
 
@@ -1356,9 +1369,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null, null, null, null, null, consumer, null);
+			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
+					null, consumer, null));
 		}
-		return new MonoPeek<>(this, null, null, null, null, null, consumer, null);
+		return onAssembly(new MonoPeek<>(this, null, null, null, null, null, consumer,
+				null));
 	}
 
 	/**
@@ -1373,9 +1388,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, onSubscribe,  null, null, null, null, null, null);
+			return onAssembly(new MonoPeekFuseable<>(this, onSubscribe,  null, null,
+					null, null, null, null));
 		}
-		return new MonoPeek<>(this, onSubscribe, null, null,  null, null, null, null);
+		return onAssembly(new MonoPeek<>(this, onSubscribe, null, null,  null, null,
+				null, null));
 	}
 
 	/**
@@ -1398,10 +1415,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
 		Consumer<Throwable> error = e -> onTerminate.accept(null, e);
 		if (this instanceof Fuseable) {
-			return new MonoPeekFuseable<>(this, null,  onSuccess, error, onSuccess, null, null,
-					null);
+			return onAssembly(new MonoPeekFuseable<>(this, null,  onSuccess, error, onSuccess, null, null,
+					null));
 		}
-		return new MonoPeek<>(this, null, onSuccess, error,  onSuccess, null, null, null);
+		return onAssembly(new MonoPeek<>(this, null, onSuccess, error,  onSuccess,
+				null, null, null));
 	}
 
 	/**
@@ -1431,9 +1449,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> filter(final Predicate<? super T> tester) {
 		if (this instanceof Fuseable) {
-			return new MonoFilterFuseable<>(this, tester);
+			return onAssembly(new MonoFilterFuseable<>(this, tester));
 		}
-		return new MonoFilter<>(this, tester);
+		return onAssembly(new MonoFilter<>(this, tester));
 	}
 
 	/**
@@ -1450,7 +1468,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return new MonoFlatMap<>(this, mapper);
+		return Flux.onAssembly(new MonoFlatMap<>(this, mapper));
 	}
 
 	/**
@@ -1473,7 +1491,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 
-		return new FluxFlatMap<>(
+		return Flux.onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				Flux.identityFunction(),
 				false,
@@ -1481,7 +1499,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
-		);
+		));
 	}
 
 	/**
@@ -1499,7 +1517,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return new FluxFlattenIterable<>(this, mapper, Integer.MAX_VALUE, QueueSupplier.one());
+		return Flux.onAssembly(new FluxFlattenIterable<>(this, mapper, Integer
+				.MAX_VALUE, QueueSupplier.one()));
 	}
 
 
@@ -1518,7 +1537,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	            }
 	            return Flux.just(v);
 	        }
-	        return new FluxCallable<>((Callable<T>)this);
+	        return Flux.onAssembly(new FluxCallable<>((Callable<T>)this));
 	    }
 		return FluxSource.wrap(this);
 	}
@@ -1549,7 +1568,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * otherwise
 	 */
 	public final Mono<Boolean> hasElement() {
-		return new MonoHasElements<>(this);
+		return onAssembly(new MonoHasElements<>(this));
 	}
 
 	/**
@@ -1561,7 +1580,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono} instance
 	 */
 	public final Mono<T> hide() {
-	    return new MonoHide<>(this);
+	    return onAssembly(new MonoHide<>(this));
 	}
 	
 	/**
@@ -1669,9 +1688,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		if (this instanceof Fuseable) {
-			return new MonoMapFuseable<>(this, mapper);
+			return onAssembly(new MonoMapFuseable<>(this, mapper));
 		}
-		return new MonoMap<>(this, mapper);
+		return onAssembly(new MonoMap<>(this, mapper));
 	}
 
 	/**
@@ -1734,7 +1753,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a {@link Mono} of materialized {@link Signal}
 	 */
 	public final Mono<Signal<T>> materialize() {
-		return new FluxMaterialize<>(this).next();
+		return onAssembly(new FluxMaterialize<>(this).next());
 	}
 
 	/**
@@ -1792,7 +1811,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> otherwise(Function<? super Throwable, ? extends Mono<? extends
 			T>> fallback) {
-		return new MonoOtherwise<>(this, fallback);
+		return onAssembly(new MonoOtherwise<>(this, fallback));
 	}
 
 	/**
@@ -1848,7 +1867,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @see Flux#switchIfEmpty
 	 */
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return new MonoOtherwiseIfEmpty<>(this, alternate);
+		return onAssembly(new MonoOtherwiseIfEmpty<>(this, alternate));
 	}
 
 	/**
@@ -1947,9 +1966,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> publishOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
 			T value = block();
-			return  new MonoSubscribeOnValue<>(value, scheduler);
+			return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
 		}
-		return new MonoPublishOn<>(this, scheduler);
+		return onAssembly(new MonoPublishOn<>(this, scheduler));
 	}
 
 	/**
@@ -1976,7 +1995,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return new FluxRepeatPredicate<>(this, predicate);
+		return Flux.onAssembly(new FluxRepeatPredicate<>(this, predicate));
 	}
 
 	/**
@@ -1991,7 +2010,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		return new FluxRepeat<>(this, numRepeat);
+		return Flux.onAssembly(new FluxRepeat<>(this, numRepeat));
 	}
 
 	/**
@@ -2029,7 +2048,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRepeatWhen<>(this, whenFactory);
+		return Flux.onAssembly(new FluxRepeatWhen<>(this, whenFactory));
 	}
 
 	/**
@@ -2126,7 +2145,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final Mono<T> retry(long numRetries) {
-		return new MonoRetry<>(this, numRetries);
+		return onAssembly(new MonoRetry<>(this, numRetries));
 	}
 
 	/**
@@ -2141,7 +2160,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a re-subscribing {@link Mono} on onError if the predicates matches.
 	 */
 	public final Mono<T> retry(Predicate<Throwable> retryMatcher) {
-		return new MonoRetryPredicate<>(this, retryMatcher);
+		return onAssembly(new MonoRetryPredicate<>(this, retryMatcher));
 	}
 
 	/**
@@ -2178,7 +2197,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * onNext signal
 	 */
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
-		return new MonoRetryWhen<>(this, whenFactory);
+		return onAssembly(new MonoRetryWhen<>(this, whenFactory));
 	}
 
 	/**
@@ -2276,9 +2295,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Fuseable.ScalarCallable) {
 			T value = block();
-			return new MonoSubscribeOnValue<>(value, scheduler);
+			return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
 		}
-		return new MonoSubscribeOn<>(this, scheduler);
+		return onAssembly(new MonoSubscribeOn<>(this, scheduler));
 	}
 
 	/**
@@ -2319,7 +2338,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {
-		return new MonoThenApply<>(this, transformer);
+		return onAssembly(new MonoThenApply<>(this, transformer));
 	}
 
 	/**
@@ -2339,7 +2358,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
             MonoThenSupply<T> a = (MonoThenSupply<T>) this;
             return a.shift(other);
 		}
-		return new MonoThenSupply<>(new Mono[] { this }, other);
+		return onAssembly(new MonoThenSupply<>(new Mono[] { this }, other));
 	}
 
 	/**
@@ -2372,7 +2391,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
-		return (Flux<V>)new FluxConcatArray<>(false, ignoreElement(), other);
+		return Flux.onAssembly((Flux<V>)new FluxConcatArray<>(false, ignoreElement(), 
+				other));
 	}
 
 	/**
@@ -2437,9 +2457,9 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		final Mono<Long> _timer = Mono.delay(timeout).otherwiseReturn(0L);
 
 		if(fallback == null) {
-			return new MonoTimeout<>(this, _timer);
+			return onAssembly(new MonoTimeout<>(this, _timer));
 		}
-		return new MonoTimeout<>(this, _timer, fallback);
+		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
 	}
 
 	/**
@@ -2456,7 +2476,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout) {
-		return new MonoTimeout<>(this, firstTimeout);
+		return onAssembly(new MonoTimeout<>(this, firstTimeout));
 	}
 
 	/**
@@ -2476,7 +2496,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Mono<? extends T> fallback) {
-		return new MonoTimeout<>(this, firstTimeout, fallback);
+		return onAssembly(new MonoTimeout<>(this, firstTimeout, fallback));
 	}
 
 
@@ -2508,4 +2528,40 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
+	/**
+	 * Configure a {@link Mono} and its child operators to trace mode. Errors will
+	 * therefore include original operator declaration stack.
+	 *
+	 * @param trace true if this {@link Mono} should trace on assembly.
+	 *
+	 * @return a configured flux
+	 */
+	public Mono<T> useTraceAssembly(boolean trace) {
+		if(trace) {
+			if (this instanceof Callable) {
+				return new MonoCallableOnAssembly<>(this);
+			}
+			return new MonoOnAssembly<>(this);
+		}
+		return this;
+	}
+
+	/**
+	 * Wrap the source into a PublisherOnAssembly or PublisherCallableOnAssembly if {@code
+	 * trackAssembly} is set to true.
+	 *
+	 * @param <T> the value type
+	 * @param source the source to wrap
+	 *
+	 * @return the potentially wrapped source
+	 */
+	static <T> Mono<T> onAssembly(Mono<T> source) {
+		if (source.isTraceAssembly()) {
+			if (source instanceof Callable) {
+				return new MonoCallableOnAssembly<>(source);
+			}
+			return new MonoOnAssembly<>(source);
+		}
+		return source;
+	}
 }

@@ -147,15 +147,15 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (sources.length == 1) {
             Publisher<? extends T> source = sources[0];
             if (source instanceof Fuseable) {
-                return new FluxMapFuseable<>(source, v -> combinator.apply(new Object[] { v }));
+	            return onAssembly(new FluxMapFuseable<>(source,
+			            v -> combinator.apply(new Object[]{v})));
             }
-            return new FluxMap<>(source, v -> combinator.apply(new Object[] { v }));
+			return onAssembly(new FluxMap<>(source,
+					v -> combinator.apply(new Object[]{v})));
 		}
 
-		return new FluxCombineLatest<>(sources,
-				combinator,
-				QueueSupplier.get(prefetch),
-				prefetch);
+		return onAssembly(new FluxCombineLatest<>(sources,
+				combinator, QueueSupplier.get(prefetch), prefetch));
 	}
 
 	/**
@@ -344,10 +344,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			int prefetch,
 			Function<Object[], V> combinator) {
 
-		return new FluxCombineLatest<>(sources,
+		return onAssembly(new FluxCombineLatest<>(sources,
 				combinator,
-				QueueSupplier.get(prefetch),
-				prefetch);
+				QueueSupplier.get(prefetch), prefetch));
 	}
 
 	/**
@@ -364,7 +363,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	public static <T> Flux<T> concat(Iterable<? extends Publisher<? extends T>> sources) {
-		return new FluxConcatIterable<>(sources);
+		return onAssembly(new FluxConcatIterable<>(sources));
 	}
 
 	/**
@@ -397,9 +396,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return new FluxConcatMap<>(sources, identityFunction(),
+		return onAssembly(new FluxConcatMap<>(sources,
+				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.IMMEDIATE);
+				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -416,7 +416,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SafeVarargs
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
-		return new FluxConcatArray<>(false, sources);
+		return onAssembly(new FluxConcatArray<>(false, sources));
 	}
 	
 	/**
@@ -452,7 +452,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
      * @return a {@link Flux}
      */
     public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter) {
-        return new FluxCreate<>(emitter, BackpressureHandling.BUFFER);
+	    return onAssembly(new FluxCreate<>(emitter, BackpressureHandling.BUFFER));
     }
     
 	/**
@@ -487,7 +487,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux}
 	 */
 	public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter, BackpressureHandling backpressure) {
-	    return new FluxCreate<>(emitter, backpressure);
+		return onAssembly(new FluxCreate<>(emitter, backpressure));
 	}
 	
 	/**
@@ -504,7 +504,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a deferred {@link Flux}
 	 */
 	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
-		return new FluxDefer<>(supplier);
+		return onAssembly(new FluxDefer<>(supplier));
 	}
 
 	/**
@@ -548,7 +548,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new failed {@link Flux}
 	 */
 	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
-		return new FluxError<>(throwable, whenRequested);
+		return onAssembly(new FluxError<>(throwable, whenRequested));
 	}
 
 	/**
@@ -565,7 +565,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> firstEmitting(Publisher<? extends I>... sources) {
-		return new FluxFirstEmitting<>(sources);
+		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
 	/**
@@ -585,7 +585,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return empty();
 		}
 
-		return new FluxFirstEmitting<>(sources);
+		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
 	/**
@@ -611,7 +611,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
             }
 			return empty();
 		}
-		return FluxSource.wrap(source);
+		return onAssembly(FluxSource.wrap(source));
 	}
 
 	/**
@@ -631,7 +631,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (array.length == 1) {
 			return just(array[0]);
 		}
-		return new FluxArray<>(array);
+		return onAssembly(new FluxArray<>(array));
 	}
 
 	/**
@@ -646,7 +646,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
-		return new FluxIterable<>(it);
+		return onAssembly(new FluxIterable<>(it));
 	}
 	
 
@@ -662,7 +662,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromStream(Stream<? extends T> s) {
-		return new FluxStream<>(s);
+		return onAssembly(new FluxStream<>(s));
 	}
 
 	/**
@@ -679,7 +679,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(BiFunction<S, SignalEmitter<T>, S> generator) {
-		return new FluxGenerate<>(generator);
+		return onAssembly(new FluxGenerate<>(generator));
 	}
 
 	/**
@@ -698,7 +698,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
-		return new FluxGenerate<>(stateSupplier, generator);
+		return onAssembly(new FluxGenerate<>(stateSupplier, generator));
 	}
 
 	/**
@@ -721,7 +721,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator, Consumer<? super S> stateConsumer) {
-		return new FluxGenerate<>(stateSupplier, generator, stateConsumer);
+		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 
 	/**
@@ -766,7 +766,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long period, TimedScheduler timer) {
-		return new FluxInterval(period, period, TimeUnit.MILLISECONDS, timer);
+		return onAssembly(new FluxInterval(period, period, TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**
@@ -835,7 +835,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(long delay, long period, TimedScheduler timer) {
-		return new FluxInterval(delay, period, TimeUnit.MILLISECONDS, timer);
+		return onAssembly(new FluxInterval(delay, period, TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**
@@ -853,7 +853,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period, TimedScheduler timer) {
-		return new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer);
+		return onAssembly(new FluxInterval(delay.toMillis(),
+				period.toMillis(),
+				TimeUnit.MILLISECONDS,
+				timer));
 	}
 	/**
 	 * Create a new {@link Flux} that emits the specified items and then complete.
@@ -881,7 +884,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> just(T data) {
-		return new FluxJust<>(data);
+		return onAssembly(new FluxJust<>(data));
 	}
 
 	/**
@@ -926,15 +929,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a merged {@link Flux}
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
-		return new FluxFlatMap<>(
+		return onAssembly(new FluxFlatMap<>(
 				source,
 				identityFunction(),
 				false,
 				concurrency,
 				QueueSupplier.get(concurrency),
 				prefetch,
-				QueueSupplier.get(prefetch)
-		);
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -988,7 +990,12 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return new FluxMerge<>(sources, false, sources.length, QueueSupplier.get(sources.length), prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new FluxMerge<>(sources,
+				false,
+				sources.length,
+				QueueSupplier.get(sources.length),
+				prefetch,
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -1022,7 +1029,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (count == 0) {
 			return empty();
 		}
-		return new FluxRange(start, count);
+		return onAssembly(new FluxRange(start, count));
 	}
 	
 	/**
@@ -1055,10 +1062,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
-		return new FluxSwitchMap<>(mergedPublishers,
+		return onAssembly(new FluxSwitchMap<>(mergedPublishers,
 				identityFunction(),
-				QueueSupplier.get(prefetch),
-				prefetch);
+				QueueSupplier.get(prefetch), prefetch));
 	}
 
 	/**
@@ -1083,7 +1089,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static <T, D> Flux<T> using(Callable<? extends D> resourceSupplier, Function<? super D, ? extends
 			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
-		return new FluxUsing<>(resourceSupplier, sourceSupplier, resourceCleanup, eager);
+		return onAssembly(new FluxUsing<>(resourceSupplier,
+				sourceSupplier,
+				resourceCleanup,
+				eager));
 	}
 
 	/**
@@ -1320,7 +1329,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			return empty();
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
+		return onAssembly(new FluxZip<>(sources,
+				combinator,
+				QueueSupplier.get(prefetch),
+				prefetch));
 	}
 
 	/**
@@ -1370,12 +1382,17 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (sources.length == 1) {
 		    Publisher<? extends I> source = sources[0];
 		    if (source instanceof Fuseable) {
-	            return new FluxMapFuseable<>(source, v -> combinator.apply(new Object[] { v }));
+			    return onAssembly(new FluxMapFuseable<>(source,
+					    v -> combinator.apply(new Object[]{v})));
 		    }
-            return new FluxMap<>(source, v -> combinator.apply(new Object[] { v }));
+			return onAssembly(new FluxMap<>(source,
+					v -> combinator.apply(new Object[]{v})));
 		}
 
-		return new FluxZip<>(sources, combinator, QueueSupplier.get(prefetch), prefetch);
+		return onAssembly(new FluxZip<>(sources,
+				combinator,
+				QueueSupplier.get(prefetch),
+				prefetch));
 	}
 
 	/**
@@ -1399,14 +1416,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
     public static <TUPLE extends Tuple, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
-		return new FluxBuffer(sources, Integer.MAX_VALUE, LIST_SUPPLIER)
+		return onAssembly(new FluxBuffer(sources, Integer.MAX_VALUE, LIST_SUPPLIER)
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
 				                    return zip(Tuple.fnAny((Function<Tuple, V>)combinator), publishers.toArray(new Publisher[publishers
 						                    .size()]));
 			                    }
-		                    });
+		                    }));
 	}
 
 //	 ==============================================================================================================
@@ -1450,7 +1467,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Mono<Boolean> any(Predicate<? super T> predicate) {
-		return new MonoAny<>(this, predicate);
+		return Mono.onAssembly(new MonoAny<>(this, predicate));
 	}
 
 	/**
@@ -1469,7 +1486,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of all evaluations
 	 */
 	public final Mono<Boolean> all(Predicate<? super T> predicate) {
-		return new MonoAll<>(this, predicate);
+		return Mono.onAssembly(new MonoAll<>(this, predicate));
 	}
 
 	/**
@@ -1497,7 +1514,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(int maxSize) {
-		return new FluxBuffer<>(this, maxSize, LIST_SUPPLIER);
+		return onAssembly(new FluxBuffer<>(this, maxSize, LIST_SUPPLIER));
 	}
 
 	/**
@@ -1527,7 +1544,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(int maxSize, int skip) {
-		return new FluxBuffer<>(this, maxSize, skip, LIST_SUPPLIER);
+		return onAssembly(new FluxBuffer<>(this, maxSize, skip, LIST_SUPPLIER));
 	}
 
 	/**
@@ -1542,7 +1559,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(Publisher<?> other) {
-		return new FluxBufferBoundary<>(this, other, LIST_SUPPLIER);
+		return onAssembly(new FluxBufferBoundary<>(this, other, LIST_SUPPLIER));
 	}
 
 	/**
@@ -1578,7 +1595,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <U, V> Flux<List<T>> buffer(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
 
-		return new FluxBufferStartEnd<>(this, bucketOpening, closeSelector, LIST_SUPPLIER, QueueSupplier.<List<T>>xs());
+		return onAssembly(new FluxBufferStartEnd<>(this, bucketOpening, closeSelector,
+				LIST_SUPPLIER, QueueSupplier.<List<T>>xs()));
 	}
 
 	/**
@@ -1720,7 +1738,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> buffer(int maxSize, final long timespan, final TimedScheduler timer) {
-		return new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer);
+		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer));
 	}
 
 	/**
@@ -1804,7 +1822,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <E> Mono<E> collect(Supplier<E> containerSupplier, BiConsumer<E, ? super T> collector) {
-		return new MonoCollect<>(this, containerSupplier, collector);
+		return Mono.onAssembly(new MonoCollect<>(this, containerSupplier, collector));
 	}
 
 	/**
@@ -1823,7 +1841,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <R, A> Mono<R> collect(Collector<T, A, R> collector) {
-		return new MonoStreamCollector<>(this, collector);
+		return Mono.onAssembly(new MonoStreamCollector<>(this, collector));
 	}
 
 	/**
@@ -1845,7 +1863,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 				T v = scalarCallable.call();
 				if (v == null) {
-					return new MonoSupplier<>(LIST_SUPPLIER);
+					return Mono.onAssembly(new MonoSupplier<>(LIST_SUPPLIER));
 				}
 				return Mono.just(v).map(u -> {
 					List<T> list = (List<T>)LIST_SUPPLIER.get();
@@ -1854,13 +1872,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				});
 
 			}
-			return new MonoCallable<>((Callable<T>)this).map(u -> {
+			return Mono.onAssembly(new MonoCallable<>((Callable<T>)this).map(u -> {
 				List<T> list = (List<T>)LIST_SUPPLIER.get();
 				list.add(u);
 				return list;
-			});
+			}));
 		}
-		return new MonoBufferAll<>(this, LIST_SUPPLIER);
+		return Mono.onAssembly(new MonoBufferAll<>(this, LIST_SUPPLIER));
 	}
 
 
@@ -2098,8 +2116,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper, int prefetch) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.IMMEDIATE);
+		return onAssembly(new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
+				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -2141,8 +2159,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, int prefetch) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.END);
+		return onAssembly(new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
+				FluxConcatMap.ErrorMode.END));
 	}
 
 	/**
@@ -2167,8 +2185,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, boolean delayUntilEnd, int prefetch) {
-		return new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
-				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY);
+		return onAssembly(new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
+				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode
+						.BOUNDARY));
 	}
 
 	/**
@@ -2208,7 +2227,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch) {
-		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -2227,7 +2247,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return new FluxConcatArray(false, this, other);
+		return onAssembly(new FluxConcatArray(false, this, other));
 	}
 
 	/**
@@ -2240,7 +2260,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Mono} of {@link Long} count
 	 */
 	public final Mono<Long> count() {
-		return new MonoCount<>(this);
+		return Mono.onAssembly(new MonoCount<>(this));
 	}
 	
 	/**
@@ -2262,7 +2282,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> defaultIfEmpty(T defaultV) {
-		return new FluxDefaultIfEmpty<>(this, defaultV);
+		return onAssembly(new FluxDefaultIfEmpty<>(this, defaultV));
 	}
 
 
@@ -2346,7 +2366,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <U> Flux<T> delaySubscription(Publisher<U> subscriptionDelay) {
-		return new FluxDelaySubscription<>(this, subscriptionDelay);
+		return onAssembly(new FluxDelaySubscription<>(this, subscriptionDelay));
 	}
 
 	/**
@@ -2365,7 +2385,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("unchecked")
 	public final <X> Flux<X> dematerialize() {
 		Flux<Signal<X>> thiz = (Flux<Signal<X>>) this;
-		return new FluxDematerialize<>(thiz);
+		return onAssembly(new FluxDematerialize<>(thiz));
 	}
 
 
@@ -2380,7 +2400,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> distinct() {
-		return new FluxDistinct<>(this, HASHCODE_EXTRACTOR, hashSetSupplier());
+		return onAssembly(new FluxDistinct<>(this, HASHCODE_EXTRACTOR, hashSetSupplier
+				()));
 	}
 
 	/**
@@ -2398,9 +2419,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
 		if (this instanceof Fuseable) {
-			return new FluxDistinctFuseable<>(this, keySelector, hashSetSupplier());
+			return onAssembly(new FluxDistinctFuseable<>(this, keySelector,
+					hashSetSupplier()));
 		}
-		return new FluxDistinct<>(this, keySelector, hashSetSupplier());
+		return onAssembly(new FluxDistinct<>(this, keySelector, hashSetSupplier()));
 	}
 
 	/**
@@ -2413,7 +2435,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Flux<T> distinctUntilChanged() {
-		return new FluxDistinctUntilChanged<T, T>(this, HASHCODE_EXTRACTOR);
+		return onAssembly(new FluxDistinctUntilChanged<T, T>(this, HASHCODE_EXTRACTOR));
 	}
 	
 	/**
@@ -2430,7 +2452,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a filtering {@link Flux} with conflated repeated elements given a comparison key
 	 */
 	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
-		return new FluxDistinctUntilChanged<>(this, keySelector);
+		return onAssembly(new FluxDistinctUntilChanged<>(this, keySelector));
 	}
 
 	/**
@@ -2444,10 +2466,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, null, null,
-					afterTerminate, null, null);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null,
+					afterTerminate, null, null));
 		}
-		return new FluxPeek<>(this,null, null, null, null, afterTerminate, null, null);
+		return onAssembly(new FluxPeek<>(this,null, null, null, null, afterTerminate,
+				null, null));
 	}
 
 	/**
@@ -2461,9 +2484,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, null, null, null, null, onCancel);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
+					null, onCancel));
 		}
-		return new FluxPeek<>(this,null, null, null, null, null, null, onCancel);
+		return onAssembly(new FluxPeek<>(this,null, null, null, null, null, null, onCancel));
 	}
 
 	/**
@@ -2477,9 +2501,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, null, onComplete, null, null, null);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, onComplete,
+					null, null, null));
 		}
-		return new FluxPeek<>(this,null, null, null, onComplete, null, null, null);
+		return onAssembly(new FluxPeek<>(this,null, null, null, onComplete, null, null,
+				null));
 	}
 
 	/**
@@ -2493,9 +2519,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnError(Consumer<Throwable> onError) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, onError, null, null, null, null);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, onError, null,
+					null, null, null));
 		}
-		return new FluxPeek<>(this,null, null, onError, null, null, null, null);
+		return onAssembly(new FluxPeek<>(this,null, null, onError, null, null, null,
+				null));
 	}
 
 	/**
@@ -2549,10 +2577,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, null, onNext, null, null, null,
-					null, null);
+			return onAssembly(new FluxPeekFuseable<>(this, null, onNext, null, null, null,
+					null, null));
 		}
-		return new FluxPeek<>(this, null, onNext, null, null, null, null, null);
+		return onAssembly(new FluxPeek<>(this, null, onNext, null, null, null, null,
+				null));
 	}
 
 	/**
@@ -2567,9 +2596,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, null, null, null, consumer, null);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
+					consumer, null));
 		}
-		return new FluxPeek<>(this,null, null, null, null, null, consumer, null);
+		return onAssembly(new FluxPeek<>(this,null, null, null, null, null, consumer,
+				null));
 	}
 
 	/**
@@ -2583,9 +2614,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this, onSubscribe, null, null, null, null, null, null);
+			return onAssembly(new FluxPeekFuseable<>(this, onSubscribe, null, null,
+					null, null, null, null));
 		}
-		return new FluxPeek<>(this, onSubscribe, null, null, null, null, null, null);
+		return onAssembly(new FluxPeek<>(this, onSubscribe, null, null, null, null,
+				null, null));
 	}
 
 	/**
@@ -2599,9 +2632,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		if (this instanceof Fuseable) {
-			return new FluxPeekFuseable<>(this,null, null, null, onTerminate, null, null, null);
+			return onAssembly(new FluxPeekFuseable<>(this,null, null, null,
+					onTerminate, null, null, null));
 		}
-		return new FluxPeek<>(this,null, null, null, onTerminate, null, null, null);
+		return onAssembly(new FluxPeek<>(this,null, null, null, onTerminate, null,
+				null, null));
 	}
 
 	/**
@@ -2629,7 +2664,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of the item at a specified index
 	 */
 	public final Mono<T> elementAt(int index) {
-		return new MonoElementAt<>(this, index);
+		return Mono.onAssembly(new MonoElementAt<>(this, index));
 	}
 
 	/**
@@ -2645,7 +2680,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Mono} of the item at a specified index or a default value
 	 */
 	public final Mono<T> elementAtOrDefault(int index, Supplier<? extends T> defaultValue) {
-		return new MonoElementAt<>(this, index, defaultValue);
+		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
 	}
 
 	/**
@@ -2690,9 +2725,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
 		if (this instanceof Fuseable) {
-			return new FluxFilterFuseable<>(this, p);
+			return onAssembly(new FluxFilterFuseable<>(this, p));
 		}
-		return new FluxFilter<>(this, p);
+		return onAssembly(new FluxFilter<>(this, p));
 	}
 
 	/**
@@ -2797,7 +2832,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
 			V>> mapper, boolean delayError, int concurrency, int prefetch) {
-		return new FluxFlatMap<>(
+		return onAssembly(new FluxFlatMap<>(
 				this,
 				mapper,
 				delayError,
@@ -2805,7 +2840,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				QueueSupplier.get(concurrency),
 				prefetch,
 				QueueSupplier.get(prefetch)
-		);
+		));
 	}
 
 	/**
@@ -2825,7 +2860,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
-		return new FluxFlatMap<>(
+		return onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				identityFunction(),
 				false,
@@ -2833,7 +2868,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				QueueSupplier.xs(),
 				PlatformDependent.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
-		);
+		));
 	}
 
 	/**
@@ -2870,7 +2905,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
-		return new FluxFlattenIterable<>(this, mapper, prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
+				QueueSupplier.get(prefetch)));
 	}
 
 	@Override
@@ -2931,10 +2967,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends V> valueMapper) {
-		return new FluxGroupBy<>(this, keyMapper, valueMapper,
+		return onAssembly(new FluxGroupBy<>(this, keyMapper, valueMapper,
 				QueueSupplier.small(),
 				QueueSupplier.unbounded(),
-				PlatformDependent.SMALL_BUFFER_SIZE);
+				PlatformDependent.SMALL_BUFFER_SIZE));
 	}
 
 	/**
@@ -2969,7 +3005,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * otherwise
 	 */
 	public final Mono<Boolean> hasElements() {
-		return new MonoHasElements<>(this);
+		return Mono.onAssembly(new MonoHasElements<>(this));
 	}
 
 	/**
@@ -3009,7 +3045,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    if (this instanceof Callable) {
 	        return convertToMono((Callable<T>)this);
 	    }
-		return new MonoTakeLastOne<>(this);
+		return Mono.onAssembly(new MonoTakeLastOne<>(this));
 	}
 
 	/**
@@ -3074,7 +3110,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level, int options) {
-		return new FluxLog<>(this, category, level, options);
+		return onAssembly(new FluxLog<>(this, category, level, options));
 	}
 
 	/**
@@ -3089,9 +3125,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
 		if (this instanceof Fuseable) {
-			return new FluxMapFuseable<>(this, mapper);
+			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}
-		return new FluxMap<>(this, mapper);
+		return onAssembly(new FluxMap<>(this, mapper));
 	}
 
 
@@ -3157,7 +3193,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Flux} of materialized {@link Signal}
 	 */
 	public final Flux<Signal<T>> materialize() {
-		return new FluxMaterialize<>(this);
+		return onAssembly(new FluxMaterialize<>(this));
 	}
 
 	/**
@@ -3213,7 +3249,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer() {
-		return new FluxBackpressureBuffer<>(this);
+		return onAssembly(new FluxBackpressureBuffer<>(this));
 	}
 
 	/**
@@ -3227,7 +3263,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureDrop() {
-		return new FluxDrop<>(this);
+		return onAssembly(new FluxDrop<>(this));
 	}
 
 	/**
@@ -3242,7 +3278,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureDrop(Consumer<? super T> onDropped) {
-		return new FluxDrop<>(this, onDropped);
+		return onAssembly(new FluxDrop<>(this, onDropped));
 	}
 
 	/**
@@ -3271,7 +3307,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> onBackpressureLatest() {
-		return new FluxLatest<>(this);
+		return onAssembly(new FluxLatest<>(this));
 	}
 
 	/**
@@ -3284,7 +3320,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
-		return new FluxResume<>(this, fallback);
+		return onAssembly(new FluxResume<>(this, fallback));
 	}
 
 	/**
@@ -3541,7 +3577,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <U> ConnectableFlux<U> process(Supplier<? extends Processor<? super T, ? extends T>>
 			processorSupplier, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
-		return new ConnectableFluxProcess<>(this, processorSupplier, selector);
+		return onAssembly(new ConnectableFluxProcess<>(this, processorSupplier,
+				selector));
 	}
 
 	/**
@@ -3574,7 +3611,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
-		return new ConnectableFluxPublish<>(this, prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new ConnectableFluxPublish<>(this, prefetch, QueueSupplier
+				.get(prefetch)));
 	}
 
 	/**
@@ -3606,7 +3644,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
 			extends R>> transform, int prefetch) {
-		return new FluxPublish<>(this, transform, prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new FluxPublish<>(this, transform, prefetch, QueueSupplier
+				.get(prefetch)));
 	}
 
 	/**
@@ -3619,7 +3658,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> publishNext() {
-		return new MonoProcessor<>(this);
+		return Mono.onAssembly(new MonoProcessor<>(this));
 	}
 
 	/**
@@ -3660,10 +3699,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
 		if (this instanceof Fuseable.ScalarCallable) {
 			@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
-			return new FluxSubscribeOnValue<>(value, scheduler);
+			return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
 		}
 
-		return new FluxPublishOn<>(this, scheduler, true, prefetch, QueueSupplier.get(prefetch));
+		return onAssembly(new FluxPublishOn<>(this, scheduler, true, prefetch,
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -3685,7 +3725,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (this instanceof Callable){
 		    return convertToMono((Callable<T>)this);
 		}
-		return new MonoAggregate<>(this, aggregator);
+	    return Mono.onAssembly(new MonoAggregate<>(this, aggregator));
 	}
 
 	/**
@@ -3721,7 +3761,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <A> Mono<A> reduceWith(Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
-		return new MonoReduce<>(this, initial, accumulator);
+		return Mono.onAssembly(new MonoReduce<>(this, initial, accumulator));
 	}
 
 	/**
@@ -3748,7 +3788,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return new FluxRepeatPredicate<>(this, predicate);
+		return onAssembly(new FluxRepeatPredicate<>(this, predicate));
 	}
 
 	/**
@@ -3763,7 +3803,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		return new FluxRepeat<>(this, numRepeat);
+		return onAssembly(new FluxRepeat<>(this, numRepeat));
 	}
 
 	/**
@@ -3801,7 +3841,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRepeatWhen<>(this, whenFactory);
+		return onAssembly(new FluxRepeatWhen<>(this, whenFactory));
 	}
 
 
@@ -3883,7 +3923,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
 	 */
 	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
-		return new FluxRetryPredicate<>(this, retryMatcher);
+		return onAssembly(new FluxRetryPredicate<>(this, retryMatcher));
 	}
 
 	/**
@@ -3921,7 +3961,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * onNext signal
 	 */
 	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
-		return new FluxRetryWhen<>(this, whenFactory);
+		return onAssembly(new FluxRetryWhen<>(this, whenFactory));
 	}
 
 	/**
@@ -3972,7 +4012,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a sampled {@link Flux} by last item observed when the sampler {@link Publisher} signals
 	 */
 	public final <U> Flux<T> sample(Publisher<U> sampler) {
-		return new FluxSample<>(this, sampler);
+		return onAssembly(new FluxSample<>(this, sampler));
 	}
 
 	/**
@@ -4019,7 +4059,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a sampled {@link Flux} by last item observed when the sampler signals
 	 */
 	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
-		return new FluxThrottleFirst<>(this, samplerFactory);
+		return onAssembly(new FluxThrottleFirst<>(this, samplerFactory));
 	}
 
 
@@ -4037,8 +4077,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
-		return new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.unbounded(PlatformDependent
-				.XS_BUFFER_SIZE));
+		return onAssembly(new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.unbounded(PlatformDependent
+				.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -4062,7 +4102,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if(maxConcurrency == Long.MAX_VALUE){
 			return sampleTimeout(throttlerFactory);
 		}
-		return new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.get(maxConcurrency));
+		return onAssembly(new FluxThrottleTimeout<>(this, throttlerFactory,
+				QueueSupplier.get(maxConcurrency)));
 	}
 
 	/**
@@ -4089,7 +4130,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
-		return new FluxAccumulate<>(this, accumulator);
+		return onAssembly(new FluxAccumulate<>(this, accumulator));
 	}
 
 	/**
@@ -4116,7 +4157,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
-		return new FluxScan<>(this, initial, accumulator);
+		return onAssembly(new FluxScan<>(this, initial, accumulator));
 	}
 
 	
@@ -4142,9 +4183,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
                 }
                 return Mono.just(v);
 	        }
-	        return new MonoCallable<>((Callable<T>)this);
+		    return Mono.onAssembly(new MonoCallable<>((Callable<T>)this));
 	    }
-		return new MonoSingle<>(this);
+		return Mono.onAssembly(new MonoSingle<>(this));
 	}
 
 	/**
@@ -4167,13 +4208,13 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
                 T v = scalarCallable.call();
                 if (v == null) {
-                    return new MonoSupplier<>(defaultSupplier);
+	                return Mono.onAssembly(new MonoSupplier<>(defaultSupplier));
                 }
                 return Mono.just(v);
             }
-            return new MonoCallable<>((Callable<T>)this);
+	        return Mono.onAssembly(new MonoCallable<>((Callable<T>)this));
         }
-		return new MonoSingle<>(this, defaultSupplier);
+		return Mono.onAssembly(new MonoSingle<>(this, defaultSupplier));
 	}
 
 	/**
@@ -4189,7 +4230,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	    if (this instanceof Callable) {
 	        return convertToMono((Callable<T>)this);
 	    }
-		return new MonoSingle<>(this, MonoSingle.completeOnEmptySequence());
+		return Mono.onAssembly(new MonoSingle<>(this, MonoSingle
+				.completeOnEmptySequence()));
 	}
 
 	/**
@@ -4204,7 +4246,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> skip(long skipped) {
 		if (skipped > 0) {
-			return new FluxSkip<>(this, skipped);
+			return onAssembly(new FluxSkip<>(this, skipped));
 		}
 		else {
 			return this;
@@ -4243,7 +4285,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> skipLast(int n) {
-		return new FluxSkipLast<>(this, n);
+		return onAssembly(new FluxSkipLast<>(this, n));
 	}
 
 	/**
@@ -4259,7 +4301,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> skipUntil(Publisher<?> other) {
-		return new FluxSkipUntil<>(this, other);
+		return onAssembly(new FluxSkipUntil<>(this, other));
 	}
 
 	/**
@@ -4273,7 +4315,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a dropping {@link Flux} while the {@link Predicate} matches
 	 */
 	public final Flux<T> skipWhile(Predicate<? super T> skipPredicate) {
-		return new FluxSkipWhile<>(this, skipPredicate);
+		return onAssembly(new FluxSkipWhile<>(this, skipPredicate));
 	}
 
 	/**
@@ -4429,9 +4471,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		if (this instanceof Fuseable.ScalarCallable) {
             @SuppressWarnings("unchecked")
             T value = ((Fuseable.ScalarCallable<T>)this).call();
-            return new FluxSubscribeOnValue<>(value, scheduler);
+			return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
 		}
-		return new FluxSubscribeOn<>(this, scheduler);
+		return onAssembly(new FluxSubscribeOn<>(this, scheduler));
 	}
 
 	/**
@@ -4482,7 +4524,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
-		return new FluxSwitchMap<>(this, fn, QueueSupplier.get(prefetch), prefetch);
+		return onAssembly(new FluxSwitchMap<>(this, fn, QueueSupplier.get(prefetch),
+				prefetch));
 	}
 
 	/**
@@ -4495,7 +4538,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return an alternating {@link Flux} on source onComplete without elements
 	 */
 	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
-		return new FluxSwitchIfEmpty<>(this, alternate);
+		return onAssembly(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**
@@ -4565,9 +4608,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> take(long n) {
 		if (this instanceof Fuseable) {
-			return new FluxTakeFuseable<>(this, n);
+			return onAssembly(new FluxTakeFuseable<>(this, n));
 		}
-		return new FluxTake<>(this, n);
+		return onAssembly(new FluxTake<>(this, n));
 	}
 
 	/**
@@ -4607,9 +4650,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<T> takeLast(int n) {
 		if(n == 1){
-			return new FluxTakeLastOne<>(this);
+			return onAssembly(new FluxTakeLastOne<>(this));
 		}
-		return new FluxTakeLast<>(this, n);
+		return onAssembly(new FluxTakeLast<>(this, n));
 	}
 
 	/**
@@ -4624,7 +4667,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> takeUntil(Publisher<?> other) {
-		return new FluxTakeUntil<>(this, other);
+		return onAssembly(new FluxTakeUntil<>(this, other));
 	}
 
 	/**
@@ -4641,7 +4684,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> takeUntil(Predicate<? super T> predicate) {
-		return new FluxTakeUntilPredicate<>(this, predicate);
+		return onAssembly(new FluxTakeUntilPredicate<>(this, predicate));
 	}
 
 	/**
@@ -4657,7 +4700,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return an eventually limited {@link Flux}
 	 */
 	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
-		return new FluxTakeWhile<>(this, continuePredicate);
+		return onAssembly(new FluxTakeWhile<>(this, continuePredicate));
 	}
 
 	/**
@@ -4670,7 +4713,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final Mono<Void> then() {
-		return (Mono<Void>) new MonoIgnoreThen<>(this);
+		return Mono.onAssembly((Mono<Void>) new MonoIgnoreThen<>(this));
 	}
 
 	/**
@@ -4832,7 +4875,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory) {
-		return new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory);
+		return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory));
 	}
 
 	/**
@@ -4856,7 +4899,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory, Publisher<? extends T>
 			fallback) {
-		return new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory, fallback);
+		return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory,
+				fallback));
 	}
 
 	/**
@@ -4999,7 +5043,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a configured flux
 	 */
 	public Flux<T> useTraceAssembly(boolean trace) {
-		return FluxConfig.withTraceAssembly(this, trace);
+		if(trace) {
+			return new FluxOnAssembly<>(this);
+		}
+		return this;
 	}
 
 	/**
@@ -5014,8 +5061,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * signals
 	 */
 	public final Flux<Flux<T>> window() {
-		return new FluxWindowOnCancel<>(this, QueueSupplier.get(getPrefetchOrDefault
-				(PlatformDependent.MEDIUM_BUFFER_SIZE)));
+		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.get(getPrefetchOrDefault
+				(PlatformDependent.MEDIUM_BUFFER_SIZE))));
 	}
 
 	/**
@@ -5032,7 +5079,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
-		return new FluxWindow<>(this, maxSize, QueueSupplier.get(maxSize));
+		return onAssembly(new FluxWindow<>(this, maxSize, QueueSupplier.get(maxSize)));
 	}
 
 	/**
@@ -5061,11 +5108,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of sized {@link Flux} buckets every skip count
 	 */
 	public final Flux<Flux<T>> window(int maxSize, int skip) {
-		return new FluxWindow<>(this,
+		return onAssembly(new FluxWindow<>(this,
 				maxSize,
 				skip,
 				QueueSupplier.xs(),
-				QueueSupplier.xs());
+				QueueSupplier.xs()));
 	}
 
 	/**
@@ -5080,10 +5127,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher}
 	 */
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
-		return new FluxWindowBoundary<>(this,
+		return onAssembly(new FluxWindowBoundary<>(this,
 				boundary,
 				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE));
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -5126,11 +5173,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 					(int)c);
 		}*/
 
-		return new FluxWindowStartEnd<>(this,
+		return onAssembly(new FluxWindowStartEnd<>(this,
 				bucketOpening,
 				closeSelector,
 				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE));
+				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -5240,7 +5287,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
-		return new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), getTimer());
+		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis()
+				, getTimer()));
 	}
 
 	/**
@@ -5265,7 +5313,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <U, R> Flux<R> withLatestFrom(Publisher<? extends U> other, BiFunction<? super T, ? super U, ?
 			extends R > resultSelector){
-		return new FluxWithLatestFrom<>(this, other, resultSelector);
+		return onAssembly(new FluxWithLatestFrom<>(this, other, resultSelector));
 	}
 
 	/**
@@ -5367,7 +5415,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
-		return new FluxZipIterable<>(this, iterable, TUPLE2_BIFUNCTION);
+		return onAssembly(new FluxZipIterable<>(this, iterable, TUPLE2_BIFUNCTION));
 	}
 
 	/**
@@ -5388,7 +5436,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
 			BiFunction<? super T, ? super T2, ? extends V> zipper) {
-		return new FluxZipIterable<>(this, iterable, zipper);
+		return onAssembly(new FluxZipIterable<>(this, iterable, zipper));
 	}
 
 	final int getPrefetchOrDefault(int defaultPrefetch) {
@@ -5419,7 +5467,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			}
 			return Mono.just(v);
 		}
-		return new MonoCallable<>(supplier);
+		return Mono.onAssembly(new MonoCallable<>(supplier));
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -5436,6 +5484,38 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	@SuppressWarnings("rawtypes")
     static final Function        IDENTITY_FUNCTION       = Function.identity();
 
+	/**
+	 * Wrap the source into a PublisherOnAssembly or PublisherCallableOnAssembly if {@code
+	 * trackAssembly} is set to true.
+	 *
+	 * @param <T> the value type
+	 * @param source the source to wrap
+	 *
+	 * @return the potentially wrapped source
+	 */
+	static <T> Flux<T> onAssembly(Flux<T> source) {
+		if (source.isTraceAssembly()) {
+			return new FluxOnAssembly<>(source);
+		}
+		return source;
+	}
+
+	/**
+	 * Wrap the source into a ConnectablePublisherOnAssembly if {@code trackAssembly} is
+	 * set to true.
+	 *
+	 * @param <T> the value type
+	 * @param source the source to wrap
+	 *
+	 * @return the potentially wrapped source
+	 */
+	static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
+		if (source.isTraceAssembly()) {
+			return new ConnectableFluxOnAssembly<>(source);
+		}
+		return source;
+	}
+	
 	@SuppressWarnings("unchecked")
 	static final <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;

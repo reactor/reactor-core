@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
 
 /**
  * A generic utility to check subscription, request size and to cap concurrent additive operations to Long
@@ -37,6 +38,20 @@ import org.reactivestreams.Subscription;
  */
 public enum BackpressureUtils {
 	;
+
+	/**
+	 * Returns the subscription as QueueSubscription if possible or null.
+	 * @param <T> the value type of the QueueSubscription.
+	 * @param s the source subscription to try to convert.
+	 * @return the QueueSubscription instance or null
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
+		if (s instanceof Fuseable.QueueSubscription) {
+			return (Fuseable.QueueSubscription<T>)s;
+		}
+		return null;
+	}
 
 	/**
 	 * Check Subscription current state and cancel new Subscription if different null, returning true if
