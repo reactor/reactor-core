@@ -4448,7 +4448,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 			consumerAction = Subscribers.bounded((int) c, consumer, errorConsumer, completeConsumer);
 		}
 
-		subscribe(consumerAction);
+		onAssembly(this).subscribe(consumerAction);
 		return consumerAction;
 	}
 

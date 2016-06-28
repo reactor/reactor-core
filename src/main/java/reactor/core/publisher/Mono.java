@@ -2215,7 +2215,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 			s = (MonoProcessor<T>)this;
 		}
 		else{
-			s = new MonoProcessor<>(this);
+			s = new MonoProcessor<>(onAssembly(this));
 		}
 		s.connect();
 		return s;
