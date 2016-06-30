@@ -91,6 +91,9 @@ public class ScatterGatherTests {
 			Mono.just(1)
 			    .useTraceAssembly(true)
 			    .map(d -> { throw new RuntimeException(); })
+			    .map(d -> d)
+			    .map(d -> d)
+			    .map(d -> d)
 			    .block();
 		}
 		catch(Exception e){

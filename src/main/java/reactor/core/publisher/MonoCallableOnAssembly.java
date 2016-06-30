@@ -43,7 +43,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
-		implements Fuseable, Callable<T> {
+		implements Fuseable, Callable<T>, AssemblyOp {
 
 	final String stacktrace;
 
@@ -74,10 +74,10 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace));
+			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace, this));
 		}
 		else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace));
+			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
 		}
 	}
 

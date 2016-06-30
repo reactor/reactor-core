@@ -18,9 +18,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-
-import reactor.core.flow.*;
-import reactor.core.publisher.FluxOnAssembly.*;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.OnAssemblyConditionalSubscriber;
+import reactor.core.publisher.FluxOnAssembly.OnAssemblySubscriber;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and
@@ -44,7 +45,8 @@ import reactor.core.publisher.FluxOnAssembly.*;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 2.5
  */
-final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements Fuseable {
+final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
+		Fuseable, AssemblyOp {
 
 	final ConnectableFlux<T> source;
 	
@@ -59,9 +61,10 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements F
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace));
+			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace,
+					this));
 		} else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace));
+			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
 		}
 	}
 

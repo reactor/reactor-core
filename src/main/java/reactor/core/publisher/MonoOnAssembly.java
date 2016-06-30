@@ -37,7 +37,7 @@ import reactor.core.flow.Fuseable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 2.5
  */
-final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable {
+final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, AssemblyOp {
 
 	final String stacktrace;
 
@@ -51,10 +51,13 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
 			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
-					stacktrace));
+					stacktrace,
+					this));
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace));
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s,
+					stacktrace,
+					this));
 		}
 	}
 }

@@ -16,10 +16,15 @@
 
 package reactor.core.publisher;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Introspectable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
@@ -40,7 +45,7 @@ import reactor.core.util.Exceptions;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 2.5
  */
-final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
+final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 
 	final String stacktrace;
 
@@ -55,6 +60,25 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 	public FluxOnAssembly(Publisher<? extends T> source) {
 		super(source);
 		this.stacktrace = takeStacktrace(source);
+	}
+
+	static Publisher<?> getParentOrThis(Publisher<?> parent) {
+		Object next = parent;
+
+		for (; ; ) {
+			if (next instanceof Receiver) {
+				Receiver r = (Receiver) next;
+				if (r instanceof Introspectable && ((Introspectable) r).isTraceAssembly()) {
+					next = r.upstream();
+					if (next instanceof AssemblyOp) {
+						return (Publisher<?>) next;
+					}
+					continue;
+				}
+			}
+			break;
+		}
+		return parent;
 	}
 
 	static String takeStacktrace(Publisher<?> source) {
@@ -133,10 +157,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace));
+			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace, this));
 		}
 		else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace));
+			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
 		}
 	}
 
@@ -150,11 +174,25 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
+		final Publisher<?> parent;
+		final Map<Publisher, String> stackByPublisher = new HashMap<>();
+
+
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
-		public OnAssemblyException(String message) {
-			super(message);
+		public OnAssemblyException(String message, Publisher<?> parent) {
+			super(message + " \\--> " + parent.hashCode());
+			this.parent = parent;
+		}
+
+		@Override
+		public String getMessage() {
+			return stackByPublisher.entrySet().toString();
+		}
+
+		StringBuilder mapLine(StringBuilder sb, String s) {
+			return sb;
 		}
 
 		@Override
@@ -163,41 +201,43 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 		}
 	}
 
-	static final class OnAssemblySubscriber<T>
+	static class OnAssemblySubscriber<T>
 			implements Subscriber<T>, QueueSubscription<T> {
 
 		final String                stacktrace;
 		final Subscriber<? super T> actual;
+		final Publisher<?>          parent;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
 		int                  fusionMode;
 
-		OnAssemblySubscriber(Subscriber<? super T> actual, String stacktrace) {
+		OnAssemblySubscriber(Subscriber<? super T> actual,
+				String stacktrace,
+				Publisher<?> parent) {
 			this.actual = actual;
 			this.stacktrace = stacktrace;
+			this.parent = parent;
 		}
 
 		@Override
-		public void onNext(T t) {
+		final public void onNext(T t) {
 			actual.onNext(t);
 		}
 
 		@Override
-		public void onError(Throwable t) {
-			if (t.getSuppressed().length == 0 || !(t.getSuppressed()[0] instanceof OnAssemblyException)) {
-				t.addSuppressed(new OnAssemblyException(stacktrace));
-			}
+		final public void onError(Throwable t) {
+			fail(t);
 			actual.onError(t);
 		}
 
 		@Override
-		public void onComplete() {
+		final public void onComplete() {
 			actual.onComplete();
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
+		final public int requestFusion(int requestedMode) {
 			QueueSubscription<T> qs = this.qs;
 			if (qs != null) {
 				int m = qs.requestFusion(requestedMode);
@@ -209,20 +249,70 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 			return Fuseable.NONE;
 		}
 
+		final void fail(Throwable t) {
+			boolean set = false;
+			if (t.getSuppressed().length > 0) {
+				for (Throwable e : t.getSuppressed()) {
+					if (e instanceof OnAssemblyException) {
+						OnAssemblyException oae = ((OnAssemblyException) e);
+						synchronized (oae.stackByPublisher) {
+							oae.stackByPublisher.compute(parent,
+									(k, s) -> s == null ? extract(stacktrace) :
+											s.concat("\n" + extract(stacktrace)));
+						}
+
+						set = true;
+						break;
+					}
+				}
+			}
+			if (!set) {
+				t.addSuppressed(new OnAssemblyException(stacktrace, parent));
+			}
+
+		}
+
+		final String extract(String source){
+			boolean publisher;
+			String usercode = null;
+			String last = null;
+			boolean first = true;
+			for(String s : source.split("\n")){
+				if(s.isEmpty()){
+					continue;
+				}
+				if(first){
+					first = false;
+					continue;
+				}
+				if(!s.contains("reactor.core.publisher.Mono") && !s.contains("reactor" +
+						".core.publisher.Flux")){
+					usercode = s.substring(s.indexOf('('));
+					break;
+				}
+				else{
+					last = s.replace("reactor.core.publisher.", "");
+					last = last.substring(0, last.indexOf("("));
+				}
+			}
+
+			return (last != null ? last : "") + usercode;
+		}
+
 		@Override
-		public boolean isEmpty() {
+		final public boolean isEmpty() {
 			try {
 				return qs.isEmpty();
 			}
 			catch (final Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				ex.addSuppressed(new OnAssemblyException(stacktrace));
+				fail(ex);
 				throw ex;
 			}
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
+		final public void onSubscribe(Subscription s) {
 			if (BackpressureUtils.validate(this.s, s)) {
 				this.s = s;
 				this.qs = BackpressureUtils.as(s);
@@ -231,141 +321,58 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
-		public int size() {
+		final public int size() {
 			return qs.size();
 		}
 
 		@Override
-		public void clear() {
+		final public void clear() {
 			qs.clear();
 		}
 
 		@Override
-		public void request(long n) {
+		final public void request(long n) {
 			s.request(n);
 		}
 
 		@Override
-		public void cancel() {
+		final public void cancel() {
 			s.cancel();
 		}
 
 		@Override
-		public T poll() {
+		final public T poll() {
 			try {
 				return qs.poll();
 			}
 			catch (final Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				ex.addSuppressed(new OnAssemblyException(stacktrace));
+				fail(ex);
 				throw ex;
 			}
 		}
 	}
 
-	static final class OnAssemblyConditionalSubscriber<T>
-			implements ConditionalSubscriber<T>, QueueSubscription<T> {
+	static final class OnAssemblyConditionalSubscriber<T> extends OnAssemblySubscriber<T>
+			implements ConditionalSubscriber<T> {
 
-		final String                           stacktrace;
-		final ConditionalSubscriber<? super T> actual;
+		final ConditionalSubscriber<? super T> actualCS;
 
-		QueueSubscription<T> qs;
-		Subscription         s;
-		int                  fusionMode;
-
-		public OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				String stacktrace) {
-			this.actual = actual;
-			this.stacktrace = stacktrace;
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
+		OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				String stacktrace,
+				Publisher<?> parent) {
+			super(actual, stacktrace, parent);
+			this.actualCS = actual;
 		}
 
 		@Override
 		public boolean tryOnNext(T t) {
-			return actual.tryOnNext(t);
+			return actualCS.tryOnNext(t);
 		}
 
-		@Override
-		public void onError(Throwable t) {
-			if (t.getSuppressed().length == 0 || !(t.getSuppressed()[0] instanceof OnAssemblyException)) {
-				t.addSuppressed(new OnAssemblyException(stacktrace));
-			}
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			actual.onComplete();
-		}
-
-		@Override
-		public int requestFusion(int requestedMode) {
-			QueueSubscription<T> qs = this.qs;
-			if (qs != null) {
-				int m = qs.requestFusion(requestedMode);
-				if (m != Fuseable.NONE) {
-					fusionMode = m;
-				}
-				return m;
-			}
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
-				this.s = s;
-				this.qs = BackpressureUtils.as(s);
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public int size() {
-			return qs.size();
-		}
-
-		@Override
-		public void clear() {
-			qs.clear();
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public boolean isEmpty() {
-			try {
-				return qs.isEmpty();
-			}
-			catch (final Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				ex.addSuppressed(new OnAssemblyException(stacktrace));
-				throw ex;
-			}
-		}
-
-		@Override
-		public T poll() {
-			try {
-				return qs.poll();
-			}
-			catch (final Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				ex.addSuppressed(new OnAssemblyException(stacktrace));
-				throw ex;
-			}
-		}
 	}
+}
+
+interface AssemblyOp {
+
 }
