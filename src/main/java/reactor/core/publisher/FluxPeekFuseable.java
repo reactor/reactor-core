@@ -469,8 +469,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				parent.onNextCall().accept(v);
 			}
 			if (v == null && sourceMode == SYNC) {
-				parent.onCompleteCall().run();
-				parent.onAfterTerminateCall().run();
+			    Runnable call = parent.onCompleteCall();
+			    if (call != null) {
+			        call.run();
+			    }
+			    call = parent.onAfterTerminateCall();
+			    if (call != null) {
+			        call.run();
+			    }
 			}
 			return v;
 		}
