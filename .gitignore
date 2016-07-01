@@ -14,3 +14,5 @@ out
 *.data
 classes
 exportToHtml
+.pmd
+.ruleset

@@ -47,7 +47,8 @@ ext {
   // Libraries
   jacksonDatabindVersion = '2.5.1'
   jsonPathVersion = '2.0.0'
-  rxJavaVersion = '1.1.5'
+  rxJavaVersion = '1.1.6'
+  rxJava2Version = '2.0.0-DP0-SNAPSHOT'
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
@@ -143,6 +144,7 @@ configure(rootProject) {
     maven { url 'http://repo.spring.io/libs-milestone' }
     maven { url 'http://repo.spring.io/libs-snapshot' }
     maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    maven { url 'https://oss.jfrog.org/libs-snapshot' }
     jcenter()
     mavenCentral()
 
@@ -168,6 +170,9 @@ configure(rootProject) {
 
     //Optional RxJava 1 Converter
     optional "io.reactivex:rxjava:$rxJavaVersion"
+
+    //Optional RxJava 2 better interop
+    optional "io.reactivex.rxjava2:rxjava:$rxJava2Version"
 
     //Optional JDK 9 Converter
     jsr166backport "io.projectreactor:jsr166:1.0.0.BUILD-SNAPSHOT"
