@@ -18,6 +18,8 @@ package reactor.core.publisher;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -25,6 +27,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Introspectable;
+import reactor.core.tuple.Tuple;
+import reactor.core.tuple.Tuple2;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
@@ -175,29 +179,98 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	static final class OnAssemblyException extends RuntimeException {
 
 		final Publisher<?> parent;
-		final Map<Publisher, String> stackByPublisher = new HashMap<>();
+		final Map<Integer, Map<Integer, String>> stackByPublisher = new HashMap<>();
 
 
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
 		public OnAssemblyException(String message, Publisher<?> parent) {
-			super(message + " \\--> " + parent.hashCode());
+			super(message);
+			Map<Integer, String> thiz = new HashMap<>();
+			thiz.put(parent.hashCode(), extract(message));
+			stackByPublisher.put(0, thiz);
 			this.parent = parent;
 		}
 
 		@Override
 		public String getMessage() {
-			return stackByPublisher.entrySet().toString();
+			StringBuilder sb = new StringBuilder(super.getMessage())
+					.append("Backtraced Operator chain :\n");
+
+			Map<Integer, String> op;
+			Tuple2<Integer, Integer> next;
+			Queue<Tuple2<Integer, Integer>> nexts = new LinkedTransferQueue<>();
+			nexts.add(Tuple.of(0, 0));
+
+			synchronized (stackByPublisher) {
+				while ((next = nexts.poll()) != null) {
+					op = stackByPublisher.get(next.getT2());
+					if (op != null) {
+						int i = next.getT1();
+						for (Map.Entry<Integer, String> entry : op.entrySet()) {
+							mapLine(i, sb, entry.getValue());
+							nexts.add(Tuple.of(i, entry.getKey()));
+							i++;
+						}
+					}
+				}
+			}
+			return sb.toString();
 		}
 
-		StringBuilder mapLine(StringBuilder sb, String s) {
-			return sb;
+		void mapLine(int indent, StringBuilder sb, String s) {
+			for(int i = 0; i < indent; i++){
+				sb.append("\t");
+			}
+			sb.append("\t|_")
+			  .append(s)
+			  .append("\n");
 		}
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return this;
+		}
+
+		void add(Publisher<?> parent, String stacktrace) {
+			int key = getParentOrThis(parent).hashCode();
+			synchronized (stackByPublisher) {
+				stackByPublisher.compute(key,
+						(k, s) -> {
+							if (s == null) {
+								s = new HashMap<>();
+							}
+							//only one publisher occurence possible?
+							s.put(parent.hashCode(), extract(stacktrace));
+							return s;
+						});
+			}
+		}
+
+		String extract(String source) {
+			String usercode = null;
+			String last = null;
+			boolean first = true;
+			for (String s : source.split("\n")) {
+				if (s.isEmpty()) {
+					continue;
+				}
+				if (first) {
+					first = false;
+					continue;
+				}
+				if (!s.contains("reactor.core.publisher.Mono") && !s.contains("reactor" + ".core.publisher.Flux")) {
+					usercode = s.substring(s.indexOf('('));
+					break;
+				}
+				else {
+					last = s.replace("reactor.core.publisher.", "");
+					last = last.substring(0, last.indexOf("("));
+				}
+			}
+
+			return (last != null ? last : "") + usercode;
 		}
 	}
 
@@ -255,12 +328,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						synchronized (oae.stackByPublisher) {
-							oae.stackByPublisher.compute(parent,
-									(k, s) -> s == null ? extract(stacktrace) :
-											s.concat("\n" + extract(stacktrace)));
-						}
-
+						oae.add(parent, stacktrace);
 						set = true;
 						break;
 					}
@@ -270,33 +338,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				t.addSuppressed(new OnAssemblyException(stacktrace, parent));
 			}
 
-		}
-
-		final String extract(String source){
-			boolean publisher;
-			String usercode = null;
-			String last = null;
-			boolean first = true;
-			for(String s : source.split("\n")){
-				if(s.isEmpty()){
-					continue;
-				}
-				if(first){
-					first = false;
-					continue;
-				}
-				if(!s.contains("reactor.core.publisher.Mono") && !s.contains("reactor" +
-						".core.publisher.Flux")){
-					usercode = s.substring(s.indexOf('('));
-					break;
-				}
-				else{
-					last = s.replace("reactor.core.publisher.", "");
-					last = last.substring(0, last.indexOf("("));
-				}
-			}
-
-			return (last != null ? last : "") + usercode;
 		}
 
 		@Override

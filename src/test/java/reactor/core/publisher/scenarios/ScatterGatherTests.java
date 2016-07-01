@@ -88,17 +88,19 @@ public class ScatterGatherTests {
 	public void testTrace2() throws Exception {
 
 		try {
-			Mono.just(1)
+			Mono m = Mono.just(1)
 			    .useTraceAssembly(true)
 			    .map(d -> { throw new RuntimeException(); })
 			    .map(d -> d)
 			    .map(d -> d)
-			    .map(d -> d)
-			    .block();
+			    .map(d -> d);
+			m.cache().subscribe();
+			m.block();
 		}
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("ScatterGatherTests.java:93"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map(ScatterGatherTests.java:93)"));
 			return;
 		}
 		throw new IllegalStateException();

@@ -18,6 +18,8 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import reactor.core.flow.Cancellation;
+import reactor.core.flow.Receiver;
+import reactor.core.state.Introspectable;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
@@ -29,7 +31,7 @@ import reactor.core.flow.Cancellation;
  * @param <T> the input and output value type
  * @since 2.5
  */
-public abstract class ConnectableFlux<T> extends Flux<T> {
+public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 
 	/**
 	 * Connects this {@link ConnectableFlux} to the upstream source when the first {@link org.reactivestreams.Subscriber}
@@ -136,4 +138,10 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	static final Consumer<Cancellation> NOOP_DISCONNECT = runnable -> {
 
 	};
+
+	@Override
+	public boolean isTraceAssembly() {
+		return upstream() instanceof Introspectable ? ((Introspectable)upstream())
+				.isTraceAssembly() : super.isTraceAssembly();
+	}
 }

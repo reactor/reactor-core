@@ -52,7 +52,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
-		implements Receiver, Loopback, Backpressurable {
+		implements Loopback, Backpressurable {
 	/** The source observable. */
 	final Publisher<? extends T> source;
 	

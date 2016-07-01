@@ -77,4 +77,9 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	public boolean isTraceAssembly() {
 		return true;
 	}
+
+	@Override
+	public Object upstream() {
+		return source;
+	}
 }
