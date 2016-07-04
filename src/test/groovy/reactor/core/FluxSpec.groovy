@@ -188,7 +188,6 @@ class FluxSpec extends Specification {
 			'the flux is retrieved'
 			def value = stream.map { it + '-ok' }.collectList()
 
-			println value.debug()
 
 		then:
 			'it is available'
@@ -205,7 +204,6 @@ class FluxSpec extends Specification {
 			stream = stream.map { it + '-ok' }.log()
 
 			def queue = stream.toIterable().iterator()
-			//	println flux.debug()
 
 			def res
 			def result = []
@@ -538,7 +536,6 @@ class FluxSpec extends Specification {
 			'the expected accept count is set and that number of values is accepted'
 			def tap
 			composable.every(3).log().subscribe{ tap = it }
-			println composable.debug()
 			d.onNext(1)
 			d.onNext(2)
 			d.onNext(3)
@@ -590,9 +587,7 @@ class FluxSpec extends Specification {
 		when:
 			'the source accepts a value'
 			def value = mapped.publishNext().subscribe()
-			println source.debug()
 			source.onNext(1)
-			println source.debug()
 
 		then:
 			'the value is mapped'
@@ -619,7 +614,6 @@ class FluxSpec extends Specification {
 			source2.onNext(2)
 			source3.onNext(3)
 
-			println source1.debug()
 
 		then:
 			'the values are all collected from source1 flux'
@@ -739,7 +733,6 @@ class FluxSpec extends Specification {
 			w3.onNext("3d")
 			w3.onComplete()
 
-			println mergedFlux.debug()
 
 		then:
 			'the values are all collected from source1 and source2 flux'
@@ -944,7 +937,6 @@ class FluxSpec extends Specification {
 		when:
 			'the source accepts a value'
 			source.onNext(1)
-			println source.debug()
 
 		then:
 			'the error is passed on'
@@ -1055,7 +1047,6 @@ class FluxSpec extends Specification {
 			source.onNext(4)
 			source.onNext(5)
 			source.onComplete()
-			println source.debug()
 		then:
 			'the consumer only receives the final value'
 			values == [120]
@@ -1174,9 +1165,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the first value is accepted'
-			println value.debug()
 			source.onNext(1)
-			println value.debug()
 			source.onComplete()
 
 		then:
@@ -1430,7 +1419,6 @@ class FluxSpec extends Specification {
 		when:
 			'the first value is accepted on the source'
 			source.onNext(1)
-			println source.debug()
 
 		then:
 			'the collected list is not yet available'
@@ -1439,7 +1427,6 @@ class FluxSpec extends Specification {
 		when:
 			'the second value is accepted'
 			source.onNext(2)
-			println source.debug()
 
 		then:
 			'the collected list contains the first and second elements'
@@ -1452,7 +1439,6 @@ class FluxSpec extends Specification {
 			sleep(2000)
 			source.onNext(3)
 			source.onNext(4)
-			println source.debug()
 
 		then:
 			'the collected list contains the first and second elements'
@@ -1477,7 +1463,6 @@ class FluxSpec extends Specification {
 				}
 			}
 
-			println source.debug()
 
 		when:
 			'some values are accepted'
@@ -1518,7 +1503,6 @@ class FluxSpec extends Specification {
 				}
 			}
 
-			println source.debug()
 	  println ReactiveStateUtils.prettyPrint(source)
 
 		when:
@@ -1555,7 +1539,6 @@ class FluxSpec extends Specification {
 		when:
 			'accept a value'
 			def result = s.collectList().block(Duration.ofSeconds(5))
-			//println s.debug()
 
 		then:
 			'dispatching works'
@@ -1578,7 +1561,6 @@ class FluxSpec extends Specification {
 		when:
 			'accept a value'
 			def result = s.collectList().block(Duration.ofSeconds(5))
-			//println s.debug()
 
 		then:
 			'dispatching works'
@@ -1602,7 +1584,6 @@ class FluxSpec extends Specification {
 			res << s.next().block(Duration.ofSeconds(5))
 			res << s.next().block(Duration.ofSeconds(5))
 			res << s.next().block(Duration.ofSeconds(5))
-			//println s.debug()
 
 		then:
 			'dispatching works'
@@ -1632,7 +1613,6 @@ class FluxSpec extends Specification {
 		when:
 			'accept a value'
 			def res = s.collectList().block(Duration.ofSeconds(5))
-			//println s.debug()
 
 		then:
 			'dispatching works'
@@ -1810,10 +1790,8 @@ class FluxSpec extends Specification {
 		when:
 			'the first values are accepted on the source'
 			source.onNext(1)
-			println source.debug()
 			source.onNext(2)
 			sleep(1200)
-			println source.debug()
 
 		then:
 			'the collected list is available'
@@ -2133,7 +2111,6 @@ class FluxSpec extends Specification {
 
 
 			tail.request(5)
-			println tail.debug()
 
 		when:
 			'the first values are accepted on the source, but we only have 5 requested elements out of 6'
@@ -2143,7 +2120,6 @@ class FluxSpec extends Specification {
 			source.onNext(4)
 			source.onNext(5)
 
-			println tail.debug()
 			source.onNext(6)
 
 		and:
@@ -2172,7 +2148,6 @@ class FluxSpec extends Specification {
 			.delay(Duration.ofMillis(100))
 			.subscribe(tail)
 
-	println tail.debug()
 
 	when:
 	'the first values are accepted on the source, but we only have 5 requested elements out of 6'
@@ -2182,7 +2157,6 @@ class FluxSpec extends Specification {
 	source.onNext(4)
 	source.onNext(5)
 
-	println tail.debug()
 
 	then:
 	tail.awaitAndAssertNextValues(1,2,3,4,5)
@@ -2216,7 +2190,6 @@ class FluxSpec extends Specification {
 			}
 
 			def value = reduced.log().subscribeWith(MonoProcessor.create())
-			println value.debug()
 
 		when:
 			'the first values are accepted on the source'
@@ -2247,7 +2220,6 @@ class FluxSpec extends Specification {
 
 			def value
 			reduced.subscribe{ value = it }
-			println source.debug()
 
 		when:
 			'the first values are accepted on the source'
@@ -2256,7 +2228,6 @@ class FluxSpec extends Specification {
 			}
 			source.onComplete()
 			latch.await(10, TimeUnit.SECONDS)
-			println source.debug()
 
 		then:
 			'the average elapsed time between 2 signals is greater than throttled time'
@@ -2293,7 +2264,6 @@ class FluxSpec extends Specification {
 
 		then:
 			'results contains the expected values'
-			println head.debug()
 			sum.get() == length
 	}
 
@@ -2332,7 +2302,6 @@ class FluxSpec extends Specification {
 
 			def value = stream.subscribeWith(MonoProcessor.create())
 
-			println stream.debug()
 
 		then:
 			'3 values are passed since it is a cold flux resubscribed 2 times and finally managed to get the 3 values'
@@ -2366,11 +2335,9 @@ class FluxSpec extends Specification {
 			}.retryWhen { attempts ->
 			  attempts.log('zipWith').zipWith(Flux.range(1, 3), { t1, t2 -> t2 }).flatMap { i ->
 					println "delay retry by " + i + " second(s)"
-				  println attempts.debug()
 				Mono.delay(i * 1000)
 				}
 			}.subscribeWith(TestSubscriber.create())
-			println value.debug()
 
 		then:
 			'MonoProcessor completed after 3 tries'
@@ -2391,7 +2358,6 @@ class FluxSpec extends Specification {
 
 			def value = stream.block()
 
-			println stream.debug()
 
 		then:
 			'9 values are passed since it is a cold flux resubscribed 2 times and finally managed to get the 9 values'

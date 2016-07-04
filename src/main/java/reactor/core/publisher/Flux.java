@@ -69,7 +69,6 @@ import reactor.core.tuple.Tuple6;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -2263,15 +2262,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return Mono.onAssembly(new MonoCount<>(this));
 	}
 	
-	/**
-	 * Introspect this {@link Flux} graph
-	 *
-	 * @return {@link ReactiveStateUtils} {@literal Graph} representation of the operational flow
-	 */
-	public final ReactiveStateUtils.Graph debug() {
-		return ReactiveStateUtils.scan(this);
-	}
-
 	/**
 	 * Provide a default unique value if this sequence is completed without any data
 	 * <p>

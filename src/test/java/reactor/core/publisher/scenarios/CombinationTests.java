@@ -236,7 +236,6 @@ public class CombinationTests {
 		Publisher<SensorData> p = Flux.concat(sensorEven(), sensorOdd())
 		                              .log("concat");
 
-		//System.out.println(tail.debug());
 		generateData(elements);
 
 		awaitLatch(p, latch);

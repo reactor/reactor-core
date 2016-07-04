@@ -190,7 +190,6 @@ class MonoSpec extends Specification {
 
 	promise.doOnError { v -> acceptedValue = v
 	}.subscribeWith(MonoProcessor.create())
-	println promise.debug()
 
 	then: "the consumer is invoked with the rejecting value"
 	acceptedValue == failure
@@ -248,9 +247,7 @@ class MonoSpec extends Specification {
 	def mappedMonoProcessor = promise.then ({ d -> Mono.just(d + 1) } as Function)
 
 	when: "the original promise is fulfilled"
-	println promise.debug()
 	promise.onNext 1
-	println promise.debug()
 
 	then: "the mapped promise is fulfilled with the mapped value"
 	mappedMonoProcessor.block() == 2
@@ -481,8 +478,6 @@ class MonoSpec extends Specification {
 
 	when: "a combined promise is first created"
 	Mono.when(promise1, promise2).block()
-	println promise1.debug()
-	println promise2.debug()
 
 	then: "it is rejected"
 	thrown Exception
@@ -500,7 +495,6 @@ class MonoSpec extends Specification {
 	!combined.pending
 
 	when: "the first promise is fulfilled"
-	println promise1.debug()
 	promise1.onNext 1
 
 	then: "the combined promise is fulfilled"

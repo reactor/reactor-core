@@ -259,15 +259,10 @@ public class EmitterProcessorDemandTests {
 			subscriber.request(4);
 			subscriber.request(1);
 
-			try{
 				subscriber
 						.await()
 						.assertValueCount(n)
 						.assertComplete();
-			}
-			finally {
-				System.out.println(subscriber.debug());
-			}
 		}
 
 		public Throwable getLastException() {

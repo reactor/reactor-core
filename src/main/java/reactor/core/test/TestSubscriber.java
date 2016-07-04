@@ -38,7 +38,6 @@ import reactor.core.flow.Fuseable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.DeferredSubscription;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -801,14 +800,6 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	public final TestSubscriber<T> configureValuesTimeout(Duration timeout) {
 		this.valuesTimeout = timeout;
 		return this;
-	}
-
-	/**
-	 * Create a "Nodes" and "Links" complete representation of a given component if available.
-	 * @return the debug graph
-	 */
-	public ReactiveStateUtils.Graph debug() {
-		return ReactiveStateUtils.scan(this);
 	}
 
 	/**

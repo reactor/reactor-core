@@ -109,8 +109,6 @@ public class FluxTests extends AbstractReactorTest {
 		str.publishOn(asyncGroup)
 		   .subscribe(new FooSubscriber());
 
-		System.out.println(str.debug());
-
 		str.onNext("Goodbye World!");
 		str.onNext("Goodbye World!");
 		str.onComplete();
@@ -573,8 +571,7 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext(i);
 		}
 		if (!latch.await(10, TimeUnit.SECONDS)) {
-			throw new RuntimeException(latch.getCount()+ " "+deferred.debug()
-			                                   .toString());
+			throw new RuntimeException(latch.getCount()+ " ");
 		}
 
 		long stop = System.currentTimeMillis() - start;
@@ -584,7 +581,6 @@ public class FluxTests extends AbstractReactorTest {
 		System.out.println("ev/ms: " + iterations / stop);
 		System.out.println("ev/s: " + iterations / stop * 1000);
 		System.out.println("");
-		System.out.println(deferred.debug());
 		assertEquals(0, latch.getCount());
 	}
 
@@ -631,8 +627,7 @@ public class FluxTests extends AbstractReactorTest {
 		}
 
 		if (!latch.await(15, TimeUnit.SECONDS)) {
-			throw new RuntimeException("Count:" + (iterations - latch.getCount()) + " " + deferred.debug()
-			                                                                                      .toString());
+			throw new RuntimeException("Count:" + (iterations - latch.getCount()) + " ");
 		}
 
 		long stop = System.currentTimeMillis() - start;
@@ -642,7 +637,6 @@ public class FluxTests extends AbstractReactorTest {
 		System.out.println("ev/ms: " + iterations / stop);
 		System.out.println("ev/s: " + iterations / stop * 1000);
 		System.out.println("");
-		System.out.println(deferred.debug());
 		assertEquals(0, latch.getCount());
 
 	}
@@ -682,12 +676,10 @@ public class FluxTests extends AbstractReactorTest {
 		}
 
 		if (!latch.await(20, TimeUnit.SECONDS)) {
-			throw new RuntimeException(mapManydeferred.debug()
-			                                          .toString());
+			throw new RuntimeException(latch.getCount()+"");
 		}
 		else {
-			System.out.println(mapManydeferred.debug()
-			                                  .toString());
+			System.out.println(latch.getCount());
 		}
 		assertEquals(0, latch.getCount());
 
@@ -766,13 +758,10 @@ public class FluxTests extends AbstractReactorTest {
 			batchingStreamDef.onNext(d);
 		});
 
-		System.out.println(batchingStreamDef.debug());
-
 		System.out.println(batchesDistribution);
 
 		if (!latch.await(10, TimeUnit.SECONDS)) {
-			throw new RuntimeException(latch.getCount() + " " + batchingStreamDef.debug()
-			                                                                     .toString());
+			throw new RuntimeException(latch.getCount() + " ");
 
 		}
 
@@ -1095,12 +1084,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		boolean finished = latch.await(2, TimeUnit.SECONDS);
 		if (!finished) {
-			throw new RuntimeException(streamBatcher.debug()
-			                                        .toString());
+			throw new RuntimeException(latch.getCount()+"");
 		}
 		else {
-			System.out.println(streamBatcher.debug()
-			                                .toString());
 			assertEquals("Must have correct latch number : " + latch.getCount(), latch.getCount(), 0);
 		}
 	}
@@ -1411,15 +1397,12 @@ public class FluxTests extends AbstractReactorTest {
 		                                                 .doOnTerminate((v, e) -> doneSemaphore.release())
 		                                                 .subscribe();
 
-		System.out.println(forkEmitterProcessor.debug());
-
 		forkEmitterProcessor.onNext(1);
 		forkEmitterProcessor.onNext(2);
 		forkEmitterProcessor.onNext(3);
 		forkEmitterProcessor.onComplete();
 
 		List<String> res = listPromise.block(Duration.ofSeconds(5));
-		System.out.println(forkEmitterProcessor.debug());
 		assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res);
 
 		forkJoin.shutdown();

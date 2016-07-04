@@ -82,8 +82,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		counters.clear();
 		final Processor<Integer, Integer> p = createProcessor(bufferSize);
 
-		/*Streams.interval(200, TimeUnit.MILLISECONDS)
-		  .subscribe(i -> System.out.println(p.debug()) );*/
 
 		processorReferences.add(p);
 		return p;
@@ -151,9 +149,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 
 		createHelperPublisher(10).subscribe(processor);
 
-		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux<?>)processor).debug());
-		}
 		List<Integer> list = new ArrayList<>();
 
 		processor.subscribe(new Subscriber<Integer>() {
@@ -191,9 +186,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		//stream.broadcastComplete();
 
 		latch.await(8, TimeUnit.SECONDS);
-		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux<?>)processor).debug());
-		}
 
 		long count = latch.getCount();
 		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " +
@@ -219,9 +211,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		EmitterProcessor<Integer> stream = EmitterProcessor.create();
 		SubmissionEmitter<Integer> session = SubmissionEmitter.create(stream);
 		stream.subscribe(processor);
-		if(Flux.class.isAssignableFrom(processor.getClass())) {
-			System.out.println(((Flux<?>)processor).debug());
-		}
 
 		processor.subscribe(new Subscriber<Integer>() {
 			@Override
@@ -247,16 +236,13 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		});
 
 
-		System.out.println(stream.debug());
 		for (int i = 0; i < elements; i++) {
 			if(session.submit(i, 1000) == -1){
-				System.out.println(stream.debug());
 			}
 		}
 		//stream.then();
 
 		latch.await(8, TimeUnit.SECONDS);
-		System.out.println(stream.debug());
 
 		System.out.println(counters);
 		long count = latch.getCount();

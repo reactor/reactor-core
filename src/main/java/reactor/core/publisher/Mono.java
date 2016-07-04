@@ -53,7 +53,6 @@ import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ReactiveStateUtils;
 import reactor.core.util.WaitStrategy;
 
 /**
@@ -1099,16 +1098,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		return Flux.concat(this, other);
 	}
-
-	/**
-	 * Introspect this Mono graph
-	 *
-	 * @return {@literal ReactiveStateUtils.Graph} representation of a publisher graph
-	 */
-	public final ReactiveStateUtils.Graph debug() {
-		return ReactiveStateUtils.scan(this);
-	}
-
 
 	/**
 	 * Provide a default unique value if this mono is completed without any data

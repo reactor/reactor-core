@@ -88,14 +88,15 @@ public class ScatterGatherTests {
 	public void testTrace2() throws Exception {
 
 		try {
-			Mono m = Mono.just(1)
+			Mono.just(1)
 			    .useTraceAssembly(true)
-			    .map(d -> { throw new RuntimeException(); })
+			    .map(d -> {
+				    throw new RuntimeException();
+			    })
+			    .filter(d -> true)
+			    .doOnNext(d -> System.currentTimeMillis())
 			    .map(d -> d)
-			    .map(d -> d)
-			    .map(d -> d);
-			m.cache().subscribe();
-			m.block();
+			    .block();
 		}
 		catch(Exception e){
 			e.printStackTrace();
