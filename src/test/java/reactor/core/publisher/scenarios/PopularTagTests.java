@@ -23,10 +23,9 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Test;
 import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
+import reactor.core.publisher.Flux;
 import reactor.core.tuple.Tuple;
 import reactor.core.util.Logger;
-import reactor.core.publisher.Flux;
-import reactor.core.util.ReactiveStateUtils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -90,8 +89,7 @@ public class PopularTagTests extends AbstractReactorTest {
 
 	private void awaitLatch(Cancellation tail, CountDownLatch latch) throws Exception {
 		if (!latch.await(10, SECONDS)) {
-			throw new Exception("Never completed: (" + latch.getCount() + ") "
-			  + ReactiveStateUtils.scan(tail));
+			throw new Exception("Never completed: (" + latch.getCount() + ")");
 		}
 	}
 }

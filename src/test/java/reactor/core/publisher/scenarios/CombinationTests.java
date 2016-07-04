@@ -41,7 +41,6 @@ import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveStateUtils;
 
 /**
  * @author Stephane Maldini
@@ -206,15 +205,11 @@ public class CombinationTests {
 		Publisher<SensorData> p = Flux.firstEmitting(sensorOdd(), sensorEven())
 		                              .log("firstEmitting");
 
-		System.out.println(ReactiveStateUtils.scan(p)
-		                                     .toString());
 
 		Subscriber<SensorData> s = Subscribers.unbounded((d, sub) -> latch.countDown(), null,
 				latch::countDown);
 		p.subscribe(s);
 		Thread.sleep(1000);
-		System.out.println(ReactiveStateUtils.scan(s)
-		                                     .toString());
 
 		generateData(elements);
 	}
@@ -292,9 +287,6 @@ public class CombinationTests {
 		    .log("zip3")
 		    .subscribe(sensorDataProcessor);
 
-		System.out.println(ReactiveStateUtils.scan(sensorDataProcessor)
-		                                     .toString());
-
 		awaitLatch(null, latch);
 		scheduler.shutdown();
 	}
@@ -322,8 +314,6 @@ public class CombinationTests {
 			else {
 				upstream = sensorOdd;
 			}
-			System.out.println(ReactiveStateUtils.scan(upstream)
-			                                     .toString());
 			upstream.onNext(data);
 		}
 

@@ -21,7 +21,6 @@ import reactor.core.publisher.*
 import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
 import reactor.core.test.TestSubscriber
-import reactor.core.util.ReactiveStateUtils
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -1502,8 +1501,6 @@ class FluxSpec extends Specification {
 					latch.countDown()
 				}
 			}
-
-	  println ReactiveStateUtils.prettyPrint(source)
 
 		when:
 			'some values are accepted'

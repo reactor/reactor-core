@@ -66,7 +66,6 @@ import reactor.core.subscriber.Subscribers;
 import reactor.core.tuple.Tuple;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveStateUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -303,13 +302,10 @@ public class FluxTests extends AbstractReactorTest {
 			latch.countDown();
 		});
 
-		System.out.println(ReactiveStateUtils.scan(tail));
-
 		for (int i = 1; i <= items; i++) {
 			s.submit(String.valueOf(i));
 		}
 		latch.await(15, TimeUnit.SECONDS);
-		System.out.println(ReactiveStateUtils.scan(tail));
 		assertTrue(latch.getCount() + " of " + items + " items were not counted down", latch.getCount() == 0);
 	}
 
@@ -440,7 +436,6 @@ public class FluxTests extends AbstractReactorTest {
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
-		System.out.println(ReactiveStateUtils.scan(c));
 		assertEquals(COUNT, internalCounter.get());
 		counsumerLatch.await(5, TimeUnit.SECONDS);
 		assertEquals(COUNT, consumerCounter.get());
@@ -596,14 +591,13 @@ public class FluxTests extends AbstractReactorTest {
 			case "partitioned":
 				deferred = EmitterProcessor.create();
 				deferred.connect();
-				System.out.println(ReactiveStateUtils.scan(deferred.publishOn(asyncGroup)
-				                                                   .parallel(2)
-				                                                   .groups()
-				                                                   .subscribe(stream -> stream.publishOn(asyncGroup)
+				deferred.publishOn(asyncGroup)
+				        .parallel(2)
+				        .groups()
+				        .subscribe(stream -> stream.publishOn(asyncGroup)
 				                                                    .map(i -> i)
 				                                                    .scan(1, (acc, next) -> acc + next)
-				                                                    .subscribe(i -> latch.countDown())
-				                                                    )));
+				                                                    .subscribe(i -> latch.countDown()));
 
 				break;
 
@@ -829,17 +823,13 @@ public class FluxTests extends AbstractReactorTest {
 			                  System.out.println(integer);
 		                  });
 
-		System.out.println(ReactiveStateUtils.scan(action));
 
 		afterSubscribe.await(5, TimeUnit.SECONDS);
-
-		System.out.println(ReactiveStateUtils.scan(action));
 
 		globalFeed.onNext(2223);
 		globalFeed.onNext(2224);
 
 		latch.await(5, TimeUnit.SECONDS);
-		System.out.println(ReactiveStateUtils.scan(action));
 		assertEquals("Must have counted 4 elements", 0, latch.getCount());
 
 	}
@@ -914,9 +904,6 @@ public class FluxTests extends AbstractReactorTest {
 		                                    .subscribe(v -> countDownLatch.countDown(), Throwable::printStackTrace));
 
 		countDownLatch.await(5, TimeUnit.SECONDS);
-		if (countDownLatch.getCount() > 0) {
-			System.out.println(ReactiveStateUtils.scan(tail));
-		}
 		Assert.assertEquals("Count max: "+ tasks.size(), 0, countDownLatch.getCount());
 	}
 
@@ -1052,7 +1039,6 @@ public class FluxTests extends AbstractReactorTest {
 				});
 
 		endLatch.await(10, TimeUnit.SECONDS);
-		System.out.println(ReactiveStateUtils.scan(controls));
 
 		Assert.assertEquals(0, endLatch.getCount());
 	}
@@ -1123,7 +1109,6 @@ public class FluxTests extends AbstractReactorTest {
 			                   latch.countDown();
 		                   });
 
-		System.out.println(ReactiveStateUtils.scan(c));
 
 		latch.await(30, TimeUnit.SECONDS);
 		assertThat("Not totally dispatched: " + latch.getCount(), latch.getCount() == 0);

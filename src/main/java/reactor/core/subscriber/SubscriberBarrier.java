@@ -23,7 +23,6 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ReactiveStateUtils;
 
 /**
  * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between
@@ -170,7 +169,7 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public boolean isTerminated() {
-		return ReactiveStateUtils.hasSubscription(subscription) && ((Completable) subscription).isTerminated();
+		return null != subscription && subscription instanceof Completable && ((Completable) subscription).isTerminated();
 	}
 
 	@Override

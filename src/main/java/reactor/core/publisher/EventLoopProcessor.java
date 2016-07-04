@@ -44,7 +44,6 @@ import reactor.core.util.BackpressureUtils;
 import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.ReactiveStateUtils;
 import reactor.core.util.WaitStrategy;
 
 /**
@@ -111,7 +110,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		contextClassLoader = new EventLoopContext();
 
-		String name = ReactiveStateUtils.getName(threadFactory);
+		String name = threadFactory instanceof Introspectable ? ((Introspectable)
+				threadFactory).getName() : null;
 		this.name = null != name ? name : getClass().getSimpleName();
 
 		if (executor == null) {
