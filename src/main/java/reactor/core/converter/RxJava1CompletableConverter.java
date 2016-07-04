@@ -21,11 +21,11 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
 
     static final RxJava1CompletableConverter INSTANCE = new RxJava1CompletableConverter();
 
-    static Completable from(Publisher<?> noValue) {
+    static public Completable from(Publisher<?> noValue) {
         return INSTANCE.fromPublisher(noValue);
     }
 
-    static Mono<Void> from(Completable completable) {
+    static public Mono<Void> from(Completable completable) {
         return INSTANCE.toPublisher(completable);
     }
 
