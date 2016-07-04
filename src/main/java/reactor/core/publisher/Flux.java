@@ -3202,18 +3202,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		}
 		return merge(this, other);
 	}
-
-	/**
-	 * Emit the current instance of the {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/nest.png" alt="">
-	 *
-	 * @return a new {@link Mono} whose value will be the current {@link Flux}
-	 */
-	public final Mono<Flux<T>> nest() {
-		return Mono.just(this);
-	}
 	
 	/**
 	 * Emit only the first item emitted by this {@link Flux}.

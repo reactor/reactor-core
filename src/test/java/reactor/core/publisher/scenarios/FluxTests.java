@@ -454,9 +454,8 @@ public class FluxTests extends AbstractReactorTest {
 
 		                          .elapsed()
 		                          .skip(1)
-		                          .nest()
-		                          .flatMap(self -> self.groupBy(w -> w.t1)
-		                                           .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c))))
+		                          .groupBy(w -> w.t1)
+								  .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c)))
 		                          .log("elapsed")
 		                          .collectSortedList((a, b) -> a.t1.compareTo(b.t1))
 		                          .flatMap(Flux::fromIterable)

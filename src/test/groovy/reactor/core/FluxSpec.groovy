@@ -2265,20 +2265,6 @@ class FluxSpec extends Specification {
 	}
 
 
-	def 'A Flux can be materialized for recursive signal or introspection'() {
-		given:
-			'a composable with an initial value'
-			def stream = Flux.just('test')
-
-		when:
-			'the flux is retrieved and a consumer is dynamically added'
-			def value = stream.nest().block()
-
-		then:
-			'it is available'
-			value == stream
-	}
-
 	def 'A Flux can re-subscribe its oldest parent on error signals'() {
 		given:
 			'a composable with an initial value'
