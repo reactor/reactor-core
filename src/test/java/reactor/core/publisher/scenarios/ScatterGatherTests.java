@@ -104,9 +104,9 @@ public class ScatterGatherTests {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("ScatterGatherTests.java:95"));
+					("ScatterGatherTests.java:96"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
-					"(ScatterGatherTests.java:95)"));
+					"(ScatterGatherTests.java:96)"));
 			return;
 		}
 		finally {
