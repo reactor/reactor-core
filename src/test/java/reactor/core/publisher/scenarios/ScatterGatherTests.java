@@ -77,6 +77,7 @@ public class ScatterGatherTests {
 			    .block();
 		}
 		catch(Exception e){
+			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
 			return;
 		}
@@ -102,8 +103,10 @@ public class ScatterGatherTests {
 		}
 		catch(Exception e){
 			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("ScatterGatherTests.java:93"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map(ScatterGatherTests.java:93)"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("ScatterGatherTests.java:95"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
+					"(ScatterGatherTests.java:95)"));
 			return;
 		}
 		finally {
