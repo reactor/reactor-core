@@ -197,8 +197,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(long duration) {
-		return delay(duration, Schedulers.timer());
+	public static Mono<Long> delayMillis(long duration) {
+		return delayMillis(duration, Schedulers.timer());
 	}
 
 	/**
@@ -213,7 +213,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration) {
-		return delay(duration.toMillis());
+		return delayMillis(duration.toMillis());
 	}
 
 	/**
@@ -228,7 +228,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(long duration, TimedScheduler timer) {
+	public static Mono<Long> delayMillis(long duration, TimedScheduler timer) {
 		return onAssembly(new MonoDelay(duration, TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -245,7 +245,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration, TimedScheduler timer) {
-		return delay(duration.toMillis(), timer);
+		return delayMillis(duration.toMillis(), timer);
 	}
 
 	/**
@@ -968,7 +968,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T block() {
-		return block(PlatformDependent.DEFAULT_TIMEOUT);
+		return blockMillis(PlatformDependent.DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -987,11 +987,11 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return T the result
 	 */
-	public T block(long timeout) {
+	public T blockMillis(long timeout) {
 		if(this instanceof Callable){
 			return block();
 		}
-		return subscribe().block(timeout);
+		return subscribe().blockMillis(timeout);
 	}
 
 	/**
@@ -1011,7 +1011,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T block(Duration timeout) {
-		return block(timeout.toMillis());
+		return blockMillis(timeout.toMillis());
 	}
 
 	/**
@@ -1033,7 +1033,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T block(WaitStrategy waitStrategy) {
-		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).block(PlatformDependent.DEFAULT_TIMEOUT);
+		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(PlatformDependent.DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -1136,7 +1136,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return a delayed {@link Mono}
 	 *
 	 */
-	public final Mono<T> delaySubscription(long delay) {
+	public final Mono<T> delaySubscriptionMillis(long delay) {
 		return delaySubscription(Duration.ofSeconds(delay));
 	}
 
@@ -2400,8 +2400,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 *
 	 * @return an expirable {@link Mono}
 	 */
-	public final Mono<T> timeout(long timeout) {
-		return timeout(Duration.ofMillis(timeout), null);
+	public final Mono<T> timeoutMillis(long timeout) {
+		return timeoutMillis(timeout, null);
 	}
 
 	/**
@@ -2426,18 +2426,35 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
 	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
+	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 *
+	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 */
+	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
+		final Mono<Long> _timer = Mono.delayMillis(timeout).otherwiseReturn(0L);
+
+		if(fallback == null) {
+			return onAssembly(new MonoTimeout<>(this, _timer));
+		}
+		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
+	}
+
+	/**
+	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
+	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
 	 *
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
-		final Mono<Long> _timer = Mono.delay(timeout).otherwiseReturn(0L);
-
-		if(fallback == null) {
-			return onAssembly(new MonoTimeout<>(this, _timer));
-		}
-		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
+		return timeoutMillis(timeout.toMillis(), fallback);
 	}
 
 	/**

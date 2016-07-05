@@ -55,7 +55,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public T block(long timeout) {
+	public T blockMillis(long timeout) {
 		try {
 			return ((Callable<T>)source).call();
 		} catch (Throwable e) {

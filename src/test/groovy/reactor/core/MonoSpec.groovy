@@ -594,7 +594,7 @@ class MonoSpec extends Specification {
 
 	and: "setting a value"
 	p1.onNext 'not a number'
-	p2.block(1_000)
+	p2.blockMillis(1_000)
 
 	then: 'No value'
 	thrown(RuntimeException)
@@ -637,7 +637,7 @@ class MonoSpec extends Specification {
 	def m = new MonoDelayedSubscription()
 
 	when: "we subscribe to that promise"
-	def v = m.block(1_000)
+	def v = m.blockMillis(1_000)
 
 	then: 'it should be subscribed to only once'
 	m.subscriptionCount.get() == 1
