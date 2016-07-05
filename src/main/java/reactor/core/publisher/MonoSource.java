@@ -76,12 +76,6 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 	}
 
 	@Override
-	public boolean isTraceAssembly() {
-		return source instanceof Introspectable ? ((Introspectable)source)
-				.isTraceAssembly() : super.isTraceAssembly();
-	}
-
-	@Override
 	public String toString() {
 		return "{" +
 				" operator : \"" + getName() + "\" " +

@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Introspectable;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
@@ -138,10 +137,4 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	static final Consumer<Cancellation> NOOP_DISCONNECT = runnable -> {
 
 	};
-
-	@Override
-	public boolean isTraceAssembly() {
-		return upstream() instanceof Introspectable ? ((Introspectable)upstream())
-				.isTraceAssembly() : super.isTraceAssembly();
-	}
 }

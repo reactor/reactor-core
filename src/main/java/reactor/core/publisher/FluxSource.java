@@ -59,12 +59,6 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 				-1L;
 	}
 
-	@Override
-	public boolean isTraceAssembly() {
-		return source instanceof Introspectable ? ((Introspectable)source)
-				.isTraceAssembly() : super.isTraceAssembly();
-	}
-
 	/**
 	 * Default is delegating and decorating with {@link Flux} API
 	 */

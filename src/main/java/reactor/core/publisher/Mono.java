@@ -51,6 +51,7 @@ import reactor.core.tuple.Tuple3;
 import reactor.core.tuple.Tuple4;
 import reactor.core.tuple.Tuple5;
 import reactor.core.tuple.Tuple6;
+import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.WaitStrategy;
@@ -2506,24 +2507,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Configure a {@link Mono} and its child operators to trace mode. Errors will
-	 * therefore include original operator declaration stack.
-	 *
-	 * @param trace true if this {@link Mono} should trace on assembly.
-	 *
-	 * @return a configured flux
-	 */
-	public Mono<T> useTraceAssembly(boolean trace) {
-		if(trace) {
-			if (this instanceof Callable) {
-				return new MonoCallableOnAssembly<>(this);
-			}
-			return new MonoOnAssembly<>(this);
-		}
-		return this;
-	}
-
-	/**
 	 * Wrap the source into a PublisherOnAssembly or PublisherCallableOnAssembly if {@code
 	 * trackAssembly} is set to true.
 	 *
@@ -2533,7 +2516,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return the potentially wrapped source
 	 */
 	static <T> Mono<T> onAssembly(Mono<T> source) {
-		if (source.isTraceAssembly()) {
+		if (Exceptions.isOperatorStacktraceEnabled()) {
 			if (source instanceof Callable) {
 				return new MonoCallableOnAssembly<>(source);
 			}

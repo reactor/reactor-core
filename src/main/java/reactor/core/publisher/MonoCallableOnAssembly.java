@@ -54,11 +54,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	}
 
 	@Override
-	public boolean isTraceAssembly() {
-		return true;
-	}
-
-	@Override
+	@SuppressWarnings("unchecked")
 	public T block(long timeout) {
 		try {
 			return ((Callable<T>)source).call();
@@ -71,6 +67,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;

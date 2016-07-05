@@ -28,6 +28,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public enum Exceptions {
 	;
 
+	static volatile boolean TRACE_ASSEMBLY              =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.assembly", "false"));
+
+
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
@@ -66,6 +70,34 @@ public enum Exceptions {
 			}
 		}
 	}
+
+	/**
+	 * When enabled, operator declaration stacks are recorded and added as Suppressed
+	 * Exception if the operator callback fails.
+	 *
+	 * @return a true if assembly tracking is enabled
+	 */
+	public static boolean isOperatorStacktraceEnabled() {
+		return TRACE_ASSEMBLY;
+	}
+
+	/**
+	 * Enable operator stack recording. Operator declaration stacks are added as Suppressed
+	 * Exception if the operator callback fails. Must be called before operators (e.g.
+	 * Flux.map) are actually called to intercept the right stack information.
+	 */
+	public static void enableOperatorStacktrace() {
+		TRACE_ASSEMBLY = true;
+	}
+
+	/**
+	 * Disable operator stack recording.
+	 */
+	public static void disableOperatorStacktrace() {
+		TRACE_ASSEMBLY = false;
+	}
+
+
 
 	/**
 	 * @return a new {@link NullPointerException} with a cause message abiding to reactive stream specification.

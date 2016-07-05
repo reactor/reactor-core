@@ -89,14 +89,4 @@ public interface Introspectable {
 		return -1L;
 	}
 
-	/**
-	 * Should this component record a stacktrace on assembly
-	 * @return true should this component record a stacktrace on assembly
-	 */
-	default boolean isTraceAssembly(){
-		return TRACE_ASSEMBLY;
-	}
-
-	boolean TRACE_ASSEMBLY              =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.assembly", "false"));
 }

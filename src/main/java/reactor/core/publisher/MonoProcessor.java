@@ -474,12 +474,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	@Override
-	public boolean isTraceAssembly() {
-		return source instanceof Introspectable ? ((Introspectable)source)
-				.isTraceAssembly() : super.isTraceAssembly();
-	}
-
 	final boolean checkStarted(){
 		int state = this.state;
 		if(state == STATE_ERROR){

@@ -26,7 +26,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Introspectable;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
 import reactor.core.util.BackpressureUtils;
@@ -72,13 +71,11 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		for (; ; ) {
 			if (next instanceof Receiver) {
 				Receiver r = (Receiver) next;
-				if (r instanceof Introspectable && ((Introspectable) r).isTraceAssembly()) {
 					next = r.upstream();
 					if (next instanceof AssemblyOp) {
 						return (Publisher<?>) next;
 					}
 					continue;
-				}
 			}
 			break;
 		}
@@ -166,11 +163,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		else {
 			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
 		}
-	}
-
-	@Override
-	public boolean isTraceAssembly() {
-		return true;
 	}
 
 	/**

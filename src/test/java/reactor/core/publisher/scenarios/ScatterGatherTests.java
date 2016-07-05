@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.test.TestSubscriber;
+import reactor.core.util.Exceptions;
 
 public class ScatterGatherTests {
 
@@ -67,12 +68,11 @@ public class ScatterGatherTests {
 
 	@Test
 	public void testTrace() throws Exception {
-
+		Exceptions.enableOperatorStacktrace();
 		try {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException();
 			})
-			    .useTraceAssembly(true)
 			    .map(d -> d)
 			    .block();
 		}
@@ -80,16 +80,18 @@ public class ScatterGatherTests {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
 			return;
 		}
+		finally {
+			Exceptions.disableOperatorStacktrace();
+		}
 		throw new IllegalStateException();
 	}
 
 
 	@Test
 	public void testTrace2() throws Exception {
-
+		Exceptions.enableOperatorStacktrace();
 		try {
 			Mono.just(1)
-			    .useTraceAssembly(true)
 			    .map(d -> {
 				    throw new RuntimeException();
 			    })
@@ -103,6 +105,9 @@ public class ScatterGatherTests {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("ScatterGatherTests.java:93"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map(ScatterGatherTests.java:93)"));
 			return;
+		}
+		finally {
+			Exceptions.disableOperatorStacktrace();
 		}
 		throw new IllegalStateException();
 	}

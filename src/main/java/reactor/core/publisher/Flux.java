@@ -4990,18 +4990,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
-	 * Configure an arbitrary name for later introspection.
-	 *
-	 * @param name arbitrary {@link Flux} name
-	 *
-	 * @return a configured flux
-	 */
-	public Flux<T> useName(String name) {
-		return FluxConfig.withName(this, name);
-
-	}
-
-	/**
 	 * Configure a {@link TimedScheduler} that can be used by timed operators downstream.
 	 *
 	 * @param timer the timer
@@ -5010,21 +4998,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public Flux<T> useTimer(TimedScheduler timer) {
 		return FluxConfig.withTimer(this, timer);
-	}
-
-	/**
-	 * Configure a {@link Flux} and its child operators to trace mode. Errors will
-	 * therefore include original operator declaration stack.
-	 *
-	 * @param trace true if this {@link Flux} should trace on assembly.
-	 *
-	 * @return a configured flux
-	 */
-	public Flux<T> useTraceAssembly(boolean trace) {
-		if(trace) {
-			return new FluxOnAssembly<>(this);
-		}
-		return this;
 	}
 
 	/**
@@ -5472,7 +5445,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return the potentially wrapped source
 	 */
 	static <T> Flux<T> onAssembly(Flux<T> source) {
-		if (source.isTraceAssembly()) {
+		if (Exceptions.isOperatorStacktraceEnabled()) {
 			return new FluxOnAssembly<>(source);
 		}
 		return source;
@@ -5488,7 +5461,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return the potentially wrapped source
 	 */
 	static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
-		if (source.isTraceAssembly()) {
+		if (Exceptions.isOperatorStacktraceEnabled()) {
 			return new ConnectableFluxOnAssembly<>(source);
 		}
 		return source;
