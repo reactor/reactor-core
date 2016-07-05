@@ -72,8 +72,9 @@ public enum Exceptions {
 	}
 
 	/**
-	 * When enabled, operator declaration stacks are recorded and added as Suppressed
-	 * Exception if the operator callback fails.
+	 * When enabled, producer declaration stacks are recorded via an intercepting
+	 * "assembly tracker" operator and added as Suppressed
+	 * Exception if the source producer fails.
 	 *
 	 * @return a true if assembly tracking is enabled
 	 */
@@ -82,16 +83,19 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Enable operator stack recording. Operator declaration stacks are added as Suppressed
-	 * Exception if the operator callback fails. Must be called before operators (e.g.
-	 * Flux.map) are actually called to intercept the right stack information.
+	 * Enable operator stack recorder. When a producer is declared, an "assembly
+	 * tracker" operator is automatically added to capture declaration
+	 * stack. Errors are observed and enriched with a Suppressed
+	 * Exception detailing the original stack. Must be called before producers
+	 * (e.g. Flux.map, Mono.fromCallable) are actually called to intercept the right
+	 * stack information.
 	 */
 	public static void enableOperatorStacktrace() {
 		TRACE_ASSEMBLY = true;
 	}
 
 	/**
-	 * Disable operator stack recording.
+	 * Disable operator stack recorder.
 	 */
 	public static void disableOperatorStacktrace() {
 		TRACE_ASSEMBLY = false;

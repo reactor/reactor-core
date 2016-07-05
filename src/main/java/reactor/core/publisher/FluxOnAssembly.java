@@ -87,7 +87,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		                                 .getStackTrace();
 
 		StringBuilder sb =
-				new StringBuilder("\nAssembly trace from source [" + source.getClass()
+				new StringBuilder("\nAssembly trace from producer [" + source.getClass()
 				                                                           .getName() + "] " +
 						":\n");
 
