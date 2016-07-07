@@ -15,44 +15,24 @@ import rx.Completable.CompletableSubscriber;
  * Convert a {@link Publisher Publisher} into a Completable
  *
  * @author Joao Pedro Evangelista
+ * @author Sebastien Deleuze
  * @since 2.5
  */
-public final class RxJava1CompletableConverter extends PublisherConverter<Completable> {
+public enum RxJava1CompletableConverter {
+    ;
 
-    static final RxJava1CompletableConverter INSTANCE = new RxJava1CompletableConverter();
-
-    static public Completable from(Publisher<?> noValue) {
-        return INSTANCE.fromPublisher(noValue);
+    public static Mono<Void> toPublisher(Completable completable) {
+        return new CompletableAsMono(completable);
     }
 
-    static public Mono<Void> from(Completable completable) {
-        return INSTANCE.toPublisher(completable);
-    }
-
-
-    @Override
-    public Mono<Void> toPublisher(Object o) {
-        if (o instanceof Completable) {
-            return new CompletableAsMono((Completable)o);
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    public Completable fromPublisher(Publisher<?> source) {
+    public static Completable fromPublisher(Publisher<?> source) {
         return Completable.create(new PublisherAsCompletable(source));
     }
 
-    @Override
-    public Class<Completable> get() {
-        return Completable.class;
-    }
-    
     /**
      * Wraps an rx.Completable and exposes it as a Mono&lt;Void>.
      */
-    static final class CompletableAsMono extends Mono<Void> {
+    private static class CompletableAsMono extends Mono<Void> {
         final Completable source;
         
         public CompletableAsMono(Completable source) {
@@ -112,7 +92,7 @@ public final class RxJava1CompletableConverter extends PublisherConverter<Comple
      * Wraps a Publisher and exposes it as a CompletableOnSubscribe and ignores
      * the onNext signals of the Publisher.
      */
-    static final class PublisherAsCompletable implements Completable.CompletableOnSubscribe {
+    private static class PublisherAsCompletable implements Completable.CompletableOnSubscribe {
         final Publisher<?> source;
         
         public PublisherAsCompletable(Publisher<?> source) {

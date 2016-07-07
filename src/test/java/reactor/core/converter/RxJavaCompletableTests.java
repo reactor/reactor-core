@@ -17,17 +17,15 @@ public class RxJavaCompletableTests {
 
     private Completable completable;
 
-    private RxJava1CompletableConverter converter;
 
     @Before
     public void setUp() throws Exception {
         completable = Completable.fromObservable(Observable.just(1,2,3,4,5));
-        converter = RxJava1CompletableConverter.INSTANCE;
     }
 
     @Test
     public void shouldConvertACompletableIntoMonoVoid() throws Exception {
-        Mono<Void> printableMono = converter.toPublisher(completable);
+        Mono<Void> printableMono = RxJava1CompletableConverter.toPublisher(completable);
         assertThat(printableMono, is(notNullValue()));
         TestSubscriber
                 .subscribe(printableMono)
@@ -38,7 +36,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void completableWithErrorIntoMono() throws Exception {
-        Mono<Void> voidMono = converter.toPublisher(Completable.fromAction(() -> {
+        Mono<Void> voidMono = RxJava1CompletableConverter.toPublisher(Completable.fromAction(() -> {
             throw new IllegalStateException("This should not happen"); //something internal happened
         }));
         TestSubscriber
@@ -51,7 +49,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void shouldConvertAMonoIntoCompletable() throws Exception {
-        Completable completable = RxJava1CompletableConverter.from(Mono.just(1));
+        Completable completable = RxJava1CompletableConverter.fromPublisher(Mono.just(1));
         Throwable maybeErrors = completable.get();
         assertThat(maybeErrors, is(nullValue()));
     }

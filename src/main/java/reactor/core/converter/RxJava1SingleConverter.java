@@ -33,56 +33,27 @@ import rx.SingleSubscriber;
  * Convert a RxJava 1 {@link Single} to/from a Reactive Streams {@link Publisher}.
  *
  * @author Stephane Maldini
+ * @author Sebastien Deleuze
  * @since 2.5
  */
-@SuppressWarnings("rawtypes")
-public final class RxJava1SingleConverter extends PublisherConverter<Single> {
-
-	static final RxJava1SingleConverter INSTANCE = new RxJava1SingleConverter();
+public enum RxJava1SingleConverter {
+	;
 
 	@SuppressWarnings("unchecked")
-	static public <T> Single<T> from(Publisher<T> o) {
-		return INSTANCE.fromPublisher(o);
-	}
-
-	@SuppressWarnings("unchecked")
-	static public <T> Mono<T> from(Single<T> o) {
-		return INSTANCE.toPublisher(o);
-	}
-
-	@Override
-	public Single fromPublisher(Publisher<?> o) {
-	    if (o instanceof Fuseable.ScalarCallable) {
-            Fuseable.ScalarCallable<?> scalarCallable = (Fuseable.ScalarCallable<?>) o;
-            Object v = scalarCallable.call();
+	public static <T> Single<T> fromPublisher(Publisher<T> publisher) {
+	    if (publisher instanceof Fuseable.ScalarCallable) {
+            Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) publisher;
+            T v = scalarCallable.call();
             if (v == null) {
                 return Single.error(new NoSuchElementException("Can't convert an empty Publisher to Single"));
             }
             return Single.just(v);
 	    }
-		return Single.create(new PublisherAsSingle<>(o));
+		return Single.create(new PublisherAsSingle<>(publisher));
 	}
 
-    @SuppressWarnings("unchecked")
-    @Override
-	public Mono toPublisher(Object o) { 
-	    if (o instanceof Single) {
-    		Single<?> single = (Single<?>) o;
-    		/*if (single instanceof ScalarSynchronousSingle) {
-    		    Object v = ((ScalarSynchronousSingle)single).get();
-    		    if (v == null) {
-    		        return Mono.error(new NullPointerException("The wrapped Single produced a null value"));
-    		    }
-                return Mono.just(v);
-    		}*/
-    		return new SingleAsMono<>(single);
-	    }
-	    return null;
-	}
-
-	@Override
-	public Class<Single> get() {
-		return Single.class;
+	public static <T> Mono<T> toPublisher(Single<T> single) {
+	    return new SingleAsMono<>(single);
 	}
 
 	/**
@@ -91,7 +62,7 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	 *
 	 * @param <T> the value type
 	 */
-	static final class PublisherAsSingle<T> implements Single.OnSubscribe<T> {
+	private static class PublisherAsSingle<T> implements Single.OnSubscribe<T> {
 	    final Publisher<? extends T> source;
 	    
         public PublisherAsSingle(Publisher<? extends T> source) {
@@ -202,7 +173,7 @@ public final class RxJava1SingleConverter extends PublisherConverter<Single> {
 	 *
 	 * @param <T> the value type
 	 */
-	static final class SingleAsMono<T> extends Mono<T> {
+	private static class SingleAsMono<T> extends Mono<T> {
 	    final Single<? extends T> source;
 	    
 	    public SingleAsMono(Single<? extends T> source) {

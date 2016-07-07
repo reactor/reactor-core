@@ -2,6 +2,7 @@ package reactor.core.converter;
 
 import java.util.NoSuchElementException;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import reactor.core.publisher.*;
@@ -15,7 +16,8 @@ public class RxJava1SingleConverterTest {
         
         Single<Integer> s = Single.just(1);
         
-        Mono<Integer> m = RxJava1SingleConverter.from(s);
+
+        Mono<Integer> m = RxJava1SingleConverter.toPublisher(s);
         
         TestSubscriber<Integer> ts = TestSubscriber.create();
         
@@ -31,7 +33,7 @@ public class RxJava1SingleConverterTest {
         
         Single<Integer> s = Single.just(1).doOnSuccess(e -> { });
         
-        Mono<Integer> m = RxJava1SingleConverter.from(s);
+        Mono<Integer> m = RxJava1SingleConverter.toPublisher(s);
         
         TestSubscriber<Integer> ts = TestSubscriber.create();
         
@@ -47,7 +49,7 @@ public class RxJava1SingleConverterTest {
         
         Single<Integer> s = Single.just(1);
         
-        Mono<Integer> m = RxJava1SingleConverter.from(s);
+        Mono<Integer> m = RxJava1SingleConverter.toPublisher(s);
         
         TestSubscriber<Integer> ts = TestSubscriber.create(0);
         
@@ -70,7 +72,7 @@ public class RxJava1SingleConverterTest {
         
         Single<Integer> s = Single.just(null);
         
-        Mono<Integer> m = RxJava1SingleConverter.from(s);
+        Mono<Integer> m = RxJava1SingleConverter.toPublisher(s);
         
         TestSubscriber<Integer> ts = TestSubscriber.create();
         
@@ -86,7 +88,7 @@ public class RxJava1SingleConverterTest {
         
         Single<Integer> s = Single.error(new RuntimeException("Forced failure"));
         
-        Mono<Integer> m = RxJava1SingleConverter.from(s);
+        Mono<Integer> m = RxJava1SingleConverter.toPublisher(s);
         
         TestSubscriber<Integer> ts = TestSubscriber.create();
         
@@ -102,7 +104,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = Mono.just(1);
         
-        Single<Integer> s = RxJava1SingleConverter.from(m);
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
         
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
         
@@ -118,7 +120,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = Mono.just(1).hide();
         
-        Single<Integer> s = RxJava1SingleConverter.from(m);
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
         
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
         
@@ -134,7 +136,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = Mono.empty();
         
-        Single<Integer> s = RxJava1SingleConverter.from(m);
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
         
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
         
@@ -149,13 +151,13 @@ public class RxJava1SingleConverterTest {
     public void publisherToSingleEmptyHidden() {
         
         Mono<Integer> m = Mono.<Integer>empty().hide();
-        
-        Single<Integer> s = RxJava1SingleConverter.from(m);
-        
+
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
+
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
-        
+
         s.subscribe(ts);
-        
+
         ts.assertNoValues();
         ts.assertError(NoSuchElementException.class);
         ts.assertNotCompleted();
@@ -166,7 +168,7 @@ public class RxJava1SingleConverterTest {
         
         Flux<Integer> m = Flux.just(1, 2);
         
-        Single<Integer> s = RxJava1SingleConverter.from(m);
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
         
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
         
@@ -182,7 +184,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = Mono.error(new RuntimeException("Forced failure"));
         
-        Single<Integer> s = RxJava1SingleConverter.from(m);
+        Single<Integer> s = RxJava1SingleConverter.fromPublisher(m);
         
         rx.observers.TestSubscriber<Integer> ts = new rx.observers.TestSubscriber<>();
         

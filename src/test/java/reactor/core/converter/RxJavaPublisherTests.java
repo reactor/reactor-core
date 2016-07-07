@@ -44,12 +44,12 @@ public class RxJavaPublisherTests extends PublisherVerification<Long> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return (Publisher<Long>) DependencyUtils.convertToPublisher(Observable.range(0, (int)Math.min(Integer.MAX_VALUE, elements)));
+		return (Publisher<Long>) Converters.toPublisher(Observable.range(0, (int)Math.min(Integer.MAX_VALUE, elements)));
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return (Publisher<Long>) DependencyUtils.convertToPublisher(Observable.error(new Exception("obs-test")));
+		return (Publisher<Long>) Converters.toPublisher(Observable.error(new Exception("obs-test")));
 	}
 }
