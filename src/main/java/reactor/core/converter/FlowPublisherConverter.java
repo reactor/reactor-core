@@ -27,74 +27,54 @@ import reactor.core.publisher.Flux;
  * Convert a Java 9+ {@literal Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
  *
  * @author Stephane Maldini
+ * @author Sebastien Deleuze
  * @since 2.5
  */
-@SuppressWarnings("rawtypes")
-public final class FlowPublisherConverter extends PublisherConverter<Flow.Publisher> {
+public enum FlowPublisherConverter {
+	;
 
-	static final FlowPublisherConverter INSTANCE = new FlowPublisherConverter();
-
-	@SuppressWarnings("unchecked")
-	static public <T> Flow.Publisher<T> from(Publisher<T> o) {
-		return INSTANCE.fromPublisher(o);
+	private FlowPublisherConverter() {
 	}
 
-	@SuppressWarnings("unchecked")
-	static public <T> Publisher<T> from(Flow.Publisher<T> o) {
-		return INSTANCE.toPublisher(o);
+	public static <T> Flow.Publisher<T> fromPublisher(final Publisher<T> publisher) {
+		return new PublisherAsFlowPublisher<>(publisher);
 	}
 
-	@Override
-	public Flow.Publisher fromPublisher(final Publisher<?> pub) {
-		return new PublisherAsFlowPublisher(pub);
+	public static <T> Flux toPublisher(Flow.Publisher<T> publisher) {
+		return new FlowPublisherAsFlux<>(publisher);
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public Flux toPublisher(Object o) {
-		if (o instanceof Flow.Publisher) {
-			final Flow.Publisher<?> pub = (Flow.Publisher<?>) o;
-			return new FlowPublisherAsFlux(pub);
-		}
-		return null;
-	}
+	private static class FlowPublisherAsFlux<T> extends Flux<T> {
+        private final java.util.concurrent.Flow.Publisher<T> pub;
 
-	@Override
-	public Class<Flow.Publisher> get() {
-		return Flow.Publisher.class;
-	}
-
-	private final class FlowPublisherAsFlux extends Flux<Object> {
-        private final java.util.concurrent.Flow.Publisher<?> pub;
-
-        private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<?> pub) {
+        private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<T> pub) {
             this.pub = pub;
         }
 
         @Override
-        public void subscribe(final Subscriber<? super Object> s) {
-        	pub.subscribe(new SubscriberToRS(s));
+        public void subscribe(final Subscriber<? super T> s) {
+        	pub.subscribe(new SubscriberToRS<>(s));
         }
     }
 
-    private final class PublisherAsFlowPublisher implements Flow.Publisher<Object> {
-        private final Publisher<?> pub;
+    private static class PublisherAsFlowPublisher<T> implements Flow.Publisher<T> {
+        private final Publisher<T> pub;
 
-        private PublisherAsFlowPublisher(Publisher<?> pub) {
+        private PublisherAsFlowPublisher(Publisher<T> pub) {
             this.pub = pub;
         }
 
         @Override
-        public void subscribe(Flow.Subscriber<? super Object> subscriber) {
-        	pub.subscribe(new FlowSubscriber(subscriber));
+        public void subscribe(Flow.Subscriber<? super T> subscriber) {
+        	pub.subscribe(new FlowSubscriber<>(subscriber));
         }
     }
 
-    private static class FlowSubscriber implements Subscriber<Object> {
+    private static class FlowSubscriber<T> implements Subscriber<T> {
 
-		private final Flow.Subscriber<? super Object> subscriber;
+		private final Flow.Subscriber<? super T> subscriber;
 
-		public FlowSubscriber(Flow.Subscriber<? super Object> subscriber) {
+		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
 		}
 
@@ -114,7 +94,7 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 		}
 
 		@Override
-		public void onNext(Object o) {
+		public void onNext(T o) {
 			subscriber.onNext(o);
 		}
 
@@ -129,11 +109,11 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 		}
 	}
 
-	private static class SubscriberToRS implements Flow.Subscriber<Object> {
+	private static class SubscriberToRS<T> implements Flow.Subscriber<T> {
 
-		private final Subscriber<? super Object> s;
+		private final Subscriber<? super T> s;
 
-		public SubscriberToRS(Subscriber<? super Object> s) {
+		public SubscriberToRS(Subscriber<? super T> s) {
 			this.s = s;
 		}
 
@@ -153,7 +133,7 @@ public final class FlowPublisherConverter extends PublisherConverter<Flow.Publis
 		}
 
 		@Override
-		public void onNext(Object o) {
+		public void onNext(T o) {
 			s.onNext(o);
 		}
 

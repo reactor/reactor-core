@@ -44,12 +44,12 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return (Publisher<Long>)DependencyUtils.convertToPublisher(Single.just(0));
+		return (Publisher<Long>) Converters.toPublisher(Single.just(0));
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return (Publisher<Long>) DependencyUtils.convertToPublisher(Single.error(new Exception("single-test")));
+		return (Publisher<Long>) Converters.toPublisher(Single.error(new Exception("single-test")));
 	}
 }

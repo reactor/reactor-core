@@ -32,69 +32,51 @@ import rx.internal.util.ScalarSynchronousObservable;
  * Convert a RxJava 1 {@link Observable} to/from a Reactive Streams {@link Publisher}.
  *
  * @author Stephane Maldini
+ * @author Sebastien Deleuze
  * @since 2.5
  */
 @SuppressWarnings("rawtypes")
-public final class RxJava1ObservableConverter extends PublisherConverter<Observable> {
-
-	static final RxJava1ObservableConverter INSTANCE = new RxJava1ObservableConverter();
-
-	@SuppressWarnings("unchecked")
-	static public <T> Observable<T> from(Publisher<T> o) {
-		return INSTANCE.fromPublisher(o);
-	}
+public enum RxJava1ObservableConverter {
+	;
 
 	@SuppressWarnings("unchecked")
-	static public <T> Flux<T> from(Observable<T> o) {
-		return INSTANCE.toPublisher(o);
-	}
+	public static <T> Observable<T> fromPublisher(final Publisher<T> publisher) {
+	    if (publisher instanceof Fuseable.ScalarCallable) {
+            Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) publisher;
 
-	@Override
-	public Observable fromPublisher(final Publisher<?> pub) {
-	    if (pub instanceof Fuseable.ScalarCallable) {
-            Fuseable.ScalarCallable scalarCallable = (Fuseable.ScalarCallable) pub;
-
-            Object v = scalarCallable.call();
+            T v = scalarCallable.call();
             if (v == null) {
                 return Observable.empty();
             }
             return Observable.just(v);
 	    }
-		return Observable.create(new PublisherAsObservable(pub));
+		return Observable.create(new PublisherAsObservable<>(publisher));
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
-	public Flux toPublisher(Object o) {
-		if (o instanceof Observable) {
-			final Observable<Object> obs = (Observable<Object>) o;
-			if (obs == Observable.empty()) {
-			    return Flux.empty();
-			}
-			if (obs instanceof ScalarSynchronousObservable) {
-				return Flux.just(((ScalarSynchronousObservable) obs).get());
-			}
-			return new ObservableAsFlux(obs);
+	public static <T> Flux<T> toPublisher(Observable<T> obs) {
+		if (obs == Observable.empty()) {
+		    return Flux.empty();
 		}
-		return null;
+		if (obs instanceof ScalarSynchronousObservable) {
+			return Flux.just(((ScalarSynchronousObservable<T>) obs).get());
+		}
+		return new ObservableAsFlux<>(obs);
+
 	}
 
-	@Override
-	public Class<Observable> get() {
-		return Observable.class;
-	}
 
-	private final class ObservableAsFlux extends Flux<Object> {
-        private final Observable<Object> obs;
+	private static class ObservableAsFlux<T> extends Flux<T> {
+        private final Observable<T> obs;
 
-        private ObservableAsFlux(Observable<Object> obs) {
+        private ObservableAsFlux(Observable<T> obs) {
             this.obs = obs;
         }
 
         @Override
-        public void subscribe(final Subscriber<? super Object> s) {
+        public void subscribe(final Subscriber<? super T> s) {
         	try {
-        		obs.subscribe(new RxSubscriberToRS(s));
+        		obs.subscribe(new RxSubscriberToRS<>(s));
         	}
         	catch (Throwable t) {
         		EmptySubscription.error(s, t);
@@ -102,17 +84,17 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
         }
     }
 
-    private final class PublisherAsObservable implements Observable.OnSubscribe<Object> {
-        private final Publisher<?> pub;
+    private static class PublisherAsObservable<T> implements Observable.OnSubscribe<T> {
+        private final Publisher<T> pub;
 
-        private PublisherAsObservable(Publisher<?> pub) {
+        private PublisherAsObservable(Publisher<T> pub) {
             this.pub = pub;
         }
 
         @Override
-        public void call(final rx.Subscriber<? super Object> subscriber) {
+        public void call(final rx.Subscriber<? super T> subscriber) {
         	try {
-        		pub.subscribe(new SubscriberToRx(subscriber));
+        		pub.subscribe(new SubscriberToRx<>(subscriber));
         	}
         	catch (Throwable t) {
         		Exceptions.throwIfFatal(t);
@@ -121,16 +103,16 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
         }
     }
 
-    private static class SubscriberToRx implements Subscriber<Object>, Producer, Subscription, rx.Subscription {
+    private static class SubscriberToRx<T> implements Subscriber<T>, Producer, Subscription, rx.Subscription {
 
-		private final    rx.Subscriber<? super Object> subscriber;
+		private final    rx.Subscriber<? super T> subscriber;
 		private volatile int                           terminated;
 		private volatile Subscription                  subscription;
 
 		private static final AtomicIntegerFieldUpdater<SubscriberToRx> TERMINATED =
 				AtomicIntegerFieldUpdater.newUpdater(SubscriberToRx.class, "terminated");
 
-		public SubscriberToRx(rx.Subscriber<? super Object> subscriber) {
+		public SubscriberToRx(rx.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
 			terminated = 0;
 		}
@@ -183,7 +165,7 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 		}
 
 		@Override
-		public void onNext(Object o) {
+		public void onNext(T o) {
 			subscriber.onNext(o);
 		}
 
@@ -204,11 +186,11 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 		}
 	}
 
-	private static class RxSubscriberToRS extends rx.Subscriber<Object> {
+	private static class RxSubscriberToRS<T> extends rx.Subscriber<T> {
 
-		private final Subscriber<? super Object> s;
+		private final Subscriber<? super T> s;
 
-		public RxSubscriberToRS(Subscriber<? super Object> s) {
+		public RxSubscriberToRS(Subscriber<? super T> s) {
 			this.s = s;
 			request(0L);
 		}
@@ -248,7 +230,7 @@ public final class RxJava1ObservableConverter extends PublisherConverter<Observa
 		}
 
 		@Override
-		public void onNext(Object o) {
+		public void onNext(T o) {
 			if (o == null) {
 				throw Exceptions.argumentIsNullException();
 			}
