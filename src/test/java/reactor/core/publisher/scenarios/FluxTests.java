@@ -162,7 +162,6 @@ public class FluxTests extends AbstractReactorTest {
 		Flux<String> stream2 = Flux.just("3", "4", "5");
 		Mono<Integer> s = Flux.merge(stream1, stream2)
 		                         //.publishOn(env)
-		                         .useCapacity(5)
 		                         .log("merge")
 		                         .map(STRING_2_INTEGER)
 		                         .reduce(1, (acc, next) -> acc * next);
@@ -816,11 +815,11 @@ public class FluxTests extends AbstractReactorTest {
 
 		                           );
 
-		Cancellation action = s.useCapacity(1L)
+		Cancellation action = s
 		                  .subscribe(integer -> {
 			                  latch.countDown();
 			                  System.out.println(integer);
-		                  });
+		                  }, 1);
 
 
 		afterSubscribe.await(5, TimeUnit.SECONDS);
@@ -1123,8 +1122,7 @@ public class FluxTests extends AbstractReactorTest {
 		       .log("testOn")
 		       .subscribeOn(ioGroup)
 		       .publishOn(asyncGroup)
-		       .useCapacity(1)
-		       .subscribe(t -> latch.countDown());
+		       .subscribe(t -> latch.countDown(), 1);
 
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}

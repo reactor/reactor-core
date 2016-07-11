@@ -52,13 +52,6 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 		this.source = Objects.requireNonNull(source);
 	}
 
-	@Override
-	public long getCapacity() {
-		return source instanceof Backpressurable ?
-				((Backpressurable) source).getCapacity() :
-				-1L;
-	}
-
 	/**
 	 * Default is delegating and decorating with {@link Flux} API
 	 */

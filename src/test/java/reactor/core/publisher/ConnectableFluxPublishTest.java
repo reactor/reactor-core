@@ -228,7 +228,7 @@ public class ConnectableFluxPublishTest {
 		TestSubscriber<Integer> ts1 = TestSubscriber.create();
 		TestSubscriber<Integer> ts2 = TestSubscriber.create();
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
+		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);
@@ -259,7 +259,7 @@ public class ConnectableFluxPublishTest {
 		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
 		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
 
-		ConnectableFlux<Integer> p = Flux.range(1, 5).useCapacity(5).publish();
+		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
 		
 		p.subscribe(ts1);
 		p.subscribe(ts2);

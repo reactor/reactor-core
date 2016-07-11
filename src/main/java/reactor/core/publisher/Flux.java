@@ -2127,7 +2127,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper) {
-		return concatMap(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+		return concatMap(mapper, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2167,7 +2167,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
-		return concatMapDelayError(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+		return concatMapDelayError(mapper, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2236,7 +2236,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a concatenated {@link Flux}
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return concatMapIterable(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+		return concatMapIterable(mapper, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2788,7 +2788,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return flatMap(mapper, getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE), PlatformDependent
+		return flatMap(mapper, PlatformDependent.SMALL_BUFFER_SIZE, PlatformDependent
 				.XS_BUFFER_SIZE);
 	}
 
@@ -2909,7 +2909,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return flatMapIterable(mapper, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+		return flatMapIterable(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3605,7 +3605,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish() {
-		return publish(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+		return publish(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3639,7 +3639,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
 			extends
 			R>> transform) {
-		return publish(transform, getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+		return publish(transform, PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3868,7 +3868,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a replaying {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> replay() {
-		return replay(getPrefetchOrDefault(PlatformDependent.SMALL_BUFFER_SIZE));
+		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -4395,8 +4395,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
-	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * sequence. It will request an unbounded demand.
+	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}
 	 *
 	 * <p>
@@ -4411,9 +4411,28 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	}
 
 	/**
+	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
+	 * sequence.
+	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
+	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
+	 * onNext, request N x 0.75.
+	 * <p>For a passive version that observe and forward incoming data see {@link
+	 * #doOnNext(java.util.function.Consumer)}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe.png"
+	 * alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer, int prefetch) {
+		return subscribe(consumer, null, null, prefetch);
+	}
+
+	/**
 	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
-	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
 	 * For a passive version that observe and forward incoming data see
 	 * {@link #doOnNext(java.util.function.Consumer)} and {@link #doOnError(java.util.function.Consumer)}.
 	 *
@@ -4431,8 +4450,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 
 	/**
 	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  If {@link Flux#getCapacity()} returns an integer value, the {@link Subscriber} will use it as a
-	 * prefetch strategy: first request N, then when 25% of N is left to be received on onNext, request N x 0.75. <p>
+	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
 	 * {@link #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
 	 *
@@ -4446,17 +4464,52 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer) {
+			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
 
-		long c = Math.min(Integer.MAX_VALUE, getCapacity());
+		LambdaSubscriber<T> consumerAction =
+				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+
+		onAssembly(this).subscribe(consumerAction);
+		return consumerAction;
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the sequence.
+	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
+	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
+	 * onNext, request N x 0.75.
+	 *
+	 * <p> For a passive version that observe and forward
+	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
+	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png"
+	 * alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param prefetch the demand to produce to this {@link Flux}
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer,
+			int prefetch) {
+
+		long c = Math.min(Integer.MAX_VALUE, prefetch);
 
 		LambdaSubscriber<T> consumerAction;
-		if (c == Integer.MAX_VALUE || c == -1L) {
-			consumerAction = new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+		if (c == Integer.MAX_VALUE) {
+			consumerAction =
+					new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
 		}
 		else {
-			consumerAction = Subscribers.bounded((int) c, consumer, errorConsumer, completeConsumer);
+			consumerAction = Subscribers.bounded((int) c,
+					consumer,
+					errorConsumer,
+					completeConsumer);
 		}
 
 		onAssembly(this).subscribe(consumerAction);
@@ -4517,7 +4570,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
-		return switchMap(fn, getPrefetchOrDefault(PlatformDependent.XS_BUFFER_SIZE));
+		return switchMap(fn, PlatformDependent.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -4956,7 +5009,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(getPrefetchOrDefault(Integer.MAX_VALUE));
+		return toIterable(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -5006,8 +5059,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> toStream() {
-		return toStream(getPrefetchOrDefault(Integer
-				.MAX_VALUE));
+		return toStream(PlatformDependent.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -5023,21 +5075,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		final Supplier<Queue<T>> provider;
 		provider = QueueSupplier.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
-	}
-
-	/**
-	 * Hint {@link Subscriber} to this {@link Flux} a preferred available capacity should be used.
-	 * {@link #toIterable()} can for instance use introspect this value to supply an appropriate queueing strategy.
-	 *
-	 * @param capacity the maximum capacity (in flight onNext) the return {@link Publisher} should expose
-	 *
-	 * @return a bounded {@link Flux}
-	 */
-	public Flux<T> useCapacity(long capacity) {
-		if (capacity == getCapacity()) {
-			return this;
-		}
-		return FluxConfig.withCapacity(this, capacity);
 	}
 
 	/**
@@ -5063,8 +5100,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * signals
 	 */
 	public final Flux<Flux<T>> window() {
-		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.get(getPrefetchOrDefault
-				(PlatformDependent.MEDIUM_BUFFER_SIZE))));
+		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded
+				(PlatformDependent.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -5164,17 +5201,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final <U, V> Flux<Flux<T>> window(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
-
-		long c = getCapacity();
-		c = c == -1L ? Long.MAX_VALUE : c;
-		/*if(c > 1 && c < 10_000_000){
-			return new StreamWindowBeginEnd<>(this,
-					bucketOpening,
-					boundarySupplier,
-					QueueSupplier.get(c),
-					(int)c);
-		}*/
-
 		return onAssembly(new FluxWindowStartEnd<>(this,
 				bucketOpening,
 				closeSelector,
@@ -5439,17 +5465,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
 			BiFunction<? super T, ? super T2, ? extends V> zipper) {
 		return onAssembly(new FluxZipIterable<>(this, iterable, zipper));
-	}
-
-	final int getPrefetchOrDefault(int defaultPrefetch) {
-		long c = getCapacity();
-		if (c < 0L) {
-			return defaultPrefetch;
-		}
-		if (c >= Integer.MAX_VALUE) {
-			return Integer.MAX_VALUE;
-		}
-		return (int) c;
 	}
 
 	/**

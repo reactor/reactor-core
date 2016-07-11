@@ -529,12 +529,12 @@ class FluxSpec extends Specification {
 		given:
 			'a composable that will accept an unknown number of values'
 			def d = EmitterProcessor.<Integer> create().connect()
-			def composable = d.useCapacity(3)
+			def composable = d
 
 		when:
 			'the expected accept count is set and that number of values is accepted'
 			def tap
-			composable.every(3).log().subscribe{ tap = it }
+			composable.every(3).log().subscribe({ tap = it }, 3)
 			d.onNext(1)
 			d.onNext(2)
 			d.onNext(3)

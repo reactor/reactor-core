@@ -68,19 +68,19 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 	public void request(long n) {
 		if (BackpressureUtils.validate(n)) {
 			for (; ; ) {
-				int s = getState();
+				int s = state;
 				if (s == SDS_HAS_REQUEST_NO_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
 					return;
 				}
 				if (s == SDS_NO_REQUEST_HAS_VALUE) {
-					if (compareAndSetState(SDS_NO_REQUEST_HAS_VALUE, SDS_HAS_REQUEST_HAS_VALUE)) {
+					if (STATE.compareAndSet(this, SDS_NO_REQUEST_HAS_VALUE, SDS_HAS_REQUEST_HAS_VALUE)) {
 						Subscriber<? super O> a = downstream();
 						a.onNext(value);
 						a.onComplete();
 					}
 					return;
 				}
-				if (compareAndSetState(SDS_NO_REQUEST_NO_VALUE, SDS_HAS_REQUEST_NO_VALUE)) {
+				if (STATE.compareAndSet(this, SDS_NO_REQUEST_NO_VALUE, SDS_HAS_REQUEST_NO_VALUE)) {
 					return;
 				}
 			}
@@ -89,7 +89,7 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 
 	@Override
 	public void cancel() {
-		setState(SDS_HAS_REQUEST_HAS_VALUE);
+		state = SDS_HAS_REQUEST_HAS_VALUE;
 	}
 
 	@Override
@@ -115,19 +115,7 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 
 	@Override
 	public final boolean isCancelled() {
-		return getState() == SDS_HAS_REQUEST_HAS_VALUE;
-	}
-
-	public final int getState() {
-		return state;
-	}
-
-	public final void setState(int updated) {
-		state = updated;
-	}
-
-	public final boolean compareAndSetState(int expected, int updated) {
-		return STATE.compareAndSet(this, expected, updated);
+		return state == SDS_HAS_REQUEST_HAS_VALUE;
 	}
 
 	@Override
@@ -149,7 +137,7 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 	public final void complete(O value) {
 		Objects.requireNonNull(value);
 		for (; ; ) {
-			int s = getState();
+			int s = state;
 			if (s == SDS_NO_REQUEST_HAS_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
 				return;
 			}
@@ -160,13 +148,13 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 				}
 				Subscriber<? super O> a = downstream();
 				a.onNext(value);
-				if (getState() != SDS_HAS_REQUEST_HAS_VALUE) {
+				if (state != SDS_HAS_REQUEST_HAS_VALUE) {
 					a.onComplete();
 				}
 				return;
 			}
 			setValue(value);
-			if (compareAndSetState(SDS_NO_REQUEST_NO_VALUE, SDS_NO_REQUEST_HAS_VALUE)) {
+			if (STATE.compareAndSet(this, SDS_NO_REQUEST_NO_VALUE, SDS_NO_REQUEST_HAS_VALUE)) {
 				return;
 			}
 		}
@@ -176,7 +164,6 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 	public boolean isStarted() {
 		return state != SDS_NO_REQUEST_NO_VALUE;
 	}
-
 
 	@Override
 	public Object connectedOutput() {
