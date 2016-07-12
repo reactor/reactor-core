@@ -49,7 +49,7 @@ public enum RxJava1Adapter {
 	/**
 	 * @param completable
 	 *
-	 * @return
+	 * @return a new Mono instance
 	 */
 	public static Mono<Void> completableToMono(rx.Completable completable) {
 		return new CompletableAsMono(completable);
@@ -59,9 +59,8 @@ public enum RxJava1Adapter {
 	 *
 	 * @param obs
 	 * @param <T>
-	 * @return
+	 * @return a new Flux instance
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> observableToFlux(Observable<T> obs) {
 		if (obs == Observable.empty()) {
 			return Flux.empty();
@@ -77,7 +76,7 @@ public enum RxJava1Adapter {
 	 *
 	 * @param publisher
 	 * @param <T>
-	 * @return
+	 * @return a new Observable instance
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Observable<T> publisherToObservable(final Publisher<T> publisher) {
@@ -97,7 +96,7 @@ public enum RxJava1Adapter {
 	 *
 	 * @param publisher
 	 * @param <T>
-	 * @return
+	 * @return a new Single instance
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> rx.Single<T> publisherToSingle(Publisher<T> publisher) {
@@ -117,7 +116,7 @@ public enum RxJava1Adapter {
 	/**
 	 * @param source
 	 *
-	 * @return
+	 * @return a new Completable instance
 	 */
 	public static rx.Completable publisherToCompletable(Publisher<?> source) {
 		return rx.Completable.create(new PublisherAsCompletable(source));
@@ -127,7 +126,7 @@ public enum RxJava1Adapter {
 	 * @param single
 	 * @param <T>
 	 *
-	 * @return
+	 * @return a new Mono instance
 	 */
 	public static <T> Mono<T> singleToMono(rx.Single<T> single) {
 		return new SingleAsMono<>(single);
@@ -448,7 +447,7 @@ public enum RxJava1Adapter {
 					}
 					else {
 						this.value = value;
-						if (STATE.compareAndSet(this, s, NO_REQUEST_HAS_VALUE)) {
+						if (STATE.compareAndSet(this, NO_REQUEST_NO_VALUE, NO_REQUEST_HAS_VALUE)) {
 							break;
 						}
 					}

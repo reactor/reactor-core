@@ -21,7 +21,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 
 /**

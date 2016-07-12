@@ -42,7 +42,6 @@ public class RxJavaPublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
 		return RxJava1Adapter.observableToFlux(Observable.range
 				(0,
@@ -51,7 +50,6 @@ public class RxJavaPublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
 		return RxJava1Adapter.observableToFlux(Observable.error(new Exception
 				("obs-test"))).cast(Long.class);

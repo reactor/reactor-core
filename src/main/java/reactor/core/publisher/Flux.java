@@ -2302,6 +2302,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} call in milliseconds
+	 * @param timer the timed scheduler to use for delaying each signal
 	 *
 	 * @return a throttled {@link Flux}
 	 *
@@ -4419,6 +4420,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
+	 * @param prefetch the the prefetch amount, positive
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */

@@ -297,7 +297,7 @@ public class FluxTests extends AbstractReactorTest {
 			                                                  return Integer.parseInt(str);
 		                                                  }));
 
-		Cancellation tail = tasks.subscribe(i -> {
+		/* Cancellation tail =*/ tasks.subscribe(i -> {
 			latch.countDown();
 		});
 
@@ -386,7 +386,7 @@ public class FluxTests extends AbstractReactorTest {
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
 		SubmissionEmitter<Integer> s = SubmissionEmitter.create(d);
 
-		Cancellation c = d.publishOn(asyncGroup)
+		/*Cancellation c = */d.publishOn(asyncGroup)
 		                  .parallel(8)
 		                  .groups()
 		                  .subscribe(stream -> stream.publishOn(asyncGroup)
@@ -815,7 +815,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		                           );
 
-		Cancellation action = s
+		/*Cancellation action = */s
 		                  .subscribe(integer -> {
 			                  latch.countDown();
 			                  System.out.println(integer);
@@ -893,7 +893,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                 .log("before")
 		                                 .publishOn(asyncGroup);
 
-		Cancellation tail = worker.log("after")
+		/*Cancellation tail = */worker.log("after")
 		                          .parallel(2)
 		                          .groups()
 		                          .subscribe(s -> s.log("w"+s.key())
@@ -1022,7 +1022,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch endLatch = new CountDownLatch(1000 / 100);
 
-		Cancellation controls = sensorDataStream
+		/*Cancellation controls = */sensorDataStream
 				/*     step 2  */.window(100)
 				///*     step 3  */.timeout(1000)
 				/*     step 4  */
@@ -1094,7 +1094,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch latch = new CountDownLatch(10);
 
-		Cancellation c = Flux.range(1, 10)
+		/*Cancellation c = */Flux.range(1, 10)
 		                     .groupBy(n -> n % 2 == 0)
 		                     .flatMap(stream -> stream.publishOn(supplier1)
 		                                            .log("groupBy-" + stream.key()))

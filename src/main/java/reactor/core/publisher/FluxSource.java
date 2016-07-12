@@ -21,8 +21,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)

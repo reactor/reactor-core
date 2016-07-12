@@ -42,13 +42,11 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
 		return RxJava1Adapter.singleToMono(Single.just(0)).cast(Long.class);
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
 		return RxJava1Adapter.singleToMono(Single.error(new Exception("single-test")));
 	}

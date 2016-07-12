@@ -40,7 +40,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 	@Test
 	public void fizzTest() throws Throwable {
 		int numOfItems = 1024;
-		int batchSize = 8;
+//		int batchSize = 8;
 		final Timer timer = new Timer();
 		AtomicLong globalCounter = new AtomicLong();
 

@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.LambdaSubscriber;
@@ -802,7 +801,7 @@ public abstract class ParallelFlux<T> {
 			onError, Runnable onComplete){
 
 		@SuppressWarnings("unchecked")
-		Subscriber<T>[] subscribers = (Subscriber<T>[])new Subscriber[parallelism()];
+		Subscriber<T>[] subscribers = new Subscriber[parallelism()];
 
 		int i = 0;
 		while(i < subscribers.length){

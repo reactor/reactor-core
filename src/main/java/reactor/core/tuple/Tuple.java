@@ -36,7 +36,8 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 
 	static final long     serialVersionUID = 8777121294502020843L;
 	static final Object[] emptyArray       = new Object[0];
-	static final Tuple    empty            = new Tuple(0){};
+	@SuppressWarnings("serial")
+    static final Tuple    empty            = new Tuple(0){};
 
 
 	protected final int size;

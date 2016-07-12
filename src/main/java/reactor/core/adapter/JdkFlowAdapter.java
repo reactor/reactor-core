@@ -38,7 +38,7 @@ public enum JdkFlowAdapter {
 		return new PublisherAsFlowPublisher<>(publisher);
 	}
 
-	public static <T> Flux flowPublisherToPublisher(Flow.Publisher<T> publisher) {
+	public static <T> Flux<T> flowPublisherToPublisher(Flow.Publisher<T> publisher) {
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
@@ -68,9 +68,11 @@ public enum JdkFlowAdapter {
         }
     }
 
-    private static class FlowSubscriber<T> implements Subscriber<T> {
+    private static class FlowSubscriber<T> implements Subscriber<T>, Flow.Subscription {
 
 		private final Flow.Subscriber<? super T> subscriber;
+		
+		Subscription subscription;
 
 		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
@@ -78,17 +80,8 @@ public enum JdkFlowAdapter {
 
 		@Override
 		public void onSubscribe(final Subscription s) {
-			subscriber.onSubscribe(new Flow.Subscription() {
-				@Override
-				public void request(long l) {
-					s.request(l);
-				}
-
-				@Override
-				public void cancel() {
-					s.cancel();
-				}
-			});
+		    this.subscription = s;
+			subscriber.onSubscribe(this);
 		}
 
 		@Override
@@ -105,11 +98,23 @@ public enum JdkFlowAdapter {
 		public void onComplete() {
 			subscriber.onComplete();
 		}
+		
+		@Override
+		public void request(long n) {
+		    subscription.request(n);
+		}
+		
+		@Override
+		public void cancel() {
+		    subscription.cancel();
+		}
 	}
 
-	private static class SubscriberToRS<T> implements Flow.Subscriber<T> {
+	private static class SubscriberToRS<T> implements Flow.Subscriber<T>, Subscription {
 
 		private final Subscriber<? super T> s;
+		
+		Flow.Subscription subscription;
 
 		public SubscriberToRS(Subscriber<? super T> s) {
 			this.s = s;
@@ -117,17 +122,8 @@ public enum JdkFlowAdapter {
 
 		@Override
 		public void onSubscribe(final Flow.Subscription subscription) {
-			s.onSubscribe(new Subscription() {
-				@Override
-				public void request(long n) {
-					subscription.request(n);
-				}
-
-				@Override
-				public void cancel() {
-					subscription.cancel();
-				}
-			});
+		    this.subscription = subscription;;
+			s.onSubscribe(this);
 		}
 
 		@Override
@@ -143,6 +139,16 @@ public enum JdkFlowAdapter {
 		@Override
 		public void onComplete() {
 			s.onComplete();
+		}
+		
+		@Override
+		public void request(long n) {
+		    subscription.request(n);
+		}
+		
+		@Override
+		public void cancel() {
+		    subscription.cancel();
 		}
 	}
 }
