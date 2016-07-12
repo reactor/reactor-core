@@ -37,16 +37,12 @@ import reactor.core.util.BackpressureUtils;
  */
 abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
-	protected final boolean        next;
-	protected final boolean        flush;
-	protected final boolean        first;
-	protected final int            batchSize;
-	protected final long           timespan;
-	protected final TimedScheduler timer;
-
-	public FluxBatch(Publisher<T> source, int batchSize, boolean next, boolean first, boolean flush) {
-		this(source, batchSize, next, first, flush, -1L, null);
-	}
+	final boolean        next;
+	final boolean        flush;
+	final boolean        first;
+	final int            batchSize;
+	final long           timespan;
+	final TimedScheduler timer;
 
 	public FluxBatch(Publisher<T> source,
 			int batchSize,
@@ -70,7 +66,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		this.batchSize = batchSize;
 	}
 
-	protected final Subscriber<? super V> prepareSub(Subscriber<? super V> actual) {
+	final Subscriber<? super V> prepareSub(Subscriber<? super V> actual) {
 		if (timer != null) {
 			return Subscribers.serialize(actual);
 		}
@@ -79,22 +75,22 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 	}
 
-	static protected abstract class BatchAction<T, V> extends SubscriberBarrier<T, V>
+	static abstract class BatchAction<T, V> extends SubscriberBarrier<T, V>
 			implements Requestable, Introspectable {
 
-		protected final static int NOT_TERMINATED = 0;
-		protected final static int TERMINATED_WITH_SUCCESS = 1;
-		protected final static int TERMINATED_WITH_ERROR = 2;
-		protected final static int TERMINATED_WITH_CANCEL = 3;
+		final static int NOT_TERMINATED = 0;
+		final static int TERMINATED_WITH_SUCCESS = 1;
+		final static int TERMINATED_WITH_ERROR = 2;
+		final static int TERMINATED_WITH_CANCEL = 3;
 
 		private volatile       int                                             terminated = NOT_TERMINATED;
 		@SuppressWarnings("rawtypes")
-		protected static final AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
+		static final AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
 				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "terminated");
 
 		private volatile       long                                         requested;
 		@SuppressWarnings("rawtypes")
-		protected static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
+		static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BatchAction.class, "requested");
 
 
@@ -134,7 +130,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			doRequested(BackpressureUtils.getAndAddCap(REQUESTED, this, n), n);
 		}
 
-		protected final void requestMore(long n){
+		final void requestMore(long n){
 			Subscription s = this.subscription;
 			if (s != null) {
 				s.request(n);
@@ -157,7 +153,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		protected void checkedError(Throwable throwable){
+		void checkedError(Throwable throwable){
 			subscriber.onError(throwable);
 		}
 
@@ -169,11 +165,11 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		protected void checkedCancel(){
+		void checkedCancel(){
 			super.doCancel();
 		}
 
-		protected void doTerminate(){
+		void doTerminate(){
 			//TBD
 		}
 
@@ -192,13 +188,13 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		};
 
-		protected final boolean        next;
-		protected final boolean        flush;
-		protected final boolean        first;
-		protected final int            batchSize;
-		protected final long           timespan;
-		protected final TimedScheduler timer;
-		protected final Runnable       flushTask;
+		final boolean        next;
+		final boolean        flush;
+		final boolean        first;
+		final int            batchSize;
+		final long           timespan;
+		final TimedScheduler timer;
+		final Runnable       flushTask;
 
 		private volatile int index = 0;
 		private Cancellation timespanRegistration;
@@ -240,7 +236,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			this.batchSize = batchSize;
 		}
 
-		protected void doRequested(long before, long n) {
+		void doRequested(long before, long n) {
 			if (isTerminated()) {
 				return;
 			}
@@ -252,13 +248,13 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		protected void nextCallback(T event) {
+		void nextCallback(T event) {
 		}
 
-		protected void flushCallback(T event) {
+		void flushCallback(T event) {
 		}
 
-		protected void firstCallback(T event) {
+		void firstCallback(T event) {
 		}
 
 		@Override
@@ -305,7 +301,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		protected void checkedComplete() {
+		void checkedComplete() {
 			try {
 				flushCallback(null);
 			}

@@ -56,11 +56,6 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		}
 
 		@Override
-		public TimedScheduler getTimer() {
-			return timer;
-		}
-
-		@Override
 		public long getCapacity() {
 			return processor.getCapacity();
 		}

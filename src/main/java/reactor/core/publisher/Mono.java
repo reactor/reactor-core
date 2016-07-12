@@ -187,21 +187,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
-	 * If the demand cannot be produced in time, an onError will be signalled instead.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
-	 * <p>
-	 * @param duration the duration in milliseconds of the delay
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public static Mono<Long> delayMillis(long duration) {
-		return delayMillis(duration, Schedulers.timer());
-	}
-
-	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} of given unit and complete on the global timer.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
@@ -224,28 +209,27 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 * <p>
 	 * @param duration the duration in milliseconds of the delay
-	 * @param timer the timer
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delayMillis(long duration, TimedScheduler timer) {
-		return onAssembly(new MonoDelay(duration, TimeUnit.MILLISECONDS, timer));
+	public static Mono<Long> delayMillis(long duration) {
+		return delayMillis(duration, Schedulers.timer());
 	}
 
 	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} and complete.
+	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delay.png" alt="">
 	 * <p>
-	 * @param duration the duration of the delay
-	 * @param timer the timer
+	 * @param duration the duration in milliseconds of the delay
+	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<Long> delay(Duration duration, TimedScheduler timer) {
-		return delayMillis(duration.toMillis(), timer);
+	public static Mono<Long> delayMillis(long duration, TimedScheduler timer) {
+		return onAssembly(new MonoDelay(duration, TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**
@@ -1131,22 +1115,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
 	 *
-	 * @param delay period in seconds before subscribing this {@link Mono}
-	 *
-	 * @return a delayed {@link Mono}
-	 *
-	 */
-	public final Mono<T> delaySubscriptionMillis(long delay) {
-		return delaySubscription(Duration.ofSeconds(delay));
-	}
-
-	/**
-	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
-	 * period elapses.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
-	 *
 	 * @param delay duration before subscribing this {@link Mono}
 	 *
 	 * @return a delayed {@link Mono}
@@ -1155,7 +1123,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	public final Mono<T> delaySubscription(Duration delay) {
 		return delaySubscription(Mono.delay(delay));
 	}
-
 	/**
 	 * Delay the subscription to this {@link Mono} until another {@link Publisher}
 	 * signals a value or completes.
@@ -1172,6 +1139,39 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new MonoDelaySubscription<>(this, subscriptionDelay));
+	}
+
+	/**
+	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
+	 * period elapses.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+	 *
+	 * @param delay period in milliseconds before subscribing this {@link Mono}
+	 *
+	 * @return a delayed {@link Mono}
+	 *
+	 */
+	public final Mono<T> delaySubscriptionMillis(long delay) {
+		return delaySubscriptionMillis(delay, Schedulers.timer());
+	}
+
+	/**
+	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
+	 * period elapses.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscription1.png" alt="">
+	 *
+	 * @param delay period in milliseconds before subscribing this {@link Mono}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a delayed {@link Mono}
+	 *
+	 */
+	public final Mono<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
+		return delaySubscription(Mono.delayMillis(delay, timer));
 	}
 
 	/**
@@ -2391,20 +2391,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono}
-	 *
-	 * @return an expirable {@link Mono}
-	 */
-	public final Mono<T> timeoutMillis(long timeout) {
-		return timeoutMillis(timeout, null);
-	}
-
-	/**
 	 * Signal a {@link java.util.concurrent.TimeoutException} in case an item doesn't arrive before the given period.
 	 *
 	 * <p>
@@ -2416,28 +2402,6 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> timeout(Duration timeout) {
 		return timeout(timeout, null);
-	}
-
-	/**
-	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
-	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
-	 *
-	 * @return an expirable {@link Mono} with a fallback {@link Mono}
-	 */
-	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
-		final Mono<Long> _timer = Mono.delayMillis(timeout).otherwiseReturn(0L);
-
-		if(fallback == null) {
-			return onAssembly(new MonoTimeout<>(this, _timer));
-		}
-		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
 	}
 
 	/**
@@ -2492,6 +2456,76 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Mono<? extends T> fallback) {
 		return onAssembly(new MonoTimeout<>(this, firstTimeout, fallback));
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 *
+	 * @return an expirable {@link Mono}
+	 */
+	public final Mono<T> timeoutMillis(long timeout) {
+		return timeoutMillis(timeout, null, Schedulers.timer());
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttime1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return an expirable {@link Mono}
+	 */
+	public final Mono<T> timeoutMillis(long timeout, TimedScheduler timer) {
+		return timeoutMillis(timeout, null, timer);
+	}
+
+	/**
+	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
+	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 *
+	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 */
+	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
+		return timeoutMillis(timeout, fallback, Schedulers.timer());
+	}
+
+	/**
+	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
+	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 */
+	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
+			TimedScheduler timer) {
+		final Mono<Long> _timer = Mono.delayMillis(timeout).otherwiseReturn(0L);
+
+		if(fallback == null) {
+			return onAssembly(new MonoTimeout<>(this, _timer));
+		}
+		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
 	}
 
 
