@@ -34,27 +34,16 @@ import rx.Single;
 @SuppressWarnings("unchecked")
 public enum Converters {
     ;
-
-    static private final boolean HAS_REACTOR_IPC;
-    static private final boolean HAS_REACTOR_NETTY;
-    static private final boolean HAS_REACTOR_BUS;
-
     static private final FlowPublisherConverterWrapper      FLOW_PUBLISHER_CONVERTER;
     static private final RxJava1ObservableConverterWrapper  RXJAVA1_OBSERVABLE_CONVERTER;
     static private final RxJava1SingleConverterWrapper      RXJAVA1_SINGLE_CONVERTER;
     static private final RxJava1CompletableConverterWrapper RXJAVA1_COMPLETABLE_CONVERTER;
-
-
-
 
     static {
         final int RXJAVA_1_OBSERVABLE = 0b000001;
         final int RXJAVA_1_SINGLE = 0b000010;
         final int RXJAVA_1_COMPLETABLE = 0b000100;
         final int FLOW_PUBLISHER = 0b100000;
-        final int REACTOR_IPC = 0b1000000;
-        final int REACTOR_BUS = 0b10000000;
-        final int REACTOR_NETTY = 0b100000000;
 
         int detected = 0;
         try {
@@ -67,32 +56,6 @@ public enum Converters {
             Flux.class.getClassLoader()
                       .loadClass("rx.Completable");
             detected |= RXJAVA_1_COMPLETABLE;
-        }
-        catch (ClassNotFoundException ignore) {
-
-        }
-
-        try {
-            Flux.class.getClassLoader()
-                      .loadClass("reactor.io.ipc.Channel");
-            detected |= REACTOR_IPC;
-        }
-        catch (ClassNotFoundException ignore) {
-
-        }
-
-        try {
-            Flux.class.getClassLoader()
-                      .loadClass("reactor.io.netty.tcp.TcpServer");
-            detected |= REACTOR_NETTY;
-        }
-        catch (ClassNotFoundException ignore) {
-
-        }
-        try {
-            Flux.class.getClassLoader()
-                      .loadClass("reactor.bus.registry.Registry");
-            detected |= REACTOR_BUS;
         }
         catch (ClassNotFoundException ignore) {
 
@@ -122,38 +85,7 @@ public enum Converters {
         else {
             FLOW_PUBLISHER_CONVERTER = null;
         }
-        HAS_REACTOR_IPC = (detected & REACTOR_IPC) == REACTOR_IPC;
-        HAS_REACTOR_BUS = (detected & REACTOR_BUS) == REACTOR_BUS;
-        HAS_REACTOR_NETTY = (detected & REACTOR_NETTY) == REACTOR_NETTY;
 
-    }
-
-    public static boolean hasRxJava1() {
-        return RXJAVA1_OBSERVABLE_CONVERTER != null;
-    }
-
-    public static boolean hasRxJava1Single() {
-        return RXJAVA1_SINGLE_CONVERTER != null;
-    }
-
-    public static boolean hasRxJava1Completable() {
-        return RXJAVA1_COMPLETABLE_CONVERTER != null;
-    }
-
-    public static boolean hasFlowPublisher() {
-        return FLOW_PUBLISHER_CONVERTER != null;
-    }
-
-    public static boolean hasReactorIpc() {
-        return HAS_REACTOR_IPC;
-    }
-
-    public static boolean hasReactorBus() {
-        return HAS_REACTOR_BUS;
-    }
-
-    public static boolean hasReactorNetty() {
-        return HAS_REACTOR_NETTY;
     }
 
     public static Publisher<?> toPublisher(Object source) {
@@ -286,4 +218,20 @@ public enum Converters {
         }
     }
 
+
+    static boolean hasRxJava1() {
+        return RXJAVA1_OBSERVABLE_CONVERTER != null;
+    }
+
+    static boolean hasRxJava1Single() {
+        return RXJAVA1_SINGLE_CONVERTER != null;
+    }
+
+    static boolean hasRxJava1Completable() {
+        return RXJAVA1_COMPLETABLE_CONVERTER != null;
+    }
+
+    static boolean hasFlowPublisher() {
+        return FLOW_PUBLISHER_CONVERTER != null;
+    }
 }
