@@ -2520,7 +2520,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 */
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
 			TimedScheduler timer) {
-		final Mono<Long> _timer = Mono.delayMillis(timeout).otherwiseReturn(0L);
+		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
 
 		if(fallback == null) {
 			return onAssembly(new MonoTimeout<>(this, _timer));

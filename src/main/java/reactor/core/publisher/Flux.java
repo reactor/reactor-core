@@ -720,16 +720,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 
-	@SuppressWarnings("unchecked")
-	static <O> Supplier<Set<O>> hashSetSupplier() {
-		return SET_SUPPLIER;
-	}
-
-	@SuppressWarnings("unchecked")
-	static final <T> Function<T, T> identityFunction(){
-		return IDENTITY_FUNCTION;
-	}
-
 	/**
 	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every period on
 	 * the global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
@@ -742,22 +732,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static Flux<Long> interval(Duration period) {
 		return intervalMillis(period.toMillis());
-	}
-
-	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every period on
-	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/interval.png" alt="">
-	 * <p>
-	 * @param period The duration to wait before the next increment
-	 * @param timer a {@link TimedScheduler} instance
-	 *
-	 * @return a new timed {@link Flux}
-	 */
-	public static Flux<Long> interval(Duration period, TimedScheduler timer) {
-		return intervalMillis(period.toMillis(), timer);
 	}
 
 	/**
@@ -775,27 +749,6 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period) {
 		return intervalMillis(delay.toMillis(), period.toMillis());
-	}
-
-	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
-	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/intervald.png" alt="">
-	 *
-	 * @param delay  the timespan to wait before emitting 0l
-	 * @param period the period before each following increment
-	 * @param timer  the {@link TimedScheduler} to schedule on
-	 *
-	 * @return a new timed {@link Flux}
-	 */
-	public static Flux<Long> interval(Duration delay, Duration period, TimedScheduler timer) {
-		return onAssembly(new FluxInterval(delay.toMillis(),
-				period.toMillis(),
-				TimeUnit.MILLISECONDS,
-				timer));
 	}
 
 	/**
@@ -5722,6 +5675,16 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 				return n++ < max && predicate.test(o);
 			}
 		};
+	}
+
+	@SuppressWarnings("unchecked")
+	static <O> Supplier<Set<O>> hashSetSupplier() {
+		return SET_SUPPLIER;
+	}
+
+	@SuppressWarnings("unchecked")
+	static final <T> Function<T, T> identityFunction(){
+		return IDENTITY_FUNCTION;
 	}
 
     static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
