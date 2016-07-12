@@ -1,4 +1,19 @@
-package reactor.core.converter;
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package reactor.core.adapter;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +40,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void shouldConvertACompletableIntoMonoVoid() throws Exception {
-        Mono<Void> printableMono = RxJava1CompletableConverter.toPublisher(completable);
+        Mono<Void> printableMono = RxJava1Adapter.completableToMono(completable);
         assertThat(printableMono, is(notNullValue()));
         TestSubscriber
                 .subscribe(printableMono)
@@ -36,7 +51,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void completableWithErrorIntoMono() throws Exception {
-        Mono<Void> voidMono = RxJava1CompletableConverter.toPublisher(Completable.fromAction(() -> {
+        Mono<Void> voidMono = RxJava1Adapter.completableToMono(Completable.fromAction(() -> {
             throw new IllegalStateException("This should not happen"); //something internal happened
         }));
         TestSubscriber
@@ -49,7 +64,7 @@ public class RxJavaCompletableTests {
 
     @Test
     public void shouldConvertAMonoIntoCompletable() throws Exception {
-        Completable completable = RxJava1CompletableConverter.fromPublisher(Mono.just(1));
+        Completable completable = RxJava1Adapter.publisherToCompletable(Mono.just(1));
         Throwable maybeErrors = completable.get();
         assertThat(maybeErrors, is(nullValue()));
     }

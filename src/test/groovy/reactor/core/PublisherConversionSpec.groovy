@@ -16,7 +16,7 @@
 
 package reactor.core
 
-import reactor.core.converter.Converters
+import reactor.core.adapter.RxJava1Adapter
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.test.TestSubscriber
@@ -37,7 +37,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Observable.range(1, 1000)
-	def pub = Converters.toPublisher(obs)
+	def pub = RxJava1Adapter.observableToFlux(obs)
 	def queue = TestSubscriber.create()
 
 
@@ -51,7 +51,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to observable"
 	pub = fromIterable(1..1000)
-	obs = Converters.fromPublisher(pub, Observable.class)
+	obs = RxJava1Adapter.publisherToObservable(pub)
 	def blocking = obs.toList()
 
 	def v = blocking.toBlocking().single()
@@ -66,7 +66,7 @@ class PublisherConversionSpec extends Specification {
 
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Single.just(1)
-	def pub = Mono.from(Converters.toPublisher(obs))
+	def pub = Mono.from(RxJava1Adapter.singleToMono(obs))
 	def queue = TestSubscriber.create()
 
 	when: "read the queue"
@@ -79,7 +79,7 @@ class PublisherConversionSpec extends Specification {
 
 	when: "Iterable publisher of 1000 to observable"
 	pub = Flux.just(1)
-	def single = Converters.fromPublisher(pub, Single.class)
+	def single = RxJava1Adapter.publisherToSingle(pub)
 	def blocking = single.toObservable().toBlocking()
 
 	def v = blocking.single()

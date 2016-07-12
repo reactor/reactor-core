@@ -28,4 +28,9 @@ public abstract class GroupedFlux<K, V> extends Flux<V> {
 	 * @return defined identifier
 	 */
 	public abstract K key();
+
+	@Override
+	public K getId() {
+		return key();
+	}
 }

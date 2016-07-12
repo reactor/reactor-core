@@ -15,9 +15,11 @@
  */
 
 /**
- * Convert
- * {@link org.reactivestreams.Publisher} to Java 9+ {@link reactor.core.converter.FlowPublisherConverter Flow.Publisher}, RxJava1 {@link reactor.core.converter.RxJava1ObservableConverter Observable} and {@link reactor.core.converter.RxJava1SingleConverter Single}.
+ * Adapt
+ * {@link org.reactivestreams.Publisher} to Java 9+
+ * {@link reactor.core.adapter.JdkFlowAdapter Flow.Publisher}, RxJava1
+ * {@link reactor.core.adapter.RxJava1Adapter Observable, Completable and Single}.
  *
  * @author Stephane Maldini
  */
-package reactor.core.converter;
+package reactor.core.adapter;

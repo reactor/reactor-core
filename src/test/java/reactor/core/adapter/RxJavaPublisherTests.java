@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.converter;
+package reactor.core.adapter;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
-import rx.Single;
+import rx.Observable;
 
 /**
  * @author Stephane Maldini
  */
 @Test
-public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
+public class RxJavaPublisherTests extends PublisherVerification<Long> {
 
-	public RxJavaSinglePublisherTests() {
+	public RxJavaPublisherTests() {
 		super(new TestEnvironment(500, true), 1000);
 	}
 
@@ -38,18 +38,22 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 
 	@Override
 	public long maxElementsFromPublisher() {
-		return 1;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createPublisher(long elements) {
-		return (Publisher<Long>) Converters.toPublisher(Single.just(0));
+		return RxJava1Adapter.observableToFlux(Observable.range
+				(0,
+				(int)Math.min(Integer.MAX_VALUE,
+				elements))).cast(Long.class);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public Publisher<Long> createFailedPublisher() {
-		return (Publisher<Long>) Converters.toPublisher(Single.error(new Exception("single-test")));
+		return RxJava1Adapter.observableToFlux(Observable.error(new Exception
+				("obs-test"))).cast(Long.class);
 	}
 }

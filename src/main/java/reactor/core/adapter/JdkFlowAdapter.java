@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.converter;
+package reactor.core.adapter;
 
 import java.util.concurrent.Flow;
 
@@ -30,17 +30,15 @@ import reactor.core.publisher.Flux;
  * @author Sebastien Deleuze
  * @since 2.5
  */
-public enum FlowPublisherConverter {
+public enum JdkFlowAdapter {
 	;
 
-	private FlowPublisherConverter() {
-	}
-
-	public static <T> Flow.Publisher<T> fromPublisher(final Publisher<T> publisher) {
+	public static <T> Flow.Publisher<T> publisherToFlowPublisher(final Publisher<T>
+			publisher) {
 		return new PublisherAsFlowPublisher<>(publisher);
 	}
 
-	public static <T> Flux toPublisher(Flow.Publisher<T> publisher) {
+	public static <T> Flux flowPublisherToPublisher(Flow.Publisher<T> publisher) {
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
