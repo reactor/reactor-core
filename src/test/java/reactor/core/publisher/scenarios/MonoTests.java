@@ -70,10 +70,10 @@ public class MonoTests {
 
 	@Test
 	public void promiseDelays() throws Exception {
-		Tuple2<Long, String> h = Mono.delay(3000)
+		Tuple2<Long, String> h = Mono.delayMillis(3000)
 		                             .log("time1")
 		                             .map(d -> "Spring wins")
-		                             .or(Mono.delay(2000).log("time2").map(d -> "Spring Reactive"))
+		                             .or(Mono.delayMillis(2000).log("time2").map(d -> "Spring Reactive"))
 		                             .then(t -> Mono.just(t+ " world"))
 		                             .elapsed()
 		                             .block();

@@ -1134,7 +1134,7 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch latch = new CountDownLatch(3);
 
 		Flux.range(1, 3)
-		       .delay(1)
+		       .delayMillis(1000)
 		       .log("delay")
 		       .subscribe(t -> latch.countDown());
 

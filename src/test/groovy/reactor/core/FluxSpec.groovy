@@ -267,7 +267,7 @@ class FluxSpec extends Specification {
 		when:
 			'the most recent value is retrieved'
 			def last = s
-					.sample(2l)
+					.sampleMillis(2000l)
 					.subscribeOn(scheduler)
 					.publishOn(asyncGroup)
 					.log()
@@ -590,7 +590,7 @@ class FluxSpec extends Specification {
 
 		then:
 			'the value is mapped'
-			value.block(5_000) == 2
+			value.blockMillis(5_000) == 2
 	}
 
 	def "Multiple Stream's values can be merged"() {
@@ -950,7 +950,7 @@ class FluxSpec extends Specification {
 			def scheduler = Schedulers.newParallel("test", 2)
 			def res = source
 					.subscribeOn(scheduler)
-					.delaySubscription(1L)
+					.delaySubscriptionMillis(1L)
 					.log("streamed")
 					.map { it * 2 }
 					.buffer()
@@ -1621,7 +1621,7 @@ class FluxSpec extends Specification {
 			'a source flux with a given globalTimer'
 
 			def res = 0l
-			def c = Mono.delay(1000)
+			def c = Mono.delayMillis(1000)
 			def timeStart = System.currentTimeMillis()
 
 		when:
@@ -1636,7 +1636,7 @@ class FluxSpec extends Specification {
 		when:
 			'consuming periodic'
 			def i = []
-			c = Flux.interval(0, 1000).log().subscribe {
+			c = Flux.intervalMillis(0, 1000).log().subscribe {
 				i << it
 			}
 			sleep(2500)
@@ -2318,7 +2318,7 @@ class FluxSpec extends Specification {
 			}.retryWhen { attempts ->
 			  attempts.log('zipWith').zipWith(Flux.range(1, 3), { t1, t2 -> t2 }).flatMap { i ->
 					println "delay retry by " + i + " second(s)"
-				Mono.delay(i * 1000)
+				Mono.delayMillis(i * 1000)
 				}
 			}.subscribeWith(TestSubscriber.create())
 
@@ -2358,7 +2358,7 @@ class FluxSpec extends Specification {
 			}.log('repeat').repeatWhen { attempts ->
 				attempts.zipWith(Flux.range(1, 3)) { t1, t2 -> t2 }.flatMap { i ->
 					println "delay repeat by " + i + " second(s)"
-				  Mono.delay(i * 1000)
+				  Mono.delayMillis(i * 1000)
 				}
 			}.log('test').subscribe()
 	  sleep 10000
@@ -2381,7 +2381,7 @@ class FluxSpec extends Specification {
 			}.repeatWhen { attempts ->
 				attempts.log('repeat').takeWhile{ println it; it == 0L }.flatMap { i ->
 					println "delay repeat by 1 second"
-				  Mono.delay(1000)
+				  Mono.delayMillis(1000)
 				}
 			}.log('test').subscribe()
 	  sleep 10000

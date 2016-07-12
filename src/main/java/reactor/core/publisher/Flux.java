@@ -734,8 +734,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long period) {
-		return interval(period, Schedulers.timer());
+	public static Flux<Long> intervalMillis(long period) {
+		return intervalMillis(period, Schedulers.timer());
 	}
 
 	/**
@@ -749,7 +749,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration period) {
-		return interval(period.toMillis());
+		return intervalMillis(period.toMillis());
 	}
 
 	/**
@@ -764,7 +764,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long period, TimedScheduler timer) {
+	public static Flux<Long> intervalMillis(long period, TimedScheduler timer) {
 		return onAssembly(new FluxInterval(period, period, TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -781,7 +781,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration period, TimedScheduler timer) {
-		return interval(period.toMillis(), timer);
+		return intervalMillis(period.toMillis(), timer);
 	}
 
 
@@ -798,8 +798,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long delay, long period) {
-		return interval(delay, period, Schedulers.timer());
+	public static Flux<Long> intervalMillis(long delay, long period) {
+		return intervalMillis(delay, period, Schedulers.timer());
 	}
 
 	/**
@@ -816,7 +816,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period) {
-		return interval(delay.toMillis(), period.toMillis());
+		return intervalMillis(delay.toMillis(), period.toMillis());
 	}
 
 	/**
@@ -833,7 +833,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(long delay, long period, TimedScheduler timer) {
+	public static Flux<Long> intervalMillis(long delay, long period, TimedScheduler timer) {
 		return onAssembly(new FluxInterval(delay, period, TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -1620,6 +1620,21 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
 	 * alt="">
 	 *
+	 * @param timespan the duration to use to release a buffered list in milliseconds
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 */
+	public final Flux<List<T>> bufferMillis(long timespan) {
+		return bufferMillis(timespan, getTimer());
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into the returned {@link Flux} every
+	 * timespan.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
+	 * alt="">
+	 *
 	 * @param timespan theduration to use to release a buffered list
 	 * @param timer the {@link TimedScheduler} to schedule on
 	 *
@@ -1627,6 +1642,22 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 */
 	public final Flux<List<T>> buffer(Duration timespan, TimedScheduler timer) {
 		return buffer(interval(timespan, timer));
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into the returned {@link Flux} every
+	 * timespan.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
+	 * alt="">
+	 *
+	 * @param timespan theduration to use to release a buffered list in milliseconds
+	 * @param timer the {@link TimedScheduler} to schedule on
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 */
+	public final Flux<List<T>> bufferMillis(long timespan, TimedScheduler timer) {
+		return buffer(intervalMillis(timespan, timer));
 	}
 
 	/**
@@ -1703,8 +1734,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> buffer(int maxSize, long timespan) {
-		return buffer(maxSize, timespan, getTimer());
+	public final Flux<List<T>> bufferMillis(int maxSize, long timespan) {
+		return bufferMillis(maxSize, timespan, getTimer());
 	}
 
 	/**
@@ -1720,7 +1751,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> buffer(int maxSize, Duration timespan) {
-		return buffer(maxSize, timespan.toMillis());
+		return bufferMillis(maxSize, timespan.toMillis());
 	}
 
 	/**
@@ -1736,7 +1767,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> buffer(int maxSize, final long timespan, final TimedScheduler timer) {
+	public final Flux<List<T>> bufferMillis(int maxSize, final long timespan, final TimedScheduler timer) {
 		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer));
 	}
 
@@ -1754,7 +1785,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> buffer(int maxSize, final Duration timespan, final TimedScheduler timer) {
-		return buffer(maxSize, timespan.toMillis(), timer);
+		return bufferMillis(maxSize, timespan.toMillis(), timer);
 	}
 
 	/**
@@ -2282,13 +2313,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
 	 *
-	 * @param seconds period to delay each {@link Subscriber#onNext} call
+	 * @param delay period to delay each {@link Subscriber#onNext} call in milliseconds
 	 *
 	 * @return a throttled {@link Flux}
 	 *
 	 */
-	public final Flux<T> delay(long seconds) {
-		return delay(Duration.ofSeconds(seconds));
+	public final Flux<T> delayMillis(long delay) {
+		TimedScheduler timer = getTimer();
+		return concatMap(t ->  Mono.delayMillis(delay, timer).map(i -> t));
 	}
 
 
@@ -2304,8 +2336,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> delay(Duration delay) {
-		TimedScheduler timer = getTimer();
-		return concatMap(t ->  Mono.delay(delay, timer).map(i -> t));
+		return delayMillis(delay.toMillis());
 	}
 
 	/**
@@ -2320,8 +2351,11 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a delayed {@link Flux}
 	 *
 	 */
-	public final Flux<T> delaySubscription(long delay) {
-		return delaySubscription(Duration.ofSeconds(delay));
+	public final Flux<T> delaySubscriptionMillis(long delay) {
+		TimedScheduler timer = getTimer();
+		return delaySubscription(Mono.delayMillis(delay, timer));
+
+
 	}
 
 	/**
@@ -2337,8 +2371,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<T> delaySubscription(Duration delay) {
-		TimedScheduler timer = getTimer();
-		return delaySubscription(Mono.delay(delay, timer));
+		return delaySubscriptionMillis(delay.toMillis());
 	}
 
 	/**
@@ -3952,8 +3985,8 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a sampled {@link Flux} by last item over a period of time
 	 */
-	public final Flux<T> sample(long timespan) {
-		return sample(Duration.ofSeconds(timespan));
+	public final Flux<T> sampleMillis(long timespan) {
+		return sample(intervalMillis(timespan));
 	}
 
 	/**
@@ -3967,7 +4000,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a sampled {@link Flux} by last item over a period of time
 	 */
 	public final Flux<T> sample(Duration timespan) {
-		return sample(interval(timespan));
+		return sampleMillis(timespan.toMillis());
 	}
 
 	/**
@@ -4003,8 +4036,10 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a sampled {@link Flux} by first item over a period of time
 	 */
-	public final Flux<T> sampleFirst(long timespan) {
-		return sampleFirst(Duration.ofSeconds(timespan));
+	public final Flux<T> sampleFirstMillis(long timespan) {
+		return sampleFirst(t -> {
+			return Mono.delayMillis(timespan);
+		});
 	}
 
 	/**
@@ -4018,9 +4053,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a sampled {@link Flux} by first item over a period of time
 	 */
 	public final Flux<T> sampleFirst(Duration timespan) {
-		return sampleFirst(t -> {
-			return Mono.delay(timespan);
-		});
+		return sampleFirstMillis(timespan.toMillis());
 	}
 
 	/**
@@ -4769,7 +4802,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a per-item expirable {@link Flux}
 	 */
-	public final Flux<T> timeout(long timeout) {
+	public final Flux<T> timeoutMillis(long timeout) {
 		return timeout(Duration.ofMillis(timeout), null);
 	}
 
@@ -4797,22 +4830,40 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback.png" alt="">
 	 *
-	 * @param timeout the timeout between two signals from this {@link Flux}
+	 * @param timeout the timeout between two signals from this {@link Flux} in milliseconds
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
-	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
+	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback) {
 		final TimedScheduler timer = Objects.requireNonNull(getTimer(), "Cannot use default timer as no environment has been " +
 				"provided to this " + "Stream");
 
-		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
+		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
 		if(fallback == null) {
 			return timeout(_timer, rest);
 		}
 		return timeout(_timer, rest, fallback);
+	}
+
+	/**
+	 * Switch to a fallback {@link Publisher} in case a per-item period
+	 * fires before the next item arrives from this {@link Flux}.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeouttimefallback.png" alt="">
+	 *
+	 * @param timeout the timeout between two signals from this {@link Flux}
+	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 *
+	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 */
+	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
+		return timeoutMillis(timeout.toMillis(), fallback);
 	}
 
 
@@ -5141,9 +5192,9 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 */
-	public final Flux<Flux<T>> window(long timespan) {
+	public final Flux<Flux<T>> windowMillis(long timespan) {
 		TimedScheduler t = getTimer();
-		return window(interval(timespan, t));
+		return window(intervalMillis(timespan, t));
 	}
 
 	/**
@@ -5157,7 +5208,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
-		return window(timespan.toMillis());
+		return windowMillis(timespan.toMillis());
 	}
 
 	/**
@@ -5185,14 +5236,14 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
 	 *
 	 */
-	public final Flux<Flux<T>> window(long timespan, long timeshift) {
+	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift) {
 		if (timeshift == timespan) {
-			return window(timespan);
+			return windowMillis(timespan);
 		}
 
 		final TimedScheduler timer = getTimer();
 
-		return window(interval(0L, timeshift, timer), aLong -> Mono.delay(timespan, timer));
+		return window(intervalMillis(0L, timeshift, timer), aLong -> Mono.delayMillis(timespan, timer));
 	}
 
 	/**
@@ -5221,7 +5272,7 @@ public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpress
 	 *
 	 */
 	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return window(timespan.toMillis(), timeshift.toMillis());
+		return windowMillis(timespan.toMillis(), timeshift.toMillis());
 	}
 
 	/**

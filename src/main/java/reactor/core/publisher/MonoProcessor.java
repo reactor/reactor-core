@@ -148,7 +148,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * not completed
 	 */
 	@Override
-	public O block(long timeout) {
+	public O blockMillis(long timeout) {
 		try {
 			if (!isPending()) {
 				return peek();
