@@ -21,6 +21,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.*;
 
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.*;
 
 /**
@@ -67,7 +68,7 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-		    if (BackpressureUtils.validate(this.s, s)) {
+		    if (SubscriptionHelper.validate(this.s, s)) {
 		        this.s = s;
 		        
 		        actual.onSubscribe(this);
@@ -131,7 +132,7 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		
 		@Override
 		public void request(long n) {
-		    if (BackpressureUtils.validate(n)) {
+		    if (SubscriptionHelper.validate(n)) {
     		    if (!DrainUtils.postCompleteRequestDelayError(n, actual, this, REQUESTED, this, this, error)) {
     		        s.request(n);
     		    }

@@ -29,8 +29,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -73,7 +72,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				v = ((Callable<T>)source).call();
 			} catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				EmptySubscription.error(s, ex);
+				SubscriptionHelper.error(s, ex);
 				return;
 			}
 			
@@ -90,7 +89,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				it = iter.iterator();
 			} catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				EmptySubscription.error(s, ex);
+				SubscriptionHelper.error(s, ex);
 				return;
 			}
 			
@@ -155,7 +154,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				
 				if (s instanceof QueueSubscription) {
@@ -189,7 +188,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				} catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
 					s.cancel();
-					EmptySubscription.error(actual, ex);
+					SubscriptionHelper.error(actual, ex);
 					return;
 				}
 
@@ -228,8 +227,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

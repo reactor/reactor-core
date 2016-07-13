@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -76,7 +76,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable{
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				subscriber.onSubscribe(this);
 

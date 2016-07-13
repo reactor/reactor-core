@@ -28,7 +28,7 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.state.Prefetchable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -112,7 +112,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				if (n == 0 && wip == 0) {
@@ -249,7 +249,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				if (n == 0 && wip == 0) {
@@ -418,7 +418,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.qs, s)) {
+			if (SubscriptionHelper.validate(this.qs, s)) {
 				this.qs = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 

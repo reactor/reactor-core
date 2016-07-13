@@ -40,8 +40,7 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 import reactor.core.util.WaitStrategy;
@@ -275,7 +274,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	@Override
 	final public void onSubscribe(final Subscription s) {
-		if (BackpressureUtils.validate(upstreamSubscription, s)) {
+		if (SubscriptionHelper.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
 				if (s != EmptySubscription.INSTANCE) {
@@ -359,7 +358,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			return true;
 		}
 		catch (Throwable t) {
-			EmptySubscription.error(subscriber, t);
+			SubscriptionHelper.error(subscriber, t);
 			return false;
 		}
 	}

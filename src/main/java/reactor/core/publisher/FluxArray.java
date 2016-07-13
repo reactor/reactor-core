@@ -27,8 +27,7 @@ import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -90,8 +89,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (SubscriptionHelper.validate(n)) {
+				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -263,8 +262,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (SubscriptionHelper.validate(n)) {
+				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					}

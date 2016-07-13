@@ -31,8 +31,7 @@ import reactor.core.queue.QueueSupplier;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -337,7 +336,7 @@ public final class UnicastProcessor<T>
 			}
 		}
 		else {
-			EmptySubscription.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
+			SubscriptionHelper.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
 		}
 	}
 
@@ -348,8 +347,8 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void request(long n) {
-		if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.addAndGet(REQUESTED, this, n);
+		if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.addAndGet(REQUESTED, this, n);
 				drain();
 		}
 	}

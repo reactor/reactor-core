@@ -25,7 +25,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 public class FluxPeekTest {
@@ -261,7 +260,7 @@ public class FluxPeekTest {
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
-				EmptySubscription.error(u,
+				SubscriptionHelper.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {
@@ -284,7 +283,7 @@ public class FluxPeekTest {
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
-				EmptySubscription.error(u,
+				SubscriptionHelper.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {

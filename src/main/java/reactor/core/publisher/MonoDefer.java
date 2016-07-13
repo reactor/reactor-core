@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Receiver;
-import reactor.core.util.EmptySubscription;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -55,12 +54,12 @@ extends Mono<T>
 		try {
 			p = supplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (p == null) {
-			EmptySubscription.error(s, new NullPointerException("The Producer returned by the supplier is null"));
+			SubscriptionHelper.error(s, new NullPointerException("The Producer returned by the supplier is null"));
 			return;
 		}
 

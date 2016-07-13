@@ -28,7 +28,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -91,8 +91,8 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 
 				drain();
 			}
@@ -114,7 +114,7 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

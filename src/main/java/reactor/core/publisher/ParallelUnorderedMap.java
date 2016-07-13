@@ -17,10 +17,10 @@ package reactor.core.publisher;
 
 import java.util.function.Function;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+import org.reactivestreams.*;
+
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.*;
 
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.
@@ -30,119 +30,119 @@ import reactor.core.util.Exceptions;
  */
 final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 
-    final ParallelFlux<T> source;
-    
-    final Function<? super T, ? extends R> mapper;
-    
-    public ParallelUnorderedMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
-        this.source = source;
-        this.mapper = mapper;
-    }
+	final ParallelFlux<T> source;
+	
+	final Function<? super T, ? extends R> mapper;
+	
+	public ParallelUnorderedMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
+		this.source = source;
+		this.mapper = mapper;
+	}
 
-    @Override
-    public void subscribe(Subscriber<? super R>[] subscribers) {
-        if (!validate(subscribers)) {
-            return;
-        }
-        
-        int n = subscribers.length;
-        @SuppressWarnings("unchecked")
-        Subscriber<? super T>[] parents = new Subscriber[n];
-        
-        for (int i = 0; i < n; i++) {
-            parents[i] = new ParallelMapSubscriber<>(subscribers[i], mapper);
-        }
-        
-        source.subscribe(parents);
-    }
+	@Override
+	public void subscribe(Subscriber<? super R>[] subscribers) {
+		if (!validate(subscribers)) {
+			return;
+		}
+		
+		int n = subscribers.length;
+		@SuppressWarnings("unchecked")
+		Subscriber<? super T>[] parents = new Subscriber[n];
+		
+		for (int i = 0; i < n; i++) {
+			parents[i] = new ParallelMapSubscriber<>(subscribers[i], mapper);
+		}
+		
+		source.subscribe(parents);
+	}
 
-    @Override
-    public int parallelism() {
-        return source.parallelism();
-    }
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
 
-    @Override
-    public boolean isOrdered() {
-        return false;
-    }
-    
-    static final class ParallelMapSubscriber<T, R> implements Subscriber<T>, Subscription {
+	@Override
+	public boolean isOrdered() {
+		return false;
+	}
+	
+	static final class ParallelMapSubscriber<T, R> implements Subscriber<T>, Subscription {
 
-        final Subscriber<? super R> actual;
-        
-        final Function<? super T, ? extends R> mapper;
-        
-        Subscription s;
-        
-        boolean done;
-        
-        public ParallelMapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
-            this.actual = actual;
-            this.mapper = mapper;
-        }
+		final Subscriber<? super R> actual;
+		
+		final Function<? super T, ? extends R> mapper;
+		
+		Subscription s;
+		
+		boolean done;
+		
+		public ParallelMapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+			this.actual = actual;
+			this.mapper = mapper;
+		}
 
-        @Override
-        public void request(long n) {
-            s.request(n);
-        }
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
 
-        @Override
-        public void cancel() {
-            s.cancel();
-        }
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
 
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.validate(this.s, s)) {
-                this.s = s;
-                
-                actual.onSubscribe(this);
-            }
-        }
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (SubscriptionHelper.validate(this.s, s)) {
+				this.s = s;
+				
+				actual.onSubscribe(this);
+			}
+		}
 
-        @Override
-        public void onNext(T t) {
-            if (done) {
-                return;
-            }
-            R v;
-            
-            try {
-                v = mapper.apply(t);
-            } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                cancel();
-                onError(Exceptions.unwrap(ex));
-                return;
-            }
-            
-            if (v == null) {
-                cancel();
-                onError(new NullPointerException("The mapper returned a null value"));
-                return;
-            }
-            
-            actual.onNext(v);
-        }
+		@Override
+		public void onNext(T t) {
+			if (done) {
+				return;
+			}
+			R v;
+			
+			try {
+				v = mapper.apply(t);
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				cancel();
+				onError(Exceptions.unwrap(ex));
+				return;
+			}
+			
+			if (v == null) {
+				cancel();
+				onError(new NullPointerException("The mapper returned a null value"));
+				return;
+			}
+			
+			actual.onNext(v);
+		}
 
-        @Override
-        public void onError(Throwable t) {
-            if (done) {
-                Exceptions.onErrorDropped(t);
-                return;
-            }
-            done = true;
-            actual.onError(t);
-        }
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			actual.onError(t);
+		}
 
-        @Override
-        public void onComplete() {
-            if (done) {
-                return;
-            }
-            done = true;
-            actual.onComplete();
-        }
-        
-    }
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			actual.onComplete();
+		}
+		
+	}
 }

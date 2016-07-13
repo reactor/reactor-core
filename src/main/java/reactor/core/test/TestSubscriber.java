@@ -35,8 +35,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.PlatformDependent;
 
 /**
@@ -912,7 +912,7 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 
 	@Override
 	public void request(long n) {
-		if (BackpressureUtils.validate(n)) {
+		if (SubscriptionHelper.validate(n)) {
 			if (establishedFusionMode != Fuseable.SYNC) {
 				super.request(n);
 			}

@@ -20,11 +20,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are
@@ -38,9 +33,8 @@ import reactor.core.util.BackpressureUtils;
  *
  * @param <T> the value type
  */
-final class SerializedSubscriber<T>
-		implements Subscriber<T>, Subscription, Receiver,
-		           Completable, Producer, Cancellable, Introspectable, Backpressurable {
+final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer,
+													  SubscriberState {
 
 	final Subscriber<? super T> actual;
 
@@ -66,7 +60,7 @@ final class SerializedSubscriber<T>
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(this.s, s)) {
+		if (SubscriptionHelper.validate(this.s, s)) {
 			this.s = s;
 
 			actual.onSubscribe(this);
@@ -168,7 +162,7 @@ final class SerializedSubscriber<T>
 				LinkedArrayNode<T> n = new LinkedArrayNode<>(value);
 
 				t.next = n;
-				tail = n;
+				tail = n ;
 			}
 			else {
 				t.array[t.count++] = value;
@@ -272,17 +266,11 @@ final class SerializedSubscriber<T>
 	@Override
 	public long getPending() {
 		LinkedArrayNode<T> node = tail;
-		if (node != null) {
+		if(node != null){
 			return node.count;
 		}
 		return 0;
 	}
-
-	@Override
-	public int getMode() {
-		return 0;
-	}
-
 
 	@Override
 	public long getCapacity() {

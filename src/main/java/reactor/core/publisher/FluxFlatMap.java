@@ -39,11 +39,9 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.ScalarSubscription;
+import reactor.core.subscriber.ScalarSubscription;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them
@@ -137,7 +135,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
-				EmptySubscription.error(s, Exceptions.unwrap(e));
+				SubscriptionHelper.error(s, Exceptions.unwrap(e));
 				return true;
 			}
 
@@ -152,12 +150,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
-				EmptySubscription.error(s, Exceptions.unwrap(e));
+				SubscriptionHelper.error(s, Exceptions.unwrap(e));
 				return true;
 			}
 
 			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The mapper returned a null Publisher"));
+				SubscriptionHelper.error(s, new NullPointerException("The mapper returned a null Publisher"));
 				return true;
 			}
 
@@ -168,7 +166,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					v = ((Callable<R>)p).call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					EmptySubscription.error(s, Exceptions.unwrap(e));
+					SubscriptionHelper.error(s, Exceptions.unwrap(e));
 					return true;
 				}
 
@@ -200,6 +198,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable,
 			           Completable, Producer, Cancellable, Backpressurable,
 			           Introspectable {
+
 
 		final Subscriber<? super R> actual;
 
@@ -293,8 +292,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -314,7 +313,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -993,7 +992,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
 					int m = f.requestFusion(Fuseable.ANY);
@@ -1053,7 +1052,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void cancel() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 
 		@Override
@@ -1251,7 +1250,7 @@ final class SuppressFuseableSubscriber<T> implements Producer, Receiver, Subscri
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(this.s, s)) {
+		if (SubscriptionHelper.validate(this.s, s)) {
 			this.s = s;
 
 			actual.onSubscribe(this);

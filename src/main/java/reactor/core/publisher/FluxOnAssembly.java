@@ -26,9 +26,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.tuple.Tuple;
 import reactor.core.tuple.Tuple2;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
@@ -346,9 +346,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 		@Override
 		final public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
-				this.qs = BackpressureUtils.as(s);
+				this.qs = SubscriptionHelper.as(s);
 				actual.onSubscribe(this);
 			}
 		}

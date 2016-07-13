@@ -26,9 +26,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -66,12 +65,12 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		try {
 			q = (Queue)queueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -135,8 +134,8 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
@@ -144,14 +143,14 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				BackpressureUtils.terminate(S, this);
-				BackpressureUtils.terminate(OTHER, this);
+				SubscriptionHelper.terminate(S, this);
+				SubscriptionHelper.terminate(OTHER, this);
 			}
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -160,7 +159,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		public void onNext(T t) {
 			long idx = INDEX.incrementAndGet(this);
 			
-			if (!BackpressureUtils.set(OTHER, this, EmptySubscription.INSTANCE)) {
+			if (!SubscriptionHelper.set(OTHER, this, EmptySubscription.INSTANCE)) {
 				return;
 			}
 			
@@ -181,7 +180,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 			
 			ThrottleTimeoutOther<T, U> os = new ThrottleTimeoutOther<>(this, t, idx);
 			
-			if (BackpressureUtils.replace(OTHER, this, os)) {
+			if (SubscriptionHelper.replace(OTHER, this, os)) {
 				p.subscribe(os);
 			}
 		}
@@ -197,7 +196,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		
 		@Override
 		public void onError(Throwable t) {
-			BackpressureUtils.terminate(OTHER, this);
+			SubscriptionHelper.terminate(OTHER, this);
 			
 			error(t);
 		}
@@ -221,7 +220,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		
 		void otherError(long idx, Throwable e) {
 			if (idx == index) {
-				BackpressureUtils.terminate(S, this);
+				SubscriptionHelper.terminate(S, this);
 				
 				error(e);
 			} else {

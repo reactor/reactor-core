@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -41,7 +39,7 @@ import reactor.core.util.WaitStrategy;
  * and ringbuffer consumers.
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
+public abstract class RingBuffer<E> implements LongSupplier {
 
 	@SuppressWarnings("rawtypes")
 	public static final Supplier EMITTED = Slot::new;
@@ -453,6 +451,11 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 	abstract public Sequence getSequence();
 
 	/**
+	 * @return the fixed buffer size
+	 */
+	abstract public int bufferSize();
+
+	/**
 	 *
 	 * @return the current list of read cursors
 	 */
@@ -548,7 +551,10 @@ public abstract class RingBuffer<E> implements LongSupplier, Backpressurable {
 
 	@Override
 	public String toString() {
-		return "RingBuffer{pending:" + getPending() + ", size:" + getCapacity() + ", cursor:" + getAsLong() + ", " +
+		return "RingBuffer{remaining size:" + remainingCapacity() + ", size:" + bufferSize() +
+				", " +
+				"cursor:" +
+				getAsLong() + ", " +
 				"min:" + getMinimumGatingSequence() + ", subscribers:" + getSequencer().gatingSequences.length + "}";
 	}
 
@@ -710,7 +716,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	final public T[] toArray() {
-		return toArray((T[]) new Object[(int) buffer.getCapacity()]);
+		return toArray((T[]) new Object[buffer.bufferSize()]);
 	}
 
 	@Override
@@ -750,7 +756,7 @@ abstract class SPSCQueue<T> implements Queue<T> {
 	}
 }
 
-final class Wrapped<E> implements Sequence, Introspectable, Producer {
+final class Wrapped<E> implements Sequence, Producer {
 
 	public final E        delegate;
 	public final Sequence sequence;
@@ -809,11 +815,6 @@ final class Wrapped<E> implements Sequence, Introspectable, Producer {
 	@Override
 	public int hashCode() {
 		return sequence.hashCode();
-	}
-
-	@Override
-	public int getMode() {
-		return TRACE_ONLY | INNER;
 	}
 
 }

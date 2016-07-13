@@ -25,7 +25,6 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.flow.Fuseable;
 import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
-import reactor.core.util.EmptySubscription;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -61,12 +60,12 @@ extends FluxSource<T, T> implements Fuseable {
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (collection == null) {
-			EmptySubscription.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+			SubscriptionHelper.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
 			return;
 		}
 		

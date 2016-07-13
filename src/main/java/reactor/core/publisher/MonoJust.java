@@ -20,7 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.util.ScalarSubscription;
+import reactor.core.subscriber.ScalarSubscription;
 
 
 /**

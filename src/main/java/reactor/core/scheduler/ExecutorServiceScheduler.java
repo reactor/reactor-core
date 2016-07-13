@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.state.Cancellable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -127,7 +126,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 	static final class ScheduledRunnable
 			extends AtomicReference<Future<?>>
-			implements Runnable, Cancellable, Cancellation {
+			implements Runnable, Cancellation {
 		/** */
 		private static final long serialVersionUID = 2284024836904862408L;
 
@@ -185,12 +184,6 @@ final class ExecutorServiceScheduler implements Scheduler {
 					return;
 				}
 			}
-		}
-
-		@Override
-		public boolean isCancelled() {
-			Future<?> f = get();
-			return f == FINISHED || f == CANCELLED_FUTURE;
 		}
 
 		@Override

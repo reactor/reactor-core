@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Skips the last N elements from the source fluxion.
@@ -73,7 +73,7 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

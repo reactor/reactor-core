@@ -35,8 +35,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -223,7 +222,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(batchSize);
 			}
 		}
@@ -231,7 +230,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 		@Override
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
-				BackpressureUtils.terminate(S, this);
+				SubscriptionHelper.terminate(S, this);
 				
 				onError(new IllegalStateException("Queue full?!"));
 			} else {
@@ -263,7 +262,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 
 		@Override
 		public void run() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 			signalConsumer();
 		}
 

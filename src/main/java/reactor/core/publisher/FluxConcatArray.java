@@ -72,7 +72,7 @@ extends Flux<T>
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The single source Publisher is null"));
+				SubscriptionHelper.error(s, new NullPointerException("The single source Publisher is null"));
 			} else {
 				p.subscribe(s);
 			}

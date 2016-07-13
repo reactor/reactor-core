@@ -19,7 +19,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.state.Completable;
-import reactor.core.util.EmptySubscription;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.

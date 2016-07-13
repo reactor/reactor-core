@@ -23,7 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.util.EmptySubscription;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -58,12 +57,12 @@ final class FluxConcatIterable<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (it == null) {
-			EmptySubscription.error(s, new NullPointerException("The Iterator returned is null"));
+			SubscriptionHelper.error(s, new NullPointerException("The Iterator returned is null"));
 			return;
 		}
 

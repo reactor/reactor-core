@@ -23,6 +23,8 @@ import org.reactivestreams.*;
 import reactor.core.flow.*;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.*;
 
 /**
@@ -76,12 +78,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (worker == null) {
-			EmptySubscription.error(s, new NullPointerException("The scheduler returned a null Function"));
+			SubscriptionHelper.error(s, new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
 
@@ -102,7 +104,8 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	}
 
 	static final class SubscribeOnPipeline<T>
-			extends DeferredSubscription implements Subscriber<T>, Producer, Loopback, Runnable {
+			extends DeferredSubscription
+			implements Subscriber<T>, Producer, Loopback, Runnable {
 		final Subscriber<? super T> actual;
 
 		final Worker worker;
@@ -154,8 +157,8 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				if(WIP.getAndIncrement(this) == 0){
 					worker.schedule(this);
 				}
@@ -237,7 +240,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Cancellation f = scheduler.schedule(this);
 					if (!FUTURE.compareAndSet(this, null, f)) {
@@ -304,7 +307,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 		@Override
 		public void request(long n) {
-			BackpressureUtils.validate(n);
+			SubscriptionHelper.validate(n);
 		}
 
 		@Override

@@ -22,7 +22,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**

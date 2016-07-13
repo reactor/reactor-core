@@ -27,8 +27,7 @@ import reactor.core.flow.MultiReceiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.subscriber.DeferredSubscriptionSubscriber;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -84,12 +83,12 @@ extends Flux<T>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				EmptySubscription.error(s, e);
+				SubscriptionHelper.error(s, e);
 				return;
 			}
 
 			if (it == null) {
-				EmptySubscription.error(s, new NullPointerException("The iterator returned is null"));
+				SubscriptionHelper.error(s, new NullPointerException("The iterator returned is null"));
 				return;
 			}
 
@@ -101,7 +100,7 @@ extends Flux<T>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					EmptySubscription.error(s, e);
+					SubscriptionHelper.error(s, e);
 					return;
 				}
 
@@ -114,12 +113,12 @@ extends Flux<T>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					EmptySubscription.error(s, e);
+					SubscriptionHelper.error(s, e);
 					return;
 				}
 
 				if (p == null) {
-					EmptySubscription.error(s, new NullPointerException("The Publisher returned by the iterator is " +
+					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " +
 					  "null"));
 					return;
 				}
@@ -144,7 +143,7 @@ extends Flux<T>
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The single source Publisher is null"));
+				SubscriptionHelper.error(s, new NullPointerException("The single source Publisher is null"));
 			} else {
 				p.subscribe(s);
 			}
@@ -226,7 +225,7 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				int w = wip;
 				if (w >= 0) {
 					subscribers[w].request(n);

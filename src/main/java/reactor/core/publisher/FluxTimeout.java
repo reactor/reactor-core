@@ -27,9 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -117,7 +115,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				set(s);
@@ -351,7 +349,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			if (!S.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (this.s != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 			} else {
 				s.request(Long.MAX_VALUE);

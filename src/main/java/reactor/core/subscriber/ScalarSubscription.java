@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.util;
+package reactor.core.subscriber;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.flow.*;
 
 /**
- * Represents a fuseable Subscription that emits a single constant value 
+ * Represents a fuseable Subscription that emits a single constant value
  * synchronously to a Subscriber or consumer.
  *
  * @param <T> the value type
@@ -52,7 +50,7 @@ public final class ScalarSubscription<T> implements Fuseable.QueueSubscription<T
 
 	@Override
 	public void request(long n) {
-		if (BackpressureUtils.validate(n)) {
+		if (SubscriptionHelper.validate(n)) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				Subscriber<? super T> a = actual;
 				a.onNext(value);
@@ -70,7 +68,7 @@ public final class ScalarSubscription<T> implements Fuseable.QueueSubscription<T
 	public Object upstream() {
 		return value;
 	}
-
+	
 
 	@Override
 	public int requestFusion(int requestedMode) {
@@ -79,7 +77,7 @@ public final class ScalarSubscription<T> implements Fuseable.QueueSubscription<T
 		}
 		return 0;
 	}
-
+	
 	@Override
 	public T poll() {
 		if (once == 0) {
@@ -88,17 +86,17 @@ public final class ScalarSubscription<T> implements Fuseable.QueueSubscription<T
 		}
 		return null;
 	}
-
+	
 	@Override
 	public boolean isEmpty() {
 		return once != 0;
 	}
-
+	
 	@Override
 	public int size() {
 		return isEmpty() ? 0 : 1;
 	}
-
+	
 	@Override
 	public void clear() {
 		ONCE.lazySet(this, 1);

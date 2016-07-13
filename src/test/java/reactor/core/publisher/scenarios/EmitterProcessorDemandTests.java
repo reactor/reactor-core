@@ -35,8 +35,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.test.TestSubscriber;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * ?
@@ -83,7 +83,7 @@ public class EmitterProcessorDemandTests {
 
 		int i = 0;
 		for (; ; ) {
-			if (BackpressureUtils.getAndSub(demand, 1) != 0) {
+			if (SubscriptionHelper.getAndSub(demand, 1) != 0) {
 				emitter.onNext("" + (i++));
 			}
 			else {
@@ -140,7 +140,7 @@ public class EmitterProcessorDemandTests {
 		String buffer = "Hello";
 		int i = 0;
 		for (; ; ) {
-			if (BackpressureUtils.getAndSub(demand, 1) > 0) {
+			if (SubscriptionHelper.getAndSub(demand, 1) > 0) {
 				emitter.onNext(buffer);
 			}
 

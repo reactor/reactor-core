@@ -37,8 +37,7 @@ import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -219,7 +218,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 		catch (Throwable t) {
 			removeInner(inner, EMPTY);
-			EmptySubscription.error(s, t);
+			SubscriptionHelper.error(s, t);
 		}
 	}
 
@@ -337,7 +336,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void onSubscribe(final Subscription s) {
-		if (BackpressureUtils.validate(upstreamSubscription, s)) {
+		if (SubscriptionHelper.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
 				EmitterSubscriber<?>[] innerSubscribers = subscribers;
@@ -681,8 +680,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.checkRequest(n, actual)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.checkRequest(n, actual)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}

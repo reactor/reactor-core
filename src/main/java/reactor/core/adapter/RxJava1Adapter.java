@@ -26,8 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import rx.Observable;
 import rx.Producer;
@@ -226,7 +225,7 @@ public enum RxJava1Adapter {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				if (BackpressureUtils.validate(this.s, s)) {
+				if (SubscriptionHelper.validate(this.s, s)) {
 					this.s = s;
 
 					actual.onSubscribe(this);
@@ -306,7 +305,7 @@ public enum RxJava1Adapter {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				if (BackpressureUtils.validate(this.s, s)) {
+				if (SubscriptionHelper.validate(this.s, s)) {
 					this.s = s;
 
 					actual.add(this);
@@ -461,7 +460,7 @@ public enum RxJava1Adapter {
 
 			@Override
 			public void request(long n) {
-				if (BackpressureUtils.validate(n)) {
+				if (SubscriptionHelper.validate(n)) {
 					for (; ; ) {
 						int s = state;
 						if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE || isUnsubscribed()) {
@@ -507,7 +506,7 @@ public enum RxJava1Adapter {
         		obs.subscribe(new RxSubscriberToRS<>(s));
         	}
         	catch (Throwable t) {
-		        EmptySubscription.error(s, t);
+		        SubscriptionHelper.error(s, t);
 	        }
         }
 	}
@@ -585,7 +584,7 @@ public enum RxJava1Adapter {
 
 		@Override
 		public void onSubscribe(final Subscription s) {
-			if (BackpressureUtils.validate(subscription, s)) {
+			if (SubscriptionHelper.validate(subscription, s)) {
 				this.subscription = s;
 				subscriber.add(this);
 				subscriber.onStart();
@@ -633,7 +632,7 @@ public enum RxJava1Adapter {
 			s.onSubscribe(new Subscription() {
 				@Override
 				public void request(long n) {
-					if (BackpressureUtils.checkRequest(n, s)) {
+					if (SubscriptionHelper.checkRequest(n, s)) {
 						doRequest(n);
 					}
 				}

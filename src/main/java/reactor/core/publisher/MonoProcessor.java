@@ -33,12 +33,10 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
-import reactor.core.util.ScalarSubscription;
+import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.util.WaitStrategy;
 
 /**
@@ -324,7 +322,7 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final void onSubscribe(Subscription subscription) {
-		if (BackpressureUtils.validate(this.subscription, subscription)) {
+		if (SubscriptionHelper.validate(this.subscription, subscription)) {
 			this.subscription = subscription;
 			if (STATE.compareAndSet(this, STATE_READY, STATE_SUBSCRIBED)){
 				subscription.request(Long.MAX_VALUE);
@@ -409,7 +407,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final void request(long n) {
 		try {
-			BackpressureUtils.checkRequest(n);
+			SubscriptionHelper.checkRequest(n);
 		}
 		catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
@@ -433,11 +431,11 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			else if (endState == STATE_ERROR) {
-				EmptySubscription.error(subscriber, error);
+				SubscriptionHelper.error(subscriber, error);
 				return;
 			}
 			else if (endState == STATE_CANCELLED) {
-				EmptySubscription.error(subscriber, new CancellationException("Mono has previously been cancelled"));
+				SubscriptionHelper.error(subscriber, new CancellationException("Mono has previously been cancelled"));
 				return;
 			}
 			Processor<O, O> out = getOrStart();

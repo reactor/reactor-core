@@ -25,8 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -62,12 +61,12 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable{
 		try {
 			container = supplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (container == null) {
-			EmptySubscription.error(s, new NullPointerException("The supplier returned a null container"));
+			SubscriptionHelper.error(s, new NullPointerException("The supplier returned a null container"));
 			return;
 		}
 
@@ -99,7 +98,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable{
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				subscriber.onSubscribe(this);

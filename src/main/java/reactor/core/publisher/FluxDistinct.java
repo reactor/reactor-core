@@ -30,8 +30,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -67,12 +66,12 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (collection == null) {
-			EmptySubscription.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+			SubscriptionHelper.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
 			return;
 		}
 
@@ -113,7 +112,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -248,7 +247,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -415,7 +414,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.qs, s)) {
+			if (SubscriptionHelper.validate(this.qs, s)) {
 				this.qs = (QueueSubscription<T>) s;
 
 				actual.onSubscribe(this);

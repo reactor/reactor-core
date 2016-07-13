@@ -26,9 +26,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -75,12 +73,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -150,7 +148,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -237,8 +235,8 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -426,7 +424,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			if (a != null) {
 				s.cancel();
 				
-				BackpressureUtils.reportSubscriptionSet();
+				SubscriptionHelper.reportSubscriptionSet();
 				return;
 			}
 			
@@ -438,7 +436,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			if (a != CancelledSubscription.INSTANCE) {
 				s.cancel();
 				
-				BackpressureUtils.reportSubscriptionSet();
+				SubscriptionHelper.reportSubscriptionSet();
 				return;
 			}
 		}

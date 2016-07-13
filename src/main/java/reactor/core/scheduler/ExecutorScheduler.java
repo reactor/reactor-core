@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.state.Cancellable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -68,7 +67,7 @@ final class ExecutorScheduler implements Scheduler {
      * ExecutorRunnable will stay in the Executor's queue and be always executed.
      */
     static final class ExecutorPlainRunnable extends AtomicBoolean 
-    implements Runnable, Cancellable, Cancellation {
+    implements Runnable, Cancellation {
         /** */
         private static final long serialVersionUID = 5116223460201378097L;
         
@@ -96,11 +95,6 @@ final class ExecutorScheduler implements Scheduler {
         }
         
         @Override
-        public boolean isCancelled() {
-            return get();
-        }
-        
-        @Override
         public String toString() {
             return "ExecutorPlainRunnable[cancelled=" + get() + ", task=" + task + "]";
         }
@@ -118,7 +112,7 @@ final class ExecutorScheduler implements Scheduler {
      * remove itself once completed or cancelled
      */
     static final class ExecutorTrackedRunnable extends AtomicBoolean 
-    implements Runnable, Cancellable, Cancellation {
+    implements Runnable, Cancellation {
         /** */
         private static final long serialVersionUID = 3503344795919906192L;
         
@@ -154,11 +148,6 @@ final class ExecutorScheduler implements Scheduler {
             if (compareAndSet(false, true)) {
                 parent.delete(this);
             }
-        }
-        
-        @Override
-        public boolean isCancelled() {
-            return get();
         }
         
         @Override

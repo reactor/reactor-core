@@ -39,8 +39,7 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -94,12 +93,12 @@ implements Fuseable, Backpressurable  {
 			q = mainQueueSupplier.get();
 		} catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			EmptySubscription.error(s, ex);
+			SubscriptionHelper.error(s, ex);
 			return;
 		}
 		
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -179,7 +178,7 @@ implements Fuseable, Backpressurable  {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				s.request(prefetch);
@@ -365,11 +364,11 @@ implements Fuseable, Backpressurable  {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				if (enableAsyncFusion) {
 					actual.onNext(null);
 				} else {
-					BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+					SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 					drain();
 				}
 			}
@@ -773,8 +772,8 @@ implements Fuseable, Backpressurable  {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

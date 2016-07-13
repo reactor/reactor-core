@@ -27,9 +27,6 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
-import reactor.core.state.Backpressurable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -156,7 +153,7 @@ public final class SubmissionEmitter<E>
 			return;
 		}
 		if(emission.isBackpressured()){
-			BackpressureUtils.reportMoreProduced();
+			SubscriptionHelper.reportMoreProduced();
 			return;
 		}
 		if(emission.isCancelled()){
@@ -187,7 +184,7 @@ public final class SubmissionEmitter<E>
 			return Emission.CANCELLED;
 		}
 		try {
-			if (BackpressureUtils.getAndSub(REQUESTED, this, 1L) == 0L) {
+			if (SubscriptionHelper.getAndSub(REQUESTED, this, 1L) == 0L) {
 				return Emission.BACKPRESSURED;
 			}
 			actual.onNext(data);
@@ -274,7 +271,8 @@ public final class SubmissionEmitter<E>
 
 	@Override
 	public long getCapacity() {
-		return Backpressurable.class.isAssignableFrom(actual.getClass()) ? ((Backpressurable) actual).getCapacity() :
+		return SubscriberState.class.isAssignableFrom(actual.getClass()) ? ((SubscriberState)
+				actual).getCapacity() :
 				Long.MAX_VALUE;
 	}
 
@@ -312,8 +310,8 @@ public final class SubmissionEmitter<E>
 
 	@Override
 	public void request(long n) {
-		if (BackpressureUtils.checkRequest(n, actual)) {
-			BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+		if (SubscriptionHelper.checkRequest(n, actual)) {
+			SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 		}
 	}
 
@@ -333,7 +331,7 @@ public final class SubmissionEmitter<E>
 		}
 		catch (Throwable t) {
 			uncaughtException = t;
-			EmptySubscription.error(actual, t);
+			SubscriptionHelper.error(actual, t);
 		}
 	}
 	/**

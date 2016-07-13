@@ -27,7 +27,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits the last N values the source emitted before its completion.
@@ -80,7 +80,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -156,7 +156,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				DrainUtils.postCompleteRequest(n, actual, buffer, REQUESTED, this, this);
 			}
 		}
@@ -169,7 +169,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

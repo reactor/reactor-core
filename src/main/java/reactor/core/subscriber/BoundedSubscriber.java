@@ -19,28 +19,26 @@ package reactor.core.subscriber;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Prefetchable;
 
 /**
  * @author Stephane Maldini
  * @since 2.5
  */
-final class BoundedSubscriber<T> extends LambdaSubscriber<T> implements Backpressurable, Prefetchable {
+final class BoundedSubscriber<T> extends LambdaSubscriber<T>  {
 
 	final int capacity;
 	final int limit;
 
-	private int outstanding;
+	int outstanding;
 
-	public BoundedSubscriber(int capacity,
+	BoundedSubscriber(int capacity,
 			Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		this(capacity, capacity / 4, consumer, errorConsumer, completeConsumer);
 	}
 
-	public BoundedSubscriber(int capacity,
+	BoundedSubscriber(int capacity,
 			int limit,
 			Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,

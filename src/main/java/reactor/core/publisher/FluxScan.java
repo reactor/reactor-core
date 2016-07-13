@@ -27,7 +27,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -107,7 +107,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -190,7 +190,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				for (;;) {
 
 					long r = requested;
@@ -212,7 +212,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 					}
 
 					// transition to HAS_REQUEST_NO_VALUE
-					long u = BackpressureUtils.addCap(r, n);
+					long u = SubscriptionHelper.addCap(r, n);
 					if (REQUESTED.compareAndSet(this, r, u)) {
 						s.request(n);
 						return;

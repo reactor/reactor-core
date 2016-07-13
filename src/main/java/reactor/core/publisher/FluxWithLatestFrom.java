@@ -24,9 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -106,7 +104,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (other != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 			}
 		}
@@ -147,7 +145,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (main != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 			} else {
 				actual.onSubscribe(this);
@@ -186,7 +184,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				if (MAIN.compareAndSet(this, null, CancelledSubscription.INSTANCE)) {
 					cancelOther();
 
-					EmptySubscription.error(actual, t);
+					SubscriptionHelper.error(actual, t);
 					return;
 				}
 			}
@@ -209,7 +207,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				if (MAIN.compareAndSet(this, null, CancelledSubscription.INSTANCE)) {
 					cancelMain();
 
-					EmptySubscription.error(actual, t);
+					SubscriptionHelper.error(actual, t);
 					return;
 				}
 			}

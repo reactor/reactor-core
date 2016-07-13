@@ -24,10 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the
@@ -42,8 +38,9 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> the input value type
  * @param <O> the output value type
  */
-public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription, Subscriber<I>, Producer, Cancellable,
-																   Requestable, Receiver, Completable {
+public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription, Subscriber<I>, Producer,
+																   SubscriberState,
+																   Receiver {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -91,7 +88,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 	public void onSubscribe(Subscription s) {
 		set(s);
 	}
-
+	
 	@Override
 	public void onError(Throwable t) {
 		subscriber.onError(t);
@@ -112,7 +109,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 		
 		if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 			Subscription a = actual;
-
+			
 			if (a != null && shouldCancelCurrent()) {
 				a.cancel();
 			}
@@ -134,7 +131,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 		}
 
 		Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
-		if (a != null) {
+		if (a != null && shouldCancelCurrent()) {
 			a.cancel();
 		}
 		drain();
@@ -142,7 +139,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 
 	@Override
 	public final void request(long n) {
-		if (BackpressureUtils.validate(n)) {
+		if (SubscriptionHelper.validate(n)) {
 			if (unbounded) {
 				return;
 			}
@@ -150,7 +147,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 				long r = requested;
 
 				if (r != Long.MAX_VALUE) {
-					r = BackpressureUtils.addCap(r, n);
+					r = SubscriptionHelper.addCap(r, n);
 					requested = r;
 					if (r == Long.MAX_VALUE) {
 						unbounded = true;
@@ -170,7 +167,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 				return;
 			}
 
-			BackpressureUtils.addAndGet(MISSED_REQUESTED, this, n);
+			SubscriptionHelper.getAndAddCap(MISSED_REQUESTED, this, n);
 
 			drain();
 		}
@@ -186,7 +183,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 			if (r != Long.MAX_VALUE) {
 				r--;
 				if (r < 0L) {
-					BackpressureUtils.reportMoreProduced();
+					SubscriptionHelper.reportMoreProduced();
 					r = 0;
 				}
 				requested = r;
@@ -203,7 +200,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 			return;
 		}
 
-		BackpressureUtils.addAndGet(MISSED_PRODUCED, this, 1L);
+		SubscriptionHelper.getAndAddCap(MISSED_PRODUCED, this, 1L);
 
 		drain();
 	}
@@ -218,7 +215,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 			if (r != Long.MAX_VALUE) {
 				long u = r - n;
 				if (u < 0L) {
-					BackpressureUtils.reportMoreProduced();
+					SubscriptionHelper.reportMoreProduced();
 					u = 0;
 				}
 				requested = u;
@@ -235,7 +232,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 			return;
 		}
 
-		BackpressureUtils.addAndGet(MISSED_PRODUCED, this, n);
+		SubscriptionHelper.getAndAddCap(MISSED_PRODUCED, this, n);
 
 		drain();
 	}
@@ -295,12 +292,12 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 			} else {
 				long r = requested;
 				if (r != Long.MAX_VALUE) {
-					long u = BackpressureUtils.addCap(r, mr);
+					long u = SubscriptionHelper.addCap(r, mr);
 
 					if (u != Long.MAX_VALUE) {
 						long v = u - mp;
 						if (v < 0L) {
-							BackpressureUtils.reportMoreProduced();
+							SubscriptionHelper.reportMoreProduced();
 							v = 0;
 						}
 						r = v;
@@ -359,6 +356,11 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 		return unbounded;
 	}
 
+	/**
+	 * When setting a new subscription via set(), should
+	 * the previous subscription be cancelled?
+	 * @return true if cancellation is needed
+	 */
 	protected boolean shouldCancelCurrent() {
 		return false;
 	}

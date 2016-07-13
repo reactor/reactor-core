@@ -15,15 +15,14 @@
  */
 package reactor.core.publisher;
 
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import org.reactivestreams.*;
+
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
-import reactor.core.util.Exceptions;
+
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.*;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -32,140 +31,144 @@ import reactor.core.util.Exceptions;
  * @param <C> the collection type
  */
 final class ParallelCollect<T, C> extends ParallelFlux<C> {
-    
-    final ParallelFlux<? extends T> source;
-    
-    final Supplier<C> initialCollection;
-    
-    final BiConsumer<C, T> collector;
-    
-    public ParallelCollect(ParallelFlux<? extends T> source,
-            Supplier<C> initialCollection, BiConsumer<C, T> collector) {
-        this.source = source;
-        this.initialCollection = initialCollection;
-        this.collector = collector;
-    }
+	
+	final ParallelFlux<? extends T> source;
+	
+	final Supplier<C> initialCollection;
+	
+	final BiConsumer<C, T> collector;
+	
+	public ParallelCollect(ParallelFlux<? extends T> source, 
+			Supplier<C> initialCollection, BiConsumer<C, T> collector) {
+		this.source = source;
+		this.initialCollection = initialCollection;
+		this.collector = collector;
+	}
 
-    @Override
-    public void subscribe(Subscriber<? super C>[] subscribers) {
-        if (!validate(subscribers)) {
-            return;
-        }
-        
-        int n = subscribers.length;
-        @SuppressWarnings("unchecked")
-        Subscriber<T>[] parents = new Subscriber[n];
-        
-        for (int i = 0; i < n; i++) {
-            
-            C initialValue;
-            
-            try {
-                initialValue = initialCollection.get();
-            } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                reportError(subscribers, ex);
-                return;
-            }
-            
-            if (initialValue == null) {
-                reportError(subscribers, new NullPointerException("The initialSupplier returned a null value"));
-                return;
-            }
-            
-            parents[i] = new ParallelCollectSubscriber<>(subscribers[i], initialValue, collector);
-        }
-        
-        source.subscribe(parents);
-    }
-    
-    void reportError(Subscriber<?>[] subscribers, Throwable ex) {
-        for (Subscriber<?> s : subscribers) {
-            EmptySubscription.error(s, ex);
-        }
-    }
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
+	}
 
-    @Override
-    public int parallelism() {
-        return source.parallelism();
-    }
+	@Override
+	public void subscribe(Subscriber<? super C>[] subscribers) {
+		if (!validate(subscribers)) {
+			return;
+		}
+		
+		int n = subscribers.length;
+		@SuppressWarnings("unchecked")
+		Subscriber<T>[] parents = new Subscriber[n];
+		
+		for (int i = 0; i < n; i++) {
+			
+			C initialValue;
+			
+			try {
+				initialValue = initialCollection.get();
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				reportError(subscribers, ex);
+				return;
+			}
+			
+			if (initialValue == null) {
+				reportError(subscribers, new NullPointerException("The initialSupplier returned a null value"));
+				return;
+			}
+			
+			parents[i] = new ParallelCollectSubscriber<>(subscribers[i], initialValue, collector);
+		}
+		
+		source.subscribe(parents);
+	}
+	
+	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
+		for (Subscriber<?> s : subscribers) {
+			SubscriptionHelper.error(s, ex);
+		}
+	}
 
-    @Override
-    public boolean isOrdered() {
-        return false;
-    }
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
 
-    static final class ParallelCollectSubscriber<T, C> extends
-                                                       DeferredScalarSubscriber<T, C> {
+	@Override
+	public boolean isOrdered() {
+		return false;
+	}
 
-        final BiConsumer<C, T> collector;
+	static final class ParallelCollectSubscriber<T, C> extends DeferredScalarSubscriber<T, C> {
 
-        C collection;
-        
-        Subscription s;
+		final BiConsumer<C, T> collector;
 
-        boolean done;
-        
-        public ParallelCollectSubscriber(Subscriber<? super C> subscriber, 
-                C initialValue, BiConsumer<C, T> collector) {
-            super(subscriber);
-            this.collection = initialValue;
-            this.collector = collector;
-        }
-        
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.validate(this.s, s)) {
-                this.s = s;
-                
-                subscriber.onSubscribe(this);
-                
-                s.request(Long.MAX_VALUE);
-            }
-        }
-        
-        @Override
-        public void onNext(T t) {
-            if (done) {
-                return;
-            }
-            
-            try {
-                collector.accept(collection, t);
-            } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                cancel();
-                onError(ex);
-                return;
-            }
-        }
-        
-        @Override
-        public void onError(Throwable t) {
-            if (done) {
-                Exceptions.onErrorDropped(t);
-                return;
-            }
-            done = true;
-            collection = null;
-            subscriber.onError(t);
-        }
-        
-        @Override
-        public void onComplete() {
-            if (done) {
-                return;
-            }
-            done = true;
-            C c = collection;
-            collection = null;
-            complete(c);
-        }
-        
-        @Override
-        public void cancel() {
-            super.cancel();
-            s.cancel();
-        }
-    }
+		C collection;
+		
+		Subscription s;
+
+		boolean done;
+		
+		public ParallelCollectSubscriber(Subscriber<? super C> subscriber, 
+				C initialValue, BiConsumer<C, T> collector) {
+			super(subscriber);
+			this.collection = initialValue;
+			this.collector = collector;
+		}
+		
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (SubscriptionHelper.validate(this.s, s)) {
+				this.s = s;
+				
+				subscriber.onSubscribe(this);
+				
+				s.request(Long.MAX_VALUE);
+			}
+		}
+		
+		@Override
+		public void onNext(T t) {
+			if (done) {
+				return;
+			}
+			
+			try {
+				collector.accept(collection, t);
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				cancel();
+				onError(ex);
+				return;
+			}
+		}
+		
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			collection = null;
+			subscriber.onError(t);
+		}
+		
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			C c = collection;
+			collection = null;
+			complete(c);
+		}
+		
+		@Override
+		public void cancel() {
+			super.cancel();
+			s.cancel();
+		}
+	}
 }

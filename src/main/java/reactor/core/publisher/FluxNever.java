@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.state.Completable;
-import reactor.core.util.EmptySubscription;
 
 /**
  * Represents an never publisher which only calls onSubscribe.

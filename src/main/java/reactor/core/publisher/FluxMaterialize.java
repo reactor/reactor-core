@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.*;
 
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
@@ -64,7 +64,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-		    if (BackpressureUtils.validate(this.s, s)) {
+		    if (SubscriptionHelper.validate(this.s, s)) {
 		        this.s = s;
 		        
 		        actual.onSubscribe(this);
@@ -99,7 +99,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		
 		@Override
 		public void request(long n) {
-		    if (BackpressureUtils.validate(n)) {
+		    if (SubscriptionHelper.validate(n)) {
 		        if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
 		            s.request(n);
 		        }

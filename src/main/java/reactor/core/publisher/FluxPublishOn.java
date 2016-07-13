@@ -36,8 +36,7 @@ import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 
@@ -91,12 +90,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (worker == null) {
-			EmptySubscription.error(s,
+			SubscriptionHelper.error(s,
 					new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
@@ -193,7 +192,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof QueueSubscription) {
@@ -229,7 +228,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 					Exceptions.throwIfFatal(e);
 					s.cancel();
 					try {
-						EmptySubscription.error(actual, e);
+						SubscriptionHelper.error(actual, e);
 					}
 					finally {
 						worker.shutdown();
@@ -282,8 +281,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}
@@ -728,7 +727,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof QueueSubscription) {
@@ -764,7 +763,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 					s.cancel();
 
 					try {
-						EmptySubscription.error(actual, e);
+						SubscriptionHelper.error(actual, e);
 					}
 					finally {
 						worker.shutdown();
@@ -818,8 +817,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}

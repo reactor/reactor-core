@@ -23,9 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Skips values from the main publisher until the other publisher signals
@@ -131,7 +129,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (other != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 			}
 		}
@@ -172,7 +170,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (main != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 			} else {
 				actual.onSubscribe(this);
@@ -192,7 +190,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			if (main == null) {
 				if (MAIN.compareAndSet(this, null, CancelledSubscription.INSTANCE)) {
-					EmptySubscription.error(actual, t);
+					SubscriptionHelper.error(actual, t);
 					return;
 				}
 			}

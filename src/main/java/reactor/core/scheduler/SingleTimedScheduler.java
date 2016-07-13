@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.state.Cancellable;
 import reactor.core.util.Exceptions;
 
 /**
@@ -229,8 +228,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     static final class TimedScheduledRunnable
-    extends AtomicReference<Future<?>>
-    implements Runnable, Cancellable, Cancellation, CancelFuture {
+    extends AtomicReference<Future<?>> implements Runnable, Cancellation, CancelFuture {
         /** */
         private static final long serialVersionUID = 2284024836904862408L;
         
@@ -304,13 +302,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                 }
             }
         }
-        
-        @Override
-        public boolean isCancelled() {
-            Future<?> f = get();
-            return f == FINISHED || f == CANCELLED_FUTURE;
-        }
-        
+
         @Override
         public void dispose() {
             for (;;) {
@@ -353,7 +345,7 @@ final class SingleTimedScheduler implements TimedScheduler {
 
     static final class TimedPeriodicScheduledRunnable
     extends AtomicReference<Future<?>>
-    implements Runnable, Cancellable, Cancellation, CancelFuture {
+    implements Runnable, Cancellation, CancelFuture {
         /** */
         private static final long serialVersionUID = 2284024836904862408L;
         
@@ -423,12 +415,6 @@ final class SingleTimedScheduler implements TimedScheduler {
                     return;
                 }
             }
-        }
-        
-        @Override
-        public boolean isCancelled() {
-            Future<?> f = get();
-            return f == FINISHED || f == CANCELLED_FUTURE;
         }
         
         @Override

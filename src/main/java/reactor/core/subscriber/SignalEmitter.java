@@ -17,18 +17,14 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.state.*;
-
 /**
  * Interface to generate signals to a bridged {@link Subscriber}.
  * <p>
- * At least one of the methods
- * should be called per invocation of the generator function
+ * At least one of the methods should be called per invocation of the generator function
  *
  * @param <T> the output value type
  */
-public interface SignalEmitter<T> extends Backpressurable, Introspectable, Cancellable,
-                                          Requestable {
+public interface SignalEmitter<T> extends SubscriberState {
 
 	/**
 	 * @see Subscriber#onComplete()

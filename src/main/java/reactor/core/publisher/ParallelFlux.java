@@ -36,7 +36,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.PlatformDependent;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 
@@ -49,7 +49,7 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> {
+public abstract class ParallelFlux<T> implements PublisherConfig {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (number of CPUs) in
@@ -823,7 +823,7 @@ public abstract class ParallelFlux<T> {
 		int p = parallelism();
 		if (subscribers.length != p) {
 			for (Subscriber<?> s : subscribers) {
-				EmptySubscription.error(s,
+				SubscriptionHelper.error(s,
 						new IllegalArgumentException("parallelism = " + p + ", subscribers = " + subscribers.length));
 			}
 			return false;

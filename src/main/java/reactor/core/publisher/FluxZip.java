@@ -42,9 +42,7 @@ import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -148,7 +146,7 @@ final class FluxZip<T, R> extends Flux<R>
 
 		for (Publisher<? extends T> p : sourcesIterable) {
 			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
+				SubscriptionHelper.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
 				return;
 			}
 
@@ -161,7 +159,7 @@ final class FluxZip<T, R> extends Flux<R>
 					v = callable.call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					EmptySubscription.error(s, Exceptions.unwrap(e));
+					SubscriptionHelper.error(s, Exceptions.unwrap(e));
 					return;
 				}
 
@@ -224,7 +222,7 @@ final class FluxZip<T, R> extends Flux<R>
 			Publisher<? extends T> p = srcs[j];
 
 			if (p == null) {
-				EmptySubscription.error(s, new NullPointerException("The sources contained a null Publisher"));
+				SubscriptionHelper.error(s, new NullPointerException("The sources contained a null Publisher"));
 				return;
 			}
 
@@ -235,7 +233,7 @@ final class FluxZip<T, R> extends Flux<R>
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					EmptySubscription.error(s, Exceptions.unwrap(e));
+					SubscriptionHelper.error(s, Exceptions.unwrap(e));
 					return;
 				}
 
@@ -461,7 +459,7 @@ final class FluxZip<T, R> extends Flux<R>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				this.s = s;
 				s.request(Long.MAX_VALUE);
 			}
@@ -475,7 +473,7 @@ final class FluxZip<T, R> extends Flux<R>
 				return;
 			}
 			done = true;
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 			parent.next(t, index);
 		}
 
@@ -542,7 +540,7 @@ final class FluxZip<T, R> extends Flux<R>
 
 		@Override
 		public void dispose() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 	}
 
@@ -605,8 +603,8 @@ final class FluxZip<T, R> extends Flux<R>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -926,7 +924,7 @@ final class FluxZip<T, R> extends Flux<R>
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
@@ -1031,7 +1029,7 @@ final class FluxZip<T, R> extends Flux<R>
 		}
 
 		void cancel() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 
 		void request(long n) {

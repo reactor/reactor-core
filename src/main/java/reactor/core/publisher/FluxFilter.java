@@ -29,7 +29,7 @@ import reactor.core.flow.Receiver;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -90,7 +90,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -219,7 +219,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}

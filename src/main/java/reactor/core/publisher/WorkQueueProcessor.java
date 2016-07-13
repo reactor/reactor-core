@@ -37,8 +37,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 import reactor.core.util.Sequence;
@@ -587,7 +586,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				TopicProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
 			}
 			else {
-				EmptySubscription.error(subscriber, t);
+				SubscriptionHelper.error(subscriber, t);
 			}
 		}
 	}
@@ -740,7 +739,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 			try {
 				if (!running.compareAndSet(false, true)) {
-					EmptySubscription.error(subscriber, new IllegalStateException("Thread is already running"));
+					SubscriptionHelper.error(subscriber, new IllegalStateException("Thread is already running"));
 					return;
 				}
 
@@ -960,7 +959,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		private void readNextEvent(final boolean unbounded)
 				throws Exceptions.AlertException {
 				//pause until request
-			while ((!unbounded && BackpressureUtils.getAndSub(pendingRequest, 1L) == 0L)) {
+			while ((!unbounded && SubscriptionHelper.getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {
 					throw Exceptions.AlertException.INSTANCE;
 				}
@@ -1011,12 +1010,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.checkRequest(n, subscriber)) {
+			if (SubscriptionHelper.checkRequest(n, subscriber)) {
 				if (!running.get()) {
 					return;
 				}
 
-				BackpressureUtils.getAndAddCap(pendingRequest, n);
+				SubscriptionHelper.getAndAddCap(pendingRequest, n);
 			}
 		}
 

@@ -21,8 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -77,7 +76,7 @@ final class FluxError<T>
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, e));
 		} else {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 		}
 	}
 	
@@ -97,7 +96,7 @@ final class FluxError<T>
 		}
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					actual.onError(error);
 				}

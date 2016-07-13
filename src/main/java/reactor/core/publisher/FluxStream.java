@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Receiver;
-import reactor.core.util.EmptySubscription;
 
 /**
  * Emits the contents of a Stream source.
@@ -55,7 +54,7 @@ final class FluxStream<T>
 		try {
 			it = stream.iterator();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 

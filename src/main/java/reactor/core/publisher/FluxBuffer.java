@@ -33,7 +33,7 @@ import reactor.core.state.Backpressurable;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -108,8 +108,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				s.request(BackpressureUtils.multiplyCap(n, size));
+			if (SubscriptionHelper.validate(n)) {
+				s.request(SubscriptionHelper.multiplyCap(n, size));
 			}
 		}
 
@@ -120,7 +120,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -266,14 +266,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		public void request(long n) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				// n full buffers
-				long u = BackpressureUtils.multiplyCap(n, size);
+				long u = SubscriptionHelper.multiplyCap(n, size);
 				// + (n - 1) gaps
-				long v = BackpressureUtils.multiplyCap(skip - size, n - 1);
+				long v = SubscriptionHelper.multiplyCap(skip - size, n - 1);
 
-				s.request(BackpressureUtils.addCap(u, v));
+				s.request(SubscriptionHelper.addCap(u, v));
 			} else {
 				// n full buffer + gap
-				s.request(BackpressureUtils.multiplyCap(skip, n));
+				s.request(SubscriptionHelper.multiplyCap(skip, n));
 			}
 		}
 
@@ -284,7 +284,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -454,7 +454,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public void request(long n) {
 
-			if (!BackpressureUtils.validate(n)) {
+			if (!SubscriptionHelper.validate(n)) {
 				return;
 			}
 
@@ -464,14 +464,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 				// (n - 1) skips
-				long u = BackpressureUtils.multiplyCap(skip, n - 1);
+				long u = SubscriptionHelper.multiplyCap(skip, n - 1);
 
 				// + 1 full buffer
-				long r = BackpressureUtils.addCap(size, u);
+				long r = SubscriptionHelper.addCap(size, u);
 				s.request(r);
 			} else {
 				// n skips
-				long r = BackpressureUtils.multiplyCap(skip, n);
+				long r = SubscriptionHelper.multiplyCap(skip, n);
 				s.request(r);
 			}
 		}
@@ -484,7 +484,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

@@ -23,6 +23,7 @@ import java.util.function.Function;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Fuseable;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -81,7 +82,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 	    
         @Override
         public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.setOnce(S, this, s)) {
+            if (SubscriptionHelper.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);
             }
         }
@@ -161,7 +162,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
         @Override
         public void cancel() {
             super.cancel();
-            BackpressureUtils.terminate(S, this);
+            SubscriptionHelper.terminate(S, this);
             second.cancel();
         }
         
@@ -190,7 +191,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             
             @Override
             public void onSubscribe(Subscription s) {
-                if (BackpressureUtils.setOnce(S, this, s)) {
+                if (SubscriptionHelper.setOnce(S, this, s)) {
                     s.request(Long.MAX_VALUE);
                 }
             }
@@ -225,7 +226,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             }
             
             void cancel() {
-                BackpressureUtils.terminate(S, this);
+                SubscriptionHelper.terminate(S, this);
             }
             
         }

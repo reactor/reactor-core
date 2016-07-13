@@ -19,8 +19,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.*;
 
 /**
  * A bounded, array backed, single-producer single-consumer queue.
@@ -34,206 +33,205 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * 
  * @param <T> the value type
  */
-final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
-    /** */
-    private static final long serialVersionUID = 494623116936946976L;
+public final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
+	/** */
+	private static final long serialVersionUID = 494623116936946976L;
 
-    public SpscArrayQueue(int capacity) {
-        super(QueueSupplier.ceilingNextPowerOfTwo(capacity));
-    }
-    
-    @Override
-    public boolean offer(T e) {
-        Objects.requireNonNull(e, "e");
-        long pi = producerIndex;
-        int offset = (int)pi & mask;
-        if (get(offset) != null) {
-            return false;
-        }
-        lazySet(offset, e);
-        PRODUCER_INDEX.lazySet(this, pi + 1);
-        return true;
-    }
-    
-    @Override
-    public T poll() {
-        long ci = consumerIndex;
-        int offset = (int)ci & mask;
-        
-        T v = get(offset);
-        if (v != null) {
-            lazySet(offset, null);
-            CONSUMER_INDEX.lazySet(this, ci + 1);
-        }
-        return v;
-    }
-    
-    @Override
-    public T peek() {
-        int offset = (int)consumerIndex & mask;
-        return get(offset);
-    }
-    
-    @Override
-    public boolean isEmpty() {
-        return producerIndex == consumerIndex;
-    }
-    
-    @Override
-    public void clear() {
-        while (poll() != null && !isEmpty());
-    }
+	public SpscArrayQueue(int capacity) {
+		super(QueueSupplier.ceilingNextPowerOfTwo(capacity));
+	}
+	
+	@Override
+	public boolean offer(T e) {
+		Objects.requireNonNull(e, "e");
+		long pi = producerIndex;
+		int offset = (int)pi & mask;
+		if (get(offset) != null) {
+			return false;
+		}
+		lazySet(offset, e);
+		PRODUCER_INDEX.lazySet(this, pi + 1);
+		return true;
+	}
+	
+	@Override
+	public T poll() {
+		long ci = consumerIndex;
+		int offset = (int)ci & mask;
+		
+		T v = get(offset);
+		if (v != null) {
+			lazySet(offset, null);
+			CONSUMER_INDEX.lazySet(this, ci + 1);
+		}
+		return v;
+	}
+	
+	@Override
+	public T peek() {
+		int offset = (int)consumerIndex & mask;
+		return get(offset);
+	}
+	
+	@Override
+	public boolean isEmpty() {
+		return producerIndex == consumerIndex;
+	}
+	
+	@Override
+	public void clear() {
+		while (poll() != null && !isEmpty());
+	}
 
-    @Override
-    public int size() {
-        long ci = consumerIndex;
-        for (;;) {
-            long pi = producerIndex;
-            long ci2 = consumerIndex;
-            if (ci == ci2) {
-                return (int)(pi - ci);
-            }
-            ci = ci2;
-        }
-    }
+	@Override
+	public int size() {
+		long ci = consumerIndex;
+		for (;;) {
+			long pi = producerIndex;
+			long ci2 = consumerIndex;
+			if (ci == ci2) {
+				return (int)(pi - ci);
+			}
+			ci = ci2;
+		}
+	}
 
-    @Override
-    public boolean contains(Object o) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean contains(Object o) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Iterator<T> iterator() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Iterator<T> iterator() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Object[] toArray() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Object[] toArray() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public <R> R[] toArray(R[] a) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public <R> R[] toArray(R[] a) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean remove(Object o) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean remove(Object o) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean containsAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean addAll(Collection<? extends T> c) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean addAll(Collection<? extends T> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean removeAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean retainAll(Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean add(T e) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public boolean add(T e) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public T remove() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public T remove() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public T element() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public T element() {
+		throw new UnsupportedOperationException();
+	}
 }
 
 class SpscArrayQueueCold<T> extends AtomicReferenceArray<T> {
-    /** */
-    private static final long serialVersionUID = 8491797459632447132L;
+	/** */
+	private static final long serialVersionUID = 8491797459632447132L;
 
-    final int mask;
-    
-    public SpscArrayQueueCold(int length) {
-        super(length);
-        mask = length - 1;
-    }
+	final int mask;
+	
+	public SpscArrayQueueCold(int length) {
+		super(length);
+		mask = length - 1;
+	}
 }
-
 class SpscArrayQueueP1<T> extends SpscArrayQueueCold<T> {
-    /** */
-    private static final long serialVersionUID = -4461305682174876914L;
-    
-    volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-    volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	/** */
+	private static final long serialVersionUID = -4461305682174876914L;
+	
+	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
+	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-    public SpscArrayQueueP1(int length) {
-        super(length);
-    }
+	public SpscArrayQueueP1(int length) {
+		super(length);
+	}
 }
 
 class SpscArrayQueueProducer<T> extends SpscArrayQueueP1<T> {
 
-    /** */
-    private static final long serialVersionUID = 1657408315616277653L;
-    
-    public SpscArrayQueueProducer(int length) {
-        super(length);
-    }
+	/** */
+	private static final long serialVersionUID = 1657408315616277653L;
+	
+	public SpscArrayQueueProducer(int length) {
+		super(length);
+	}
 
-    volatile long producerIndex;
-    @SuppressWarnings("rawtypes")
-    static final AtomicLongFieldUpdater<SpscArrayQueueProducer> PRODUCER_INDEX =
-            AtomicLongFieldUpdater.newUpdater(SpscArrayQueueProducer.class, "producerIndex");
+	volatile long producerIndex;
+	@SuppressWarnings("rawtypes")
+	static final AtomicLongFieldUpdater<SpscArrayQueueProducer> PRODUCER_INDEX =
+			AtomicLongFieldUpdater.newUpdater(SpscArrayQueueProducer.class, "producerIndex");
 
 }
 
 class SpscArrayQueueP2<T> extends SpscArrayQueueProducer<T> {
-    /** */
-    private static final long serialVersionUID = -5400235061461013116L;
-    
-    volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-    volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	/** */
+	private static final long serialVersionUID = -5400235061461013116L;
+	
+	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
+	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-    public SpscArrayQueueP2(int length) {
-        super(length);
-    }
+	public SpscArrayQueueP2(int length) {
+		super(length);
+	}
 }
 
 class SpscArrayQueueConsumer<T> extends SpscArrayQueueP2<T> {
 
-    /** */
-    private static final long serialVersionUID = 4075549732218321659L;
-    
-    public SpscArrayQueueConsumer(int length) {
-        super(length);
-    }
+	/** */
+	private static final long serialVersionUID = 4075549732218321659L;
+	
+	public SpscArrayQueueConsumer(int length) {
+		super(length);
+	}
 
-    volatile long consumerIndex;
-    @SuppressWarnings("rawtypes")
-    static final AtomicLongFieldUpdater<SpscArrayQueueConsumer> CONSUMER_INDEX =
-            AtomicLongFieldUpdater.newUpdater(SpscArrayQueueConsumer.class, "consumerIndex");
+	volatile long consumerIndex;
+	@SuppressWarnings("rawtypes")
+	static final AtomicLongFieldUpdater<SpscArrayQueueConsumer> CONSUMER_INDEX =
+			AtomicLongFieldUpdater.newUpdater(SpscArrayQueueConsumer.class, "consumerIndex");
 
 }
 
 class SpscArrayQueueP3<T> extends SpscArrayQueueConsumer<T> {
-    /** */
-    private static final long serialVersionUID = -2684922090021364171L;
-    
-    volatile long p00, p01, p02, p03, p04, p05, p06, p07;
-    volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
+	/** */
+	private static final long serialVersionUID = -2684922090021364171L;
+	
+	volatile long p00, p01, p02, p03, p04, p05, p06, p07;
+	volatile long p08, p09, p0A, p0B, p0C, p0D, p0E;
 
-    public SpscArrayQueueP3(int length) {
-        super(length);
-    }
+	public SpscArrayQueueP3(int length) {
+		super(length);
+	}
 }

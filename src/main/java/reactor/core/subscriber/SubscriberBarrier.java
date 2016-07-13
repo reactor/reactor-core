@@ -19,9 +19,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
@@ -36,7 +33,7 @@ import reactor.core.util.Exceptions;
  * @param <O> the output value type
  */
 public class SubscriberBarrier<I, O>
-		implements BaseSubscriber<I>, Subscription, Backpressurable, Completable, Receiver, Producer {
+		implements BaseSubscriber<I>, Subscription, SubscriberState, Receiver, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -63,7 +60,7 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public final void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(subscription, s)) {
+		if (SubscriptionHelper.validate(subscription, s)) {
 			try {
 				subscription = s;
 				doOnSubscribe(s);
@@ -133,7 +130,7 @@ public class SubscriberBarrier<I, O>
 	@Override
 	public final void request(long n) {
 		try {
-			BackpressureUtils.checkRequest(n);
+			SubscriptionHelper.checkRequest(n);
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
@@ -169,19 +166,24 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public boolean isTerminated() {
-		return null != subscription && subscription instanceof Completable && ((Completable) subscription).isTerminated();
+		return null != subscription && subscription instanceof SubscriberState && (
+				(SubscriberState) subscription).isTerminated();
 	}
 
 	@Override
 	public long getCapacity() {
-		return subscriber != null && Backpressurable.class.isAssignableFrom(subscriber.getClass()) ?
-				((Backpressurable) subscriber).getCapacity() :
+		return subscriber != null && SubscriberState.class.isAssignableFrom(subscriber
+				.getClass()) ?
+				((SubscriberState) subscriber).getCapacity() :
 		  Long.MAX_VALUE;
 	}
 
 	@Override
 	public long getPending() {
-		return -1L;
+		return subscriber != null && SubscriberState.class.isAssignableFrom(subscriber
+				.getClass()) ?
+				((SubscriberState) subscriber).getPending() :
+				-1L;
 	}
 
 	@Override

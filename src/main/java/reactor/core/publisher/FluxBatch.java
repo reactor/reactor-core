@@ -29,7 +29,7 @@ import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
@@ -127,7 +127,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 		@Override
 		protected void doRequest(long n) {
-			doRequested(BackpressureUtils.getAndAddCap(REQUESTED, this, n), n);
+			doRequested(SubscriptionHelper.getAndAddCap(REQUESTED, this, n), n);
 		}
 
 		final void requestMore(long n){
@@ -244,7 +244,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 				requestMore(Long.MAX_VALUE);
 			}
 			else {
-				requestMore(BackpressureUtils.multiplyCap(n, batchSize));
+				requestMore(SubscriptionHelper.multiplyCap(n, batchSize));
 			}
 		}
 

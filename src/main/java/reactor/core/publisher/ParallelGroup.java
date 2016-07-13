@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.flow.Fuseable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Exposes the 'rails' as individual GroupedFlux instances, keyed by the rail index (zero based).
@@ -35,116 +35,116 @@ import reactor.core.util.EmptySubscription;
  */
 final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fuseable {
 
-    final ParallelFlux<? extends T> source;
+	final ParallelFlux<? extends T> source;
 
-    public ParallelGroup(ParallelFlux<? extends T> source) {
-        this.source = source;
-    }
-    
-    @Override
-    public void subscribe(Subscriber<? super GroupedFlux<Integer, T>> s) {
-        int n = source.parallelism();
-        
-        @SuppressWarnings("unchecked")
-        ParallelInnerGroup<T>[] groups = new ParallelInnerGroup[n];
-        
-        for (int i = 0; i < n; i++) {
-            groups[i] = new ParallelInnerGroup<>(i);
-        }
-        
-       FluxArray.subscribe(s, groups);
-        
-        source.subscribe(groups);
-    }
-    
-    static final class ParallelInnerGroup<T> extends GroupedFlux<Integer, T> 
-    implements Subscriber<T>, Subscription {
-        final int key;
-        
-        volatile int once;
-        @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<ParallelInnerGroup> ONCE =
-                AtomicIntegerFieldUpdater.newUpdater(ParallelInnerGroup.class, "once");
-        
-        volatile Subscription s;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<ParallelInnerGroup, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(ParallelInnerGroup.class, Subscription.class, "s");
-        
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<ParallelInnerGroup> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(ParallelInnerGroup.class, "requested");
-        
-        Subscriber<? super T> actual;
-        
-        public ParallelInnerGroup(int key) {
-            this.key = key;
-        }
-        
-        @Override
-        public Integer key() {
-            return key;
-        }
-        
-        @Override
-        public void subscribe(Subscriber<? super T> s) {
-            if (ONCE.compareAndSet(this, 0, 1)) {
-                this.actual = s;
-                s.onSubscribe(this);
-            } else {
-                EmptySubscription.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
-            }
-        }
-        
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.setOnce(S, this, s)) {
-                long r = REQUESTED.getAndSet(this, 0L);
-                if (r != 0L) {
-                    s.request(r);
-                }
-            }
-        }
-        
-        @Override
-        public void onNext(T t) {
-            actual.onNext(t);
-        }
-        
-        @Override
-        public void onError(Throwable t) {
-            actual.onError(t);
-        }
-        
-        @Override
-        public void onComplete() {
-            actual.onComplete();
-        }
-        
-        @Override
-        public void request(long n) {
-            if (BackpressureUtils.validate(n)) {
-                Subscription a = s;
-                if (a == null) {
-                    BackpressureUtils.getAndAddCap(REQUESTED, this, n);
-                    
-                    a = s;
-                    if (a != null) {
-                        long r = REQUESTED.getAndSet(this, 0L);
-                        if (r != 0L) {
-                            a.request(n);
-                        }
-                    }
-                } else {
-                    a.request(n);
-                }
-            }
-        }
-        
-        @Override
-        public void cancel() {
-            BackpressureUtils.terminate(S, this);
-        }
-    }
+	public ParallelGroup(ParallelFlux<? extends T> source) {
+		this.source = source;
+	}
+	
+	@Override
+	public void subscribe(Subscriber<? super GroupedFlux<Integer, T>> s) {
+		int n = source.parallelism();
+		
+		@SuppressWarnings("unchecked")
+		ParallelInnerGroup<T>[] groups = new ParallelInnerGroup[n];
+		
+		for (int i = 0; i < n; i++) {
+			groups[i] = new ParallelInnerGroup<>(i);
+		}
+		
+		FluxArray.subscribe(s, groups);
+		
+		source.subscribe(groups);
+	}
+	
+	static final class ParallelInnerGroup<T> extends GroupedFlux<Integer, T> 
+	implements Subscriber<T>, Subscription {
+		final int key;
+		
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ParallelInnerGroup> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(ParallelInnerGroup.class, "once");
+		
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ParallelInnerGroup, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ParallelInnerGroup.class, Subscription.class, "s");
+		
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<ParallelInnerGroup> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(ParallelInnerGroup.class, "requested");
+		
+		Subscriber<? super T> actual;
+		
+		public ParallelInnerGroup(int key) {
+			this.key = key;
+		}
+		
+		@Override
+		public Integer key() {
+			return key;
+		}
+		
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			if (ONCE.compareAndSet(this, 0, 1)) {
+				this.actual = s;
+				s.onSubscribe(this);
+			} else {
+				SubscriptionHelper.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
+			}
+		}
+		
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0L) {
+					s.request(r);
+				}
+			}
+		}
+		
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
+		
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
+		
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+		}
+		
+		@Override
+		public void request(long n) {
+			if (SubscriptionHelper.validate(n)) {
+				Subscription a = s;
+				if (a == null) {
+					SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+					
+					a = s;
+					if (a != null) {
+						long r = REQUESTED.getAndSet(this, 0L);
+						if (r != 0L) {
+							a.request(n);
+						}
+					}
+				} else {
+					a.request(n);
+				}
+			}
+		}
+		
+		@Override
+		public void cancel() {
+			SubscriptionHelper.terminate(S, this);
+		}
+	}
 }

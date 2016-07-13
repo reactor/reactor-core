@@ -22,6 +22,7 @@ import java.util.stream.Collector;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Fuseable;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -62,7 +63,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			finisher = collector.finisher();
 		} catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			EmptySubscription.error(s, ex);
+			SubscriptionHelper.error(s, ex);
 			return;
 		}
 		
@@ -91,7 +92,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				
 				subscriber.onSubscribe(this);

@@ -24,6 +24,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.*;
 import reactor.core.state.*;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.*;
 
 /**
@@ -214,7 +215,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 		@Override
 		public void dispose() {
 			if (CONNECTED.compareAndSet(this, 1, 2)) {
-				if(BackpressureUtils.terminate(S, this)) {
+				if(SubscriptionHelper.terminate(S, this)) {
 					processor.onError(new CancellationException("Disconnected"));
 				}
 			}
@@ -227,7 +228,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				processor.onSubscribe(s);
 			}
 		}

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -202,7 +203,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.setOnce(S, this, s)) {
+            if (SubscriptionHelper.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);
             } else {
                 s.cancel();
@@ -231,7 +232,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         }
         
         void cancel() {
-            BackpressureUtils.terminate(S, this);
+            SubscriptionHelper.terminate(S, this);
         }
     }
 }

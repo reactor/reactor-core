@@ -15,8 +15,8 @@
  */
 
 /**
- * Core utility functions to work with Reactive components, specifically:
- * {@link org.reactivestreams.Subscription}, {@link reactor.core.util.BackpressureUtils backpressure}, {@link reactor.core.util.Logger logging}, {@link reactor.core.util.Exceptions Exception} handling,
+ * Utility functions to work with Reactive components, specifically:
+ * {@link reactor.core.util.Logger logging}, {@link reactor.core.util.Exceptions Exception} handling,
  * or the {@link reactor.core.util.PlatformDependent environment}
  * settings.
  *

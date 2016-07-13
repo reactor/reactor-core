@@ -27,6 +27,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.util.*;
 
@@ -202,7 +203,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.replace(S, this, s)) {
+            if (SubscriptionHelper.replace(S, this, s)) {
                 s.request(Long.MAX_VALUE);
             }
         }
@@ -223,7 +224,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
         
         void cancel() {
-            BackpressureUtils.terminate(S, this);
+            SubscriptionHelper.terminate(S, this);
         }
         
         void clear() {
@@ -247,7 +248,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.setOnce(S, this, s)) {
+            if (SubscriptionHelper.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);
             }
         }
@@ -281,7 +282,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
         
         void cancel() {
-            BackpressureUtils.terminate(S, this);
+            SubscriptionHelper.terminate(S, this);
         }
     }
 }

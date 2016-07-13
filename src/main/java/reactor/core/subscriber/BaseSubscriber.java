@@ -17,8 +17,6 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -43,7 +41,7 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 	 * @return this
 	 */
 	default BaseSubscriber<T> connect() {
-		onSubscribe(EmptySubscription.INSTANCE);
+		onSubscribe(SubscriptionHelper.empty());
 		return this;
 	}
 
@@ -69,8 +67,8 @@ public interface BaseSubscriber<T> extends Subscriber<T> {
 
 	@Override
 	default void onSubscribe(Subscription s) {
-		BackpressureUtils.validate(null, s);
-		//To validate with BackpressureUtils.validate(current, s)
+		SubscriptionHelper.validate(null, s);
+		//To validate with SubscriptionHelper.validate(current, s)
 	}
 
 	@Override

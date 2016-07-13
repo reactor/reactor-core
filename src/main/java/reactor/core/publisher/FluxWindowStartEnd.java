@@ -28,9 +28,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -74,12 +73,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		try {
 			q = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -159,7 +158,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -192,8 +191,8 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		
@@ -251,7 +250,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void run() {
 			if (OPEN.decrementAndGet(this) == 0) {
-				BackpressureUtils.terminate(S, this);
+				SubscriptionHelper.terminate(S, this);
 			}
 		}
 		
@@ -308,7 +307,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 					if (e != null) {
 						e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							BackpressureUtils.terminate(S, this);
+							SubscriptionHelper.terminate(S, this);
 							starter.cancel();
 							removeAll();
 

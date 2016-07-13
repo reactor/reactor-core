@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
@@ -60,7 +60,7 @@ enum DrainUtils {
 			long r0 = r & REQUESTED_MASK;
 
 			// preserve COMPLETED_MASK and calculate new requested amount
-			long u = (r & COMPLETED_MASK) | BackpressureUtils.addCap(r0, n);
+			long u = (r & COMPLETED_MASK) | SubscriptionHelper.addCap(r0, n);
 
 			if (field.compareAndSet(instance, r, u)) {
 				// (complete, 0) -> (complete, n) transition then replay
@@ -233,7 +233,7 @@ enum DrainUtils {
             long r0 = r & REQUESTED_MASK;
 
             // preserve COMPLETED_MASK and calculate new requested amount
-            long u = (r & COMPLETED_MASK) | BackpressureUtils.addCap(r0, n);
+            long u = (r & COMPLETED_MASK) | SubscriptionHelper.addCap(r0, n);
 
             if (field.compareAndSet(instance, r, u)) {
                 // (complete, 0) -> (complete, n) transition then replay

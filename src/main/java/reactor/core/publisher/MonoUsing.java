@@ -24,7 +24,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -79,7 +78,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 			resource = resourceSupplier.call();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			EmptySubscription.error(s, Exceptions.unwrap(e));
+			SubscriptionHelper.error(s, Exceptions.unwrap(e));
 			return;
 		}
 
@@ -97,7 +96,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 				e = ex;
 			}
 
-			EmptySubscription.error(s, Exceptions.unwrap(e));
+			SubscriptionHelper.error(s, Exceptions.unwrap(e));
 			return;
 		}
 
@@ -112,7 +111,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 				e = _ex;
 			}
 
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 

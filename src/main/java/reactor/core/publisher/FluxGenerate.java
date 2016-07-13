@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Fuseable.QueueSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.util.*;
 
@@ -75,7 +76,7 @@ extends Flux<T> {
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		s.onSubscribe(new GenerateSubscription<>(s, state, generator, stateConsumer));
@@ -177,8 +178,8 @@ extends Flux<T> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (SubscriptionHelper.validate(n)) {
+				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

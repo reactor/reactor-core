@@ -22,7 +22,7 @@ import org.reactivestreams.*;
 
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Subscribes to the upstream Mono on the specified Scheduler and makes sure
@@ -72,7 +72,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (!BackpressureUtils.setOnce(S, this, s)) {
+            if (!SubscriptionHelper.setOnce(S, this, s)) {
                 s.cancel();
             } else {
                 long r = REQUESTED.getAndSet(this, 0L);
@@ -107,14 +107,14 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         
         @Override
         public void request(long n) {
-            if (BackpressureUtils.validate(n)) {
+            if (SubscriptionHelper.validate(n)) {
                 worker.schedule(() -> requestMore(n));
             }
         }
         
         @Override
         public void cancel() {
-            if (BackpressureUtils.terminate(S, this)) {
+            if (SubscriptionHelper.terminate(S, this)) {
                 worker.shutdown();
             }
         }
@@ -124,7 +124,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
             if (a != null) {
                 a.request(n);
             } else {
-                BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+                SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
                 a = s;
                 if (a != null) {
                     long r = REQUESTED.getAndSet(this, 0L);

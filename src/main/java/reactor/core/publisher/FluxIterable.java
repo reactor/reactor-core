@@ -27,8 +27,7 @@ import reactor.core.flow.Receiver;
 import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits the contents of an Iterable source.
@@ -57,7 +56,7 @@ extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
@@ -77,7 +76,7 @@ extends Flux<T>
 	 */
 	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
 		if (it == null) {
-			EmptySubscription.error(s, new NullPointerException("The iterator is null"));
+			SubscriptionHelper.error(s, new NullPointerException("The iterator is null"));
 			return;
 		}
 
@@ -86,7 +85,7 @@ extends Flux<T>
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		if (!b) {
@@ -135,8 +134,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (SubscriptionHelper.validate(n)) {
+				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -380,8 +379,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				if (BackpressureUtils.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (SubscriptionHelper.validate(n)) {
+				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

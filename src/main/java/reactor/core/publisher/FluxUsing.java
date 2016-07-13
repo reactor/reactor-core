@@ -26,8 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -82,7 +81,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 			resource = resourceSupplier.call();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			EmptySubscription.error(s, Exceptions.unwrap(e));
+			SubscriptionHelper.error(s, Exceptions.unwrap(e));
 			return;
 		}
 
@@ -100,7 +99,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				e = ex;
 			}
 
-			EmptySubscription.error(s, Exceptions.unwrap(e));
+			SubscriptionHelper.error(s, Exceptions.unwrap(e));
 			return;
 		}
 
@@ -115,7 +114,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				e = _ex;
 			}
 
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
@@ -179,7 +178,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -310,7 +309,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = (QueueSubscription<T>)s;
 
 				actual.onSubscribe(this);
@@ -446,7 +445,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

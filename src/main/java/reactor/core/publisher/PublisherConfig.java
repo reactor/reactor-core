@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
  *
@@ -13,19 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package reactor.core.state;
+package reactor.core.publisher;
 
 /**
- * A request aware component
+ * A component that has introspection options
  */
-public interface Requestable {
+public interface PublisherConfig {
 
 	/**
-	 * Return defined element capacity, used to drive new {@link org.reactivestreams.Subscription} request needs. This
-	 * is the maximum in-flight data allowed to transit to this elements.
-	 *
-	 * @return long capacity
+	 * Defined identifier or null if not available
+	 * @return defined identifier or null if not available
 	 */
-	long requestedFromDownstream();
+	default Object getId() {
+		return null;
+	}
+
+	/**
+	 * The prefetch configuration of the component
+	 * @return the prefetch configuration of the component
+	 */
+	default long getPrefetch() {
+		return -1L;
+	}
 }

@@ -31,9 +31,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -79,12 +78,12 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -158,7 +157,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -221,13 +220,13 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		
 		void cancelMain() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 		
 		void cancelStart() {

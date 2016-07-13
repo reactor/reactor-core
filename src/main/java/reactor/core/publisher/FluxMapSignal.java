@@ -23,6 +23,7 @@ import org.reactivestreams.*;
 
 import reactor.core.flow.*;
 import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.*;
 
 /**
@@ -100,7 +101,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.validate(this.s, s)) {
+            if (SubscriptionHelper.validate(this.s, s)) {
                 this.s = s;
 
                 actual.onSubscribe(this);
@@ -237,7 +238,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	    
 	    @Override
 	    public void request(long n) {
-	        if (BackpressureUtils.validate(n)) {
+	        if (SubscriptionHelper.validate(n)) {
 	            if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
 	                s.request(n);
 	            }

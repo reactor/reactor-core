@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.state.Introspectable;
+import reactor.core.publisher.PublisherConfig;
 import reactor.core.util.Exceptions;
 import reactor.core.util.PlatformDependent;
 
@@ -445,7 +445,7 @@ public class Schedulers {
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name, boolean daemon) {
-		return newTimer(new SchedulerFactory(name, daemon, SingleScheduler.COUNTER));
+		return newTimer(new SchedulerFactory(name, daemon, SingleTimedScheduler.COUNTER));
 	}
 
 	/**
@@ -606,7 +606,7 @@ public class Schedulers {
 		}
 	}
 
-	static final class SchedulerFactory implements ThreadFactory, Introspectable {
+	static final class SchedulerFactory implements ThreadFactory, PublisherConfig {
 
 		final String     name;
 		final boolean    daemon;
@@ -626,7 +626,7 @@ public class Schedulers {
 		}
 
 		@Override
-		public String getName() {
+		public String getId() {
 			return name;
 		}
 	}

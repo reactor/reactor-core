@@ -26,7 +26,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.state.Completable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -91,8 +91,8 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
@@ -103,7 +103,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

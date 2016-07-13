@@ -159,10 +159,11 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public long getCapacity()
+    public int bufferSize()
     {
         return bufferSize;
     }
+
     @Override
     public void publish(long sequence)
     {
@@ -179,12 +180,6 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     public long remainingCapacity()
     {
         return sequenceProducer.remainingCapacity();
-    }
-
-    @Override
-    public long getPending()
-    {
-        return sequenceProducer.getPending();
     }
 
     @Override

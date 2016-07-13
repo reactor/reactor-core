@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -74,7 +73,7 @@ extends Mono<T> implements reactor.core.state.Completable {
 			e = new NullPointerException("The Throwable returned by the supplier is null");
 		}
 
-		EmptySubscription.error(s, e);
+		SubscriptionHelper.error(s, e);
 	}
 
 	@Override

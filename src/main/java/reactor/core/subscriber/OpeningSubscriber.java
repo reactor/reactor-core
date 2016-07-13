@@ -22,8 +22,6 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
@@ -31,7 +29,7 @@ import reactor.core.util.Exceptions;
  * @author Stephane Maldini
  */
 final class OpeningSubscriber<T> implements BaseSubscriber<T>,
-                                            Backpressurable, Receiver {
+                                            SubscriberState, Receiver {
 
 	final Consumer<? super Subscription>              subscriptionHandler;
 	final BiConsumer<? super T, ? super Subscription> dataConsumer;
@@ -58,7 +56,7 @@ final class OpeningSubscriber<T> implements BaseSubscriber<T>,
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(subscription, s)) {
+		if (SubscriptionHelper.validate(subscription, s)) {
 			try {
 				this.subscription = s;
 				final RefSubscription proxyRequest = new RefSubscription();
@@ -138,7 +136,7 @@ final class OpeningSubscriber<T> implements BaseSubscriber<T>,
         @Override
 		public void request(long n) {
 			if (subscription == null && get() != Long.MIN_VALUE) {
-				BackpressureUtils.addAndGet(this, n);
+				SubscriptionHelper.addAndGet(this, n);
 			}
 			else if (subscription != null) {
 				subscription.request(n);

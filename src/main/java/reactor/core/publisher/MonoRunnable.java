@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.util.EmptySubscription;
 import rx.exceptions.Exceptions;
 
 /**
@@ -39,7 +38,7 @@ final class MonoRunnable extends Mono<Void> {
             run.run();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
-            EmptySubscription.error(s, ex);
+            SubscriptionHelper.error(s, ex);
             return;
         }
         EmptySubscription.complete(s);

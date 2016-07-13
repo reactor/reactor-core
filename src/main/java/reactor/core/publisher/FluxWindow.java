@@ -36,8 +36,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -102,12 +101,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			try {
 				overflowQueue = overflowQueueSupplier.get();
 			} catch (Throwable e) {
-				EmptySubscription.error(s, e);
+				SubscriptionHelper.error(s, e);
 				return;
 			}
 			
 			if (overflowQueue == null) {
-				EmptySubscription.error(s, new NullPointerException("The overflowQueueSupplier returned a null queue"));
+				SubscriptionHelper.error(s, new NullPointerException("The overflowQueueSupplier returned a null queue"));
 				return;
 			}
 			
@@ -157,7 +156,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -248,8 +247,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				long u = BackpressureUtils.multiplyCap(size, n);
+			if (SubscriptionHelper.validate(n)) {
+				long u = SubscriptionHelper.multiplyCap(size, n);
 				s.request(u);
 			}
 		}
@@ -354,7 +353,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -450,14 +449,14 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-					long u = BackpressureUtils.multiplyCap(size, n);
-					long v = BackpressureUtils.multiplyCap(skip - size, n - 1);
-					long w = BackpressureUtils.addCap(u, v);
+					long u = SubscriptionHelper.multiplyCap(size, n);
+					long v = SubscriptionHelper.multiplyCap(skip - size, n - 1);
+					long w = SubscriptionHelper.addCap(u, v);
 					s.request(w);
 				} else {
-					long u = BackpressureUtils.multiplyCap(skip, n);
+					long u = SubscriptionHelper.multiplyCap(skip, n);
 					s.request(u);
 				}
 			}
@@ -584,7 +583,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -826,17 +825,17 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
+			if (SubscriptionHelper.validate(n)) {
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-					long u = BackpressureUtils.multiplyCap(skip, n - 1);
-					long v = BackpressureUtils.addCap(size, u);
+					long u = SubscriptionHelper.multiplyCap(skip, n - 1);
+					long v = SubscriptionHelper.addCap(size, u);
 					s.request(v);
 				} else {
-					long u = BackpressureUtils.multiplyCap(skip, n);
+					long u = SubscriptionHelper.multiplyCap(skip, n);
 					s.request(u);
 				}
 
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

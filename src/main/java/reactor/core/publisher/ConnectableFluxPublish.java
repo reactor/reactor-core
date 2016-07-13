@@ -38,7 +38,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Completable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -192,7 +192,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
@@ -278,7 +278,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 			if (cancelled) {
 				return;
 			}
-			if (BackpressureUtils.terminate(S, this)) {
+			if (SubscriptionHelper.terminate(S, this)) {
 				cancelled = true;
 				if (WIP.getAndIncrement(this) != 0) {
 					return;
@@ -575,8 +575,8 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				State<T> p = parent;
 				if (p != null) {
 					p.drain();

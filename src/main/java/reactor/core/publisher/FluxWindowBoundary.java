@@ -25,9 +25,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.Exceptions;
 
 /**
@@ -67,12 +66,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			q = processorQueueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (q == null) {
-			EmptySubscription.error(s, new NullPointerException("The processorQueueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The processorQueueSupplier returned a null queue"));
 			return;
 		}
 
@@ -81,12 +80,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			dq = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 
 		if (dq == null) {
-			EmptySubscription.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
 			return;
 		}
 
@@ -161,7 +160,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -203,13 +202,13 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
 		void cancelMain() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 
 		@Override

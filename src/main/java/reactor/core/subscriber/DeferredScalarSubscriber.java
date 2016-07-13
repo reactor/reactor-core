@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	   http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,9 +24,6 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
 
 /**
  * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
@@ -35,7 +32,8 @@ import reactor.core.util.BackpressureUtils;
  * @param <I> The upstream sequence type
  * @param <O> The downstream sequence type
  */
-public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completable, Loopback, Cancellable,
+public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Loopback,
+                                                       SubscriberState,
                                                        Receiver, Producer,
                                                        Fuseable.QueueSubscription<O> {
 
@@ -55,7 +53,6 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 
 	protected byte outputFused;
 
-	static final byte OUTPUT_NOT_FUSED = 0;
 	static final byte OUTPUT_NO_VALUE = 1;
 	static final byte OUTPUT_HAS_VALUE = 2;
 	static final byte OUTPUT_COMPLETE = 3;
@@ -66,7 +63,7 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 
 	@Override
 	public void request(long n) {
-		if (BackpressureUtils.validate(n)) {
+		if (SubscriptionHelper.validate(n)) {
 			for (; ; ) {
 				int s = state;
 				if (s == SDS_HAS_REQUEST_NO_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
@@ -206,6 +203,7 @@ public class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Completabl
 	@Override
 	public void clear() {
 		outputFused = OUTPUT_COMPLETE;
+		value = null;
 	}
 
 	@Override

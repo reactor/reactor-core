@@ -27,8 +27,7 @@ import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -65,12 +64,12 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			it = other.iterator();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (it == null) {
-			EmptySubscription.error(s, new NullPointerException("The other iterable produced a null iterator"));
+			SubscriptionHelper.error(s, new NullPointerException("The other iterable produced a null iterator"));
 			return;
 		}
 		
@@ -79,7 +78,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
@@ -113,7 +112,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}

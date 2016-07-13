@@ -92,7 +92,7 @@ import reactor.core.util.PlatformDependent;
  * @see Mono
  * @since 2.5
  */
-public abstract class Flux<T> implements Publisher<T>, Introspectable, Backpressurable{
+public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 
 //	 ==============================================================================================================
 //	 Static Generators

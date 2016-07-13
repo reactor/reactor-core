@@ -36,8 +36,7 @@ import reactor.core.state.Cancellable;
 import reactor.core.state.Introspectable;
 import reactor.core.state.Prefetchable;
 import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -117,12 +116,12 @@ extends Flux<R>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				EmptySubscription.error(s, e);
+				SubscriptionHelper.error(s, e);
 				return;
 			}
 
 			if (it == null) {
-				EmptySubscription.error(s, new NullPointerException("The iterator returned is null"));
+				SubscriptionHelper.error(s, new NullPointerException("The iterator returned is null"));
 				return;
 			}
 
@@ -133,7 +132,7 @@ extends Flux<R>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					EmptySubscription.error(s, e);
+					SubscriptionHelper.error(s, e);
 					return;
 				}
 
@@ -146,12 +145,12 @@ extends Flux<R>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					EmptySubscription.error(s, e);
+					SubscriptionHelper.error(s, e);
 					return;
 				}
 
 				if (p == null) {
-					EmptySubscription.error(s, new NullPointerException("The Publisher returned by the iterator is " +
+					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " +
 					  "null"));
 					return;
 				}
@@ -187,12 +186,12 @@ extends Flux<R>
 		try {
 			queue = queueSupplier.get();
 		} catch (Throwable e) {
-			EmptySubscription.error(s, e);
+			SubscriptionHelper.error(s, e);
 			return;
 		}
 		
 		if (queue == null) {
-			EmptySubscription.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -260,8 +259,8 @@ extends Flux<R>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -576,7 +575,7 @@ extends Flux<R>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.setOnce(S, this, s)) {
+			if (SubscriptionHelper.setOnce(S, this, s)) {
 				s.request(prefetch);
 			}
 		}
@@ -597,7 +596,7 @@ extends Flux<R>
 		}
 		
 		public void cancel() {
-			BackpressureUtils.terminate(S, this);
+			SubscriptionHelper.terminate(S, this);
 		}
 		
 		public void requestOne() {

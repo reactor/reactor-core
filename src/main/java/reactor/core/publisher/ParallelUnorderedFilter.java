@@ -15,12 +15,12 @@
  */
 package reactor.core.publisher;
 
-import java.util.function.Predicate;
+import java.util.function.*;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.Exceptions;
+import org.reactivestreams.*;
+
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.*;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.
@@ -29,117 +29,117 @@ import reactor.core.util.Exceptions;
  */
 final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 
-    final ParallelFlux<T> source;
-    
-    final Predicate<? super T> predicate;
-    
-    public ParallelUnorderedFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
-        this.source = source;
-        this.predicate = predicate;
-    }
+	final ParallelFlux<T> source;
+	
+	final Predicate<? super T> predicate;
+	
+	public ParallelUnorderedFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
+		this.source = source;
+		this.predicate = predicate;
+	}
 
-    @Override
-    public void subscribe(Subscriber<? super T>[] subscribers) {
-        if (!validate(subscribers)) {
-            return;
-        }
-        
-        int n = subscribers.length;
-        @SuppressWarnings("unchecked")
-        Subscriber<? super T>[] parents = new Subscriber[n];
-        
-        for (int i = 0; i < n; i++) {
-            parents[i] = new ParallelFilterSubscriber<>(subscribers[i], predicate);
-        }
-        
-        source.subscribe(parents);
-    }
+	@Override
+	public void subscribe(Subscriber<? super T>[] subscribers) {
+		if (!validate(subscribers)) {
+			return;
+		}
+		
+		int n = subscribers.length;
+		@SuppressWarnings("unchecked")
+		Subscriber<? super T>[] parents = new Subscriber[n];
+		
+		for (int i = 0; i < n; i++) {
+			parents[i] = new ParallelFilterSubscriber<>(subscribers[i], predicate);
+		}
+		
+		source.subscribe(parents);
+	}
 
-    @Override
-    public int parallelism() {
-        return source.parallelism();
-    }
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
 
-    @Override
-    public boolean isOrdered() {
-        return false;
-    }
-    
-    static final class ParallelFilterSubscriber<T> implements Subscriber<T>, Subscription {
+	@Override
+	public boolean isOrdered() {
+		return false;
+	}
+	
+	static final class ParallelFilterSubscriber<T> implements Subscriber<T>, Subscription {
 
-        final Subscriber<? super T> actual;
-        
-        final Predicate<? super T> predicate;
-        
-        Subscription s;
-        
-        boolean done;
-        
-        public ParallelFilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
-            this.actual = actual;
-            this.predicate = predicate;
-        }
+		final Subscriber<? super T> actual;
+		
+		final Predicate<? super T> predicate;
+		
+		Subscription s;
+		
+		boolean done;
+		
+		public ParallelFilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+			this.actual = actual;
+			this.predicate = predicate;
+		}
 
-        @Override
-        public void request(long n) {
-            s.request(n);
-        }
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
 
-        @Override
-        public void cancel() {
-            s.cancel();
-        }
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
 
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (BackpressureUtils.validate(this.s, s)) {
-                this.s = s;
-                
-                actual.onSubscribe(this);
-            }
-        }
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (SubscriptionHelper.validate(this.s, s)) {
+				this.s = s;
+				
+				actual.onSubscribe(this);
+			}
+		}
 
-        @Override
-        public void onNext(T t) {
-            if (done) {
-                return;
-            }
-            boolean b;
-            
-            try {
-                b = predicate.test(t);
-            } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                cancel();
-                onError(Exceptions.unwrap(ex));
-                return;
-            }
-            
-            if (b) {
-                actual.onNext(t);
-            } else {
-                s.request(1);
-            }
-        }
+		@Override
+		public void onNext(T t) {
+			if (done) {
+				return;
+			}
+			boolean b;
+			
+			try {
+				b = predicate.test(t);
+			} catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				cancel();
+				onError(Exceptions.unwrap(ex));
+				return;
+			}
+			
+			if (b) {
+				actual.onNext(t);
+			} else {
+				s.request(1);
+			}
+		}
 
-        @Override
-        public void onError(Throwable t) {
-            if (done) {
-                Exceptions.onErrorDropped(t);
-                return;
-            }
-            done = true;
-            actual.onError(t);
-        }
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			actual.onError(t);
+		}
 
-        @Override
-        public void onComplete() {
-            if (done) {
-                return;
-            }
-            done = true;
-            actual.onComplete();
-        }
-        
-    }
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			actual.onComplete();
+		}
+		
+	}
 }

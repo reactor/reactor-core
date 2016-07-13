@@ -27,11 +27,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -49,8 +46,9 @@ import reactor.core.util.BackpressureUtils;
  * @param <T> the input and output value type
  */
 public final class DirectProcessor<T>
-	extends FluxProcessor<T, T>
-	implements Receiver, Completable, MultiProducer {
+		extends FluxProcessor<T, T>
+	implements Receiver, MultiProducer, SubscriberState {
+
 
 	/**
 	 * Create a new {@link DirectProcessor}
@@ -62,16 +60,15 @@ public final class DirectProcessor<T>
 	}
 
 	@SuppressWarnings("rawtypes")
-	static final DirectProcessorSubscription[] EMPTY = new DirectProcessorSubscription[0];
+	private static final DirectProcessorSubscription[] EMPTY = new DirectProcessorSubscription[0];
 
 	@SuppressWarnings("rawtypes")
-	static final DirectProcessorSubscription[] TERMINATED = new DirectProcessorSubscription[0];
+	private static final DirectProcessorSubscription[] TERMINATED = new DirectProcessorSubscription[0];
 
 	@SuppressWarnings("unchecked")
-	volatile	 DirectProcessorSubscription<T>[]
-			subscribers = EMPTY;
+	private volatile	 DirectProcessorSubscription<T>[]										   subscribers = EMPTY;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<DirectProcessor, DirectProcessorSubscription[]>SUBSCRIBERS =
+	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectProcessorSubscription[]>SUBSCRIBERS =
 	  AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class,
 		DirectProcessorSubscription[].class,
 		"subscribers");
@@ -79,6 +76,11 @@ public final class DirectProcessor<T>
 	Throwable error;
 
 	DirectProcessor() {
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	@Override
@@ -247,8 +249,9 @@ public final class DirectProcessor<T>
 		return null;
 	}
 
-	static final class DirectProcessorSubscription<T> implements Subscription, Introspectable, Completable, Requestable,
-																 Receiver, Producer, Cancellable {
+	static final class DirectProcessorSubscription<T> implements Subscription,
+																 Receiver, Producer,
+																 SubscriberState {
 
 		final Subscriber<? super T> actual;
 
@@ -268,8 +271,8 @@ public final class DirectProcessor<T>
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
@@ -330,20 +333,10 @@ public final class DirectProcessor<T>
 		public boolean isTerminated() {
 			return parent.isTerminated();
 		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
 	}
 
 	@Override
 	public Object upstream() {
 		return null;
-	}
-
-	@Override
-	public int getMode() {
-		return 0;
 	}
 }

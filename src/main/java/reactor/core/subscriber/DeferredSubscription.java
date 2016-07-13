@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	   http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.util;
+package reactor.core.subscriber;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -21,29 +21,26 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
 
 /**
  * Base class for Subscribers that will receive their Subscriptions at any time yet
  * they need to be cancelled or requested at any time.
  */
 public class DeferredSubscription
-		implements Subscription, Receiver, Cancellable, Requestable, Completable {
+		implements Subscription, Receiver, SubscriberState {
 
 	volatile Subscription s;
 	static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
-		AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
+			AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
 
 	volatile long requested;
 	static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
-		AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
+			AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
 
 	protected final void setInitialRequest(long n) {
 		REQUESTED.lazySet(this, n);
 	}
-	
+
 	/**
 	 * Atomically sets the single subscription and requests the missed amount from it.
 	 *
@@ -53,13 +50,13 @@ public class DeferredSubscription
 	public final boolean set(Subscription s) {
 		Objects.requireNonNull(s, "s");
 		Subscription a = this.s;
-		if (a == CancelledSubscription.INSTANCE) {
+		if (a == SubscriptionHelper.cancelled()) {
 			s.cancel();
 			return false;
 		}
 		if (a != null) {
 			s.cancel();
-			BackpressureUtils.reportSubscriptionSet();
+			SubscriptionHelper.reportSubscriptionSet();
 			return false;
 		}
 
@@ -76,12 +73,12 @@ public class DeferredSubscription
 
 		a = this.s;
 
-		if (a != CancelledSubscription.INSTANCE) {
+		if (a != SubscriptionHelper.cancelled()) {
 			s.cancel();
 			return false;
 		}
-		
-		BackpressureUtils.reportSubscriptionSet();
+
+		SubscriptionHelper.reportSubscriptionSet();
 		return false;
 	}
 
@@ -91,7 +88,7 @@ public class DeferredSubscription
 		if (a != null) {
 			a.request(n);
 		} else {
-			BackpressureUtils.addAndGet(REQUESTED, this, n);
+			SubscriptionHelper.addAndGet(REQUESTED, this, n);
 
 			a = s;
 
@@ -108,9 +105,9 @@ public class DeferredSubscription
 	@Override
 	public void cancel() {
 		Subscription a = s;
-		if (a != CancelledSubscription.INSTANCE) {
-			a = S.getAndSet(this, CancelledSubscription.INSTANCE);
-			if (a != null && a != CancelledSubscription.INSTANCE) {
+		if (a != SubscriptionHelper.cancelled()) {
+			a = S.getAndSet(this, SubscriptionHelper.cancelled());
+			if (a != null && a != SubscriptionHelper.cancelled()) {
 				a.cancel();
 			}
 		}
@@ -124,13 +121,13 @@ public class DeferredSubscription
 		Objects.requireNonNull(s, "s");
 		for (;;) {
 			Subscription a = this.s;
-			if (a == CancelledSubscription.INSTANCE) {
+			if (a == SubscriptionHelper.cancelled()) {
 				s.cancel();
 				return false;
 			}
 			if (a != null) {
 				s.cancel();
-				BackpressureUtils.reportSubscriptionSet();
+				SubscriptionHelper.reportSubscriptionSet();
 				return false;
 			}
 
@@ -158,7 +155,7 @@ public class DeferredSubscription
 	 */
 	@Override
 	public final boolean isCancelled() {
-		return s == CancelledSubscription.INSTANCE;
+		return s == SubscriptionHelper.cancelled();
 	}
 
 	@Override

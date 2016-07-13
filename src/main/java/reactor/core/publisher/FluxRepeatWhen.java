@@ -26,8 +26,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.DeferredSubscription;
-import reactor.core.util.EmptySubscription;
+import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.util.Exceptions;
 
 /**

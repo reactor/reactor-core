@@ -26,6 +26,7 @@ import reactor.core.flow.*;
 import reactor.core.flow.Fuseable.QueueSubscription;
 import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.queue.QueueSupplier;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.*;
 
 /**
@@ -417,8 +418,8 @@ final class FluxCreate<T> extends Flux<T> {
         
         @Override
         public void request(long n) {
-            if (BackpressureUtils.validate(n)) {
-                BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+            if (SubscriptionHelper.validate(n)) {
+                SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
                 if (handling == BackpressureHandling.BUFFER) {
                     drain();
                 } else

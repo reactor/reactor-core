@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -129,7 +129,7 @@ final class MonoCreate<T> extends Mono<T> {
 
         @Override
         public void request(long n) {
-            if (BackpressureUtils.validate(n)) {
+            if (SubscriptionHelper.validate(n)) {
                 for (;;) {
                     int s = state;
                     if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {

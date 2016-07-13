@@ -27,7 +27,6 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
-import reactor.core.util.EmptySubscription;
 import reactor.core.util.Exceptions;
 
 /**

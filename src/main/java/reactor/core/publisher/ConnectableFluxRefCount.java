@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.flow.*;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Connects to the underlying Flux once the given number of Subscribers subscribed
@@ -185,7 +185,7 @@ final class ConnectableFluxRefCount<T> extends Flux<T>
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				if (BackpressureUtils.validate(this.s, s)) {
+				if (SubscriptionHelper.validate(this.s, s)) {
 					this.s = s;
 					actual.onSubscribe(this);
 				}

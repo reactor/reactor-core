@@ -24,8 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.BackpressureUtils;
-import reactor.core.util.CancelledSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
@@ -105,7 +104,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (main != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 				return;
 			}
@@ -136,7 +135,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
 				if (other != CancelledSubscription.INSTANCE) {
-					BackpressureUtils.reportSubscriptionSet();
+					SubscriptionHelper.reportSubscriptionSet();
 				}
 				return;
 			}
@@ -145,8 +144,8 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (BackpressureUtils.validate(n)) {
-				BackpressureUtils.getAndAddCap(REQUESTED, this, n);
+			if (SubscriptionHelper.validate(n)) {
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 

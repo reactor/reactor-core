@@ -22,9 +22,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
 import reactor.core.util.Exceptions;
 
 /**
@@ -33,8 +30,8 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  * @param <T> the value type
  */
-public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation, Completable,
-                                            Backpressurable {
+public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
+                                            SubscriberState {
 
 	final Consumer<? super T>         consumer;
 	final Consumer<? super Throwable> errorConsumer;
@@ -80,7 +77,7 @@ public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancell
 
 	@Override
 	public final void onSubscribe(Subscription s) {
-		if (BackpressureUtils.validate(subscription, s)) {
+		if (SubscriptionHelper.validate(subscription, s)) {
 			this.subscription = s;
 			if(consumer == null && errorConsumer == null && completeConsumer == null){
 				barrier = new Object();
@@ -218,7 +215,7 @@ public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancell
 	@Override
 	public void dispose() {
 		@SuppressWarnings("unused")
-        Object notifyBarrier = barrier;
+		Object notifyBarrier = barrier;
 		cancel();
 	}
 }

@@ -26,7 +26,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.state.Completable;
-import reactor.core.util.BackpressureUtils;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -96,7 +96,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = (QueueSubscription<T>)s;
 				actual.onSubscribe(this);
 			}
@@ -257,7 +257,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (BackpressureUtils.validate(this.s, s)) {
+			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = (QueueSubscription<T>)s;
 				actual.onSubscribe(this);
 			}
