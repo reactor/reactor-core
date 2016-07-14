@@ -21,9 +21,6 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import reactor.util.function.Tuple;
-import reactor.util.function.Tuple7;
-
 /**
  * A tuple that holds eight values
  *
@@ -45,13 +42,13 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 
 	public final T8 t8;
 
-	Tuple8(int size, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
-		super(size, t1, t2, t3, t4, t5, t6, t7);
+	Tuple8(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
+		super(t1, t2, t3, t4, t5, t6, t7);
 		this.t8 = t8;
 	}
 
 	/**
-	 * Type-safe way to get the eighth object of this {@link Tuple}.
+	 * Type-safe way to get the eighth object of this {@link Tuples}.
 	 *
 	 * @return The eighth object
 	 */
@@ -113,6 +110,11 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 		int result = super.hashCode();
 		result = 31 * result + (t8 != null ? t8.hashCode() : 0);
 		return result;
+	}
+
+	@Override
+	public int size() {
+		return 8;
 	}
 
 	@Override

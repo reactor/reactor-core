@@ -62,8 +62,7 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
-import reactor.core.subscriber.Subscribers;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.Exceptions;
 import reactor.util.Logger;
 
@@ -193,12 +192,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		final AtomicInteger batchCount = new AtomicInteger();
 		final AtomicInteger count = new AtomicInteger();
-		s.subscribe(Subscribers.consumer(is -> {
+		s.subscribe(is -> {
 			batchCount.incrementAndGet();
 			for (int i : is) {
 				count.addAndGet(i);
 			}
-		}));
+		});
 
 		assertThat("batchCount is 3", batchCount.get(), is(1));
 		assertThat("count is 15", count.get(), is(15));
@@ -324,13 +323,13 @@ public class FluxTests extends AbstractReactorTest {
 	<T> void await(int count, final Publisher<T> s, Matcher<T> expected) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(count);
 		final AtomicReference<T> ref = new AtomicReference<>();
-		s.subscribe(Subscribers.consumer(t -> {
+		Flux.from(s).subscribe(t -> {
 			ref.set(t);
 			latch.countDown();
 		}, t -> {
 			t.printStackTrace();
 			latch.countDown();
-		}));
+		});
 
 		long startTime = System.currentTimeMillis();
 		T result = null;
@@ -455,7 +454,7 @@ public class FluxTests extends AbstractReactorTest {
 		                          .elapsed()
 		                          .skip(1)
 		                          .groupBy(w -> w.t1)
-								  .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c)))
+								  .flatMap(w -> w.count().map(c -> Tuples.of(w.key(), c)))
 		                          .log("elapsed")
 		                          .collectSortedList((a, b) -> a.t1.compareTo(b.t1))
 		                          .flatMap(Flux::fromIterable)
@@ -1034,7 +1033,7 @@ public class FluxTests extends AbstractReactorTest {
 						/* ad-hoc step */
 						.doOnSuccess(v -> endLatch.countDown())
 						/* final step  */
-						.subscribe(Subscribers.consumer(i -> System.out.println("Minimum " + i)));
+						.subscribe(i -> System.out.println("Minimum " + i));
 				});
 
 		endLatch.await(10, TimeUnit.SECONDS);
@@ -1173,7 +1172,8 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * This test case demonstrates a silent failure of {@link Flux#interval(long)} when a resolution is specified that
+	 * This test case demonstrates a silent failure of {@link Flux#intervalMillis(long)}
+	 * when a resolution is specified that
 	 * is less than the backing {@link Timer} class.
 	 *
 	 * @throws InterruptedException - on failure.

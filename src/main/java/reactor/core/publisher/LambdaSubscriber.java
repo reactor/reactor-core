@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
@@ -22,15 +22,16 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Receiver;
+import reactor.core.subscriber.BaseSubscriber;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}
- * @author Stephane Maldini
- * @since 2.5
  * @param <T> the value type
  */
-public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
+class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
                                             SubscriberState {
 
 	final Consumer<? super T>         consumer;

@@ -21,7 +21,7 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.test.subscriber.TestSubscriber;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 
 import static reactor.core.publisher.Flux.range;
@@ -115,14 +115,14 @@ public class FluxPublishTest {
 		range(1, 9).compose(o -> zip(o, o.skip(1)))
 		           .subscribe(ts);
 
-		ts.assertValues(Tuple.of(1, 2),
-				Tuple.of(2, 3),
-				Tuple.of(3, 4),
-				Tuple.of(4, 5),
-				Tuple.of(5, 6),
-				Tuple.of(6, 7),
-				Tuple.of(7, 8),
-				Tuple.of(8, 9))
+		ts.assertValues(Tuples.of(1, 2),
+				Tuples.of(2, 3),
+				Tuples.of(3, 4),
+				Tuples.of(4, 5),
+				Tuples.of(5, 6),
+				Tuples.of(6, 7),
+				Tuples.of(7, 8),
+				Tuples.of(8, 9))
 		  .assertComplete();
 	}
 

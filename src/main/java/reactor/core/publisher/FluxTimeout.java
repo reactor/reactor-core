@@ -9,7 +9,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
@@ -71,7 +70,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		source.subscribe(main);
 	}
 
-	static final class TimeoutMainSubscriber<T, V> extends MultiSubscriptionSubscriber<T, T> {
+	static final class TimeoutMainSubscriber<T, V> extends
+	                                               OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
@@ -263,9 +263,9 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		final Subscriber<? super T> actual;
 
-		final MultiSubscriptionSubscriber<T, T> arbiter;
+		final OperatorHelper.MultiSubscriptionSubscriber<T, T> arbiter;
 
-		public TimeoutOtherSubscriber(Subscriber<? super T> actual, MultiSubscriptionSubscriber<T, T>
+		public TimeoutOtherSubscriber(Subscriber<? super T> actual, OperatorHelper.MultiSubscriptionSubscriber<T, T>
 		  arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;

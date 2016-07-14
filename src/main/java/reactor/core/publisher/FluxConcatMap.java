@@ -27,7 +27,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -746,7 +745,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 	
 	static final class ConcatMapInner<R>
-			extends MultiSubscriptionSubscriber<R, R> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<R, R> {
 
 		final FluxConcatMapSupport<R> parent;
 

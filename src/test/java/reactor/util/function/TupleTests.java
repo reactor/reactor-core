@@ -16,20 +16,17 @@
 
 package reactor.util.function;
 
-import java.util.Arrays;
-
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 public class TupleTests {
 
 	@Test
 	public void tupleProvidesTypeSafeMethods() {
-		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
+		Tuple3<String, Long, Integer> t3 = Tuples.of("string", 1L, 10);
 
 		assertThat("first value is a string", String.class.isInstance(t3.getT1()));
 		assertThat("second value is a long", Long.class.isInstance(t3.getT2()));
@@ -38,31 +35,31 @@ public class TupleTests {
 
 	@Test
 	public void tupleProvidesTupleTypeHierarchy() {
-		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
+		Tuple3<String, Long, Integer> t3 = Tuples.of("string", 1L, 10);
 
 		assertThat("Tuple3 is also a Tuple2", Tuple2.class.isInstance(t3));
 	}
 
 	@Test
 	public void tupleEquals() {
-		Tuple3<String, Long, Integer> t3a = Tuple.of("string", 1L, 10);
-		Tuple3<String, Long, Integer> t3b = Tuple.of("string", 1L, 10);
+		Tuple3<String, Long, Integer> t3a = Tuples.of("string", 1L, 10);
+		Tuple3<String, Long, Integer> t3b = Tuples.of("string", 1L, 10);
 
 		assertThat("Tuples of same length and values are equal.", t3a, is(t3b));
 	}
 
 	@Test
 	public void tupleNotEquals() {
-		Tuple2<String, String> t2a = Tuple.of("ALPHA", "BRAVO");
-		Tuple2<String, String> t2b = Tuple.of("ALPHA", "CHARLIE");
+		Tuple2<String, String> t2a = Tuples.of("ALPHA", "BRAVO");
+		Tuple2<String, String> t2b = Tuples.of("ALPHA", "CHARLIE");
 
 		assertThat("Tuples of same length and values are not equal.", t2a, is(Matchers.not(t2b)));
 	}
 
 	@Test
 	public void tuplesOfDifferentLengthAreNotEqual() {
-		Tuple3<String, Long, Integer> t3 = Tuple.of("string", 1L, 10);
-		Tuple2<String, Long> t2 = Tuple.of("string", 1L);
+		Tuple3<String, Long, Integer> t3 = Tuples.of("string", 1L, 10);
+		Tuple2<String, Long> t2 = Tuples.of("string", 1L);
 
 		assertThat("Tuples of different length are not equal.", t3, is(Matchers.not(t2)));
 		assertThat("Tuples of different length are not equal.", t2, is(Matchers.not((Tuple2<String, Long>) t3)));

@@ -21,9 +21,6 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import reactor.util.function.Tuple;
-import reactor.util.function.Tuple2;
-
 /**
  * A tuple that holds three values
  *
@@ -39,13 +36,13 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 
 	public final T3 t3;
 
-	Tuple3(int size, T1 t1, T2 t2, T3 t3) {
-		super(size, t1, t2);
+	Tuple3(T1 t1, T2 t2, T3 t3) {
+		super(t1, t2);
 		this.t3 = t3;
 	}
 
 	/**
-	 * Type-safe way to get the third object of this {@link Tuple}.
+	 * Type-safe way to get the third object of this {@link Tuples}.
 	 *
 	 * @return The third object
 	 */
@@ -89,7 +86,11 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
         Tuple3 tuple3 = (Tuple3) o;
 
 		return t3 != null ? t3.equals(tuple3.t3) : tuple3.t3 == null;
+	}
 
+	@Override
+	public int size() {
+		return 3;
 	}
 
 	@Override

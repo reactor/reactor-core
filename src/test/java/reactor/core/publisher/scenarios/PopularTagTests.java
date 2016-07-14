@@ -24,7 +24,7 @@ import org.junit.Test;
 import reactor.core.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.Logger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -63,7 +63,7 @@ public class PopularTagTests extends AbstractReactorTest {
 			)
 		         .window(Duration.ofSeconds(2))
 		         .flatMap(s -> s.groupBy(w -> w)
-		                       .flatMap(w -> w.count().map(c -> Tuple.of(w.key(), c)))
+		                       .flatMap(w -> w.count().map(c -> Tuples.of(w.key(), c)))
 		                       .collectSortedList((a, b) -> -a.t2.compareTo(b.t2))
 		                        .flatMap(Flux::fromIterable)
 		                       .take(10)

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.MultiReceiver;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -140,7 +139,7 @@ extends Flux<T>
 
 	
 	static final class ConcatArraySubscriber<T>
-			extends MultiSubscriptionSubscriber<T, T> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T>[] sources;
 
@@ -207,7 +206,7 @@ extends Flux<T>
 	}
 
 	static final class ConcatArrayDelayErrorSubscriber<T>
-	extends MultiSubscriptionSubscriber<T, T> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T>[] sources;
 

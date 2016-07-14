@@ -21,7 +21,6 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.util.Exceptions;
 
 /**
@@ -57,7 +56,7 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatPredicateSubscriber<T>
-			extends MultiSubscriptionSubscriber<T, T> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T> source;
 

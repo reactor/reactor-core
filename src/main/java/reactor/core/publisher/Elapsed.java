@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.function.Function;
 
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * @author Stephane Maldini
@@ -32,6 +33,6 @@ final class Elapsed<T> implements Function<T, Tuple2<Long, T>> {
 		public Tuple2<Long, T> apply(T ev) {
 			long previousTime = lastTime;
 			lastTime = System.currentTimeMillis();
-			return Tuple2.of(lastTime - previousTime, ev);
+			return Tuples.of(lastTime - previousTime, ev);
 		}
 }

@@ -16,56 +16,25 @@
 
 package reactor.util.function;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
- * A {@literal Tuple} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
+ * A {@literal Tuples} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
  *
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 @SuppressWarnings({"rawtypes"})
-public abstract class Tuple implements Iterable, Serializable, Function {
-
-	static final long     serialVersionUID = 8777121294502020843L;
-	static final Object[] emptyArray       = new Object[0];
-	@SuppressWarnings("serial")
-    static final Tuple    empty            = new Tuple(0){};
-
-
-	protected final int size;
+public abstract class Tuples implements Function {
 
 	/**
-	 * Creates a new {@code Tuple} that holds the given {@code values}.
-	 *
-	 * @param size The number of values to hold
-	 */
-	protected Tuple(int size) {
-		this.size = size;
-	}
-
-	/**
-	 * @return An empty tuple
-	 */
-	public static Tuple empty() {
-		return empty;
-	}
-
-	/**
-	 * Create a {@link Tuple} with the given object.
+	 * Create a {@link Tuples} with the given object.
 	 *
 	 * @param list Build an unbounded tuple
-	 * @return The new {@link Tuple}.
+	 * @return The new {@link Tuples}.
 	 */
-	public static Tuple of(Object[] list) {
-		if(list == null) return empty();
+	public static Tuple2 fromArray(Object[] list) {
 		switch (list.length){
 			case 1:
 				return of(list[0], null);
@@ -96,7 +65,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple2}.
 	 */
 	public static <T1, T2> Tuple2<T1, T2> of(T1 t1, T2 t2) {
-		return new Tuple2<>(2, t1, t2);
+		return new Tuple2<>(t1, t2);
 	}
 
 	/**
@@ -111,7 +80,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple3}.
 	 */
 	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(T1 t1, T2 t2, T3 t3) {
-		return new Tuple3<>(3, t1, t2, t3);
+		return new Tuple3<>(t1, t2, t3);
 	}
 
 	/**
@@ -128,7 +97,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple4}.
 	 */
 	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(T1 t1, T2 t2, T3 t3, T4 t4) {
-		return new Tuple4<>(4, t1, t2, t3, t4);
+		return new Tuple4<>(t1, t2, t3, t4);
 	}
 
 	/**
@@ -147,7 +116,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The new {@link Tuple5}.
 	 */
 	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
-		return new Tuple5<>(5, t1, t2, t3, t4, t5);
+		return new Tuple5<>(t1, t2, t3, t4, t5);
 	}
 
 	/**
@@ -169,7 +138,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6
 	  t6) {
-		return new Tuple6<>(6, t1, t2, t3, t4, t5, t6);
+		return new Tuple6<>(t1, t2, t3, t4, t5, t6);
 	}
 
 	/**
@@ -193,7 +162,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5,
 	                                                                                 T6 t6, T7 t7) {
-		return new Tuple7<>(7, t1, t2, t3, t4, t5, t6, t7);
+		return new Tuple7<>(t1, t2, t3, t4, t5, t6, t7);
 	}
 
 	/**
@@ -221,29 +190,29 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	  t4,
 	                                                                                         T5 t5, T6 t6, T7 t7,
 	                                                                                         T8 t8) {
-		return new Tuple8<>(8, t1, t2, t3, t4, t5, t6, t7, t8);
+		return new Tuple8<>(t1, t2, t3, t4, t5, t6, t7, t8);
 	}
 
 	/**
-	 * A converting function from Object array to {@link Tuple}
+	 * A converting function from Object array to {@link Tuples}
 	 *
-	 * @return The unchecked conversion function to {@link Tuple}.
+	 * @return The unchecked conversion function to {@link Tuples}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Function<Object[], Tuple> fnAny() {
+	public static Function<Object[], Tuples> fnAny() {
 		return empty;
 	}
 
 	/**
-	 * A converting function from Object array to {@link Tuple} to R.
+	 * A converting function from Object array to {@link Tuples} to R.
 	 *
 	 * @param <R> The type of the return value.
 	 * @param delegate the function to delegate to
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <R> Function<Object[], R> fnAny(final Function<Tuple, R> delegate) {
-		return objects -> delegate.apply(Tuple.fnAny().apply(objects));
+	public static <R> Function<Object[], R> fnAny(final Function<Tuples, R> delegate) {
+		return objects -> delegate.apply(Tuples.fnAny().apply(objects));
 	}
 
 	/**
@@ -286,7 +255,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, R> Function<Object[], R> fn3(final Function<Tuple3<T1, T2, T3>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3>fn3().apply(objects));
+		return objects -> delegate.apply(Tuples.<T1, T2, T3>fn3().apply(objects));
 	}
 
 	/**
@@ -317,7 +286,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, R> Function<Object[], R> fn4(final Function<Tuple4<T1, T2, T3, T4>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4>fn4().apply(objects));
+		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4>fn4().apply(objects));
 	}
 
 	/**
@@ -350,7 +319,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, R> Function<Object[], R> fn5(final Function<Tuple5<T1, T2, T3, T4, T5>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5>fn5().apply(objects));
+		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4, T5>fn5().apply(objects));
 	}
 
 	/**
@@ -385,7 +354,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, R> Function<Object[], R> fn6(final Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
+		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4, T5, T6>fn6().apply(objects));
 	}
 
 	/**
@@ -422,7 +391,7 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to R.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Object[], R> fn7(final Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
+		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4, T5, T6, T7>fn7().apply(objects));
 	}
 
 	/**
@@ -461,72 +430,18 @@ public abstract class Tuple implements Iterable, Serializable, Function {
 	 * @return The unchecked conversion function to {@link Tuple8}.
 	 */
 	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Object[], R> fn8(final Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> delegate) {
-		return objects -> delegate.apply(Tuple.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
-	}
-
-	/**
-	 * Get the object at the given index.
-	 *
-	 * @param index The index of the object to retrieve. Starts at 0.
-	 * @return The object. Might be {@literal null}.
-	 */
-	@Nullable
-	public Object get(int index) {
-		return null;
-	}
-
-	/**
-	 * Turn this {@literal Tuple} into a plain Object array.
-	 *
-	 * @return A new Object array.
-	 */
-	public Object[] toArray() {
-		return emptyArray;
-	}
-
-	/**
-	 * Turn this {@literal Tuple} into a plain Object list.
-	 *
-	 * @return A new Object list.
-	 */
-	public List<Object> toList() {
-		return Arrays.asList(toArray());
-	}
-
-	/**
-	 * Return the number of elements in this {@literal Tuple}.
-	 *
-	 * @return The size of this {@literal Tuple}.
-	 */
-	public int size() {
-		return size;
+		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
 	}
 
 	@Override
-	@Nonnull
-	public Iterator<?> iterator() {
-		return Arrays.asList(emptyArray).iterator();
+	public Tuple2 apply(Object o) {
+		return fromArray((Object[])o);
 	}
 
 
-	@Override
-	public int hashCode() {
-		return 0;
-	}
 
-	@Override
-	public Tuple apply(Object o) {
-		return of((Object[])o);
-	}
+	@SuppressWarnings("serial")
+	static final Tuples   empty            = new Tuples(){};
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == null) return false;
-
-		if (!(o instanceof Tuple)) return false;
-
-		Tuple cast = (Tuple) o;
-
-		return this.size == cast.size;
-	}
+	Tuples(){}
 }

@@ -26,7 +26,7 @@ import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
- * all of them produced a value, emit a Tuple of those values; otherwise
+ * all of them produced a value, emit a Tuples of those values; otherwise
  * terminate.
  *
  * @param <T> the source value types

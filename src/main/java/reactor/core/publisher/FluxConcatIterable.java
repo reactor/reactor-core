@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.MultiReceiver;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -76,7 +75,7 @@ final class FluxConcatIterable<T> extends Flux<T>
 	}
 
 	static final class ConcatIterableSubscriber<T>
-			extends MultiSubscriptionSubscriber<T, T> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Iterator<? extends Publisher<? extends T>> it;
 

@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -64,7 +63,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatSubscriber<T>
-			extends MultiSubscriptionSubscriber<T, T> {
+			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T> source;
 

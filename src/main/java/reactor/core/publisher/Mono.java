@@ -41,13 +41,12 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.subscriber.LambdaSubscriber;
 import reactor.util.Exceptions;
 import reactor.util.Logger;
 import reactor.util.ReactorProperties;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -561,7 +560,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(false, p1, p2).map(a -> (Tuple2)Tuple.of(a)));
+		return onAssembly(new MonoWhen<>(false, p1, p2).map(Tuples::fromArray));
 	}
 
 	/**
@@ -583,7 +582,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3)Tuple.of
+		return onAssembly(new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3) Tuples.fromArray
 				(a)));
 	}
 
@@ -611,8 +610,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4)Tuple
-				.of(a)));
+		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4) Tuples
+				.fromArray(a)));
 	}
 
 	/**
@@ -643,7 +642,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
 		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)
-				Tuple.of(a)));
+				Tuples.fromArray(a)));
 	}
 
 	/**
@@ -677,7 +676,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
         return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a ->
-		        (Tuple6)Tuple.of(a)));
+		        (Tuple6) Tuples.fromArray(a)));
 	}
 
 	/**
@@ -713,7 +712,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(true, p1, p2).map(a -> (Tuple2)Tuple.of(a)));
+		return onAssembly(new MonoWhen<>(true, p1, p2).map(Tuples::fromArray));
 	}
 
 	/**
@@ -734,7 +733,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3)Tuple.of(a)));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3) Tuples.fromArray(a)));
 	}
 
 	/**
@@ -760,8 +759,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4)Tuple
-				.of(a)));
+		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4) Tuples
+				.fromArray(a)));
 	}
 
 	/**
@@ -791,7 +790,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
 		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5).map(a -> (Tuple5)
-				Tuple.of(a)));
+				Tuples.fromArray(a)));
 	}
 
 	/**
@@ -824,7 +823,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
 		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5, p6).map(a ->
-				(Tuple6)Tuple.of(a)));
+				(Tuple6) Tuples.fromArray(a)));
 	}
 
 	/**

@@ -54,14 +54,12 @@ import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
-import reactor.core.subscriber.Subscribers;
 import reactor.util.Exceptions;
 import reactor.util.Logger;
 import reactor.util.ReactorProperties;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -1118,7 +1116,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 */
 	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
-		return zip(Tuple.fn2(), source1, source2);
+		return zip(Tuples.fn2(), source1, source2);
 	}
 
 	/**
@@ -1139,7 +1137,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3) {
-		return zip(Tuple.fn3(), source1, source2, source3);
+		return zip(Tuples.fn3(), source1, source2, source3);
 	}
 
 	/**
@@ -1163,7 +1161,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T2> source2,
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4) {
-		return zip(Tuple.fn4(), source1, source2, source3, source4);
+		return zip(Tuples.fn4(), source1, source2, source3, source4);
 	}
 
 	/**
@@ -1190,7 +1188,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T3> source3,
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5) {
-		return zip(Tuple.fn5(), source1, source2, source3, source4, source5);
+		return zip(Tuples.fn5(), source1, source2, source3, source4, source5);
 	}
 
 	/**
@@ -1220,7 +1218,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T4> source4,
 			Publisher<? extends T5> source5,
 			Publisher<? extends T6> source6) {
-		return zip(Tuple.fn6(), source1, source2, source3, source4, source5, source6);
+		return zip(Tuples.fn6(), source1, source2, source3, source4, source5, source6);
 	}
 
 //	 ==============================================================================================================
@@ -1239,8 +1237,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static Flux<Tuple> zip(Iterable<? extends Publisher<?>> sources) {
-		return zip(sources, Tuple.fnAny());
+	public static Flux<Tuples> zip(Iterable<? extends Publisher<?>> sources) {
+		return zip(sources, Tuples.fnAny());
 	}
 
 	/**
@@ -1377,14 +1375,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced value
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <TUPLE extends Tuple, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
+    public static <TUPLE extends Tuples, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
 		return onAssembly(new FluxBuffer(sources, Integer.MAX_VALUE, LIST_SUPPLIER)
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
-				                    return zip(Tuple.fnAny((Function<Tuple, V>)combinator), publishers.toArray(new Publisher[publishers
+				                    return zip(Tuples.fnAny((Function<Tuples, V>)combinator), publishers.toArray(new Publisher[publishers
 						                    .size()]));
 			                    }
 		                    }));
@@ -4515,7 +4513,7 @@ public abstract class Flux<T> implements Publisher<T> {
 					new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
 		}
 		else {
-			consumerAction = Subscribers.bounded((int) c,
+			consumerAction = new BoundedSubscriber<T>((int) c,
 					consumer,
 					errorConsumer,
 					completeConsumer);
@@ -5578,7 +5576,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
-		return zip(Tuple.fn2(), prefetch, this, source2);
+		return zip(Tuples.fn2(), prefetch, this, source2);
 	}
 
 	/**
@@ -5713,11 +5711,11 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 	@SuppressWarnings("rawtypes")
-	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
+	static final BiFunction      TUPLE2_BIFUNCTION       = Tuples::of;
 	@SuppressWarnings("rawtypes")
 	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
 	@SuppressWarnings("rawtypes")
-	static final Function        TIMESTAMP_OPERATOR      = o -> Tuple.of(System.currentTimeMillis(), o);
+	static final Function        TIMESTAMP_OPERATOR      = o -> Tuples.of(System.currentTimeMillis(), o);
 	@SuppressWarnings("rawtypes")
 	static final Supplier        SET_SUPPLIER            = HashSet::new;
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;

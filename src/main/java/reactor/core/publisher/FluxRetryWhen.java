@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.subscriber.DeferredSubscription;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -99,7 +98,8 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		subscribe(s, whenSourceFactory, source);
 	}
 
-	static final class RetryWhenMainSubscriber<T> extends MultiSubscriptionSubscriber<T, T> {
+	static final class RetryWhenMainSubscriber<T> extends
+	                                              OperatorHelper.MultiSubscriptionSubscriber<T, T> {
 
 		final DeferredSubscription otherArbiter;
 

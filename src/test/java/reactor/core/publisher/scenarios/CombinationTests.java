@@ -38,7 +38,6 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
-import reactor.core.subscriber.Subscribers;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.Logger;
 
@@ -91,19 +90,11 @@ public class CombinationTests {
 		CountDownLatch latch = new CountDownLatch(1);
 		Scheduler scheduler = Schedulers.parallel();
 		processor.publishOn(scheduler)
-		         .subscribe(Subscribers.create(s -> {
-			         try {
-				         System.out.println("test" + Thread.currentThread());
-				         Thread.sleep(1000);
-			         }
-			         catch (InterruptedException ie) {
-				         //IGNORE
-			         }
-			         s.request(1L);
-		         }, (d, s) -> {
+		         .delaySubscriptionMillis(1000)
+		         .subscribe(d -> {
 			         count.incrementAndGet();
 			         latch.countDown();
-		         }));
+		         }, 1);
 
 		SubmissionEmitter<Integer> session = processor.connectEmitter();
 		long emission = session.submit(1);
@@ -133,12 +124,7 @@ public class CombinationTests {
 		Scheduler c = Schedulers.single();
 		for (int i = 0; i < subs; i++) {
 			processor.publishOn(c)
-			         .subscribe(Subscribers.create(s -> s.request(1L),
-					         (d, s) -> {
-//				         System.out.println(d);
-				         s.request(1L);
-				         latch.countDown();
-			         }, null, latch::countDown));
+			         .subscribe(d -> latch.countDown(), null, latch::countDown, 1);
 		}
 
 		SubmissionEmitter<Integer> session = processor.connectEmitter();
@@ -202,13 +188,10 @@ public class CombinationTests {
 		int elements = 40;
 		CountDownLatch latch = new CountDownLatch(elements / 2 + 1);
 
-		Publisher<SensorData> p = Flux.firstEmitting(sensorOdd(), sensorEven())
+		Flux<SensorData> p = Flux.firstEmitting(sensorOdd(), sensorEven())
 		                              .log("firstEmitting");
 
-
-		Subscriber<SensorData> s = Subscribers.unbounded((d, sub) -> latch.countDown(), null,
-				latch::countDown);
-		p.subscribe(s);
+		p.subscribe(d -> latch.countDown(), null, latch::countDown);
 		Thread.sleep(1000);
 
 		generateData(elements);
@@ -280,8 +263,7 @@ public class CombinationTests {
 		Scheduler scheduler = Schedulers.single();
 
 		sensorDataProcessor.publishOn(scheduler)
-		                   .subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(),
-				null, latch::countDown));
+		                   .subscribe(d -> latch.countDown(), null, latch::countDown);
 
 		Flux.zip(Flux.just(new SensorData(2L, 12.0f)), Flux.just(new SensorData(1L, 14.0f)), this::computeMin)
 		    .log("zip3")
@@ -293,8 +275,7 @@ public class CombinationTests {
 
 	private void awaitLatch(Publisher<?> tail, CountDownLatch latch) throws Exception {
 		if (tail != null) {
-			tail.subscribe(Subscribers.unbounded((d, sub) -> latch.countDown(), null,
-					latch::countDown));
+			Flux.from(tail).subscribe(d -> latch.countDown(), null, latch::countDown);
 		}
 		if (!latch.await(10, TimeUnit.SECONDS)) {
 			throw new Exception("Never completed: (" + latch.getCount() + ") ");

@@ -27,7 +27,7 @@ import reactor.core.Fuseable;
 import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
-import reactor.util.function.Tuple;
+import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 
 /**
@@ -196,7 +196,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			Map<Integer, String> op;
 			Tuple2<Integer, Integer> next;
 			Queue<Tuple2<Integer, Integer>> nexts = new LinkedTransferQueue<>();
-			nexts.add(Tuple.of(0, 0));
+			nexts.add(Tuples.of(0, 0));
 
 			synchronized (stackByPublisher) {
 				while ((next = nexts.poll()) != null) {
@@ -205,7 +205,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 						int i = next.getT1();
 						for (Map.Entry<Integer, String> entry : op.entrySet()) {
 							mapLine(i, sb, entry.getValue());
-							nexts.add(Tuple.of(i, entry.getKey()));
+							nexts.add(Tuples.of(i, entry.getKey()));
 							i++;
 						}
 					}

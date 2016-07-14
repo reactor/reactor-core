@@ -21,9 +21,6 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import reactor.util.function.Tuple;
-import reactor.util.function.Tuple3;
-
 /**
  * A tuple that holds four values
  *
@@ -40,13 +37,13 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 
 	public final T4 t4;
 
-	Tuple4(int size, T1 t1, T2 t2, T3 t3, T4 t4) {
-		super(size, t1, t2, t3);
+	Tuple4(T1 t1, T2 t2, T3 t3, T4 t4) {
+		super( t1, t2, t3);
 		this.t4 = t4;
 	}
 
 	/**
-	 * Type-safe way to get the fourth object of this {@link Tuple}.
+	 * Type-safe way to get the fourth object of this {@link Tuples}.
 	 *
 	 * @return The fourth object
 	 */
@@ -100,6 +97,11 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 		int result = super.hashCode();
 		result = 31 * result + (t4 != null ? t4.hashCode() : 0);
 		return result;
+	}
+
+	@Override
+	public int size() {
+		return 4;
 	}
 
 	@Override

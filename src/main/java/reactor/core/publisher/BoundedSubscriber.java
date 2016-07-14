@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
  * @author Stephane Maldini
  * @since 2.5
  */
-final class BoundedSubscriber<T> extends LambdaSubscriber<T>  {
+final class BoundedSubscriber<T> extends LambdaSubscriber<T> {
 
 	final int capacity;
 	final int limit;

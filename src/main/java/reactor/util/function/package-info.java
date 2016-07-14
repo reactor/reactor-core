@@ -15,6 +15,6 @@
  */
 
 /**
- * {@link reactor.util.function.Tuple Tuples} provide a type-safe way to specify multiple parameters.
+ * {@link reactor.util.function.Tuples Tuples} provide a type-safe way to specify multiple parameters.
  */
 package reactor.util.function;

@@ -16,12 +16,12 @@
 
 package reactor.util.function;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import reactor.util.function.Tuple;
 
 /**
  * A tuple that holds two values
@@ -31,21 +31,18 @@ import reactor.util.function.Tuple;
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
-public class Tuple2<T1, T2> extends Tuple {
-
-	private static final long serialVersionUID = -565933838909569191L;
+public class Tuple2<T1, T2> implements Iterable, Serializable {
 
 	public final T1 t1;
 	public final T2 t2;
 
-	Tuple2(int size, T1 t1, T2 t2) {
-		super(size);
+	Tuple2(T1 t1, T2 t2) {
 		this.t1 = t1;
 		this.t2 = t2;
 	}
 
 	/**
-	 * Type-safe way to get the fist object of this {@link Tuple}.
+	 * Type-safe way to get the fist object of this {@link Tuples}.
 	 *
 	 * @return The second object
 	 */
@@ -54,7 +51,7 @@ public class Tuple2<T1, T2> extends Tuple {
 	}
 
 	/**
-	 * Type-safe way to get the second object of this {@link Tuple}.
+	 * Type-safe way to get the second object of this {@link Tuples}.
 	 *
 	 * @return The second object
 	 */
@@ -62,8 +59,14 @@ public class Tuple2<T1, T2> extends Tuple {
 		return t2;
 	}
 
+
+	/**
+	 * Get the object at the given index.
+	 *
+	 * @param index The index of the object to retrieve. Starts at 0.
+	 * @return The object. Might be {@literal null}.
+	 */
 	@Nullable
-	@Override
 	public Object get(int index) {
 		switch (index) {
 			case 0:
@@ -75,7 +78,20 @@ public class Tuple2<T1, T2> extends Tuple {
 		}
 	}
 
-	@Override
+	/**
+	 * Turn this {@literal Tuples} into a plain Object list.
+	 *
+	 * @return A new Object list.
+	 */
+	public List<Object> toList() {
+		return Arrays.asList(toArray());
+	}
+
+	/**
+	 * Turn this {@literal Tuples} into a plain Object array.
+	 *
+	 * @return A new Object array.
+	 */
 	public Object[] toArray() {
 		return new Object[]{t1, t2};
 	}
@@ -88,12 +104,14 @@ public class Tuple2<T1, T2> extends Tuple {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
+		if (o == null) return false;
+
 		if (!(o instanceof Tuple2)) return false;
-		if (!super.equals(o)) return false;
 
 		@SuppressWarnings("rawtypes")
-        Tuple2 tuple2 = (Tuple2) o;
+		Tuple2 tuple2 = (Tuple2) o;
+
+		if (size() != tuple2.size()) return false;
 
 		return (t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null) &&
 				t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
@@ -106,6 +124,15 @@ public class Tuple2<T1, T2> extends Tuple {
 		result = 31 * result + (t1 != null ? t1.hashCode() : 0);
 		result = 31 * result + (t2 != null ? t2.hashCode() : 0);
 		return result;
+	}
+
+	/**
+	 * Return the number of elements in this {@literal Tuples}.
+	 *
+	 * @return The size of this {@literal Tuples}.
+	 */
+	public int size() {
+		return 2;
 	}
 
 	@Override

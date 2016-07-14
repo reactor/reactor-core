@@ -21,9 +21,6 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import reactor.util.function.Tuple;
-import reactor.util.function.Tuple4;
-
 /**
  * A tuple that holds five values
  *
@@ -41,13 +38,13 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 
 	public final T5 t5;
 
-	Tuple5(int size, T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
-		super(size, t1, t2, t3, t4);
+	Tuple5(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
+		super(t1, t2, t3, t4);
 		this.t5 = t5;
 	}
 
 	/**
-	 * Type-safe way to get the fifth object of this {@link Tuple}.
+	 * Type-safe way to get the fifth object of this {@link Tuples}.
 	 *
 	 * @return The fifth object
 	 */
@@ -105,6 +102,10 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 		return result;
 	}
 
+	@Override
+	public int size() {
+		return 5;
+	}
 
 	@Override
 	public String toString() {
