@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -69,7 +69,12 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super C> s) {
 		

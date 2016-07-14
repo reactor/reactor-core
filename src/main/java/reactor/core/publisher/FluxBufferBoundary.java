@@ -24,8 +24,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -48,11 +48,15 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	
 	final Supplier<C> bufferSupplier;
 
-	public FluxBufferBoundary(Publisher<? extends T> source,
-			Publisher<U> other, Supplier<C> bufferSupplier) {
+	public FluxBufferBoundary(Publisher<? extends T> source, Publisher<U> other, Supplier<C> bufferSupplier) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 	
 	@Override

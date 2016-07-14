@@ -17,12 +17,13 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
  * <p>
- * This Publisher is effectively stateless and only a single instance any.
+ * This Publisher is effectively stateless and only a single instance exists.
  * Use the {@link #instance()} method to obtain a properly type-parametrized view of it.
  */
 
@@ -31,8 +32,7 @@ import reactor.core.state.Completable;
  * @since 2.5
  */
 final class FluxNever 
-extends Flux<Object>
-		implements Completable {
+extends Flux<Object> implements SubscriberState {
 
 	private static final Publisher<Object> INSTANCE = new FluxNever();
 
@@ -42,7 +42,7 @@ extends Flux<Object>
 
 	@Override
 	public void subscribe(Subscriber<? super Object> s) {
-		s.onSubscribe(EmptySubscription.INSTANCE);
+		s.onSubscribe(SubscriptionHelper.empty());
 	}
 
 	/**

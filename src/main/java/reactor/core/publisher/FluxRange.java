@@ -20,11 +20,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.ScalarSubscription;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits a range of integer values.
@@ -34,8 +32,7 @@ import reactor.core.subscriber.ScalarSubscription;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxRange
-		extends Flux<Integer>
+final class FluxRange extends Flux<Integer>
 		implements Fuseable {
 
 	final long start;
@@ -60,7 +57,7 @@ final class FluxRange
 		long st = start;
 		long en = end;
 		if (st == en) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		} else
 		if (st + 1 == en) {
@@ -76,7 +73,7 @@ final class FluxRange
 	}
 
 	static final class RangeSubscription
-	  implements Cancellable, Requestable, Completable, Producer, SynchronousSubscription<Integer> {
+			implements SubscriberState, Producer, SynchronousSubscription<Integer> {
 
 		final Subscriber<? super Integer> actual;
 
@@ -231,7 +228,7 @@ final class FluxRange
 	}
 	
 	static final class RangeSubscriptionConditional
-	implements Cancellable, Requestable, Completable, Producer, SynchronousSubscription<Integer> {
+			implements SubscriberState, Producer, SynchronousSubscription<Integer> {
 
 		final ConditionalSubscriber<? super Integer> actual;
 

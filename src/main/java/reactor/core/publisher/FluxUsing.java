@@ -59,8 +59,8 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 	final boolean eager;
 
 	public FluxUsing(Callable<S> resourceSupplier,
-			Function<? super S, ? extends Publisher<? extends T>> sourceFactory, Consumer<? super S>
-			resourceCleanup,
+			Function<? super S, ? extends Publisher<? extends T>> sourceFactory,
+			Consumer<? super S> resourceCleanup,
 			boolean eager) {
 		this.resourceSupplier = Objects.requireNonNull(resourceSupplier, "resourceSupplier");
 		this.sourceFactory = Objects.requireNonNull(sourceFactory, "sourceFactory");
@@ -120,10 +120,11 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		if (p instanceof Fuseable) {
 			p.subscribe(new UsingFuseableSubscriber<>(s, resourceCleanup, resource, eager));
-		} else
-		if (s instanceof ConditionalSubscriber) {
+		}
+		else if (s instanceof ConditionalSubscriber) {
 			p.subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, resourceCleanup, resource, eager));
-		} else {
+		}
+		else {
 			p.subscribe(new UsingSubscriber<>(s, resourceCleanup, resource, eager));
 		}
 	}

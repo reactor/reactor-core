@@ -30,18 +30,12 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
-
 /**
- * Emits events on a different thread specified by a worker callback.
+ * Emits events on a different thread specified by a scheduler callback.
  *
  * @param <T> the value type
  */
@@ -50,7 +44,7 @@ import reactor.core.util.Exceptions;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopback {
+final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
 
 	final Scheduler scheduler;
 	
@@ -77,10 +71,14 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 	}
 
 	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		if (source instanceof ScalarCallable) {
-			FluxSubscribeOn.scalarScheduleOn(source, s, scheduler);
+		if (FluxSubscribeOnValue.scalarScheduleOn(source, s, scheduler)) {
 			return;
 		}
 
@@ -122,17 +120,9 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		return scheduler;
 	}
 
-
-	@Override
-	public long getCapacity() {
-		return prefetch;
-	}
-
 	static final class PublishOnSubscriber<T>
 			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
-			           Backpressurable, Prefetchable, Receiver, Cancellable,
-			           Introspectable,
-			   Requestable, Completable {
+			           Receiver, SubscriberState {
 		
 		final Subscriber<? super T> actual;
 		
@@ -478,10 +468,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 				if (d) {
 					Throwable e = error;
 					if (e != null) {
-						actual.onError(e);
+						doError(actual, e);
 					}
 					else {
-						actual.onComplete();
+						doComplete(actual);
 					}
 					return;
 				}
@@ -524,7 +514,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
-				s.cancel();
 				queue.clear();
 				return true;
 			}
@@ -663,8 +652,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 	}
 
 	static final class PublishOnConditionalSubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T>, Runnable,
-			   Producer, Loopback, Backpressurable, Prefetchable, Receiver, Cancellable, Introspectable, Completable, Requestable {
+			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
+			           Receiver, SubscriberState {
 
 		final ConditionalSubscriber<? super T> actual;
 		
@@ -830,10 +819,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 			}
 			
 			cancelled = true;
+			s.cancel();
 			worker.shutdown();
 			
 			if (WIP.getAndIncrement(this) == 0) {
-				s.cancel();
 				queue.clear();
 			}
 		}
@@ -1015,10 +1004,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 				if (d) {
 					Throwable e = error;
 					if (e != null) {
-						actual.onError(e);
+						doError(actual, e);
 					}
 					else {
-						actual.onComplete();
+						doComplete(actual);
 					}
 					return;
 				}
@@ -1126,7 +1115,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable, Loopb
 		
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
-				s.cancel();
 				queue.clear();
 				return true;
 			}

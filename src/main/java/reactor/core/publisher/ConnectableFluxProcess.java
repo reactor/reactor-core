@@ -15,17 +15,25 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.*;
-import java.util.function.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
-import reactor.core.state.*;
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.core.util.Exceptions;
 
 /**
  * @param <T>
@@ -127,7 +135,8 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 	}
 
 	static abstract class State<T, U>
-			implements Cancellation, Completable, Subscription, Receiver, Introspectable, Producer, Subscriber<T> {
+			implements Cancellation, Subscription, Receiver, Producer, Subscriber<T>,
+			           SubscriberState {
 
 		final Processor<? super T, ? extends T> processor;
 		final Publisher<? extends U>			publisher;
@@ -181,16 +190,6 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 			if (CONNECTED.compareAndSet(this, 1, 2)) {
 				processor.onComplete();
 			}
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return State.class.getSimpleName();
 		}
 
 		@Override

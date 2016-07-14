@@ -30,14 +30,12 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
+import reactor.core.subscriber.ScalarSubscription;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
-import reactor.core.subscriber.ScalarSubscription;
-import reactor.core.util.WaitStrategy;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.WaitStrategy;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -53,9 +51,8 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Cancellation, Subscription, Cancellable, Receiver, Producer,
-		           Prefetchable, MonoEmitter<O>, LongSupplier,
-		           reactor.core.state.Completable {
+		implements Processor<O, O>, Cancellation, Subscription, SubscriberState, Receiver, Producer,
+		           MonoEmitter<O>, LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -111,7 +108,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_CANCELLED)) {
-				subscription = CancelledSubscription.INSTANCE;
+				subscription = SubscriptionHelper.cancelled();
 				break;
 			}
 			state = this.state;
@@ -193,11 +190,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final Throwable getError() {
 		return error;
-	}
-
-	@Override
-	public int getMode() {
-		return 0;
 	}
 
 	@Override
@@ -423,7 +415,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (; ; ) {
 			int endState = this.state;
 			if (endState == STATE_COMPLETE_NO_VALUE) {
-				EmptySubscription.complete(subscriber);
+				SubscriptionHelper.complete(subscriber);
 				return;
 			}
 			else if (endState == STATE_SUCCESS_VALUE) {
@@ -464,7 +456,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	final void connect() {
 		if(CONNECTED.compareAndSet(this, 0, 1)){
 			if(source == null){
-				onSubscribe(EmptySubscription.INSTANCE);
+				onSubscribe(SubscriptionHelper.empty());
 			}
 			else{
 				source.subscribe(this);
@@ -551,12 +543,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@SuppressWarnings("rawtypes")
-    final static class NoopProcessor implements Processor, Introspectable {
-
-		@Override
-		public int getMode() {
-			return TRACE_ONLY;
-		}
+    final static class NoopProcessor implements Processor {
 
 		@Override
 		public void onComplete() {
@@ -595,7 +582,8 @@ public final class MonoProcessor<O> extends Mono<O>
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
     @SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(MonoProcessor.class, "processor");
+		    ReactorProperties.newAtomicReferenceFieldUpdater(MonoProcessor.class,
+				    "processor");
 	final static int       STATE_CANCELLED         = -1;
 	final static int       STATE_READY             = 0;
 	final static int       STATE_SUBSCRIBED        = 1;

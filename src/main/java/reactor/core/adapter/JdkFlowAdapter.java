@@ -33,12 +33,25 @@ import reactor.core.publisher.Flux;
 public enum JdkFlowAdapter {
 	;
 
+	/**
+	 * Return a {@link Flux} from a java {@code Flow.Publisher}
+	 * @param publisher
+	 * @param <T>
+	 * @return a java {@code Flow.Publisher} from the given {@link Publisher}
+	 */
 	public static <T> Flow.Publisher<T> publisherToFlowPublisher(final Publisher<T>
 			publisher) {
 		return new PublisherAsFlowPublisher<>(publisher);
 	}
 
-	public static <T> Flux<T> flowPublisherToPublisher(Flow.Publisher<T> publisher) {
+	/**
+	 * Return a {@link Flux} from a java {@code Flow.Publisher}
+	 *
+	 * @param publisher
+	 * @param <T>
+	 * @return a {@link Flux} from a java {@code Flow.Publisher}
+	 */
+	public static <T> Flux<T> flowPublisherToFlux(Flow.Publisher<T> publisher) {
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
@@ -71,7 +84,7 @@ public enum JdkFlowAdapter {
     private static class FlowSubscriber<T> implements Subscriber<T>, Flow.Subscription {
 
 		private final Flow.Subscriber<? super T> subscriber;
-		
+
 		Subscription subscription;
 
 		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
@@ -98,12 +111,12 @@ public enum JdkFlowAdapter {
 		public void onComplete() {
 			subscriber.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 		    subscription.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 		    subscription.cancel();
@@ -113,7 +126,7 @@ public enum JdkFlowAdapter {
 	private static class SubscriberToRS<T> implements Flow.Subscriber<T>, Subscription {
 
 		private final Subscriber<? super T> s;
-		
+
 		Flow.Subscription subscription;
 
 		public SubscriberToRS(Subscriber<? super T> s) {
@@ -122,7 +135,7 @@ public enum JdkFlowAdapter {
 
 		@Override
 		public void onSubscribe(final Flow.Subscription subscription) {
-		    this.subscription = subscription;;
+		    this.subscription = subscription;
 			s.onSubscribe(this);
 		}
 
@@ -140,12 +153,12 @@ public enum JdkFlowAdapter {
 		public void onComplete() {
 			s.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 		    subscription.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 		    subscription.cancel();

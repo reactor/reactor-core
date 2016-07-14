@@ -28,8 +28,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -64,7 +64,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		this.drainQueueSupplier = Objects.requireNonNull(drainQueueSupplier, "drainQueueSupplier");
 		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> s) {
 

@@ -34,7 +34,7 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
  */
 final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 
-    final Publisher<? extends T> other;
+	final Publisher<? extends T> other;
 
 	public FluxSwitchIfEmpty(Publisher<? extends T> source,
 			Publisher<? extends T> other) {

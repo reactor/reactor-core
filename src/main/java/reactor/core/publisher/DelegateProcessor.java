@@ -21,14 +21,15 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
-import reactor.core.state.Backpressurable;
+import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.util.Exceptions;
 
 /**
  * @author Stephane Maldini
  */
 final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Producer, Backpressurable, reactor.core.flow.Receiver {
+		implements Producer, Receiver {
 
 	private final Publisher<OUT> downstream;
 	private final Subscriber<IN> upstream;
@@ -46,8 +47,8 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@Override
 	public long getCapacity() {
-		return Backpressurable.class.isAssignableFrom(upstream.getClass()) ?
-				((Backpressurable) upstream).getCapacity() : Long.MAX_VALUE;
+		return SubscriberState.class.isAssignableFrom(upstream.getClass()) ?
+				((SubscriberState) upstream).getCapacity() : Long.MAX_VALUE;
 	}
 
 	@Override

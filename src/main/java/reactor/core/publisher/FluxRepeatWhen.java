@@ -23,10 +23,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
-import reactor.core.subscriber.MultiSubscriptionSubscriber;
-
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.MultiSubscriptionSubscriber;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -58,8 +58,8 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Subscribers.serialize(other.completionSignal);
-		
-		signaller.onSubscribe(EmptySubscription.INSTANCE);
+
+		signaller.onSubscribe(SubscriptionHelper.empty());
 
 		Subscriber<T> serial = Subscribers.serialize(s);
 
@@ -88,11 +88,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		if (!main.cancelled) {
 			source.subscribe(main);
 		}
-	}
-
-	@Override
-	public long getCapacity() {
-		return -1L;
 	}
 
 	static final class RepeatWhenMainSubscriber<T> extends MultiSubscriptionSubscriber<T, T> {
@@ -194,8 +189,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class RepeatWhenOtherSubscriber
-			extends Flux<Long>
+	static final class RepeatWhenOtherSubscriber extends Flux<Long>
 	implements Subscriber<Object>, Loopback {
 		RepeatWhenMainSubscriber<?> main;
 
@@ -234,11 +228,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		@Override
 		public Object connectedOutput() {
 			return completionSignal;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER | TRACE_ONLY;
 		}
 	}
 }

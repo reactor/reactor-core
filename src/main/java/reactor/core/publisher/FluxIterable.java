@@ -24,9 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -89,7 +87,7 @@ extends Flux<T>
 			return;
 		}
 		if (!b) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 
@@ -101,7 +99,7 @@ extends Flux<T>
 	}
 
 	static final class IterableSubscription<T>
-			implements Producer, Completable, Requestable, Cancellable, SynchronousSubscription<T> {
+			implements Producer, SubscriberState, SynchronousSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -346,7 +344,8 @@ extends Flux<T>
 	}
 
 	static final class IterableSubscriptionConditional<T>
-			implements Producer, Completable, Requestable, Cancellable, Subscription, SynchronousSubscription<T> {
+			implements Producer, SubscriberState, Subscription,
+			           SynchronousSubscription<T> {
 
 		final ConditionalSubscriber<? super T> actual;
 

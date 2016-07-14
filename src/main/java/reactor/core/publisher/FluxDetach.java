@@ -1,7 +1,8 @@
 package reactor.core.publisher;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

@@ -23,7 +23,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.queue.QueueSupplier;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.concurrent.QueueSupplier;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Exceptions;
 
@@ -198,13 +199,7 @@ public class FluxPeekTest {
 
 		Throwable err = new Exception("test");
 
-		new FluxPeek<>(new FluxJust<>(1),
-				null, d -> {throw Exceptions.propagate(err);},
-				null,
-				null,
-				null, null,
-				null
-		).subscribe(ts);
+		Flux.just(1).doOnNext(d -> {throw Exceptions.propagate(err);}).subscribe(ts);
 
 		//nominal error path (DownstreamException)
 		ts.assertErrorMessage("test");
@@ -212,17 +207,12 @@ public class FluxPeekTest {
 		ts = TestSubscriber.create();
 
 		try {
-			new FluxPeek<>(new FluxJust<>(1),
-					null, d -> {throw Exceptions.bubble(err);},
-					null,
-					null,
-					null, null,
-					null).subscribe(ts);
+			Flux.just(1).doOnNext(d -> {throw Exceptions.bubble(err);}).subscribe(ts);
 
 			Assert.fail();
 		}
 		catch (Exception e){
-			//fatal publisher exception (UpstreamException)
+			//fatal publisher exception (BubblingException)
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
 		}
 	}
@@ -264,7 +254,7 @@ public class FluxPeekTest {
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {
-				EmptySubscription.complete(u);
+				SubscriptionHelper.complete(u);
 			}
 		})
 		    .doOnNext(v -> {
@@ -287,7 +277,7 @@ public class FluxPeekTest {
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {
-				EmptySubscription.complete(u);
+				SubscriptionHelper.complete(u);
 			}
 		})
 		    .doOnNext(v -> {

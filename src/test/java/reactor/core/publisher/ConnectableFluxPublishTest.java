@@ -15,10 +15,12 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CancellationException;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.flow.Cancellation;
-import reactor.core.queue.QueueSupplier;
+import reactor.core.util.concurrent.QueueSupplier;
 import reactor.core.test.TestSubscriber;
 import reactor.core.util.Exceptions;
 
@@ -328,7 +330,7 @@ public class ConnectableFluxPublishTest {
 		r.dispose();
 		
 		ts.assertValues(1, 2)
-		.assertError(Exceptions.CancelException.class)
+		.assertError(CancellationException.class)
 		.assertNotComplete();
 		
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
@@ -350,7 +352,7 @@ public class ConnectableFluxPublishTest {
 		r.dispose();
 		
 		ts.assertNoValues()
-		.assertError(Exceptions.CancelException.class)
+		.assertError(CancellationException.class)
 		.assertNotComplete();
 
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);

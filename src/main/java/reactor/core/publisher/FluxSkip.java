@@ -22,13 +22,11 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
-import reactor.core.state.Prefetchable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
- * Skips the first N elements from a reactive fluxion.
+ * Skips the first N elements from a reactive stream.
  *
  * @param <T> the value type
  */
@@ -65,8 +63,8 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class SkipSubscriber<T> implements Subscriber<T>, Receiver, Producer, Prefetchable,
-															 Backpressurable, Completable, Subscription {
+	static final class SkipSubscriber<T>
+			implements Subscriber<T>, Receiver, Producer, Subscription, SubscriberState {
 
 		final Subscriber<? super T> actual;
 

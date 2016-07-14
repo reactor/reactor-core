@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -32,7 +32,7 @@ import reactor.core.util.Exceptions;
  * Accumulates the source values with an accumulator function and
  * returns the intermediate results of this function.
  * <p>
- * Unlike {@link reactor.core.publisher.FluxScan}, this operator doesn't take an initial value
+ * Unlike {@link FluxScan}, this operator doesn't take an initial value
  * but treats the first source value as initial value.
  * <br>
  * The accumulation works as follows:
@@ -64,7 +64,9 @@ final class FluxAccumulate<T> extends FluxSource<T, T> {
 		source.subscribe(new AccumulateSubscriber<>(s, accumulator));
 	}
 
-	static final class AccumulateSubscriber<T> implements Subscriber<T>, Receiver, Producer, Completable, Loopback, Subscription {
+	static final class AccumulateSubscriber<T>
+			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
+			           SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final BiFunction<T, ? super T, T> accumulator;

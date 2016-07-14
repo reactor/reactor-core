@@ -15,13 +15,19 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

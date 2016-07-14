@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -34,7 +35,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  * @since 2.5
  */
 final class FluxError<T>
-		extends Flux<T> {
+		extends Flux<T> implements SubscriberState {
 
 	final Supplier<? extends Throwable> supplier;
 	

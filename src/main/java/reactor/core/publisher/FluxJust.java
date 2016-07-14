@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.util.Exceptions;
 
 /**
@@ -66,11 +66,6 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	@Override
-	public long getCapacity() {
-		return 1L;
-	}
-
-	@Override
 	public void subscribe(final Subscriber<? super T> subscriber) {
 		try {
 			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
@@ -86,7 +81,8 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		return value;
 	}
 
-	static final class WeakScalarSubscription<T> implements QueueSubscription<T>, Receiver, Completable {
+	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
+	                                                        Receiver, SubscriberState {
 
 		boolean terminado;
 		final T                     value;

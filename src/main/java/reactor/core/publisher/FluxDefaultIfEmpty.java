@@ -117,8 +117,8 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		        public int requestFusion(int requestedMode) {
-			            return Fuseable.NONE; // prevent fusion because of the upstream
-			        }
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE; // prevent fusion because of the upstream
+		}
 	}
 }

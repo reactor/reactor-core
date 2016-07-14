@@ -25,8 +25,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -52,7 +51,7 @@ extends Flux<T>
 	@SuppressWarnings("unchecked")
 	public static <T> void subscribe(Subscriber<? super T> s, T[] array) {
 		if (array.length == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 		if (s instanceof ConditionalSubscriber) {
@@ -68,7 +67,8 @@ extends Flux<T>
 	}
 
 	static final class ArraySubscription<T>
-	  implements Producer, Requestable, Cancellable, MultiReceiver, SynchronousSubscription<T> {
+			implements Producer, SubscriberState, MultiReceiver,
+			           SynchronousSubscription<T> {
 		final Subscriber<? super T> actual;
 
 		final T[] array;
@@ -237,9 +237,8 @@ extends Flux<T>
 	}
 
 	static final class ArrayConditionalSubscription<T>
-			implements Producer, Requestable, Cancellable, MultiReceiver,
+			implements Producer, SubscriberState, MultiReceiver,
 			           SynchronousSubscription<T> {
-
 		final ConditionalSubscriber<? super T> actual;
 
 		final T[] array;

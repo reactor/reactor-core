@@ -16,15 +16,17 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collector;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.Exceptions;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -48,7 +50,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 		super(source);
 		this.collector = Objects.requireNonNull(collector, "collector");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		A container;

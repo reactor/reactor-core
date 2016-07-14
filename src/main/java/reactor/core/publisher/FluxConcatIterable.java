@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -34,8 +35,7 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxConcatIterable<T>
-		extends Flux<T>
+final class FluxConcatIterable<T> extends Flux<T>
 		implements MultiReceiver {
 
 	final Iterable<? extends Publisher<? extends T>> iterable;

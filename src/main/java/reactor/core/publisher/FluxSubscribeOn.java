@@ -16,16 +16,20 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Fuseable;
+import reactor.core.flow.Loopback;
+import reactor.core.flow.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.core.util.Exceptions;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -38,7 +42,7 @@ import reactor.core.util.*;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
+final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
 
 	final Scheduler scheduler;
 	
@@ -49,26 +53,10 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
 
-	public static <T> void scalarScheduleOn(Publisher<? extends T> source, Subscriber<? super T> s, Scheduler scheduler) {
-		@SuppressWarnings("unchecked") Fuseable.ScalarCallable<T> supplier = (Fuseable.ScalarCallable<T>) source;
-
-        T v = supplier.call();
-
-        if (v == null) {
-            ScheduledEmpty parent = new ScheduledEmpty(s);
-            s.onSubscribe(parent);
-            Cancellation f = scheduler.schedule(parent);
-            parent.setFuture(f);
-        }
-        else {
-            s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
-        }
-	}
-	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable.ScalarCallable) {
-			scalarScheduleOn(source, s, scheduler);
+		if (source instanceof ScalarCallable) {
+			FluxSubscribeOnValue.singleScheduleOn(source, s, scheduler);
 			return;
 		}
 		
@@ -103,9 +91,9 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		return null;
 	}
 
-	static final class SubscribeOnPipeline<T>
-			extends DeferredSubscription
+	static final class SubscribeOnPipeline<T> extends DeferredSubscription
 			implements Subscriber<T>, Producer, Loopback, Runnable {
+
 		final Subscriber<? super T> actual;
 
 		final Worker worker;
@@ -206,147 +194,6 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public Object connectedInput() {
 			return null;
-		}
-	}
-
-	static final class ScheduledScalar<T>
-			implements Subscription, Runnable, Producer, Loopback {
-
-		final Subscriber<? super T> actual;
-		
-		final T value;
-		
-		final Scheduler scheduler;
-
-		volatile int once;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ScheduledScalar> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
-		
-		volatile Cancellation future;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ScheduledScalar, Cancellation> FUTURE =
-				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class, Cancellation.class, "future");
-		
-		static final Cancellation CANCELLED = () -> { };
-
-		static final Cancellation FINISHED = () -> { };
-
-		public ScheduledScalar(Subscriber<? super T> actual, T value, Scheduler scheduler) {
-			this.actual = actual;
-			this.value = value;
-			this.scheduler = scheduler;
-		}
-		
-		@Override
-		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (ONCE.compareAndSet(this, 0, 1)) {
-					Cancellation f = scheduler.schedule(this);
-					if (!FUTURE.compareAndSet(this, null, f)) {
-						if (future != FINISHED && future != CANCELLED) {
-							f.dispose();
-						}
-					}
-				}
-			}
-		}
-		
-		@Override
-		public void cancel() {
-			ONCE.lazySet(this, 1);
-			Cancellation f = future;
-			if (f != CANCELLED && future != FINISHED) {
-				f = FUTURE.getAndSet(this, CANCELLED);
-				if (f != null && f != CANCELLED && f != FINISHED) {
-					f.dispose();
-				}
-			}
-		}
-		
-		@Override
-		public void run() {
-			try {
-				actual.onNext(value);
-				actual.onComplete();
-			} finally {
-				FUTURE.lazySet(this, FINISHED);
-			}
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return scheduler;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return value;
-		}
-	}
-
-	static final class ScheduledEmpty implements Subscription, Runnable, Producer, Loopback {
-		final Subscriber<?> actual;
-
-		volatile Cancellation future;
-		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Cancellation> FUTURE =
-				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class, Cancellation.class, "future");
-		
-		static final Cancellation CANCELLED = () -> { };
-		
-		static final Cancellation FINISHED = () -> { };
-
-		public ScheduledEmpty(Subscriber<?> actual) {
-			this.actual = actual;
-		}
-
-		@Override
-		public void request(long n) {
-			SubscriptionHelper.validate(n);
-		}
-
-		@Override
-		public void cancel() {
-			Cancellation f = future;
-			if (f != CANCELLED && f != FINISHED) {
-				f = FUTURE.getAndSet(this, CANCELLED);
-				if (f != null && f != CANCELLED && f != FINISHED) {
-					f.dispose();
-				}
-			}
-		}
-
-		@Override
-		public void run() {
-			try {
-				actual.onComplete();
-			} finally {
-				FUTURE.lazySet(this, FINISHED);
-			}
-		}
-
-		void setFuture(Cancellation f) {
-			if (!FUTURE.compareAndSet(this, null, f)) {
-				Cancellation a = future;
-				if (a != FINISHED && a != CANCELLED) {
-					f.dispose();
-				}
-			}
-		}
-		
-		@Override
-		public Object connectedInput() {
-			return null; // FIXME value?
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
 		}
 	}
 

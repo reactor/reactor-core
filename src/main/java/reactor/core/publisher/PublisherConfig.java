@@ -26,7 +26,7 @@ public interface PublisherConfig {
 	 * @return defined identifier or null if not available
 	 */
 	default Object getId() {
-		return null;
+		return getClass().getSimpleName();
 	}
 
 	/**

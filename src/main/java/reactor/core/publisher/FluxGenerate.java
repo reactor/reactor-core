@@ -118,7 +118,7 @@ extends Flux<T> {
 		}
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED = 
+		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
 		public GenerateSubscription(Subscriber<? super T> actual, S state,
@@ -308,11 +308,21 @@ extends Flux<T> {
 		
 		@Override
 		public T poll() {
+			S s = state;
+
 			if (terminate) {
+				cleanup(s);
+
+				Throwable e = generatedError;
+				if (e != null) {
+
+					generatedError = null;
+					Exceptions.bubble(e);
+				}
+
 				return null;
 			}
 
-			S s = state;
 			
 			try {
 				s = generator.apply(s, this);
@@ -321,21 +331,20 @@ extends Flux<T> {
 				throw ex;
 			}
 			
-			Throwable e = generatedError;
-			if (e != null) {
-				cleanup(s);
-				
-				generatedError = null;
-				throw Exceptions.bubble(e);
-			}
-			
 			if (!hasValue) {
 				cleanup(s);
 				
 				if (!terminate) {
-					throw new IllegalStateException("The generator didn't call any of the " +
-						"SignalEmitter method");
+					throw new IllegalStateException("The generator didn't call any of the " + "FluxGenerateOutput method");
 				}
+
+				Throwable e = generatedError;
+				if (e != null) {
+
+					generatedError = null;
+					throw Exceptions.bubble(e);
+				}
+
 				return null;
 			}
 			

@@ -56,11 +56,6 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 		}
 	}
 
-	@Override
-	public long getCapacity() {
-		return -1L;
-	}
-
 	static final class RepeatPredicateSubscriber<T>
 			extends MultiSubscriptionSubscriber<T, T> {
 

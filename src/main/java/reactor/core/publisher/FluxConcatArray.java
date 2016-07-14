@@ -18,13 +18,15 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.util.*;
+import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.Exceptions;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -65,7 +67,7 @@ extends Flux<T>
 		Publisher<? extends T>[] a = array;
 
 		if (a.length == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 		if (a.length == 1) {

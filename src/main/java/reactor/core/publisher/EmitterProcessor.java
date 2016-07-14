@@ -28,19 +28,14 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.RingBuffer;
-import reactor.core.queue.Slot;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.Sequence;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.RingBuffer;
+import reactor.core.util.concurrent.Sequence;
+import reactor.core.util.concurrent.Slot;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
@@ -60,11 +55,10 @@ import reactor.core.util.Sequence;
  * @param <T> the input and output value type
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>
-		implements MultiProducer, Completable, Cancellable, Prefetchable, Backpressurable,
-		           Receiver {
+		implements MultiProducer, Receiver {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -75,18 +69,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(PlatformDependent.SMALL_BUFFER_SIZE, autoCancel);
+		return create(ReactorProperties.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -97,7 +91,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -109,7 +103,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -121,7 +115,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
@@ -173,13 +167,15 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "error");
+			ReactorProperties.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+					"error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			PlatformDependent.newAtomicReferenceFieldUpdater(EmitterProcessor.class, "subscribers");
+			ReactorProperties.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+					"subscribers");
 	@SuppressWarnings("unused")
 	private volatile int running;
 
@@ -224,13 +220,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public EmitterProcessor<T> connect() {
-		onSubscribe(EmptySubscription.INSTANCE);
+		onSubscribe(SubscriptionHelper.empty());
 		return this;
 	}
 
 	@Override
 	public long getPending() {
-		return (emitBuffer == null ? -1L : emitBuffer.getPending());
+		return (emitBuffer == null ? -1L :
+				emitBuffer.getPending());
 	}
 
 	@Override
@@ -250,7 +247,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			long seq = -1L;
 
 			int outstanding;
-			if (upstreamSubscription != EmptySubscription.INSTANCE) {
+			if (upstreamSubscription != SubscriptionHelper.empty()) {
 
 				outstanding = this.outstanding;
 				if (outstanding != 0) {
@@ -376,7 +373,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public boolean isTerminated() {
-		return done && (emitBuffer == null || emitBuffer.getPending() == 0L);
+		return done && (emitBuffer == null || emitBuffer.getPending() == 0);
 	}
 
 	@Override
@@ -500,7 +497,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 				else {
 					if (q != null) {
-						requestMore((int) q.getPending());
+						requestMore(q.getPending());
 					}
 					else {
 						requestMore(0);
@@ -602,7 +599,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void requestMore(int buffered) {
 		Subscription subscription = upstreamSubscription;
-		if (subscription == EmptySubscription.INSTANCE) {
+		if (subscription == SubscriptionHelper.empty()) {
 			return;
 		}
 
@@ -650,8 +647,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	static final class EmitterSubscriber<T>
-			implements Subscription, Introspectable, Completable, Cancellable, Backpressurable, Receiver,
-			           Requestable, Producer {
+			implements Subscription, SubscriberState, Receiver, Producer {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final EmitterProcessor<T>   parent;
@@ -671,7 +667,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
-				PlatformDependent.newAtomicReferenceFieldUpdater(EmitterSubscriber.class, "pollCursor");
+				ReactorProperties.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
+						"pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
@@ -745,16 +742,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		@Override
 		public Object upstream() {
 			return parent;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return EmitterSubscriber.class.getSimpleName();
 		}
 
 		@Override

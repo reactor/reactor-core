@@ -16,18 +16,22 @@
 
 package reactor.core.publisher;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-
-import reactor.core.flow.*;
+import reactor.core.flow.Cancellation;
+import reactor.core.flow.Fuseable;
 import reactor.core.flow.Fuseable.QueueSubscription;
+import reactor.core.flow.Producer;
 import reactor.core.publisher.FluxEmitter.BackpressureHandling;
-import reactor.core.queue.QueueSupplier;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.core.util.Exceptions;
+import reactor.core.util.concurrent.QueueSupplier;
 
 /**
  * Provides a multi-valued emitter API for a callback that is called for
@@ -385,7 +389,7 @@ final class FluxCreate<T> extends Flux<T> {
         
         @Override
         public int requestFusion(int requestedMode) {
-// TODO enable
+// FIXME enable
 //            if ((requestedMode & Fuseable.ASYNC) != 0) {
 //                return Fuseable.ASYNC;
 //            }
@@ -394,26 +398,21 @@ final class FluxCreate<T> extends Flux<T> {
         
         @Override
         public T poll() {
-            // TODO Auto-generated method stub
             return null;
         }
         
         @Override
         public boolean isEmpty() {
-            // TODO Auto-generated method stub
             return false;
         }
         
         @Override
         public int size() {
-            // TODO Auto-generated method stub
             return 0;
         }
         
         @Override
         public void clear() {
-            // TODO Auto-generated method stub
-            
         }
         
         @Override

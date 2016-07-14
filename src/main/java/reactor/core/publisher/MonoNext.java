@@ -22,8 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -49,7 +48,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 	}
 
 	static final class NextSubscriber<T>
-			implements Subscriber<T>, Subscription, Completable, Backpressurable, Receiver, Producer {
+			implements Subscriber<T>, Subscription, Receiver, Producer, SubscriberState {
 
 		final Subscriber<? super T> actual;
 

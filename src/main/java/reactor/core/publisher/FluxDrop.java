@@ -24,8 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -58,18 +57,19 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 		this.onDrop = Objects.requireNonNull(onDrop, "onDrop");
 	}
 
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new DropSubscriber<>(s, onDrop));
 	}
 
-	@Override
-	public long getCapacity() {
-		return -1L;
-	}
-
 	static final class DropSubscriber<T>
-			implements Subscriber<T>, Subscription, Producer, Completable, Requestable, Loopback {
+			implements Subscriber<T>, Subscription, Producer, Loopback, SubscriberState {
 
 		final Subscriber<? super T> actual;
 

@@ -31,7 +31,7 @@ import reactor.core.flow.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactorProperties;
 
 /**
  * Replays all or the last N items to Subscribers.
@@ -42,7 +42,7 @@ import reactor.core.util.PlatformDependent;
  * @param <T> the value type
  */
 public final class ReplayProcessor<T> 
-extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver, SubscriberState {
+extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 	/**
 	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create ReplayProcessor}  that will not
@@ -83,17 +83,17 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver, Subscr
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create() {
-		return create(PlatformDependent.SMALL_BUFFER_SIZE, true);
+		return create(ReactorProperties.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize
@@ -106,7 +106,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver, Subscr
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize maximum items retained if bounded, or link size if unbounded

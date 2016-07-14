@@ -19,6 +19,8 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -31,8 +33,7 @@ import reactor.core.util.Exceptions;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class MonoError<T> 
-extends Mono<T> implements reactor.core.state.Completable {
+final class MonoError<T> extends Mono<T> implements SubscriberState {
 
 	final Supplier<? extends Throwable> supplier;
 

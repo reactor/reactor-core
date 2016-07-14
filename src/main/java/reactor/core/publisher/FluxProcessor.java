@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
 import reactor.core.subscriber.BaseSubscriber;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -37,7 +37,7 @@ import reactor.core.util.Exceptions;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Backpressurable, Completable, BaseSubscriber<IN> {
+		implements Processor<IN, OUT>, SubscriberState, BaseSubscriber<IN> {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -74,7 +74,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	@Override
 	public FluxProcessor<IN, OUT> connect() {
-		onSubscribe(EmptySubscription.INSTANCE);
+		onSubscribe(SubscriptionHelper.empty());
 		return this;
 	}
 

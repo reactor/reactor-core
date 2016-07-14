@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -32,8 +33,7 @@ import reactor.core.flow.Receiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxDefer<T>
-		extends Flux<T>
+final class FluxDefer<T> extends Flux<T>
 		implements Receiver {
 
 	final Supplier<? extends Publisher<? extends T>> supplier;

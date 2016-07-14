@@ -21,10 +21,8 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.util.Logger;
-import reactor.core.util.SignalKind;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them
@@ -50,7 +48,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 	}
 
 	@Override
-	public String getName() {
+	public String getId() {
 		return "/loggers/" + (log.getName()
 		                         .equalsIgnoreCase(FluxLog.class.getName()) ? "default" : log.getName());
 	}
@@ -67,7 +65,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		source.subscribe(new LoggerBarrier<>(this, newId, subscriber));
 	}
 
-	final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN> implements Introspectable {
+	final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN>  {
 
 		private final int    options;
 		private final Logger log;
@@ -117,7 +115,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doOnSubscribe(Subscription subscription) {
 			if ((options & Logger.ON_SUBSCRIBE) == Logger.ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onSubscribe, this.subscription, this);
+				log(SignalType.onSubscribe, this.subscription, this);
 			}
 			subscriber.onSubscribe(this);
 		}
@@ -125,7 +123,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doNext(IN in) {
 			if ((options & Logger.ON_NEXT) == Logger.ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onNext, in, this);
+				log(SignalType.onNext, in, this);
 			}
 			subscriber.onNext(in);
 		}
@@ -133,7 +131,10 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doError(Throwable throwable) {
 			if ((options & Logger.ON_ERROR) == Logger.ON_ERROR && log.isErrorEnabled()) {
-				log.error(concatId() + " " + LOG_TEMPLATE, SignalKind.onError, throwable, this);
+				log.error(concatId() + " " + LOG_TEMPLATE,
+						SignalType.onError,
+						throwable,
+						this);
 				log.error(concatId(), throwable);
 			}
 			subscriber.onError(throwable);
@@ -147,7 +148,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doComplete() {
 			if ((options & Logger.ON_COMPLETE) == Logger.ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.onComplete, "", this);
+				log(SignalType.onComplete, "", this);
 			}
 			subscriber.onComplete();
 		}
@@ -155,7 +156,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doRequest(long n) {
 			if ((options & Logger.REQUEST) == Logger.REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
+				log(SignalType.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
 			}
 			super.doRequest(n);
 		}
@@ -163,26 +164,16 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doCancel() {
 			if ((options & Logger.CANCEL) == Logger.CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalKind.cancel, "", this);
+				log(SignalType.cancel, "", this);
 			}
 			super.doCancel();
 		}
 
 		@Override
-		public int getMode() {
-			return LOGGING;
-		}
-
-		@Override
-		public String getName() {
+		public String toString() {
 			return "/loggers/" + (log.getName()
 			                         .equalsIgnoreCase(FluxLog.class.getName()) ? "default" :
 					log.getName()) + "/" + uniqueId;
-		}
-
-		@Override
-		public String toString() {
-			return getName();
 		}
 	}
 

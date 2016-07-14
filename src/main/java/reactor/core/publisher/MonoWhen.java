@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.*;
-
-import reactor.core.subscriber.SubscriptionHelper;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -74,7 +74,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         }
         
         if (n == 0) {
-            EmptySubscription.complete(s);
+            SubscriptionHelper.complete(s);
             return;
         }
         

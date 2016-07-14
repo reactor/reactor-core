@@ -15,16 +15,21 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.AbstractQueue;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.*;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
-import reactor.core.flow.*;
-import reactor.core.state.Completable;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.flow.Producer;
+import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.core.util.Exceptions;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -74,7 +79,8 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
     static final class FluxMapSignalSubscriber<T, R> 
     extends AbstractQueue<R>
-    implements Subscriber<T>, Receiver, Producer, Completable, Subscription, BooleanSupplier {
+    implements Subscriber<T>, Receiver, Producer, SubscriberState, Subscription,
+               BooleanSupplier {
 
         final Subscriber<? super R>            actual;
         final FluxMapSignal<T, R> parent;

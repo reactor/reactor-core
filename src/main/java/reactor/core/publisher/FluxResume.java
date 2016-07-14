@@ -51,11 +51,6 @@ final class FluxResume<T> extends FluxSource<T, T> {
 		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	@Override
-	public long getCapacity() {
-		return -1L;
-	}
-
 	static final class ResumeSubscriber<T> extends MultiSubscriptionSubscriber<T, T>
 			implements Loopback {
 

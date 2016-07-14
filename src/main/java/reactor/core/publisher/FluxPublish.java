@@ -65,6 +65,11 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 	}
 
 	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		
 		FluxPublishMulticaster<T, R> multicast = new FluxPublishMulticaster<>(prefetch, queueSupplier);

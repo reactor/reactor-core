@@ -26,7 +26,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -75,7 +75,9 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		source.subscribe(new MapSubscriber<>(s, mapper));
 	}
 
-	static final class MapSubscriber<T, R> implements Subscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
+	static final class MapSubscriber<T, R>
+			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
+			           SubscriberState {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -183,7 +185,9 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	static final class MapConditionalSubscriber<T, R> implements Fuseable.ConditionalSubscriber<T>, Completable, Receiver, Producer, Loopback, Subscription {
+	static final class MapConditionalSubscriber<T, R>
+			implements Fuseable.ConditionalSubscriber<T>, Receiver, Producer, Loopback,
+			           Subscription, SubscriberState {
 		final Fuseable.ConditionalSubscriber<? super R> actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -245,6 +249,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
+				done = true;
 				Exceptions.throwIfFatal(e);
 				s.cancel();
 				onError(Exceptions.unwrap(e));

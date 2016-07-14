@@ -22,11 +22,11 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
- * Skips the last N elements from the source fluxion.
+ * Skips the last N elements from the source stream.
  *
  * @param <T> the value type
  */
@@ -56,7 +56,8 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class SkipLastSubscriber<T> implements Subscriber<T>, Receiver, Producer, Backpressurable, Subscription {
+	static final class SkipLastSubscriber<T>
+			implements Subscriber<T>, Receiver, Producer, Subscription, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final int n;

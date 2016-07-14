@@ -352,7 +352,7 @@ class MonoSpec extends Specification {
 	promise.onError new Exception()
 
 	then: "an IllegalStateException is thrown"
-	thrown(Exceptions.UpstreamException)
+	thrown(Exceptions.BubblingException)
   }
 
   def "An IllegalStateException is thrown if an attempt is made to reject a fulfilled promise"() {
@@ -364,7 +364,7 @@ class MonoSpec extends Specification {
 	promise.onError new Exception()
 
 	then: "an IllegalStateException is thrown"
-	thrown(Exceptions.UpstreamException)
+	thrown(Exceptions.BubblingException)
   }
 
   def "Multiple promises can be combined"() {

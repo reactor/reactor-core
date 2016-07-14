@@ -63,7 +63,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.tuple.Tuple;
+import reactor.core.util.function.Tuple;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
 
@@ -254,7 +254,7 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext(error);
 			fail();
 		}
-		catch (Exceptions.UpstreamException ise) {
+		catch (Exceptions.BubblingException ise) {
 			// Swallow
 		}
 		assertTrue(deferred.getError() instanceof Exception);
@@ -269,7 +269,7 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext("alpha");
 			fail();
 		}
-		catch (Exceptions.ReactiveException ise) {
+		catch (Exceptions.BubblingException ise) {
 		}
 		assertTrue(deferred.getError() instanceof Exception);
 	}

@@ -26,8 +26,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -54,6 +54,11 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		super(source);
 		this.throttler = Objects.requireNonNull(throttler, "throttler");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -158,8 +163,8 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			long idx = INDEX.incrementAndGet(this);
-			
-			if (!SubscriptionHelper.set(OTHER, this, EmptySubscription.INSTANCE)) {
+
+			if (!SubscriptionHelper.set(OTHER, this, SubscriptionHelper.empty())) {
 				return;
 			}
 			
@@ -309,8 +314,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		}
 	}
 	
-	static final class ThrottleTimeoutOther<T, U>
-	extends DeferredSubscription
+	static final class ThrottleTimeoutOther<T, U> extends DeferredSubscription
 	implements Subscriber<U> {
 		final ThrottleTimeoutMain<T, U> main;
 		

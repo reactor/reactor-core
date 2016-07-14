@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.publisher.FluxTake.TakeFuseableSubscriber;
 
@@ -57,10 +56,5 @@ final class FluxTakeFuseable<T> extends FluxSource<T, T> implements Fuseable {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new TakeFuseableSubscriber<>(s, n));
-	}
-
-	@Override
-	public long getCapacity() {
-		return n;
 	}
 }

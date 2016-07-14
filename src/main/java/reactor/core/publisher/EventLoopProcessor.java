@@ -31,19 +31,18 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
+import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.QueueSupplier;
-import reactor.core.queue.RingBuffer;
-import reactor.core.queue.Slot;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.WaitStrategy;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.QueueSupplier;
+import reactor.core.util.concurrent.RingBuffer;
+import reactor.core.util.concurrent.Sequence;
+import reactor.core.util.concurrent.Slot;
+import reactor.core.util.concurrent.WaitStrategy;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -51,8 +50,7 @@ import reactor.core.util.WaitStrategy;
  * @author Stephane Maldini
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Cancellable, Receiver, Runnable, MultiProducer, Backpressurable {
-
+		implements Receiver, Runnable, MultiProducer {
 	/**
 	 * Create a {@link Scheduler} pool of N {@literal parallelSchedulers} size calling the
 	 * {@link Processor} {@link Supplier} once each.
@@ -75,6 +73,84 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			int paralellism,
 			boolean autoShutdown) {
 		return new EventLoopScheduler(processors, paralellism, autoShutdown);
+	}
+
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
+	 * before this operation.
+	 *
+	 * @param sequence current sequence to update
+	 * @param toAdd delta to add
+	 *
+	 * @return value before addition or Long.MAX_VALUE
+	 */
+	static long getAndAddCap(Sequence sequence, long toAdd) {
+		long u, r;
+		do {
+			r = sequence.getAsLong();
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = SubscriptionHelper.addCap(r, toAdd);
+		}
+		while (!sequence.compareAndSet(r, u));
+		return r;
+	}
+
+	/**
+	 * Concurrent substraction bound to 0 and Long.MAX_VALUE. Any concurrent write will
+	 * "happen" before this operation.
+	 *
+	 * @param sequence current sequence to update
+	 * @param toSub delta to sub
+	 *
+	 * @return value before subscription, 0 or Long.MAX_VALUE
+	 */
+	static long getAndSub(Sequence sequence, long toSub) {
+		long r, u;
+		do {
+			r = sequence.getAsLong();
+			if (r == 0 || r == Long.MAX_VALUE) {
+				return r;
+			}
+			u = SubscriptionHelper.subOrZero(r, toSub);
+		}
+		while (!sequence.compareAndSet(r, u));
+
+		return r;
+	}
+
+	/**
+	 * Wrap a new sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level
+	 * when
+	 * peeking. Mostly invisible cost but the option is left open. Keeping reference of the arbitrary consumer allows
+	 * expanded operational navigation (graph) by finding all target subscribers of a given ring buffer.
+	 *
+	 * @param init the initial sequence index
+	 * @param delegate the target to proxy
+	 *
+	 * @return a wrapped {@link Sequence}
+	 */
+	static Sequence wrap(long init, Object delegate) {
+		if (ReactorProperties.TRACEABLE_RING_BUFFER_PROCESSOR) {
+			return wrap(RingBuffer.newSequence(init), delegate);
+		}
+		else {
+			return RingBuffer.newSequence(init);
+		}
+	}
+
+	/**
+	 * Wrap a sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level when
+	 * peeking. Mostly invisible cost but the option is left open.
+	 *
+	 * @param init the sequence reference
+	 * @param delegate the object to wrap
+	 *
+	 * @return a wrapped {@link Sequence}
+	 */
+	static Sequence wrap(Sequence init, Object delegate){
+		return new Wrapped<>(delegate, init);
 	}
 
 	final ExecutorService executor;
@@ -109,8 +185,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		contextClassLoader = new EventLoopContext();
 
-		String name = threadFactory instanceof Introspectable ? ((Introspectable)
-				threadFactory).getName() : null;
+		String name = threadFactory instanceof Supplier ? ((Supplier)
+				threadFactory).get().toString() : null;
 		this.name = null != name ? name : getClass().getSimpleName();
 
 		if (executor == null) {
@@ -209,13 +285,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	final public int getMode() {
-		return UNIQUE;
-	}
-
-	@Override
-	final public String getName() {
-		return "/Processors/" + name;
+	final public String getId() {
+		return "/Processors/" + name + "/" + contextClassLoader.hashCode();
 	}
 
 	@Override
@@ -236,11 +307,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	@Override
 	final public boolean isTerminated() {
 		return terminated > 0;
-	}
-
-	@Override
-	final public Object getId() {
-		return contextClassLoader.hashCode();
 	}
 
 	@Override
@@ -277,7 +343,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		if (SubscriptionHelper.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
-				if (s != EmptySubscription.INSTANCE) {
+				if (s != SubscriptionHelper.empty()) {
 					requestTask(s);
 				}
 			}
@@ -308,10 +374,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	final public Subscription upstream() {
 		return upstreamSubscription;
 	}
-	
+
 	@Override
 	final public long getCapacity() {
-		return ringBuffer.getCapacity();
+		return ringBuffer.bufferSize();
 	}
 
 	final void cancel() {
@@ -382,9 +448,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 }
 
-final class EventLoopFactory extends AtomicInteger implements ThreadFactory,
-                                                               Introspectable {
+final class EventLoopFactory
+		implements ThreadFactory, Supplier<String> {
 	/** */
+
+	static final AtomicInteger COUNT = new AtomicInteger();
+
     private static final long serialVersionUID = -3202326942393105842L;
     final String  name;
 	final boolean daemon;
@@ -396,18 +465,18 @@ final class EventLoopFactory extends AtomicInteger implements ThreadFactory,
 
 	@Override
 	public Thread newThread(Runnable r) {
-		Thread t = new Thread(r, name + "-" + incrementAndGet());
+		Thread t = new Thread(r, name + "-" + COUNT.incrementAndGet());
 		t.setDaemon(daemon);
 		return t;
 	}
 
 	@Override
-	public String getName() {
+	public String get() {
 		return name;
 	}
 }
 
-final class EventLoopScheduler implements Scheduler, MultiProducer, Completable {
+final class EventLoopScheduler implements Scheduler, MultiProducer {
 
 	@Override
 	public Worker createWorker() {
@@ -424,26 +493,6 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 	@Override
 	public long downstreamCount() {
 		return workerPool.length;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (!processorWorker.processor.isTerminated()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	@Override
-	public boolean isStarted() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			if (!processorWorker.processor.isStarted()) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	@Override
@@ -514,8 +563,7 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 	final static Cancellation NOOP_CANCEL = () -> {
 	};
 
-	final static class ProcessorWorker
-			implements Subscriber<Runnable>, Loopback, Worker, Introspectable {
+	final static class ProcessorWorker implements Subscriber<Runnable>, Loopback, Worker {
 
 		final EventLoopProcessor<Runnable> processor;
 		final boolean                      autoShutdown;
@@ -641,11 +689,6 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 		}
 
 		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
 		public void onError(Throwable t) {
 			thread = null;
 			Exceptions.throwIfFatal(t);
@@ -680,4 +723,66 @@ final class EventLoopScheduler implements Scheduler, MultiProducer, Completable 
 			count = 1;
 		}
 	}
+}
+final class Wrapped<E> implements Sequence, Producer {
+
+	public final E        delegate;
+	public final Sequence sequence;
+
+	public Wrapped(E delegate, Sequence sequence) {
+		this.delegate = delegate;
+		this.sequence = sequence;
+	}
+
+	@Override
+	public long getAsLong() {
+		return sequence.getAsLong();
+	}
+
+	@Override
+	public Object downstream() {
+		return delegate;
+	}
+
+	@Override
+	public void set(long value) {
+		sequence.set(value);
+	}
+
+	@Override
+	public void setVolatile(long value) {
+		sequence.setVolatile(value);
+	}
+
+	@Override
+	public boolean compareAndSet(long expectedValue, long newValue) {
+		return sequence.compareAndSet(expectedValue, newValue);
+	}
+
+	@Override
+	public long incrementAndGet() {
+		return sequence.incrementAndGet();
+	}
+
+	@Override
+	public long addAndGet(long increment) {
+		return sequence.addAndGet(increment);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		Wrapped<?> wrapped = (Wrapped<?>) o;
+
+		return sequence.equals(wrapped.sequence);
+
+	}
+
+	@Override
+	public int hashCode() {
+		return sequence.hashCode();
+	}
+
 }

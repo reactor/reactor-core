@@ -25,9 +25,7 @@ import reactor.core.flow.Fuseable.ConditionalSubscriber;
 import reactor.core.flow.Fuseable.QueueSubscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
-import reactor.core.state.Prefetchable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -81,13 +79,12 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public long getCapacity() {
-		return n;
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	static final class TakeSubscriber<T>
-			implements Subscriber<T>, Subscription, Completable, Receiver, Prefetchable,
-			           Backpressurable, Producer {
+			implements Subscriber<T>, Subscription, Receiver, Producer, SubscriberState {
 
 		final Subscriber<? super T> actual;
 
@@ -221,8 +218,8 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeConditionalSubscriber<T>
-			implements ConditionalSubscriber<T>, Subscription, Completable, Receiver,
-			           Prefetchable, Backpressurable, Producer {
+			implements ConditionalSubscriber<T>, Subscription, Receiver, Producer,
+			           SubscriberState {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -351,7 +348,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void cancel() {
 			s.cancel();
 		}
-
 		@Override
 		public boolean isStarted() {
 			return s != null && !done;
@@ -389,8 +385,8 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeFuseableSubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T>, Completable, Receiver,
-			           Prefetchable, Backpressurable, Producer {
+			implements Subscriber<T>, QueueSubscription<T>, Receiver, Producer,
+			           SubscriberState {
 
 		final Subscriber<? super T> actual;
 
@@ -500,7 +496,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void cancel() {
 			qs.cancel();
 		}
-
 		@Override
 		public boolean isStarted() {
 			return qs != null && !done;

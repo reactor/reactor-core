@@ -35,7 +35,7 @@ import reactor.core.util.Exceptions;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public class MonoSource<I, O> extends Mono<O> implements Receiver {
+public class MonoSource<I, O> extends Mono<O> implements Receiver{
 
 	protected final Publisher<? extends I> source;
 
@@ -66,7 +66,7 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 		try {
 			source.subscribe((Subscriber<? super I>) s);
 		}
-		catch(Exceptions.UpstreamException rfe){
+		catch (Exceptions.BubblingException rfe) {
 			if(rfe.getCause() instanceof RuntimeException){
 				throw (RuntimeException)rfe.getCause();
 			}
@@ -77,7 +77,7 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver {
 	@Override
 	public String toString() {
 		return "{" +
-				" operator : \"" + getName() + "\" " +
+				" operator : \"" + getId() + "\" " +
 				'}';
 	}
 

@@ -18,7 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.Fuseable;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -33,7 +34,7 @@ import reactor.core.state.Completable;
  */
 final class MonoEmpty 
 extends Mono<Object>
-		implements Fuseable.ScalarCallable<Object>, Completable {
+		implements Fuseable.ScalarCallable<Object>, SubscriberState {
 
 	private static final Publisher<Object> INSTANCE = new MonoEmpty();
 
@@ -43,7 +44,7 @@ extends Mono<Object>
 
 	@Override
 	public void subscribe(Subscriber<? super Object> s) {
-		EmptySubscription.complete(s);
+		SubscriptionHelper.complete(s);
 	}
 
 	/**

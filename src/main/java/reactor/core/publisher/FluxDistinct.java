@@ -29,7 +29,7 @@ import reactor.core.flow.Fuseable.QueueSubscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -92,7 +92,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Completable, Subscription {
+			           Subscription, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final C collection;
@@ -156,6 +156,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				onError(e);
 				return true;
 			}
+
 
 			if (b) {
 				actual.onNext(t);
@@ -225,8 +226,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctConditionalSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Completable, Subscription {
-
+			           Subscription, SubscriberState {
 		final ConditionalSubscriber<? super T> actual;
 
 		final C collection;
@@ -322,6 +322,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return true;
 			}
 
+
 			if (b) {
 				return actual.tryOnNext(t);
 			}
@@ -389,8 +390,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctFuseableSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Completable, QueueSubscription<T> {
-
+			           QueueSubscription<T>, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final C collection;
@@ -403,8 +403,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		int sourceMode;
 
-		public DistinctFuseableSubscriber(Subscriber<? super T> actual,
-				C collection,
+		public DistinctFuseableSubscriber(Subscriber<? super T> actual, C collection,
 				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
 			this.collection = collection;
@@ -463,6 +462,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				onError(e);
 				return true;
 			}
+
 
 			if (b) {
 				actual.onNext(t);

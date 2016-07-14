@@ -24,7 +24,7 @@ import org.junit.Test;
 import reactor.core.flow.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
-import reactor.core.tuple.Tuple;
+import reactor.core.util.function.Tuple;
 import reactor.core.util.Logger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

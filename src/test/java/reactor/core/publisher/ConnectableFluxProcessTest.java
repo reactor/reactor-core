@@ -19,7 +19,7 @@ import java.util.concurrent.CancellationException;
 
 import org.junit.Test;
 import reactor.core.flow.Cancellation;
-import reactor.core.queue.QueueSupplier;
+import reactor.core.util.concurrent.QueueSupplier;
 import reactor.core.test.TestSubscriber;
 
 public class ConnectableFluxProcessTest {

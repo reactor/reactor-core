@@ -29,19 +29,15 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.RingBuffer;
-import reactor.core.queue.RingBufferReceiver;
-import reactor.core.queue.Slot;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.Sequence;
-import reactor.core.util.WaitStrategy;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.RingBuffer;
+import reactor.core.util.concurrent.RingBufferReceiver;
+import reactor.core.util.concurrent.Sequence;
+import reactor.core.util.concurrent.Slot;
+import reactor.core.util.concurrent.WaitStrategy;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
@@ -71,19 +67,20 @@ import reactor.core.util.WaitStrategy;
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create() {
-		return create(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return create(WorkQueueProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -92,12 +89,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create(boolean autoCancel) {
-		return create(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return create(WorkQueueProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -106,11 +104,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service) {
-		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
+		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -122,7 +120,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			boolean autoCancel) {
-		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
+		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
@@ -136,7 +134,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create(String name) {
-		return create(name, PlatformDependent.SMALL_BUFFER_SIZE);
+		return create(name, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -282,7 +280,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
@@ -290,12 +288,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> share() {
-		return share(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return share(WorkQueueProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -305,12 +304,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> share(boolean autoCancel) {
-		return share(WorkQueueProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return share(WorkQueueProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -319,11 +319,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service) {
-		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
+		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -336,7 +336,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			boolean autoCancel) {
-		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
+		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
@@ -512,8 +512,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	volatile RingBuffer<Slot<E>> retryBuffer;
 
 	@SuppressWarnings("rawtypes")
-    final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer>
-			RETRY_REF = PlatformDependent
+	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer> RETRY_REF =
+			ReactorProperties
 			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
 
 	final WaitStrategy writeWait;
@@ -617,14 +617,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							throw Exceptions.CancelException.INSTANCE;
 						}
 						else {
-							throw Exceptions.AlertException.INSTANCE;
+							RingBuffer.throwAlert();
 						}
 					}
 				}, null,
 				ringBuffer::getMinimumGatingSequence,
-				readWait,
-				this,
-				(int) ringBuffer.getCapacity()), name + "[request-task]").start();
+				readWait, this, ringBuffer.bufferSize()),
+				name + "[request-task]").start();
 	}
 
 	@Override
@@ -639,7 +638,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public long getPending() {
-		return ringBuffer.getPending() + (retryBuffer != null ? retryBuffer.getPending() : 0L);
+		return ringBuffer.remainingCapacity() + (retryBuffer != null ?
+				retryBuffer.remainingCapacity() : 0L);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -664,7 +664,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	@Override
 	public void run() {
 		if (!alive()) {
-			throw Exceptions.AlertException.INSTANCE;
+			RingBuffer.throwAlert();
 		}
 	}
 
@@ -676,13 +676,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * parallel coordination of an event.
 	 */
 	final static class QueueSubscriberLoop<T>
-			implements Runnable, Producer, Backpressurable, Completable, Cancellable, Introspectable,
-			           Requestable, Subscription, Receiver {
+			implements Runnable, Producer, SubscriberState, Subscription, Receiver {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
-		private final Sequence sequence =
-				RingBuffer.wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
+		private final Sequence sequence = wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
 		private final Sequence pendingRequest = RingBuffer.newSequence(0);
 
@@ -697,7 +695,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
 						replay(pendingRequest.getAsLong() == Long.MAX_VALUE)) {
-					throw Exceptions.AlertException.INSTANCE;
+					RingBuffer.throwAlert();
 				}
 			}
 		};
@@ -788,7 +786,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
 								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
 									if (!isRunning()) {
-										throw Exceptions.AlertException.INSTANCE;
+										RingBuffer.throwAlert();
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -803,7 +801,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							try {
 								readNextEvent(unbounded);
 							}
-							catch (Exceptions.AlertException ce) {
+							catch (Exception ce) {
+								if (!RingBuffer.isAlert(ce)) {
+									throw ce;
+								}
 								barrier.clearAlert();
 								throw Exceptions.CancelException.INSTANCE;
 							}
@@ -819,7 +820,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								cachedAvailableSequence =
 										barrier.waitFor(nextSequence, waiter);
 							}
-							catch (Exceptions.AlertException ce) {
+							catch (Exception ce) {
+								if (!RingBuffer.isAlert(ce)) {
+									throw ce;
+								}
 								barrier.clearAlert();
 								if (!running.get()) {
 									processor.decrementSubscribers();
@@ -835,7 +839,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 											event = processor.ringBuffer.get(nextSequence);
 											break;
 										}
-										catch (Exceptions.AlertException cee) {
+										catch (Exception cee) {
+											if (!RingBuffer.isAlert(cee)) {
+												throw ce;
+											}
 											barrier.clearAlert();
 										}
 									}
@@ -854,7 +861,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						reschedule(event);
 						break;
 					}
-					catch (Exceptions.AlertException ex) {
+					catch (RuntimeException ce) {
+						if (!RingBuffer.isAlert(ce)) {
+							throw ce;
+						}
 						barrier.clearAlert();
 						if (!running.get()) {
 							break;
@@ -864,7 +874,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								subscriber.onError(processor.error);
 								break;
 							}
-							if (processor.ringBuffer.getPending() == 0L) {
+							if (processor.ringBuffer.getPending() == 0) {
 								subscriber.onComplete();
 								break;
 							}
@@ -956,12 +966,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			}
 		}
 
-		private void readNextEvent(final boolean unbounded)
-				throws Exceptions.AlertException {
+		private void readNextEvent(final boolean unbounded) {
 				//pause until request
-			while ((!unbounded && SubscriptionHelper.getAndSub(pendingRequest, 1L) == 0L)) {
+			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {
-					throw Exceptions.AlertException.INSTANCE;
+					RingBuffer.throwAlert();
 				}
 				//Todo Use WaitStrategy?
 				LockSupport.parkNanos(1L);
@@ -1015,7 +1024,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					return;
 				}
 
-				SubscriptionHelper.getAndAddCap(pendingRequest, n);
+				getAndAddCap(pendingRequest, n);
 			}
 		}
 
@@ -1024,15 +1033,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			halt();
 		}
 
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return processor.getName()+"#loop";
-		}
 	}
 
 

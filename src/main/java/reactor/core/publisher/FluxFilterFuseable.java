@@ -25,7 +25,7 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -65,8 +65,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
 	}
 
-	static final class FilterFuseableSubscriber<T> 
-	implements Receiver, Producer, Loopback, Completable, SynchronousSubscription<T>, ConditionalSubscriber<T> {
+	static final class FilterFuseableSubscriber<T>
+			implements Receiver, Producer, Loopback, SynchronousSubscription<T>,
+			           ConditionalSubscriber<T>, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -269,7 +270,8 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	}
 
 	static final class FilterFuseableConditionalSubscriber<T>
-	implements Receiver, Producer, Loopback, Completable, SynchronousSubscription<T>, ConditionalSubscriber<T> {
+			implements Receiver, Producer, Loopback, ConditionalSubscriber<T>,
+			           SynchronousSubscription<T>, SubscriberState {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;

@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.SignalKind;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -36,10 +35,11 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	/** */
     private static final long serialVersionUID = 8430680363917273272L;
 
-    private static final Signal<Void> ON_COMPLETE = new Signal<>(SignalKind.onComplete, null, null, null);
+	private static final Signal<Void> ON_COMPLETE =
+			new Signal<>(SignalType.onComplete, null, null, null);
 
-	private final SignalKind      type;
-	private final Throwable throwable;
+	private final SignalType type;
+	private final Throwable  throwable;
 
 	private final T value;
 
@@ -53,7 +53,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
-		return new Signal<>(SignalKind.onNext, t, null, null);
+		return new Signal<>(SignalType.onNext, t, null, null);
 	}
 
 	/**
@@ -64,7 +64,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
-		return new Signal<>(SignalKind.onError, null, e, null);
+		return new Signal<>(SignalType.onError, null, e, null);
 	}
 
 	/**
@@ -86,10 +86,10 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> subscribe(Subscription subscription) {
-		return new Signal<>(SignalKind.onSubscribe, null, null, subscription);
+		return new Signal<>(SignalType.onSubscribe, null, null, subscription);
 	}
 
-	private Signal(SignalKind type, T value, Throwable e, Subscription subscription) {
+	private Signal(SignalType type, T value, Throwable e, Subscription subscription) {
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
@@ -147,7 +147,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 *
 	 * @return the type of the signal
 	 */
-	public SignalKind getType() {
+	public SignalType getType() {
 		return type;
 	}
 
@@ -157,7 +157,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onError} event
 	 */
 	public boolean isOnError() {
-		return getType() == SignalKind.onError;
+		return getType() == SignalType.onError;
 	}
 
 	/**
@@ -166,7 +166,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnComplete() {
-		return getType() == SignalKind.onComplete;
+		return getType() == SignalType.onComplete;
 	}
 
 	/**
@@ -175,7 +175,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnSubscribe() {
-		return getType() == SignalKind.onSubscribe;
+		return getType() == SignalType.onSubscribe;
 	}
 
 	/**
@@ -184,7 +184,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onNext} event
 	 */
 	public boolean isOnNext() {
-		return getType() == SignalKind.onNext;
+		return getType() == SignalType.onNext;
 	}
 
 	@Override

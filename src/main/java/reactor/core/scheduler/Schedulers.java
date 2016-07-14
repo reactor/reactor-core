@@ -32,9 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.publisher.PublisherConfig;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactorProperties;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
@@ -188,7 +187,7 @@ public class Schedulers {
 	public static Scheduler newComputation(String name, int parallelism, boolean daemon) {
 		return newComputation(name,
 				parallelism,
-				PlatformDependent.MEDIUM_BUFFER_SIZE,
+				ReactorProperties.MEDIUM_BUFFER_SIZE,
 				daemon);
 	}
 
@@ -554,12 +553,13 @@ public class Schedulers {
 
 	// Internals
 
-	static final String COMPUTATION     = "computation";
-	static final String ELASTIC         = "elastic";
-	static final String NEW_COMPUTATION = "newComputation";
+	static final String COMPUTATION     = "computation"; //non blocking tasks
+	static final String ELASTIC         = "elastic"; // IO stuff
 	static final String PARALLEL        = "parallel";
 	static final String SINGLE          = "single";
 	static final String TIMER           = "timer";
+
+	static final String NEW_COMPUTATION = "newComputation";
 
 	static final AtomicReference<Method>                COMPUTATION_FACTORY =
 			new AtomicReference<>();
@@ -606,7 +606,7 @@ public class Schedulers {
 		}
 	}
 
-	static final class SchedulerFactory implements ThreadFactory, PublisherConfig {
+	static final class SchedulerFactory implements ThreadFactory, Supplier<String>{
 
 		final String     name;
 		final boolean    daemon;
@@ -626,7 +626,7 @@ public class Schedulers {
 		}
 
 		@Override
-		public String getId() {
+		public String get() {
 			return name;
 		}
 	}

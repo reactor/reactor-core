@@ -35,13 +35,8 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
 import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -57,8 +52,7 @@ import reactor.core.util.Exceptions;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxZip<T, R> extends Flux<R>
-		implements Introspectable, Backpressurable, MultiReceiver {
+final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberState {
 
 	final Publisher<? extends T>[] sources;
 
@@ -108,6 +102,11 @@ final class FluxZip<T, R> extends Flux<R>
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
+	}
+
+	@Override
+	public long getPrefetch() {
+		return prefetch;
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
@@ -164,7 +163,7 @@ final class FluxZip<T, R> extends Flux<R>
 				}
 
 				if (v == null) {
-					EmptySubscription.complete(s);
+					SubscriptionHelper.complete(s);
 					return;
 				}
 
@@ -198,7 +197,7 @@ final class FluxZip<T, R> extends Flux<R>
 		}
 
 		if (n == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 
@@ -211,7 +210,7 @@ final class FluxZip<T, R> extends Flux<R>
 		int n = srcs.length;
 
 		if (n == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 
@@ -238,7 +237,7 @@ final class FluxZip<T, R> extends Flux<R>
 				}
 
 				if (v == null) {
-					EmptySubscription.complete(s);
+					SubscriptionHelper.complete(s);
 					return;
 				}
 
@@ -257,8 +256,8 @@ final class FluxZip<T, R> extends Flux<R>
 	void handleBoth(Subscriber<? super R> s, Publisher<? extends T>[] srcs, Object[] scalars, int n, int sc) {
 		if (sc != 0) {
 			if (n != sc) {
-				FluxZipSingleCoordinator<T, R> coordinator =
-						new FluxZipSingleCoordinator<>(s, scalars, n, zipper);
+				ZipSingleCoordinator<T, R> coordinator =
+						new ZipSingleCoordinator<>(s, scalars, n, zipper);
 
 				s.onSubscribe(coordinator);
 
@@ -312,34 +311,32 @@ final class FluxZip<T, R> extends Flux<R>
 		return sources == null ? -1 : sources.length;
 	}
 
-	static final class FluxZipSingleCoordinator<T, R>
-			extends DeferredScalarSubscriber<R, R>
-			implements MultiReceiver, Backpressurable {
+	static final class ZipSingleCoordinator<T, R> extends DeferredScalarSubscriber<R, R>
+			implements MultiReceiver, SubscriberState {
 
 		final Function<? super Object[], ? extends R> zipper;
 
 		final Object[] scalars;
 
-		final FluxZipSingleSubscriber<T>[] subscribers;
+		final ZipSingleSubscriber<T>[] subscribers;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<FluxZipSingleCoordinator> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(FluxZipSingleCoordinator.class,
-						"wip");
+		static final AtomicIntegerFieldUpdater<ZipSingleCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ZipSingleCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		public FluxZipSingleCoordinator(Subscriber<? super R> subscriber,
+		public ZipSingleCoordinator(Subscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
 				Function<? super Object[], ? extends R> zipper) {
 			super(subscriber);
 			this.zipper = zipper;
 			this.scalars = scalars;
-			FluxZipSingleSubscriber<T>[] a = new FluxZipSingleSubscriber[n];
+			ZipSingleSubscriber<T>[] a = new ZipSingleSubscriber[n];
 			for (int i = 0; i < n; i++) {
 				if (scalars[i] == null) {
-					a[i] = new FluxZipSingleSubscriber<>(this, i);
+					a[i] = new ZipSingleSubscriber<>(this, i);
 				}
 			}
 			this.subscribers = a;
@@ -347,12 +344,12 @@ final class FluxZip<T, R> extends Flux<R>
 
 		void subscribe(int n, int sc, Publisher<? extends T>[] sources) {
 			WIP.lazySet(this, n - sc);
-			FluxZipSingleSubscriber<T>[] a = subscribers;
+			ZipSingleSubscriber<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
 				if (wip <= 0 || isCancelled()) {
 					break;
 				}
-				FluxZipSingleSubscriber<T> s = a[i];
+				ZipSingleSubscriber<T> s = a[i];
 				if (s != null) {
 					sources[i].subscribe(s);
 				}
@@ -426,7 +423,7 @@ final class FluxZip<T, R> extends Flux<R>
 		}
 
 		void cancelAll() {
-			for (FluxZipSingleSubscriber<T> s : subscribers) {
+			for (ZipSingleSubscriber<T> s : subscribers) {
 				if (s != null) {
 					s.dispose();
 				}
@@ -434,24 +431,23 @@ final class FluxZip<T, R> extends Flux<R>
 		}
 	}
 
-	static final class FluxZipSingleSubscriber<T>
-			implements Subscriber<T>, Cancellable, Cancellation, Backpressurable,
-			           Completable, Introspectable, Receiver {
+	static final class ZipSingleSubscriber<T>
+			implements Subscriber<T>, SubscriberState, Cancellation, Receiver {
 
-		final FluxZipSingleCoordinator<T, ?> parent;
+		final ZipSingleCoordinator<T, ?> parent;
 
 		final int index;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxZipSingleSubscriber, Subscription>
-				S = AtomicReferenceFieldUpdater.newUpdater(FluxZipSingleSubscriber.class,
-				Subscription.class,
-				"s");
+		static final AtomicReferenceFieldUpdater<ZipSingleSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ZipSingleSubscriber.class,
+						Subscription.class,
+						"s");
 
 		boolean done;
 
-		public FluxZipSingleSubscriber(FluxZipSingleCoordinator<T, ?> parent, int index) {
+		public ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
 			this.parent = parent;
 			this.index = index;
 		}
@@ -510,7 +506,7 @@ final class FluxZip<T, R> extends Flux<R>
 
 		@Override
 		public boolean isCancelled() {
-			return s == CancelledSubscription.INSTANCE;
+			return s == SubscriptionHelper.cancelled();
 		}
 
 		@Override
@@ -521,16 +517,6 @@ final class FluxZip<T, R> extends Flux<R>
 		@Override
 		public boolean isTerminated() {
 			return done;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return "ScalarZipSubscriber";
 		}
 
 		@Override
@@ -545,8 +531,7 @@ final class FluxZip<T, R> extends Flux<R>
 	}
 
 	static final class ZipCoordinator<T, R>
-			implements Subscription, MultiReceiver, Cancellable, Backpressurable,
-			           Completable, Requestable, Introspectable {
+			implements Subscription, MultiReceiver, SubscriberState {
 
 		final Subscriber<? super R> actual;
 
@@ -728,17 +713,19 @@ final class FluxZip<T, R> extends Flux<R>
 
 								T v = q != null ? q.poll() : null;
 
-								empty = v == null;
-								if (d && empty) {
+								boolean sourceEmpty = v == null;
+								if (d && sourceEmpty) {
 									cancelAll();
 
 									a.onComplete();
 									return;
 								}
-								if (empty) {
-									break;
+								if (!sourceEmpty) {
+									values[j] = v;
 								}
-								values[j] = v;
+								else {
+									empty = true;
+								}
 							}
 							catch (Throwable ex) {
 								Exceptions.throwIfFatal(ex);
@@ -870,8 +857,7 @@ final class FluxZip<T, R> extends Flux<R>
 	}
 
 	static final class ZipInner<T>
-			implements Subscriber<T>, Backpressurable, Completable, Prefetchable,
-			           Receiver, Producer {
+			implements Subscriber<T>, Receiver, Producer, SubscriberState {
 
 		final ZipCoordinator<T, ?> parent;
 
@@ -937,8 +923,7 @@ final class FluxZip<T, R> extends Flux<R>
 						parent.drain();
 						return;
 					}
-					else
-					if (m == Fuseable.ASYNC) {
+					else if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
 					} else {
@@ -1047,7 +1032,6 @@ final class FluxZip<T, R> extends Flux<R>
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	static final class PairwiseZipper<R> implements Function<Object[], R> {
-
 		final BiFunction[] zippers;
 
 		public PairwiseZipper(BiFunction[] zippers) {

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *	   http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,18 +33,13 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.ScalarSubscription;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.subscriber.ScalarSubscription;
 
 /**
- * Maps a sequence of values each into a Publisher and flattens them
+ * Maps a sequence of values each into a Publisher and flattens them 
  * back into a single sequence, interleaving events from the various inner Publishers.
  *
  * @param <T> the source value type
@@ -86,18 +81,22 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		this.innerQueueSupplier = Objects.requireNonNull(innerQueueSupplier, "innerQueueSupplier");
 	}
 
-	public static <T, R> Subscriber<T> subscriber(
-			Subscriber<? super R> s,
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
+	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			boolean delayError,
-			int maxConcurrency, Supplier<? extends Queue<R>> mainQueueSupplier,
+			int maxConcurrency, Supplier<? extends Queue<R>> mainQueueSupplier, 
 			int prefetch, Supplier<? extends Queue<R>> innerQueueSupplier) {
 		return new FlatMapMain<>(s, mapper, delayError, maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier);
 	}
-
+	
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-
+		
 		if (trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
@@ -140,7 +139,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 
 			if (t == null) {
-				EmptySubscription.complete(s);
+				SubscriptionHelper.complete(s);
 				return true;
 			}
 
@@ -148,7 +147,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 			try {
 				p = mapper.apply(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
 				SubscriptionHelper.error(s, Exceptions.unwrap(e));
 				return true;
@@ -164,7 +164,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 				try {
 					v = ((Callable<R>)p).call();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
 					SubscriptionHelper.error(s, Exceptions.unwrap(e));
 					return true;
@@ -173,7 +174,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (v != null) {
 					s.onSubscribe(new ScalarSubscription<>(s, v));
 				} else {
-					EmptySubscription.complete(s);
+					SubscriptionHelper.complete(s);
 				}
 			} else {
 				if (!fuseableExpected || p instanceof Fuseable) {
@@ -189,25 +190,18 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		return false;
 	}
 
-	@Override
-	public long getCapacity() {
-		return -1L;
-	}
-
 	static final class FlatMapMain<T, R> extends SpscFreeListTracker<FlatMapInner<R>>
-			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Requestable,
-			           Completable, Producer, Cancellable, Backpressurable,
-			           Introspectable {
-
-
+			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Producer,
+			   SubscriberState {
+		
 		final Subscriber<? super R> actual;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
 		final boolean delayError;
-
+		
 		final int maxConcurrency;
-
+		
 		final Supplier<? extends Queue<R>> mainQueueSupplier;
 
 		final int prefetch;
@@ -215,40 +209,40 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		final Supplier<? extends Queue<R>> innerQueueSupplier;
 
 		final int limit;
-
+		
 		volatile Queue<R> scalarQueue;
-
+		
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class, Throwable.class, "error");
 
 		volatile boolean done;
-
+		
 		volatile boolean cancelled;
-
+		
 		Subscription s;
-
+		
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<FlatMapMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(FlatMapMain.class, "requested");
-
+		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<FlatMapMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(FlatMapMain.class, "wip");
-
+		
 		@SuppressWarnings("rawtypes")
 		static final FlatMapInner[] EMPTY = new FlatMapInner[0];
-
+		
 		@SuppressWarnings("rawtypes")
 		static final FlatMapInner[] TERMINATED = new FlatMapInner[0];
-
+		
 		int lastIndex;
-
+		
 		int produced;
-
+		
 		public FlatMapMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
 				Supplier<? extends Queue<R>> mainQueueSupplier, int prefetch, Supplier<? extends Queue<R>> innerQueueSupplier) {
@@ -267,29 +261,29 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		protected FlatMapInner<R>[] empty() {
 			return EMPTY;
 		}
-
+		
 		@SuppressWarnings("unchecked")
 		@Override
 		protected FlatMapInner<R>[] terminated() {
 			return TERMINATED;
 		}
-
+		
 		@SuppressWarnings("unchecked")
 		@Override
 		protected FlatMapInner<R>[] newArray(int size) {
 			return new FlatMapInner[size];
 		}
-
+		
 		@Override
 		protected void setIndex(FlatMapInner<R> entry, int index) {
 			entry.index = index;
 		}
-
+		
 		@Override
 		protected void unsubscribeEntry(FlatMapInner<R> entry) {
 			entry.cancel();
 		}
-
+		
 		@Override
 		public void request(long n) {
 			if (SubscriptionHelper.validate(n)) {
@@ -302,7 +296,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-
+				
 				if (WIP.getAndIncrement(this) == 0) {
 					scalarQueue = null;
 					s.cancel();
@@ -315,9 +309,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		public void onSubscribe(Subscription s) {
 			if (SubscriptionHelper.validate(this.s, s)) {
 				this.s = s;
-
+				
 				actual.onSubscribe(this);
-
+				
 				if (maxConcurrency == Integer.MAX_VALUE) {
 					s.request(Long.MAX_VALUE);
 				} else {
@@ -333,9 +327,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				Exceptions.onNextDropped(t);
 				return;
 			}
-
+			
 			Publisher<? extends R> p;
-
+			
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
@@ -344,14 +338,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				onError(e);
 				return;
 			}
-
+			
 			if (p == null) {
 				s.cancel();
 
 				onError(new NullPointerException("The mapper returned a null Publisher"));
 				return;
 			}
-
+			
 			if (p instanceof Callable) {
 				R v;
 				try {
@@ -365,13 +359,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			} else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
 				if (add(inner)) {
-
+					
 					p.subscribe(inner);
 				}
 			}
-
+			
 		}
-
+		
 		void emitScalar(R v) {
 			if (v == null) {
 				if (maxConcurrency != Integer.MAX_VALUE) {
@@ -387,14 +381,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
-
+				
 				if (r != 0L) {
 					actual.onNext(v);
-
+					
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
-
+					
 					if (maxConcurrency != Integer.MAX_VALUE) {
 						int p = produced + 1;
 						if (p == limit) {
@@ -406,29 +400,30 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					}
 				} else {
 					Queue<R> q;
-
+					
 					try {
 						q = getOrCreateScalarQueue();
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
-
+						
 						s.cancel();
-
+						
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							done = true;
-						} else {
+						}
+						else {
 							Exceptions.onErrorDropped(ex);
 						}
-
+						
 						drainLoop();
 						return;
 					}
-
+					
 					if (!q.offer(v)) {
 						s.cancel();
-
+						
 						Throwable e = new IllegalStateException("Scalar queue full?!");
-
+						
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							done = true;
 						} else {
@@ -445,29 +440,30 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				drainLoop();
 			} else {
 				Queue<R> q;
-
+				
 				try {
 					q = getOrCreateScalarQueue();
-				} catch (Throwable ex) {
+				}
+				catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
-
+					
 					s.cancel();
-
+					
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						done = true;
 					} else {
 						Exceptions.onErrorDropped(ex);
 					}
-
+					
 					drain();
 					return;
 				}
-
+				
 				if (!q.offer(v)) {
 					s.cancel();
-
+					
 					Throwable e = new IllegalStateException("Scalar queue full?!");
-
+					
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						done = true;
 					} else {
@@ -477,7 +473,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				drain();
 			}
 		}
-
+		
 		Queue<R> getOrCreateScalarQueue() {
 			Queue<R> q = scalarQueue;
 			if (q == null) {
@@ -506,23 +502,23 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (done) {
 				return;
 			}
-
+			
 			done = true;
 			drain();
 		}
-
+		
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 			drainLoop();
 		}
-
+		
 		void drainLoop() {
 			int missed = 1;
-
+			
 			final Subscriber<? super R> a = actual;
-
+			
 			for (;;) {
 
 				boolean d = done;
@@ -532,28 +528,28 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				int n = as.length;
 
 				Queue<R> sq = scalarQueue;
-
+				
 				boolean noSources = isEmpty();
-
+				
 				if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), a)) {
 					return;
 				}
-
+				
 				boolean again = false;
 
 				long r = requested;
 				long e = 0L;
 				long replenishMain = 0L;
-
+				
 				if (r != 0L) {
 					sq = scalarQueue;
 					if (sq != null) {
-
+						
 						while (e != r) {
 							d = done;
-
+							
 							R v = sq.poll();
-
+							
 							boolean empty = v == null;
 
 							if (checkTerminated(d, false, a)) {
@@ -565,10 +561,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 							}
 
 							a.onNext(v);
-
+							
 							e++;
 						}
-
+						
 						if (e != 0L) {
 							replenishMain += e;
 							if (r != Long.MAX_VALUE) {
@@ -581,12 +577,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 				if (r != 0L && !noSources) {
-
+					
 					int j = lastIndex;
 					if (j >= n) {
 						j = 0;
 					}
-
+					
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
 							scalarQueue = null;
@@ -594,7 +590,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 							unsubscribe();
 							return;
 						}
-
+						
 						FlatMapInner<R> inner = as[j];
 						if (inner != null) {
 							d = inner.done;
@@ -622,13 +618,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										v = null;
 										d = true;
 									}
-
+									
 									boolean empty = v == null;
-
+									
 									if (checkTerminated(d, false, a)) {
 										return;
 									}
-
+	
 									if (d && empty) {
 										remove(inner.index);
 										again = true;
@@ -641,10 +637,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 									}
 
 									a.onNext(v);
-
+									
 									e++;
 								}
-
+								
 								if (e == r) {
 									d = inner.done;
 									boolean empty;
@@ -661,14 +657,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										empty = true;
 										d = true;
 									}
-
+									
 									if (d && empty) {
 										remove(inner.index);
 										again = true;
 										replenishMain++;
 									}
 								}
-
+								
 								if (e != 0L) {
 									if (!inner.done) {
 										inner.request(e);
@@ -683,7 +679,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 								}
 							}
 						}
-
+						
 						if (r == 0L) {
 							break;
 						}
@@ -692,14 +688,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 							j = 0;
 						}
 					}
-
+					
 					lastIndex = j;
 				}
-
+				
 				if (r == 0L && !noSources) {
 					as = get();
 					n = as.length;
-
+					
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
 							scalarQueue = null;
@@ -707,16 +703,16 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 							unsubscribe();
 							return;
 						}
-
+						
 						FlatMapInner<R> inner = as[i];
 						if (inner == null) {
 							continue;
 						}
-
+						
 						d = inner.done;
 						Queue<R> q = inner.queue;
 						boolean empty = (q == null || q.isEmpty());
-
+						
 						// if we have a non-empty source then quit the cleanup
 						if (!empty) {
 							break;
@@ -729,31 +725,31 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						}
 					}
 				}
-
+				
 				if (replenishMain != 0L && !done && !cancelled) {
 					s.request(replenishMain);
 				}
-
+				
 				if (again) {
 					continue;
 				}
-
+				
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-
+		
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {
 			if (cancelled) {
 				scalarQueue = null;
 				s.cancel();
 				unsubscribe();
-
+				
 				return true;
 			}
-
+			
 			if (delayError) {
 				if (d && empty) {
 					Throwable e = error;
@@ -763,7 +759,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					} else {
 						a.onComplete();
 					}
-
+					
 					return true;
 				}
 			} else {
@@ -784,10 +780,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 			}
-
+			
 			return false;
 		}
-
+		
 		void innerError(FlatMapInner<R> inner, Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				inner.done = true;
@@ -799,14 +795,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				Exceptions.onErrorDropped(e);
 			}
 		}
-
+		
 		void innerNext(FlatMapInner<R> inner, R v) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
-
+				
 				if (r != 0L) {
 					actual.onNext(v);
-
+					
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
@@ -814,7 +810,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					inner.request(1);
 				} else {
 					Queue<R> q;
-
+					
 					try {
 						q = getOrCreateScalarQueue(inner);
 					} catch (Throwable ex) {
@@ -831,9 +827,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 					if (!q.offer(v)) {
 						inner.cancel();
-
+						
 						Throwable e = new IllegalStateException("Scalar queue full?!");
-
+						
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							inner.done = true;
 						} else {
@@ -846,11 +842,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (WIP.decrementAndGet(this) == 0) {
 					return;
 				}
-
+				
 				drainLoop();
 			} else {
 				Queue<R> q;
-
+				
 				try {
 					q = getOrCreateScalarQueue(inner);
 				} catch (Throwable ex) {
@@ -864,12 +860,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					drain();
 					return;
 				}
-
+				
 				if (!q.offer(v)) {
 					inner.cancel();
-
+					
 					Throwable e = new IllegalStateException("Scalar queue full?!");
-
+					
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						inner.done = true;
 					} else {
@@ -879,7 +875,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				drain();
 			}
 		}
-
+		
 		Queue<R> getOrCreateScalarQueue(FlatMapInner<R> inner) {
 			Queue<R> q = inner.queue;
 			if (q == null) {
@@ -926,8 +922,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public Iterator<?> upstreams() {
-			return Arrays.asList(get())
-			             .iterator();
+			return Arrays.asList(get()).iterator();
 		}
 
 		@Override
@@ -947,29 +942,28 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class FlatMapInner<R>
-			implements Subscriber<R>, Subscription, Producer, Receiver, Backpressurable,
-			           Cancellable, Completable, Prefetchable, Introspectable {
+			implements Subscriber<R>, Subscription, Producer, Receiver, SubscriberState  {
 
 		final FlatMapMain<?, R> parent;
-
+		
 		final int prefetch;
-
+		
 		final int limit;
-
+		
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class, Subscription.class, "s");
-
+		
 		long produced;
 
 		volatile Queue<R> queue;
-
+		
 		volatile boolean done;
-
+		
 		/** Represents the optimization mode of this inner subscriber. */
 		int sourceMode;
-
+		
 		/** Running with regular, arbitrary source. */
 		static final int NORMAL = 0;
 		/** Running with a source that implements SynchronousSource. */
@@ -983,7 +977,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				AtomicIntegerFieldUpdater.newUpdater(FlatMapInner.class, "once");
 
 		int index;
-
+		
 		public FlatMapInner(FlatMapMain<?, R> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch;
@@ -1067,7 +1061,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isCancelled() {
-			return s == CancelledSubscription.INSTANCE;
+			return s == SubscriptionHelper.cancelled();
 		}
 
 		@Override
@@ -1078,16 +1072,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public boolean isTerminated() {
 			return done && (queue == null || queue.isEmpty());
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return FlatMapInner.class.getSimpleName();
 		}
 
 		@Override

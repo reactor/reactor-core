@@ -28,20 +28,16 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.RingBuffer;
-import reactor.core.queue.RingBufferReceiver;
-import reactor.core.queue.Slot;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.Sequence;
-import reactor.core.util.WaitStrategy;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.RingBuffer;
+import reactor.core.util.concurrent.RingBufferReceiver;
+import reactor.core.util.concurrent.Sequence;
+import reactor.core.util.concurrent.Slot;
+import reactor.core.util.concurrent.WaitStrategy;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
@@ -80,31 +76,32 @@ import reactor.core.util.WaitStrategy;
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create() {
-		return create(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return create(TopicProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new {@link TopicProcessor} using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create(String name) {
-		return create(name, PlatformDependent.SMALL_BUFFER_SIZE, true);
+		return create(name, ReactorProperties.SMALL_BUFFER_SIZE, true);
 	}
 
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -113,12 +110,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create(boolean autoCancel) {
-		return create(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return create(TopicProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -127,11 +125,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create(ExecutorService service) {
-		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
+		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -143,11 +141,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                boolean autoCancel) {
-		return create(service, PlatformDependent.SMALL_BUFFER_SIZE, null, autoCancel);
+		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
 	 * qualify the created threads.
@@ -337,6 +335,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	public static Scheduler newComputation(int parallelism,
 			int bufferSize,
 			ThreadFactory threadFactory) {
+
 		return asScheduler(() -> new TopicProcessor<>(threadFactory,
 				null,
 				bufferSize,
@@ -347,7 +346,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
@@ -355,12 +354,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> share() {
-		return share(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return share(TopicProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -370,12 +370,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> share(boolean autoCancel) {
-		return share(TopicProcessor.class.getSimpleName(), PlatformDependent.SMALL_BUFFER_SIZE,
+		return share(TopicProcessor.class.getSimpleName(),
+				ReactorProperties.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * The passed {@link ExecutorService} will execute as many
@@ -385,11 +386,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> share(ExecutorService service) {
-		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null, true);
+		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -402,12 +403,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               boolean autoCancel) {
-		return share(service, PlatformDependent.SMALL_BUFFER_SIZE, null,
+		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link PlatformDependent#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created
@@ -746,12 +747,15 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							             throw Exceptions.CancelException.INSTANCE;
 						             }
 						             else {
-							             throw Exceptions.AlertException.INSTANCE;
+							             RingBuffer.throwAlert();
 						             }
 					             }
 				             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
 								minimum.getAsLong() :
-								ringBuffer.getMinimumGatingSequence(minimum), readWait, this, (int)ringBuffer.getCapacity()),
+						ringBuffer.getMinimumGatingSequence(minimum),
+				readWait,
+				this,
+				ringBuffer.bufferSize()),
 				name+"[request-task]").start();
 	}
 
@@ -771,7 +775,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	@Override
 	public void run() {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
-			throw Exceptions.AlertException.INSTANCE;
+			RingBuffer.throwAlert();
 		}
 	}
 
@@ -783,13 +787,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * parallel coordination of an event.
 	 */
 	private final static class TopicSubscriberLoop<T>
-			implements Runnable, Producer, Backpressurable, Completable, Receiver, Cancellable,
-			           Introspectable, Requestable, Subscription {
+			implements Runnable, Producer, Receiver, SubscriberState, Subscription {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
 		private final Sequence sequence =
-				RingBuffer.wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
+				wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
 		private final TopicProcessor<T> processor;
 
@@ -801,7 +804,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			@Override
 			public void run() {
 				if (!running.get() || processor.isTerminated()) {
-					throw Exceptions.AlertException.INSTANCE;
+					RingBuffer.throwAlert();
 				}
 			}
 		};
@@ -878,12 +881,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							event = processor.ringBuffer.get(nextSequence);
 
 								//if bounded and out of capacity
-								while (!unbounded &&
-										SubscriptionHelper.getAndSub(pendingRequest, 1L) ==
+								while (!unbounded && getAndSub(pendingRequest, 1L) ==
 												0) {
 									//Todo Use WaitStrategy?
 									if(!running.get() || processor.isTerminated()){
-										throw Exceptions.AlertException.INSTANCE;
+										RingBuffer.throwAlert();
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -895,39 +897,45 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						}
 						sequence.set(availableSequence);
 
-						if (EmptySubscription.INSTANCE !=
+						if (SubscriptionHelper.empty() !=
 								processor.upstreamSubscription) {
 							processor.readWait.signalAllWhenBlocking();
 						}
 					}
-					catch (final Exceptions.AlertException | Exceptions.CancelException ex) {
-						if (!running.get()) {
-							break;
-						}
-						else {
-							if(processor.terminated == SHUTDOWN) {
-								if (processor.error != null) {
-									subscriber.onError(processor.error);
-									break;
-								}
-								if(nextSequence > processor.ringBuffer.getAsLong()) {
-									subscriber.onComplete();
-									break;
-								}
 
-								LockSupport.parkNanos(1L);
-							} else if (processor.terminated == FORCED_SHUTDOWN) {
-								break;
-							}
-							processor.barrier.clearAlert();
-						}
-					}
 					catch (final InterruptedException ex) {
 						Thread.currentThread().interrupt();
 						break;
 					}
-					catch (final Throwable ex) {
+					catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
+						if(RingBuffer.isAlert(ex) ||
+								ex instanceof Exceptions.CancelException) {
+
+							if (!running.get()) {
+								break;
+							}
+							else {
+								if (processor.terminated == SHUTDOWN) {
+									if (processor.error != null) {
+										subscriber.onError(processor.error);
+										break;
+									}
+									if (nextSequence > processor.ringBuffer.getAsLong()) {
+										subscriber.onComplete();
+										break;
+									}
+
+									LockSupport.parkNanos(1L);
+								}
+								else if (processor.terminated == FORCED_SHUTDOWN) {
+									break;
+								}
+								processor.barrier.clearAlert();
+							}
+							continue;
+						}
+
 						subscriber.onError(ex);
 						sequence.set(nextSequence);
 						nextSequence++;
@@ -989,23 +997,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 					return;
 				}
 
-				SubscriptionHelper.getAndAddCap(pendingRequest, n);
+				getAndAddCap(pendingRequest, n);
 			}
 		}
 
 		@Override
 		public void cancel() {
 			halt();
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return processor.getName()+"#loop";
 		}
 	}
 

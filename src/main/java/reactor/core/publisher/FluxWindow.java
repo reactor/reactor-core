@@ -31,11 +31,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -46,7 +42,7 @@ import reactor.core.util.Exceptions;
  */
 
 /**
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 2.5
  */
 final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
@@ -59,8 +55,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier;
 
-	public FluxWindow(Publisher<? extends T> source, int size,
-			Supplier<? extends Queue<T>> processorQueueSupplier) {
+	public FluxWindow(Publisher<? extends T> source, int size, Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -71,9 +66,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		this.overflowQueueSupplier = null; // won't be needed here
 	}
 
-
-	public FluxWindow(Publisher<? extends T> source, int size, int skip,
-			Supplier<? extends Queue<T>> processorQueueSupplier,
+	public FluxWindow(Publisher<? extends T> source, int size, int skip, Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
@@ -114,13 +107,9 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 	}
 
-	@Override
-	public long getCapacity() {
-		return size;
-	}
-
-	static final class WindowExactSubscriber<T> implements Subscriber<T>, Subscription, Runnable, Producer,
-	                                                       Prefetchable, MultiProducer, Receiver, Completable {
+	static final class WindowExactSubscriber<T>
+			implements Subscriber<T>, Subscription, Runnable, Producer, Receiver,
+			           MultiProducer, SubscriberState {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -308,8 +297,9 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 	}
 
-	static final class WindowSkipSubscriber<T> implements Subscriber<T>, Subscription, Runnable, MultiProducer,
-	                                                      Producer, Receiver, Completable, Backpressurable {
+	static final class WindowSkipSubscriber<T>
+			implements Subscriber<T>, Subscription, Runnable, Receiver, MultiProducer,
+			           Producer, SubscriberState {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -518,8 +508,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOverlapSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable, Producer, Receiver, MultiProducer,
-			           Completable, Cancellable, Introspectable, Backpressurable, Prefetchable {
+			implements Subscriber<T>, Subscription, Runnable, Producer, MultiProducer,
+			           Receiver, SubscriberState {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -689,66 +679,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			drain();
 		}
 
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !done && !cancelled;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return (size + skip) - produced;
-		}
-
-		@Override
-		public long limit() {
-			return skip;
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return Arrays.asList(windows.toArray()).iterator();
-		}
-
-		@Override
-		public long downstreamCount() {
-			return windows.size();
-		}
-
-		@Override
-		public long getCapacity() {
-			return size;
-		}
-
-		@Override
-		public long getPending() {
-			return size - produced ;
-		}
-
 		void drain() {
 			if (DW.getAndIncrement(this) != 0) {
 				return;
@@ -826,6 +756,9 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void request(long n) {
 			if (SubscriptionHelper.validate(n)) {
+
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
 					long u = SubscriptionHelper.multiplyCap(skip, n - 1);
 					long v = SubscriptionHelper.addCap(size, u);
@@ -835,13 +768,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					s.request(u);
 				}
 
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
 		
 		@Override
 		public void cancel() {
+			cancelled = true;
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				run();
 			}
@@ -852,6 +785,67 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (WIP.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done && !cancelled;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return (size + skip) - produced;
+		}
+
+		@Override
+		public long limit() {
+			return skip;
+		}
+
+		@Override
+		public Iterator<?> downstreams() {
+			return Arrays.asList(windows.toArray())
+			             .iterator();
+		}
+
+		@Override
+		public long downstreamCount() {
+			return windows.size();
+		}
+
+		@Override
+		public long getCapacity() {
+			return size;
+		}
+
+		@Override
+		public long getPending() {
+			return size - produced;
 		}
 	}
 

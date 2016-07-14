@@ -29,10 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -86,7 +83,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 	}
 
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
-	  implements Subscriber<T>, Subscription, Receiver, Producer, Loopback, Completable, Backpressurable {
+			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
+			           SubscriberState {
 
 		final Subscriber<? super C> actual;
 
@@ -231,7 +229,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 	}
 
 	static final class BufferSkipSubscriber<T, C extends Collection<? super T>>
-	  implements Subscriber<T>, Subscription, Receiver, Producer, Loopback, Completable, Backpressurable {
+			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
+			           SubscriberState {
 
 		final Subscriber<? super C> actual;
 
@@ -407,8 +406,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 
 	static final class BufferOverlappingSubscriber<T, C extends Collection<? super T>>
-	  implements Subscriber<T>, Subscription, Receiver, BooleanSupplier, Producer, Completable, Cancellable, Loopback,
-				 Backpressurable, Requestable {
+			implements Subscriber<T>, Subscription, Receiver, BooleanSupplier, Producer,
+			           SubscriberState, Loopback {
 		final Subscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;

@@ -97,7 +97,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		this.prefetch = prefetch;
 		this.errorMode = Objects.requireNonNull(errorMode, "errorMode");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
@@ -119,12 +119,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		source.subscribe(parent);
 	}
 
-	@Override
-	public long getCapacity() {
-		return prefetch;
-	}
-
-	static final class ConcatMapImmediate<T, R> implements Subscriber<T>, StreamConcatMapSupport<R>, Subscription {
+	static final class ConcatMapImmediate<T, R>
+			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
 
 		final Subscriber<? super R> actual;
 		
@@ -216,8 +212,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
 						s.cancel();
+
 						SubscriptionHelper.error(actual, ex);
 						return;
 					}
@@ -374,12 +370,13 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 
 							if (p instanceof Callable) {
-								@SuppressWarnings("unchecked") Callable<R> supplier = (Callable<R>) p;
+								@SuppressWarnings("unchecked") Callable<R> callable =
+										(Callable<R>) p;
 								
 								R vr;
 								
 								try {
-									vr = supplier.call();
+									vr = callable.call();
 								} catch (Throwable e) {
 									Exceptions.throwIfFatal(e);
 									s.cancel();
@@ -449,7 +446,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	static final class ConcatMapDelayed<T, R> implements Subscriber<T>, StreamConcatMapSupport<R>, Subscription {
+	static final class ConcatMapDelayed<T, R>
+			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
 
 		final Subscriber<? super R> actual;
 		
@@ -738,7 +736,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	interface StreamConcatMapSupport<T> {
+	interface FluxConcatMapSupport<T> {
 		
 		void innerNext(T value);
 		
@@ -750,15 +748,15 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	static final class ConcatMapInner<R>
 			extends MultiSubscriptionSubscriber<R, R> {
 
-		final StreamConcatMapSupport<R> parent;
-		
+		final FluxConcatMapSupport<R> parent;
+
 		long produced;
 
-		public ConcatMapInner(StreamConcatMapSupport<R> parent) {
+		public ConcatMapInner(FluxConcatMapSupport<R> parent) {
 			super(null);
 			this.parent = parent;
 		}
-		
+
 		@Override
 		public void onNext(R t) {
 			produced++;

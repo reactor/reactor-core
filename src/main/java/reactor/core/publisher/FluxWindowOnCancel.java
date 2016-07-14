@@ -30,7 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -62,7 +62,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowOnCancelSubscriber<T>
 			implements Subscriber<T>, Subscription, Runnable, Producer,
-			           MultiProducer, Receiver, Completable {
+			           MultiProducer, Receiver, SubscriberState {
 
 		final Subscriber<? super Flux<T>> actual;
 

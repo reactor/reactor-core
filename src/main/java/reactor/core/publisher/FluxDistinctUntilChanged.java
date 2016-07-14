@@ -25,7 +25,7 @@ import reactor.core.flow.Fuseable.ConditionalSubscriber;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -62,7 +62,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 
 	static final class DistinctUntilChangedSubscriber<T, K>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Completable, Subscription {
+			           Subscription, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final Function<? super T, K> keyExtractor;
@@ -113,6 +113,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				onError(Exceptions.unwrap(e));
 				return true;
 			}
+
 
 			if (Objects.equals(lastKey, k)) {
 				lastKey = k;
@@ -187,8 +188,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 
 	static final class DistinctUntilChangedConditionalSubscriber<T, K>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Completable, Subscription {
-
+			           Subscription, SubscriberState {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Function<? super T, K> keyExtractor;

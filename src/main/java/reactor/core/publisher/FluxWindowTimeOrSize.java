@@ -56,11 +56,6 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		}
 
 		@Override
-		public long getCapacity() {
-			return processor.getCapacity();
-		}
-
-		@Override
 		public void onSubscribe(Subscription s) {
 			s.cancel();
 		}
@@ -99,11 +94,6 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		@Override
 		public Object downstream() {
 			return processor;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
 		}
 	}
 

@@ -25,7 +25,7 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -78,7 +78,8 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	}
 
 	static final class MapFuseableSubscriber<T, R>
-	implements Subscriber<T>, Completable, Receiver, Producer, Loopback, SynchronousSubscription<R> {
+			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
+			           SynchronousSubscription<R>, SubscriberState {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -238,8 +239,9 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		}
 	}
 
-	static final class MapFuseableConditionalSubscriber<T, R> 
-	implements ConditionalSubscriber<T>, Completable, Receiver, Producer, Loopback, SynchronousSubscription<R> {
+	static final class MapFuseableConditionalSubscriber<T, R>
+			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
+			           SynchronousSubscription<R>, SubscriberState {
 		final ConditionalSubscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 

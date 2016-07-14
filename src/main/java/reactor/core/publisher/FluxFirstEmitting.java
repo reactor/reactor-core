@@ -24,9 +24,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiReceiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Introspectable;
 import reactor.core.subscriber.DeferredSubscriptionSubscriber;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -118,8 +117,7 @@ extends Flux<T>
 				}
 
 				if (p == null) {
-					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " +
-					  "null"));
+					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " + "null"));
 					return;
 				}
 
@@ -136,7 +134,7 @@ extends Flux<T>
 		}
 
 		if (n == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 		if (n == 1) {
@@ -160,7 +158,7 @@ extends Flux<T>
 	 * the current array of sources.
 	 * <p>
 	 * This operation doesn't change the current FluxFirstEmitting instance.
-	 * 
+	 *
 	 * @param source the new source to merge with the others
 	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
 	 */
@@ -171,14 +169,14 @@ extends Flux<T>
 			Publisher<? extends T>[] newArray = new Publisher[n + 1];
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
-			
+
 			return new FluxFirstEmitting<>(newArray);
 		}
 		return null;
 	}
 
 	static final class AmbCoordinator<T>
-	  implements Subscription, MultiReceiver, Cancellable {
+			implements Subscription, MultiReceiver, SubscriberState {
 
 		final AmbSubscriber<T>[] subscribers;
 
@@ -289,8 +287,8 @@ extends Flux<T>
 		}
 	}
 
-	static final class AmbSubscriber<T> extends DeferredSubscriptionSubscriber<T, T>
-			implements Introspectable {
+	static final class AmbSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
+
 		final AmbCoordinator<T> parent;
 
 		final int index;
@@ -331,11 +329,6 @@ extends Flux<T>
 				won = true;
 				subscriber.onComplete();
 			}
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
 		}
 	}
 }

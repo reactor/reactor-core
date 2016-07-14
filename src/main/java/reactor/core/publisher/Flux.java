@@ -51,24 +51,22 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
 import reactor.core.publisher.FluxEmitter.BackpressureHandling;
-import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SignalEmitter;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.QueueSupplier;
+import reactor.core.util.function.Tuple;
+import reactor.core.util.function.Tuple2;
+import reactor.core.util.function.Tuple3;
+import reactor.core.util.function.Tuple4;
+import reactor.core.util.function.Tuple5;
+import reactor.core.util.function.Tuple6;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -115,7 +113,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 */
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, Publisher<? extends T>... sources) {
-		return combineLatest(combinator, PlatformDependent.XS_BUFFER_SIZE, sources);
+		return combineLatest(combinator, ReactorProperties.XS_BUFFER_SIZE, sources);
 	}
 
 	/**
@@ -318,7 +316,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 */
 	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			Function<Object[], V> combinator) {
-		return combineLatest(sources, PlatformDependent.XS_BUFFER_SIZE, combinator);
+		return combineLatest(sources, ReactorProperties.XS_BUFFER_SIZE, combinator);
 	}
 
 	/**
@@ -376,7 +374,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources) {
-		return concat(sources, PlatformDependent.XS_BUFFER_SIZE);
+		return concat(sources, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -857,7 +855,9 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a merged {@link Flux}
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
-		return merge(source, PlatformDependent.SMALL_BUFFER_SIZE, PlatformDependent.XS_BUFFER_SIZE);
+		return merge(source,
+				ReactorProperties.SMALL_BUFFER_SIZE,
+				ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -872,7 +872,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a merged {@link Flux}
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency) {
-		return merge(source, concurrency, PlatformDependent.XS_BUFFER_SIZE);
+		return merge(source, concurrency, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -926,7 +926,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> merge(Publisher<? extends I>... sources) {
-		return merge(PlatformDependent.XS_BUFFER_SIZE, sources);
+		return merge(ReactorProperties.XS_BUFFER_SIZE, sources);
 	}
 
 	/**
@@ -1004,7 +1004,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
-		return switchOnNext(mergedPublishers, PlatformDependent.XS_BUFFER_SIZE);
+		return switchOnNext(mergedPublishers, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -1263,7 +1263,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
 			final Function<? super Object[], ? extends O> combinator) {
 
-		return zip(sources, PlatformDependent.XS_BUFFER_SIZE, combinator);
+		return zip(sources, ReactorProperties.XS_BUFFER_SIZE, combinator);
 	}
 
 	/**
@@ -1316,7 +1316,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	@SafeVarargs
 	public static <I, O> Flux<O> zip(
 			final Function<? super Object[], ? extends O> combinator, Publisher<? extends I>... sources) {
-		return zip(combinator, PlatformDependent.XS_BUFFER_SIZE, sources);
+		return zip(combinator, ReactorProperties.XS_BUFFER_SIZE, sources);
 	}
 
 	/**
@@ -1759,7 +1759,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache() {
-		return process(ReplayProcessor.create(PlatformDependent.SMALL_BUFFER_SIZE, true))
+		return process(ReplayProcessor.create(ReactorProperties.SMALL_BUFFER_SIZE, true))
 				.autoConnect();
 	}
 
@@ -2086,7 +2086,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 */
 	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper) {
-		return concatMap(mapper, PlatformDependent.XS_BUFFER_SIZE);
+		return concatMap(mapper, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2126,7 +2126,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 *
 	 */
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
-		return concatMapDelayError(mapper, PlatformDependent.XS_BUFFER_SIZE);
+		return concatMapDelayError(mapper, ReactorProperties.XS_BUFFER_SIZE);
 	}
 	
 	/**
@@ -2195,7 +2195,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a concatenated {@link Flux}
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return concatMapIterable(mapper, PlatformDependent.XS_BUFFER_SIZE);
+		return concatMapIterable(mapper, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2648,7 +2648,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	}
 
 	/**
-	 * Map this {@link Flux} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
+	 * Map this {@link Flux} sequence into {@link reactor.core.util.function.Tuple2} of T1 {@link Long} timemillis and T2
 	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal OR between two next signals.
 	 *
@@ -2773,7 +2773,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return flatMap(mapper, PlatformDependent.SMALL_BUFFER_SIZE, PlatformDependent
+		return flatMap(mapper, ReactorProperties.SMALL_BUFFER_SIZE, ReactorProperties
 				.XS_BUFFER_SIZE);
 	}
 
@@ -2794,7 +2794,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency) {
-		return flatMap(mapper, concurrency, PlatformDependent.XS_BUFFER_SIZE);
+		return flatMap(mapper, concurrency, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -2870,10 +2870,8 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 		return onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				identityFunction(),
-				false,
-				PlatformDependent.XS_BUFFER_SIZE,
-				QueueSupplier.xs(),
-				PlatformDependent.XS_BUFFER_SIZE,
+				false, ReactorProperties.XS_BUFFER_SIZE,
+				QueueSupplier.xs(), ReactorProperties.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
 		));
 	}
@@ -2893,7 +2891,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return flatMapIterable(mapper, PlatformDependent.SMALL_BUFFER_SIZE);
+		return flatMapIterable(mapper, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -2917,12 +2915,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	}
 
 	@Override
-	public int getMode() {
-		return FACTORY;
-	}
-
-	@Override
-	public String getName() {
+	public Object getId() {
 		return getClass().getSimpleName()
 		                 .replace(Flux.class.getSimpleName(), "");
 	}
@@ -2964,8 +2957,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 			Function<? super T, ? extends V> valueMapper) {
 		return onAssembly(new FluxGroupBy<>(this, keyMapper, valueMapper,
 				QueueSupplier.small(),
-				QueueSupplier.unbounded(),
-				PlatformDependent.SMALL_BUFFER_SIZE));
+				QueueSupplier.unbounded(), ReactorProperties.SMALL_BUFFER_SIZE));
 	}
 
 	/**
@@ -3429,8 +3421,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> parallel(int parallelism) {
-		return parallel(parallelism,
-				PlatformDependent.SMALL_BUFFER_SIZE);
+		return parallel(parallelism, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3563,7 +3554,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 
 	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
-	 * subscribers in a backpressure-aware manner. Prefetch will default to {@link PlatformDependent#SMALL_BUFFER_SIZE}.
+	 * subscribers in a backpressure-aware manner. Prefetch will default to {@link ReactorProperties#SMALL_BUFFER_SIZE}.
 	 * This will effectively turn any type of sequence into a hot sequence.
 	 * <p>
 	 * Backpressure will be coordinated on {@link Subscription#request} and if any {@link Subscriber} is missing
@@ -3574,7 +3565,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish() {
-		return publish(PlatformDependent.SMALL_BUFFER_SIZE);
+		return publish(ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3608,7 +3599,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
 			extends
 			R>> transform) {
-		return publish(transform, PlatformDependent.SMALL_BUFFER_SIZE);
+		return publish(transform, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3657,7 +3648,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler) {
-		return publishOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
+		return publishOn(scheduler, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -3826,7 +3817,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 
 	/**
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}. Will
-	 * retain up to {@link PlatformDependent#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
+	 * retain up to {@link ReactorProperties#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
 	 * replayed.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
@@ -3835,7 +3826,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a replaying {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> replay() {
-		return replay(PlatformDependent.SMALL_BUFFER_SIZE);
+		return replay(ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -4054,7 +4045,9 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
-		return onAssembly(new FluxThrottleTimeout<>(this, throttlerFactory, QueueSupplier.unbounded(PlatformDependent
+		return onAssembly(new FluxThrottleTimeout<>(this,
+				throttlerFactory,
+				QueueSupplier.unbounded(ReactorProperties
 				.XS_BUFFER_SIZE)));
 	}
 
@@ -4390,6 +4383,22 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 		return subscribe(null, null, null);
 	}
 
+
+	/**
+	 * Start the chain and request {@code prefetch} demand
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
+	 * <p>
+	 *
+	 * @param prefetch an arbitrary value
+	 *
+	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
+	 */
+	public final Cancellation subscribe(int prefetch) {
+		return subscribe(null, null, null, prefetch);
+	}
+
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
 	 * sequence. It will request an unbounded demand.
@@ -4581,7 +4590,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
-		return switchMap(fn, PlatformDependent.XS_BUFFER_SIZE);
+		return switchMap(fn, ReactorProperties.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -5050,7 +5059,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	}
 
 	/**
-	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
+	 * Emit a {@link reactor.core.util.function.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
 	 *
 	 * <p>
@@ -5073,7 +5082,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a blocking {@link Iterable}
 	 */
 	public final Iterable<T> toIterable() {
-		return toIterable(PlatformDependent.SMALL_BUFFER_SIZE);
+		return toIterable(ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -5123,7 +5132,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
 	public Stream<T> toStream() {
-		return toStream(PlatformDependent.SMALL_BUFFER_SIZE);
+		return toStream(ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -5153,8 +5162,8 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * signals
 	 */
 	public final Flux<Flux<T>> window() {
-		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded
-				(PlatformDependent.XS_BUFFER_SIZE)));
+		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded(
+				ReactorProperties.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -5221,8 +5230,8 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
 				boundary,
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE)));
+				QueueSupplier.unbounded(ReactorProperties.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(ReactorProperties.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -5257,8 +5266,8 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 		return onAssembly(new FluxWindowStartEnd<>(this,
 				bucketOpening,
 				closeSelector,
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE),
-				QueueSupplier.unbounded(PlatformDependent.XS_BUFFER_SIZE)));
+				QueueSupplier.unbounded(ReactorProperties.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(ReactorProperties.XS_BUFFER_SIZE)));
 	}
 
 	/**

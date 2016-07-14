@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
 import java.util.HashMap;
@@ -27,19 +26,24 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
 import reactor.core.util.Exceptions;
+import reactor.core.util.function.Tuple;
+import reactor.core.util.function.Tuple2;
 
 /**
- * Captures the current stacktrace when this publisher is created and makes it
- * available/visible for debugging purposes from the inner Subscriber.
+ * Captures the current stacktrace when this publisher is created and
+ * makes it available/visible for debugging purposes from
+ * the inner Subscriber.
  * <p>
  * Note that getting a stacktrace is a costly operation.
  * <p>
- * The operator sanitizes the stacktrace and removes noisy entries such as: <ul>
- * <li>java.lang.Thread entries</li> <li>method references with source line of 1 (bridge
- * methods)</li> <li>Tomcat worker thread entries</li> <li>JUnit setup</li> </ul>
+ * The operator sanitizes the stacktrace and removes noisy entries such as:
+ * <ul>
+ * <li>java.lang.Thread entries</li>
+ * <li>method references with source line of 1 (bridge methods)</li>
+ * <li>Tomcat worker thread entries</li>
+ * <li>JUnit setup</li>
+ * </ul>
  *
  * @param <T> the value type passing through
  */
@@ -71,11 +75,11 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		for (; ; ) {
 			if (next instanceof Receiver) {
 				Receiver r = (Receiver) next;
-					next = r.upstream();
-					if (next instanceof AssemblyOp) {
-						return (Publisher<?>) next;
-					}
-					continue;
+				next = r.upstream();
+				if (next instanceof AssemblyOp) {
+					return (Publisher<?>) next;
+				}
+				continue;
 			}
 			break;
 		}
@@ -86,10 +90,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		StackTraceElement[] stes = Thread.currentThread()
 		                                 .getStackTrace();
 
-		StringBuilder sb =
-				new StringBuilder("\nAssembly trace from producer [" + source.getClass()
-				                                                           .getName() + "] " +
-						":\n");
+		StringBuilder sb = new StringBuilder("Assembly trace:\n");
 
 		for (StackTraceElement e : stes) {
 			String row = e.toString();
@@ -100,16 +101,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
 					continue;
 				}
-				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
-					continue;
-				}
 				if (row.contains("FluxOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoOnAssembly.")) {
-					continue;
-				}
-				if (row.contains("MonoCallableOnAssembly.")) {
 					continue;
 				}
 				if (row.contains(".junit.runner")) {
@@ -122,9 +114,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 					continue;
 				}
 				if (row.contains("sun.reflect")) {
-					continue;
-				}
-				if (row.contains("useTraceAssembly")) {
 					continue;
 				}
 				if (row.contains("java.lang.Thread.")) {
@@ -173,7 +162,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		final Publisher<?> parent;
 		final Map<Integer, Map<Integer, String>> stackByPublisher = new HashMap<>();
 
-
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
@@ -187,8 +175,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 		@Override
 		public String getMessage() {
-			StringBuilder sb = new StringBuilder(super.getMessage())
-					.append("Backtraced Operator chain :\n");
+			StringBuilder sb = new StringBuilder(super.getMessage()).append(
+					"Backtraced Operator chain :\n");
 
 			Map<Integer, String> op;
 			Tuple2<Integer, Integer> next;
@@ -212,7 +200,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 		void mapLine(int indent, StringBuilder sb, String s) {
-			for(int i = 0; i < indent; i++){
+			for (int i = 0; i < indent; i++) {
 				sb.append("\t");
 			}
 			sb.append("\t|_")
@@ -228,15 +216,14 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		void add(Publisher<?> parent, String stacktrace) {
 			int key = getParentOrThis(parent).hashCode();
 			synchronized (stackByPublisher) {
-				stackByPublisher.compute(key,
-						(k, s) -> {
-							if (s == null) {
-								s = new HashMap<>();
-							}
-							//only one publisher occurence possible?
-							s.put(parent.hashCode(), extract(stacktrace));
-							return s;
-						});
+				stackByPublisher.compute(key, (k, s) -> {
+					if (s == null) {
+						s = new HashMap<>();
+					}
+					//only one publisher occurence possible?
+					s.put(parent.hashCode(), extract(stacktrace));
+					return s;
+				});
 			}
 		}
 
@@ -266,8 +253,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 	}
 
-	static class OnAssemblySubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T> {
+	static class OnAssemblySubscriber<T> implements Subscriber<T>, QueueSubscription<T> {
 
 		final String                stacktrace;
 		final Subscriber<? super T> actual;
@@ -405,7 +391,5 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	}
 }
-
 interface AssemblyOp {
-
 }

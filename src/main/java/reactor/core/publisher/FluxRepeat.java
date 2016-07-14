@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
+import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Repeatedly subscribes to the source and relays its values either
@@ -49,7 +50,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		if (times == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 
@@ -60,11 +61,6 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 		if (!parent.isCancelled()) {
 			parent.onComplete();
 		}
-	}
-
-	@Override
-	public long getCapacity() {
-		return -1L;
 	}
 
 	static final class RepeatSubscriber<T>

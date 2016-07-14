@@ -47,7 +47,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  */
 public final class DirectProcessor<T>
 		extends FluxProcessor<T, T>
-	implements Receiver, MultiProducer, SubscriberState {
+	implements Receiver, MultiProducer {
 
 
 	/**

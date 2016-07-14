@@ -33,12 +33,12 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.queue.QueueSupplier;
+import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.PlatformDependent;
-import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.QueueSupplier;
 
 /**
  * Abstract base class for Parallel publishers that take an array of Subscribers.
@@ -63,8 +63,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
 		return from(source,
 				Runtime.getRuntime()
-				       .availableProcessors(),
-				PlatformDependent.SMALL_BUFFER_SIZE,
+				       .availableProcessors(), ReactorProperties.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -81,8 +80,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
 			int parallelism) {
 		return from(source,
-				parallelism,
-				PlatformDependent.SMALL_BUFFER_SIZE,
+				parallelism, ReactorProperties.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -464,8 +462,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper,
 				false,
-				Integer.MAX_VALUE,
-				PlatformDependent.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -484,8 +481,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
-				Integer.MAX_VALUE,
-				PlatformDependent.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -508,8 +504,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 			int maxConcurrency) {
 		return flatMap(mapper,
 				delayError,
-				maxConcurrency,
-				PlatformDependent.SMALL_BUFFER_SIZE);
+				maxConcurrency, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -627,7 +622,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * PlatformDependent.SMALL_BUFFER_SIZE}.
+	 * ReactorProperties.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -644,7 +639,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler) {
-		return runOn(scheduler, PlatformDependent.SMALL_BUFFER_SIZE);
+		return runOn(scheduler, ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -652,7 +647,7 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * PlatformDependent.SMALL_BUFFER_SIZE}.
+	 * ReactorProperties.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -686,14 +681,14 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * PlatformDependent.SMALL_BUFFER_SIZE}.
+	 * ReactorProperties.SMALL_BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *
 	 * @see ParallelFlux#sequential(int)
 	 */
 	public final Flux<T> sequential() {
-		return sequential(PlatformDependent.SMALL_BUFFER_SIZE);
+		return sequential(ReactorProperties.SMALL_BUFFER_SIZE);
 	}
 
 	/**

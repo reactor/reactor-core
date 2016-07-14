@@ -45,8 +45,8 @@ final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	@Override
-	public long getCapacity() {
-		return 1;
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	static final class TakeLastOneSubscriber<T>

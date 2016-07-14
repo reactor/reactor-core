@@ -40,7 +40,7 @@ public abstract class Logger {
 	private final static LoggerFactory defaultFactory = newDefaultFactory(LoggerFactory.class.getName());
 
 	private static final AtomicReferenceFieldUpdater<GlobalExtension, Extension> EXTENSION =
-			PlatformDependent.newAtomicReferenceFieldUpdater(GlobalExtension.class, "extension");
+			ReactorProperties.newAtomicReferenceFieldUpdater(GlobalExtension.class, "extension");
 
 	private static LoggerFactory newDefaultFactory(String name) {
 		LoggerFactory f;

@@ -24,10 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -53,13 +50,12 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public long getCapacity() {
+	public long getPrefetch() {
 		return Long.MAX_VALUE;
 	}
 
 	static final class LatestSubscriber<T>
-			implements Subscriber<T>, Subscription, Cancellable, Introspectable, Completable, Producer,
-			           Requestable, Receiver {
+			implements Subscriber<T>, Subscription, SubscriberState, Producer, Receiver {
 
 		final Subscriber<? super T> actual;
 

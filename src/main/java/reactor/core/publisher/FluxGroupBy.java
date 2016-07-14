@@ -33,12 +33,7 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -55,7 +50,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
-implements Fuseable, Backpressurable  {
+		implements Fuseable {
 
 	final Function<? super T, ? extends K> keySelector;
 
@@ -106,13 +101,14 @@ implements Fuseable, Backpressurable  {
 	}
 
 	@Override
-	public long getCapacity() {
+	public long getPrefetch() {
 		return prefetch;
 	}
 	
 	static final class GroupByMain<T, K, V> implements Subscriber<T>,
-	                                                   QueueSubscription<GroupedFlux<K, V>>, MultiProducer, Backpressurable, Producer, Requestable,
-	                                                   Cancellable, Completable, Receiver, Introspectable {
+	                                                   QueueSubscription<GroupedFlux<K, V>>,
+	                                                   MultiProducer, Producer,
+	                                                   SubscriberState, Receiver {
 
 		final Function<? super T, ? extends K> keySelector;
 		
@@ -196,38 +192,18 @@ implements Fuseable, Backpressurable  {
 			} catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
 				s.cancel();
-				
-				Exceptions.addThrowable(ERROR, this, ex);
-				done = true;
-				if (enableAsyncFusion) {
-					signalAsyncError();
-				} else {
-					drain();
-				}
+
+				onError(ex);
 				return;
 			}
 			if (key == null) {
-				NullPointerException ex = new NullPointerException("The keySelector returned a null value");
 				s.cancel();
-				Exceptions.addThrowable(ERROR, this, ex);
-				done = true;
-				if (enableAsyncFusion) {
-					signalAsyncError();
-				} else {
-					drain();
-				}
+				onError(new NullPointerException("The keySelector returned a null value"));
 				return;
 			}
 			if (value == null) {
-				NullPointerException ex = new NullPointerException("The valueSelector returned a null value");
 				s.cancel();
-				Exceptions.addThrowable(ERROR, this, ex);
-				done = true;
-				if (enableAsyncFusion) {
-					signalAsyncError();
-				} else {
-					drain();
-				}
+				onError(new NullPointerException("The valueSelector returned a null value"));
 				return;
 			}
 			
@@ -241,16 +217,8 @@ implements Fuseable, Backpressurable  {
 					try {
 						q = groupQueueSupplier.get();
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						
-						Exceptions.addThrowable(ERROR, this, ex);
-						done = true;
-						if (enableAsyncFusion) {
-							signalAsyncError();
-						} else {
-							drain();
-						}
+						onError(ex);
 						return;
 					}
 					
@@ -260,11 +228,7 @@ implements Fuseable, Backpressurable  {
 					groupMap.put(key, g);
 					
 					queue.offer(g);
-					if (enableAsyncFusion) {
-						actual.onNext(null);
-					} else {
-						drain();
-					}
+					drain();
 				}
 			} else {
 				g.onNext(value);
@@ -289,13 +253,8 @@ implements Fuseable, Backpressurable  {
 			groupMap.clear();
 			GROUP_COUNT.decrementAndGet(this);
 			done = true;
-			if (enableAsyncFusion) {
-				actual.onComplete();
-			} else {
-				drain();
-			}
+			drain();
 		}
-
 
 		@Override
 		public long getCapacity() {
@@ -365,12 +324,8 @@ implements Fuseable, Backpressurable  {
 		@Override
 		public void request(long n) {
 			if (SubscriptionHelper.validate(n)) {
-				if (enableAsyncFusion) {
-					actual.onNext(null);
-				} else {
-					SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
-					drain();
-				}
+				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+				drain();
 			}
 		}
 		
@@ -413,7 +368,48 @@ implements Fuseable, Backpressurable  {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			drainLoop();
+
+			if (enableAsyncFusion) {
+				drainFused();
+			}
+			else {
+				drainLoop();
+			}
+		}
+
+		void drainFused() {
+			int missed = 1;
+
+			final Subscriber<? super GroupedFlux<K, V>> a = actual;
+			final Queue<GroupedFlux<K, V>> q = queue;
+
+			for (; ; ) {
+
+				if (cancelled != 0) {
+					q.clear();
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						signalAsyncError();
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
 		}
 
 		void drainLoop() {
@@ -520,8 +516,8 @@ implements Fuseable, Backpressurable  {
 	}
 
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
-	implements Fuseable, QueueSubscription<V>,
-			   Producer, Receiver, Completable, Prefetchable, Cancellable, Requestable, Backpressurable {
+			implements Fuseable, QueueSubscription<V>, Producer, Receiver,
+			           SubscriberState {
 		final K key;
 		
 		final int limit;
@@ -617,7 +613,7 @@ implements Fuseable, Backpressurable  {
 				}
 
 				if (e != 0) {
-					FluxGroupBy.GroupByMain<?, K, V> main = parent;
+					GroupByMain<?, K, V> main = parent;
 					if (main != null) {
 						main.requestInner(e);
 					}
@@ -763,11 +759,6 @@ implements Fuseable, Backpressurable  {
 			} else {
 				s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
 			}
-		}
-
-		@Override
-		public int getMode() {
-			return Introspectable.INNER;
 		}
 
 		@Override

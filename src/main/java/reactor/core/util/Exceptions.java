@@ -17,6 +17,8 @@ package reactor.core.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.util.concurrent.WaitStrategy;
+
 /**
  * Static Helpers to decorate an error with an associated data
  * <p>
@@ -28,9 +30,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public enum Exceptions {
 	;
 
-	static volatile boolean TRACE_ASSEMBLY              =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.assembly", "false"));
-
+	static volatile boolean TRACE_OPERATOR_STACKTRACE =
+			ReactorProperties.TRACE_OPERATOR_STACKTRACE;
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
@@ -79,7 +80,7 @@ public enum Exceptions {
 	 * @return a true if assembly tracking is enabled
 	 */
 	public static boolean isOperatorStacktraceEnabled() {
-		return TRACE_ASSEMBLY;
+		return TRACE_OPERATOR_STACKTRACE;
 	}
 
 	/**
@@ -91,14 +92,14 @@ public enum Exceptions {
 	 * stack information.
 	 */
 	public static void enableOperatorStacktrace() {
-		TRACE_ASSEMBLY = true;
+		TRACE_OPERATOR_STACKTRACE = true;
 	}
 
 	/**
 	 * Disable operator stack recorder.
 	 */
 	public static void disableOperatorStacktrace() {
-		TRACE_ASSEMBLY = false;
+		TRACE_OPERATOR_STACKTRACE = false;
 	}
 
 
@@ -130,7 +131,7 @@ public enum Exceptions {
 		if(t instanceof RuntimeException){
 			return (RuntimeException)t;
 		}
-		return new DownstreamException(t);
+		return new ReactiveException(t);
 	}
 
 	/**
@@ -142,10 +143,7 @@ public enum Exceptions {
 	 */
 	public static RuntimeException bubble(Throwable t) {
 		throwIfFatal(t);
-		if(t instanceof UpstreamException){
-			return (UpstreamException) t;
-		}
-		return new UpstreamException(t);
+		return new BubblingException(t);
 	}
 
 	/**
@@ -153,7 +151,7 @@ public enum Exceptions {
 	 * @return a {@link CancelException}
 	 */
 	public static CancelException failWithCancel() {
-		return PlatformDependent.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+		return ReactorProperties.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**
@@ -161,7 +159,7 @@ public enum Exceptions {
 	 * @return an {@link InsufficientCapacityException}
 	 */
 	public static InsufficientCapacityException failWithOverflow() {
-		return PlatformDependent.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+		return ReactorProperties.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
 
@@ -228,7 +226,7 @@ public enum Exceptions {
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error varieties. These
 	 * varieties are as follows:
 	 * <ul>
-	 * <li>{@link UpstreamException}</li>
+	 * <li>{@link BubblingException}</li>
 	 * <li>{@code StackOverflowError}</li>
 	 * <li>{@code VirtualMachineError}</li>
 	 * <li>{@code ThreadDeath}</li>
@@ -238,8 +236,8 @@ public enum Exceptions {
 	 * @param t the exception to evaluate
 	 */
 	public static void throwIfFatal(Throwable t) {
-		if (t instanceof UpstreamException) {
-			throw (UpstreamException) t;
+		if (t instanceof BubblingException) {
+			throw (BubblingException) t;
 		} else if (t instanceof StackOverflowError) {
 			throw (StackOverflowError) t;
 		} else if (t instanceof VirtualMachineError) {
@@ -252,7 +250,7 @@ public enum Exceptions {
 	}
 
 	/**
-	 * Unwrap a particular {@code Throwable} only if it is a wrapped UpstreamException or DownstreamException
+	 * Unwrap a particular {@code Throwable} only if it is a wrapped BubblingException or DownstreamException
 	 *
 	 * @param t the exception to wrap
 	 * @return the unwrapped exception
@@ -266,86 +264,40 @@ public enum Exceptions {
 	}
 
 	/**
-	 * An exception helper for lambda and other checked-to-unchecked exception wrapping
+	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
+	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
+	 * dealing with boundaries (queues, combinations and async).
 	 */
-	public static class ReactiveException extends RuntimeException {
-		/** */
-        private static final long serialVersionUID = -3853731900001499819L;
-        
-        public ReactiveException(Throwable cause) {
+	public static class BubblingException extends ReactiveException {
+		private static final long serialVersionUID = 2491425277432776142L;
+
+		public BubblingException(String message) {
+			super(message);
+		}
+
+		public BubblingException(Throwable cause) {
+			super(cause);
+		}
+	}
+
+	/**
+	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
+	 */
+	static class ReactiveException extends RuntimeException {
+		private static final long serialVersionUID = 2491425227432776143L;
+
+		public ReactiveException(Throwable cause) {
 			super(cause);
 		}
 
 		public ReactiveException(String message) {
 			super(message);
 		}
+
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
 		}
-
-	}
-
-	/**
-	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
-	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
-	 * dealing with boundaries (queues, combinations and async).
-	 */
-	public static class UpstreamException extends ReactiveException {
-		public static final UpstreamException INSTANCE = new UpstreamException("Uncaught exception");
-
-		private static final long serialVersionUID = 2491425277432776142L;
-		public static UpstreamException instance() {
-			return INSTANCE;
-		}
-
-		public UpstreamException(String message) {
-			super(message);
-		}
-
-		public UpstreamException(Throwable cause) {
-			super(cause);
-		}
-
-	}
-
-	/**
-	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
-	 */
-	public static class DownstreamException extends ReactiveException {
-		private static final long serialVersionUID = 2491425227432776143L;
-
-		public DownstreamException(Throwable cause) {
-			super(cause);
-		}
-
-	}
-	/**
-	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
-	 * <p>
-	 * It does not fill in a stack trace for performance reasons.
-	 */
-	@SuppressWarnings("serial")
-	public static final class AlertException extends RuntimeException {
-		/** Pre-allocated exception to avoid garbage generation */
-		public static final AlertException INSTANCE = new AlertException();
-
-		/**
-		 * Private constructor so only a single instance any.
-		 */
-		private AlertException() {
-		}
-
-		/**
-		 * Overridden so the stack trace is not filled in for this exception for performance reasons.
-		 *
-		 * @return this instance.
-		 */
-		@Override
-		public Throwable fillInStackTrace() {
-			return this;
-		}
-
 	}
 
 	/**
@@ -353,7 +305,7 @@ public enum Exceptions {
 	 *
 	 * @author Stephane Maldini
 	 */
-	public static final class CancelException extends UpstreamException {
+	public static final class CancelException extends BubblingException {
 
 		public static final CancelException INSTANCE = new CancelException();
 
@@ -364,7 +316,7 @@ public enum Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return PlatformDependent.TRACE_CANCEL ? super.fillInStackTrace() : this;
+			return ReactorProperties.TRACE_CANCEL ? super.fillInStackTrace() : this;
 		}
 
 	}
@@ -386,7 +338,7 @@ public enum Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return PlatformDependent.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
+			return ReactorProperties.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
 		}
 
 	}

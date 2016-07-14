@@ -25,14 +25,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.flow.Cancellation;
-import reactor.core.state.Completable;
 import reactor.core.util.Exceptions;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
  * and is suited for parallel work.
  */
-final class ParallelScheduler implements Scheduler, Completable {
+final class ParallelScheduler implements Scheduler {
 
     static final AtomicLong COUNTER = new AtomicLong();
 
@@ -69,16 +68,6 @@ final class ParallelScheduler implements Scheduler, Completable {
             a[i] = Executors.newSingleThreadExecutor(factory);
         }
         EXECUTORS.lazySet(this, a);
-    }
-    
-    @Override
-    public boolean isStarted() {
-        return executors != SHUTDOWN;
-    }
-
-    @Override
-    public boolean isTerminated() {
-        return executors == SHUTDOWN;
     }
 
     @Override

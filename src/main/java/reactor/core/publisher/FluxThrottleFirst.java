@@ -24,8 +24,8 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -57,6 +57,11 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 		s.onSubscribe(main);
 		
 		source.subscribe(main);
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 	
 	static final class ThrottleFirstMain<T, U> 

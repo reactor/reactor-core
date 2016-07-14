@@ -50,8 +50,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 	
 	static final SwitchMapInner<Object> CANCELLED_INNER = new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 
-	public FluxSwitchMap(Publisher<? extends T> source,
-			Function<? super T, ? extends Publisher<? extends R>> mapper,
+	public FluxSwitchMap(Publisher<? extends T> source, Function<? super T, ? extends Publisher<? extends R>> mapper,
 					Supplier<? extends Queue<Object>> queueSupplier, int bufferSize) {
 		super(source);
 		if (bufferSize <= 0) {
@@ -61,7 +60,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.bufferSize = bufferSize;
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
@@ -418,7 +422,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Subscription a = this.s;
-			if (a == CancelledSubscription.INSTANCE) {
+			if (a == SubscriptionHelper.cancelled()) {
 				s.cancel();
 			}
 			if (a != null) {
@@ -433,7 +437,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			a = this.s;
-			if (a != CancelledSubscription.INSTANCE) {
+			if (a != SubscriptionHelper.cancelled()) {
 				s.cancel();
 				
 				SubscriptionHelper.reportSubscriptionSet();
@@ -486,9 +490,9 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != CancelledSubscription.INSTANCE) {
-				a = S.getAndSet(this, CancelledSubscription.INSTANCE);
-				if (a != null && a != CancelledSubscription.INSTANCE) {
+			if (a != SubscriptionHelper.cancelled()) {
+				a = S.getAndSet(this, SubscriptionHelper.cancelled());
+				if (a != null && a != SubscriptionHelper.cancelled()) {
 					a.cancel();
 				}
 			}

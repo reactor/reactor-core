@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.subscriber.SubscriptionHelper;
@@ -39,62 +39,59 @@ import reactor.core.util.Exceptions;
 final class MonoDelay extends Mono<Long> {
 
 	final TimedScheduler timedScheduler;
-	
+
 	final long delay;
-	
+
 	final TimeUnit unit;
-	
+
 	public MonoDelay(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
 		this.delay = delay;
 		this.unit = Objects.requireNonNull(unit, "unit");
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super Long> s) {
-		TimerRunnable r = new TimerRunnable(s);
-		
+		MonoDelayRunnable r = new MonoDelayRunnable(s);
+
 		s.onSubscribe(r);
-		
+
 		r.setCancel(timedScheduler.schedule(r, delay, unit));
 	}
 
-	@Override
-	public long getPeriod() {
-		return delay;
-	}
-
-	static final class TimerRunnable implements Runnable, Subscription {
+	static final class MonoDelayRunnable implements Runnable, Subscription {
 		final Subscriber<? super Long> s;
-		
+
 		volatile Cancellation cancel;
-		static final AtomicReferenceFieldUpdater<TimerRunnable, Cancellation> CANCEL =
-				AtomicReferenceFieldUpdater.newUpdater(TimerRunnable.class, Cancellation.class, "cancel");
-		
+		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Cancellation> CANCEL =
+				AtomicReferenceFieldUpdater.newUpdater(MonoDelayRunnable.class,
+						Cancellation.class,
+						"cancel");
+
 		volatile boolean requested;
-		
+
 		static final Cancellation CANCELLED = () -> { };
 
-		public TimerRunnable(Subscriber<? super Long> s) {
+		public MonoDelayRunnable(Subscriber<? super Long> s) {
 			this.s = s;
 		}
-		
+
 		public void setCancel(Cancellation cancel) {
 			if (!CANCEL.compareAndSet(this, null, cancel)) {
 				cancel.dispose();
 			}
 		}
-		
+
 		@Override
 		public void run() {
 			if (requested) {
 				try {
-					if (cancel != CANCELLED) {
-						s.onNext(0L);
-					}
-					if (cancel != CANCELLED) {
-						s.onComplete();
-					}
+				if (cancel != CANCELLED) {
+					s.onNext(0L);
+				}
+				if (cancel != CANCELLED) {
+					s.onComplete();
+				}
 				}
 				catch (Throwable t){
 					Exceptions.throwIfFatal(t);
@@ -104,7 +101,7 @@ final class MonoDelay extends Mono<Long> {
 				s.onError(new IllegalStateException("Could not emit value due to lack of requests"));
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			Cancellation c = cancel;
@@ -115,7 +112,7 @@ final class MonoDelay extends Mono<Long> {
 				}
 			}
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (SubscriptionHelper.validate(n)) {

@@ -33,8 +33,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -45,7 +44,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  *
  * @param <T> the value type
  */
-final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurable {
+final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberState {
 
 	final Publisher<? extends T> source;
 	
@@ -87,7 +86,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 
 		return StreamSupport.stream(sp, false).onClose(it);
 	}
-	
+
 	SubscriberIterator<T> createIterator() {
 		Queue<T> q;
 		
@@ -126,8 +125,9 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 		}
 		throw new RuntimeException(e);
 	}
-	
-	static final class SubscriberIterator<T> implements Subscriber<T>, Iterator<T>, Runnable, Receiver, Completable {
+
+	static final class SubscriberIterator<T>
+			implements Subscriber<T>, Iterator<T>, Runnable, Receiver, SubscriberState {
 
 		final Queue<T> queue;
 		
@@ -273,12 +273,12 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Backpressurabl
 
 		@Override
 		public boolean isStarted() {
-			return s != null && !done && s != CancelledSubscription.INSTANCE;
+			return s != null && !done && s != SubscriptionHelper.cancelled();
 		}
 
 		@Override
 		public boolean isTerminated() {
-			return done || s == CancelledSubscription.INSTANCE;
+			return done || s == SubscriptionHelper.cancelled();
 		}
 	}
 

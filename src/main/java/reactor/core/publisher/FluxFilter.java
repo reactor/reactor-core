@@ -28,7 +28,7 @@ import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -74,7 +74,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 	}
 
 	static final class FilterSubscriber<T>
-	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
+			implements Receiver, Producer, Loopback, Subscription,
+			           Fuseable.ConditionalSubscriber<T>, SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -203,8 +204,10 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 	}
 
 	static final class FilterConditionalSubscriber<T>
-	implements Receiver, Producer, Loopback, Completable, Subscription, ConditionalSubscriber<T> {
-		final ConditionalSubscriber<? super T> actual;
+			implements Receiver, Producer, Loopback, Subscription,
+			           Fuseable.ConditionalSubscriber<T>, SubscriberState {
+
+		final Fuseable.ConditionalSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
 
@@ -212,7 +215,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 		boolean done;
 
-		public FilterConditionalSubscriber(ConditionalSubscriber<? super T> actual, Predicate<? super T> predicate) {
+		public FilterConditionalSubscriber(Fuseable.ConditionalSubscriber<? super T> actual,
+				Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -239,6 +243,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
 				s.cancel();
+
 				onError(Exceptions.unwrap(e));
 				return;
 			}
@@ -263,6 +268,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
 				s.cancel();
+
 				onError(Exceptions.unwrap(e));
 				return false;
 			}

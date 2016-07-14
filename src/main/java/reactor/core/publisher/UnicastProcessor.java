@@ -21,18 +21,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.queue.QueueSupplier;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Requestable;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
+import reactor.core.util.concurrent.QueueSupplier;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -45,9 +41,7 @@ import reactor.core.util.Exceptions;
  */
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Processor<T, T>, Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver,
-		           Completable, Cancellable, Requestable {
-
+		implements Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver {
 
 	/**
 	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
@@ -119,18 +113,12 @@ public final class UnicastProcessor<T>
 
 	volatile boolean enableOperatorFusion;
 
-	@Override
-	public UnicastProcessor<T> connect() {
-		onSubscribe(EmptySubscription.INSTANCE);
-		return this;
-	}
-
-	UnicastProcessor(Queue<T> queue) {
+	public UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;
 	}
 
-	UnicastProcessor(Queue<T> queue, Runnable onTerminate) {
+	public UnicastProcessor(Queue<T> queue, Runnable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}
@@ -188,7 +176,6 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-
 	void drainFused(Subscriber<? super T> a) {
 		int missed = 1;
 
@@ -204,7 +191,7 @@ public final class UnicastProcessor<T>
 
 			boolean d = done;
 
-			actual.onNext(null);
+			a.onNext(null);
 
 			if (d) {
 				actual = null;
@@ -226,31 +213,31 @@ public final class UnicastProcessor<T>
 	}
 
 	void drain() {
-	    if (WIP.getAndIncrement(this) != 0) {
-            return;
-        }
+		if (WIP.getAndIncrement(this) != 0) {
+			return;
+		}
 
-        int missed = 1;
-        
-        for (;;) {
-            Subscriber<? super T> a = actual;
-            if (a != null) {
-    
-                if (enableOperatorFusion) {
-                    drainFused(a);
-                } else {
-                    drainRegular(a);
-                }
-                return;
-            }
-            
-            missed = WIP.addAndGet(this, -missed);
-            if (missed == 0) {
-                break;
-            }
-        }
-    }
-	
+		int missed = 1;
+
+		for (;;) {
+			Subscriber<? super T> a = actual;
+			if (a != null) {
+
+				if (enableOperatorFusion) {
+					drainFused(a);
+				} else {
+					drainRegular(a);
+				}
+				return;
+			}
+
+			missed = WIP.addAndGet(this, -missed);
+			if (missed == 0) {
+				break;
+			}
+		}
+	}
+
 	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
 		if (cancelled) {
 			q.clear();
@@ -262,10 +249,9 @@ public final class UnicastProcessor<T>
 			actual = null;
 			if (e != null) {
 				a.onError(e);
-			}
-			else {
+			} else {
 				a.onComplete();
-		}
+			}
 			return true;
 		}
 
@@ -279,6 +265,11 @@ public final class UnicastProcessor<T>
 		} else {
 			s.request(Long.MAX_VALUE);
 		}
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	@Override
@@ -334,22 +325,16 @@ public final class UnicastProcessor<T>
 			} else {
 				drain();
 			}
-		}
-		else {
+		} else {
 			SubscriptionHelper.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
 		}
 	}
 
 	@Override
-	public int getMode() {
-		return INNER;
-	}
-
-	@Override
 	public void request(long n) {
 		if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.addAndGet(REQUESTED, this, n);
-				drain();
+			SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			drain();
 		}
 	}
 
@@ -365,7 +350,7 @@ public final class UnicastProcessor<T>
 		if (!enableOperatorFusion) {
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
-		}
+			}
 		}
 	}
 
@@ -429,13 +414,12 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public long requestedFromDownstream() {
-		return requested;
-	}
-
-	@Override
 	public long getCapacity() {
 		return Long.MAX_VALUE;
 	}
 
+	@Override
+	public long requestedFromDownstream() {
+		return requested;
+	}
 }

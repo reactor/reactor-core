@@ -38,23 +38,21 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.flow.Fuseable;
-import reactor.core.queue.QueueSupplier;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Introspectable;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.tuple.Tuple;
-import reactor.core.tuple.Tuple2;
-import reactor.core.tuple.Tuple3;
-import reactor.core.tuple.Tuple4;
-import reactor.core.tuple.Tuple5;
-import reactor.core.tuple.Tuple6;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.WaitStrategy;
+import reactor.core.util.ReactorProperties;
+import reactor.core.util.concurrent.QueueSupplier;
+import reactor.core.util.concurrent.WaitStrategy;
+import reactor.core.util.function.Tuple;
+import reactor.core.util.function.Tuple2;
+import reactor.core.util.function.Tuple3;
+import reactor.core.util.function.Tuple4;
+import reactor.core.util.function.Tuple5;
+import reactor.core.util.function.Tuple6;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -83,7 +81,7 @@ import reactor.core.util.WaitStrategy;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspectable {
+public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 
 	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
 
@@ -943,7 +941,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
@@ -952,13 +950,13 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T block() {
-		return blockMillis(PlatformDependent.DEFAULT_TIMEOUT);
+		return blockMillis(ReactorProperties.DEFAULT_TIMEOUT);
 	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -981,7 +979,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -1001,7 +999,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal PlatformDependent#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in
 	 * other words, the result might
@@ -1017,7 +1015,8 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	 * @return T the result
 	 */
 	public T block(WaitStrategy waitStrategy) {
-		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(PlatformDependent.DEFAULT_TIMEOUT);
+		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(
+				ReactorProperties.DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -1413,7 +1412,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	/**
-	 * Map this {@link Mono} sequence into {@link reactor.core.tuple.Tuple2} of T1 {@link Long} timemillis and T2
+	 * Map this {@link Mono} sequence into {@link reactor.core.util.function.Tuple2} of T1 {@link Long} timemillis and T2
 	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal.
 	 *
@@ -1486,8 +1485,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 				Flux.identityFunction(),
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.xs(),
-				PlatformDependent.XS_BUFFER_SIZE,
+				QueueSupplier.xs(), ReactorProperties.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
 		));
 	}
@@ -1533,17 +1531,12 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 	}
 
 	@Override
-	public final long getCapacity() {
-		return 1L;
+	public final long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	@Override
-	public int getMode() {
-		return FACTORY;
-	}
-
-	@Override
-	public String getName() {
+	public Object getId() {
 		return getClass().getSimpleName()
 		                 .replace(Mono.class.getSimpleName(), "");
 	}
@@ -2530,7 +2523,7 @@ public abstract class Mono<T> implements Publisher<T>, Backpressurable, Introspe
 
 
 	/**
-	 * Emit a {@link reactor.core.tuple.Tuple2} pair of T1 {@link Long} current system time in
+	 * Emit a {@link reactor.core.util.function.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
 	 *
 	 * <p>

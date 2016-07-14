@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -141,7 +142,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(EmptySubscription.INSTANCE);
+					actual.onSubscribe(SubscriptionHelper.empty());
 					onError(e);
 					return;
 				}
@@ -343,7 +344,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(EmptySubscription.INSTANCE);
+					actual.onSubscribe(SubscriptionHelper.empty());
 					onError(e);
 					return;
 				}
@@ -468,14 +469,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				parent.onNextCall().accept(v);
 			}
 			if (v == null && sourceMode == SYNC) {
-			    Runnable call = parent.onCompleteCall();
-			    if (call != null) {
-			        call.run();
-			    }
-			    call = parent.onAfterTerminateCall();
-			    if (call != null) {
-			        call.run();
-			    }
+				Runnable call = parent.onCompleteCall();
+				if (call != null) {
+					call.run();
+				}
+				call = parent.onAfterTerminateCall();
+				if (call != null) {
+					call.run();
+				}
 			}
 			return v;
 		}
@@ -592,7 +593,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(EmptySubscription.INSTANCE);
+					actual.onSubscribe(SubscriptionHelper.empty());
 					onError(e);
 					return;
 				}

@@ -26,6 +26,7 @@ import reactor.core.flow.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
 /**
@@ -52,11 +53,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
-	@Override
-	public long getCapacity() {
-		return -1L;
-	}
-
 	static <T> void subscribe(Subscriber<? super T> s, Function<? super
 			Flux<Throwable>, ?
 			extends Publisher<? extends Object>> whenSourceFactory, Publisher<? extends
@@ -64,7 +60,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 		Subscriber<Throwable> signaller = Subscribers.serialize(other.completionSignal);
 
-		signaller.onSubscribe(EmptySubscription.INSTANCE);
+		signaller.onSubscribe(SubscriptionHelper.empty());
 
 		Subscriber<T> serial = Subscribers.serialize(s);
 
@@ -203,8 +199,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class RetryWhenOtherSubscriber
-			extends Flux<Throwable>
+	static final class RetryWhenOtherSubscriber extends Flux<Throwable>
 	implements Subscriber<Object>, Loopback {
 		RetryWhenMainSubscriber<?> main;
 
@@ -243,11 +238,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		@Override
 		public Object connectedOutput() {
 			return completionSignal;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER | TRACE_ONLY;
 		}
 	}
 }

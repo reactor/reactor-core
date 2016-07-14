@@ -62,6 +62,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
 
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
@@ -77,7 +82,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			}
 			
 			if (v == null) {
-				EmptySubscription.complete(s);
+				SubscriptionHelper.complete(s);
 				return;
 			}
 			
@@ -97,10 +102,13 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			
 			return;
 		}
-		source.subscribe(new ConcatMapIterableSubscriber<>(s, mapper, prefetch, queueSupplier));
+		source.subscribe(new FlattenIterableSubscriber<>(s,
+				mapper,
+				prefetch,
+				queueSupplier));
 	}
-	
-	static final class ConcatMapIterableSubscriber<T, R> 
+
+	static final class FlattenIterableSubscriber<T, R>
 	implements Subscriber<T>, QueueSubscription<R> {
 		
 		final Subscriber<? super R> actual;
@@ -115,13 +123,15 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ConcatMapIterableSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ConcatMapIterableSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<FlattenIterableSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
+						"wip");
 		
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ConcatMapIterableSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ConcatMapIterableSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<FlattenIterableSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
+						"requested");
 		
 		Subscription s;
 		
@@ -133,16 +143,19 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ConcatMapIterableSubscriber, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ConcatMapIterableSubscriber.class, Throwable.class, "error");
+		static final AtomicReferenceFieldUpdater<FlattenIterableSubscriber, Throwable>
+				ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
+						Throwable.class,
+						"error");
 
 		Iterator<? extends R> current;
 		
 		int consumed;
 		
 		int fusionMode;
-		
-		public ConcatMapIterableSubscriber(Subscriber<? super R> actual,
+
+		public FlattenIterableSubscriber(Subscriber<? super R> actual,
 				Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch,
 				Supplier<Queue<T>> queueSupplier) {
 			this.actual = actual;
@@ -243,16 +256,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				}
 			}
 		}
-		
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
-			
+
+		void drainAsync() {
 			final Subscriber<? super R> a = actual;
 			final Queue<T> q = queue;
-			final boolean replenish = fusionMode != Fuseable.SYNC;
-			
+
 			int missed = 1;
 			
 			Iterator<? extends R> it = current;
@@ -260,7 +268,21 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			for (;;) {
 
 				if (it == null) {
-					
+
+					if (cancelled) {
+						q.clear();
+						return;
+					}
+
+					Throwable ex = error;
+					if (ex != null) {
+						ex = Exceptions.terminate(ERROR, this);
+						current = null;
+						q.clear();
+						a.onError(ex);
+						return;
+					}
+
 					boolean d = done;
 					
 					T t;
@@ -268,12 +290,13 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					t = q.poll();
 					
 					boolean empty = t == null;
-					
-					if (checkTerminated(d, empty, a, q)) {
+
+					if (d && empty) {
+						a.onComplete();
 						return;
 					}
 
-					if (t != null) {
+					if (!empty) {
 						Iterable<? extends R> iterable;
 						
 						boolean b;
@@ -284,20 +307,26 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							it = iterable.iterator();
 							
 							b = it.hasNext();
-						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							onError(ex);
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							onError(exc);
 							it = null;
 							continue;
 						}
 						
 						if (!b) {
 							it = null;
-							consumedOne(replenish);
+							int c = consumed + 1;
+							if (c == limit) {
+								consumed = 0;
+								s.request(c);
+							}
+							else {
+								consumed = c;
+							}
 							continue;
 						}
-						
-						current = it;
 					}
 				}
 				
@@ -306,7 +335,18 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					long e = 0L;
 					
 					while (e != r) {
-						if (checkTerminated(done, false, a, q)) {
+						if (cancelled) {
+							current = null;
+							q.clear();
+							return;
+						}
+
+						Throwable ex = error;
+						if (ex != null) {
+							ex = Exceptions.terminate(ERROR, this);
+							current = null;
+							q.clear();
+							a.onError(ex);
 							return;
 						}
 
@@ -314,15 +354,18 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						
 						try {
 							v = it.next();
-						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							onError(ex);
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							onError(exc);
 							continue;
 						}
 						
 						a.onNext(v);
 
-						if (checkTerminated(done, false, a, q)) {
+						if (cancelled) {
+							current = null;
+							q.clear();
 							return;
 						}
 
@@ -332,14 +375,22 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						
 						try {
 							b = it.hasNext();
-						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							onError(ex);
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							onError(exc);
 							continue;
 						}
 						
 						if (!b) {
-							consumedOne(replenish);
+							int c = consumed + 1;
+							if (c == limit) {
+								consumed = 0;
+								s.request(c);
+							}
+							else {
+								consumed = c;
+							}
 							it = null;
 							current = null;
 							break;
@@ -347,18 +398,27 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					}
 					
 					if (e == r) {
-						boolean d = done;
-						boolean empty;
-						
-						try {
-							empty = q.isEmpty() && it == null;
-						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							onError(ex);
-							empty = true;
+						if (cancelled) {
+							current = null;
+							q.clear();
+							return;
 						}
-						
-						if (checkTerminated(d, empty, a, q)) {
+
+						Throwable ex = error;
+						if (ex != null) {
+							ex = Exceptions.terminate(ERROR, this);
+							current = null;
+							q.clear();
+							a.onError(ex);
+							return;
+						}
+
+						boolean d = done;
+						boolean empty = q.isEmpty();
+
+						if (d && empty) {
+							current = null;
+							a.onComplete();
 							return;
 						}
 					}
@@ -373,48 +433,169 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						continue;
 					}
 				}
-				
+
+				current = it;
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
-		void consumedOne(boolean enabled) {
-			if (enabled) {
-				int c = consumed + 1;
-				if (c == limit) {
-					consumed = 0;
-					s.request(c);
-				} else {
-					consumed = c;
+
+		void drainSync() {
+			final Subscriber<? super R> a = actual;
+//			final Queue<T> q = queue;
+
+			int missed = 1;
+
+			Iterator<? extends R> it = current;
+
+			for (; ; ) {
+
+				if (it == null) {
+
+					if (cancelled) {
+						queue.clear();
+						return;
+					}
+
+					boolean d = done;
+
+					T t;
+
+					t = queue.poll();
+
+					boolean empty = t == null;
+
+					if (d && empty) {
+						a.onComplete();
+						return;
+					}
+
+					if (!empty) {
+						Iterable<? extends R> iterable;
+
+						boolean b;
+
+						try {
+							iterable = mapper.apply(t);
+
+							it = iterable.iterator();
+
+							b = it.hasNext();
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							current = null;
+							a.onError(exc);
+							return;
+						}
+
+						if (!b) {
+							it = null;
+							continue;
+						}
+					}
+				}
+
+				if (it != null) {
+					long r = requested;
+					long e = 0L;
+
+					while (e != r) {
+						if (cancelled) {
+							current = null;
+							queue.clear();
+							return;
+						}
+
+						R v;
+
+						try {
+							v = it.next();
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							current = null;
+							a.onError(exc);
+							return;
+						}
+
+						a.onNext(v);
+
+						if (cancelled) {
+							current = null;
+							queue.clear();
+							return;
+						}
+
+						e++;
+
+						boolean b;
+
+						try {
+							b = it.hasNext();
+						}
+						catch (Throwable exc) {
+							Exceptions.throwIfFatal(exc);
+							onError(exc);
+							continue;
+						}
+
+						if (!b) {
+							it = null;
+							current = null;
+							break;
+						}
+					}
+
+					if (e == r) {
+						if (cancelled) {
+							current = null;
+							queue.clear();
+							return;
+						}
+
+						boolean d = done;
+						boolean empty = queue.isEmpty() && it == null;
+
+						if (d && empty) {
+							current = null;
+							a.onComplete();
+							return;
+						}
+					}
+
+					if (e != 0L) {
+						if (r != Long.MAX_VALUE) {
+							REQUESTED.addAndGet(this, -e);
+						}
+					}
+
+					if (it == null) {
+						continue;
+					}
+				}
+
+				current = it;
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
 				}
 			}
 		}
-		
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
-			if (cancelled) {
-				current = null;
-				q.clear();
-				return true;
-			}
-			if (d) {
-				if (error != null) {
-					Throwable e = Exceptions.terminate(ERROR, this);
-					
-					current = null;
-					q.clear();
 
-					a.onError(e);
-					return true;
-				} else
-				if (empty) {
-					a.onComplete();
-					return true;
-				}
+		void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
 			}
-			return false;
+
+			if (fusionMode == SYNC) {
+				drainSync();
+			}
+			else {
+				drainAsync();
+			}
 		}
 		
 		@Override

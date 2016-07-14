@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Receiver;
 import reactor.core.subscriber.DeferredScalarSubscriber;
@@ -94,6 +93,6 @@ extends Mono<T>
 
 	@Override
 	public T call() throws Exception {
-	    return callable.call();
+		return callable.call();
 	}
 }

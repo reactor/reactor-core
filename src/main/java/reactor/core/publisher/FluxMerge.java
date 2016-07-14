@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.flow.MultiReceiver;
+import reactor.core.subscriber.SubscriberState;
 
 /**
  * Merges a fixed array of Publishers.
@@ -35,7 +36,7 @@ import reactor.core.flow.MultiReceiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @since 2.5
  */
-final class FluxMerge<T> extends Flux<T> implements MultiReceiver {
+final class FluxMerge<T> extends Flux<T> implements MultiReceiver, SubscriberState {
 
 	final Publisher<? extends T>[] sources;
 	

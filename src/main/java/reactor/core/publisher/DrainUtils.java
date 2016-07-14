@@ -22,10 +22,6 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 
-/**
- * @author Stephane Maldini
- * @since 2.1
- */
 enum DrainUtils {
 	;
 

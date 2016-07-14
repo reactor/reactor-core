@@ -22,7 +22,7 @@ import org.junit.Test;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.tuple.Tuple2;
+import reactor.core.util.function.Tuple2;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -26,16 +26,12 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.util.Exceptions;
 import reactor.core.util.Logger;
-import reactor.core.util.PlatformDependent;
-import reactor.core.util.Sequence;
+import reactor.core.util.ReactorProperties;
 
 //
 /**
  * A utility to check subscription, handle noop subscriptions, validate request size and
- * to
- * cap concurrent
- * additive operations to Long
- * .MAX_VALUE_LONG,
+ * to cap concurrent additive operations to Long.MAX_VALUE,
  * which is generic to {@link Subscription#request(long)} handling.
  *
  * Combine utils available to operator implementations, @see http://github.com/reactor/reactive-streams-commons
@@ -128,8 +124,10 @@ public enum SubscriptionHelper {
 	/**
 	 * A singleton Subscription that represents a cancelled subscription instance and
 	 * should not be leaked to clients as it represents a terminal state. <br> If
-	 * algorithms need to hand out a subscription, replace this with {@link
-	 * EmptySubscription#INSTANCE} because there is no standard way to tell if a
+	 * algorithms need to hand out a subscription, replace this with a singleton
+	 * subscription because
+	 * there is
+	 * no standard way to tell if a
 	 * Subscription is cancelled or not otherwise.
 	 *
 	 * @return a singleton noop {@link Subscription}
@@ -178,7 +176,7 @@ public enum SubscriptionHelper {
 	 * @param s
 	 */
 	public static void complete(Subscriber<?> s) {
-		s.onSubscribe(SubscriptionHelper.empty());
+		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onComplete();
 	}
 
@@ -204,7 +202,7 @@ public enum SubscriptionHelper {
 	 * @param e
 	 */
 	public static void error(Subscriber<?> s, Throwable e) {
-		s.onSubscribe(SubscriptionHelper.empty());
+		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onError(e);
 	}
 
@@ -232,26 +230,6 @@ public enum SubscriptionHelper {
 	}
 
 	/**
-	 * Concurrent addition bound to Long.MAX_VALUE.
-	 * Any concurrent write will "happen" before this operation.
-	 *
-	 * @param sequence current sequence to update
-	 * @param toAdd    delta to add
-	 * @return value before addition or Long.MAX_VALUE
-	 */
-	public static long getAndAddCap(Sequence sequence, long toAdd) {
-		long u, r;
-		do {
-			r = sequence.getAsLong();
-			if (r == Long.MAX_VALUE) {
-				return Long.MAX_VALUE;
-			}
-			u = addCap(r, toAdd);
-		} while (!sequence.compareAndSet(r, u));
-		return r;
-	}
-
-	/**
 	 * Concurrent substraction bound to 0.
 	 * Any concurrent write will "happen" before this operation.
 	 *
@@ -270,27 +248,6 @@ public enum SubscriptionHelper {
 			}
 			u = subOrZero(r, toSub);
 		} while (!updater.compareAndSet(instance, r, u));
-
-		return r;
-	}
-
-	/**
-	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.
-	 * Any concurrent write will "happen" before this operation.
-	 *
-	 * @param sequence current sequence to update
-	 * @param toSub    delta to sub
-	 * @return value before subscription, 0 or Long.MAX_VALUE
-	 */
-	public static long getAndSub(Sequence sequence, long toSub) {
-		long r, u;
-		do {
-			r = sequence.getAsLong();
-			if (r == 0 || r == Long.MAX_VALUE) {
-				return r;
-			}
-			u = subOrZero(r, toSub);
-		} while (!sequence.compareAndSet(r, u));
 
 		return r;
 	}
@@ -336,7 +293,7 @@ public enum SubscriptionHelper {
 
 	/**
 	 * A generic utility to atomically replace a subscription or cancel if marked by a
-	 * {@link CancelledSubscription}.
+	 * singleton subscription.
 	 *
 	 * @param field The Atomic container
 	 * @param instance the instance reference
@@ -380,7 +337,7 @@ public enum SubscriptionHelper {
 	 * Log or Throw {@link IllegalStateException}
 	 */
 	public static void reportSubscriptionSet() {
-		if (!PlatformDependent.TRACE_CANCEL) {
+		if (!ReactorProperties.TRACE_CANCEL) {
 			Logger.getLogger(SubscriptionHelper.class)
 			      .trace("Duplicate Subscription has been detected");
 		}
@@ -391,7 +348,7 @@ public enum SubscriptionHelper {
 
 	/**
 	 * A generic utility to atomically replace a subscription or cancel if marked by a
-	 * {@link CancelledSubscription} or concurrently set before.
+	 * singleton subscription or concurrently set before.
 	 *
 	 * @param field The Atomic container
 	 * @param instance the instance reference

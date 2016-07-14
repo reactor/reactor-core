@@ -1,18 +1,3 @@
-/*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -43,6 +28,11 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 	public FluxTakeUntil(Publisher<? extends T> source, Publisher<U> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
+	}
+
+	@Override
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	@Override
@@ -118,7 +108,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != CancelledSubscription.INSTANCE) {
+				if (other != SubscriptionHelper.cancelled()) {
 					SubscriptionHelper.reportSubscriptionSet();
 				}
 			}
@@ -131,9 +121,9 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != CancelledSubscription.INSTANCE) {
-				s = MAIN.getAndSet(this, CancelledSubscription.INSTANCE);
-				if (s != null && s != CancelledSubscription.INSTANCE) {
+			if (s != SubscriptionHelper.cancelled()) {
+				s = MAIN.getAndSet(this, SubscriptionHelper.cancelled());
+				if (s != null && s != SubscriptionHelper.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -141,9 +131,9 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != CancelledSubscription.INSTANCE) {
-				s = OTHER.getAndSet(this, CancelledSubscription.INSTANCE);
-				if (s != null && s != CancelledSubscription.INSTANCE) {
+			if (s != SubscriptionHelper.cancelled()) {
+				s = OTHER.getAndSet(this, SubscriptionHelper.cancelled());
+				if (s != null && s != SubscriptionHelper.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -159,7 +149,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != CancelledSubscription.INSTANCE) {
+				if (main != SubscriptionHelper.cancelled()) {
 					SubscriptionHelper.reportSubscriptionSet();
 				}
 			} else {
@@ -176,7 +166,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, CancelledSubscription.INSTANCE)) {
+				if (MAIN.compareAndSet(this, null, SubscriptionHelper.cancelled())) {
 					SubscriptionHelper.error(actual, t);
 					return;
 				}
@@ -189,9 +179,9 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, CancelledSubscription.INSTANCE)) {
+				if (MAIN.compareAndSet(this, null, SubscriptionHelper.cancelled())) {
 					cancelOther();
-					EmptySubscription.complete(actual);
+					SubscriptionHelper.complete(actual);
 					return;
 				}
 			}

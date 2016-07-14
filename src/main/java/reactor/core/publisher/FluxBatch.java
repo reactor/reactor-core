@@ -25,8 +25,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.flow.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
@@ -75,8 +73,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 	}
 
-	static abstract class BatchAction<T, V> extends SubscriberBarrier<T, V>
-			implements Requestable, Introspectable {
+	static abstract class BatchAction<T, V> extends SubscriberBarrier<T, V> {
 
 		final static int NOT_TERMINATED = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;

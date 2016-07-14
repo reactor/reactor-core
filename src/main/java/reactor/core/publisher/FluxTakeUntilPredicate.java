@@ -9,9 +9,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
-import reactor.core.util.Exceptions;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.util.Exceptions;
 
 /**
  * Relays values until a predicate returns
@@ -44,7 +44,8 @@ final class FluxTakeUntilPredicate<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeUntilPredicateSubscriber<T>
-			implements Subscriber<T>, Producer, Receiver, Completable, Loopback, Subscription {
+			implements Subscriber<T>, Producer, Receiver, Loopback, Subscription,
+			           SubscriberState {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;

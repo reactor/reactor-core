@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.TimedScheduler.TimedWorker;
 import reactor.core.subscriber.SubscriptionHelper;
@@ -68,11 +68,6 @@ final class FluxInterval extends Flux<Long> {
 		s.onSubscribe(r);
 
 		w.schedulePeriodically(r, initialDelay, period, unit);
-	}
-
-	@Override
-	public long getPeriod() {
-		return period;
 	}
 
 	static final class IntervalRunnable implements Runnable, Subscription {

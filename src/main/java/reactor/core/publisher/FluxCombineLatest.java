@@ -32,10 +32,7 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Prefetchable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -168,7 +165,7 @@ extends Flux<R>
 		}
 
 		if (n == 0) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 		if (n == 1) {
@@ -203,8 +200,8 @@ extends Flux<R>
 		coordinator.subscribe(a, n);
 	}
 	
-	static final class CombineLatestCoordinator<T, R> 
-	implements QueueSubscription<R>, MultiReceiver, Cancellable {
+	static final class CombineLatestCoordinator<T, R>
+			implements QueueSubscription<R>, MultiReceiver, SubscriberState {
 
 		final Subscriber<? super R> actual;
 		
@@ -548,7 +545,7 @@ extends Flux<R>
 	}
 	
 	static final class CombineLatestInner<T>
-			implements Subscriber<T>, Introspectable, Prefetchable, Requestable, Receiver, Producer {
+			implements Subscriber<T>, Receiver, Producer, SubscriberState {
 
 		final CombineLatestCoordinator<T, ?> parent;
 
@@ -634,11 +631,6 @@ extends Flux<R>
 		@Override
 		public long expectedFromUpstream() {
 			return limit - produced;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
 		}
 	}
 	

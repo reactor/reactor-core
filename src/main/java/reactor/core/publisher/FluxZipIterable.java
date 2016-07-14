@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.MultiReceiver;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Completable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -48,9 +48,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 
 	final BiFunction<? super T, ? super U, ? extends R> zipper;
 
-	public FluxZipIterable(
-			Publisher<? extends T> source,
-			Iterable<? extends U> other,
+	public FluxZipIterable(Publisher<? extends T> source, Iterable<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> zipper) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
@@ -83,7 +81,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		}
 		
 		if (!b) {
-			EmptySubscription.complete(s);
+			SubscriptionHelper.complete(s);
 			return;
 		}
 		
@@ -91,7 +89,8 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 	}
 
 	static final class ZipSubscriber<T, U, R> implements Subscriber<T>, Producer, MultiReceiver,
-																  Completable, Receiver, Subscription {
+	                                                     Receiver, Subscription,
+	                                                     SubscriberState {
 		
 		final Subscriber<? super R> actual;
 		

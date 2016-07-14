@@ -25,8 +25,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.flow.Producer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
+import reactor.core.publisher.FluxTakeLastOne.TakeLastOneSubscriber;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -56,15 +56,16 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 		if (n == 0) {
 			source.subscribe(new TakeLastZeroSubscriber<>(s));
 		} else if (n == 1) {
-			source.subscribe(new FluxTakeLastOne.TakeLastOneSubscriber<>(s));
+			source.subscribe(new TakeLastOneSubscriber<>(s));
 		} else {
 			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}
 	}
 
+
 	@Override
-	public long getCapacity() {
-		return n;
+	public long getPrefetch() {
+		return Long.MAX_VALUE;
 	}
 
 	static final class TakeLastZeroSubscriber<T> implements Subscriber<T>, Producer, Subscription,
@@ -126,7 +127,8 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	static final class TakeLastManySubscriber<T>
-	  implements Subscriber<T>, Subscription, BooleanSupplier, Producer, Cancellable, Receiver, Backpressurable {
+			implements Subscriber<T>, Subscription, BooleanSupplier, Producer,
+			           SubscriberState, Receiver {
 
 		final Subscriber<? super T> actual;
 

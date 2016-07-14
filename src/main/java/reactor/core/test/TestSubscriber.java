@@ -37,7 +37,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.flow.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.DeferredSubscription;
-import reactor.core.util.PlatformDependent;
+import reactor.core.util.ReactorProperties;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -990,6 +990,6 @@ public class TestSubscriber<T> extends DeferredSubscription implements Subscribe
 	}
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
-			PlatformDependent.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
+			ReactorProperties.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
 
 }

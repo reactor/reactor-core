@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -33,11 +34,7 @@ import reactor.core.flow.Fuseable;
 import reactor.core.flow.Loopback;
 import reactor.core.flow.MultiProducer;
 import reactor.core.flow.Receiver;
-import reactor.core.state.Backpressurable;
-import reactor.core.state.Cancellable;
-import reactor.core.state.Completable;
-import reactor.core.state.Introspectable;
-import reactor.core.state.Requestable;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.util.Exceptions;
 
@@ -52,7 +49,7 @@ import reactor.core.util.Exceptions;
  * @since 2.5
  */
 final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
-		implements Loopback, Backpressurable {
+		implements Receiver, Loopback {
 	/** The source observable. */
 	final Publisher<? extends T> source;
 	
@@ -127,7 +124,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public long getCapacity() {
+	public long getPrefetch() {
 		return prefetch;
 	}
 
@@ -142,8 +139,9 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		return source;
 	}
 
-	static final class State<T> implements Subscriber<T>, Receiver, MultiProducer, Backpressurable,
-										   Completable, Cancellable, Cancellation, Introspectable {
+	static final class State<T>
+			implements Subscriber<T>, Receiver, MultiProducer, SubscriberState,
+			           Cancellation {
 
 		final int prefetch;
 		
@@ -289,7 +287,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		
 		void disconnectAction() {
 			queue.clear();
-			Exception ex = Exceptions.CancelException.INSTANCE;
+			CancellationException ex = new CancellationException("Disconnected");
 			for (InnerSubscription<T> inner : terminate()) {
 				inner.actual.onError(ex);
 			}
@@ -552,8 +550,9 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 			return s;
 		}
 	}
-	
-	static final class InnerSubscription<T> implements Subscription, Introspectable, Receiver, Requestable, Cancellable {
+
+	static final class InnerSubscription<T>
+			implements Subscription, Receiver, SubscriberState {
 		
 		final Subscriber<? super T> actual;
 		
@@ -597,16 +596,6 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		@Override
 		public boolean isCancelled() {
 			return cancelled != 0;
-		}
-
-		@Override
-		public int getMode() {
-			return INNER;
-		}
-
-		@Override
-		public String getName() {
-			return InnerSubscription.class.getSimpleName();
 		}
 
 		@Override
