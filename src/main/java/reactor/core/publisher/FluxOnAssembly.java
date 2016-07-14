@@ -95,7 +95,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		StackTraceElement[] stes = Thread.currentThread()
 		                                 .getStackTrace();
 
-		StringBuilder sb = new StringBuilder("Assembly trace:\n");
+		StringBuilder sb =
+				new StringBuilder("\nAssembly trace from producer [" + source.getClass()
+				                                                           .getName() + "] " +
+						":\n");
 
 		for (StackTraceElement e : stes) {
 			String row = e.toString();
@@ -106,7 +109,16 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
 					continue;
 				}
+				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
+					continue;
+				}
 				if (row.contains("FluxOnAssembly.")) {
+					continue;
+				}
+				if (row.contains("MonoOnAssembly.")) {
+					continue;
+				}
+				if (row.contains("MonoCallableOnAssembly.")) {
 					continue;
 				}
 				if (row.contains(".junit.runner")) {
@@ -119,6 +131,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 					continue;
 				}
 				if (row.contains("sun.reflect")) {
+					continue;
+				}
+				if (row.contains("useTraceAssembly")) {
 					continue;
 				}
 				if (row.contains("java.lang.Thread.")) {
