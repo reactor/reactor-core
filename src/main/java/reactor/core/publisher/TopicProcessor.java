@@ -908,7 +908,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						break;
 					}
 					catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
 						if(RingBuffer.isAlert(ex) ||
 								ex instanceof Exceptions.CancelException) {
 
@@ -935,7 +934,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							}
 							continue;
 						}
-
+						Exceptions.throwIfFatal(ex);
 						subscriber.onError(ex);
 						sequence.set(nextSequence);
 						nextSequence++;

@@ -92,7 +92,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 	}
 
 	static final class SubscribeOnPipeline<T> extends DeferredSubscription
-			implements Subscriber<T>, Producer, Loopback, Runnable {
+			implements Subscriber<T>, Producer, Loopback, Runnable, QueueSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -194,6 +194,31 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		@Override
 		public Object connectedInput() {
 			return null;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public T poll() {
+			return null;
+		}
+
+		@Override
+		public void clear() {
+
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return false;
+		}
+
+		@Override
+		public int size() {
+			return 0;
 		}
 	}
 
