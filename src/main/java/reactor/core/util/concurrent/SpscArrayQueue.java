@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
  * 
  * @param <T> the value type
  */
-public final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
+final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 	/** */
 	private static final long serialVersionUID = 494623116936946976L;
 
