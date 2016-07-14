@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.OnAssemblyConditionalSubscriber;
 import reactor.core.publisher.FluxOnAssembly.OnAssemblySubscriber;
 

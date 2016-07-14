@@ -6,12 +6,12 @@ import java.util.function.Predicate;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Loopback;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Relays values until a predicate returns

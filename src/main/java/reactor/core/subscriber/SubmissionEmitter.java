@@ -26,8 +26,8 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.util.Exceptions;
+import reactor.core.Producer;
+import reactor.util.Exceptions;
 
 /**
  *
@@ -115,7 +115,7 @@ public final class SubmissionEmitter<E>
 		return create(subscriber, true);
 	}
 	final Subscriber<? super E> actual;
-	volatile     long                                  requested;
+	volatile     long requested;
 	Throwable uncaughtException;
 
 	volatile boolean cancelled;

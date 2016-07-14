@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.flow.Producer;
+import reactor.core.Fuseable;
+import reactor.core.MultiReceiver;
+import reactor.core.Producer;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 

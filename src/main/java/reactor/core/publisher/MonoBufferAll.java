@@ -21,10 +21,8 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
 import rx.exceptions.Exceptions;
 
 /**
@@ -64,7 +62,7 @@ final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource
     }
     
     static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>
-    extends DeferredScalarSubscriber<T, C>
+            extends OperatorHelper.DeferredScalarSubscriber<T, C>
     implements Subscriber<T>, Subscription {
         
         final Subscriber<? super C> actual;

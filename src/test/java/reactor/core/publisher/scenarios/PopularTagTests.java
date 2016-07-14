@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
-import reactor.core.util.function.Tuple;
-import reactor.core.util.Logger;
+import reactor.util.function.Tuple;
+import reactor.util.Logger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

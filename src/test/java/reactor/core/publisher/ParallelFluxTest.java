@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class ParallelFluxTest {
 

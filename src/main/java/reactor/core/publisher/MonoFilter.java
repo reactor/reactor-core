@@ -20,8 +20,8 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Fuseable.ConditionalSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.*;
 
 /**

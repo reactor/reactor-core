@@ -20,10 +20,10 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.OnAssemblyConditionalSubscriber;
 import reactor.core.publisher.FluxOnAssembly.OnAssemblySubscriber;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it

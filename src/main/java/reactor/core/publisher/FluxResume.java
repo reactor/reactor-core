@@ -21,9 +21,9 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
+import reactor.core.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Resumes the failed main sequence with another sequence returned by

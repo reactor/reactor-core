@@ -17,7 +17,7 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.TimeUnit;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 
 /**
  * Provides an abstract, timed asychronous boundary to operators.

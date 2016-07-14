@@ -19,10 +19,8 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.DeferredScalarSubscriber;
-
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -99,7 +97,8 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 		return false;
 	}
 
-	static final class ParallelCollectSubscriber<T, C> extends DeferredScalarSubscriber<T, C> {
+	static final class ParallelCollectSubscriber<T, C> extends
+	                                                   OperatorHelper.DeferredScalarSubscriber<T, C> {
 
 		final BiConsumer<C, T> collector;
 

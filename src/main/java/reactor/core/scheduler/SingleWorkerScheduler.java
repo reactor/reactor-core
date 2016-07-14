@@ -17,7 +17,7 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.Executor;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 
 /**
  * Wraps one of the workers of some other Scheduler and

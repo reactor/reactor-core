@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

@@ -21,8 +21,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule Runnables for async operators.

@@ -15,7 +15,7 @@
  */
 package reactor.core.scheduler;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 
 /**
  * Provides an abstract asychronous boundary to operators.

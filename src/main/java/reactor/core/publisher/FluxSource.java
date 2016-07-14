@@ -19,8 +19,8 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)

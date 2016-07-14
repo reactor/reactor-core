@@ -37,8 +37,8 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.LambdaSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.ReactorProperties;
-import reactor.core.util.concurrent.QueueSupplier;
+import reactor.util.ReactorProperties;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Abstract base class for Parallel publishers that take an array of Subscribers.

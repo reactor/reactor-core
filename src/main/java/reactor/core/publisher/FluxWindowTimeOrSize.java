@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.Producer;
+import reactor.core.Loopback;
+import reactor.core.Producer;
 import reactor.core.scheduler.TimedScheduler;
 
 /**

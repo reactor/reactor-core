@@ -22,11 +22,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.

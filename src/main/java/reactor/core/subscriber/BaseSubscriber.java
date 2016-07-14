@@ -17,7 +17,7 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Convenience subscriber default interface that checks for input errors and provide a self-subscription operation.

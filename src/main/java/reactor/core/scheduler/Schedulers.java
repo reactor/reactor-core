@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ReactorProperties;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
+import reactor.util.ReactorProperties;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link

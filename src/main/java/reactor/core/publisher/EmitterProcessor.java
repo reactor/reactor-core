@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.MultiProducer;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ReactorProperties;
-import reactor.core.util.concurrent.RingBuffer;
-import reactor.core.util.concurrent.Sequence;
-import reactor.core.util.concurrent.Slot;
+import reactor.util.Exceptions;
+import reactor.util.ReactorProperties;
+import reactor.util.concurrent.RingBuffer;
+import reactor.util.concurrent.Sequence;
+import reactor.util.concurrent.Slot;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with

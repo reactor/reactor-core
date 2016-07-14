@@ -25,11 +25,10 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiReceiver;
+import reactor.core.Fuseable;
+import reactor.core.MultiReceiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Concatenates a several Mono sources with a final Mono source by
@@ -87,7 +86,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
     }
     
     static final class MonoConcatIgnoreManager<T>
-    extends DeferredScalarSubscriber<T, T> {
+            extends OperatorHelper.DeferredScalarSubscriber<T, T> {
         final MonoConcatIgnoreSubscriber ignore;
         
         final MonoConcatAcceptSubscriber<T> accept;

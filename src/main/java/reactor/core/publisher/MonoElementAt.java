@@ -21,11 +21,10 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -68,7 +67,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
 	static final class ElementAtSubscriber<T>
-			extends DeferredScalarSubscriber<T, T>
+			extends OperatorHelper.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 		final Supplier<? extends T> defaultSupplier;
 

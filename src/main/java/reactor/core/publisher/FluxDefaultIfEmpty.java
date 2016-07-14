@@ -20,9 +20,8 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -50,7 +49,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
-			extends DeferredScalarSubscriber<T, T>
+			extends OperatorHelper.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 
 		Subscription s;

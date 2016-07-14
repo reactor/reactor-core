@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after

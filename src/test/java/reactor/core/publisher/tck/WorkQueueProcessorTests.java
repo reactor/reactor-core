@@ -27,8 +27,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.test.TestSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.util.Exceptions;
 
 /**
  * @author Stephane Maldini

@@ -19,9 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 
 /**
  * Emits the value or error produced by the wrapped CompletableFuture.
@@ -48,7 +47,8 @@ extends Mono<T>
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DeferredScalarSubscriber<T, T> sds = new DeferredScalarSubscriber<>(s);
+        OperatorHelper.DeferredScalarSubscriber<T, T>
+                sds = new OperatorHelper.DeferredScalarSubscriber<>(s);
 
         s.onSubscribe(sds);
 

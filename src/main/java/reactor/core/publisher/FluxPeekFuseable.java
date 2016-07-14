@@ -21,11 +21,11 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.

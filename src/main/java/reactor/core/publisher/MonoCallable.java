@@ -19,10 +19,9 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
+import reactor.util.Exceptions;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -54,7 +53,8 @@ extends Mono<T>
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		DeferredScalarSubscriber<T, T> sds = new DeferredScalarSubscriber<>(s);
+		OperatorHelper.DeferredScalarSubscriber<T, T>
+				sds = new OperatorHelper.DeferredScalarSubscriber<>(s);
 
 		s.onSubscribe(sds);
 

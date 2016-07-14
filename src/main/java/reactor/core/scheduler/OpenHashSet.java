@@ -25,7 +25,7 @@ package reactor.core.scheduler;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import reactor.core.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * A simple open hash set with add, remove and clear capabilities only.

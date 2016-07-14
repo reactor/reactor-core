@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.subscriber.SubscriberBarrier;
 import reactor.core.subscriber.Subscribers;

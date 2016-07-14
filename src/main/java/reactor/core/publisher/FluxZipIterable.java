@@ -23,12 +23,12 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.MultiReceiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.

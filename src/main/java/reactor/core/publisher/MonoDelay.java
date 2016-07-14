@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of

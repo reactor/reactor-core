@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class FluxZipTest {
 

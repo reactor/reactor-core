@@ -18,11 +18,11 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.flow.Fuseable;
-import reactor.core.util.concurrent.QueueSupplier;
-import reactor.core.test.TestSubscriber;
-import reactor.core.util.function.Tuple;
-import reactor.core.util.function.Tuple2;
+import reactor.core.Fuseable;
+import reactor.util.concurrent.QueueSupplier;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.util.function.Tuple;
+import reactor.util.function.Tuple2;
 
 import static reactor.core.publisher.Flux.range;
 import static reactor.core.publisher.Flux.zip;

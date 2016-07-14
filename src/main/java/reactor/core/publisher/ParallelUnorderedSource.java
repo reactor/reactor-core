@@ -24,9 +24,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are

@@ -30,7 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items of a 
@@ -429,7 +429,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 	
 	static final class WindowStartEndStarter<T, U, V>
-	extends DeferredSubscription
+			extends DeferredSubscription
 	implements Subscriber<U> {
 
 		final WindowStartEndMainSubscriber<T, U, V> main;
@@ -463,7 +463,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 	
 	static final class WindowStartEndEnder<T, V>
-	extends DeferredSubscription
+			extends DeferredSubscription
 	implements Subscriber<V> {
 
 		final WindowStartEndMainSubscriber<T, ?, V> main;

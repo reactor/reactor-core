@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.flow.Cancellation;
-import reactor.core.test.TestSubscriber;
+import reactor.core.Cancellation;
+import reactor.test.subscriber.TestSubscriber;
 
 public class ConnectableFluxRefCountTest {
 	/*@Test

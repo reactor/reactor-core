@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Receiver;
+import reactor.core.Cancellation;
+import reactor.core.Receiver;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up

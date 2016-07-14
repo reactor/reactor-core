@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Loopback;
+import reactor.core.Loopback;
 import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 /**

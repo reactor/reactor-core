@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.Producer;
+import reactor.core.Fuseable;
+import reactor.core.Loopback;
+import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or

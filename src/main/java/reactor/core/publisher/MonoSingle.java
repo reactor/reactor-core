@@ -22,11 +22,10 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Expects and emits a single item from the source or signals
@@ -75,7 +74,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		source.subscribe(new SingleSubscriber<>(s, defaultSupplier));
 	}
 
-	static final class SingleSubscriber<T> extends DeferredScalarSubscriber<T, T>
+	static final class SingleSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 
 		final Supplier<? extends T> defaultSupplier;

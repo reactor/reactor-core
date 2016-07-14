@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -45,7 +44,8 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 		source.subscribe(new CountSubscriber<>(s));
 	}
 
-	static final class CountSubscriber<T> extends DeferredScalarSubscriber<T, Long> implements Receiver {
+	static final class CountSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, Long>
+			implements Receiver {
 
 		long counter;
 

@@ -23,12 +23,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
-import reactor.core.util.ReactorProperties;
+import reactor.core.Fuseable;
+import reactor.util.Exceptions;
+import reactor.util.Logger;
+import reactor.util.ReactorProperties;
 
-//
 /**
  * A utility to check subscription, handle noop subscriptions, validate request size and
  * to cap concurrent additive operations to Long.MAX_VALUE,
@@ -327,7 +326,7 @@ public enum SubscriptionHelper {
 	}
 
 	/**
-	 * Throw {@link reactor.core.util.Exceptions.InsufficientCapacityException}
+	 * Throw {@link reactor.util.Exceptions.InsufficientCapacityException}
 	 */
 	public static void reportMoreProduced() {
 		throw Exceptions.failWithOverflow();

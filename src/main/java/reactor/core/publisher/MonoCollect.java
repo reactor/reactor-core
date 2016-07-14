@@ -22,11 +22,10 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Collects the values of the source sequence into a container returned by
@@ -74,7 +73,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 	}
 
 	static final class CollectSubscriber<T, R>
-			extends DeferredScalarSubscriber<T, R>
+			extends OperatorHelper.DeferredScalarSubscriber<T, R>
 			implements Receiver {
 
 		final BiConsumer<? super R, ? super T> action;

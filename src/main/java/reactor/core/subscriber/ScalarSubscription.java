@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.*;
+import reactor.core.*;
 
 /**
  * Represents a fuseable Subscription that emits a single constant value

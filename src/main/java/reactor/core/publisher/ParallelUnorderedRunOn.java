@@ -24,7 +24,7 @@ import org.reactivestreams.*;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Ensures each 'rail' from upstream runs on a Worker from a Scheduler.

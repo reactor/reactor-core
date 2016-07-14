@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -38,7 +37,7 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		source.subscribe(new HasElementsSubscriber<>(s));
 	}
 
-	static final class HasElementsSubscriber<T> extends DeferredScalarSubscriber<T, Boolean>
+	static final class HasElementsSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, Boolean>
 			implements Receiver {
 		Subscription s;
 

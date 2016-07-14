@@ -36,7 +36,7 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 /**
  * ?

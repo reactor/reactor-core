@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.MultiProducer;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ReactorProperties;
+import reactor.util.Exceptions;
+import reactor.util.ReactorProperties;
 
 /**
  * Replays all or the last N items to Subscribers.

@@ -20,7 +20,7 @@ import java.util.function.*;
 import org.reactivestreams.*;
 
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.

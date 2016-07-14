@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
+import reactor.core.Fuseable;
+import reactor.core.Producer;
 import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;

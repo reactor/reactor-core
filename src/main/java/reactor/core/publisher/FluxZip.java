@@ -30,15 +30,14 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
+import reactor.core.MultiReceiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -263,7 +262,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 				coordinator.subscribe(n, sc, srcs);
 			} else {
-				DeferredScalarSubscriber<R, R> sds = new DeferredScalarSubscriber<>(s);
+				OperatorHelper.DeferredScalarSubscriber<R, R>
+						sds = new OperatorHelper.DeferredScalarSubscriber<>(s);
 
 				s.onSubscribe(sds);
 
@@ -311,7 +311,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 		return sources == null ? -1 : sources.length;
 	}
 
-	static final class ZipSingleCoordinator<T, R> extends DeferredScalarSubscriber<R, R>
+	static final class ZipSingleCoordinator<T, R> extends OperatorHelper.DeferredScalarSubscriber<R, R>
 			implements MultiReceiver, SubscriberState {
 
 		final Function<? super Object[], ? extends R> zipper;

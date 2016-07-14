@@ -18,8 +18,8 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are

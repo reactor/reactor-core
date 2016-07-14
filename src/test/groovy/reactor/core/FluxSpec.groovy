@@ -20,7 +20,7 @@ import org.reactivestreams.Subscription
 import reactor.core.publisher.*
 import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
-import reactor.core.test.TestSubscriber
+import reactor.test.subscriber.TestSubscriber
 import spock.lang.Shared
 import spock.lang.Specification
 

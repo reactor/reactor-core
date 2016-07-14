@@ -20,7 +20,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 
 /**

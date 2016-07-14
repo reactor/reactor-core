@@ -15,8 +15,8 @@
  */
 package reactor.core.scheduler;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
 
 /**
  * Executes tasks on the caller's thread immediately.

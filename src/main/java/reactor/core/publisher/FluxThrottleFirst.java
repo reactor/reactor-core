@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Takes a value from upstream then uses the duration provided by a 
@@ -212,7 +212,7 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 	}
 	
 	static final class ThrottleFirstOther<U>
-	extends DeferredSubscription
+			extends DeferredSubscription
 	implements Subscriber<U> {
 
 		final ThrottleFirstMain<?, U> main;

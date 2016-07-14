@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

@@ -23,7 +23,7 @@ import org.reactivestreams.*;
 
 import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 final class MonoFlatMap<T, R> extends Flux<R> {
     final Mono<? extends T> source;

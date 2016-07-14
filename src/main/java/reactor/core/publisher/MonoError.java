@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.

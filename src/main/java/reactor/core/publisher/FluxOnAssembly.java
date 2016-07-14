@@ -23,12 +23,12 @@ import java.util.concurrent.LinkedTransferQueue;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.function.Tuple;
-import reactor.core.util.function.Tuple2;
+import reactor.util.Exceptions;
+import reactor.util.function.Tuple;
+import reactor.util.function.Tuple2;
 
 /**
  * Captures the current stacktrace when this publisher is created and

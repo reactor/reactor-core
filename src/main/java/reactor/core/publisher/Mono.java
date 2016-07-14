@@ -36,23 +36,23 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.subscriber.LambdaSubscriber;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
-import reactor.core.util.ReactorProperties;
-import reactor.core.util.concurrent.QueueSupplier;
-import reactor.core.util.concurrent.WaitStrategy;
-import reactor.core.util.function.Tuple;
-import reactor.core.util.function.Tuple2;
-import reactor.core.util.function.Tuple3;
-import reactor.core.util.function.Tuple4;
-import reactor.core.util.function.Tuple5;
-import reactor.core.util.function.Tuple6;
+import reactor.util.Exceptions;
+import reactor.util.Logger;
+import reactor.util.ReactorProperties;
+import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.WaitStrategy;
+import reactor.util.function.Tuple;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple5;
+import reactor.util.function.Tuple6;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -965,7 +965,7 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.util.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.util.Exceptions.CancelException}
 	 *
 	 * @return T the result
 	 */
@@ -988,7 +988,7 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.util.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for before raising a {@literal reactor.util.Exceptions.CancelException}
 	 *
 	 * @return T the result
 	 */
@@ -1412,7 +1412,7 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 	}
 
 	/**
-	 * Map this {@link Mono} sequence into {@link reactor.core.util.function.Tuple2} of T1 {@link Long} timemillis and T2
+	 * Map this {@link Mono} sequence into {@link reactor.util.function.Tuple2} of T1 {@link Long} timemillis and T2
 	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
 	 * next signal.
 	 *
@@ -2529,7 +2529,7 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 
 
 	/**
-	 * Emit a {@link reactor.core.util.function.Tuple2} pair of T1 {@link Long} current system time in
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
 	 *
 	 * <p>

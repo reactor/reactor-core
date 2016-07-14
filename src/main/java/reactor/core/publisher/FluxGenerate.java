@@ -22,11 +22,11 @@ import java.util.function.*;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Fuseable.QueueSubscription;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.subscriber.SignalEmitter;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Generate signals one-by-one via a function callback.

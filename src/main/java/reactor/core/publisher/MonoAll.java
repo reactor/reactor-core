@@ -21,11 +21,10 @@ import java.util.function.Predicate;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Emits a single boolean true if all values of the source sequence match
@@ -55,7 +54,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 		source.subscribe(new AllSubscriber<T>(s, predicate));
 	}
 
-	static final class AllSubscriber<T> extends DeferredScalarSubscriber<T, Boolean>
+	static final class AllSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, Boolean>
 			implements Receiver {
 		final Predicate<? super T> predicate;
 

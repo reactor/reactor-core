@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 import java.util.ArrayList;
 import java.util.Arrays;

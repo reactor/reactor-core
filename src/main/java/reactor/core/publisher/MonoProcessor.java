@@ -27,15 +27,15 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Cancellation;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.ReactorProperties;
-import reactor.core.util.concurrent.WaitStrategy;
+import reactor.util.Exceptions;
+import reactor.util.ReactorProperties;
+import reactor.util.concurrent.WaitStrategy;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.

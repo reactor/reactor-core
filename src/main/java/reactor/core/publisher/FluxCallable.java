@@ -19,8 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
@@ -36,7 +35,8 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DeferredScalarSubscriber<T, T> wrapper = new DeferredScalarSubscriber<>(s);
+        OperatorHelper.DeferredScalarSubscriber<T, T>
+                wrapper = new OperatorHelper.DeferredScalarSubscriber<>(s);
         s.onSubscribe(wrapper);
         
         T v;

@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import org.testng.SkipException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.TopicProcessor;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

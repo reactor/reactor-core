@@ -19,10 +19,8 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.DeferredScalarSubscriber;
-
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -98,7 +96,8 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> {
 		return false;
 	}
 
-	static final class ParallelReduceSubscriber<T, R> extends DeferredScalarSubscriber<T, R> {
+	static final class ParallelReduceSubscriber<T, R> extends
+	                                                  OperatorHelper.DeferredScalarSubscriber<T, R> {
 
 		final BiFunction<R, T, R> reducer;
 

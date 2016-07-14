@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.concurrent.QueueSupplier;
+import reactor.util.Exceptions;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * A Processor implementation that takes a custom queue and allows

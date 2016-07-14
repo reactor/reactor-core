@@ -20,9 +20,9 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Receiver;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.core.Receiver;
+import reactor.util.Exceptions;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}

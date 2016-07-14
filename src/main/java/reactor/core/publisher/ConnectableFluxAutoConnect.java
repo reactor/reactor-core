@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.flow.*;
+import reactor.core.*;
 
 /**
  * Connects to the underlying Flux once the given amount of Subscribers

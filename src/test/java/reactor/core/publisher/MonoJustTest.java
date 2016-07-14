@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.flow.Fuseable;
-import reactor.core.test.TestSubscriber;
+import reactor.core.Fuseable;
+import reactor.test.subscriber.TestSubscriber;
 
 public class MonoJustTest {
 

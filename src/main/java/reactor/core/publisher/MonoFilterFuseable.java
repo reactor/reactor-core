@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 
 /**
  * Filters out values that make a filter function return false.

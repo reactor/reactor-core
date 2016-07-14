@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.ScalarSubscription;
 
 

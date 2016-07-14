@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class FluxMaterializeTest {
 
@@ -54,7 +54,7 @@ public class FluxMaterializeTest {
         
         ts.request(1);
         
-        ts.assertValues(Signal.<Integer>error(ex))
+        ts.assertValues(Signal.error(ex))
         .assertNoError()
         .assertComplete();
     }

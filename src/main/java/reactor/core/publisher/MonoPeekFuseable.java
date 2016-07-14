@@ -22,7 +22,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 
 /**
  * Peeks out values that make a filter function return false.

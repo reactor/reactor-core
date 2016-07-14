@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxTake.TakeFuseableSubscriber;
 
 /**

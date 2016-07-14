@@ -33,7 +33,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
@@ -511,7 +511,8 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		}
 	}
 	
-	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>> extends DeferredSubscription
+	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>> extends
+	                                                                              DeferredSubscription
 	implements Subscriber<V> {
 		final BufferStartEndMainSubscriber<T, ?, V, C> main;
 

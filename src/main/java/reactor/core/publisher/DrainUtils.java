@@ -22,9 +22,7 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 
-enum DrainUtils {
-	;
-
+abstract class DrainUtils {
 
 	static final long COMPLETED_MASK = 0x8000_0000_0000_0000L;
 	static final long REQUESTED_MASK = 0x7FFF_FFFF_FFFF_FFFFL;
@@ -368,4 +366,5 @@ enum DrainUtils {
         }
     }
 
+	DrainUtils(){}
 }

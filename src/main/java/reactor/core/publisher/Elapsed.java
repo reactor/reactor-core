@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import java.util.function.Function;
 
-import reactor.core.util.function.Tuple2;
+import reactor.util.function.Tuple2;
 
 /**
  * @author Stephane Maldini

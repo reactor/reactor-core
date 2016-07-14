@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.Loopback;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * A Stream that emits only one value and then complete.

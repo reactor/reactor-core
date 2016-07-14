@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredScalarSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**
@@ -83,8 +82,8 @@ final class MonoWhen<T> extends Mono<T[]>  {
         parent.subscribe(a);
     }
     
-    static final class MonoWhenCoordinator<T> 
-    extends DeferredScalarSubscriber<T, T[]>
+    static final class MonoWhenCoordinator<T>
+            extends OperatorHelper.DeferredScalarSubscriber<T, T[]>
     implements Subscription {
         final MonoWhenSubscriber<T>[] subscribers;
         

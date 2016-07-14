@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Receiver;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

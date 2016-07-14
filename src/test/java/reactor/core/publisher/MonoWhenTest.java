@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 import org.junit.*;
 
-import reactor.core.util.function.*;
+import reactor.util.function.*;
 
 public class MonoWhenTest {
 

@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 
 /**
  * Wrapper API around an actual downstream Subscriber

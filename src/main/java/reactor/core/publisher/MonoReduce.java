@@ -22,11 +22,10 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Aggregates the source values with the help of an accumulator
@@ -73,7 +72,7 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 	}
 
 	static final class ReduceSubscriber<T, R>
-			extends DeferredScalarSubscriber<T, R>
+			extends OperatorHelper.DeferredScalarSubscriber<T, R>
 			implements Receiver {
 
 		final BiFunction<R, ? super T, R> accumulator;

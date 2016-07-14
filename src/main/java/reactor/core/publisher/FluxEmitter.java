@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.subscriber.SignalEmitter;
 
 /**

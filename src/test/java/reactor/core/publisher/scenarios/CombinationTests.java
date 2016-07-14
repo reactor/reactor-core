@@ -39,8 +39,8 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.test.TestSubscriber;
-import reactor.core.util.Logger;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.util.Logger;
 
 /**
  * @author Stephane Maldini

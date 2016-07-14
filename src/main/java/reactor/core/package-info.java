@@ -17,5 +17,11 @@
 /**
  * Core components of the Reactor framework supporting Reactive Stream programming model.
  *
+ * Topology representation of reactive flows :
+ * {@link reactor.core.Receiver upstream} ({@link reactor.core.MultiReceiver s}),
+ * {@link reactor.core.Producer downstream}
+ * ({@link reactor.core.MultiProducer s}) and
+ * {@link reactor.core.Loopback loopback} flows.
+ * 
  */
 package reactor.core;

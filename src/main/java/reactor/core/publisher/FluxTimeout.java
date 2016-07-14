@@ -13,7 +13,7 @@ import reactor.core.subscriber.MultiSubscriptionSubscriber;
 
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item

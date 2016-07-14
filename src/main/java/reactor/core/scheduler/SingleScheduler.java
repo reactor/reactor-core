@@ -24,8 +24,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
 
 /**
  * Scheduler that works with a single-threaded ExecutorService and is suited for

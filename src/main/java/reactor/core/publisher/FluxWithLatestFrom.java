@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Combines values from a main Publisher with values from another

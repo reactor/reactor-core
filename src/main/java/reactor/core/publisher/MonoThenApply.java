@@ -22,10 +22,9 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.subscriber.DeferredScalarSubscriber;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Given a Mono source, applies a function on its single item and continues
@@ -61,7 +60,8 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 		source.subscribe(manager);
 	}
 	
-	static final class MonoThenApplyManager<T, R> extends DeferredScalarSubscriber<T, R> {
+	static final class MonoThenApplyManager<T, R> extends
+                                                  OperatorHelper.DeferredScalarSubscriber<T, R> {
 
 	    final Function<? super T, ? extends Mono<? extends R>> mapper;
 

@@ -23,11 +23,11 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Cancellation;
+import reactor.core.Loopback;
+import reactor.core.MultiProducer;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriptionHelper;
 
 /**

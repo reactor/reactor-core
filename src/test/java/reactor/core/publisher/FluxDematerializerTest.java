@@ -18,11 +18,11 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class FluxDematerializerTest {
 
-    Signal<Integer> error = Signal.<Integer>error(new RuntimeException("Forced failure"));
+    Signal<Integer> error = Signal.error(new RuntimeException("Forced failure"));
     
     @Test
     public void singleCompletion() {

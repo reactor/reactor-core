@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.*;
 
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * @author Stephane Maldini

@@ -18,9 +18,9 @@ package reactor.core.publisher;
 import java.util.concurrent.CancellationException;
 
 import org.junit.Test;
-import reactor.core.flow.Cancellation;
-import reactor.core.util.concurrent.QueueSupplier;
-import reactor.core.test.TestSubscriber;
+import reactor.core.Cancellation;
+import reactor.util.concurrent.QueueSupplier;
+import reactor.test.subscriber.TestSubscriber;
 
 public class ConnectableFluxProcessTest {
 

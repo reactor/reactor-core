@@ -18,9 +18,9 @@ package reactor.core.scheduler;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler.TimedWorker;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Wraps another TimedWorker and tracks Runnable tasks scheduled with it.

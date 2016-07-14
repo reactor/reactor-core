@@ -28,13 +28,13 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Fuseable;
+import reactor.core.MultiReceiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Combines the latest values from multiple sources through a function.

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriptionHelper;
 

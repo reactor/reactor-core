@@ -23,8 +23,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.

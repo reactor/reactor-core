@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import reactor.core.flow.Cancellation;
-import reactor.core.util.Exceptions;
+import reactor.core.Cancellation;
+import reactor.util.Exceptions;
 
 /**
  * Dynamically creates ExecutorService-based Workers and caches the thread pools, reusing

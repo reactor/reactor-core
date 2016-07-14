@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.publisher.FluxSubscribeOnValue.*;
 import reactor.core.scheduler.Scheduler;
 

@@ -18,8 +18,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.util.concurrent.QueueSupplier;
+import reactor.core.Fuseable;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * @author Stephane Maldini

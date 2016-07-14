@@ -21,10 +21,9 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.
@@ -50,7 +49,8 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 		source.subscribe(new AggregateSubscriber<>(s, aggregator));
 	}
 	
-	static final class AggregateSubscriber<T> extends DeferredScalarSubscriber<T, T> {
+	static final class AggregateSubscriber<T> extends
+	                                          OperatorHelper.DeferredScalarSubscriber<T, T> {
 		final BiFunction<T, T, T> aggregator;
 
 		Subscription s;

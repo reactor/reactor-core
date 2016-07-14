@@ -22,11 +22,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.concurrent.QueueSupplier;
-import reactor.core.test.TestSubscriber;
-import reactor.core.util.Exceptions;
+import reactor.util.concurrent.QueueSupplier;
+import reactor.test.subscriber.TestSubscriber;
+import reactor.util.Exceptions;
 
 public class FluxPeekTest {
 	@Test(expected = NullPointerException.class)

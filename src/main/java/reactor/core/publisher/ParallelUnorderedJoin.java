@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.*;
 
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Merges the individual 'rails' of the source ParallelFlux, unordered,

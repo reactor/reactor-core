@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Fuseable.QueueSubscription;
-import reactor.core.flow.Producer;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.QueueSubscription;
+import reactor.core.Producer;
 import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.concurrent.QueueSupplier;
+import reactor.util.Exceptions;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Provides a multi-valued emitter API for a callback that is called for

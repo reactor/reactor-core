@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.

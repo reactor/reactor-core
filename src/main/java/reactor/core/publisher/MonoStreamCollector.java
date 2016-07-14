@@ -23,10 +23,9 @@ import java.util.stream.Collector;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Fuseable;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -73,7 +72,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 	}
 	
 	static final class StreamCollectorSubscriber<T, A, R>
-	extends DeferredScalarSubscriber<T, R> {
+			extends OperatorHelper.DeferredScalarSubscriber<T, R> {
 		final BiConsumer<A, T> accumulator;
 		
 		final Function<A, R> finisher;

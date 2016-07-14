@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.MultiReceiver;
+import reactor.core.MultiReceiver;
 import reactor.core.subscriber.SubscriberState;
 
 /**

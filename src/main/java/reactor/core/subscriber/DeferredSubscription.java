@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
+import reactor.core.Receiver;
 
 /**
  * Base class for Subscribers that will receive their Subscriptions at any time yet

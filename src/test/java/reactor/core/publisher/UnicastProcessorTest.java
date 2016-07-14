@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
 
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class UnicastProcessorTest {
 

@@ -29,14 +29,14 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Receiver;
+import reactor.core.Cancellation;
+import reactor.core.Fuseable;
+import reactor.core.Loopback;
+import reactor.core.MultiProducer;
+import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values to subscribers in a backpressure-aware

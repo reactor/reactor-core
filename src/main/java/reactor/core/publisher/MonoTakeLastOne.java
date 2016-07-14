@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.*;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.*;
 import org.reactivestreams.*;
 
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Given sorted rail sequences (according to the provided comparator) as List

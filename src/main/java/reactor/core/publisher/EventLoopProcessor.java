@@ -28,21 +28,21 @@ import java.util.function.Supplier;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
-import reactor.core.flow.Loopback;
-import reactor.core.flow.MultiProducer;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Cancellation;
+import reactor.core.Loopback;
+import reactor.core.MultiProducer;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
-import reactor.core.util.ReactorProperties;
-import reactor.core.util.concurrent.QueueSupplier;
-import reactor.core.util.concurrent.RingBuffer;
-import reactor.core.util.concurrent.Sequence;
-import reactor.core.util.concurrent.Slot;
-import reactor.core.util.concurrent.WaitStrategy;
+import reactor.util.Exceptions;
+import reactor.util.Logger;
+import reactor.util.ReactorProperties;
+import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.RingBuffer;
+import reactor.util.concurrent.Sequence;
+import reactor.util.concurrent.Slot;
+import reactor.util.concurrent.WaitStrategy;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService

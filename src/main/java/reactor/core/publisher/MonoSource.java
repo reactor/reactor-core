@@ -19,9 +19,9 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
-import reactor.core.flow.Receiver;
-import reactor.core.util.Exceptions;
+import reactor.core.Fuseable;
+import reactor.core.Receiver;
+import reactor.util.Exceptions;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}

@@ -20,9 +20,8 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscriptionSubscriber;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.Exceptions;
+import reactor.util.Exceptions;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -56,7 +55,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class DelaySubscriptionOtherSubscriber<T, U>
-			extends DeferredSubscriptionSubscriber<U, T> {
+			extends OperatorHelper.DeferredSubscriptionSubscriber<U, T> {
 
 		final Publisher<? extends T> source;
 
@@ -125,10 +124,10 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 			final Subscriber<? super T> actual;
 
-			final DeferredSubscriptionSubscriber<?, ?> arbiter;
+			final OperatorHelper.DeferredSubscriptionSubscriber<?, ?> arbiter;
 
 			public DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
-															DeferredSubscriptionSubscriber<?, ?> arbiter) {
+															OperatorHelper.DeferredSubscriptionSubscriber<?, ?> arbiter) {
 				this.actual = actual;
 				this.arbiter = arbiter;
 			}

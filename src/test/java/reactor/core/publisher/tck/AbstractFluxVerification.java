@@ -41,7 +41,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.subscriber.SubmissionEmitter;
-import reactor.core.util.ReactorProperties;
+import reactor.util.ReactorProperties;
 
 /**
  * @author Stephane Maldini

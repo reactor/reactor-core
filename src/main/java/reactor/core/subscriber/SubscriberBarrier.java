@@ -17,9 +17,9 @@ package reactor.core.subscriber;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
-import reactor.core.util.Exceptions;
+import reactor.core.Producer;
+import reactor.core.Receiver;
+import reactor.util.Exceptions;
 
 /**
  * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between
@@ -82,9 +82,11 @@ public class SubscriberBarrier<I, O>
 		BaseSubscriber.super.onNext(i);
 		try {
 			doNext(i);
-		} catch (Exceptions.CancelException c) {
+		}
+		catch (Exceptions.CancelException c) {
 			throw c;
-		} catch (Throwable throwable) {
+		}
+		catch (Throwable throwable) {
 			Subscription subscription = this.subscription;
 			if(subscription != null){
 				subscription.cancel();

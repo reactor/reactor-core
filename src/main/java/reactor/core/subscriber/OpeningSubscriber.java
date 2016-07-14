@@ -21,8 +21,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Receiver;
-import reactor.core.util.Exceptions;
+import reactor.core.Receiver;
+import reactor.util.Exceptions;
 
 /**
  * A Subscriber with a safe Subscription callback

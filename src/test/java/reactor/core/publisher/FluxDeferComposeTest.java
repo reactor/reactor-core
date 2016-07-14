@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import reactor.core.test.TestSubscriber;
+import reactor.test.subscriber.TestSubscriber;
 
 public class FluxDeferComposeTest {
     @Test

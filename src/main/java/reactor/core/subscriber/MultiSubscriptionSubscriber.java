@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Producer;
-import reactor.core.flow.Receiver;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 
 /**
  * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the

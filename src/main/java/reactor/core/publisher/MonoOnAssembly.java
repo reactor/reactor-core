@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.flow.Fuseable;
+import reactor.core.Fuseable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it

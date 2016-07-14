@@ -23,8 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.MultiReceiver;
-import reactor.core.subscriber.DeferredSubscriptionSubscriber;
+import reactor.core.MultiReceiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
@@ -287,7 +286,8 @@ extends Flux<T>
 		}
 	}
 
-	static final class AmbSubscriber<T> extends DeferredSubscriptionSubscriber<T, T> {
+	static final class AmbSubscriber<T> extends
+	                                    OperatorHelper.DeferredSubscriptionSubscriber<T, T> {
 
 		final AmbCoordinator<T> parent;
 

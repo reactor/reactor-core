@@ -20,10 +20,9 @@ import java.util.function.BiFunction;
 
 import org.reactivestreams.*;
 
-import reactor.core.flow.Fuseable;
-import reactor.core.subscriber.DeferredScalarSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.core.util.*;
+import reactor.util.*;
 
 /**
  * Reduces all 'rails' into a single value which then gets reduced into a single
@@ -55,7 +54,8 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 		return Long.MAX_VALUE;
 	}
 	
-	static final class ParallelReduceFullMainSubscriber<T> extends DeferredScalarSubscriber<T, T> {
+	static final class ParallelReduceFullMainSubscriber<T> extends
+	                                                       OperatorHelper.DeferredScalarSubscriber<T, T> {
 
 		final ParallelReduceFullInnerSubscriber<T>[] subscribers;
 		

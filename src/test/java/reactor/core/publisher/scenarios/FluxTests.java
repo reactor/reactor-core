@@ -50,7 +50,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.flow.Cancellation;
+import reactor.core.Cancellation;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
@@ -63,9 +63,9 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.Subscribers;
-import reactor.core.util.function.Tuple;
-import reactor.core.util.Exceptions;
-import reactor.core.util.Logger;
+import reactor.util.function.Tuple;
+import reactor.util.Exceptions;
+import reactor.util.Logger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -281,7 +281,8 @@ public class FluxTests extends AbstractReactorTest {
 		Random random = ThreadLocalRandom.current();
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
-		SubmissionEmitter<String> s = SubmissionEmitter.create(d);
+		SubmissionEmitter<String> s = d.connectEmitter();
+
 		Flux<Integer> tasks = d.publishOn(asyncGroup)
 		                       .parallel(8)
 		                       .groups()
