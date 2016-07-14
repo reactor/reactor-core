@@ -282,12 +282,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			if (cancelled) {
 				return;
 			}
-			
+
 			cancelled = true;
+			s.cancel();
 			worker.shutdown();
-			
+
 			if (WIP.getAndIncrement(this) == 0) {
-				s.cancel();
 				queue.clear();
 			}
 		}
