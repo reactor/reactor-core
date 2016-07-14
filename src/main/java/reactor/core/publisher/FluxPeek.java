@@ -63,10 +63,12 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 	final Runnable onCancelCall;
 
 	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-						 Consumer<? super T> onNextCall,
-			Consumer<? super Throwable> onErrorCall, Runnable
-						   onCompleteCall,
-						 Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
+			Consumer<? super T> onNextCall,
+			Consumer<? super Throwable> onErrorCall,
+			Runnable onCompleteCall,
+			Runnable onAfterTerminateCall,
+			LongConsumer onRequestCall,
+			Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
@@ -85,13 +87,13 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 		}
 		if (s instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
-			ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>)s;
+					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;
 			source.subscribe(new PeekConditionalSubscriber<>(s2, this));
 			return;
 		}
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
-	
+
 	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer {
 
 		final Subscriber<? super T> actual;
@@ -99,6 +101,8 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 		final FluxPeekHelper<T> parent;
 
 		Subscription s;
+
+		boolean done;
 
 		public PeekSubscriber(Subscriber<? super T> actual, FluxPeekHelper<T> parent) {
 			this.actual = actual;
@@ -155,6 +159,10 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return;
+			}
 			if(parent.onNextCall() != null) {
 				try {
 					parent.onNextCall().accept(t);
@@ -166,11 +174,17 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					return;
 				}
 			}
+
 			actual.onNext(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
+			}
+			done = true;
 			if(parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
 				parent.onErrorCall().accept(t);
@@ -196,6 +210,10 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 
 		@Override
 		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
 			if(parent.onCompleteCall() != null) {
 				try {
 					parent.onCompleteCall().run();
@@ -240,45 +258,34 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 		return onSubscribeCall;
 	}
 
-
-
 	@Override
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
-
-
 
 	@Override
 	public Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
-
-
 	@Override
 	public Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
-
-
 
 	@Override
 	public Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
-
-
 	@Override
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
-
-
 	@Override
 	public Runnable onCancelCall() {
 		return onCancelCall;
 	}
+
 }

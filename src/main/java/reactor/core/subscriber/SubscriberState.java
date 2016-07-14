@@ -21,7 +21,8 @@ package reactor.core.subscriber;
 public interface SubscriberState {
 
 	/**
-	 * FIXME
+	 * Returned value when a given component does not provide access to the requested
+	 * trait
 	 */
 	long UNSPECIFIED = -1L;
 

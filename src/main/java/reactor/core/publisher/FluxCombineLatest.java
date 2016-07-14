@@ -264,7 +264,15 @@ extends Flux<R>
 
 		@Override
 		public void cancel() {
+			if (cancelled) {
+				return;
+			}
 			cancelled = true;
+			cancelAll();
+
+			if (WIP.getAndIncrement(this) == 0) {
+				queue.clear();
+			}
 		}
 
 		@Override

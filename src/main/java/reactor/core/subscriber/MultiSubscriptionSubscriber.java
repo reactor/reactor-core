@@ -131,7 +131,7 @@ public abstract class MultiSubscriptionSubscriber<I, O> implements Subscription,
 		}
 
 		Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
-		if (a != null && shouldCancelCurrent()) {
+		if (a != null) {
 			a.cancel();
 		}
 		drain();
