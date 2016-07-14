@@ -2269,7 +2269,9 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 				T value = block();
 				return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
 			}
-			return onAssembly(new MonoSubscribeOnCallable<T>((Callable<T>)this,
+			@SuppressWarnings("unchecked")
+			Callable<T> c = (Callable<T>)this;
+			return onAssembly(new MonoSubscribeOnCallable<T>(c,
 					scheduler));
 		}
 		return onAssembly(new MonoSubscribeOn<>(this, scheduler));

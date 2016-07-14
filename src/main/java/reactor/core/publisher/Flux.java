@@ -4545,7 +4545,9 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 						((Fuseable.ScalarCallable<T>) this).call();
 				return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
 			}
-			return onAssembly(new FluxSubscribeOnCallable<T>((Callable<T>)this, scheduler));
+			@SuppressWarnings("unchecked")
+			Callable<T> c = (Callable<T>)this;
+			return onAssembly(new FluxSubscribeOnCallable<T>(c, scheduler));
 		}
 		return onAssembly(new FluxSubscribeOn<>(this, scheduler));
 	}
