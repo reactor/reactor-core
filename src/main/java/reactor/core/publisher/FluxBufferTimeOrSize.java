@@ -25,7 +25,6 @@ import reactor.core.scheduler.TimedScheduler;
 
 /**
  * @author Stephane Maldini
- * @since 1.1, 2.5
  */
 final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 

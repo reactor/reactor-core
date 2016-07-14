@@ -50,7 +50,6 @@ import reactor.core.util.function.Tuple2;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
- * @since 2.5
  */
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 

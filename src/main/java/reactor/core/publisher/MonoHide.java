@@ -26,7 +26,6 @@ import org.reactivestreams.*;
  * 
  * @param <T> the value type
  * 
- * @since 2.5
  */
 final class MonoHide<T> extends MonoSource<T, T> {
 

@@ -20,7 +20,6 @@ import org.reactivestreams.Subscriber;
 
 /**
  * @author Stephane Maldini
- * @since 2.0, 2.5
  */
 final class MonoDematerialize<T> extends MonoSource<Signal<T>, T> {
 

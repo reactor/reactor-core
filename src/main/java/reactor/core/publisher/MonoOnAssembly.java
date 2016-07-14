@@ -35,7 +35,6 @@ import reactor.core.flow.Fuseable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
- * @since 2.5
  */
 final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, AssemblyOp {
 

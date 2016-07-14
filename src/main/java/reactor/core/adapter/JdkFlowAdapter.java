@@ -28,7 +28,6 @@ import reactor.core.publisher.Flux;
  *
  * @author Stephane Maldini
  * @author Sebastien Deleuze
- * @since 2.5
  */
 public enum JdkFlowAdapter {
 	;

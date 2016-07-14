@@ -26,7 +26,6 @@ import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
- * @since 2.0, 2.5
  */
 final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 

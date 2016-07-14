@@ -31,7 +31,6 @@ import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
- * @since 1.1, 2.0, 2.5
  */
 abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 

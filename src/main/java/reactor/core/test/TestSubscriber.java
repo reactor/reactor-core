@@ -82,7 +82,6 @@ import reactor.core.util.ReactorProperties;
  * @author Anatoly Kadyshev
  * @author Stephane Maldini
  * @author Brian Clozel
- * @since 2.5
  */
 public class TestSubscriber<T> extends DeferredSubscription implements Subscriber<T> {
 
