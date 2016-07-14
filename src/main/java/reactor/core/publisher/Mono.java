@@ -2264,9 +2264,13 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 	 * @return an asynchronously requesting {@link Mono}
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarCallable) {
-			T value = block();
-			return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+		if(this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				T value = block();
+				return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+			}
+			return onAssembly(new MonoSubscribeOnCallable<T>((Callable<T>)this,
+					scheduler));
 		}
 		return onAssembly(new MonoSubscribeOn<>(this, scheduler));
 	}

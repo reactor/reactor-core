@@ -4539,10 +4539,13 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 	 * @return a {@link Flux} requesting asynchronously
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
-		if (this instanceof Fuseable.ScalarCallable) {
-            @SuppressWarnings("unchecked")
-            T value = ((Fuseable.ScalarCallable<T>)this).call();
-			return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked") T value =
+						((Fuseable.ScalarCallable<T>) this).call();
+				return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+			}
+			return onAssembly(new FluxSubscribeOnCallable<T>((Callable<T>)this, scheduler));
 		}
 		return onAssembly(new FluxSubscribeOn<>(this, scheduler));
 	}
