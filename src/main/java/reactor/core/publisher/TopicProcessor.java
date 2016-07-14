@@ -760,14 +760,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
-	public String toString() {
-		return "TopicProcessor{" +
-				"barrier=" + barrier +
-				", remaining=" + ringBuffer.remainingCapacity() +
-				'}';
-	}
-
-	@Override
 	public long downstreamCount() {
 		return ringBuffer.getSequenceReceivers().length - (isStarted() ? 1 : 0);
 	}

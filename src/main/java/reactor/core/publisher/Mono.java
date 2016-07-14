@@ -81,7 +81,7 @@ import reactor.util.function.Tuple6;
  * @see Flux
  * @since 2.5
  */
-public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
+public abstract class Mono<T> implements Publisher<T> {
 
 	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
 
@@ -1530,17 +1530,6 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 		return FluxSource.wrap(this);
 	}
 
-	@Override
-	public final long getPrefetch() {
-		return Long.MAX_VALUE;
-	}
-
-	@Override
-	public Object getId() {
-		return getClass().getSimpleName()
-		                 .replace(Mono.class.getSimpleName(), "");
-	}
-
 	/**
 	 * Emit a single boolean true if this {@link Mono} has an element.
 	 *
@@ -2554,6 +2543,12 @@ public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 	 */
 	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()
+		                 .replace(Mono.class.getSimpleName(), "");
 	}
 
 	/**

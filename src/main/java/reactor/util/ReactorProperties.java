@@ -34,8 +34,7 @@ import sun.misc.Unsafe;
  * Original Reference :
  * <a href='https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java'>Netty</a>.
  */
-public enum ReactorProperties {
-	;
+public abstract class ReactorProperties {
 
 	/**
 	 *
@@ -288,4 +287,6 @@ public enum ReactorProperties {
 			}
 		}
 	}
+
+	ReactorProperties(){}
 }

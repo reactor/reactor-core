@@ -49,7 +49,7 @@ import reactor.util.concurrent.QueueSupplier;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> implements PublisherConfig {
+public abstract class ParallelFlux<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (number of CPUs) in
@@ -882,5 +882,13 @@ public abstract class ParallelFlux<T> implements PublisherConfig {
 			Publisher<? extends R>> mapper,
 			int prefetch) {
 		return concatMap(mapper, prefetch, ErrorMode.END);
+	}
+
+	/**
+	 * The prefetch configuration of the component
+	 * @return the prefetch configuration of the component
+	 */
+	public long getPrefetch() {
+		return -1L;
 	}
 }

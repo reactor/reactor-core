@@ -48,12 +48,6 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 	}
 
 	@Override
-	public String getId() {
-		return "/loggers/" + (log.getName()
-		                         .equalsIgnoreCase(FluxLog.class.getName()) ? "default" : log.getName());
-	}
-
-	@Override
 	public void subscribe(Subscriber<? super IN> subscriber) {
 		long newId = uniqueId++;
 		if ((options & Logger.SUBSCRIBE) == Logger.SUBSCRIBE) {
@@ -177,4 +171,10 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		}
 	}
 
+
+	@Override
+	public String toString() {
+		return "/loggers/" + (log.getName()
+		                         .equalsIgnoreCase(FluxLog.class.getName()) ? "default" : log.getName());
+	}
 }

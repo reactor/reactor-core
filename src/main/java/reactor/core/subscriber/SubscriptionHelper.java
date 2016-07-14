@@ -39,8 +39,7 @@ import reactor.util.ReactorProperties;
  *
  * @since 2.5
  */
-public enum SubscriptionHelper {
-	;
+public abstract class SubscriptionHelper {
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
@@ -542,4 +541,6 @@ public enum SubscriptionHelper {
 			return 0;
 		}
 	}
+
+	SubscriptionHelper(){}
 }

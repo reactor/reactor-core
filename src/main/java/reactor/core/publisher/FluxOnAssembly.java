@@ -69,11 +69,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		this.stacktrace = takeStacktrace(source);
 	}
 
-	@Override
-	public Object getId() {
-		return null;
-	}
-
 	static Publisher<?> getParentOrThis(Publisher<?> parent) {
 		Object next = parent;
 

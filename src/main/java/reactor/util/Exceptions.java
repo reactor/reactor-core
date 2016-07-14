@@ -27,8 +27,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  * @since 2.0
  */
-public enum Exceptions {
-	;
+public abstract class Exceptions {
 
 	static volatile boolean TRACE_OPERATOR_STACKTRACE =
 			ReactorProperties.TRACE_OPERATOR_STACKTRACE;
@@ -342,4 +341,6 @@ public enum Exceptions {
 		}
 
 	}
+
+	Exceptions(){}
 }

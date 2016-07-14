@@ -627,16 +627,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
-	public String toString() {
-		return "WorkQueueProcessor{" +
-				", ringBuffer=" + ringBuffer +
-				", executor=" + executor +
-				", workSequence=" + workSequence +
-				", retrySequence=" + retrySequence +
-				'}';
-	}
-
-	@Override
 	public long getPending() {
 		return ringBuffer.remainingCapacity() + (retryBuffer != null ?
 				retryBuffer.remainingCapacity() : 0L);

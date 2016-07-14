@@ -90,7 +90,7 @@ import reactor.util.function.Tuple6;
  * @see Mono
  * @since 2.5
  */
-public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
+public abstract class Flux<T> implements Publisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -2914,10 +2914,12 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 				QueueSupplier.get(prefetch)));
 	}
 
-	@Override
-	public Object getId() {
-		return getClass().getSimpleName()
-		                 .replace(Flux.class.getSimpleName(), "");
+	/**
+	 * The prefetch configuration of the {@link Flux}
+	 * @return the prefetch configuration of the {@link Flux}, -1L if unspecified
+	 */
+	public long getPrefetch() {
+		return -1L;
 	}
 
 	/**
@@ -5155,6 +5157,12 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 		return new BlockingIterable<>(this, batchSize, provider).stream();
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()
+		                 .replace(Flux.class.getSimpleName(), "");
+	}
+
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by cancel
 	 * signals they receive.
@@ -5703,7 +5711,7 @@ public abstract class Flux<T> implements Publisher<T>, PublisherConfig {
 		return IDENTITY_FUNCTION;
 	}
 
-    static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
+	static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 	@SuppressWarnings("rawtypes")
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuple::of;
 	@SuppressWarnings("rawtypes")

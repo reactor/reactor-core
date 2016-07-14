@@ -26,7 +26,6 @@ import org.reactivestreams.Processor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
-import reactor.core.subscriber.Subscribers;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.Exceptions;
 
@@ -78,17 +77,17 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		AtomicLong count = new AtomicLong();
 		AtomicLong errorCount = new AtomicLong();
 
-		processor.subscribe(Subscribers.unbounded((d, sub) -> {
+		processor.subscribe(d -> {
 			errorCount.incrementAndGet();
 			throw Exceptions.failWithCancel();
-		}));
+		});
 
 		Flux.from(processor).doOnNext(
 			d -> count.incrementAndGet()
-		).subscribe(Subscribers.unbounded((d, sub) -> {
+		).subscribe(d -> {
 			latch.countDown();
 			//list.add(d);
-		}));
+		});
 
 		sink.subscribe(processor);
 		sink.connect();
@@ -96,10 +95,10 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 			sink.onNext(i);
 			if( i % 100 == 0) {
-				processor.subscribe(Subscribers.unbounded((d, sub) -> {
+				processor.subscribe(d -> {
 					errorCount.incrementAndGet();
 					throw Exceptions.failWithCancel();
-				}));
+				});
 			}
 		}
 

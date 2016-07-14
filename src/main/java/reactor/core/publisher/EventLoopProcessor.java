@@ -285,7 +285,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	final public String getId() {
+	final public String toString() {
 		return "/Processors/" + name + "/" + contextClassLoader.hashCode();
 	}
 
