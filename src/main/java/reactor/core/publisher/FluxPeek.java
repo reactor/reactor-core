@@ -44,7 +44,6 @@ import reactor.core.util.Exceptions;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
- * @since 2.5
  */
 final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 

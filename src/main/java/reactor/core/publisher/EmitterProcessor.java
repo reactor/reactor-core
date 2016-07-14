@@ -50,8 +50,7 @@ import reactor.core.util.concurrent.Slot;
  * <p>
  *
  * @author Stephane Maldini
- * @since 2.5
- * 
+ *
  * @param <T> the input and output value type
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T>

@@ -38,7 +38,6 @@ import reactor.core.util.ReactorProperties;
  *
  * @author Stephane Maldini
  *
- * @since 2.5
  */
 public enum SubscriptionHelper {
 	;

@@ -48,7 +48,6 @@ import reactor.core.util.Exceptions;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
- * @since 2.5
  */
 final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 

@@ -23,8 +23,7 @@ import reactor.core.util.Exceptions;
  * Convenience subscriber default interface that checks for input errors and provide a self-subscription operation.
  *
  * @author Stephane Maldini
- * @since 2.5
- * 
+ *
  * @param <T> the value type observed
  */
 public interface BaseSubscriber<T> extends Subscriber<T> {

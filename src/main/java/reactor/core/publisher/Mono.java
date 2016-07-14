@@ -79,7 +79,6 @@ import reactor.core.util.function.Tuple6;
  * @author David Karnok
  *
  * @see Flux
- * @since 2.5
  */
 public abstract class Mono<T> implements Publisher<T>, PublisherConfig {
 

@@ -27,7 +27,6 @@ import reactor.core.scheduler.TimedScheduler;
  * WindowAction is forwarding events on a steam until {@code backlog} is reached, after that streams collected events
  * further, complete it and create a fresh new fluxion.
  * @author Stephane Maldini
- * @since 2.0, 2.5
  */
 final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 

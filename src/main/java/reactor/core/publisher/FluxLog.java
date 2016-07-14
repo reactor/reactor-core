@@ -28,7 +28,6 @@ import reactor.core.util.Logger;
  * A logging interceptor that intercepts all reactive calls and trace them
  *
  * @author Stephane Maldini
- * @since 2.5
  */
 final class FluxLog<IN> extends FluxSource<IN, IN> {
 

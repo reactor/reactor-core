@@ -36,7 +36,6 @@ import reactor.core.util.*;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
- * @since 2.5
  */
 final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 

@@ -27,7 +27,6 @@ import reactor.core.util.Exceptions;
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}
  * @author Stephane Maldini
- * @since 2.5
  * @param <T> the value type
  */
 public class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
