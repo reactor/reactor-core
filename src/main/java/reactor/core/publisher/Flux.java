@@ -50,7 +50,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxEmitter.BackpressureHandling;
+import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
@@ -413,7 +413,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	
 	/**
      * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
-     * the FluxEmitter API.
+     * the FluxSink API.
      * <p>
      * This Flux factory is useful if one wants to adapt some other a multi-valued async API
      * and not worry about cancellation and backpressure. For example:
@@ -440,16 +440,16 @@ public abstract class Flux<T> implements Publisher<T> {
      * <code></pre>
      *
      * @param <T> the value type
-     * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
+     * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
      * @return a {@link Flux}
      */
-    public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter) {
-	    return onAssembly(new FluxCreate<>(emitter, BackpressureHandling.BUFFER));
+    public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter) {
+	    return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER));
     }
 
 	/**
 	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
-	 * the FluxEmitter API.
+	 * the FluxSink API.
 	 * <p>
 	 * This Flux factory is useful if one wants to adapt some other a multi-valued async API
 	 * and not worry about cancellation and backpressure. For example:
@@ -470,15 +470,15 @@ public abstract class Flux<T> implements Publisher<T> {
      *     emitter.setCancellation(() -> {
      *         button.removeListener(al);
      *     });
-     * }, FluxEmitter.BackpressureHandling.LATEST);
+     * }, FluxSink.OverflowStrategy.LATEST);
      * <code></pre>
      *
 	 * @param <T> the value type
-	 * @param backpressure the backpressure mode, see {@link BackpressureHandling} for the avilable backpressure modes
-	 * @param emitter the consumer that will receive a FluxEmitter for each individual Subscriber.
+	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the avilable backpressure modes
+	 * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<T> create(Consumer<? super FluxEmitter<T>> emitter, BackpressureHandling backpressure) {
+	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
 		return onAssembly(new FluxCreate<>(emitter, backpressure));
 	}
 
@@ -664,12 +664,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
-	 * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+	 * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
 	 * expected to return a (new) state.
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(BiFunction<S, SignalEmitter<T>, S> generator) {
+	public static <T, S> Flux<T> generate(BiFunction<S, SynchronousSink<T>, S> generator) {
 		return onAssembly(new FluxGenerate<>(generator));
 	}
 
@@ -684,11 +684,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
 	 * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
-	 * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+	 * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
      * expected to return a (new) state.
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator));
 	}
 
@@ -704,14 +704,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
      * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
-     * @param generator the bifunction called with the current state, the SignalEmitter API instance and is
+     * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
      * expected to return a (new) state.
      * @param stateConsumer called after the generator has terminated or the downstream cancelled, receiving the last
      * state to be handled (i.e., release resources or do other cleanup).
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator, Consumer<? super S> stateConsumer) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 

@@ -504,7 +504,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isCancelled() {
-			return s == Operators.cancelled();
+			return s == Operators.cancelledSubscription();
 		}
 
 		@Override

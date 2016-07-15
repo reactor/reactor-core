@@ -104,7 +104,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != Operators.cancelled()) {
+				if (main != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 				return;
@@ -114,9 +114,9 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != Operators.cancelled()) {
-				s = MAIN.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -124,9 +124,9 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != Operators.cancelled()) {
-				s = OTHER.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = OTHER.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -135,7 +135,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != Operators.cancelled()) {
+				if (other != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 				return;

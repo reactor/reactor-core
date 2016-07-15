@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
+import reactor.core.Trackable;
 import reactor.util.*;
 
 /**
@@ -45,21 +46,21 @@ extends Flux<T> {
 
 	final Callable<S> stateSupplier;
 
-	final BiFunction<S, SignalEmitter<T>, S> generator;
+	final BiFunction<S, SynchronousSink<T>, S> generator;
 
 	final Consumer<? super S> stateConsumer;
 
-	public FluxGenerate(BiFunction<S, SignalEmitter<T>, S> generator) {
+	public FluxGenerate(BiFunction<S, SynchronousSink<T>, S> generator) {
 		this(() -> null, generator, s -> {
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator) {
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
 		this(stateSupplier, generator, s -> {
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SignalEmitter<T>, S> generator,
+	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator,
 							 Consumer<? super S> stateConsumer) {
 		this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier");
 		this.generator = Objects.requireNonNull(generator, "generator");
@@ -80,11 +81,11 @@ extends Flux<T> {
 	}
 
 	static final class GenerateSubscription<T, S>
-	  implements QueueSubscription<T>, SignalEmitter<T> {
+	  implements QueueSubscription<T>, Trackable, SynchronousSink<T> {
 
 		final Subscriber<? super T> actual;
 
-		final BiFunction<S, SignalEmitter<T>, S> generator;
+		final BiFunction<S, SynchronousSink<T>, S> generator;
 
 		final Consumer<? super S> stateConsumer;
 
@@ -119,7 +120,7 @@ extends Flux<T> {
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
 		public GenerateSubscription(Subscriber<? super T> actual, S state,
-											 BiFunction<S, SignalEmitter<T>, S> generator, Consumer<? super
+											 BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super
 		  S> stateConsumer) {
 			this.actual = actual;
 			this.state = state;
@@ -189,7 +190,7 @@ extends Flux<T> {
 		void fastPath() {
 			S s = state;
 
-			final BiFunction<S, SignalEmitter<T>, S> g = generator;
+			final BiFunction<S, SynchronousSink<T>, S> g = generator;
 
 			for (; ; ) {
 
@@ -214,7 +215,7 @@ extends Flux<T> {
 					cleanup(s);
 
 					actual.onError(new IllegalStateException("The generator didn't call any of the " +
-					  "SignalEmitter method"));
+					  "SynchronousSink method"));
 					return;
 				}
 
@@ -227,7 +228,7 @@ extends Flux<T> {
 
 			long e = 0L;
 
-			final BiFunction<S, SignalEmitter<T>, S> g = generator;
+			final BiFunction<S, SynchronousSink<T>, S> g = generator;
 
 			for (; ; ) {
 				while (e != n) {
@@ -253,7 +254,7 @@ extends Flux<T> {
 						cleanup(s);
 
 						actual.onError(new IllegalStateException("The generator didn't call any of the " +
-						  "SignalEmitter method"));
+						  "SynchronousSink method"));
 						return;
 					}
 

@@ -22,7 +22,8 @@ import reactor.core.Cancellation;
  * for emitting nothing, a single value or an error (mutually exclusive).
  * @param <T> the value type emitted
  */
-public interface MonoEmitter<T> {
+public interface MonoSink<T> {
+
     /**
      * Complete without any value.
      * <p>Calling this method multiple times or after the other

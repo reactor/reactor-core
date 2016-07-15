@@ -115,7 +115,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 ```
 
 
-## Hot Publishing : SignalEmitter, FluxEmitter, MonoEmitter
+## Hot Publishing : SynchronousSink, FluxSink, MonoSink
 To bridge a Subscriber or Processor into an outside context that is taking care of
 producing non concurrently, use `Flux#create`, `Mono#create`, or
 `FluxProcessor#connectEmitter()`.
@@ -124,7 +124,7 @@ producing non concurrently, use `Flux#create`, `Mono#create`, or
 Flux.create(emitter -> {
          // setup backpressure mode, default is BUFFER
 
-         emitter.setBackpressureHandling(FluxEmitter.BackpressureHandling.LATEST);
+         emitter.setBackpressureHandling(FluxSink.BackpressureHandling.LATEST);
 
          ActionListener al = e -> {
             emitter.next(textField.getText());
@@ -155,7 +155,7 @@ The 3 main processor implementations are message relays using 0 ([EmitterProcess
 
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
-SignalEmitter<Integer> sink = emitter.connectEmitter();
+SynchronousSink<Integer> sink = emitter.connectEmitter();
 sink.submit(1);
 sink.submit(2);
 emitter.subscribe(System.out::println);
@@ -171,7 +171,7 @@ asynchronous boundaries between N Subscribers (asynchronous or not) and a parent
 Replay capacity in action:
 ```java
 ReplayProcessor<Integer> replayer = ReplayProcessor.create();
-SignalEmitter<Integer> sink = replayer.connectEmitter();
+SynchronousSink<Integer> sink = replayer.connectEmitter();
 sink.submit(1);
 sink.submit(2);
 replayer.subscribe(System.out::println); //output 1, 2

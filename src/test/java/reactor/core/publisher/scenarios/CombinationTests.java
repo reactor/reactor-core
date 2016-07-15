@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Reactor;
+import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -38,7 +39,6 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.publisher.SubmissionEmitter;
 import reactor.test.TestSubscriber;
 import static reactor.core.Reactor.Logger;
 
@@ -97,7 +97,7 @@ public class CombinationTests {
 			         latch.countDown();
 		         }, 1);
 
-		SubmissionEmitter<Integer> session = processor.connectEmitter();
+		BlockingSink<Integer> session = processor.connectEmitter();
 		long emission = session.submit(1);
 		if (emission == -1L) {
 			throw new IllegalStateException("Negatime " + emission);
@@ -128,7 +128,7 @@ public class CombinationTests {
 			         .subscribe(d -> latch.countDown(), null, latch::countDown, 1);
 		}
 
-		SubmissionEmitter<Integer> session = processor.connectEmitter();
+		BlockingSink<Integer> session = processor.connectEmitter();
 
 		for (int i = 0; i < n; i++) {
 			while (!session.emit(i)

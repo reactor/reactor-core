@@ -55,7 +55,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
 
-		signaller.onSubscribe(Operators.empty());
+		signaller.onSubscribe(Operators.emptySubscription());
 
 		Subscriber<T> serial = Operators.serialize(s);
 

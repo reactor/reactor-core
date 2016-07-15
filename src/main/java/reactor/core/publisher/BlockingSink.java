@@ -34,24 +34,22 @@ import reactor.util.Exceptions;
  *
  * A "hot" sequence source to decorate any {@link Subscriber} or {@link org.reactivestreams.Processor}.
  *
- * The {@link SubmissionEmitter} keeps track of the decorated {@link Subscriber} demand. Therefore any emission can be
+ * The {@link BlockingSink} keeps track of the decorated {@link Subscriber} demand. Therefore any emission can be
  * safely sent to
  * the delegate
  * {@link Subscriber} by using {@link #submit} to block on backpressure (missing demand) or {@link #emit} to
- * never block and return instead an {@link SubmissionEmitter.Emission} status.
+ * never block and return instead an {@link BlockingSink.Emission} status.
  *
  * The emitter is itself a {@link Subscriber} that will request an unbounded value if subscribed.
  *
  * @author Stephane Maldini
  * @param <E> the element type
  */
-public final class SubmissionEmitter<E>
-		implements Producer, Subscription,
-		           Consumer<E>, SignalEmitter<E>,
-		           Closeable {
+public final class BlockingSink<E>
+		implements Producer, Subscription, Trackable, Consumer<E>, Closeable {
 	/**
 	 * An acknowledgement signal returned by {@link #emit}.
-	 * {@link SubmissionEmitter.Emission#isOk()} is the only successful signal, the other define the emission failure cause.
+	 * {@link BlockingSink.Emission#isOk()} is the only successful signal, the other define the emission failure cause.
 	 *
 	 */
 	public enum Emission {
@@ -77,7 +75,7 @@ public final class SubmissionEmitter<E>
 	/**
 	 *
 	 * Create a
-	 * {@link SubmissionEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
+	 * {@link BlockingSink} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
 	 *
 	 * The subscriber will be immediately {@link #start started} only if the autostart property is true.  via
 	 * {@link Subscriber#onSubscribe(Subscription)} as the
@@ -88,10 +86,10 @@ public final class SubmissionEmitter<E>
 	 * @param autostart true if {@link Subscriber#onSubscribe(Subscription)} is invoked during this call
 	 * @param <E> the reified {@link Subscriber} type
 	 *
-	 * @return a new {@link SubmissionEmitter}
+	 * @return a new {@link BlockingSink}
 	 */
-	public static <E> SubmissionEmitter<E> create(Subscriber<? super E> subscriber, boolean autostart) {
-		SubmissionEmitter<E> sub = new SubmissionEmitter<>(subscriber);
+	public static <E> BlockingSink<E> create(Subscriber<? super E> subscriber, boolean autostart) {
+		BlockingSink<E> sub = new BlockingSink<>(subscriber);
 		if (autostart) {
 			sub.start();
 		}
@@ -101,7 +99,7 @@ public final class SubmissionEmitter<E>
 	/**
 	 *
 	 * Create a
-	 * {@link SubmissionEmitter} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
+	 * {@link BlockingSink} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
 	 *
 	 * The subscriber will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
 	 * this call.
@@ -109,9 +107,9 @@ public final class SubmissionEmitter<E>
 	 * @param subscriber the decorated {@link Subscriber}
 	 * @param <E> the reified {@link Subscriber} type
 	 *
-	 * @return a new pre-subscribed {@link SubmissionEmitter}
+	 * @return a new pre-subscribed {@link BlockingSink}
 	 */
-	public static <E> SubmissionEmitter<E> create(Subscriber<? super E> subscriber) {
+	public static <E> BlockingSink<E> create(Subscriber<? super E> subscriber) {
 		return create(subscriber, true);
 	}
 	final Subscriber<? super E> actual;
@@ -120,7 +118,7 @@ public final class SubmissionEmitter<E>
 
 	volatile boolean cancelled;
 
-	protected SubmissionEmitter(Subscriber<? super E> actual) {
+	protected BlockingSink(Subscriber<? super E> actual) {
 		this.actual = actual;
 	}
 
@@ -146,7 +144,12 @@ public final class SubmissionEmitter<E>
 		return actual;
 	}
 
-	@Override
+	/**
+	 * Try emitting, might throw an unchecked exception.
+	 * @see Subscriber#onNext(Object)
+	 * @param t the value to emit, not null
+	 * @throws RuntimeException
+	 */
 	public void next(E t) {
 		Emission emission = emit(t);
 		if(emission.isOk()) {
@@ -168,13 +171,13 @@ public final class SubmissionEmitter<E>
 
 	/**
 	 * A non-blocking {@link Subscriber#onNext(Object)} that will return a status 
-	 * {@link SubmissionEmitter.Emission}. The status will
+	 * {@link BlockingSink.Emission}. The status will
 	 * indicate if the decorated
-	 * subscriber is backpressuring this {@link SubmissionEmitter} and if it has previously been terminated successfully or
+	 * subscriber is backpressuring this {@link BlockingSink} and if it has previously been terminated successfully or
 	 * not.
 	 *
 	 * @param data the data to signal
-	 * @return an {@link SubmissionEmitter.Emission} status
+	 * @return an {@link BlockingSink.Emission} status
 	 */
 	public Emission emit(E data) {
 		if (uncaughtException != null) {
@@ -209,14 +212,13 @@ public final class SubmissionEmitter<E>
 
 	/**
 	 *
-	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link SubmissionEmitter#fail(Throwable)}
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link BlockingSink#fail(Throwable)}
 	 * might fail itself with an
 	 * unchecked exception if an error has already been recorded or it
 	 * has previously been terminated via {@link #cancel()}, {@link #finish()} or {@link #complete()}.
 	 *
 	 * @param error the exception to signal
 	 */
-	@Override
 	public void fail(Throwable error) {
 		if (uncaughtException == null) {
 			uncaughtException = error;
@@ -239,10 +241,10 @@ public final class SubmissionEmitter<E>
 
 	/**
 	 * Try emitting {@link #complete()} to the decorated {@link Subscriber}. The completion might not return a
-	 * successful {@link SubmissionEmitter.Emission#isOk()} if this {@link SubmissionEmitter} was previously terminated or the delegate
+	 * successful {@link BlockingSink.Emission#isOk()} if this {@link BlockingSink} was previously terminated or the delegate
 	 * failed consuming the signal.
 	 *
-	 * @return an {@link SubmissionEmitter.Emission} status
+	 * @return an {@link BlockingSink.Emission} status
 	 */
 	public Emission finish() {
 		if (uncaughtException != null) {
@@ -282,7 +284,7 @@ public final class SubmissionEmitter<E>
 	}
 
 	/**
-	 * @return true if the {@link SubmissionEmitter} has observed any error
+	 * @return true if the {@link BlockingSink} has observed any error
 	 */
 	public boolean hasFailed() {
 		return uncaughtException != null;
@@ -303,7 +305,6 @@ public final class SubmissionEmitter<E>
 	/**
 	 * @see Subscriber#onComplete()
 	 */
-	@Override
 	public void complete() {
 		finish();
 	}
@@ -322,7 +323,7 @@ public final class SubmissionEmitter<E>
 
 	/**
 	 * Subscribe the decorated subscriber
-	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link SubmissionEmitter} might be
+	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link BlockingSink} might be
 	 * cancelled as per Reactive Streams Specification enforce.
 	 */
 	public void start() {
@@ -433,7 +434,7 @@ public final class SubmissionEmitter<E>
 
 	@Override
 	public String toString() {
-		return "SubmissionEmitter{" +
+		return "BlockingSink{" +
 				"requested=" + requested +
 				", uncaughtException=" + uncaughtException +
 				", cancelled=" + cancelled +
@@ -443,8 +444,8 @@ public final class SubmissionEmitter<E>
 //
 
 	@SuppressWarnings("rawtypes")
-    static final Predicate                                 NEVER     = o -> false;
+    static final Predicate                            NEVER     = o -> false;
 	@SuppressWarnings("rawtypes")
-	static final AtomicLongFieldUpdater<SubmissionEmitter> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(SubmissionEmitter.class, "requested");
+	static final AtomicLongFieldUpdater<BlockingSink> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(BlockingSink.class, "requested");
 }

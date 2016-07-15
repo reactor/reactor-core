@@ -136,7 +136,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 				} catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
 					s.cancel();
-					actual.onSubscribe(Operators.empty());
+					actual.onSubscribe(Operators.emptySubscription());
 					onError(ex);
 					return;
 				}

@@ -30,16 +30,16 @@ import reactor.util.Exceptions;
  */
 final class MonoCreate<T> extends Mono<T> {
 
-    final Consumer<MonoEmitter<T>> callback;
+    final Consumer<MonoSink<T>> callback;
 
-    public MonoCreate(Consumer<MonoEmitter<T>> callback) {
+    public MonoCreate(Consumer<MonoSink<T>> callback) {
         this.callback = callback;
     }
 
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DefaultMonoEmitter<T> emitter = new DefaultMonoEmitter<>(s);
+        DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
         
         s.onSubscribe(emitter);
         
@@ -51,18 +51,18 @@ final class MonoCreate<T> extends Mono<T> {
         }
     }
 
-    static final class DefaultMonoEmitter<T> implements MonoEmitter<T>, Subscription {
+    static final class DefaultMonoSink<T> implements MonoSink<T>, Subscription {
         final Subscriber<? super T> actual;
         
         volatile Cancellation cancellation;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultMonoEmitter, Cancellation> CANCELLATION =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoEmitter.class, Cancellation.class, "cancellation");
+        static final AtomicReferenceFieldUpdater<DefaultMonoSink, Cancellation> CANCELLATION =
+                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Cancellation.class, "cancellation");
         
         volatile int state;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<DefaultMonoEmitter> STATE =
-                AtomicIntegerFieldUpdater.newUpdater(DefaultMonoEmitter.class, "state");
+        static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
+                AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
 
         T value;
         
@@ -73,7 +73,7 @@ final class MonoCreate<T> extends Mono<T> {
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
         
-        public DefaultMonoEmitter(Subscriber<? super T> actual) {
+        public DefaultMonoSink(Subscriber<? super T> actual) {
             this.actual = actual;
         }
 

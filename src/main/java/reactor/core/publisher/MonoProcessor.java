@@ -50,7 +50,7 @@ import reactor.util.concurrent.WaitStrategy;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver, Producer,
-		           MonoEmitter<O>, LongSupplier {
+		           MonoSink<O>, LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -106,7 +106,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_CANCELLED)) {
-				subscription = Operators.cancelled();
+				subscription = Operators.cancelledSubscription();
 				break;
 			}
 			state = this.state;
@@ -454,7 +454,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	final void connect() {
 		if(CONNECTED.compareAndSet(this, 0, 1)){
 			if(source == null){
-				onSubscribe(Operators.empty());
+				onSubscribe(Operators.emptySubscription());
 			}
 			else{
 				source.subscribe(this);

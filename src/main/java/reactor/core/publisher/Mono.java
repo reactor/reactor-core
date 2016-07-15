@@ -158,11 +158,11 @@ public abstract class Mono<T> implements Publisher<T> {
      * }); 
      * <code></pre>
 	 * 
-	 * @param callback the consumer who will receive a per-subscriber {@link MonoEmitter}.
+	 * @param callback the consumer who will receive a per-subscriber {@link MonoSink}.
 	 * @param <T> The type of the value emitted
 	 * @return a {@link Mono}
 	 */
-	public static <T> Mono<T> create(Consumer<MonoEmitter<T>> callback) {
+	public static <T> Mono<T> create(Consumer<MonoSink<T>> callback) {
 	    return onAssembly(new MonoCreate<>(callback));
 	}
 	/**
@@ -956,7 +956,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -979,7 +979,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
+	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
 	 *
 	 * <p>
@@ -999,7 +999,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
 	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
-	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in
+	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in
 	 * other words, the result might
 	 * miss signal from hot publishers.
 	 *

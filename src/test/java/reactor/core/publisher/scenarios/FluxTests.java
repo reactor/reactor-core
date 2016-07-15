@@ -53,6 +53,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Reactor;
 import reactor.core.publisher.AbstractReactorTest;
+import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -62,7 +63,6 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.publisher.SubmissionEmitter;
 import reactor.util.function.Tuples;
 import reactor.util.Exceptions;
 
@@ -281,7 +281,7 @@ public class FluxTests extends AbstractReactorTest {
 		Random random = ThreadLocalRandom.current();
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
-		SubmissionEmitter<String> s = d.connectEmitter();
+		BlockingSink<String> s = d.connectEmitter();
 
 		Flux<Integer> tasks = d.publishOn(asyncGroup)
 		                       .parallel(8)
@@ -385,7 +385,7 @@ public class FluxTests extends AbstractReactorTest {
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
-		SubmissionEmitter<Integer> s = SubmissionEmitter.create(d);
+		BlockingSink<Integer> s = BlockingSink.create(d);
 
 		/*Cancellation c = */d.publishOn(asyncGroup)
 		                  .parallel(8)

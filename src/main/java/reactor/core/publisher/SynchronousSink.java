@@ -25,7 +25,7 @@ import reactor.core.Trackable;
  *
  * @param <T> the output value type
  */
-public interface SignalEmitter<T> extends Trackable {
+public interface SynchronousSink<T> {
 
 	/**
 	 * @see Subscriber#onComplete()

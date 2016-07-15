@@ -40,7 +40,7 @@ extends Flux<Object> implements Trackable {
 
 	@Override
 	public void subscribe(Subscriber<? super Object> s) {
-		s.onSubscribe(Operators.empty());
+		s.onSubscribe(Operators.emptySubscription());
 	}
 
 	/**

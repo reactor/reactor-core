@@ -862,7 +862,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						}
 						sequence.set(availableSequence);
 
-						if (Operators.empty() !=
+						if (Operators.emptySubscription() !=
 								processor.upstreamSubscription) {
 							processor.readWait.signalAllWhenBlocking();
 						}

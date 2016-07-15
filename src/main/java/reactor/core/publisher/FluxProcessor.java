@@ -83,28 +83,28 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * @return this
 	 */
 	public FluxProcessor<IN, OUT> connect() {
-		onSubscribe(Operators.empty());
+		onSubscribe(Operators.emptySubscription());
 		return this;
 	}
 
 	/**
-	 * Create a {@link SubmissionEmitter} and attach it via {@link #onSubscribe(Subscription)}.
+	 * Create a {@link BlockingSink} and attach it via {@link #onSubscribe(Subscription)}.
 	 *
-	 * @return a new subscribed {@link SubmissionEmitter}
+	 * @return a new subscribed {@link BlockingSink}
 	 */
-	public final SubmissionEmitter<IN> connectEmitter() {
+	public final BlockingSink<IN> connectEmitter() {
 		return connectEmitter(true);
 	}
 
 	/**
-	 * Prepare a {@link SubmissionEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * Prepare a {@link BlockingSink} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
 	 * set to true.
 	 *
 	 * @param autostart automatically start?
-	 * @return a new {@link SubmissionEmitter}
+	 * @return a new {@link BlockingSink}
 	 */
-	public final SubmissionEmitter<IN> connectEmitter(boolean autostart) {
-		return SubmissionEmitter.create(this, autostart);
+	public final BlockingSink<IN> connectEmitter(boolean autostart) {
+		return BlockingSink.create(this, autostart);
 	}
 
 	@Override

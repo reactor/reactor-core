@@ -28,7 +28,8 @@ import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
-import reactor.core.publisher.FluxEmitter.BackpressureHandling;
+import reactor.core.Trackable;
+import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -40,18 +41,18 @@ import reactor.util.concurrent.QueueSupplier;
  */
 final class FluxCreate<T> extends Flux<T> {
     
-    final Consumer<? super FluxEmitter<T>> emitter;
+    final Consumer<? super FluxSink<T>> emitter;
     
-    final BackpressureHandling backpressure;
+    final OverflowStrategy backpressure;
     
-    public FluxCreate(Consumer<? super FluxEmitter<T>> emitter, BackpressureHandling backpressure) {
+    public FluxCreate(Consumer<? super FluxSink<T>> emitter, FluxSink.OverflowStrategy backpressure) {
         this.emitter = Objects.requireNonNull(emitter, "emitter");
         this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
     }
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        DefaultFluxEmitter<T> dfe = new DefaultFluxEmitter<>(s, backpressure);
+        DefaultFluxSink<T> dfe = new DefaultFluxSink<>(s, backpressure);
         s.onSubscribe(dfe);
         
         try {
@@ -62,12 +63,12 @@ final class FluxCreate<T> extends Flux<T> {
         }
     }
     
-    static final class DefaultFluxEmitter<T> 
-    implements FluxEmitter<T>, QueueSubscription<T>, Producer {
+    static final class DefaultFluxSink<T>
+            implements FluxSink<T>, QueueSubscription<T>, Producer, Trackable {
 
         final Subscriber<? super T> actual; 
         
-        final BackpressureHandling handling;
+        final OverflowStrategy handling;
         
         boolean caughtUp;
         
@@ -76,30 +77,30 @@ final class FluxCreate<T> extends Flux<T> {
         volatile T latest;
         
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultFluxEmitter, Object> LATEST =
-        AtomicReferenceFieldUpdater.newUpdater(DefaultFluxEmitter.class, Object.class, "latest");
+        static final AtomicReferenceFieldUpdater<DefaultFluxSink, Object> LATEST =
+        AtomicReferenceFieldUpdater.newUpdater(DefaultFluxSink.class, Object.class, "latest");
         
         volatile boolean done;
         Throwable error;
         
         volatile Cancellation cancel;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultFluxEmitter, Cancellation> CANCEL =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultFluxEmitter.class, Cancellation.class, "cancel");
+        static final AtomicReferenceFieldUpdater<DefaultFluxSink, Cancellation> CANCEL =
+                AtomicReferenceFieldUpdater.newUpdater(DefaultFluxSink.class, Cancellation.class, "cancel");
         
         volatile long requested;
         @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<DefaultFluxEmitter> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(DefaultFluxEmitter.class, "requested");
+        static final AtomicLongFieldUpdater<DefaultFluxSink> REQUESTED =
+                AtomicLongFieldUpdater.newUpdater(DefaultFluxSink.class, "requested");
         
         volatile int wip;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<DefaultFluxEmitter> WIP =
-                AtomicIntegerFieldUpdater.newUpdater(DefaultFluxEmitter.class, "wip");
+        static final AtomicIntegerFieldUpdater<DefaultFluxSink> WIP =
+                AtomicIntegerFieldUpdater.newUpdater(DefaultFluxSink.class, "wip");
         
         static final Cancellation CANCELLED = () -> { };
         
-        public DefaultFluxEmitter(Subscriber<? super T> actual, BackpressureHandling handling) {
+        public DefaultFluxSink(Subscriber<? super T> actual, OverflowStrategy handling) {
             this.actual = actual;
             this.queue = QueueSupplier.<T>unbounded().get();
             this.handling = handling;
@@ -418,10 +419,10 @@ final class FluxCreate<T> extends Flux<T> {
         public void request(long n) {
             if (Operators.validate(n)) {
                 Operators.getAndAddCap(REQUESTED, this, n);
-                if (handling == BackpressureHandling.BUFFER) {
+                if (handling == OverflowStrategy.BUFFER) {
                     drain();
                 } else
-                if (handling == BackpressureHandling.LATEST) {
+                if (handling == OverflowStrategy.LATEST) {
                     drainLatest();
                 }
             }

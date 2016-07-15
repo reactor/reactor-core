@@ -54,7 +54,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
-		signaller.onSubscribe(Operators.empty());
+		signaller.onSubscribe(Operators.emptySubscription());
 
 		Subscriber<T> serial = Operators.serialize(s);
 

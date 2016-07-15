@@ -143,7 +143,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(Operators.empty());
+					actual.onSubscribe(Operators.emptySubscription());
 					onError(e);
 					return;
 				}
@@ -360,7 +360,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(Operators.empty());
+					actual.onSubscribe(Operators.emptySubscription());
 					onError(e);
 					return;
 				}
@@ -628,7 +628,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable, Fl
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(Operators.empty());
+					actual.onSubscribe(Operators.emptySubscription());
 					onError(e);
 					return;
 				}

@@ -420,7 +420,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Subscription a = this.s;
-			if (a == Operators.cancelled()) {
+			if (a == Operators.cancelledSubscription()) {
 				s.cancel();
 			}
 			if (a != null) {
@@ -435,7 +435,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			a = this.s;
-			if (a != Operators.cancelled()) {
+			if (a != Operators.cancelledSubscription()) {
 				s.cancel();
 				
 				Operators.reportSubscriptionSet();
@@ -488,9 +488,9 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != Operators.cancelled()) {
-				a = S.getAndSet(this, Operators.cancelled());
-				if (a != null && a != Operators.cancelled()) {
+			if (a != Operators.cancelledSubscription()) {
+				a = S.getAndSet(this, Operators.cancelledSubscription());
+				if (a != null && a != Operators.cancelledSubscription()) {
 					a.cancel();
 				}
 			}

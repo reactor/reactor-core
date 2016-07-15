@@ -249,7 +249,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 				subscriber.onError(new TimeoutException());
 			} else {
-				set(Operators.empty());
+				set(Operators.emptySubscription());
 
 				other.subscribe(new TimeoutOtherSubscriber<>(subscriber, this));
 			}
@@ -330,7 +330,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!S.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (this.s != Operators.cancelled()) {
+				if (this.s != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 			} else {
@@ -358,9 +358,9 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != Operators.cancelled()) {
-				a = S.getAndSet(this, Operators.cancelled());
-				if (a != null && a != Operators.cancelled()) {
+			if (a != Operators.cancelledSubscription()) {
+				a = S.getAndSet(this, Operators.cancelledSubscription());
+				if (a != null && a != Operators.cancelledSubscription()) {
 					a.cancel();
 				}
 			}

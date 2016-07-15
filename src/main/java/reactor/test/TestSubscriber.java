@@ -778,9 +778,9 @@ public class TestSubscriber<T>
 	@Override
 	public void cancel() {
 		Subscription a = s;
-		if (a != Operators.cancelled()) {
-			a = S.getAndSet(this, Operators.cancelled());
-			if (a != null && a != Operators.cancelled()) {
+		if (a != Operators.cancelledSubscription()) {
+			a = S.getAndSet(this, Operators.cancelledSubscription());
+			if (a != null && a != Operators.cancelledSubscription()) {
 				a.cancel();
 			}
 		}
@@ -824,7 +824,7 @@ public class TestSubscriber<T>
 
 	@Override
 	public final boolean isCancelled() {
-		return s == Operators.cancelled();
+		return s == Operators.cancelledSubscription();
 	}
 
 	@Override
@@ -1005,7 +1005,7 @@ public class TestSubscriber<T>
 	protected final boolean set(Subscription s) {
 		Objects.requireNonNull(s, "s");
 		Subscription a = this.s;
-		if (a == Operators.cancelled()) {
+		if (a == Operators.cancelledSubscription()) {
 			s.cancel();
 			return false;
 		}
@@ -1028,7 +1028,7 @@ public class TestSubscriber<T>
 
 		a = this.s;
 
-		if (a != Operators.cancelled()) {
+		if (a != Operators.cancelledSubscription()) {
 			s.cancel();
 			return false;
 		}
@@ -1046,7 +1046,7 @@ public class TestSubscriber<T>
 		Objects.requireNonNull(s, "s");
 		for (;;) {
 			Subscription a = this.s;
-			if (a == Operators.cancelled()) {
+			if (a == Operators.cancelledSubscription()) {
 				s.cancel();
 				return false;
 			}

@@ -23,7 +23,7 @@ import reactor.test.TestSubscriber;
 
 public class MonoDeferComposeTest {
     @Test
-    public void perSubscriberState() {
+    public void perTrackable() {
         
         Mono<Integer> source = Mono.just(10).compose(f -> {
             AtomicInteger value = new AtomicInteger();

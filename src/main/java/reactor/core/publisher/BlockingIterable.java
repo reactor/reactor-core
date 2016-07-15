@@ -272,12 +272,12 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 
 		@Override
 		public boolean isStarted() {
-			return s != null && !done && s != Operators.cancelled();
+			return s != null && !done && s != Operators.cancelledSubscription();
 		}
 
 		@Override
 		public boolean isTerminated() {
-			return done || s == Operators.cancelled();
+			return done || s == Operators.cancelledSubscription();
 		}
 	}
 

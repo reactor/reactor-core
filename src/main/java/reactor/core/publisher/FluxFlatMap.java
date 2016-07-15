@@ -1058,7 +1058,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isCancelled() {
-			return s == Operators.cancelled();
+			return s == Operators.cancelledSubscription();
 		}
 
 		@Override

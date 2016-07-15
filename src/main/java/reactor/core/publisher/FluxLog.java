@@ -56,10 +56,10 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 				                                                    .getSimpleName(), this);
 			}
 		}
-		source.subscribe(new LoggerBarrier<>(this, newId, subscriber));
+		source.subscribe(new LoggerSubscriber<>(this, newId, subscriber));
 	}
 
-	final static class LoggerBarrier<IN> extends OperatorAdapter<IN, IN> {
+	final static class LoggerSubscriber<IN> extends OperatorAdapter<IN, IN> {
 
 		private final int    options;
 		private final Logger log;
@@ -68,7 +68,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		private final FluxLog<IN> parent;
 
-		public LoggerBarrier(FluxLog<IN> parent, long uniqueId, Subscriber<? super IN> subscriber) {
+		public LoggerSubscriber(FluxLog<IN> parent, long uniqueId, Subscriber<? super IN> subscriber) {
 			super(subscriber);
 			this.parent = parent;
 			this.level = parent.level;

@@ -161,7 +161,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		public void onNext(T t) {
 			long idx = INDEX.incrementAndGet(this);
 
-			if (!Operators.set(OTHER, this, Operators.empty())) {
+			if (!Operators.set(OTHER, this, Operators.emptySubscription())) {
 				return;
 			}
 			

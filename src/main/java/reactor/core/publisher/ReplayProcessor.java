@@ -311,7 +311,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 	@Override
 	public ReplayProcessor<T> connect() {
-		onSubscribe(Operators.empty());
+		onSubscribe(Operators.emptySubscription());
 		return this;
 	}
 

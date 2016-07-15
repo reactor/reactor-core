@@ -38,8 +38,6 @@ import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.Slot;
 import reactor.util.concurrent.WaitStrategy;
 
-import static reactor.core.Reactor.Logger;
-
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
  *
@@ -320,7 +318,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		if (Operators.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
-				if (s != Operators.empty()) {
+				if (s != Operators.emptySubscription()) {
 					requestTask(s);
 				}
 			}

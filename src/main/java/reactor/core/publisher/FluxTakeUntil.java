@@ -104,7 +104,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != Operators.cancelled()) {
+				if (other != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 			}
@@ -117,9 +117,9 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != Operators.cancelled()) {
-				s = MAIN.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -127,9 +127,9 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != Operators.cancelled()) {
-				s = OTHER.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = OTHER.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -145,7 +145,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != Operators.cancelled()) {
+				if (main != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 			} else {
@@ -162,7 +162,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					Operators.error(actual, t);
 					return;
 				}
@@ -175,7 +175,7 @@ final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					cancelOther();
 					Operators.complete(actual);
 					return;

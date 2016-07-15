@@ -131,7 +131,7 @@ public abstract class Operators {
 	 *
 	 * @return a singleton noop {@link Subscription}
 	 */
-	public static Subscription cancelled() {
+	public static Subscription cancelledSubscription() {
 		return CancelledSubscription.INSTANCE;
 	}
 
@@ -189,7 +189,7 @@ public abstract class Operators {
 	 *
 	 * @return a singleton noop {@link Subscription}
 	 */
-	public static Subscription empty() {
+	public static Subscription emptySubscription() {
 		return EmptySubscription.INSTANCE;
 	}
 
@@ -197,8 +197,8 @@ public abstract class Operators {
 	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onError with the
 	 * supplied error.
 	 *
-	 * @param s
-	 * @param e
+	 * @param s target Subscriber to error
+	 * @param e the actual error
 	 */
 	public static void error(Subscriber<?> s, Throwable e) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
@@ -326,7 +326,7 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throw {@link Exceptions.InsufficientCapacityException}
+	 * Throw {@code Exceptions.InsufficientCapacityException}
 	 */
 	public static void reportMoreProduced() {
 		throw Exceptions.failWithOverflow();
@@ -417,22 +417,6 @@ public abstract class Operators {
 	public static long subOrZero(long a, long b) {
 		long res = a - b;
 		if (res < 0L) {
-			return 0;
-		}
-		return res;
-	}
-
-	/**
-	 * Cap a substraction to 0
-	 *
-	 * @param a left operand
-	 * @param b right operand
-	 *
-	 * @return Subscription result or 0 if overflow
-	 */
-	public static int subOrZero(int a, int b) {
-		int res = a - b;
-		if (res < 0) {
 			return 0;
 		}
 		return res;
@@ -598,7 +582,7 @@ public abstract class Operators {
 		public final boolean set(Subscription s) {
 			Objects.requireNonNull(s, "s");
 			Subscription a = this.s;
-			if (a == cancelled()) {
+			if (a == cancelledSubscription()) {
 				s.cancel();
 				return false;
 			}
@@ -621,7 +605,7 @@ public abstract class Operators {
 
 			a = this.s;
 
-			if (a != cancelled()) {
+			if (a != cancelledSubscription()) {
 				s.cancel();
 				return false;
 			}
@@ -653,9 +637,9 @@ public abstract class Operators {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != cancelled()) {
-				a = S.getAndSet(this, cancelled());
-				if (a != null && a != cancelled()) {
+			if (a != cancelledSubscription()) {
+				a = S.getAndSet(this, cancelledSubscription());
+				if (a != null && a != cancelledSubscription()) {
 					a.cancel();
 				}
 			}
@@ -668,7 +652,7 @@ public abstract class Operators {
 		 */
 		@Override
 		public final boolean isCancelled() {
-			return s == cancelled();
+			return s == cancelledSubscription();
 		}
 
 		@Override

@@ -37,10 +37,10 @@ import org.reactivestreams.Subscription;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
+import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.SubmissionEmitter;
 import reactor.core.Reactor;
 
 /**
@@ -209,7 +209,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		Processor<Integer, Integer> processor = createProcessor(1024);
 
 		EmitterProcessor<Integer> stream = EmitterProcessor.create();
-		SubmissionEmitter<Integer> session = SubmissionEmitter.create(stream);
+		BlockingSink<Integer> session = BlockingSink.create(stream);
 		stream.subscribe(processor);
 
 		processor.subscribe(new Subscriber<Integer>() {

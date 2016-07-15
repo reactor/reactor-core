@@ -217,7 +217,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public EmitterProcessor<T> connect() {
-		onSubscribe(Operators.empty());
+		onSubscribe(Operators.emptySubscription());
 		return this;
 	}
 
@@ -246,7 +246,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			long seq = -1L;
 
 			int outstanding;
-			if (upstreamSubscription != Operators.empty()) {
+			if (upstreamSubscription != Operators.emptySubscription()) {
 
 				outstanding = this.outstanding;
 				if (outstanding != 0) {
@@ -600,7 +600,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void requestMore(int buffered) {
 		Subscription subscription = upstreamSubscription;
-		if (subscription == Operators.empty()) {
+		if (subscription == Operators.emptySubscription()) {
 			return;
 		}
 

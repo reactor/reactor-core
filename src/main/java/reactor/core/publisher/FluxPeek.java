@@ -146,7 +146,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(Operators.empty());
+					actual.onSubscribe(Operators.emptySubscription());
 					onError(e);
 					return;
 				}

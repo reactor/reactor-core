@@ -95,7 +95,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != Operators.cancelled()) {
+				if (other != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 			}
@@ -108,9 +108,9 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != Operators.cancelled()) {
-				s = MAIN.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -118,9 +118,9 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != Operators.cancelled()) {
-				s = OTHER.getAndSet(this, Operators.cancelled());
-				if (s != null && s != Operators.cancelled()) {
+			if (s != Operators.cancelledSubscription()) {
+				s = OTHER.getAndSet(this, Operators.cancelledSubscription());
+				if (s != null && s != Operators.cancelledSubscription()) {
 					s.cancel();
 				}
 			}
@@ -136,7 +136,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != Operators.cancelled()) {
+				if (main != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
 			} else {
@@ -173,7 +173,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					cancelOther();
 
 					Operators.error(actual, t);
@@ -196,7 +196,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 		void otherError(Throwable t) {
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					cancelMain();
 
 					Operators.error(actual, t);
@@ -212,7 +212,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		void otherComplete() {
 			if (otherValue == null) {
 				if (main == null) {
-					if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+					if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 						cancelMain();
 
 						Operators.complete(actual);
