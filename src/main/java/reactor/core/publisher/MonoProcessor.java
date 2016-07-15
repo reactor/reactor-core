@@ -30,7 +30,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -419,7 +418,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			else if (endState == STATE_SUCCESS_VALUE) {
-				subscriber.onSubscribe(new ScalarSubscription<>(subscriber, value));
+				subscriber.onSubscribe(new Operators.ScalarSubscription<>(subscriber, value));
 				return;
 			}
 			else if (endState == STATE_ERROR) {

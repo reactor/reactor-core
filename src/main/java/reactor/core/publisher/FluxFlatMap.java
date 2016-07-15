@@ -33,7 +33,6 @@ import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -171,7 +170,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 
 				if (v != null) {
-					s.onSubscribe(new ScalarSubscription<>(s, v));
+					s.onSubscribe(new Operators.ScalarSubscription<>(s, v));
 				} else {
 					SubscriptionHelper.complete(s);
 				}

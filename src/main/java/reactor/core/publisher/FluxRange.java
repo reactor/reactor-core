@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
-import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
@@ -60,7 +59,7 @@ final class FluxRange extends Flux<Integer>
 			return;
 		} else
 		if (st + 1 == en) {
-			s.onSubscribe(new ScalarSubscription<>(s, (int)st));
+			s.onSubscribe(new Operators.ScalarSubscription<>(s, (int)st));
 			return;
 		}
 		

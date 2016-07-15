@@ -232,7 +232,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
-		super.onNext(t);
+		if (t == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 
 		EmitterSubscriber<?>[] inner = subscribers;
 		if (autoCancel && inner == CANCELLED) {
@@ -312,7 +314,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void onError(Throwable t) {
-		super.onError(t);
+		if (t == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		if (autoCancel && done) {
 			Exceptions.onErrorDropped(t);
 		}

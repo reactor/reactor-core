@@ -321,7 +321,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	@Override
 	final public void onError(Throwable t) {
-		super.onError(t);
+		if (t == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			error = t;
 			upstreamSubscription = null;
@@ -334,7 +336,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	@Override
 	final public void onNext(IN o) {
-		super.onNext(o);
+		if (o == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		RingBuffer.onNext(o, ringBuffer);
 	}
 

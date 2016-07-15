@@ -33,16 +33,30 @@ import reactor.core.subscriber.SubscriptionHelper;
 abstract class Operators {
 
 	/**
+	 * Represents a fuseable Subscription that emits a single constant value synchronously
+	 * to a Subscriber or consumer.
+	 *
+	 * @param subscriber the delegate {@link Subscriber} that will be requesting the value
+	 * @param value the single value to be emitted
+	 * @param <T> the value type
+	 * @return a new scalar {@link Subscription}
+	 */
+	public static <T> Subscription scalarSubscription(Subscriber<? super T> subscriber,
+			T value){
+		return new ScalarSubscription<>(subscriber, value);
+	}
+
+	/**
 	 * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
 	 * resulting from concurrent request or cancel and onXXX signals.
 	 *
 	 * @param <I> The upstream sequence type
 	 * @param <O> The downstream sequence type
 	 */
-	public static class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Loopback,
-	                                                              SubscriberState,
-	                                                              Receiver, Producer,
-	                                                              Fuseable.QueueSubscription<O> {
+	static class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Loopback,
+	                                                       SubscriberState,
+	                                                       Receiver, Producer,
+	                                                       Fuseable.QueueSubscription<O> {
 
 		static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 		static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
@@ -227,7 +241,7 @@ abstract class Operators {
 	 * @param <I> the input value type
 	 * @param <O> the output value type
 	 */
-	public static class DeferredSubscriptionSubscriber<I, O>
+	static class DeferredSubscriptionSubscriber<I, O>
 			extends DeferredSubscription
 	implements Subscriber<I>, Producer {
 
@@ -282,9 +296,10 @@ abstract class Operators {
 	 * @param <I> the input value type
 	 * @param <O> the output value type
 	 */
-	public abstract static class MultiSubscriptionSubscriber<I, O> implements Subscription, Subscriber<I>, Producer,
-	                                                                          SubscriberState,
-	                                                                          Receiver {
+	abstract static class MultiSubscriptionSubscriber<I, O>
+			implements Subscription, Subscriber<I>, Producer,
+			           SubscriberState,
+			           Receiver {
 
 		protected final Subscriber<? super O> subscriber;
 
@@ -613,4 +628,86 @@ abstract class Operators {
 	}
 
 	Operators(){}
+
+	/**
+	 * Represents a fuseable Subscription that emits a single constant value synchronously
+	 * to a Subscriber or consumer.
+	 *
+	 * @param <T> the value type
+	 */
+	static final class ScalarSubscription<T>
+			implements Fuseable.QueueSubscription<T>, Producer, Receiver {
+
+		final Subscriber<? super T> actual;
+
+		final T value;
+
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ScalarSubscription> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
+
+		public ScalarSubscription(Subscriber<? super T> actual, T value) {
+			this.value = Objects.requireNonNull(value, "value");
+			this.actual = Objects.requireNonNull(actual, "actual");
+		}
+
+		@Override
+		public final Subscriber<? super T> downstream() {
+			return actual;
+		}
+
+		@Override
+		public void request(long n) {
+			if (SubscriptionHelper.validate(n)) {
+				if (ONCE.compareAndSet(this, 0, 1)) {
+					Subscriber<? super T> a = actual;
+					a.onNext(value);
+					a.onComplete();
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			ONCE.lazySet(this, 1);
+		}
+
+		@Override
+		public Object upstream() {
+			return value;
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & Fuseable.SYNC) != 0) {
+				return Fuseable.SYNC;
+			}
+			return 0;
+		}
+
+		@Override
+		public T poll() {
+			if (once == 0) {
+				ONCE.lazySet(this, 1);
+				return value;
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return once != 0;
+		}
+
+		@Override
+		public int size() {
+			return isEmpty() ? 0 : 1;
+		}
+
+		@Override
+		public void clear() {
+			ONCE.lazySet(this, 1);
+		}
+	}
 }

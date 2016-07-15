@@ -20,8 +20,6 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.ScalarSubscription;
-
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -48,7 +46,7 @@ extends Mono<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		s.onSubscribe(new ScalarSubscription<>(s, value));
+		s.onSubscribe(new Operators.ScalarSubscription<>(s, value));
 	}
 
 	@Override

@@ -21,7 +21,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.ScalarSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
@@ -151,7 +150,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 if (v == null) {
                     actual.onComplete();
                 } else {
-                    onSubscribeInner(new ScalarSubscription<>(actual, v));
+                    onSubscribeInner(new Operators.ScalarSubscription<>(actual, v));
                 }
                 
                 return;

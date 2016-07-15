@@ -35,7 +35,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Receiver;
 import reactor.core.subscriber.DeferredSubscription;
+import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.ReactorProperties;
 
@@ -84,7 +86,7 @@ import reactor.util.ReactorProperties;
  * @author Brian Clozel
  */
 public class TestSubscriber<T> extends DeferredSubscription
-		implements Subscriber<T> {
+		implements Subscriber<T>, Subscription, SubscriberState, Receiver {
 
 	/**
 	 * Default timeout for waiting next values to be received
