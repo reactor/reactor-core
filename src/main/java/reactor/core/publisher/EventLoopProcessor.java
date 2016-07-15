@@ -36,13 +36,14 @@ import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
-import reactor.util.Logger;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.Slot;
 import reactor.util.concurrent.WaitStrategy;
+
+import static reactor.core.Reactor.Logger;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -132,7 +133,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @return a wrapped {@link Sequence}
 	 */
 	static Sequence wrap(long init, Object delegate) {
-		if (ReactorProperties.TRACEABLE_RING_BUFFER_PROCESSOR) {
+		if (Reactor.TRACEABLE_RING_BUFFER_PROCESSOR) {
 			return wrap(RingBuffer.newSequence(init), delegate);
 		}
 		else {
@@ -678,7 +679,7 @@ final class EventLoopScheduler implements Scheduler, MultiProducer {
 		}
 
 		void routeError(Throwable t) {
-			Logger.getLogger(EventLoopScheduler.class)
+			Reactor.getLogger(EventLoopScheduler.class)
 			      .error("Unrouted exception", t);
 		}
 

@@ -32,7 +32,7 @@ import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.Slot;
@@ -57,7 +57,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Receiver {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -68,18 +68,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(ReactorProperties.SMALL_BUFFER_SIZE, autoCancel);
+		return create(Reactor.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -90,7 +90,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -102,7 +102,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -114,7 +114,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
@@ -166,14 +166,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			ReactorProperties.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			Reactor.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
 					"error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			ReactorProperties.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			Reactor.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
 					"subscribers");
 	@SuppressWarnings("unused")
 	private volatile int running;
@@ -670,7 +670,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
-				ReactorProperties.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
+				Reactor.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
 						"pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {

@@ -18,7 +18,7 @@ package reactor.util.concurrent;
 import java.util.function.Supplier;
 
 import reactor.util.Exceptions;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import sun.misc.Unsafe;
 
 abstract class RingBufferPad<E> extends RingBuffer<E>
@@ -31,7 +31,7 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
     private static final int  BUFFER_PAD;
     private static final long REF_ARRAY_BASE;
     private static final int  REF_ELEMENT_SHIFT;
-    private static final Unsafe UNSAFE = ReactorProperties.getUnsafe();
+    private static final Unsafe UNSAFE = Reactor.getUnsafe();
 
     static {
         final int scale = UNSAFE.arrayIndexScale(Object[].class);

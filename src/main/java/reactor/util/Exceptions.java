@@ -17,6 +17,8 @@ package reactor.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.core.Reactor;
+
 /**
  * Static Helpers to decorate an error with an associated data
  *
@@ -24,9 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * @author Stephane Maldini
  */
 public abstract class Exceptions {
-
-	static volatile boolean TRACE_OPERATOR_STACKTRACE =
-			ReactorProperties.TRACE_OPERATOR_STACKTRACE;
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
@@ -65,36 +64,6 @@ public abstract class Exceptions {
 				return true;
 			}
 		}
-	}
-
-	/**
-	 * When enabled, producer declaration stacks are recorded via an intercepting
-	 * "assembly tracker" operator and added as Suppressed
-	 * Exception if the source producer fails.
-	 *
-	 * @return a true if assembly tracking is enabled
-	 */
-	public static boolean isOperatorStacktraceEnabled() {
-		return TRACE_OPERATOR_STACKTRACE;
-	}
-
-	/**
-	 * Enable operator stack recorder. When a producer is declared, an "assembly
-	 * tracker" operator is automatically added to capture declaration
-	 * stack. Errors are observed and enriched with a Suppressed
-	 * Exception detailing the original stack. Must be called before producers
-	 * (e.g. Flux.map, Mono.fromCallable) are actually called to intercept the right
-	 * stack information.
-	 */
-	public static void enableOperatorStacktrace() {
-		TRACE_OPERATOR_STACKTRACE = true;
-	}
-
-	/**
-	 * Disable operator stack recorder.
-	 */
-	public static void disableOperatorStacktrace() {
-		TRACE_OPERATOR_STACKTRACE = false;
 	}
 
 	/**
@@ -144,7 +113,7 @@ public abstract class Exceptions {
 	 * @return a {@link CancelException}
 	 */
 	public static CancelException failWithCancel() {
-		return ReactorProperties.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+		return Reactor.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**
@@ -152,7 +121,7 @@ public abstract class Exceptions {
 	 * @return an {@link InsufficientCapacityException}
 	 */
 	public static InsufficientCapacityException failWithOverflow() {
-		return ReactorProperties.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+		return Reactor.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
 
@@ -309,7 +278,7 @@ public abstract class Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return ReactorProperties.TRACE_CANCEL ? super.fillInStackTrace() : this;
+			return Reactor.TRACE_CANCEL ? super.fillInStackTrace() : this;
 		}
 
 	}
@@ -331,7 +300,7 @@ public abstract class Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return ReactorProperties.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
+			return Reactor.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
 		}
 
 	}

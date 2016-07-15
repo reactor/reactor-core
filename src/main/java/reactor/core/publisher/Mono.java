@@ -41,9 +41,7 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.util.Exceptions;
-import reactor.util.Logger;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 import reactor.util.function.Tuples;
@@ -52,6 +50,8 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+
+import static reactor.core.Reactor.Logger;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -939,7 +939,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
@@ -948,13 +948,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block() {
-		return blockMillis(ReactorProperties.DEFAULT_TIMEOUT);
+		return blockMillis(Reactor.DEFAULT_TIMEOUT);
 	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -977,7 +977,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -997,7 +997,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal ReactorProperties#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoEmitter) subscriber, in
 	 * other words, the result might
@@ -1014,7 +1014,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public T block(WaitStrategy waitStrategy) {
 		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(
-				ReactorProperties.DEFAULT_TIMEOUT);
+				Reactor.DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -1483,7 +1483,7 @@ public abstract class Mono<T> implements Publisher<T> {
 				Flux.identityFunction(),
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.xs(), ReactorProperties.XS_BUFFER_SIZE,
+				QueueSupplier.xs(), Reactor.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
 		));
 	}
@@ -2559,7 +2559,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	static <T> Mono<T> onAssembly(Mono<T> source) {
-		if (Exceptions.isOperatorStacktraceEnabled()) {
+		if (Reactor.isOperatorStacktraceEnabled()) {
 			if (source instanceof Callable) {
 				return new MonoCallableOnAssembly<>(source);
 			}

@@ -36,7 +36,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -62,7 +62,7 @@ public abstract class ParallelFlux<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
 		return from(source,
 				Runtime.getRuntime()
-				       .availableProcessors(), ReactorProperties.SMALL_BUFFER_SIZE,
+				       .availableProcessors(), Reactor.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -79,7 +79,7 @@ public abstract class ParallelFlux<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
 			int parallelism) {
 		return from(source,
-				parallelism, ReactorProperties.SMALL_BUFFER_SIZE,
+				parallelism, Reactor.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -461,7 +461,7 @@ public abstract class ParallelFlux<T> {
 	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper,
 				false,
-				Integer.MAX_VALUE, ReactorProperties.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Reactor.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -480,7 +480,7 @@ public abstract class ParallelFlux<T> {
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
-				Integer.MAX_VALUE, ReactorProperties.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Reactor.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -503,7 +503,7 @@ public abstract class ParallelFlux<T> {
 			int maxConcurrency) {
 		return flatMap(mapper,
 				delayError,
-				maxConcurrency, ReactorProperties.SMALL_BUFFER_SIZE);
+				maxConcurrency, Reactor.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -621,7 +621,7 @@ public abstract class ParallelFlux<T> {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * ReactorProperties.SMALL_BUFFER_SIZE}.
+	 * Reactor.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -638,7 +638,7 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler) {
-		return runOn(scheduler, ReactorProperties.SMALL_BUFFER_SIZE);
+		return runOn(scheduler, Reactor.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -646,7 +646,7 @@ public abstract class ParallelFlux<T> {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * ReactorProperties.SMALL_BUFFER_SIZE}.
+	 * Reactor.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -680,14 +680,14 @@ public abstract class ParallelFlux<T> {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * ReactorProperties.SMALL_BUFFER_SIZE}.
+	 * Reactor.SMALL_BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *
 	 * @see ParallelFlux#sequential(int)
 	 */
 	public final Flux<T> sequential() {
-		return sequential(ReactorProperties.SMALL_BUFFER_SIZE);
+		return sequential(Reactor.SMALL_BUFFER_SIZE);
 	}
 
 	/**

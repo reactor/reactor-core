@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 
 /**
  * Provide a queue adapted for a given capacity
@@ -63,7 +63,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		if (batchSize == Integer.MAX_VALUE) {
 			return CLQ_SUPPLIER;
 		}
-		if (batchSize == ReactorProperties.XS_BUFFER_SIZE) {
+		if (batchSize == Reactor.XS_BUFFER_SIZE) {
 			if(waiting) {
 				return WAITING_XSRB_SUPPLIER;
 			}
@@ -71,7 +71,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 				return XSRB_SUPPLIER;
 			}
 		}
-		if (batchSize == ReactorProperties.SMALL_BUFFER_SIZE) {
+		if (batchSize == Reactor.SMALL_BUFFER_SIZE) {
 			if(waiting) {
 				return WAITING_SMALLRB_SUPPLIER;
 			}
@@ -189,7 +189,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	public Queue<T> get() {
 
 		if(batchSize > 10_000_000){
-			return new SpscLinkedArrayQueue<>(ReactorProperties.SMALL_BUFFER_SIZE);
+			return new SpscLinkedArrayQueue<>(Reactor.SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
 			if(waiting){
@@ -354,11 +354,11 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
     @SuppressWarnings("rawtypes")
 	static final Supplier ONE_SUPPLIER          = new QueueSupplier<>(1, false, true);
     @SuppressWarnings("rawtypes")
-	static final Supplier XSRB_SUPPLIER         = new QueueSupplier<>(ReactorProperties.XS_BUFFER_SIZE, false, false);
+	static final Supplier XSRB_SUPPLIER         = new QueueSupplier<>(Reactor.XS_BUFFER_SIZE, false, false);
     @SuppressWarnings("rawtypes")
-	static final Supplier SMALLRB_SUPPLIER      = new QueueSupplier<>(ReactorProperties.SMALL_BUFFER_SIZE, false, false);
+	static final Supplier SMALLRB_SUPPLIER      = new QueueSupplier<>(Reactor.SMALL_BUFFER_SIZE, false, false);
     @SuppressWarnings("rawtypes")
-	static final Supplier WAITING_XSRB_SUPPLIER = new QueueSupplier<>(ReactorProperties.XS_BUFFER_SIZE, true, false);
+	static final Supplier WAITING_XSRB_SUPPLIER = new QueueSupplier<>(Reactor.XS_BUFFER_SIZE, true, false);
     @SuppressWarnings("rawtypes")
-	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(ReactorProperties.SMALL_BUFFER_SIZE, true, false);
+	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(Reactor.SMALL_BUFFER_SIZE, true, false);
 }
