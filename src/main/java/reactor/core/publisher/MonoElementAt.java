@@ -66,7 +66,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
 	static final class ElementAtSubscriber<T>
-			extends OperatorHelper.DeferredScalarSubscriber<T, T>
+			extends Operators.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 		final Supplier<? extends T> defaultSupplier;
 

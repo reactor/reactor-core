@@ -62,7 +62,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatSubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T> source;
 

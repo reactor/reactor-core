@@ -19,7 +19,8 @@ package reactor.core.publisher;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.BaseSubscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.subscriber.SubmissionEmitter;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -36,7 +37,7 @@ import reactor.util.Exceptions;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, SubscriberState, BaseSubscriber<IN> {
+		implements Processor<IN, OUT>, SubscriberState {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -71,10 +72,41 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return new DelegateProcessor<>(downstream, upstream);
 	}
 
-	@Override
+
+	/**
+	 * Trigger onSubscribe with a stateless subscription to signal this subscriber it can start receiving
+	 * onNext, onComplete and onError calls.
+	 * <p>
+	 * Doing so MAY allow direct UNBOUNDED onXXX calls and MAY prevent {@link org.reactivestreams.Publisher} to subscribe this
+	 * subscriber.
+	 *
+	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
+	 *
+	 * @return this
+	 */
 	public FluxProcessor<IN, OUT> connect() {
 		onSubscribe(SubscriptionHelper.empty());
 		return this;
+	}
+
+	/**
+	 * Create a {@link SubmissionEmitter} and attach it via {@link #onSubscribe(Subscription)}.
+	 *
+	 * @return a new subscribed {@link SubmissionEmitter}
+	 */
+	public final SubmissionEmitter<IN> connectEmitter() {
+		return connectEmitter(true);
+	}
+
+	/**
+	 * Prepare a {@link SubmissionEmitter} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
+	 * set to true.
+	 *
+	 * @param autostart automatically start?
+	 * @return a new {@link SubmissionEmitter}
+	 */
+	public final SubmissionEmitter<IN> connectEmitter(boolean autostart) {
+		return SubmissionEmitter.create(this, autostart);
 	}
 
 	@Override

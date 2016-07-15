@@ -72,7 +72,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 	}
 
 	static final class CollectSubscriber<T, R>
-			extends OperatorHelper.DeferredScalarSubscriber<T, R>
+			extends Operators.DeferredScalarSubscriber<T, R>
 			implements Receiver {
 
 		final BiConsumer<? super R, ? super T> action;

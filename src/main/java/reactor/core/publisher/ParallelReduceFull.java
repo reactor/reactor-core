@@ -55,7 +55,7 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 	}
 	
 	static final class ParallelReduceFullMainSubscriber<T> extends
-	                                                       OperatorHelper.DeferredScalarSubscriber<T, T> {
+	                                                       Operators.DeferredScalarSubscriber<T, T> {
 
 		final ParallelReduceFullInnerSubscriber<T>[] subscribers;
 		

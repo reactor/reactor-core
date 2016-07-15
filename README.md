@@ -118,7 +118,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 ## Hot Publishing : SignalEmitter, FluxEmitter, MonoEmitter
 To bridge a Subscriber or Processor into an outside context that is taking care of
 producing non concurrently, use `Flux#create`, `Mono#create`, or
-`BaseSubscriber#connectEmitter()` available on any `Processor`.
+`FluxProcessor#connectEmitter()`.
 
 ```java
 Flux.create(emitter -> {

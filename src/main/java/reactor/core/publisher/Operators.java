@@ -30,8 +30,7 @@ import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
-enum OperatorHelper {
-	;
+abstract class Operators {
 
 	/**
 	 * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
@@ -612,4 +611,6 @@ enum OperatorHelper {
 			return false;
 		}
 	}
+
+	Operators(){}
 }

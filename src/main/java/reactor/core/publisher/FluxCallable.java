@@ -35,8 +35,8 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        OperatorHelper.DeferredScalarSubscriber<T, T>
-                wrapper = new OperatorHelper.DeferredScalarSubscriber<>(s);
+        Operators.DeferredScalarSubscriber<T, T>
+                wrapper = new Operators.DeferredScalarSubscriber<>(s);
         s.onSubscribe(wrapper);
         
         T v;

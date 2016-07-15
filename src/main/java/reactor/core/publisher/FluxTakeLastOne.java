@@ -48,7 +48,7 @@ final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	static final class TakeLastOneSubscriber<T>
-			extends OperatorHelper.DeferredScalarSubscriber<T, T>
+			extends Operators.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 
 		Subscription s;

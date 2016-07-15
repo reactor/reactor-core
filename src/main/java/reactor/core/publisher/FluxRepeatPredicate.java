@@ -55,7 +55,7 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatPredicateSubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T> source;
 

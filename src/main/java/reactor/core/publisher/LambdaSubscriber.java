@@ -22,7 +22,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Receiver;
-import reactor.core.subscriber.BaseSubscriber;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -31,7 +30,7 @@ import reactor.util.Exceptions;
  * An unbounded Java Lambda adapter to {@link Subscriber}
  * @param <T> the value type
  */
-class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
+class LambdaSubscriber<T> implements Subscriber<T>, Receiver, Cancellation,
                                             SubscriberState {
 
 	final Consumer<? super T>         consumer;
@@ -105,36 +104,23 @@ class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
 			return;
 		}
 		subscription = null;
-		try {
-			doComplete();
-		}
-		catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			doError(t);
-		}
-	}
-
-	/**
-	 *
-	 */
-	protected void doComplete() {
 		if (completeConsumer != null) {
-			completeConsumer.run();
+			try {
+				completeConsumer.run();
+			}
+			catch (Throwable t) {
+				Exceptions.throwIfFatal(t);
+				onError(t);
+			}
 		}
 	}
 
 	@Override
 	public final void onError(Throwable t) {
-		BaseSubscriber.super.onError(t);
-		doError(t);
+		if (t == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		subscription = null;
-	}
-
-	/**
-	 *
-	 * @param t
-	 */
-	protected void doError(Throwable t) {
 		if (errorConsumer != null) {
 			errorConsumer.accept(t);
 		}
@@ -145,8 +131,9 @@ class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
 
 	@Override
 	public final void onNext(T x) {
-		BaseSubscriber.super.onNext(x);
-
+		if (x == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		try {
 			doNext(x);
 		}
@@ -157,7 +144,7 @@ class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
 				subscription = null;
 				s.cancel();
 			}
-			doError(t);
+			onError(t);
 		}
 	}
 
@@ -175,7 +162,7 @@ class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
 	 *
 	 * @param n
 	 */
-	protected void requestMore(long n){
+	final void requestMore(long n){
 		Subscription s = subscription;
 		if (s != null) {
 			s.request(n);
@@ -185,17 +172,12 @@ class LambdaSubscriber<T> implements BaseSubscriber<T>, Receiver, Cancellation,
 	/**
 	 *
 	 */
-	protected void cancel() {
+	final void cancel() {
 		Subscription s = subscription;
 		if (s != null) {
 			subscription = null;
 			s.cancel();
 		}
-	}
-
-	@Override
-	public long getPending() {
-		return -1L;
 	}
 
 	@Override

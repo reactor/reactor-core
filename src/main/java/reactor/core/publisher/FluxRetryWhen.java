@@ -98,7 +98,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 	}
 
 	static final class RetryWhenMainSubscriber<T> extends
-	                                              OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+	                                              Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final DeferredSubscription otherArbiter;
 

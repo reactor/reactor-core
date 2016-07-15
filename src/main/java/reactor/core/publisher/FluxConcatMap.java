@@ -744,7 +744,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 	
 	static final class ConcatMapInner<R>
-			extends OperatorHelper.MultiSubscriptionSubscriber<R, R> {
+			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
 		final FluxConcatMapSupport<R> parent;
 

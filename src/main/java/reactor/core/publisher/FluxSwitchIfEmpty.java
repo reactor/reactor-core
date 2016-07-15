@@ -50,7 +50,7 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	static final class SwitchIfEmptySubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> implements Loopback {
+			extends Operators.MultiSubscriptionSubscriber<T, T> implements Loopback {
 
 		final Publisher<? extends T> other;
 

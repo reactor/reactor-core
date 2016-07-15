@@ -36,7 +36,7 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		source.subscribe(new HasElementsSubscriber<>(s));
 	}
 
-	static final class HasElementsSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, Boolean>
+	static final class HasElementsSubscriber<T> extends Operators.DeferredScalarSubscriber<T, Boolean>
 			implements Receiver {
 		Subscription s;
 

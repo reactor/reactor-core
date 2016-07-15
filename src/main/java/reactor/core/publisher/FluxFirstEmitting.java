@@ -286,7 +286,7 @@ extends Flux<T>
 	}
 
 	static final class AmbSubscriber<T> extends
-	                                    OperatorHelper.DeferredSubscriptionSubscriber<T, T> {
+	                                    Operators.DeferredSubscriptionSubscriber<T, T> {
 
 		final AmbCoordinator<T> parent;
 

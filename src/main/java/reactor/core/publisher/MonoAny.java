@@ -53,7 +53,7 @@ final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 		source.subscribe(new AnySubscriber<T>(s, predicate));
 	}
 
-	static final class AnySubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, Boolean>
+	static final class AnySubscriber<T> extends Operators.DeferredScalarSubscriber<T, Boolean>
 			implements Receiver {
 		final Predicate<? super T> predicate;
 

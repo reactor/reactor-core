@@ -54,7 +54,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class DelaySubscriptionOtherSubscriber<T, U>
-			extends OperatorHelper.DeferredSubscriptionSubscriber<U, T> {
+			extends Operators.DeferredSubscriptionSubscriber<U, T> {
 
 		final Publisher<? extends T> source;
 
@@ -123,10 +123,10 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 			final Subscriber<? super T> actual;
 
-			final OperatorHelper.DeferredSubscriptionSubscriber<?, ?> arbiter;
+			final Operators.DeferredSubscriptionSubscriber<?, ?> arbiter;
 
 			public DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
-															OperatorHelper.DeferredSubscriptionSubscriber<?, ?> arbiter) {
+															Operators.DeferredSubscriptionSubscriber<?, ?> arbiter) {
 				this.actual = actual;
 				this.arbiter = arbiter;
 			}

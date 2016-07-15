@@ -83,7 +83,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
     }
     
     static final class MonoWhenCoordinator<T>
-            extends OperatorHelper.DeferredScalarSubscriber<T, T[]>
+            extends Operators.DeferredScalarSubscriber<T, T[]>
     implements Subscription {
         final MonoWhenSubscriber<T>[] subscribers;
         

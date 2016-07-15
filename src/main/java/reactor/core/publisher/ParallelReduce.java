@@ -97,7 +97,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> {
 	}
 
 	static final class ParallelReduceSubscriber<T, R> extends
-	                                                  OperatorHelper.DeferredScalarSubscriber<T, R> {
+	                                                  Operators.DeferredScalarSubscriber<T, R> {
 
 		final BiFunction<R, T, R> reducer;
 

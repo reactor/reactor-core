@@ -89,7 +89,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatWhenMainSubscriber<T> extends
-	                                               OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+	                                               Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final DeferredSubscription otherArbiter;
 

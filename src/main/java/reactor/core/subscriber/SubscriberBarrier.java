@@ -32,7 +32,7 @@ import reactor.util.Exceptions;
  * @param <O> the output value type
  */
 public class SubscriberBarrier<I, O>
-		implements BaseSubscriber<I>, Subscription, SubscriberState, Receiver, Producer {
+		implements Subscriber<I>, Subscription, SubscriberState, Receiver, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 
@@ -78,7 +78,9 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public final void onNext(I i) {
-		BaseSubscriber.super.onNext(i);
+		if (i == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		try {
 			doNext(i);
 		}
@@ -102,7 +104,9 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public final void onError(Throwable t) {
-		BaseSubscriber.super.onError(t);
+		if (t == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		doError(t);
 	}
 

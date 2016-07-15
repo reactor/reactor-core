@@ -49,7 +49,7 @@ final class FluxResume<T> extends FluxSource<T, T> {
 		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	static final class ResumeSubscriber<T> extends OperatorHelper.MultiSubscriptionSubscriber<T, T>
+	static final class ResumeSubscriber<T> extends Operators.MultiSubscriptionSubscriber<T, T>
 			implements Loopback {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;

@@ -73,7 +73,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		source.subscribe(new SingleSubscriber<>(s, defaultSupplier));
 	}
 
-	static final class SingleSubscriber<T> extends OperatorHelper.DeferredScalarSubscriber<T, T>
+	static final class SingleSubscriber<T> extends Operators.DeferredScalarSubscriber<T, T>
 			implements Receiver {
 
 		final Supplier<? extends T> defaultSupplier;

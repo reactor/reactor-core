@@ -98,7 +98,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 	}
 
 	static final class ParallelCollectSubscriber<T, C> extends
-	                                                   OperatorHelper.DeferredScalarSubscriber<T, C> {
+	                                                   Operators.DeferredScalarSubscriber<T, C> {
 
 		final BiConsumer<C, T> collector;
 

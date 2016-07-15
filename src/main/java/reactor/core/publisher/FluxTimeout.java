@@ -70,7 +70,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 	}
 
 	static final class TimeoutMainSubscriber<T, V> extends
-	                                               OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+	                                               Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
@@ -262,9 +262,9 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		final Subscriber<? super T> actual;
 
-		final OperatorHelper.MultiSubscriptionSubscriber<T, T> arbiter;
+		final Operators.MultiSubscriptionSubscriber<T, T> arbiter;
 
-		public TimeoutOtherSubscriber(Subscriber<? super T> actual, OperatorHelper.MultiSubscriptionSubscriber<T, T>
+		public TimeoutOtherSubscriber(Subscriber<? super T> actual, Operators.MultiSubscriptionSubscriber<T, T>
 		  arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;

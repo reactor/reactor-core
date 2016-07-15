@@ -74,7 +74,7 @@ final class FluxConcatIterable<T> extends Flux<T>
 	}
 
 	static final class ConcatIterableSubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Iterator<? extends Publisher<? extends T>> it;
 

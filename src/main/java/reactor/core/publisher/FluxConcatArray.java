@@ -138,7 +138,7 @@ extends Flux<T>
 
 	
 	static final class ConcatArraySubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T>[] sources;
 
@@ -205,7 +205,7 @@ extends Flux<T>
 	}
 
 	static final class ConcatArrayDelayErrorSubscriber<T>
-			extends OperatorHelper.MultiSubscriptionSubscriber<T, T> {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T>[] sources;
 
