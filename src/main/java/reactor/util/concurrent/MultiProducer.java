@@ -19,9 +19,6 @@ import java.util.concurrent.locks.LockSupport;
 
 import reactor.util.Exceptions;
 import reactor.util.ReactorProperties;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.WaitStrategy;
 import sun.misc.Unsafe;
 
 /**

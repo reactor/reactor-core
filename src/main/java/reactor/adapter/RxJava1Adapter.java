@@ -34,9 +34,7 @@ import rx.internal.util.ScalarSynchronousObservable;
 
 /**
  * Convert a RxJava 1 {@link rx.Observable}. {@link rx.Single} and {@link rx.Completable}
- * to/from a Reactive
- * Streams
- * {@link Publisher}.
+ * to/from a Reactive Streams {@link Publisher}.
  *
  * @author Stephane Maldini
  */

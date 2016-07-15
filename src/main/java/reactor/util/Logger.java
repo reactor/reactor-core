@@ -28,7 +28,7 @@ import java.util.regex.Matcher;
  */
 public abstract class Logger {
 
-	public static final int SUBSCRIBE    = 0b010000000;
+	public static final  int           SUBSCRIBE      = 0b010000000;
 	public static final  int           ON_SUBSCRIBE   = 0b001000000;
 	public static final  int           ON_NEXT        = 0b000100000;
 	public static final  int           ON_ERROR       = 0b000010000;

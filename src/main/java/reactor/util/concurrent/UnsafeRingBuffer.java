@@ -19,9 +19,6 @@ import java.util.function.Supplier;
 
 import reactor.util.Exceptions;
 import reactor.util.ReactorProperties;
-import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
 import sun.misc.Unsafe;
 
 abstract class RingBufferPad<E> extends RingBuffer<E>

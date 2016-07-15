@@ -27,31 +27,21 @@ import sun.misc.Unsafe;
 
 /**
  *
- * Expose some runtime properties such as Unsafe access or Android environment.
- *
- * Borrowed from Netty project which itself borrows from JCTools and various other projects.
+ * Expose some runtime properties such as Unsafe access or Android environment. Borrowed
+ * from Netty project which itself borrows from JCTools and various other projects.
  *
  * Original Reference :
  * <a href='https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java'>Netty</a>.
  */
 public abstract class ReactorProperties {
 
-	/**
-	 *
-	 */
 	public static final  boolean TRACE_CANCEL                    =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
 
-	/**
-	 *
-	 */
 	public static final boolean TRACE_OPERATOR_STACKTRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
 
-	/**
-	 *
-	 */
 	public static final  boolean TRACE_NOCAPACITY                =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.nocapacity", "false"));
 	/**
@@ -95,10 +85,10 @@ public abstract class ReactorProperties {
 	 * Default number of processors available to the runtime on init (min 4)
 	 * @see Runtime#availableProcessors()
 	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
-	                                                            .availableProcessors(), 4);
+	public static final int DEFAULT_POOL_SIZE =
+			Math.max(Runtime.getRuntime().availableProcessors(), 4);
 
-	private static final boolean HAS_UNSAFE                      = hasUnsafe0();
+	private static final boolean HAS_UNSAFE = hasUnsafe0();
 
 	@SuppressWarnings("unchecked")
 	public static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(

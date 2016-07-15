@@ -18,9 +18,6 @@ package reactor.util.concurrent;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.util.Exceptions;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.WaitStrategy;
 
 import static java.util.Arrays.copyOf;
 

@@ -18,9 +18,6 @@ package reactor.util.concurrent;
 import java.util.concurrent.locks.LockSupport;
 
 import reactor.util.Exceptions;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.WaitStrategy;
 
 abstract class SingleProducerSequencerPad extends RingBufferProducer
 {

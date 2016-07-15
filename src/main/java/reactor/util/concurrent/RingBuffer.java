@@ -30,8 +30,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.Exceptions;
 import reactor.util.ReactorProperties;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.Slot;
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer

@@ -21,8 +21,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.*;
 
-import reactor.util.concurrent.QueueSupplier;
-
 /**
  * A bounded, array backed, single-producer single-consumer queue.
  * 

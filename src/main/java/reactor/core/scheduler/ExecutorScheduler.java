@@ -30,7 +30,7 @@ import reactor.util.Exceptions;
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
  * <p>
  * It supports both non-trampolined worker (for cases where the trampolining happens
- * extenrally) and trampolined worker.
+ * externally) and trampolined worker.
  */
 final class ExecutorScheduler implements Scheduler {
 

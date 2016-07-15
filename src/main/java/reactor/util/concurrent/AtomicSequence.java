@@ -18,8 +18,6 @@ package reactor.util.concurrent;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 
-import reactor.util.concurrent.Sequence;
-
 /**
  * <p>Concurrent sequence class used for tracking the progress of
  * the ring buffer and event processors.  Support a number

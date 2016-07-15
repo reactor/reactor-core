@@ -18,7 +18,6 @@ package reactor.util.concurrent;
 import java.util.function.LongSupplier;
 
 import reactor.util.ReactorProperties;
-import reactor.util.concurrent.Sequence;
 import sun.misc.Unsafe;
 
 class LhsPadding

@@ -18,11 +18,6 @@ package reactor.util.concurrent;
 import java.util.concurrent.locks.LockSupport;
 
 import reactor.util.Exceptions;
-import reactor.util.concurrent.AtomicSequence;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferProducer;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.WaitStrategy;
 
 /**
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.

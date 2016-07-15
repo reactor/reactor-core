@@ -17,11 +17,8 @@ package reactor.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.util.concurrent.WaitStrategy;
-
 /**
  * Static Helpers to decorate an error with an associated data
- * <p>
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @author Stephane Maldini
@@ -99,8 +96,6 @@ public abstract class Exceptions {
 	public static void disableOperatorStacktrace() {
 		TRACE_OPERATOR_STACKTRACE = false;
 	}
-
-
 
 	/**
 	 * @return a new {@link NullPointerException} with a cause message abiding to reactive stream specification.

@@ -18,10 +18,6 @@ package reactor.util.concurrent;
 import java.util.function.LongSupplier;
 
 import reactor.util.Exceptions;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferProducer;
-import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.WaitStrategy;
 
 /**
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),

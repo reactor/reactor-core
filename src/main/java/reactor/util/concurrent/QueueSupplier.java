@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.util.ReactorProperties;
-import reactor.util.concurrent.RingBuffer;
 
 /**
  * Provide a queue adapted for a given capacity

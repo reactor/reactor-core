@@ -23,8 +23,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
-import reactor.util.concurrent.RingBuffer;
-
 /**
  * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
  */

@@ -18,8 +18,6 @@ package reactor.util.concurrent;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import reactor.util.concurrent.QueueSupplier;
-
 /**
  * An unbounded, array-backed single-producer, single-consumer queue with a fixed link size.
  *

@@ -18,8 +18,6 @@ package reactor.util.concurrent;
 import java.util.function.Supplier;
 
 import reactor.util.Exceptions;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
 
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {

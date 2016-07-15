@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 
 /**
  * A domain representation of a Reactive Stream signal.
- * There are 4 differents signals and their possible sequence is defined as such:
+ * There are 4 distinct signals and their possible sequence is defined as such:
  * onError | (onSubscribe onNext* (onError | onComplete)?)
  *
  * @author Stephane Maldini
@@ -32,8 +32,8 @@ import org.reactivestreams.Subscription;
  * @param <T> the value type
  */
 public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>>, Serializable {
-	/** */
-    private static final long serialVersionUID = 8430680363917273272L;
+
+	private static final long serialVersionUID = 8430680363917273272L;
 
 	private static final Signal<Void> ON_COMPLETE =
 			new Signal<>(SignalType.onComplete, null, null, null);
