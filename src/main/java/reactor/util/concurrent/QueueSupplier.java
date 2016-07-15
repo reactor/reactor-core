@@ -43,16 +43,16 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 	/**
 	 *
-	 * @param batchSize the bounded or unbounded (long.max) queue size
+	 * @param batchSize the bounded or unbounded (int.max) queue size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
-	public static <T> Supplier<Queue<T>> get(long batchSize) {
+	public static <T> Supplier<Queue<T>> get(int batchSize) {
 		return get(batchSize, false, false);
 	}
 
 	/**
-	 * @param batchSize the bounded or unbounded (long.max) queue size
+	 * @param batchSize the bounded or unbounded (int.max) queue size
 	 * @param waiting if true {@link Queue#offer(Object)} will be spinning if under capacity
 	 * @param multiproducer if true {@link Queue#offer(Object)} will support concurrent calls
 	 * @param <T> the reified {@link Queue} generic type
@@ -61,7 +61,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(long batchSize, boolean waiting, boolean multiproducer) {
-		if (batchSize > 10_000_000) {
+		if (batchSize == Integer.MAX_VALUE) {
 			return CLQ_SUPPLIER;
 		}
 		if (batchSize == ReactorProperties.XS_BUFFER_SIZE) {

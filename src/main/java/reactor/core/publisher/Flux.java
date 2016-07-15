@@ -4066,7 +4066,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
-	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory, long
+	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>>
+			throttlerFactory, int
 			maxConcurrency) {
 		if(maxConcurrency == Long.MAX_VALUE){
 			return sampleTimeout(throttlerFactory);
@@ -5119,7 +5120,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Iterable<T> toIterable(long batchSize, Supplier<Queue<T>> queueProvider) {
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
-			provider = QueueSupplier.get(batchSize);
+			provider = QueueSupplier.get((int)Math.min(Integer.MAX_VALUE, batchSize));
 		}
 		else{
 			provider = queueProvider;
