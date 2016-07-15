@@ -29,7 +29,6 @@ import reactor.core.Loopback;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
- * @since 2.5
  */
 final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 

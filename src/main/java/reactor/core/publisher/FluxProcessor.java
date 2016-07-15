@@ -31,8 +31,7 @@ import reactor.util.Exceptions;
  * {@link ReplayProcessor}, {@link WorkQueueProcessor} and {@link TopicProcessor}.
  *
  * @author Stephane Maldini
- * @since 2.0.2, 2.5
- * 
+ *
  * @param <IN> the input value type
  * @param <OUT> the output value type
  */

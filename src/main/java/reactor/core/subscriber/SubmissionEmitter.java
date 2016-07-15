@@ -42,7 +42,6 @@ import reactor.util.Exceptions;
  * The emitter is itself a {@link Subscriber} that will request an unbounded value if subscribed.
  *
  * @author Stephane Maldini
- * @since 2.5
  * @param <E> the element type
  */
 public final class SubmissionEmitter<E>

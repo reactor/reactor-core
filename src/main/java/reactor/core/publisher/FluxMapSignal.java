@@ -40,7 +40,6 @@ import reactor.util.Exceptions;
 
 /**
  * @author Stephane Maldini
- * @since 2.5
  */
 final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 

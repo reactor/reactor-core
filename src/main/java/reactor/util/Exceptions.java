@@ -25,7 +25,6 @@ import reactor.util.concurrent.WaitStrategy;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @author Stephane Maldini
- * @since 2.0
  */
 public abstract class Exceptions {
 

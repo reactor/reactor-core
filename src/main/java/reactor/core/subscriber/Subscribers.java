@@ -32,7 +32,6 @@ import org.reactivestreams.Subscriber;
  * </pre>
  *
  * @author Stephane Maldini
- * @since 2.0.3, 2.5
  */
 public enum Subscribers{
 	;

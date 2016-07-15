@@ -23,7 +23,6 @@ import reactor.util.function.Tuples;
 
 /**
  * @author Stephane Maldini
- * @since 2.0, 2.5
  */
 final class Elapsed<T> implements Function<T, Tuple2<Long, T>> {
 

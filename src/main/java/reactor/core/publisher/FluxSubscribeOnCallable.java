@@ -36,7 +36,6 @@ import reactor.util.Exceptions;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
- * @since 2.5
  */
 final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 

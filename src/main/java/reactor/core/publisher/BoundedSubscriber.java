@@ -22,7 +22,6 @@ import org.reactivestreams.Subscription;
 
 /**
  * @author Stephane Maldini
- * @since 2.5
  */
 final class BoundedSubscriber<T> extends LambdaSubscriber<T> {
 

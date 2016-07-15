@@ -27,8 +27,7 @@ import reactor.util.Exceptions;
  * the {@link org.reactivestreams.Processor} interface allowing multiple subscribes.
  *
  * @author Stephane Maldini
- * @since 2.0.4
- * 
+ *
  * @param <I> the input value type
  * @param <O> the output value type
  */

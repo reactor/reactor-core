@@ -86,7 +86,6 @@ import reactor.util.function.Tuple6;
  * @author David Karnok
  *
  * @see Mono
- * @since 2.5
  */
 public abstract class Flux<T> implements Publisher<T> {
 

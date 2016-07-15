@@ -39,7 +39,6 @@ import rx.internal.util.ScalarSynchronousObservable;
  * {@link Publisher}.
  *
  * @author Stephane Maldini
- * @since 2.5
  */
 @SuppressWarnings("rawtypes")
 public abstract class RxJava1Adapter {

@@ -37,7 +37,6 @@ import reactor.util.ReactorProperties;
  *
  * @author Stephane Maldini
  *
- * @since 2.5
  */
 public abstract class SubscriptionHelper {
 

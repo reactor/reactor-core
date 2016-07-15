@@ -26,7 +26,6 @@ import reactor.util.*;
 
 /**
  * @author Stephane Maldini
- * @since 2.0, 2.5
  */
 final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 
