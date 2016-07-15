@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.core.Trackable;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are
@@ -34,7 +35,7 @@ import reactor.core.Receiver;
  * @param <T> the value type
  */
 final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer,
-													  SubscriberState {
+                                               Trackable {
 
 	final Subscriber<? super T> actual;
 
@@ -60,7 +61,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (SubscriptionHelper.validate(this.s, s)) {
+		if (Operators.validate(this.s, s)) {
 			this.s = s;
 
 			actual.onSubscribe(this);

@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -114,7 +113,7 @@ final class MonoDelay extends Mono<Long> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				requested = true;
 			}
 		}

@@ -19,7 +19,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -92,7 +91,7 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);

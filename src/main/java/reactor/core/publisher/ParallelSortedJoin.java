@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -106,8 +105,8 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				if (remaining == 0) {
 					drain();
 				}
@@ -277,7 +276,7 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -298,7 +297,7 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 		}
 		
 		void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 	}
 }

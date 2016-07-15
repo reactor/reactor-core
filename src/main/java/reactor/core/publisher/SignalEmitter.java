@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Trackable;
 
 /**
  * Interface to generate signals to a bridged {@link Subscriber}.
@@ -24,7 +25,7 @@ import org.reactivestreams.Subscriber;
  *
  * @param <T> the output value type
  */
-public interface SignalEmitter<T> extends SubscriberState {
+public interface SignalEmitter<T> extends Trackable {
 
 	/**
 	 * @see Subscriber#onComplete()

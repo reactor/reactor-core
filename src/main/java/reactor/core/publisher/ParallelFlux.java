@@ -35,7 +35,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -817,7 +816,7 @@ public abstract class ParallelFlux<T> {
 		int p = parallelism();
 		if (subscribers.length != p) {
 			for (Subscriber<?> s : subscribers) {
-				SubscriptionHelper.error(s,
+				Operators.error(s,
 						new IllegalArgumentException("parallelism = " + p + ", subscribers = " + subscribers.length));
 			}
 			return false;

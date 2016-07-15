@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -74,7 +73,7 @@ final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				subscriber.onSubscribe(this);

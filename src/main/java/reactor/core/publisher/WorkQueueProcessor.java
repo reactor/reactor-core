@@ -29,8 +29,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.RingBuffer;
@@ -586,7 +585,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				TopicProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
 			}
 			else {
-				SubscriptionHelper.error(subscriber, t);
+				Operators.error(subscriber, t);
 			}
 		}
 	}
@@ -666,7 +665,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * parallel coordination of an event.
 	 */
 	final static class QueueSubscriberLoop<T>
-			implements Runnable, Producer, SubscriberState, Subscription, Receiver {
+			implements Runnable, Producer, Trackable, Subscription, Receiver {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -727,7 +726,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 			try {
 				if (!running.compareAndSet(false, true)) {
-					SubscriptionHelper.error(subscriber, new IllegalStateException("Thread is already running"));
+					Operators.error(subscriber, new IllegalStateException("Thread is already running"));
 					return;
 				}
 
@@ -1009,7 +1008,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.checkRequest(n, subscriber)) {
+			if (Operators.checkRequest(n, subscriber)) {
 				if (!running.get()) {
 					return;
 				}

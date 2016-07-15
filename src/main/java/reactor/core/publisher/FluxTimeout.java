@@ -10,8 +10,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -54,7 +52,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		Subscriber<T> serial = Subscribers.serialize(s);
+		Subscriber<T> serial = Operators.serialize(s);
 
 		TimeoutMainSubscriber<T, V> main = new TimeoutMainSubscriber<>(serial, itemTimeout, other);
 
@@ -99,7 +97,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				set(s);
@@ -251,7 +249,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 				subscriber.onError(new TimeoutException());
 			} else {
-				set(SubscriptionHelper.empty());
+				set(Operators.empty());
 
 				other.subscribe(new TimeoutOtherSubscriber<>(subscriber, this));
 			}
@@ -332,8 +330,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!S.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (this.s != SubscriptionHelper.cancelled()) {
-					SubscriptionHelper.reportSubscriptionSet();
+				if (this.s != Operators.cancelled()) {
+					Operators.reportSubscriptionSet();
 				}
 			} else {
 				s.request(Long.MAX_VALUE);
@@ -360,9 +358,9 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != SubscriptionHelper.cancelled()) {
-				a = S.getAndSet(this, SubscriptionHelper.cancelled());
-				if (a != null && a != SubscriptionHelper.cancelled()) {
+			if (a != Operators.cancelled()) {
+				a = S.getAndSet(this, Operators.cancelled());
+				if (a != null && a != Operators.cancelled()) {
 					a.cancel();
 				}
 			}

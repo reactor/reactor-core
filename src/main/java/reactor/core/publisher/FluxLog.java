@@ -22,9 +22,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Reactor;
-import reactor.core.subscriber.SubscriberBarrier;
-
 import static reactor.core.Reactor.Logger;
+
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them
@@ -60,7 +59,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		source.subscribe(new LoggerBarrier<>(this, newId, subscriber));
 	}
 
-	final static class LoggerBarrier<IN> extends SubscriberBarrier<IN, IN>  {
+	final static class LoggerBarrier<IN> extends OperatorAdapter<IN, IN> {
 
 		private final int    options;
 		private final Logger log;

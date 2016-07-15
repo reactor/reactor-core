@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.io.IOException;
 
 import org.junit.Test;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class MonoCallableTest {
 

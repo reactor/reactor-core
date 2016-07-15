@@ -26,7 +26,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -326,14 +325,14 @@ public final class UnicastProcessor<T>
 				drain();
 			}
 		} else {
-			SubscriptionHelper.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
+			Operators.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
 		}
 	}
 
 	@Override
 	public void request(long n) {
-		if (SubscriptionHelper.validate(n)) {
-			SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+		if (Operators.validate(n)) {
+			Operators.getAndAddCap(REQUESTED, this, n);
 			drain();
 		}
 	}

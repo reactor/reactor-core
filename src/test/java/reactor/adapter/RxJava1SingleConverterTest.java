@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.junit.Test;
 
 import reactor.core.publisher.*;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 import rx.Single;
 
 public class RxJava1SingleConverterTest {

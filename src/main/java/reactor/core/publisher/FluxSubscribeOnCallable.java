@@ -25,7 +25,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -243,7 +242,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				for (; ; ) {
 					int s = state;
 					if (s == CANCELLED || s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {

@@ -32,8 +32,7 @@ import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -112,12 +111,12 @@ extends Flux<R>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				SubscriptionHelper.error(s, e);
+				Operators.error(s, e);
 				return;
 			}
 
 			if (it == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The iterator returned is null"));
+				Operators.error(s, new NullPointerException("The iterator returned is null"));
 				return;
 			}
 
@@ -128,7 +127,7 @@ extends Flux<R>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					SubscriptionHelper.error(s, e);
+					Operators.error(s, e);
 					return;
 				}
 
@@ -141,12 +140,12 @@ extends Flux<R>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					SubscriptionHelper.error(s, e);
+					Operators.error(s, e);
 					return;
 				}
 
 				if (p == null) {
-					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " +
+					Operators.error(s, new NullPointerException("The Publisher returned by the iterator is " +
 					  "null"));
 					return;
 				}
@@ -164,7 +163,7 @@ extends Flux<R>
 		}
 
 		if (n == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 		if (n == 1) {
@@ -182,12 +181,12 @@ extends Flux<R>
 		try {
 			queue = queueSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (queue == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -200,7 +199,7 @@ extends Flux<R>
 	}
 	
 	static final class CombineLatestCoordinator<T, R>
-			implements QueueSubscription<R>, MultiReceiver, SubscriberState {
+			implements QueueSubscription<R>, MultiReceiver, Trackable {
 
 		final Subscriber<? super R> actual;
 		
@@ -255,8 +254,8 @@ extends Flux<R>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -552,7 +551,7 @@ extends Flux<R>
 	}
 	
 	static final class CombineLatestInner<T>
-			implements Subscriber<T>, Receiver, Producer, SubscriberState {
+			implements Subscriber<T>, Receiver, Producer, Trackable {
 
 		final CombineLatestCoordinator<T, ?> parent;
 
@@ -579,7 +578,7 @@ extends Flux<R>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(prefetch);
 			}
 		}
@@ -600,7 +599,7 @@ extends Flux<R>
 		}
 		
 		public void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 		
 		public void requestOne() {

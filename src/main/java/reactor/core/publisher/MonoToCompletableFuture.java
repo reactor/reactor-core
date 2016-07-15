@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -44,7 +43,7 @@ final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements S
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (SubscriptionHelper.validate(ref.getAndSet(s), s)) {
+		if (Operators.validate(ref.getAndSet(s), s)) {
 			s.request(Long.MAX_VALUE);
 		}
 		else {

@@ -21,8 +21,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Cancellation;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.subscriber.TestSubscriber;
-import reactor.util.Exceptions;
+import reactor.test.TestSubscriber;
 
 public class ConnectableFluxPublishTest {
 

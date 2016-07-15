@@ -22,9 +22,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
-
 /**
  * Skips values from the main publisher until the other publisher signals
  * an onNext or onComplete.
@@ -83,7 +80,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 			SkipUntilMainSubscriber<?> m = main;
 			m.other.cancel();
 			m.gate = true;
-			m.other = SubscriptionHelper.cancelled();
+			m.other = Operators.cancelled();
 		}
 
 		@Override
@@ -102,7 +99,7 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 				return;
 			}
 			m.gate = true;
-			m.other = SubscriptionHelper.cancelled();
+			m.other = Operators.cancelled();
 		}
 
 
@@ -126,14 +123,14 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 		volatile boolean gate;
 
 		public SkipUntilMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = Subscribers.serialize(actual);
+			this.actual = Operators.serialize(actual);
 		}
 
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != SubscriptionHelper.cancelled()) {
-					SubscriptionHelper.reportSubscriptionSet();
+				if (other != Operators.cancelled()) {
+					Operators.reportSubscriptionSet();
 				}
 			}
 		}
@@ -145,9 +142,9 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != SubscriptionHelper.cancelled()) {
-				s = MAIN.getAndSet(this, SubscriptionHelper.cancelled());
-				if (s != null && s != SubscriptionHelper.cancelled()) {
+			if (s != Operators.cancelled()) {
+				s = MAIN.getAndSet(this, Operators.cancelled());
+				if (s != null && s != Operators.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -155,9 +152,9 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != SubscriptionHelper.cancelled()) {
-				s = OTHER.getAndSet(this, SubscriptionHelper.cancelled());
-				if (s != null && s != SubscriptionHelper.cancelled()) {
+			if (s != Operators.cancelled()) {
+				s = OTHER.getAndSet(this, Operators.cancelled());
+				if (s != null && s != Operators.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -173,8 +170,8 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != SubscriptionHelper.cancelled()) {
-					SubscriptionHelper.reportSubscriptionSet();
+				if (main != Operators.cancelled()) {
+					Operators.reportSubscriptionSet();
 				}
 			} else {
 				actual.onSubscribe(this);
@@ -193,8 +190,8 @@ final class FluxSkipUntil<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (main == null) {
-				if (MAIN.compareAndSet(this, null, SubscriptionHelper.cancelled())) {
-					SubscriptionHelper.error(actual, t);
+				if (MAIN.compareAndSet(this, null, Operators.cancelled())) {
+					Operators.error(actual, t);
 					return;
 				}
 			}

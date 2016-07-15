@@ -26,8 +26,7 @@ import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxTakeLastOne.TakeLastOneSubscriber;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Emits the last N values the source emitted before its completion.
@@ -80,7 +79,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -126,8 +125,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	static final class TakeLastManySubscriber<T>
-			implements Subscriber<T>, Subscription, BooleanSupplier, Producer,
-			           SubscriberState, Receiver {
+			implements Subscriber<T>, Subscription, BooleanSupplier, Producer, Trackable, Receiver {
 
 		final Subscriber<? super T> actual;
 
@@ -157,7 +155,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				DrainUtils.postCompleteRequest(n, actual, buffer, REQUESTED, this, this);
 			}
 		}
@@ -170,7 +168,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

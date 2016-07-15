@@ -20,7 +20,7 @@ import java.util.Collections;
 import org.junit.Test;
 
 import reactor.core.Fuseable;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class FluxCombineLatestTest {
 

@@ -29,8 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -83,7 +82,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
 			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
-			           SubscriberState {
+			           Trackable {
 
 		final Subscriber<? super C> actual;
 
@@ -105,8 +104,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				s.request(SubscriptionHelper.multiplyCap(n, size));
+			if (Operators.validate(n)) {
+				s.request(Operators.multiplyCap(n, size));
 			}
 		}
 
@@ -117,7 +116,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -229,7 +228,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 	static final class BufferSkipSubscriber<T, C extends Collection<? super T>>
 			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
-			           SubscriberState {
+			           Trackable {
 
 		final Subscriber<? super C> actual;
 
@@ -264,14 +263,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		public void request(long n) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				// n full buffers
-				long u = SubscriptionHelper.multiplyCap(n, size);
+				long u = Operators.multiplyCap(n, size);
 				// + (n - 1) gaps
-				long v = SubscriptionHelper.multiplyCap(skip - size, n - 1);
+				long v = Operators.multiplyCap(skip - size, n - 1);
 
-				s.request(SubscriptionHelper.addCap(u, v));
+				s.request(Operators.addCap(u, v));
 			} else {
 				// n full buffer + gap
-				s.request(SubscriptionHelper.multiplyCap(skip, n));
+				s.request(Operators.multiplyCap(skip, n));
 			}
 		}
 
@@ -282,7 +281,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -406,7 +405,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 	static final class BufferOverlappingSubscriber<T, C extends Collection<? super T>>
 			implements Subscriber<T>, Subscription, Receiver, BooleanSupplier, Producer,
-			           SubscriberState, Loopback {
+			           Trackable, Loopback {
 		final Subscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
@@ -452,7 +451,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public void request(long n) {
 
-			if (!SubscriptionHelper.validate(n)) {
+			if (!Operators.validate(n)) {
 				return;
 			}
 
@@ -462,14 +461,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 				// (n - 1) skips
-				long u = SubscriptionHelper.multiplyCap(skip, n - 1);
+				long u = Operators.multiplyCap(skip, n - 1);
 
 				// + 1 full buffer
-				long r = SubscriptionHelper.addCap(size, u);
+				long r = Operators.addCap(size, u);
 				s.request(r);
 			} else {
 				// n skips
-				long r = SubscriptionHelper.multiplyCap(skip, n);
+				long r = Operators.multiplyCap(skip, n);
 				s.request(r);
 			}
 		}
@@ -482,7 +481,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

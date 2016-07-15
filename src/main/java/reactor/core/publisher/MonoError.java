@@ -19,8 +19,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -32,7 +31,7 @@ import reactor.util.Exceptions;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoError<T> extends Mono<T> implements SubscriberState {
+final class MonoError<T> extends Mono<T> implements Trackable {
 
 	final Supplier<? extends Throwable> supplier;
 
@@ -73,7 +72,7 @@ final class MonoError<T> extends Mono<T> implements SubscriberState {
 			e = new NullPointerException("The Throwable returned by the supplier is null");
 		}
 
-		SubscriptionHelper.error(s, e);
+		Operators.error(s, e);
 	}
 
 	@Override

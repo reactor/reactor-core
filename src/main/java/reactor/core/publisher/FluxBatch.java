@@ -25,9 +25,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.subscriber.SubscriberBarrier;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * @author Stephane Maldini
@@ -65,14 +62,14 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 	final Subscriber<? super V> prepareSub(Subscriber<? super V> actual) {
 		if (timer != null) {
-			return Subscribers.serialize(actual);
+			return Operators.serialize(actual);
 		}
 		else {
 			return actual;
 		}
 	}
 
-	static abstract class BatchAction<T, V> extends SubscriberBarrier<T, V> {
+	static abstract class BatchAction<T, V> extends OperatorAdapter<T, V> {
 
 		final static int NOT_TERMINATED = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;
@@ -123,7 +120,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 		@Override
 		protected void doRequest(long n) {
-			doRequested(SubscriptionHelper.getAndAddCap(REQUESTED, this, n), n);
+			doRequested(Operators.getAndAddCap(REQUESTED, this, n), n);
 		}
 
 		final void requestMore(long n){
@@ -240,7 +237,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 				requestMore(Long.MAX_VALUE);
 			}
 			else {
-				requestMore(SubscriptionHelper.multiplyCap(n, batchSize));
+				requestMore(Operators.multiplyCap(n, batchSize));
 			}
 		}
 

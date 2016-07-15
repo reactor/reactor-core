@@ -28,9 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.RingBuffer;
@@ -318,31 +316,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						strategy,
 				false,
 				autoCancel, null);
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param parallelism Number of pooled workers.
-	 * @param bufferSize backlog size to be used by event loops.
-	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(int parallelism,
-			int bufferSize,
-			ThreadFactory threadFactory) {
-
-		return asScheduler(() -> new TopicProcessor<>(threadFactory,
-				null,
-				bufferSize,
-				WaitStrategy.phasedOffLiteLock(200, 200, TimeUnit.MILLISECONDS),
-				true,
-				false,
-				null), parallelism, false);
 	}
 
 	/**
@@ -696,7 +669,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				coldSource(ringBuffer, t, error, minimum).subscribe(subscriber);
 			}
 			else{
-				SubscriptionHelper.error(subscriber, t);
+				Operators.error(subscriber, t);
 			}
 		}
 	}
@@ -779,7 +752,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * parallel coordination of an event.
 	 */
 	private final static class TopicSubscriberLoop<T>
-			implements Runnable, Producer, Receiver, SubscriberState, Subscription {
+			implements Runnable, Producer, Receiver, Trackable, Subscription {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -833,7 +806,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		public void run() {
 			try {
 				if (!running.compareAndSet(false, true)) {
-					SubscriptionHelper.error(subscriber, new IllegalStateException("Thread is already running"));
+					Operators.error(subscriber, new IllegalStateException("Thread is already running"));
 					return;
 				}
 
@@ -889,7 +862,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						}
 						sequence.set(availableSequence);
 
-						if (SubscriptionHelper.empty() !=
+						if (Operators.empty() !=
 								processor.upstreamSubscription) {
 							processor.readWait.signalAllWhenBlocking();
 						}
@@ -983,7 +956,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.checkRequest(n, subscriber)) {
+			if (Operators.checkRequest(n, subscriber)) {
 				if (!running.get()) {
 					return;
 				}

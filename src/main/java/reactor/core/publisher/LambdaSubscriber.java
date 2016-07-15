@@ -22,16 +22,14 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}
  * @param <T> the value type
  */
-class LambdaSubscriber<T> implements Subscriber<T>, Receiver, Cancellation,
-                                            SubscriberState {
+class LambdaSubscriber<T> implements Subscriber<T>, Receiver, Cancellation, Trackable {
 
 	final Consumer<? super T>         consumer;
 	final Consumer<? super Throwable> errorConsumer;
@@ -77,7 +75,7 @@ class LambdaSubscriber<T> implements Subscriber<T>, Receiver, Cancellation,
 
 	@Override
 	public final void onSubscribe(Subscription s) {
-		if (SubscriptionHelper.validate(subscription, s)) {
+		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
 			if(consumer == null && errorConsumer == null && completeConsumer == null){
 				barrier = new Object();

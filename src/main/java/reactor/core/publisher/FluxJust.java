@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -82,7 +82,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
-	                                                        Receiver, SubscriberState {
+	                                                        Receiver, Trackable {
 
 		boolean terminado;
 		final T                     value;

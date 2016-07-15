@@ -23,7 +23,6 @@ import org.reactivestreams.*;
 
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -125,7 +124,7 @@ final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -168,8 +167,8 @@ final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				schedule();
 			}
 		}

@@ -30,8 +30,7 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -87,12 +86,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (worker == null) {
-			SubscriptionHelper.error(s,
+			Operators.error(s,
 					new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
@@ -121,7 +120,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 	static final class PublishOnSubscriber<T>
 			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
-			           Receiver, SubscriberState {
+			           Receiver, Trackable {
 		
 		final Subscriber<? super T> actual;
 		
@@ -181,7 +180,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof QueueSubscription) {
@@ -217,7 +216,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					Exceptions.throwIfFatal(e);
 					s.cancel();
 					try {
-						SubscriptionHelper.error(actual, e);
+						Operators.error(actual, e);
 					}
 					finally {
 						worker.shutdown();
@@ -270,8 +269,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}
@@ -652,7 +651,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 	static final class PublishOnConditionalSubscriber<T>
 			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
-			           Receiver, SubscriberState {
+			           Receiver, Trackable {
 
 		final ConditionalSubscriber<? super T> actual;
 		
@@ -715,7 +714,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof QueueSubscription) {
@@ -751,7 +750,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					s.cancel();
 
 					try {
-						SubscriptionHelper.error(actual, e);
+						Operators.error(actual, e);
 					}
 					finally {
 						worker.shutdown();
@@ -805,8 +804,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				trySchedule();
 			}
 		}

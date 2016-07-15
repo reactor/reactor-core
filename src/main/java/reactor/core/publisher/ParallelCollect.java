@@ -19,7 +19,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -83,7 +82,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 	
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
 		for (Subscriber<?> s : subscribers) {
-			SubscriptionHelper.error(s, ex);
+			Operators.error(s, ex);
 		}
 	}
 
@@ -117,7 +116,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				subscriber.onSubscribe(this);

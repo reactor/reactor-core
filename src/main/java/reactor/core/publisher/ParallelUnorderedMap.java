@@ -19,7 +19,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -93,7 +92,7 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);

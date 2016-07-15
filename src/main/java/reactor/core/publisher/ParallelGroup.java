@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Exposes the 'rails' as individual GroupedFlux instances, keyed by the rail index (zero based).
@@ -93,13 +92,13 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fu
 				this.actual = s;
 				s.onSubscribe(this);
 			} else {
-				SubscriptionHelper.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
+				Operators.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
 			}
 		}
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				long r = REQUESTED.getAndSet(this, 0L);
 				if (r != 0L) {
 					s.request(r);
@@ -124,10 +123,10 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fu
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				Subscription a = s;
 				if (a == null) {
-					SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+					Operators.getAndAddCap(REQUESTED, this, n);
 					
 					a = s;
 					if (a != null) {
@@ -144,7 +143,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fu
 		
 		@Override
 		public void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 	}
 }

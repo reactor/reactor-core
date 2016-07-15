@@ -26,8 +26,7 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -76,7 +75,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 	static final class MapSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
-			           SubscriberState {
+			           Trackable {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -91,7 +90,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -186,7 +185,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 	static final class MapConditionalSubscriber<T, R>
 			implements Fuseable.ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, SubscriberState {
+			           Subscription, Trackable {
 		final Fuseable.ConditionalSubscriber<? super R> actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -201,7 +200,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

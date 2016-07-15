@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -73,7 +72,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         }
         
         if (n == 0) {
-            SubscriptionHelper.complete(s);
+            Operators.complete(s);
             return;
         }
         
@@ -202,7 +201,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (SubscriptionHelper.setOnce(S, this, s)) {
+            if (Operators.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);
             } else {
                 s.cancel();
@@ -231,7 +230,7 @@ final class MonoWhen<T> extends Mono<T[]>  {
         }
         
         void cancel() {
-            SubscriptionHelper.terminate(S, this);
+            Operators.terminate(S, this);
         }
     }
 }

@@ -21,7 +21,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 final class MonoFlatMap<T, R> extends Flux<R> {
@@ -73,8 +72,8 @@ final class MonoFlatMap<T, R> extends Flux<R> {
             if (a != null) {
                 a.request(n);
             } else {
-                if (SubscriptionHelper.validate(n)) {
-                    SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+                if (Operators.validate(n)) {
+                    Operators.getAndAddCap(REQUESTED, this, n);
                     a = inner;
                     if (a != null) {
                         n = REQUESTED.getAndSet(this, 0L);
@@ -89,12 +88,12 @@ final class MonoFlatMap<T, R> extends Flux<R> {
         @Override
         public void cancel() {
             main.cancel();
-            SubscriptionHelper.terminate(INNER, this);
+            Operators.terminate(INNER, this);
         }
 
         @Override
         public void onSubscribe(Subscription s) {
-            if (SubscriptionHelper.validate(this.main, s)) {
+            if (Operators.validate(this.main, s)) {
                 this.main = s;
                 
                 actual.onSubscribe(this);
@@ -104,7 +103,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
         }
         
         boolean onSubscribeInner(Subscription s) {
-            if (SubscriptionHelper.setOnce(INNER, this, s)) {
+            if (Operators.setOnce(INNER, this, s)) {
                 
                 long r = REQUESTED.getAndSet(this, 0L);
                 if (r != 0) {

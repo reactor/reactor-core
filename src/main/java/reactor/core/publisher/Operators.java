@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -25,11 +26,483 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
+import reactor.core.Reactor;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
+import reactor.util.Exceptions;
 
-abstract class Operators {
+/**
+ * An helper to support "Operator" writing, handle noop subscriptions, validate request
+ * size and
+ * to cap concurrent additive operations to Long.MAX_VALUE,
+ * which is generic to {@link Subscription#request(long)} handling.
+ *
+ * Combine utils available to operator implementations, @see http://github.com/reactor/reactive-streams-commons
+ *
+ */
+public abstract class Operators {
+
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE.
+	 * Any concurrent write will "happen" before this operation.
+	 *
+	 * @param current current atomic to update
+	 * @param toAdd   delta to add
+	 * @return Addition result or Long.MAX_VALUE
+	 */
+	public static long addAndGet(AtomicLong current, long toAdd) {
+		long u, r;
+		do {
+			r = current.get();
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+		}
+		while (!current.compareAndSet(r, u));
+
+		return u;
+	}
+
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
+	 * before this operation.
+	 *
+	 * @param <T> the parent instance type
+	 * @param updater current field updater
+	 * @param instance current instance to update
+	 * @param n delta to add
+	 *
+	 * @return Addition result or Long.MAX_VALUE
+	 */
+	public static <T> long addAndGet(AtomicLongFieldUpdater<T> updater,
+			T instance,
+			long n) {
+		for (; ; ) {
+			long r = updater.get(instance);
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			long u = addCap(r, n);
+			if (updater.compareAndSet(instance, r, u)) {
+				return r;
+			}
+		}
+	}
+
+	/**
+	 * Cap an addition to Long.MAX_VALUE
+	 *
+	 * @param a left operand
+	 * @param b right operand
+	 *
+	 * @return Addition result or Long.MAX_VALUE if overflow
+	 */
+	public static long addCap(long a, long b) {
+		long res = a + b;
+		if (res < 0L) {
+			return Long.MAX_VALUE;
+		}
+		return res;
+	}
+
+	/**
+	 * Returns the subscription as QueueSubscription if possible or null.
+	 * @param <T> the value type of the QueueSubscription.
+	 * @param s the source subscription to try to convert.
+	 * @return the QueueSubscription instance or null
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
+		if (s instanceof Fuseable.QueueSubscription) {
+			return (Fuseable.QueueSubscription<T>) s;
+		}
+		return null;
+	}
+
+	/**
+	 * A singleton Subscription that represents a cancelled subscription instance and
+	 * should not be leaked to clients as it represents a terminal state. <br> If
+	 * algorithms need to hand out a subscription, replace this with a singleton
+	 * subscription because
+	 * there is
+	 * no standard way to tell if a
+	 * Subscription is cancelled or not otherwise.
+	 *
+	 * @return a singleton noop {@link Subscription}
+	 */
+	public static Subscription cancelled() {
+		return CancelledSubscription.INSTANCE;
+	}
+
+	/**
+	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
+	 *
+	 * @param n demand to check
+	 * @throws IllegalArgumentException
+	 */
+	public static void checkRequest(long n) throws IllegalArgumentException {
+		if (n <= 0L) {
+			throw Exceptions.nullOrNegativeRequestException(n);
+		}
+	}
+
+	/**
+	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
+	 *
+	 * @param n          demand to check
+	 * @param subscriber Subscriber to onError if non strict positive n
+	 *
+	 * @return true if valid or false if specification exception occured
+	 *
+	 * @throws IllegalArgumentException if subscriber is null and demand is negative or 0.
+	 */
+	public static boolean checkRequest(long n, Subscriber<?> subscriber) {
+		if (n <= 0L) {
+			if (null != subscriber) {
+				subscriber.onError(Exceptions.nullOrNegativeRequestException(n));
+			} else {
+				throw Exceptions.nullOrNegativeRequestException(n);
+			}
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onComplete.
+	 *
+	 * @param s
+	 */
+	public static void complete(Subscriber<?> s) {
+		s.onSubscribe(EmptySubscription.INSTANCE);
+		s.onComplete();
+	}
+
+	/**
+	 * A singleton enumeration that represents a no-op Subscription instance that
+	 * can be freely given out to clients.
+	 * <p>
+	 * The enum also implements Fuseable.QueueSubscription so operators expecting a
+	 * QueueSubscription from a Fuseable source don't have to double-check their Subscription
+	 * received in onSubscribe.
+	 *
+	 * @return a singleton noop {@link Subscription}
+	 */
+	public static Subscription empty() {
+		return EmptySubscription.INSTANCE;
+	}
+
+	/**
+	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onError with the
+	 * supplied error.
+	 *
+	 * @param s
+	 * @param e
+	 */
+	public static void error(Subscriber<?> s, Throwable e) {
+		s.onSubscribe(EmptySubscription.INSTANCE);
+		s.onError(e);
+	}
+
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE.
+	 * Any concurrent write will "happen" before this operation.
+	 *
+     * @param <T> the parent instance type
+	 * @param updater  current field updater
+	 * @param instance current instance to update
+	 * @param toAdd    delta to add
+	 * @return value before addition or Long.MAX_VALUE
+	 */
+	public static <T> long getAndAddCap(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
+		long r, u;
+		do {
+			r = updater.get(instance);
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+		} while (!updater.compareAndSet(instance, r, u));
+
+		return r;
+	}
+
+	/**
+	 * Concurrent substraction bound to 0.
+	 * Any concurrent write will "happen" before this operation.
+	 *
+     * @param <T> the parent instance type
+	 * @param updater  current field updater
+	 * @param instance current instance to update
+	 * @param toSub    delta to sub
+	 * @return value before subscription or zero
+	 */
+	public static <T> long getAndSub(AtomicLongFieldUpdater<T> updater, T instance, long toSub) {
+		long r, u;
+		do {
+			r = updater.get(instance);
+			if (r == 0 || r == Long.MAX_VALUE) {
+				return r;
+			}
+			u = subOrZero(r, toSub);
+		} while (!updater.compareAndSet(instance, r, u));
+
+		return r;
+	}
+
+	/**
+	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.
+	 * Any concurrent write will "happen" before this operation.
+	 *
+	 * @param sequence current atomic to update
+	 * @param toSub    delta to sub
+	 * @return value before subscription, 0 or Long.MAX_VALUE
+	 */
+	public static long getAndSub(AtomicLong sequence, long toSub) {
+		long r, u;
+		do {
+			r = sequence.get();
+			if (r == 0 || r == Long.MAX_VALUE) {
+				return r;
+			}
+			u = subOrZero(r, toSub);
+		} while (!sequence.compareAndSet(r, u));
+
+		return r;
+	}
+
+	/**
+	 * Cap a multiplication to Long.MAX_VALUE
+	 *
+	 * @param a left operand
+	 * @param b right operand
+	 *
+	 * @return Product result or Long.MAX_VALUE if overflow
+	 */
+	public static long multiplyCap(long a, long b) {
+		long u = a * b;
+		if (((a | b) >>> 31) != 0) {
+			if (u / a != b) {
+				return Long.MAX_VALUE;
+			}
+		}
+		return u;
+	}
+
+	/**
+	 * A generic utility to atomically replace a subscription or cancel if marked by a
+	 * singleton subscription.
+	 *
+	 * @param field The Atomic container
+	 * @param instance the instance reference
+	 * @param s the subscription
+	 * @param <F> the instance type
+	 *
+	 * @return true if replaced
+	 */
+	public static <F> boolean replace(AtomicReferenceFieldUpdater<F, Subscription> field,
+			F instance,
+			Subscription s) {
+		for (; ; ) {
+			Subscription a = field.get(instance);
+			if (a == CancelledSubscription.INSTANCE) {
+				s.cancel();
+				return false;
+			}
+			if (field.compareAndSet(instance, a, s)) {
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * Throw {@link IllegalArgumentException}
+	 *
+	 * @param n the demand to evaluate
+	 */
+	public static void reportBadRequest(long n) {
+		throw Exceptions.nullOrNegativeRequestException(n);
+	}
+
+	/**
+	 * Throw {@link Exceptions.InsufficientCapacityException}
+	 */
+	public static void reportMoreProduced() {
+		throw Exceptions.failWithOverflow();
+	}
+
+	/**
+	 * Log or Throw {@link IllegalStateException}
+	 */
+	public static void reportSubscriptionSet() {
+		if (!Reactor.TRACE_CANCEL) {
+			Reactor.getLogger(Operators.class)
+			      .trace("Duplicate Subscription has been detected");
+		}
+		else {
+			throw Exceptions.duplicateOnSubscribeException();
+		}
+	}
+
+	/**
+	 * A generic utility to atomically replace a subscription or cancel if marked by a
+	 * singleton subscription or concurrently set before.
+	 *
+	 * @param field The Atomic container
+	 * @param instance the instance reference
+	 * @param s the subscription
+	 * @param <F> the instance type
+	 *
+	 * @return true if replaced
+	 */
+	public static <F> boolean set(AtomicReferenceFieldUpdater<F, Subscription> field,
+			F instance,
+			Subscription s) {
+		for (; ; ) {
+			Subscription a = field.get(instance);
+			if (a == CancelledSubscription.INSTANCE) {
+				s.cancel();
+				return false;
+			}
+			if (field.compareAndSet(instance, a, s)) {
+				if (a != null) {
+					a.cancel();
+				}
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * Sets the given subscription once and returns true if successful, false
+	 * if the field has a subscription already or has been cancelled.
+	 * @param <F> the instance type containing the field
+	 * @param field the field accessor
+	 * @param instance the parent instance
+	 * @param s the subscription to set once
+	 * @return true if successful, false if the target was not empty or has been cancelled
+	 */
+	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
+		Subscription a = field.get(instance);
+		if (a == CancelledSubscription.INSTANCE) {
+			return false;
+		}
+		if (a != null) {
+			reportSubscriptionSet();
+			return false;
+		}
+
+		if (field.compareAndSet(instance, null, s)) {
+			return true;
+		}
+
+		a = field.get(instance);
+
+		if (a == CancelledSubscription.INSTANCE) {
+			return false;
+		}
+
+		reportSubscriptionSet();
+		return false;
+	}
+
+	/**
+	 * Cap a substraction to 0
+	 *
+	 * @param a left operand
+	 * @param b right operand
+	 * @return Subscription result or 0 if overflow
+	 */
+	public static long subOrZero(long a, long b) {
+		long res = a - b;
+		if (res < 0L) {
+			return 0;
+		}
+		return res;
+	}
+
+	/**
+	 * Cap a substraction to 0
+	 *
+	 * @param a left operand
+	 * @param b right operand
+	 *
+	 * @return Subscription result or 0 if overflow
+	 */
+	public static int subOrZero(int a, int b) {
+		int res = a - b;
+		if (res < 0) {
+			return 0;
+		}
+		return res;
+	}
+
+	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, Subscription> field,
+			F instance) {
+		Subscription a = field.get(instance);
+		if (a != CancelledSubscription.INSTANCE) {
+			a = field.getAndSet(instance, CancelledSubscription.INSTANCE);
+			if (a != null && a != CancelledSubscription.INSTANCE) {
+				a.cancel();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check Subscription current state and cancel new Subscription if different null, returning true if
+	 * ready to subscribe.
+	 *
+	 * @param current current Subscription, expected to be null
+	 * @param next new Subscription
+	 * @return true if Subscription can be used
+	 */
+	public static boolean validate(Subscription current, Subscription next) {
+		Objects.requireNonNull(next, "Subscription cannot be null");
+		if (current != null) {
+			next.cancel();
+			//reportSubscriptionSet();
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Evaluate if a request is strictly positive otherwise {@link #reportBadRequest(long)}
+	 * @param n the request value
+	 * @return true if valid
+	 */
+	public static boolean validate(long n) {
+		if (n < 0) {
+			reportBadRequest(n);
+			return false;
+		}
+		return true;
+	}
+
+	//
+	enum CancelledSubscription implements Subscription, Trackable {
+		INSTANCE;
+
+		@Override
+		public void cancel() {
+			// deliberately no op
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return true;
+		}
+
+		@Override
+		public void request(long n) {
+			// deliberately no op
+		}
+
+	}
 
 	/**
 	 * Represents a fuseable Subscription that emits a single constant value synchronously
@@ -46,11 +519,67 @@ abstract class Operators {
 	}
 
 	/**
+	 * Safely gate a {@link Subscriber} by a serializing {@link Subscriber}.
+	 * Serialization uses thread-stealing and a potentially unbounded queue that might starve a calling thread if
+	 * races are too important and
+	 * {@link Subscriber} is slower.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 *
+	 * @param <T> the relayed type
+	 * @param subscriber the subscriber to wrap
+	 * @return a serializing {@link Subscriber}
+	 */
+	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {
+		return new SerializedSubscriber<>(subscriber);
+	}
+
+	enum EmptySubscription implements Fuseable.QueueSubscription<Object> {
+		INSTANCE;
+
+		@Override
+		public void cancel() {
+			// deliberately no op
+		}
+
+		@Override
+		public void clear() {
+			// deliberately no op
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return true;
+		}
+
+		@Override
+		public Object poll() {
+			return null;
+		}
+
+		@Override
+		public void request(long n) {
+			// deliberately no op
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return Fuseable.NONE; // can't enable fusion due to complete/error possibility
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+	}
+
+	/**
 	 * Base class for Subscribers that will receive their Subscriptions at any time yet
 	 * they need to be cancelled or requested at any time.
 	 */
 	static class DeferredSubscription
-			implements Subscription, Receiver, SubscriberState {
+			implements Subscription, Receiver, Trackable {
 
 		volatile Subscription s;
 		static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
@@ -69,13 +598,13 @@ abstract class Operators {
 		public final boolean set(Subscription s) {
 			Objects.requireNonNull(s, "s");
 			Subscription a = this.s;
-			if (a == SubscriptionHelper.cancelled()) {
+			if (a == cancelled()) {
 				s.cancel();
 				return false;
 			}
 			if (a != null) {
 				s.cancel();
-				SubscriptionHelper.reportSubscriptionSet();
+				reportSubscriptionSet();
 				return false;
 			}
 
@@ -92,12 +621,12 @@ abstract class Operators {
 
 			a = this.s;
 
-			if (a != SubscriptionHelper.cancelled()) {
+			if (a != cancelled()) {
 				s.cancel();
 				return false;
 			}
 
-			SubscriptionHelper.reportSubscriptionSet();
+			reportSubscriptionSet();
 			return false;
 		}
 
@@ -107,7 +636,7 @@ abstract class Operators {
 			if (a != null) {
 				a.request(n);
 			} else {
-				SubscriptionHelper.addAndGet(REQUESTED, this, n);
+				addAndGet(REQUESTED, this, n);
 
 				a = s;
 
@@ -124,9 +653,9 @@ abstract class Operators {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != SubscriptionHelper.cancelled()) {
-				a = S.getAndSet(this, SubscriptionHelper.cancelled());
-				if (a != null && a != SubscriptionHelper.cancelled()) {
+			if (a != cancelled()) {
+				a = S.getAndSet(this, cancelled());
+				if (a != null && a != cancelled()) {
 					a.cancel();
 				}
 			}
@@ -139,7 +668,7 @@ abstract class Operators {
 		 */
 		@Override
 		public final boolean isCancelled() {
-			return s == SubscriptionHelper.cancelled();
+			return s == cancelled();
 		}
 
 		@Override
@@ -172,7 +701,7 @@ abstract class Operators {
 	 * @param <O> The downstream sequence type
 	 */
 	static class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Loopback,
-	                                                       SubscriberState,
+	                                                       Trackable,
 	                                                       Receiver, Producer,
 	                                                       Fuseable.QueueSubscription<O> {
 
@@ -202,7 +731,7 @@ abstract class Operators {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (validate(n)) {
 				for (; ; ) {
 					int s = state;
 					if (s == SDS_HAS_REQUEST_NO_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
@@ -415,8 +944,7 @@ abstract class Operators {
 	 * @param <O> the output value type
 	 */
 	abstract static class MultiSubscriptionSubscriber<I, O>
-			implements Subscription, Subscriber<I>, Producer,
-			           SubscriberState,
+			implements Subscription, Subscriber<I>, Producer, Trackable,
 			           Receiver {
 
 		protected final Subscriber<? super O> subscriber;
@@ -518,7 +1046,7 @@ abstract class Operators {
 
 		@Override
 		public final void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (validate(n)) {
 				if (unbounded) {
 					return;
 				}
@@ -526,7 +1054,7 @@ abstract class Operators {
 					long r = requested;
 
 					if (r != Long.MAX_VALUE) {
-						r = SubscriptionHelper.addCap(r, n);
+						r = addCap(r, n);
 						requested = r;
 						if (r == Long.MAX_VALUE) {
 							unbounded = true;
@@ -546,7 +1074,7 @@ abstract class Operators {
 					return;
 				}
 
-				SubscriptionHelper.getAndAddCap(MISSED_REQUESTED, this, n);
+				getAndAddCap(MISSED_REQUESTED, this, n);
 
 				drain();
 			}
@@ -562,7 +1090,7 @@ abstract class Operators {
 				if (r != Long.MAX_VALUE) {
 					r--;
 					if (r < 0L) {
-						SubscriptionHelper.reportMoreProduced();
+						reportMoreProduced();
 						r = 0;
 					}
 					requested = r;
@@ -579,7 +1107,7 @@ abstract class Operators {
 				return;
 			}
 
-			SubscriptionHelper.getAndAddCap(MISSED_PRODUCED, this, 1L);
+			getAndAddCap(MISSED_PRODUCED, this, 1L);
 
 			drain();
 		}
@@ -594,7 +1122,7 @@ abstract class Operators {
 				if (r != Long.MAX_VALUE) {
 					long u = r - n;
 					if (u < 0L) {
-						SubscriptionHelper.reportMoreProduced();
+						reportMoreProduced();
 						u = 0;
 					}
 					requested = u;
@@ -611,7 +1139,7 @@ abstract class Operators {
 				return;
 			}
 
-			SubscriptionHelper.getAndAddCap(MISSED_PRODUCED, this, n);
+			getAndAddCap(MISSED_PRODUCED, this, n);
 
 			drain();
 		}
@@ -671,12 +1199,12 @@ abstract class Operators {
 				} else {
 					long r = requested;
 					if (r != Long.MAX_VALUE) {
-						long u = SubscriptionHelper.addCap(r, mr);
+						long u = addCap(r, mr);
 
 						if (u != Long.MAX_VALUE) {
 							long v = u - mp;
 							if (v < 0L) {
-								SubscriptionHelper.reportMoreProduced();
+								reportMoreProduced();
 								v = 0;
 							}
 							r = v;
@@ -777,7 +1305,7 @@ abstract class Operators {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Subscriber<? super T> a = actual;
 					a.onNext(value);

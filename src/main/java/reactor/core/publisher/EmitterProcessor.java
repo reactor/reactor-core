@@ -28,9 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.RingBuffer;
@@ -140,7 +138,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	 */
 	public static <T> FluxProcessor<T, T> serialize() {
 		Processor<T, T> processor = create();
-		return new DelegateProcessor<>(processor, Subscribers.serialize(processor));
+		return new DelegateProcessor<>(processor, Operators.serialize(processor));
 	}
 
 	final int maxConcurrency;
@@ -213,13 +211,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 		catch (Throwable t) {
 			removeInner(inner, EMPTY);
-			SubscriptionHelper.error(s, t);
+			Operators.error(s, t);
 		}
 	}
 
 	@Override
 	public EmitterProcessor<T> connect() {
-		onSubscribe(SubscriptionHelper.empty());
+		onSubscribe(Operators.empty());
 		return this;
 	}
 
@@ -248,7 +246,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			long seq = -1L;
 
 			int outstanding;
-			if (upstreamSubscription != SubscriptionHelper.empty()) {
+			if (upstreamSubscription != Operators.empty()) {
 
 				outstanding = this.outstanding;
 				if (outstanding != 0) {
@@ -336,7 +334,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void onSubscribe(final Subscription s) {
-		if (SubscriptionHelper.validate(upstreamSubscription, s)) {
+		if (Operators.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
 				EmitterSubscriber<?>[] innerSubscribers = subscribers;
@@ -602,7 +600,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void requestMore(int buffered) {
 		Subscription subscription = upstreamSubscription;
-		if (subscription == SubscriptionHelper.empty()) {
+		if (subscription == Operators.empty()) {
 			return;
 		}
 
@@ -650,7 +648,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	static final class EmitterSubscriber<T>
-			implements Subscription, SubscriberState, Receiver, Producer {
+			implements Subscription, Trackable, Receiver, Producer {
 
 		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final EmitterProcessor<T>   parent;
@@ -680,8 +678,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.checkRequest(n, actual)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.checkRequest(n, actual)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
 					parent.drainLoop();
 				}

@@ -30,8 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.WaitStrategy;
@@ -50,7 +49,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Cancellation, Subscription, SubscriberState, Receiver, Producer,
+		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver, Producer,
 		           MonoEmitter<O>, LongSupplier {
 
 	/**
@@ -107,7 +106,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_CANCELLED)) {
-				subscription = SubscriptionHelper.cancelled();
+				subscription = Operators.cancelled();
 				break;
 			}
 			state = this.state;
@@ -313,7 +312,7 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final void onSubscribe(Subscription subscription) {
-		if (SubscriptionHelper.validate(this.subscription, subscription)) {
+		if (Operators.validate(this.subscription, subscription)) {
 			this.subscription = subscription;
 			if (STATE.compareAndSet(this, STATE_READY, STATE_SUBSCRIBED)){
 				subscription.request(Long.MAX_VALUE);
@@ -398,7 +397,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final void request(long n) {
 		try {
-			SubscriptionHelper.checkRequest(n);
+			Operators.checkRequest(n);
 		}
 		catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
@@ -414,7 +413,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (; ; ) {
 			int endState = this.state;
 			if (endState == STATE_COMPLETE_NO_VALUE) {
-				SubscriptionHelper.complete(subscriber);
+				Operators.complete(subscriber);
 				return;
 			}
 			else if (endState == STATE_SUCCESS_VALUE) {
@@ -422,11 +421,11 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			else if (endState == STATE_ERROR) {
-				SubscriptionHelper.error(subscriber, error);
+				Operators.error(subscriber, error);
 				return;
 			}
 			else if (endState == STATE_CANCELLED) {
-				SubscriptionHelper.error(subscriber, new CancellationException("Mono has previously been cancelled"));
+				Operators.error(subscriber, new CancellationException("Mono has previously been cancelled"));
 				return;
 			}
 			Processor<O, O> out = getOrStart();
@@ -455,7 +454,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	final void connect() {
 		if(CONNECTED.compareAndSet(this, 0, 1)){
 			if(source == null){
-				onSubscribe(SubscriptionHelper.empty());
+				onSubscribe(Operators.empty());
 			}
 			else{
 				source.subscribe(this);

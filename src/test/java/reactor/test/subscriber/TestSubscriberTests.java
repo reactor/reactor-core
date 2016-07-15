@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.test.TestSubscriber;
 
 /**
  * @author Anatoly Kadyshev

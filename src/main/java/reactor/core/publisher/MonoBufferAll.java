@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.*;
 
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import rx.exceptions.Exceptions;
 
 /**
@@ -49,12 +48,12 @@ final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource
             collection = collectionSupplier.get();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
-            SubscriptionHelper.error(s, ex);
+            Operators.error(s, ex);
             return;
         }
         
         if (collection == null) {
-            SubscriptionHelper.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+            Operators.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
             return;
         }
         
@@ -79,7 +78,7 @@ final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (SubscriptionHelper.validate(this.s, s)) {
+            if (Operators.validate(this.s, s)) {
                 this.s = s;
                 
                 actual.onSubscribe(this);

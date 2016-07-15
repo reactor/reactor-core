@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -152,7 +153,7 @@ public final class SubmissionEmitter<E>
 			return;
 		}
 		if(emission.isBackpressured()){
-			SubscriptionHelper.reportMoreProduced();
+			Operators.reportMoreProduced();
 			return;
 		}
 		if(emission.isCancelled()){
@@ -183,7 +184,7 @@ public final class SubmissionEmitter<E>
 			return Emission.CANCELLED;
 		}
 		try {
-			if (SubscriptionHelper.getAndSub(REQUESTED, this, 1L) == 0L) {
+			if (Operators.getAndSub(REQUESTED, this, 1L) == 0L) {
 				return Emission.BACKPRESSURED;
 			}
 			actual.onNext(data);
@@ -270,7 +271,7 @@ public final class SubmissionEmitter<E>
 
 	@Override
 	public long getCapacity() {
-		return SubscriberState.class.isAssignableFrom(actual.getClass()) ? ((SubscriberState)
+		return Trackable.class.isAssignableFrom(actual.getClass()) ? ((Trackable)
 				actual).getCapacity() :
 				Long.MAX_VALUE;
 	}
@@ -309,8 +310,8 @@ public final class SubmissionEmitter<E>
 
 	@Override
 	public void request(long n) {
-		if (SubscriptionHelper.checkRequest(n, actual)) {
-			SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+		if (Operators.checkRequest(n, actual)) {
+			Operators.getAndAddCap(REQUESTED, this, n);
 		}
 	}
 
@@ -330,7 +331,7 @@ public final class SubmissionEmitter<E>
 		}
 		catch (Throwable t) {
 			uncaughtException = t;
-			SubscriptionHelper.error(actual, t);
+			Operators.error(actual, t);
 		}
 	}
 	/**

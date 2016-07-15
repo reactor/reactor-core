@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import reactor.core.Cancellation;
-import reactor.core.subscriber.SignalEmitter;
 
 /**
  * Wrapper API around a downstream Subscriber for emitting any number of

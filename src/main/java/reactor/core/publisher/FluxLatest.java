@@ -24,8 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -54,7 +53,7 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 	}
 
 	static final class LatestSubscriber<T>
-			implements Subscriber<T>, Subscription, SubscriberState, Producer, Receiver {
+			implements Subscriber<T>, Subscription, Trackable, Producer, Receiver {
 
 		final Subscriber<? super T> actual;
 
@@ -86,8 +85,8 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 
 				drain();
 			}
@@ -109,7 +108,7 @@ final class FluxLatest<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

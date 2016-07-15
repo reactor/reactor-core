@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.*;
 
 import reactor.core.Fuseable;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class FluxGenerateTest {
 

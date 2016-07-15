@@ -22,8 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Skips the last N elements from the source stream.
@@ -56,7 +55,7 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 	}
 
 	static final class SkipLastSubscriber<T>
-			implements Subscriber<T>, Receiver, Producer, Subscription, SubscriberState {
+			implements Subscriber<T>, Receiver, Producer, Subscription, Trackable {
 		final Subscriber<? super T> actual;
 
 		final int n;
@@ -73,7 +72,7 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

@@ -18,7 +18,7 @@ package reactor.adapter;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 import rx.Completable;
 import rx.Observable;
 

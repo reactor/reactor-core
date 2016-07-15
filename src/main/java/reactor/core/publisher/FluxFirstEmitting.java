@@ -24,8 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.MultiReceiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -80,12 +79,12 @@ extends Flux<T>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				SubscriptionHelper.error(s, e);
+				Operators.error(s, e);
 				return;
 			}
 
 			if (it == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The iterator returned is null"));
+				Operators.error(s, new NullPointerException("The iterator returned is null"));
 				return;
 			}
 
@@ -97,7 +96,7 @@ extends Flux<T>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					SubscriptionHelper.error(s, e);
+					Operators.error(s, e);
 					return;
 				}
 
@@ -110,12 +109,12 @@ extends Flux<T>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					SubscriptionHelper.error(s, e);
+					Operators.error(s, e);
 					return;
 				}
 
 				if (p == null) {
-					SubscriptionHelper.error(s, new NullPointerException("The Publisher returned by the iterator is " + "null"));
+					Operators.error(s, new NullPointerException("The Publisher returned by the iterator is " + "null"));
 					return;
 				}
 
@@ -132,14 +131,14 @@ extends Flux<T>
 		}
 
 		if (n == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 		if (n == 1) {
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The single source Publisher is null"));
+				Operators.error(s, new NullPointerException("The single source Publisher is null"));
 			} else {
 				p.subscribe(s);
 			}
@@ -174,7 +173,7 @@ extends Flux<T>
 	}
 
 	static final class AmbCoordinator<T>
-			implements Subscription, MultiReceiver, SubscriberState {
+			implements Subscription, MultiReceiver, Trackable {
 
 		final AmbSubscriber<T>[] subscribers;
 
@@ -221,7 +220,7 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				int w = wip;
 				if (w >= 0) {
 					subscribers[w].request(n);

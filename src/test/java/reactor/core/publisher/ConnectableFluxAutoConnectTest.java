@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Cancellation;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class ConnectableFluxAutoConnectTest {
 

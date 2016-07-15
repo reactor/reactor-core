@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Repeatedly subscribes to the source and relays its values either
@@ -48,7 +47,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		if (times == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 

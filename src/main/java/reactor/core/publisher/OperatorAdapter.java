@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscriber;
+package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -31,14 +32,14 @@ import reactor.util.Exceptions;
  * @param <I> the input value type
  * @param <O> the output value type
  */
-public class SubscriberBarrier<I, O>
-		implements Subscriber<I>, Subscription, SubscriberState, Receiver, Producer {
+public class OperatorAdapter<I, O>
+		implements Subscriber<I>, Subscription, Trackable, Receiver, Producer {
 
 	protected final Subscriber<? super O> subscriber;
 
 	protected Subscription subscription;
 
-	public SubscriberBarrier(Subscriber<? super O> subscriber) {
+	public OperatorAdapter(Subscriber<? super O> subscriber) {
 		this.subscriber = subscriber;
 	}
 
@@ -59,7 +60,7 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public final void onSubscribe(Subscription s) {
-		if (SubscriptionHelper.validate(subscription, s)) {
+		if (Operators.validate(subscription, s)) {
 			try {
 				subscription = s;
 				doOnSubscribe(s);
@@ -72,6 +73,10 @@ public class SubscriberBarrier<I, O>
 		}
 	}
 
+	/**
+	 *
+	 * @param subscription
+	 */
 	protected void doOnSubscribe(Subscription subscription) {
 		subscriber.onSubscribe(this);
 	}
@@ -135,7 +140,7 @@ public class SubscriberBarrier<I, O>
 	@Override
 	public final void request(long n) {
 		try {
-			SubscriptionHelper.checkRequest(n);
+			Operators.checkRequest(n);
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
@@ -171,23 +176,23 @@ public class SubscriberBarrier<I, O>
 
 	@Override
 	public boolean isTerminated() {
-		return null != subscription && subscription instanceof SubscriberState && (
-				(SubscriberState) subscription).isTerminated();
+		return null != subscription && subscription instanceof Trackable && (
+				(Trackable) subscription).isTerminated();
 	}
 
 	@Override
 	public long getCapacity() {
-		return subscriber != null && SubscriberState.class.isAssignableFrom(subscriber
+		return subscriber != null && Trackable.class.isAssignableFrom(subscriber
 				.getClass()) ?
-				((SubscriberState) subscriber).getCapacity() :
+				((Trackable) subscriber).getCapacity() :
 		  Long.MAX_VALUE;
 	}
 
 	@Override
 	public long getPending() {
-		return subscriber != null && SubscriberState.class.isAssignableFrom(subscriber
+		return subscriber != null && Trackable.class.isAssignableFrom(subscriber
 				.getClass()) ?
-				((SubscriberState) subscriber).getPending() :
+				((Trackable) subscriber).getPending() :
 				-1L;
 	}
 

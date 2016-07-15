@@ -23,9 +23,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 import reactor.util.Exceptions;
 
 public class FluxPeekTest {
@@ -250,11 +249,11 @@ public class FluxPeekTest {
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
-				SubscriptionHelper.error(u,
+				Operators.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {
-				SubscriptionHelper.complete(u);
+				Operators.complete(u);
 			}
 		})
 		    .doOnNext(v -> {
@@ -273,11 +272,11 @@ public class FluxPeekTest {
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
-				SubscriptionHelper.error(u,
+				Operators.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
 			}
 			else {
-				SubscriptionHelper.complete(u);
+				Operators.complete(u);
 			}
 		})
 		    .doOnNext(v -> {

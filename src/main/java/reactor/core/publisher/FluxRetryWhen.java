@@ -23,8 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -55,11 +53,11 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 			extends Publisher<? extends Object>> whenSourceFactory, Publisher<? extends
 			T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
-		Subscriber<Throwable> signaller = Subscribers.serialize(other.completionSignal);
+		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
 
-		signaller.onSubscribe(SubscriptionHelper.empty());
+		signaller.onSubscribe(Operators.empty());
 
-		Subscriber<T> serial = Subscribers.serialize(s);
+		Subscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
 				new RetryWhenMainSubscriber<>(serial, signaller, source);

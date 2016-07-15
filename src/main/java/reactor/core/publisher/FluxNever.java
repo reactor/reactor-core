@@ -17,8 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -31,7 +30,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxNever 
-extends Flux<Object> implements SubscriberState {
+extends Flux<Object> implements Trackable {
 
 	private static final Publisher<Object> INSTANCE = new FluxNever();
 
@@ -41,7 +40,7 @@ extends Flux<Object> implements SubscriberState {
 
 	@Override
 	public void subscribe(Subscriber<? super Object> s) {
-		s.onSubscribe(SubscriptionHelper.empty());
+		s.onSubscribe(Operators.empty());
 	}
 
 	/**

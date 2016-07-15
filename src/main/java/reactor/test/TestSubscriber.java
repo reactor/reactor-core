@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.test.subscriber;
+package reactor.test;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,8 +37,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.publisher.Operators;
+import reactor.core.Trackable;
 import reactor.core.Reactor;
 
 /**
@@ -86,7 +86,7 @@ import reactor.core.Reactor;
  * @author Brian Clozel
  */
 public class TestSubscriber<T>
-		implements Subscriber<T>, Subscription, SubscriberState, Receiver {
+		implements Subscriber<T>, Subscription, Trackable, Receiver {
 
 	/**
 	 * Default timeout for waiting next values to be received
@@ -778,9 +778,9 @@ public class TestSubscriber<T>
 	@Override
 	public void cancel() {
 		Subscription a = s;
-		if (a != SubscriptionHelper.cancelled()) {
-			a = S.getAndSet(this, SubscriptionHelper.cancelled());
-			if (a != null && a != SubscriptionHelper.cancelled()) {
+		if (a != Operators.cancelled()) {
+			a = S.getAndSet(this, Operators.cancelled());
+			if (a != null && a != Operators.cancelled()) {
 				a.cancel();
 			}
 		}
@@ -824,7 +824,7 @@ public class TestSubscriber<T>
 
 	@Override
 	public final boolean isCancelled() {
-		return s == SubscriptionHelper.cancelled();
+		return s == Operators.cancelled();
 	}
 
 	@Override
@@ -938,7 +938,7 @@ public class TestSubscriber<T>
 
 	@Override
 	public void request(long n) {
-		if (SubscriptionHelper.validate(n)) {
+		if (Operators.validate(n)) {
 			if (establishedFusionMode != Fuseable.SYNC) {
 				normalRequest(n);
 			}
@@ -971,7 +971,7 @@ public class TestSubscriber<T>
 		if (a != null) {
 			a.request(n);
 		} else {
-			SubscriptionHelper.addAndGet(REQUESTED, this, n);
+			Operators.addAndGet(REQUESTED, this, n);
 
 			a = s;
 
@@ -1005,13 +1005,13 @@ public class TestSubscriber<T>
 	protected final boolean set(Subscription s) {
 		Objects.requireNonNull(s, "s");
 		Subscription a = this.s;
-		if (a == SubscriptionHelper.cancelled()) {
+		if (a == Operators.cancelled()) {
 			s.cancel();
 			return false;
 		}
 		if (a != null) {
 			s.cancel();
-			SubscriptionHelper.reportSubscriptionSet();
+			Operators.reportSubscriptionSet();
 			return false;
 		}
 
@@ -1028,12 +1028,12 @@ public class TestSubscriber<T>
 
 		a = this.s;
 
-		if (a != SubscriptionHelper.cancelled()) {
+		if (a != Operators.cancelled()) {
 			s.cancel();
 			return false;
 		}
 
-		SubscriptionHelper.reportSubscriptionSet();
+		Operators.reportSubscriptionSet();
 		return false;
 	}
 
@@ -1046,13 +1046,13 @@ public class TestSubscriber<T>
 		Objects.requireNonNull(s, "s");
 		for (;;) {
 			Subscription a = this.s;
-			if (a == SubscriptionHelper.cancelled()) {
+			if (a == Operators.cancelled()) {
 				s.cancel();
 				return false;
 			}
 			if (a != null) {
 				s.cancel();
-				SubscriptionHelper.reportSubscriptionSet();
+				Operators.reportSubscriptionSet();
 				return false;
 			}
 

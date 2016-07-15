@@ -20,8 +20,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -130,7 +128,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				try {
@@ -138,7 +136,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 				} catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
 					s.cancel();
-					actual.onSubscribe(SubscriptionHelper.empty());
+					actual.onSubscribe(Operators.empty());
 					onError(ex);
 					return;
 				}

@@ -19,7 +19,7 @@ package reactor.core
 import reactor.adapter.RxJava1Adapter
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.test.subscriber.TestSubscriber
+import reactor.test.TestSubscriber
 import rx.Observable
 import rx.Single
 import spock.lang.Specification

@@ -28,7 +28,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -79,12 +78,12 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 			out = transform.apply(multicast);
 		} catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			SubscriptionHelper.error(s, ex);
+			Operators.error(s, ex);
 			return;
 		}
 		
 		if (out == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The transform returned a null Publisher"));
+			Operators.error(s, new NullPointerException("The transform returned a null Publisher"));
 			return;
 		}
 		
@@ -171,7 +170,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				
 				if (s instanceof QueueSubscription) {
 					@SuppressWarnings("unchecked")
@@ -586,7 +585,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 		
 		@SuppressWarnings("unchecked")
 		void terminate() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 			subscribers = TERMINATED;
 			if (WIP.getAndIncrement(this) == 0) {
 				if (connected) {
@@ -620,8 +619,8 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				parent.drain();
 			}
 		}

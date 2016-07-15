@@ -26,8 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -61,12 +60,12 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			it = other.iterator();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (it == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The other iterable produced a null iterator"));
+			Operators.error(s, new NullPointerException("The other iterable produced a null iterator"));
 			return;
 		}
 		
@@ -75,12 +74,12 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (!b) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 		
@@ -89,7 +88,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 
 	static final class ZipSubscriber<T, U, R> implements Subscriber<T>, Producer, MultiReceiver,
 	                                                     Receiver, Subscription,
-	                                                     SubscriberState {
+	                                                     Trackable {
 		
 		final Subscriber<? super R> actual;
 		
@@ -110,7 +109,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}

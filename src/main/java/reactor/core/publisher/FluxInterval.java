@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.TimedScheduler.TimedWorker;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -105,8 +104,8 @@ final class FluxInterval extends Flux<Long> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		

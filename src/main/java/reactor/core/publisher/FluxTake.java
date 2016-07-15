@@ -25,8 +25,7 @@ import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -83,7 +82,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeSubscriber<T>
-			implements Subscriber<T>, Subscription, Receiver, Producer, SubscriberState {
+			implements Subscriber<T>, Subscription, Receiver, Producer, Trackable {
 
 		final Subscriber<? super T> actual;
 
@@ -108,7 +107,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				if (n == 0 && wip == 0) {
@@ -218,7 +217,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	static final class TakeConditionalSubscriber<T>
 			implements ConditionalSubscriber<T>, Subscription, Receiver, Producer,
-			           SubscriberState {
+			           Trackable {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -245,7 +244,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				if (n == 0 && wip == 0) {
@@ -385,7 +384,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	static final class TakeFuseableSubscriber<T>
 			implements Subscriber<T>, QueueSubscription<T>, Receiver, Producer,
-			           SubscriberState {
+			           Trackable {
 
 		final Subscriber<? super T> actual;
 
@@ -413,7 +412,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.qs, s)) {
+			if (Operators.validate(this.qs, s)) {
 				this.qs = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 

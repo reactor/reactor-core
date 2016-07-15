@@ -20,9 +20,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubmissionEmitter;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -37,7 +35,7 @@ import reactor.util.Exceptions;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, SubscriberState {
+		implements Processor<IN, OUT>, Trackable {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -85,7 +83,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * @return this
 	 */
 	public FluxProcessor<IN, OUT> connect() {
-		onSubscribe(SubscriptionHelper.empty());
+		onSubscribe(Operators.empty());
 		return this;
 	}
 

@@ -28,7 +28,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
+import reactor.core.Reactor;
 
 public class ScatterGatherTests {
 
@@ -104,9 +105,9 @@ public class ScatterGatherTests {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("ScatterGatherTests.java:96"));
+					("ScatterGatherTests.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
-					"(ScatterGatherTests.java:96)"));
+					"(ScatterGatherTests.java:)"));
 			return;
 		}
 		finally {

@@ -20,7 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 

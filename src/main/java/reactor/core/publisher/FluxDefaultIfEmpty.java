@@ -22,7 +22,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Emits a scalar value if the source sequence turns out to be empty.
@@ -74,7 +73,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				subscriber.onSubscribe(this);

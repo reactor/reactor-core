@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -76,12 +75,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -151,7 +150,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -238,8 +237,8 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -421,13 +420,13 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Subscription a = this.s;
-			if (a == SubscriptionHelper.cancelled()) {
+			if (a == Operators.cancelled()) {
 				s.cancel();
 			}
 			if (a != null) {
 				s.cancel();
 				
-				SubscriptionHelper.reportSubscriptionSet();
+				Operators.reportSubscriptionSet();
 				return;
 			}
 			
@@ -436,10 +435,10 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			a = this.s;
-			if (a != SubscriptionHelper.cancelled()) {
+			if (a != Operators.cancelled()) {
 				s.cancel();
 				
-				SubscriptionHelper.reportSubscriptionSet();
+				Operators.reportSubscriptionSet();
 				return;
 			}
 		}
@@ -489,9 +488,9 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void cancel() {
 			Subscription a = s;
-			if (a != SubscriptionHelper.cancelled()) {
-				a = S.getAndSet(this, SubscriptionHelper.cancelled());
-				if (a != null && a != SubscriptionHelper.cancelled()) {
+			if (a != Operators.cancelled()) {
+				a = S.getAndSet(this, Operators.cancelled());
+				if (a != null && a != Operators.cancelled()) {
 					a.cancel();
 				}
 			}

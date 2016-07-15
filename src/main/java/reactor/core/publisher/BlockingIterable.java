@@ -33,8 +33,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -44,7 +43,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  *
  * @param <T> the value type
  */
-final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberState {
+final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 
 	final Publisher<? extends T> source;
 	
@@ -127,7 +126,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberStat
 	}
 
 	static final class SubscriberIterator<T>
-			implements Subscriber<T>, Iterator<T>, Runnable, Receiver, SubscriberState {
+			implements Subscriber<T>, Iterator<T>, Runnable, Receiver, Trackable {
 
 		final Queue<T> queue;
 		
@@ -222,7 +221,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberStat
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(batchSize);
 			}
 		}
@@ -230,7 +229,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberStat
 		@Override
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
-				SubscriptionHelper.terminate(S, this);
+				Operators.terminate(S, this);
 				
 				onError(new IllegalStateException("Queue full?!"));
 			} else {
@@ -262,7 +261,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberStat
 
 		@Override
 		public void run() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 			signalConsumer();
 		}
 
@@ -273,12 +272,12 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, SubscriberStat
 
 		@Override
 		public boolean isStarted() {
-			return s != null && !done && s != SubscriptionHelper.cancelled();
+			return s != null && !done && s != Operators.cancelled();
 		}
 
 		@Override
 		public boolean isTerminated() {
-			return done || s == SubscriptionHelper.cancelled();
+			return done || s == Operators.cancelled();
 		}
 	}
 

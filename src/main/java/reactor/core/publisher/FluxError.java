@@ -21,8 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -34,7 +33,7 @@ import reactor.core.subscriber.SubscriptionHelper;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxError<T>
-		extends Flux<T> implements SubscriberState {
+		extends Flux<T> implements Trackable {
 
 	final Supplier<? extends Throwable> supplier;
 	
@@ -76,7 +75,7 @@ final class FluxError<T>
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, e));
 		} else {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 		}
 	}
 	
@@ -96,7 +95,7 @@ final class FluxError<T>
 		}
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					actual.onError(error);
 				}

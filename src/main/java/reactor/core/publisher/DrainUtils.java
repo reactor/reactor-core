@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.SubscriptionHelper;
 
 abstract class DrainUtils {
 
@@ -54,7 +53,7 @@ abstract class DrainUtils {
 			long r0 = r & REQUESTED_MASK;
 
 			// preserve COMPLETED_MASK and calculate new requested amount
-			long u = (r & COMPLETED_MASK) | SubscriptionHelper.addCap(r0, n);
+			long u = (r & COMPLETED_MASK) | Operators.addCap(r0, n);
 
 			if (field.compareAndSet(instance, r, u)) {
 				// (complete, 0) -> (complete, n) transition then replay
@@ -227,7 +226,7 @@ abstract class DrainUtils {
             long r0 = r & REQUESTED_MASK;
 
             // preserve COMPLETED_MASK and calculate new requested amount
-            long u = (r & COMPLETED_MASK) | SubscriptionHelper.addCap(r0, n);
+            long u = (r & COMPLETED_MASK) | Operators.addCap(r0, n);
 
             if (field.compareAndSet(instance, r, u)) {
                 // (complete, 0) -> (complete, n) transition then replay

@@ -33,8 +33,7 @@ import reactor.core.Fuseable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -87,12 +86,12 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			q = mainQueueSupplier.get();
 		} catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			SubscriptionHelper.error(s, ex);
+			Operators.error(s, ex);
 			return;
 		}
 		
 		if (q == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
+			Operators.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -106,8 +105,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	
 	static final class GroupByMain<T, K, V> implements Subscriber<T>,
 	                                                   QueueSubscription<GroupedFlux<K, V>>,
-	                                                   MultiProducer, Producer,
-	                                                   SubscriberState, Receiver {
+	                                                   MultiProducer, Producer, Trackable, Receiver {
 
 		final Function<? super T, ? extends K> keySelector;
 		
@@ -173,7 +171,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 				s.request(prefetch);
@@ -322,8 +320,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -515,8 +513,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	}
 
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
-			implements Fuseable, QueueSubscription<V>, Producer, Receiver,
-			           SubscriberState {
+			implements Fuseable, QueueSubscription<V>, Producer, Receiver, Trackable {
 		final K key;
 		
 		final int limit;
@@ -762,8 +759,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}

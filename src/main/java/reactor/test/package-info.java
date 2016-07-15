@@ -15,9 +15,6 @@
  */
 
 /**
- * Subscribers implementations to build on like
- * {@link reactor.core.subscriber.SubscriberBarrier} or for direct use via {@link reactor.core.subscriber.Subscribers} factory or {@link reactor.core.subscriber.SubmissionEmitter}
- *
- * @author Stephane Maldini
+ * Test components of the Reactor framework supporting Reactive Stream programming model.
  */
-package reactor.core.subscriber;
+package reactor.test;

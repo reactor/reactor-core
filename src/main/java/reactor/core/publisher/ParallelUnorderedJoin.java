@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.*;
 
 /**
@@ -93,8 +92,8 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -314,7 +313,7 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(prefetch);
 			}
 		}
@@ -355,7 +354,7 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
 		}
 
 		public void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 		
 		Queue<T> getQueue(Supplier<Queue<T>> queueSupplier) {

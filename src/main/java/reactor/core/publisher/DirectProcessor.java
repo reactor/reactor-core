@@ -27,8 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -251,7 +250,7 @@ public final class DirectProcessor<T>
 
 	static final class DirectProcessorSubscription<T> implements Subscription,
 																 Receiver, Producer,
-																 SubscriberState {
+																 Trackable {
 
 		final Subscriber<? super T> actual;
 
@@ -271,8 +270,8 @@ public final class DirectProcessor<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 

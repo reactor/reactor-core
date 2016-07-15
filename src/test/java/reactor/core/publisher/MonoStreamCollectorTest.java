@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class MonoStreamCollectorTest {
 

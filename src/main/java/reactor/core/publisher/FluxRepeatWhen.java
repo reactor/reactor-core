@@ -23,8 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -54,11 +52,11 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	public void subscribe(Subscriber<? super T> s) {
 
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
-		Subscriber<Long> signaller = Subscribers.serialize(other.completionSignal);
+		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
-		signaller.onSubscribe(SubscriptionHelper.empty());
+		signaller.onSubscribe(Operators.empty());
 
-		Subscriber<T> serial = Subscribers.serialize(s);
+		Subscriber<T> serial = Operators.serialize(s);
 
 		RepeatWhenMainSubscriber<T> main = new RepeatWhenMainSubscriber<>(serial, signaller, source);
 		other.main = main;

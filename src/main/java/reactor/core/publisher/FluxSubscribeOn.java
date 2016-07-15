@@ -27,7 +27,6 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -64,12 +63,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
 			Exceptions.throwIfFatal(e);
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (worker == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The scheduler returned a null Function"));
+			Operators.error(s, new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
 
@@ -143,8 +142,8 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				if(WIP.getAndIncrement(this) == 0){
 					worker.schedule(this);
 				}

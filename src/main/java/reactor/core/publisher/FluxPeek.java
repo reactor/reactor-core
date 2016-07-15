@@ -27,7 +27,6 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -147,7 +146,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 				}
 				catch (Throwable e) {
 					s.cancel();
-					actual.onSubscribe(SubscriptionHelper.empty());
+					actual.onSubscribe(Operators.empty());
 					onError(e);
 					return;
 				}

@@ -54,7 +54,6 @@ import reactor.core.publisher.FluxEmitter.BackpressureHandling;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.subscriber.SignalEmitter;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;

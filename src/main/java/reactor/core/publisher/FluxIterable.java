@@ -24,8 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Emits the contents of an Iterable source.
@@ -53,7 +52,7 @@ extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 
@@ -73,7 +72,7 @@ extends Flux<T>
 	 */
 	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
 		if (it == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The iterator is null"));
+			Operators.error(s, new NullPointerException("The iterator is null"));
 			return;
 		}
 
@@ -82,11 +81,11 @@ extends Flux<T>
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		if (!b) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 
@@ -98,7 +97,7 @@ extends Flux<T>
 	}
 
 	static final class IterableSubscription<T>
-			implements Producer, SubscriberState, SynchronousSubscription<T> {
+			implements Producer, Trackable, SynchronousSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -131,8 +130,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -343,7 +342,7 @@ extends Flux<T>
 	}
 
 	static final class IterableSubscriptionConditional<T>
-			implements Producer, SubscriberState, Subscription,
+			implements Producer, Trackable, Subscription,
 			           SynchronousSubscription<T> {
 
 		final ConditionalSubscriber<? super T> actual;
@@ -377,8 +376,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

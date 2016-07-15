@@ -16,7 +16,7 @@
 
 package reactor.core
 
-import reactor.test.subscriber.TestSubscriber
+import reactor.test.TestSubscriber
 import spock.lang.Specification
 
 import static reactor.core.publisher.Flux.fromIterable

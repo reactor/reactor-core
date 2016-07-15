@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -76,12 +75,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		try {
 			q = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (q == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
+			Operators.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
 			return;
 		}
 		
@@ -161,7 +160,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -194,8 +193,8 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 		
@@ -253,7 +252,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void run() {
 			if (OPEN.decrementAndGet(this) == 0) {
-				SubscriptionHelper.terminate(S, this);
+				Operators.terminate(S, this);
 			}
 		}
 		
@@ -310,7 +309,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 					if (e != null) {
 						e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
-							SubscriptionHelper.terminate(S, this);
+							Operators.terminate(S, this);
 							starter.cancel();
 							removeAll();
 

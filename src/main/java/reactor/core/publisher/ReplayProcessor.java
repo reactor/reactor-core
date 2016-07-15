@@ -28,8 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 
@@ -251,7 +250,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		if (buffer.isDone()) {
 			s.cancel();
 		} else {
-			if(!SubscriptionHelper.validate(subscription, s)) {
+			if(!Operators.validate(subscription, s)) {
 				s.cancel();
 				return;
 			}
@@ -312,7 +311,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 	@Override
 	public ReplayProcessor<T> connect() {
-		onSubscribe(SubscriptionHelper.empty());
+		onSubscribe(Operators.empty());
 		return this;
 	}
 
@@ -828,7 +827,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 	
 	static final class ReplaySubscription<T> implements QueueSubscription<T>, Producer,
-														SubscriberState, Receiver {
+	                                                    Trackable, Receiver {
 		final Subscriber<? super T> actual;
 		
 		final ReplayProcessor<T> parent;
@@ -912,9 +911,9 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				if (fusionMode == NONE) {
-					SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+					Operators.getAndAddCap(REQUESTED, this, n);
 				}
 				buffer.drain(this);
 			}

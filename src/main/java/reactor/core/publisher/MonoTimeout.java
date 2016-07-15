@@ -21,7 +21,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.subscriber.Subscribers;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item generated
@@ -64,7 +63,7 @@ final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 
-		Subscriber<T> serial = Subscribers.serialize(s);
+		Subscriber<T> serial = Operators.serialize(s);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
 				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other);

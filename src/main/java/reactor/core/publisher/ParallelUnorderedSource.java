@@ -25,7 +25,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -124,7 +123,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof Fuseable.QueueSubscription) {
@@ -175,14 +174,14 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 				subscribers[i].onSubscribe(new Subscription() {
 					@Override
 					public void request(long n) {
-						if (SubscriptionHelper.validate(n)) {
+						if (Operators.validate(n)) {
 							AtomicLongArray ra = requests;
 							for (;;) {
 								long r = ra.get(j);
 								if (r == Long.MAX_VALUE) {
 									return;
 								}
-								long u = SubscriptionHelper.addCap(r, n);
+								long u = Operators.addCap(r, n);
 								if (ra.compareAndSet(j, r, u)) {
 									break;
 								}

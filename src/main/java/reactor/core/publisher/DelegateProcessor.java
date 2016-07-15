@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -47,8 +47,8 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@Override
 	public long getCapacity() {
-		return SubscriberState.class.isAssignableFrom(upstream.getClass()) ?
-				((SubscriberState) upstream).getCapacity() : Long.MAX_VALUE;
+		return Trackable.class.isAssignableFrom(upstream.getClass()) ?
+				((Trackable) upstream).getCapacity() : Long.MAX_VALUE;
 	}
 
 	@Override

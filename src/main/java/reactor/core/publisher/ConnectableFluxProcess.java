@@ -31,8 +31,7 @@ import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -135,7 +134,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 
 	static abstract class State<T, U>
 			implements Cancellation, Subscription, Receiver, Producer, Subscriber<T>,
-			           SubscriberState {
+			           Trackable {
 
 		final Processor<? super T, ? extends T> processor;
 		final Publisher<? extends U>			publisher;
@@ -213,7 +212,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 		@Override
 		public void dispose() {
 			if (CONNECTED.compareAndSet(this, 1, 2)) {
-				if(SubscriptionHelper.terminate(S, this)) {
+				if(Operators.terminate(S, this)) {
 					processor.onError(new CancellationException("Disconnected"));
 				}
 			}
@@ -226,7 +225,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				processor.onSubscribe(s);
 			}
 		}

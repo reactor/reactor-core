@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -64,12 +63,12 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		try {
 			buffer = bufferSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 		
 		if (buffer == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The bufferSupplier returned a null buffer"));
+			Operators.error(s, new NullPointerException("The bufferSupplier returned a null buffer"));
 			return;
 		}
 		
@@ -114,13 +113,13 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
 		void cancelMain() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 		
 		@Override
@@ -131,7 +130,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}

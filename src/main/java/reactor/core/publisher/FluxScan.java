@@ -25,8 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -68,7 +67,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 	static final class ScanSubscriber<T, R>
 			implements Subscriber<T>, Subscription, Producer, Receiver, Loopback,
-			           SubscriberState {
+			           Trackable {
 
 		final Subscriber<? super R> actual;
 
@@ -106,7 +105,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -189,7 +188,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				for (;;) {
 
 					long r = requested;
@@ -211,7 +210,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 					}
 
 					// transition to HAS_REQUEST_NO_VALUE
-					long u = SubscriptionHelper.addCap(r, n);
+					long u = Operators.addCap(r, n);
 					if (REQUESTED.compareAndSet(this, r, u)) {
 						s.request(n);
 						return;

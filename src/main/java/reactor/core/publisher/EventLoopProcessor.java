@@ -25,16 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
-import reactor.core.Loopback;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
@@ -52,29 +47,6 @@ import static reactor.core.Reactor.Logger;
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Receiver, Runnable, MultiProducer {
-	/**
-	 * Create a {@link Scheduler} pool of N {@literal parallelSchedulers} size calling the
-	 * {@link Processor} {@link Supplier} once each.
-	 * <p>
-	 * It provides for reference counting on {@link Scheduler#createWorker()} and {@link
-	 * reactor.core.scheduler.Scheduler.Worker#shutdown()} If autoShutdown is given true
-	 * and reference count returns to 0 it will automatically call {@link
-	 * Scheduler#shutdown()} which will invoke {@link Processor#onComplete()}.
-	 * <p>
-	 *
-	 * @param processors
-	 * @param paralellism Parallel workers subscribed once each to their respective
-	 * internal {@link Runnable} {@link Subscriber}
-	 * @param autoShutdown true if this {@link Scheduler} should automatically shutdown
-	 * its resources
-	 *
-	 * @return a new {@link Scheduler}
-	 */
-	public static Scheduler asScheduler(Supplier<? extends EventLoopProcessor<Runnable>> processors,
-			int paralellism,
-			boolean autoShutdown) {
-		return new EventLoopScheduler(processors, paralellism, autoShutdown);
-	}
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
@@ -92,7 +64,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			if (r == Long.MAX_VALUE) {
 				return Long.MAX_VALUE;
 			}
-			u = SubscriptionHelper.addCap(r, toAdd);
+			u = Operators.addCap(r, toAdd);
 		}
 		while (!sequence.compareAndSet(r, u));
 		return r;
@@ -114,7 +86,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			if (r == 0 || r == Long.MAX_VALUE) {
 				return r;
 			}
-			u = SubscriptionHelper.subOrZero(r, toSub);
+			u = Operators.subOrZero(r, toSub);
 		}
 		while (!sequence.compareAndSet(r, u));
 
@@ -345,10 +317,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	@Override
 	final public void onSubscribe(final Subscription s) {
-		if (SubscriptionHelper.validate(upstreamSubscription, s)) {
+		if (Operators.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
 			try {
-				if (s != SubscriptionHelper.empty()) {
+				if (s != Operators.empty()) {
 					requestTask(s);
 				}
 			}
@@ -429,7 +401,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			return true;
 		}
 		catch (Throwable t) {
-			SubscriptionHelper.error(subscriber, t);
+			Operators.error(subscriber, t);
 			return false;
 		}
 	}
@@ -453,14 +425,16 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 }
 
+
+
 final class EventLoopFactory
 		implements ThreadFactory, Supplier<String> {
 	/** */
 
 	static final AtomicInteger COUNT = new AtomicInteger();
 
-    private static final long serialVersionUID = -3202326942393105842L;
-    final String  name;
+	private static final long serialVersionUID = -3202326942393105842L;
+	final String  name;
 	final boolean daemon;
 
 	EventLoopFactory(String name, boolean daemon) {
@@ -481,254 +455,6 @@ final class EventLoopFactory
 	}
 }
 
-final class EventLoopScheduler implements Scheduler, MultiProducer {
-
-	@Override
-	public Worker createWorker() {
-		references.incrementAndGet();
-		return next();
-	}
-
-	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(workerPool)
-		             .iterator();
-	}
-
-	@Override
-	public long downstreamCount() {
-		return workerPool.length;
-	}
-
-	@Override
-	public Cancellation schedule(Runnable task) {
-		next().processor.onNext(task);
-		return NOOP_CANCEL;
-	}
-
-	@Override
-	public void shutdown() {
-		for (ProcessorWorker processorWorker : workerPool) {
-			processorWorker.processor.shutdown();
-		}
-	}
-
-	ProcessorWorker next() {
-		int size = workerPool.length;
-		if (size == 1) {
-			return workerPool[0];
-		}
-
-		int index;
-		for (; ; ) {
-			index = this.index;
-			if (index == Integer.MAX_VALUE) {
-				if (INDEX.compareAndSet(this, Integer.MAX_VALUE, 0)) {
-					index = 0;
-					break;
-				}
-				continue;
-			}
-
-			if (INDEX.compareAndSet(this, index, index + 1)) {
-				break;
-			}
-		}
-
-		return workerPool[index % size];
-	}
-
-	static final AtomicIntegerFieldUpdater<EventLoopScheduler> INDEX =
-			AtomicIntegerFieldUpdater.newUpdater(EventLoopScheduler.class, "index");
-
-	final ProcessorWorker[] workerPool;
-	final AtomicInteger references = new AtomicInteger(0);
-
-	volatile int index = 0;
-
-	EventLoopScheduler(Supplier<? extends EventLoopProcessor<Runnable>> processorSupplier,
-			int parallelism,
-			boolean autoShutdown) {
-
-		if (parallelism < 1) {
-			throw new IllegalArgumentException(
-					"Cannot create group pools from null or negative parallel argument");
-		}
-
-		this.workerPool = new ProcessorWorker[parallelism];
-
-		for (int i = 0; i < parallelism; i++) {
-			workerPool[i] = new ProcessorWorker(processorSupplier.get(),
-					autoShutdown,
-					references);
-			workerPool[i].start();
-		}
-	}
-
-	final static Cancellation NOOP_CANCEL = () -> {
-	};
-
-	final static class ProcessorWorker implements Subscriber<Runnable>, Loopback, Worker {
-
-		final EventLoopProcessor<Runnable> processor;
-		final boolean                      autoShutdown;
-		final AtomicInteger                references;
-
-		LinkedArrayNode head;
-		LinkedArrayNode tail;
-		boolean         running;
-
-		Thread thread;
-
-		ProcessorWorker(final EventLoopProcessor<Runnable> processor,
-				boolean autoShutdown,
-				AtomicInteger references) {
-			this.processor = processor;
-			this.autoShutdown = autoShutdown;
-			this.references = references;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			thread = Thread.currentThread();
-			s.request(Long.MAX_VALUE);
-		}
-
-		@Override
-		public void onNext(Runnable task) {
-			try {
-				running = true;
-				task.run();
-
-				//tail recurse
-				LinkedArrayNode n = head;
-
-				while (n != null) {
-					for (int i = 0; i < n.count; i++) {
-						n.array[i].run();
-					}
-					n = n.next;
-				}
-
-				head = null;
-				tail = null;
-
-				running = false;
-			}
-			catch (Exceptions.CancelException ce) {
-				//IGNORE
-			}
-			catch (Throwable t) {
-				routeError(t);
-			}
-		}
-
-		@Override
-		public Cancellation schedule(Runnable task) {
-			try {
-				if (Thread.currentThread() == thread && running) {
-					tail(task);
-					return NOOP_CANCEL;
-				}
-
-				processor.onNext(task);
-				return NOOP_CANCEL;
-			}
-			catch (Exceptions.CancelException ce) {
-				//IGNORE
-			}
-			catch (Throwable t) {
-				if (processor != null) {
-					processor.onError(t);
-				}
-			}
-			return REJECTED;
-		}
-
-		@Override
-		public void shutdown() {
-			if (references.decrementAndGet() <= 0 && autoShutdown) {
-				processor.onComplete();
-			}
-		}
-
-		void start() {
-			processor.subscribe(this);
-		}
-
-		void tail(Runnable task) {
-			LinkedArrayNode t = tail;
-
-			if (t == null) {
-				t = new LinkedArrayNode(task);
-
-				head = t;
-				tail = t;
-			}
-			else {
-				if (t.count == LinkedArrayNode.DEFAULT_CAPACITY) {
-					LinkedArrayNode n = new LinkedArrayNode(task);
-
-					t.next = n;
-					tail = n;
-				}
-				else {
-					t.array[t.count++] = task;
-				}
-			}
-		}
-
-		void routeError(Throwable t) {
-			Reactor.getLogger(EventLoopScheduler.class)
-			      .error("Unrouted exception", t);
-		}
-
-		@Override
-		public Object connectedInput() {
-			return processor;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return processor;
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			thread = null;
-			Exceptions.throwIfFatal(t);
-
-			//TODO support resubscribe ?
-			throw new UnsupportedOperationException(
-					"No error handler provided for this EventLoop worker",
-					t);
-		}
-
-		@Override
-		public void onComplete() {
-			thread = null;
-		}
-	}
-
-	/**
-	 * Node in a linked array list that is only appended.
-	 */
-	static final class LinkedArrayNode {
-
-		static final int DEFAULT_CAPACITY = 16;
-
-		final Runnable[] array;
-		int count;
-
-		LinkedArrayNode next;
-
-		LinkedArrayNode(Runnable value) {
-			array = new Runnable[DEFAULT_CAPACITY];
-			array[0] = value;
-			count = 1;
-		}
-	}
-}
 final class Wrapped<E> implements Sequence, Producer {
 
 	public final E        delegate;

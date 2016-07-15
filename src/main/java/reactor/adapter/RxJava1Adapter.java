@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.publisher.Operators;
 import reactor.util.Exceptions;
 import rx.Observable;
 import rx.Producer;
@@ -221,7 +221,7 @@ public abstract class RxJava1Adapter {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				if (SubscriptionHelper.validate(this.s, s)) {
+				if (Operators.validate(this.s, s)) {
 					this.s = s;
 
 					actual.onSubscribe(this);
@@ -301,7 +301,7 @@ public abstract class RxJava1Adapter {
 
 			@Override
 			public void onSubscribe(Subscription s) {
-				if (SubscriptionHelper.validate(this.s, s)) {
+				if (Operators.validate(this.s, s)) {
 					this.s = s;
 
 					actual.add(this);
@@ -456,7 +456,7 @@ public abstract class RxJava1Adapter {
 
 			@Override
 			public void request(long n) {
-				if (SubscriptionHelper.validate(n)) {
+				if (Operators.validate(n)) {
 					for (; ; ) {
 						int s = state;
 						if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE || isUnsubscribed()) {
@@ -502,7 +502,7 @@ public abstract class RxJava1Adapter {
         		obs.subscribe(new RxSubscriberToRS<>(s));
         	}
         	catch (Throwable t) {
-		        SubscriptionHelper.error(s, t);
+		        Operators.error(s, t);
 	        }
         }
 	}
@@ -580,7 +580,7 @@ public abstract class RxJava1Adapter {
 
 		@Override
 		public void onSubscribe(final Subscription s) {
-			if (SubscriptionHelper.validate(subscription, s)) {
+			if (Operators.validate(subscription, s)) {
 				this.subscription = s;
 				subscriber.add(this);
 				subscriber.onStart();
@@ -628,7 +628,7 @@ public abstract class RxJava1Adapter {
 			s.onSubscribe(new Subscription() {
 				@Override
 				public void request(long n) {
-					if (SubscriptionHelper.checkRequest(n, s)) {
+					if (Operators.checkRequest(n, s)) {
 						doRequest(n);
 					}
 				}

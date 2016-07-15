@@ -27,7 +27,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -177,7 +176,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s))  {
+			if (Operators.validate(this.s, s))  {
 				this.s = s;
 
 				if (s instanceof Fuseable.QueueSubscription) {
@@ -202,7 +201,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						} catch (Throwable ex) {
 							Exceptions.throwIfFatal(ex);
 							s.cancel();
-							SubscriptionHelper.error(actual, ex);
+							Operators.error(actual, ex);
 							return;
 						}
 					}
@@ -212,7 +211,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					} catch (Throwable ex) {
 						s.cancel();
 
-						SubscriptionHelper.error(actual, ex);
+						Operators.error(actual, ex);
 						return;
 					}
 				}
@@ -502,7 +501,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s))  {
+			if (Operators.validate(this.s, s))  {
 				this.s = s;
 
 				if (s instanceof Fuseable.QueueSubscription) {
@@ -529,7 +528,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						} catch (Throwable ex) {
 							Exceptions.throwIfFatal(ex);
 							s.cancel();
-							SubscriptionHelper.error(actual, ex);
+							Operators.error(actual, ex);
 							return;
 						}
 					}
@@ -539,7 +538,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					} catch (Throwable ex) {
 						Exceptions.throwIfFatal(ex);
 						s.cancel();
-						SubscriptionHelper.error(actual, ex);
+						Operators.error(actual, ex);
 						return;
 					}
 				}

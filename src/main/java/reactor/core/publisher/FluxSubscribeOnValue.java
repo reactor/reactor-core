@@ -27,7 +27,6 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -154,7 +153,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Cancellation f = scheduler.schedule(this);
 					if (!FUTURE.compareAndSet(this, null, f)) {
@@ -264,7 +263,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void request(long n) {
-			SubscriptionHelper.validate(n);
+			Operators.validate(n);
 		}
 
 		@Override

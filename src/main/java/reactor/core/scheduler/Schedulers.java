@@ -209,7 +209,7 @@ public class Schedulers {
 			int bufferSize,
 			boolean daemon) {
 		return newComputation(parallelism,
-				bufferSize, new SchedulerFactory(name, daemon, new AtomicLong()));
+				bufferSize, new SchedulerFactory(name, daemon, ComputationScheduler.COUNTER));
 	}
 
 	/**
@@ -568,10 +568,7 @@ public class Schedulers {
 
 	static {
 		try {
-			Class<?> factory = Schedulers.class.getClassLoader()
-			                                   .loadClass(
-					                                   "reactor.core.publisher.TopicProcessor");
-			setComputationFactory(factory);
+			setComputationFactory(ComputationScheduler.class);
 		}
 		catch (Exception e) {
 			throw Exceptions.bubble(e);

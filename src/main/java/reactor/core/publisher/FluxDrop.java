@@ -24,8 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -68,7 +67,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 	}
 
 	static final class DropSubscriber<T>
-			implements Subscriber<T>, Subscription, Producer, Loopback, SubscriberState {
+			implements Subscriber<T>, Subscription, Producer, Loopback, Trackable {
 
 		final Subscriber<? super T> actual;
 
@@ -90,8 +89,8 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 
@@ -102,7 +101,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);

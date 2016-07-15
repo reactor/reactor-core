@@ -40,7 +40,7 @@ import org.testng.annotations.AfterClass;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.subscriber.SubmissionEmitter;
+import reactor.core.publisher.SubmissionEmitter;
 import reactor.core.Reactor;
 
 /**

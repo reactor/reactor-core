@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.MultiReceiver;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -55,12 +54,12 @@ final class FluxConcatIterable<T> extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 
 		if (it == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The Iterator returned is null"));
+			Operators.error(s, new NullPointerException("The Iterator returned is null"));
 			return;
 		}
 

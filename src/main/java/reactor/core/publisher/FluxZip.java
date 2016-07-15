@@ -35,8 +35,7 @@ import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -50,7 +49,7 @@ import reactor.util.Exceptions;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberState {
+final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 	final Publisher<? extends T>[] sources;
 
@@ -143,7 +142,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 		for (Publisher<? extends T> p : sourcesIterable) {
 			if (p == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
+				Operators.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
 				return;
 			}
 
@@ -156,12 +155,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 					v = callable.call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					SubscriptionHelper.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.unwrap(e));
 					return;
 				}
 
 				if (v == null) {
-					SubscriptionHelper.complete(s);
+					Operators.complete(s);
 					return;
 				}
 
@@ -195,7 +194,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 		}
 
 		if (n == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 
@@ -208,7 +207,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 		int n = srcs.length;
 
 		if (n == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 
@@ -219,7 +218,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 			Publisher<? extends T> p = srcs[j];
 
 			if (p == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The sources contained a null Publisher"));
+				Operators.error(s, new NullPointerException("The sources contained a null Publisher"));
 				return;
 			}
 
@@ -230,12 +229,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					SubscriptionHelper.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.unwrap(e));
 					return;
 				}
 
 				if (v == null) {
-					SubscriptionHelper.complete(s);
+					Operators.complete(s);
 					return;
 				}
 
@@ -311,7 +310,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 	}
 
 	static final class ZipSingleCoordinator<T, R> extends Operators.DeferredScalarSubscriber<R, R>
-			implements MultiReceiver, SubscriberState {
+			implements MultiReceiver, Trackable {
 
 		final Function<? super Object[], ? extends R> zipper;
 
@@ -431,7 +430,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 	}
 
 	static final class ZipSingleSubscriber<T>
-			implements Subscriber<T>, SubscriberState, Cancellation, Receiver {
+			implements Subscriber<T>, Trackable, Cancellation, Receiver {
 
 		final ZipSingleCoordinator<T, ?> parent;
 
@@ -454,7 +453,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				this.s = s;
 				s.request(Long.MAX_VALUE);
 			}
@@ -468,7 +467,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 				return;
 			}
 			done = true;
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 			parent.next(t, index);
 		}
 
@@ -505,7 +504,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 		@Override
 		public boolean isCancelled() {
-			return s == SubscriptionHelper.cancelled();
+			return s == Operators.cancelled();
 		}
 
 		@Override
@@ -525,12 +524,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 		@Override
 		public void dispose() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 	}
 
 	static final class ZipCoordinator<T, R>
-			implements Subscription, MultiReceiver, SubscriberState {
+			implements Subscription, MultiReceiver, Trackable {
 
 		final Subscriber<? super R> actual;
 
@@ -587,8 +586,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -856,7 +855,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 	}
 
 	static final class ZipInner<T>
-			implements Subscriber<T>, Receiver, Producer, SubscriberState {
+			implements Subscriber<T>, Receiver, Producer, Trackable {
 
 		final ZipCoordinator<T, ?> parent;
 
@@ -909,7 +908,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
@@ -1013,7 +1012,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, SubscriberSt
 		}
 
 		void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 
 		void request(long n) {

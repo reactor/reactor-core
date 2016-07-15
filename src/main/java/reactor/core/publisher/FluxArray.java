@@ -25,8 +25,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -50,7 +49,7 @@ extends Flux<T>
 	@SuppressWarnings("unchecked")
 	public static <T> void subscribe(Subscriber<? super T> s, T[] array) {
 		if (array.length == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 		if (s instanceof ConditionalSubscriber) {
@@ -66,7 +65,7 @@ extends Flux<T>
 	}
 
 	static final class ArraySubscription<T>
-			implements Producer, SubscriberState, MultiReceiver,
+			implements Producer, Trackable, MultiReceiver,
 			           SynchronousSubscription<T> {
 		final Subscriber<? super T> actual;
 
@@ -88,8 +87,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -236,7 +235,7 @@ extends Flux<T>
 	}
 
 	static final class ArrayConditionalSubscription<T>
-			implements Producer, SubscriberState, MultiReceiver,
+			implements Producer, Trackable, MultiReceiver,
 			           SynchronousSubscription<T> {
 		final ConditionalSubscriber<? super T> actual;
 
@@ -260,8 +259,8 @@ extends Flux<T>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					}

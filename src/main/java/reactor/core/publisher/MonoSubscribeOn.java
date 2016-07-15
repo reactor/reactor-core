@@ -22,7 +22,6 @@ import org.reactivestreams.*;
 
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Subscribes to the upstream Mono on the specified Scheduler and makes sure
@@ -72,7 +71,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         
         @Override
         public void onSubscribe(Subscription s) {
-            if (!SubscriptionHelper.setOnce(S, this, s)) {
+            if (!Operators.setOnce(S, this, s)) {
                 s.cancel();
             } else {
                 long r = REQUESTED.getAndSet(this, 0L);
@@ -107,14 +106,14 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         
         @Override
         public void request(long n) {
-            if (SubscriptionHelper.validate(n)) {
+            if (Operators.validate(n)) {
                 worker.schedule(() -> requestMore(n));
             }
         }
         
         @Override
         public void cancel() {
-            if (SubscriptionHelper.terminate(S, this)) {
+            if (Operators.terminate(S, this)) {
                 worker.shutdown();
             }
         }
@@ -124,7 +123,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
             if (a != null) {
                 a.request(n);
             } else {
-                SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+                Operators.getAndAddCap(REQUESTED, this, n);
                 a = s;
                 if (a != null) {
                     long r = REQUESTED.getAndSet(this, 0L);

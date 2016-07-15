@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class FluxFirstEmittingTest {
 

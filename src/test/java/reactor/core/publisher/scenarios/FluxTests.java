@@ -62,7 +62,7 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.subscriber.SubmissionEmitter;
+import reactor.core.publisher.SubmissionEmitter;
 import reactor.util.function.Tuples;
 import reactor.util.Exceptions;
 

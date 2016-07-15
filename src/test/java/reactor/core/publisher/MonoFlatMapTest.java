@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.subscriber.TestSubscriber;
+import reactor.test.TestSubscriber;
 
 public class MonoFlatMapTest {
 

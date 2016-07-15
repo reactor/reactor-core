@@ -25,8 +25,7 @@ import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -63,7 +62,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 	static final class SkipWhileSubscriber<T>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, SubscriberState {
+			           Subscription, Trackable {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -81,7 +80,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}

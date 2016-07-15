@@ -38,9 +38,8 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.subscriber.SubmissionEmitter;
-import reactor.test.subscriber.TestSubscriber;
-
+import reactor.core.publisher.SubmissionEmitter;
+import reactor.test.TestSubscriber;
 import static reactor.core.Reactor.Logger;
 
 /**

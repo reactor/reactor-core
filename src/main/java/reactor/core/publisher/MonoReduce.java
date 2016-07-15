@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -58,12 +57,12 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 		try {
 			initialValue = initialSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 
 		if (initialValue == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The initial value supplied is null"));
+			Operators.error(s, new NullPointerException("The initial value supplied is null"));
 			return;
 		}
 
@@ -100,7 +99,7 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				subscriber.onSubscribe(this);

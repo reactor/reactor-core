@@ -31,8 +31,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -93,12 +92,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			try {
 				overflowQueue = overflowQueueSupplier.get();
 			} catch (Throwable e) {
-				SubscriptionHelper.error(s, e);
+				Operators.error(s, e);
 				return;
 			}
 			
 			if (overflowQueue == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The overflowQueueSupplier returned a null queue"));
+				Operators.error(s, new NullPointerException("The overflowQueueSupplier returned a null queue"));
 				return;
 			}
 			
@@ -108,7 +107,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowExactSubscriber<T>
 			implements Subscriber<T>, Subscription, Runnable, Producer, Receiver,
-			           MultiProducer, SubscriberState {
+			           MultiProducer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -144,7 +143,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -235,8 +234,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				long u = SubscriptionHelper.multiplyCap(size, n);
+			if (Operators.validate(n)) {
+				long u = Operators.multiplyCap(size, n);
 				s.request(u);
 			}
 		}
@@ -298,7 +297,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowSkipSubscriber<T>
 			implements Subscriber<T>, Subscription, Runnable, Receiver, MultiProducer,
-			           Producer, SubscriberState {
+			           Producer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
 
@@ -342,7 +341,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -438,14 +437,14 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-					long u = SubscriptionHelper.multiplyCap(size, n);
-					long v = SubscriptionHelper.multiplyCap(skip - size, n - 1);
-					long w = SubscriptionHelper.addCap(u, v);
+					long u = Operators.multiplyCap(size, n);
+					long v = Operators.multiplyCap(skip - size, n - 1);
+					long w = Operators.addCap(u, v);
 					s.request(w);
 				} else {
-					long u = SubscriptionHelper.multiplyCap(skip, n);
+					long u = Operators.multiplyCap(skip, n);
 					s.request(u);
 				}
 			}
@@ -508,7 +507,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowOverlapSubscriber<T>
 			implements Subscriber<T>, Subscription, Runnable, Producer, MultiProducer,
-			           Receiver, SubscriberState {
+			           Receiver, Trackable {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -572,7 +571,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -754,16 +753,16 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+				Operators.getAndAddCap(REQUESTED, this, n);
 
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
-					long u = SubscriptionHelper.multiplyCap(skip, n - 1);
-					long v = SubscriptionHelper.addCap(size, u);
+					long u = Operators.multiplyCap(skip, n - 1);
+					long v = Operators.addCap(size, u);
 					s.request(v);
 				} else {
-					long u = SubscriptionHelper.multiplyCap(skip, n);
+					long u = Operators.multiplyCap(skip, n);
 					s.request(u);
 				}
 

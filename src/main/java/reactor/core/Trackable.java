@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.subscriber;
+package reactor.core;
 
 /**
  * A lifecycle backed downstream
  */
-public interface SubscriberState {
+public interface Trackable {
 
 	/**
 	 * Returned value when a given component does not provide access to the requested

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.MultiReceiver;
-import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
 /**
@@ -65,14 +64,14 @@ extends Flux<T>
 		Publisher<? extends T>[] a = array;
 
 		if (a.length == 0) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		}
 		if (a.length == 1) {
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The single source Publisher is null"));
+				Operators.error(s, new NullPointerException("The single source Publisher is null"));
 			} else {
 				p.subscribe(s);
 			}

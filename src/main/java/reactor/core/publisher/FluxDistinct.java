@@ -29,8 +29,7 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -65,12 +64,12 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 
 		if (collection == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+			Operators.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
 			return;
 		}
 
@@ -91,7 +90,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, SubscriberState {
+			           Subscription, Trackable {
 		final Subscriber<? super T> actual;
 
 		final C collection;
@@ -111,7 +110,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -225,7 +224,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctConditionalSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, SubscriberState {
+			           Subscription, Trackable {
 		final ConditionalSubscriber<? super T> actual;
 
 		final C collection;
@@ -246,7 +245,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
@@ -389,7 +388,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	static final class DistinctFuseableSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           QueueSubscription<T>, SubscriberState {
+			           QueueSubscription<T>, Trackable {
 		final Subscriber<? super T> actual;
 
 		final C collection;
@@ -412,7 +411,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.qs, s)) {
+			if (Operators.validate(this.qs, s)) {
 				this.qs = (QueueSubscription<T>) s;
 
 				actual.onSubscribe(this);

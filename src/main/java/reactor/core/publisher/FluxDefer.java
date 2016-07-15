@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriptionHelper;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -53,12 +52,12 @@ final class FluxDefer<T> extends Flux<T>
 		try {
 			p = supplier.get();
 		} catch (Throwable e) {
-			SubscriptionHelper.error(s, e);
+			Operators.error(s, e);
 			return;
 		}
 
 		if (p == null) {
-			SubscriptionHelper.error(s, new NullPointerException("The Producer returned by the supplier is null"));
+			Operators.error(s, new NullPointerException("The Producer returned by the supplier is null"));
 			return;
 		}
 

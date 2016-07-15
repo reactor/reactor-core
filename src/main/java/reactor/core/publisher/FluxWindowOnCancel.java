@@ -30,8 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -61,7 +60,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowOnCancelSubscriber<T>
 			implements Subscriber<T>, Subscription, Runnable, Producer,
-			           MultiProducer, Receiver, SubscriberState {
+			           MultiProducer, Receiver, Trackable {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -92,7 +91,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -172,7 +171,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
+			if (Operators.validate(n)) {
 				s.request(n);
 			}
 		}

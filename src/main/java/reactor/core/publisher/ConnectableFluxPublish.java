@@ -34,8 +34,7 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.MultiProducer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -139,7 +138,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	static final class State<T>
-			implements Subscriber<T>, Receiver, MultiProducer, SubscriberState,
+			implements Subscriber<T>, Receiver, MultiProducer, Trackable,
 			           Cancellation {
 
 		final int prefetch;
@@ -189,7 +188,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
@@ -275,7 +274,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 			if (cancelled) {
 				return;
 			}
-			if (SubscriptionHelper.terminate(S, this)) {
+			if (Operators.terminate(S, this)) {
 				cancelled = true;
 				if (WIP.getAndIncrement(this) != 0) {
 					return;
@@ -551,7 +550,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	static final class InnerSubscription<T>
-			implements Subscription, Receiver, SubscriberState {
+			implements Subscription, Receiver, Trackable {
 		
 		final Subscriber<? super T> actual;
 		
@@ -573,8 +572,8 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				State<T> p = parent;
 				if (p != null) {
 					p.drain();

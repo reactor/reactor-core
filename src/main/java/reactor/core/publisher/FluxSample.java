@@ -23,9 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.subscriber.Subscribers;
-import reactor.core.subscriber.SubscriptionHelper;
-
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
  * signals a value.
@@ -62,7 +59,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		Subscriber<T> serial = Subscribers.serialize(s);
+		Subscriber<T> serial = Operators.serialize(s);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);
 
@@ -107,8 +104,8 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (!MAIN.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (main != SubscriptionHelper.cancelled()) {
-					SubscriptionHelper.reportSubscriptionSet();
+				if (main != Operators.cancelled()) {
+					Operators.reportSubscriptionSet();
 				}
 				return;
 			}
@@ -117,9 +114,9 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		void cancelMain() {
 			Subscription s = main;
-			if (s != SubscriptionHelper.cancelled()) {
-				s = MAIN.getAndSet(this, SubscriptionHelper.cancelled());
-				if (s != null && s != SubscriptionHelper.cancelled()) {
+			if (s != Operators.cancelled()) {
+				s = MAIN.getAndSet(this, Operators.cancelled());
+				if (s != null && s != Operators.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -127,9 +124,9 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		void cancelOther() {
 			Subscription s = other;
-			if (s != SubscriptionHelper.cancelled()) {
-				s = OTHER.getAndSet(this, SubscriptionHelper.cancelled());
-				if (s != null && s != SubscriptionHelper.cancelled()) {
+			if (s != Operators.cancelled()) {
+				s = OTHER.getAndSet(this, Operators.cancelled());
+				if (s != null && s != Operators.cancelled()) {
 					s.cancel();
 				}
 			}
@@ -138,8 +135,8 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		void setOther(Subscription s) {
 			if (!OTHER.compareAndSet(this, null, s)) {
 				s.cancel();
-				if (other != SubscriptionHelper.cancelled()) {
-					SubscriptionHelper.reportSubscriptionSet();
+				if (other != Operators.cancelled()) {
+					Operators.reportSubscriptionSet();
 				}
 				return;
 			}
@@ -148,8 +145,8 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
 

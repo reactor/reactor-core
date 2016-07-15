@@ -25,8 +25,7 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -66,7 +65,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 
 	static final class FilterFuseableSubscriber<T>
 			implements Receiver, Producer, Loopback, SynchronousSubscription<T>,
-			           ConditionalSubscriber<T>, SubscriberState {
+			           ConditionalSubscriber<T>, Trackable {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -85,7 +84,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = (QueueSubscription<T>)s;
 				actual.onSubscribe(this);
 			}
@@ -270,7 +269,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 
 	static final class FilterFuseableConditionalSubscriber<T>
 			implements Receiver, Producer, Loopback, ConditionalSubscriber<T>,
-			           SynchronousSubscription<T>, SubscriberState {
+			           SynchronousSubscription<T>, Trackable {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -289,7 +288,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = (QueueSubscription<T>)s;
 				actual.onSubscribe(this);
 			}

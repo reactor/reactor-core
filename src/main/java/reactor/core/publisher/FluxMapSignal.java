@@ -27,8 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -78,7 +77,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
     static final class FluxMapSignalSubscriber<T, R> 
     extends AbstractQueue<R>
-    implements Subscriber<T>, Receiver, Producer, SubscriberState, Subscription,
+    implements Subscriber<T>, Receiver, Producer, Trackable, Subscription,
                BooleanSupplier {
 
         final Subscriber<? super R>            actual;
@@ -106,7 +105,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            if (SubscriptionHelper.validate(this.s, s)) {
+            if (Operators.validate(this.s, s)) {
                 this.s = s;
 
                 actual.onSubscribe(this);
@@ -243,7 +242,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	    
 	    @Override
 	    public void request(long n) {
-	        if (SubscriptionHelper.validate(n)) {
+	        if (Operators.validate(n)) {
 	            if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
 	                s.request(n);
 	            }

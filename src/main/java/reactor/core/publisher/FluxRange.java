@@ -20,8 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 
 /**
  * Emits a range of integer values.
@@ -55,7 +54,7 @@ final class FluxRange extends Flux<Integer>
 		long st = start;
 		long en = end;
 		if (st == en) {
-			SubscriptionHelper.complete(s);
+			Operators.complete(s);
 			return;
 		} else
 		if (st + 1 == en) {
@@ -71,7 +70,7 @@ final class FluxRange extends Flux<Integer>
 	}
 
 	static final class RangeSubscription
-			implements SubscriberState, Producer, SynchronousSubscription<Integer> {
+			implements Trackable, Producer, SynchronousSubscription<Integer> {
 
 		final Subscriber<? super Integer> actual;
 
@@ -93,8 +92,8 @@ final class FluxRange extends Flux<Integer>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -226,7 +225,7 @@ final class FluxRange extends Flux<Integer>
 	}
 	
 	static final class RangeSubscriptionConditional
-			implements SubscriberState, Producer, SynchronousSubscription<Integer> {
+			implements Trackable, Producer, SynchronousSubscription<Integer> {
 
 		final ConditionalSubscriber<? super Integer> actual;
 
@@ -248,8 +247,8 @@ final class FluxRange extends Flux<Integer>
 
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				if (SubscriptionHelper.getAndAddCap(REQUESTED, this, n) == 0) {
+			if (Operators.validate(n)) {
+				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

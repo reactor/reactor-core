@@ -33,8 +33,7 @@ import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.SubscriberState;
-import reactor.core.subscriber.SubscriptionHelper;
+import reactor.core.Trackable;
 import reactor.util.Exceptions;
 
 /**
@@ -132,12 +131,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
-				SubscriptionHelper.error(s, Exceptions.unwrap(e));
+				Operators.error(s, Exceptions.unwrap(e));
 				return true;
 			}
 
 			if (t == null) {
-				SubscriptionHelper.complete(s);
+				Operators.complete(s);
 				return true;
 			}
 
@@ -148,12 +147,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 			catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
-				SubscriptionHelper.error(s, Exceptions.unwrap(e));
+				Operators.error(s, Exceptions.unwrap(e));
 				return true;
 			}
 
 			if (p == null) {
-				SubscriptionHelper.error(s, new NullPointerException("The mapper returned a null Publisher"));
+				Operators.error(s, new NullPointerException("The mapper returned a null Publisher"));
 				return true;
 			}
 
@@ -165,14 +164,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					SubscriptionHelper.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.unwrap(e));
 					return true;
 				}
 
 				if (v != null) {
 					s.onSubscribe(new Operators.ScalarSubscription<>(s, v));
 				} else {
-					SubscriptionHelper.complete(s);
+					Operators.complete(s);
 				}
 			} else {
 				if (!fuseableExpected || p instanceof Fuseable) {
@@ -190,7 +189,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 	static final class FlatMapMain<T, R> extends SpscFreeListTracker<FlatMapInner<R>>
 			implements Subscriber<T>, Subscription, Receiver, MultiReceiver, Producer,
-			   SubscriberState {
+			           Trackable {
 		
 		final Subscriber<? super R> actual;
 
@@ -284,8 +283,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				SubscriptionHelper.getAndAddCap(REQUESTED, this, n);
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -305,7 +304,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				
 				actual.onSubscribe(this);
@@ -940,7 +939,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class FlatMapInner<R>
-			implements Subscriber<R>, Subscription, Producer, Receiver, SubscriberState  {
+			implements Subscriber<R>, Subscription, Producer, Receiver, Trackable {
 
 		final FlatMapMain<?, R> parent;
 		
@@ -984,7 +983,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (SubscriptionHelper.setOnce(S, this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f = (Fuseable.QueueSubscription<R>)s;
 					int m = f.requestFusion(Fuseable.ANY);
@@ -1044,7 +1043,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void cancel() {
-			SubscriptionHelper.terminate(S, this);
+			Operators.terminate(S, this);
 		}
 
 		@Override
@@ -1059,7 +1058,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isCancelled() {
-			return s == SubscriptionHelper.cancelled();
+			return s == Operators.cancelled();
 		}
 
 		@Override
@@ -1232,7 +1231,7 @@ final class SuppressFuseableSubscriber<T> implements Producer, Receiver, Subscri
 
 	@Override
 	public void onSubscribe(Subscription s) {
-		if (SubscriptionHelper.validate(this.s, s)) {
+		if (Operators.validate(this.s, s)) {
 			this.s = s;
 
 			actual.onSubscribe(this);
