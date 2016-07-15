@@ -26,7 +26,6 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 
@@ -44,6 +43,125 @@ abstract class Operators {
 	public static <T> Subscription scalarSubscription(Subscriber<? super T> subscriber,
 			T value){
 		return new ScalarSubscription<>(subscriber, value);
+	}
+
+	/**
+	 * Base class for Subscribers that will receive their Subscriptions at any time yet
+	 * they need to be cancelled or requested at any time.
+	 */
+	static class DeferredSubscription
+			implements Subscription, Receiver, SubscriberState {
+
+		volatile Subscription s;
+		static final AtomicReferenceFieldUpdater<DeferredSubscription, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(DeferredSubscription.class, Subscription.class, "s");
+
+		volatile long requested;
+		static final AtomicLongFieldUpdater<DeferredSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(DeferredSubscription.class, "requested");
+
+		/**
+		 * Atomically sets the single subscription and requests the missed amount from it.
+		 *
+		 * @param s
+		 * @return false if this arbiter is cancelled or there was a subscription already set
+		 */
+		public final boolean set(Subscription s) {
+			Objects.requireNonNull(s, "s");
+			Subscription a = this.s;
+			if (a == SubscriptionHelper.cancelled()) {
+				s.cancel();
+				return false;
+			}
+			if (a != null) {
+				s.cancel();
+				SubscriptionHelper.reportSubscriptionSet();
+				return false;
+			}
+
+			if (S.compareAndSet(this, null, s)) {
+
+				long r = REQUESTED.getAndSet(this, 0L);
+
+				if (r != 0L) {
+					s.request(r);
+				}
+
+				return true;
+			}
+
+			a = this.s;
+
+			if (a != SubscriptionHelper.cancelled()) {
+				s.cancel();
+				return false;
+			}
+
+			SubscriptionHelper.reportSubscriptionSet();
+			return false;
+		}
+
+		@Override
+		public void request(long n) {
+			Subscription a = s;
+			if (a != null) {
+				a.request(n);
+			} else {
+				SubscriptionHelper.addAndGet(REQUESTED, this, n);
+
+				a = s;
+
+				if (a != null) {
+					long r = REQUESTED.getAndSet(this, 0L);
+
+					if (r != 0L) {
+						a.request(r);
+					}
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			Subscription a = s;
+			if (a != SubscriptionHelper.cancelled()) {
+				a = S.getAndSet(this, SubscriptionHelper.cancelled());
+				if (a != null && a != SubscriptionHelper.cancelled()) {
+					a.cancel();
+				}
+			}
+		}
+
+		/**
+		 * Returns true if this arbiter has been cancelled.
+		 *
+		 * @return true if this arbiter has been cancelled
+		 */
+		@Override
+		public final boolean isCancelled() {
+			return s == SubscriptionHelper.cancelled();
+		}
+
+		@Override
+		public final boolean isStarted() {
+			return s != null;
+		}
+
+		@Override
+		public final boolean isTerminated() {
+			return isCancelled();
+		}
+
+		@Override
+		public final long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public Subscription upstream() {
+			return s;
+		}
+
 	}
 
 	/**

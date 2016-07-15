@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -479,7 +478,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		}
 	}
 	
-	static final class BufferStartEndStarter<U> extends DeferredSubscription
+	static final class BufferStartEndStarter<U> extends Operators.DeferredSubscription
 	implements Subscriber<U> {
 		final BufferStartEndMainSubscriber<?, U, ?, ?> main;
 		
@@ -511,7 +510,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 	}
 	
 	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>> extends
-	                                                                              DeferredSubscription
+	                                                                              Operators.DeferredSubscription
 	implements Subscriber<V> {
 		final BufferStartEndMainSubscriber<T, ?, V, C> main;
 

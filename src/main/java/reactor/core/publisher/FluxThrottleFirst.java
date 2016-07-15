@@ -24,7 +24,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -211,7 +210,7 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 	}
 	
 	static final class ThrottleFirstOther<U>
-			extends DeferredSubscription
+			extends Operators.DeferredSubscription
 	implements Subscriber<U> {
 
 		final ThrottleFirstMain<?, U> main;

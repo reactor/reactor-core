@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -428,7 +427,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 	
 	static final class WindowStartEndStarter<T, U, V>
-			extends DeferredSubscription
+			extends Operators.DeferredSubscription
 	implements Subscriber<U> {
 
 		final WindowStartEndMainSubscriber<T, U, V> main;
@@ -462,7 +461,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 	
 	static final class WindowStartEndEnder<T, V>
-			extends DeferredSubscription
+			extends Operators.DeferredSubscription
 	implements Subscriber<V> {
 
 		final WindowStartEndMainSubscriber<T, ?, V> main;

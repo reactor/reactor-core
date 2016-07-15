@@ -27,7 +27,6 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -90,7 +89,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		return null;
 	}
 
-	static final class SubscribeOnPipeline<T> extends DeferredSubscription
+	static final class SubscribeOnPipeline<T> extends Operators.DeferredSubscription
 			implements Subscriber<T>, Producer, Loopback, Runnable, QueueSubscription<T> {
 
 		final Subscriber<? super T> actual;

@@ -23,7 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.Subscribers;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
@@ -91,7 +90,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	static final class RepeatWhenMainSubscriber<T> extends
 	                                               Operators.MultiSubscriptionSubscriber<T, T> {
 
-		final DeferredSubscription otherArbiter;
+		final Operators.DeferredSubscription otherArbiter;
 
 		final Subscriber<Long> signaller;
 
@@ -111,7 +110,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
-			this.otherArbiter = new DeferredSubscription();
+			this.otherArbiter = new Operators.DeferredSubscription();
 		}
 
 		@Override

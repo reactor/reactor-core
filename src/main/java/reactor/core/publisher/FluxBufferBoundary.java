@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -249,7 +248,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 	}
 	
-	static final class BufferBoundaryOther<U> extends DeferredSubscription
+	static final class BufferBoundaryOther<U> extends Operators.DeferredSubscription
 	implements Subscriber<U> {
 		
 		final BufferBoundaryMain<?, U, ?> main;

@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
 
@@ -371,7 +370,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowBoundaryOther<U>
-			extends DeferredSubscription
+			extends Operators.DeferredSubscription
 			implements Subscriber<U> {
 
 		final WindowBoundaryMain<?, U> main;

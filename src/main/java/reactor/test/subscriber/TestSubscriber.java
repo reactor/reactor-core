@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -36,7 +37,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.subscriber.DeferredSubscription;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.ReactorProperties;
@@ -85,7 +85,7 @@ import reactor.util.ReactorProperties;
  * @author Stephane Maldini
  * @author Brian Clozel
  */
-public class TestSubscriber<T> extends DeferredSubscription
+public class TestSubscriber<T>
 		implements Subscriber<T>, Subscription, SubscriberState, Receiver {
 
 	/**
@@ -206,9 +206,10 @@ public class TestSubscriber<T> extends DeferredSubscription
 		publisher.subscribe(subscriber);
 		return subscriber;
 	}
-
 	final         List<Throwable> errors = new LinkedList<>();
 	private final CountDownLatch  cdl    = new CountDownLatch(1);
+	volatile Subscription s;
+	volatile long requested;
 	volatile      List<T>         values = new LinkedList<>();
 	/**
 	 * The fusion mode to request.
@@ -223,7 +224,6 @@ public class TestSubscriber<T> extends DeferredSubscription
 	 */
 	Fuseable.QueueSubscription<T> qs;
 	private int subscriptionCount = 0;
-
 	//	 ==============================================================================================================
 //	 Static methods
 //	 ==============================================================================================================
@@ -232,23 +232,14 @@ public class TestSubscriber<T> extends DeferredSubscription
 	private volatile long     nextValueAssertedCount = 0L;
 	private          Duration valuesTimeout          = DEFAULT_VALUES_TIMEOUT;
 	private boolean valuesStorage = true;
-
 	private TestSubscriber() {
 		 this(Long.MAX_VALUE);
 	}
-
-
-
-
-//	 ==============================================================================================================
-//	 Private constructors
-//	 ==============================================================================================================
-
 	private TestSubscriber(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
 		}
-		setInitialRequest(n);
+		REQUESTED.lazySet(this, n);
 	}
 
 	/**
@@ -266,8 +257,11 @@ public class TestSubscriber<T> extends DeferredSubscription
 		return this;
 	}
 
+
+
+
 //	 ==============================================================================================================
-//	 Configuration
+//	 Private constructors
 //	 ==============================================================================================================
 
 	/**
@@ -321,7 +315,7 @@ public class TestSubscriber<T> extends DeferredSubscription
 	}
 
 //	 ==============================================================================================================
-//	 Assertions
+//	 Configuration
 //	 ==============================================================================================================
 
 	/**
@@ -368,6 +362,10 @@ public class TestSubscriber<T> extends DeferredSubscription
 
 		return this;
 	}
+
+//	 ==============================================================================================================
+//	 Assertions
+//	 ==============================================================================================================
 
 	/**
 	 * Assert an error signal has been received.
@@ -600,10 +598,6 @@ public class TestSubscriber<T> extends DeferredSubscription
 		return this;
 	}
 
-//	 ==============================================================================================================
-//	 Await methods
-//	 ==============================================================================================================
-
 	/**
 	 * Assert the specified values have been received in the declared order. Values
 	 * storage should be enabled to use this method.
@@ -647,6 +641,10 @@ public class TestSubscriber<T> extends DeferredSubscription
 		}
 		return this;
 	}
+
+//	 ==============================================================================================================
+//	 Await methods
+//	 ==============================================================================================================
 
 	/**
 	 * Blocking method that waits until a complete successfully or error signal is received.
@@ -706,10 +704,6 @@ public class TestSubscriber<T> extends DeferredSubscription
 		return this;
 	}
 
-//	 ==============================================================================================================
-//	 Utility methods
-//	 ==============================================================================================================
-
 	/**
 	 * Blocking method that waits until {@code n} next values have been received (n is the
 	 * number of values provided) to assert them.
@@ -737,10 +731,6 @@ public class TestSubscriber<T> extends DeferredSubscription
 		awaitAndAssertNextValuesWith(expectations.toArray((Consumer<T>[]) new Consumer[0]));
 		return this;
 	}
-
-//	 ==============================================================================================================
-//	 Subscriber overrides
-//	 ==============================================================================================================
 
 	/**
 	 * Blocking method that waits until {@code n} next values have been received
@@ -781,6 +771,25 @@ public class TestSubscriber<T> extends DeferredSubscription
 		return this;
 	}
 
+//	 ==============================================================================================================
+//	 Utility methods
+//	 ==============================================================================================================
+
+	@Override
+	public void cancel() {
+		Subscription a = s;
+		if (a != SubscriptionHelper.cancelled()) {
+			a = S.getAndSet(this, SubscriptionHelper.cancelled());
+			if (a != null && a != SubscriptionHelper.cancelled()) {
+				a.cancel();
+			}
+		}
+	}
+
+//	 ==============================================================================================================
+//	 Subscriber overrides
+//	 ==============================================================================================================
+
 	/**
 	 * Enable or disabled the values storage. It is enabled by default, and can be disable
 	 * in order to be able to perform performance benchmarks or tests with a huge amount
@@ -811,6 +820,21 @@ public class TestSubscriber<T> extends DeferredSubscription
 	 */
 	public final int establishedFusionMode() {
 		return establishedFusionMode;
+	}
+
+	@Override
+	public final boolean isCancelled() {
+		return s == SubscriptionHelper.cancelled();
+	}
+
+	@Override
+	public final boolean isStarted() {
+		return s != null;
+	}
+
+	@Override
+	public final boolean isTerminated() {
+		return isCancelled();
 	}
 
 	@Override
@@ -916,9 +940,14 @@ public class TestSubscriber<T> extends DeferredSubscription
 	public void request(long n) {
 		if (SubscriptionHelper.validate(n)) {
 			if (establishedFusionMode != Fuseable.SYNC) {
-				super.request(n);
+				normalRequest(n);
 			}
 		}
+	}
+
+	@Override
+	public final long requestedFromDownstream() {
+		return requested;
 	}
 
 	/**
@@ -930,6 +959,107 @@ public class TestSubscriber<T> extends DeferredSubscription
 	public final TestSubscriber<T> requestedFusionMode(int requestMode) {
 		this.requestedFusionMode = requestMode;
 		return this;
+	}
+
+	@Override
+	public Subscription upstream() {
+		return s;
+	}
+
+	protected final void normalRequest(long n) {
+		Subscription a = s;
+		if (a != null) {
+			a.request(n);
+		} else {
+			SubscriptionHelper.addAndGet(REQUESTED, this, n);
+
+			a = s;
+
+			if (a != null) {
+				long r = REQUESTED.getAndSet(this, 0L);
+
+				if (r != 0L) {
+					a.request(r);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Requests the deferred amount if not zero.
+	 */
+	protected final void requestDeferred() {
+		long r = REQUESTED.getAndSet(this, 0L);
+
+		if (r != 0L) {
+			s.request(r);
+		}
+	}
+	
+	/**
+	 * Atomically sets the single subscription and requests the missed amount from it.
+	 *
+	 * @param s
+	 * @return false if this arbiter is cancelled or there was a subscription already set
+	 */
+	protected final boolean set(Subscription s) {
+		Objects.requireNonNull(s, "s");
+		Subscription a = this.s;
+		if (a == SubscriptionHelper.cancelled()) {
+			s.cancel();
+			return false;
+		}
+		if (a != null) {
+			s.cancel();
+			SubscriptionHelper.reportSubscriptionSet();
+			return false;
+		}
+
+		if (S.compareAndSet(this, null, s)) {
+
+			long r = REQUESTED.getAndSet(this, 0L);
+
+			if (r != 0L) {
+				s.request(r);
+			}
+
+			return true;
+		}
+
+		a = this.s;
+
+		if (a != SubscriptionHelper.cancelled()) {
+			s.cancel();
+			return false;
+		}
+
+		SubscriptionHelper.reportSubscriptionSet();
+		return false;
+	}
+
+	/**
+	 * Sets the Subscription once but does not request anything.
+	 * @param s the Subscription to set
+	 * @return true if successful, false if the current subscription is not null
+	 */
+	protected final boolean setWithoutRequesting(Subscription s) {
+		Objects.requireNonNull(s, "s");
+		for (;;) {
+			Subscription a = this.s;
+			if (a == SubscriptionHelper.cancelled()) {
+				s.cancel();
+				return false;
+			}
+			if (a != null) {
+				s.cancel();
+				SubscriptionHelper.reportSubscriptionSet();
+				return false;
+			}
+
+			if (S.compareAndSet(this, null, s)) {
+				return true;
+			}
+		}
 	}
 
 	/**
@@ -979,10 +1109,6 @@ public class TestSubscriber<T> extends DeferredSubscription
 		}
 	}
 
-//	 ==============================================================================================================
-//	 Non public methods
-//	 ==============================================================================================================
-
 	final String valueAndClass(Object o) {
 		if (o == null) {
 			return null;
@@ -990,6 +1116,15 @@ public class TestSubscriber<T> extends DeferredSubscription
 		return o + " (" + o.getClass()
 		  .getSimpleName() + ")";
 	}
+	static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, Subscription.class, "s");
+
+
+//	 ==============================================================================================================
+//	 Non public methods
+//	 ==============================================================================================================
+	static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requested");
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
 			ReactorProperties.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
