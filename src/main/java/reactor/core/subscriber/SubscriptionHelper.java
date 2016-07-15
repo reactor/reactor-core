@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Reactor;
 import reactor.util.Exceptions;
-import reactor.util.Logger;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor.Logger;
 
 /**
  * A utility to check subscription, handle noop subscriptions, validate request size and
@@ -334,8 +334,8 @@ public abstract class SubscriptionHelper {
 	 * Log or Throw {@link IllegalStateException}
 	 */
 	public static void reportSubscriptionSet() {
-		if (!ReactorProperties.TRACE_CANCEL) {
-			Logger.getLogger(SubscriptionHelper.class)
+		if (!Reactor.TRACE_CANCEL) {
+			Reactor.getLogger(SubscriptionHelper.class)
 			      .trace("Duplicate Subscription has been detected");
 		}
 		else {

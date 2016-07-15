@@ -17,7 +17,7 @@
 /**
  * Utility functions to work with Reactive components, specifically:
  * {@link reactor.util.Logger logging}, {@link reactor.util.Exceptions Exception} handling,
- * or the {@link reactor.util.ReactorProperties environment}
+ * or the {@link reactor.core.Reactor environment}
  * settings.
  *
  * @author Stephane Maldini

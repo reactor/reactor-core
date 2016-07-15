@@ -39,7 +39,7 @@ import reactor.core.Fuseable;
 import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -1127,6 +1127,6 @@ public class TestSubscriber<T>
 			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requested");
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
-			ReactorProperties.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
+			Reactor.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
 
 }

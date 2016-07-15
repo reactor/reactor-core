@@ -22,19 +22,20 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 import reactor.core.Cancellation;
+import reactor.core.Reactor;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
 import reactor.util.function.Tuples;
-import reactor.util.Logger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static reactor.core.Reactor.Logger;
 
 /**
  * @author Stephane Maldini
  */
 public class PopularTagTests extends AbstractReactorTest {
 
-	private static final Logger LOG = Logger.getLogger(PopularTagTests.class);
+	private static final Logger LOG = Reactor.getLogger(PopularTagTests.class);
 
 	private static final List<String> PULP_SAMPLE = Arrays.asList(
 	  "Look, ", "just because I don't be givin' no man a #foot massage don't make it right for #Marsellus #to throw " +

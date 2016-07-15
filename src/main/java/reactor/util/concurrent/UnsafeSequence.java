@@ -17,7 +17,7 @@ package reactor.util.concurrent;
 
 import java.util.function.LongSupplier;
 
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import sun.misc.Unsafe;
 
 class LhsPadding
@@ -50,7 +50,7 @@ final class UnsafeSequence extends RhsPadding implements Sequence, LongSupplier
 
     static
     {
-        UNSAFE = ReactorProperties.getUnsafe();
+        UNSAFE = Reactor.getUnsafe();
         try
         {
             VALUE_OFFSET = UNSAFE.objectFieldOffset(Value.class.getDeclaredField("value"));

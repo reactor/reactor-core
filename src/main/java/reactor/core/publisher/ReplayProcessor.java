@@ -31,7 +31,7 @@ import reactor.core.Receiver;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 
 /**
  * Replays all or the last N items to Subscribers.
@@ -83,17 +83,17 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create() {
-		return create(ReactorProperties.SMALL_BUFFER_SIZE, true);
+		return create(Reactor.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize
@@ -106,7 +106,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize maximum items retained if bounded, or link size if unbounded

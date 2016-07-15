@@ -21,8 +21,10 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Reactor;
 import reactor.core.subscriber.SubscriberBarrier;
-import reactor.util.Logger;
+
+import static reactor.core.Reactor.Logger;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them
@@ -41,7 +43,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 	public FluxLog(Publisher<IN> source, final String category, Level level, int options) {
 		super(source);
 		this.log =
-				category != null && !category.isEmpty() ? Logger.getLogger(category) : Logger.getLogger(FluxLog.class);
+				category != null && !category.isEmpty() ? Reactor.getLogger(category) : Reactor.getLogger(FluxLog.class);
 		this.options = options;
 		this.level = level;
 	}

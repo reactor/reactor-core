@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.Exceptions;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
@@ -121,7 +121,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			int bufferSize,
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
-		if (ReactorProperties.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (Reactor.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			MultiProducer sequencer = new MultiProducer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<>(factory, sequencer);
@@ -218,7 +218,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (ReactorProperties.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (Reactor.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
@@ -293,7 +293,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 * @return a safe or unsafe sequence set to the passed init value
 	 */
 	public static Sequence newSequence(long init) {
-		if (ReactorProperties.hasUnsafe()) {
+		if (Reactor.hasUnsafe()) {
 			return new UnsafeSequence(init);
 		}
 		else {

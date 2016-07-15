@@ -32,7 +32,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.subscriber.SubscriberState;
 import reactor.core.subscriber.SubscriptionHelper;
 import reactor.util.Exceptions;
-import reactor.util.ReactorProperties;
+import reactor.core.Reactor;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.RingBufferReceiver;
 import reactor.util.concurrent.Sequence;
@@ -76,7 +76,7 @@ import reactor.util.concurrent.WaitStrategy;
 public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
@@ -84,24 +84,24 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> create() {
 		return create(TopicProcessor.class.getSimpleName(),
-				ReactorProperties.SMALL_BUFFER_SIZE,
+				Reactor.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new {@link TopicProcessor} using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link TopicProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
 	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create(String name) {
-		return create(name, ReactorProperties.SMALL_BUFFER_SIZE, true);
+		return create(name, Reactor.SMALL_BUFFER_SIZE, true);
 	}
 
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -111,12 +111,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> create(boolean autoCancel) {
 		return create(TopicProcessor.class.getSimpleName(),
-				ReactorProperties.SMALL_BUFFER_SIZE,
+				Reactor.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -125,11 +125,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create(ExecutorService service) {
-		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
+		return create(service, Reactor.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -141,11 +141,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                boolean autoCancel) {
-		return create(service, ReactorProperties.SMALL_BUFFER_SIZE, null, autoCancel);
+		return create(service, Reactor.SMALL_BUFFER_SIZE, null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created and will use the passed name to
 	 * qualify the created threads.
@@ -346,7 +346,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
@@ -355,12 +355,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> share() {
 		return share(TopicProcessor.class.getSimpleName(),
-				ReactorProperties.SMALL_BUFFER_SIZE,
+				Reactor.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -371,12 +371,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> share(boolean autoCancel) {
 		return share(TopicProcessor.class.getSimpleName(),
-				ReactorProperties.SMALL_BUFFER_SIZE,
+				Reactor.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * The passed {@link ExecutorService} will execute as many
@@ -386,11 +386,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> share(ExecutorService service) {
-		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null, true);
+		return share(service, Reactor.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -403,12 +403,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 */
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               boolean autoCancel) {
-		return share(service, ReactorProperties.SMALL_BUFFER_SIZE, null,
+		return share(service, Reactor.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link ReactorProperties#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new TopicProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created
