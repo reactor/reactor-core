@@ -32,7 +32,7 @@ import sun.misc.Unsafe;
  * or internal logger.
  *
  * Original Reference :
- * <a href='https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java'>Netty</a>.
+ * <a href='https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/Reactor.java'>Netty</a>.
  */
 public abstract class Reactor {
 
@@ -163,7 +163,7 @@ public abstract class Reactor {
 		try {
 			return UnsafeSupport.hasUnsafe();
 		} catch (Throwable t) {
-			// Probably failed to initialize PlatformDependent0.
+			// Probably failed to initialize Reactor0.
 			return false;
 		}
 	}
@@ -172,7 +172,7 @@ public abstract class Reactor {
 	/**
 	 * Borrowed from Netty project which itself borrows from JCTools and various other projects.
 	 *
-	 * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/PlatformDependent.java">Netty javadoc</a>
+	 * @see <a href="https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/Reactor.java">Netty javadoc</a>
 	 * operations which requires access to {@code sun.misc.*}.
 	 */
 	private enum UnsafeSupport {
