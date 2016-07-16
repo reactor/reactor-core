@@ -81,8 +81,6 @@ import static reactor.core.Reactor.Logger;
  */
 public abstract class Mono<T> implements Publisher<T> {
 
-	static final Mono<?> NEVER = MonoSource.from(FluxNever.instance());
-
 //	 ==============================================================================================================
 //	 Static Generators
 //	 ==============================================================================================================
@@ -483,9 +481,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a never completing {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> never() {
-		return (Mono<T>)NEVER;
+		return MonoNever.instance();
 	}
 
 	/**

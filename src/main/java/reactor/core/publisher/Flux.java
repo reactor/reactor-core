@@ -508,9 +508,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an empty {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> empty() {
-		return (Flux<T>) EMPTY;
+		return FluxEmpty.instance();
 	}
 
 	/**
@@ -5709,7 +5708,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return IDENTITY_FUNCTION;
 	}
 
-	static final Flux<?>          EMPTY                  = FluxSource.wrap(Mono.empty());
 	@SuppressWarnings("rawtypes")
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuples::of;
 	@SuppressWarnings("rawtypes")
