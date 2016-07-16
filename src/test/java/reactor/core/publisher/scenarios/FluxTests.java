@@ -281,7 +281,7 @@ public class FluxTests extends AbstractReactorTest {
 		Random random = ThreadLocalRandom.current();
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
-		BlockingSink<String> s = d.connectEmitter();
+		BlockingSink<String> s = d.connectSink();
 
 		Flux<Integer> tasks = d.publishOn(asyncGroup)
 		                       .parallel(8)

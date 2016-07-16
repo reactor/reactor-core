@@ -97,7 +97,7 @@ public class CombinationTests {
 			         latch.countDown();
 		         }, 1);
 
-		BlockingSink<Integer> session = processor.connectEmitter();
+		BlockingSink<Integer> session = processor.connectSink();
 		long emission = session.submit(1);
 		if (emission == -1L) {
 			throw new IllegalStateException("Negatime " + emission);
@@ -128,7 +128,7 @@ public class CombinationTests {
 			         .subscribe(d -> latch.countDown(), null, latch::countDown, 1);
 		}
 
-		BlockingSink<Integer> session = processor.connectEmitter();
+		BlockingSink<Integer> session = processor.connectSink();
 
 		for (int i = 0; i < n; i++) {
 			while (!session.emit(i)

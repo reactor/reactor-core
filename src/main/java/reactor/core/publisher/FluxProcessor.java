@@ -92,8 +92,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return a new subscribed {@link BlockingSink}
 	 */
-	public final BlockingSink<IN> connectEmitter() {
-		return connectEmitter(true);
+	public final BlockingSink<IN> connectSink() {
+		return connectSink(true);
 	}
 
 	/**
@@ -103,7 +103,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * @param autostart automatically start?
 	 * @return a new {@link BlockingSink}
 	 */
-	public final BlockingSink<IN> connectEmitter(boolean autostart) {
+	public final BlockingSink<IN> connectSink(boolean autostart) {
 		return BlockingSink.create(this, autostart);
 	}
 
