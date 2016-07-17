@@ -93,6 +93,58 @@ public class TestSubscriber<T>
 	 */
 	public static final Duration DEFAULT_VALUES_TIMEOUT = Duration.ofSeconds(3);
 
+	private static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED =
+			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requested");
+
+	@SuppressWarnings("rawtypes")
+	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
+			RingBuffer.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
+
+	private static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, Subscription.class, "s");
+
+
+	private final List<Throwable> errors = new LinkedList<>();
+
+	private final CountDownLatch cdl = new CountDownLatch(1);
+
+	volatile Subscription s;
+
+	volatile long requested;
+
+	volatile List<T> values = new LinkedList<>();
+
+	/**
+	 * The fusion mode to request.
+	 */
+	private int requestedFusionMode = -1;
+
+	/**
+	 * The established fusion mode.
+	 */
+	private volatile int establishedFusionMode = -1;
+
+	/**
+	 * The fuseable QueueSubscription in case a fusion mode was specified.
+	 */
+	private Fuseable.QueueSubscription<T> qs;
+
+	private int subscriptionCount = 0;
+
+	private int completionCount = 0;
+
+	private volatile long valueCount = 0L;
+
+	private volatile long nextValueAssertedCount = 0L;
+
+	private Duration valuesTimeout = DEFAULT_VALUES_TIMEOUT;
+
+	private boolean valuesStorage = true;
+
+//	 ==============================================================================================================
+//	 Static methods
+//	 ==============================================================================================================
+
 	/**
 	 * Blocking method that waits until {@code conditionSupplier} returns true, or if it
 	 * does not before the specified timeout, throws an {@link AssertionError} with the
@@ -104,8 +156,7 @@ public class TestSubscriber<T>
 	 *
 	 * @throws AssertionError
 	 */
-	public static void await(Duration timeout,
-			Supplier<String> errorMessageSupplier,
+	public static void await(Duration timeout, Supplier<String> errorMessageSupplier,
 			BooleanSupplier conditionSupplier) {
 
 		Objects.requireNonNull(errorMessageSupplier);
@@ -122,8 +173,7 @@ public class TestSubscriber<T>
 				Thread.sleep(100);
 			}
 			catch (InterruptedException e) {
-				Thread.currentThread()
-				      .interrupt();
+				Thread.currentThread().interrupt();
 				throw new RuntimeException(e);
 			}
 		}
@@ -206,35 +256,15 @@ public class TestSubscriber<T>
 		publisher.subscribe(subscriber);
 		return subscriber;
 	}
-	final         List<Throwable> errors = new LinkedList<>();
-	private final CountDownLatch  cdl    = new CountDownLatch(1);
-	volatile Subscription s;
-	volatile long requested;
-	volatile      List<T>         values = new LinkedList<>();
-	/**
-	 * The fusion mode to request.
-	 */
-	int requestedFusionMode = -1;
-	/**
-	 * The established fusion mode.
-	 */
-	volatile int establishedFusionMode = -1;
-	/**
-	 * The fuseable QueueSubscription in case a fusion mode was specified.
-	 */
-	Fuseable.QueueSubscription<T> qs;
-	private int subscriptionCount = 0;
-	//	 ==============================================================================================================
-//	 Static methods
+
 //	 ==============================================================================================================
-	private          int      completionCount        = 0;
-	private volatile long     valueCount             = 0L;
-	private volatile long     nextValueAssertedCount = 0L;
-	private          Duration valuesTimeout          = DEFAULT_VALUES_TIMEOUT;
-	private boolean valuesStorage = true;
+//	 Private constructors
+//	 ==============================================================================================================
+
 	private TestSubscriber() {
 		 this(Long.MAX_VALUE);
 	}
+
 	private TestSubscriber(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
@@ -242,9 +272,50 @@ public class TestSubscriber<T>
 		REQUESTED.lazySet(this, n);
 	}
 
+//	 ==============================================================================================================
+//	 Configuration
+//	 ==============================================================================================================
+
+
+	/**
+	 * Enable or disabled the values storage. It is enabled by default, and can be disable
+	 * in order to be able to perform performance benchmarks or tests with a huge amount
+	 * values.
+	 * @param enabled enable value storage?
+	 * @return this
+	 */
+	public final TestSubscriber<T> configureValuesStorage(boolean enabled) {
+		this.valuesStorage = enabled;
+		return this;
+	}
+
+	/**
+	 * Configure the timeout in seconds for waiting next values to be received (3 seconds
+	 * by default).
+	 * @param timeout the new default value timeout duration
+	 * @return this
+	 */
+	public final TestSubscriber<T> configureValuesTimeout(Duration timeout) {
+		this.valuesTimeout = timeout;
+		return this;
+	}
+
+	/**
+	 * Returns the established fusion mode or -1 if it was not enabled
+	 *
+	 * @return the fusion mode, see Fuseable constants
+	 */
+	public final int establishedFusionMode() {
+		return establishedFusionMode;
+	}
+
+//	 ==============================================================================================================
+//	 Assertions
+//	 ==============================================================================================================
+
 	/**
 	 * Assert a complete successfully signal has been received.
-     * @return this
+	 * @return this
 	 */
 	public final TestSubscriber<T> assertComplete() {
 		int c = completionCount;
@@ -256,13 +327,6 @@ public class TestSubscriber<T>
 		}
 		return this;
 	}
-
-
-
-
-//	 ==============================================================================================================
-//	 Private constructors
-//	 ==============================================================================================================
 
 	/**
 	 * Assert the specified values have been received. Values storage should be enabled to
@@ -301,7 +365,7 @@ public class TestSubscriber<T>
 
 	/**
 	 * Assert an error signal has been received.
-     * @return this
+	 * @return this
 	 */
 	public final TestSubscriber<T> assertError() {
 		int s = errors.size();
@@ -314,14 +378,10 @@ public class TestSubscriber<T>
 		return this;
 	}
 
-//	 ==============================================================================================================
-//	 Configuration
-//	 ==============================================================================================================
-
 	/**
 	 * Assert an error signal has been received.
 	 * @param clazz The class of the exception contained in the error signal
-     * @return this
+	 * @return this
 	 */
 	public final TestSubscriber<T> assertError(Class<? extends Throwable> clazz) {
 		 int s = errors.size();
@@ -350,10 +410,8 @@ public class TestSubscriber<T>
 			if (!Objects.equals(message,
 					errors.get(0)
 					      .getMessage())) {
-				assertionError("Error class incompatible: expected = \"" + message + "\", actual = \"" + errors.get(
-						0)
-				                                                                                               .getMessage() + "\"",
-						null);
+				assertionError("Error class incompatible: expected = \"" + message +
+						"\", actual = \"" + errors.get(0).getMessage() + "\"", null);
 			}
 		}
 		if (s > 1) {
@@ -363,15 +421,11 @@ public class TestSubscriber<T>
 		return this;
 	}
 
-//	 ==============================================================================================================
-//	 Assertions
-//	 ==============================================================================================================
-
 	/**
 	 * Assert an error signal has been received.
 	 * @param expectation A method that can verify the exception contained in the error signal
 	 * and throw an exception (like an {@link AssertionError}) if the exception is not valid.
-     * @return this
+	 * @return this
 	 */
 	public final TestSubscriber<T> assertErrorWith(Consumer<? super Throwable> expectation) {
 		int s = errors.size();
@@ -772,7 +826,7 @@ public class TestSubscriber<T>
 	}
 
 //	 ==============================================================================================================
-//	 Utility methods
+//	 Overrides
 //	 ==============================================================================================================
 
 	@Override
@@ -784,42 +838,6 @@ public class TestSubscriber<T>
 				a.cancel();
 			}
 		}
-	}
-
-//	 ==============================================================================================================
-//	 Subscriber overrides
-//	 ==============================================================================================================
-
-	/**
-	 * Enable or disabled the values storage. It is enabled by default, and can be disable
-	 * in order to be able to perform performance benchmarks or tests with a huge amount
-	 * values.
-	 * @param enabled enable value storage?
-	 * @return this
-	 */
-	public final TestSubscriber<T> configureValuesStorage(boolean enabled) {
-		this.valuesStorage = enabled;
-		return this;
-	}
-
-	/**
-	 * Configure the timeout in seconds for waiting next values to be received (3 seconds
-	 * by default).
-	 * @param timeout the new default value timeout duration
-	 * @return this
-	 */
-	public final TestSubscriber<T> configureValuesTimeout(Duration timeout) {
-		this.valuesTimeout = timeout;
-		return this;
-	}
-
-	/**
-	 * Returns the established fusion mode or -1 if it was not enabled
-	 *
-	 * @return the fusion mode, see Fuseable constants
-	 */
-	public final int establishedFusionMode() {
-		return establishedFusionMode;
 	}
 
 	@Override
@@ -966,6 +984,11 @@ public class TestSubscriber<T>
 		return s;
 	}
 
+
+//	 ==============================================================================================================
+//	 Non public methods
+//	 ==============================================================================================================
+
 	protected final void normalRequest(long n) {
 		Subscription a = s;
 		if (a != null) {
@@ -995,7 +1018,7 @@ public class TestSubscriber<T>
 			s.request(r);
 		}
 	}
-	
+
 	/**
 	 * Atomically sets the single subscription and requests the missed amount from it.
 	 *
@@ -1071,7 +1094,7 @@ public class TestSubscriber<T>
 	 *
 	 * @throws AssertionError as expected
 	 */
-	final void assertionError(String message, Throwable cause) {
+	protected final void assertionError(String message, Throwable cause) {
 		StringBuilder b = new StringBuilder();
 
 		if (cdl.getCount() != 0) {
@@ -1094,7 +1117,7 @@ public class TestSubscriber<T>
 		throw e;
 	}
 
-	String fusionModeName(int mode) {
+	protected final String fusionModeName(int mode) {
 		switch (mode) {
 			case -1:
 				return "Disabled";
@@ -1109,24 +1132,11 @@ public class TestSubscriber<T>
 		}
 	}
 
-	final String valueAndClass(Object o) {
+	protected final String valueAndClass(Object o) {
 		if (o == null) {
 			return null;
 		}
-		return o + " (" + o.getClass()
-		  .getSimpleName() + ")";
+		return o + " (" + o.getClass().getSimpleName() + ")";
 	}
-	static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, Subscription.class, "s");
-
-
-//	 ==============================================================================================================
-//	 Non public methods
-//	 ==============================================================================================================
-	static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requested");
-	@SuppressWarnings("rawtypes")
-	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
-			RingBuffer.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
 
 }
