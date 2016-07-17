@@ -32,9 +32,8 @@ import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferReceiver;
+import reactor.util.concurrent.RingBufferReader;
 import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.Slot;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -590,7 +589,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				autoCancel, null);
 	}
 
-	final RingBufferReceiver barrier;
+	final RingBufferReader barrier;
 
 	final Sequence minimum;
 
@@ -622,7 +621,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}, waitStrategy);
 
 		this.minimum = RingBuffer.newSequence(-1);
-		this.barrier = ringBuffer.newBarrier();
+		this.barrier = ringBuffer.newReader();
 	}
 
 	@Override
@@ -692,18 +691,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		//ringBuffer.markAsTerminated();
 	}
 
-	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
-			Sequence start){
-		Flux<E> bufferIterable = fromIterable(RingBuffer.nonBlockingBoundedQueue(ringBuffer, start.getAsLong()));
-		if (error != null) {
-			if (t != null) {
-				t.addSuppressed(error);
-				return concat(bufferIterable, Flux.error(t));
-			}
-			return concat(bufferIterable, Flux.error(error));
-		}
-		return bufferIterable;
-	}
+
 
 	@Override
 	public long getPending() {
@@ -714,7 +702,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	protected void requestTask(Subscription s) {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
-		new Thread(RingBuffer.createRequestTask(s, () -> {
+		new Thread(EventLoopProcessor.createRequestTask(s, () -> {
 					             if (!alive()) {
 						             if(cancelled){
 							             throw Exceptions.CancelException.INSTANCE;
@@ -814,7 +802,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 					return;
 				}
 
-				if (!RingBuffer
+				if (!EventLoopProcessor
 						.waitRequestOrTerminalEvent(pendingRequest, processor.barrier, running, sequence, waiter)) {
 					if(!running.get()){
 						return;

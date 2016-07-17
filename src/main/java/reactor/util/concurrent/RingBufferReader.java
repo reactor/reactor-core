@@ -23,13 +23,13 @@ import reactor.util.Exceptions;
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
  * using the given WaitStrategy.
  */
-public final class RingBufferReceiver implements Runnable, LongSupplier {
+public final class RingBufferReader implements Runnable, LongSupplier {
     private final WaitStrategy waitStrategy;
     private volatile boolean alerted = false;
     private final Sequence           cursorSequence;
     private final RingBufferProducer sequenceProducer;
 
-    RingBufferReceiver(final RingBufferProducer sequenceProducer,
+    RingBufferReader(final RingBufferProducer sequenceProducer,
                            final WaitStrategy waitStrategy,
                            final Sequence cursorSequence) {
         this.sequenceProducer = sequenceProducer;

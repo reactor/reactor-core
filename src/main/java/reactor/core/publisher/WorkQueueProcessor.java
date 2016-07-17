@@ -31,12 +31,10 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferReceiver;
+import reactor.util.concurrent.RingBufferReader;
 import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.Slot;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -513,7 +511,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer> RETRY_REF =
-			Reactor
+			RingBuffer
 			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
 
 	final WaitStrategy writeWait;
@@ -610,7 +608,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	protected void requestTask(Subscription s) {
-		new Thread(RingBuffer.createRequestTask(s,
+		new Thread(EventLoopProcessor.createRequestTask(s,
 				() -> {
 					if (!alive()) {
 						if (cancelled) {
@@ -674,7 +672,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		private final Sequence pendingRequest = RingBuffer.newSequence(0);
 
-		private final RingBufferReceiver barrier;
+		private final RingBufferReader barrier;
 
 		private final WorkQueueProcessor<T> processor;
 
@@ -701,7 +699,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			this.processor = processor;
 			this.subscriber = subscriber;
 
-			this.barrier = processor.ringBuffer.newBarrier();
+			this.barrier = processor.ringBuffer.newReader();
 		}
 
 		public Sequence getSequence() {
@@ -741,7 +739,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				long nextSequence = sequence.getAsLong();
 				Slot<T> event = null;
 
-				if (!RingBuffer.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
+				if (!EventLoopProcessor.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
 						waiter)) {
 					if(!running.get()){
 						return;

@@ -30,11 +30,9 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.Slot;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
@@ -148,7 +146,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	final boolean autoCancel;
 	Subscription upstreamSubscription;
 
-	private volatile RingBuffer<Slot<T>> emitBuffer;
+	private volatile RingBuffer<EventLoopProcessor.Slot<T>> emitBuffer;
 
 	private volatile boolean done;
 
@@ -165,14 +163,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			Reactor.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			RingBuffer.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
 					"error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			Reactor.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			RingBuffer.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
 					"subscribers");
 	@SuppressWarnings("unused")
 	private volatile int running;
@@ -388,17 +386,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return outstanding;
 	}
 
-	RingBuffer<Slot<T>> getMainQueue() {
-		RingBuffer<Slot<T>> q = emitBuffer;
+	RingBuffer<EventLoopProcessor.Slot<T>> getMainQueue() {
+		RingBuffer<EventLoopProcessor.Slot<T>> q = emitBuffer;
 		if (q == null) {
-			q = RingBuffer.createSingleProducer(bufferSize);
+			q = EventLoopProcessor.createSingleProducer(bufferSize);
 			emitBuffer = q;
 		}
 		return q;
 	}
 
 	final long buffer(T value) {
-		RingBuffer<Slot<T>> q = getMainQueue();
+		RingBuffer<EventLoopProcessor.Slot<T>> q = getMainQueue();
 
 		long seq = q.next();
 
@@ -415,7 +413,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	final void drainLoop() {
 		int missed = 1;
-		RingBuffer<Slot<T>> q = null;
+		RingBuffer<EventLoopProcessor.Slot<T>> q = null;
 		for (; ; ) {
 			EmitterSubscriber<?>[] inner = subscribers;
 			if (inner == CANCELLED) {
@@ -669,7 +667,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
-				Reactor.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
+				RingBuffer.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
 						"pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
@@ -712,7 +710,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		void start() {
 			if (REQUESTED.compareAndSet(this, MASK_NOT_SUBSCRIBED, 0)) {
-				RingBuffer<Slot<T>> ringBuffer = parent.emitBuffer;
+				RingBuffer<EventLoopProcessor.Slot<T>> ringBuffer = parent.emitBuffer;
 				if (ringBuffer != null) {
 					startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence() + 1L));
 				}

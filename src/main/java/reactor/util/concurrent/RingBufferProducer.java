@@ -114,14 +114,14 @@ abstract class RingBufferProducer {
 	}
 
 	/**
-	 * Create a new {@link RingBufferReceiver} to be used by an EventProcessor to track which messages
+	 * Create a new {@link RingBufferReader} to be used by an EventProcessor to track which messages
 	 * are available to be read from the ring buffer
 	 *
-	 * @see RingBufferReceiver
+	 * @see RingBufferReader
 	 * @return A sequence barrier that will track the specified sequences.
 	 */
-	public RingBufferReceiver newBarrier() {
-		return new RingBufferReceiver(this, waitStrategy, cursor);
+	public RingBufferReader newBarrier() {
+		return new RingBufferReader(this, waitStrategy, cursor);
 	}
 
 	/**

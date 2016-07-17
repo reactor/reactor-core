@@ -16,20 +16,19 @@
 
 package reactor.util.concurrent;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
+import sun.misc.Unsafe;
+
 
 /**
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
@@ -38,63 +37,15 @@ import reactor.core.Reactor;
  */
 public abstract class RingBuffer<E> implements LongSupplier {
 
-	@SuppressWarnings("rawtypes")
-	public static final Supplier EMITTED = Slot::new;
 	/**
 	 * Set to -1 as sequence starting point
 	 */
 	public static final long     INITIAL_CURSOR_VALUE = -1L;
 
 	/**
-	 *
-	 * Create a
-	 * {@link Runnable} event loop that will keep monitoring a {@link LongSupplier} and compare it to a {@link RingBuffer}
-	 *
-	 * @param upstream the {@link Subscription} to request/cancel on
-	 * @param stopCondition {@link Runnable} evaluated in the spin loop that may throw
-	 * @param postWaitCallback a {@link Consumer} notified with the latest sequence read
-	 * @param readCount a {@link LongSupplier} a sequence cursor to wait on
-	 * @param waitStrategy a {@link WaitStrategy} to trade off cpu cycle for latency
-	 * @param errorSubscriber an error subscriber if request/cancel fails
-	 * @param prefetch the target prefetch size
-	 *
-	 * @return a {@link Runnable} loop to execute to start the requesting loop
-	 */
-	public static Runnable createRequestTask(Subscription upstream,
-			Runnable stopCondition,
-			Consumer<Long> postWaitCallback,
-			LongSupplier readCount,
-			WaitStrategy waitStrategy,
-			Subscriber<?> errorSubscriber,
-			int prefetch) {
-		return new RequestTask(upstream,
-				stopCondition,
-				postWaitCallback,
-				readCount,
-				waitStrategy,
-				errorSubscriber,
-				prefetch);
-	}
-
-	/**
-	 * Create a new multiple producer RingBuffer using the default wait strategy   {@link WaitStrategy#busySpin()}.
-     * <p>See {@code MultiProducer}.
-	 *
-	 * @param <E> the element type
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 * 
-	 * @return the new RingBuffer instance
-	 * @throws IllegalArgumentException if <tt>bufferSize</tt> is less than 1 or not a power of 2
-	 */
-	@SuppressWarnings("unchecked")
-	public static <E> RingBuffer<Slot<E>> createMultiProducer(int bufferSize) {
-		return createMultiProducer(EMITTED, bufferSize, WaitStrategy.blocking());
-	}
-
-	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
      * <p>See {@code MultiProducer}.
-	 * 
+	 *
 	 * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -121,7 +72,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			int bufferSize,
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
-		if (Reactor.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			MultiProducer sequencer = new MultiProducer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<>(factory, sequencer);
@@ -132,47 +83,6 @@ public abstract class RingBuffer<E> implements LongSupplier {
 
 			return new NotFunRingBuffer<>(factory, sequencer);
 		}
-	}
-
-	/**
-	 * Create a {@link Queue} view over the given {@link RingBuffer} of {@link Slot}.
-	 * The read cursor will be added to the gating sequences and will be incremented on polling.
-	 * Offer will return false if the {@link RingBuffer#tryNext()} does not succeed.
-	 *
-	 * @param buffer the {@link RingBuffer} repository
-	 * @param startSequence the starting sequence to track in the {@link Queue}
-	 * @param <T> the {@link Slot} data content type
-	 *
-	 * @return a non blocking {@link Queue} view of the given {@link RingBuffer}
-	 */
-	public static <T> Queue<T> nonBlockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
-		return new NonBlockingSPSCQueue<>(buffer, startSequence);
-	}
-	/**
-	 * Create a {@link Queue} view over the given {@link RingBuffer} of {@link Slot}.
-	 * The read cursor will be added to the gating sequences and will be incremented on polling.
-	 * Offer will spin on {@link RingBuffer#next()} if the ringbuffer is overrun.
-	 *
-	 * @param buffer the {@link RingBuffer} repository
-	 * @param startSequence the starting sequence to track in the {@link Queue}
-	 * @param <T> the {@link Slot} data content type
-	 *
-	 * @return a non blocking {@link Queue} view of the given {@link RingBuffer}
-	 */
-	public static <T> Queue<T> blockingBoundedQueue(RingBuffer<Slot<T>> buffer, long startSequence){
-		return new BlockingSPSCQueue<>(buffer, startSequence);
-	}
-
-	/**
-	 * Create a new single producer RingBuffer using the default wait strategy  {@link WaitStrategy#busySpin()}.
-     * <p>See {@code MultiProducer}.
-	 * @param <E> the element type
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @return the new RingBuffer instance
-	 */
-	@SuppressWarnings("unchecked")
-	public static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize) {
-		return createSingleProducer(EMITTED, bufferSize, WaitStrategy.busySpin());
 	}
 
 	/**
@@ -218,7 +128,7 @@ public abstract class RingBuffer<E> implements LongSupplier {
 			Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (Reactor.hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
@@ -264,6 +174,29 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	/**
+	 * Test if exception is alert
+	 * @param t exception checked
+	 * @return true if this is an alert signal
+	 */
+	public static boolean isAlert(Throwable t){
+		return t == AlertException.INSTANCE;
+	}
+
+
+
+	/**
+	 * Return the {@code sun.misc.Unsafe} instance if found on the classpath and can be used for acclerated
+	 * direct memory access.
+	 *
+	 * @param <T> the Unsafe type
+	 * @return the Unsafe instance
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> T getUnsafe() {
+		return (T) UnsafeSupport.getUnsafe();
+	}
+
+	/**
 	 * Calculate the log base 2 of the supplied integer, essentially reports the location of the highest bit.
 	 *
 	 * @param i Value to calculate log2 for.
@@ -278,13 +211,17 @@ public abstract class RingBuffer<E> implements LongSupplier {
 		return r;
 	}
 
-	/**
-	 * Test if exception is alert
-	 * @param t exception checked
-	 * @return true if this is an alert signal
-	 */
-	public static boolean isAlert(Throwable t){
-		return t == AlertException.INSTANCE;
+	@SuppressWarnings("unchecked")
+	public static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(
+			Class<U> tclass, String fieldName) {
+		if (hasUnsafe()) {
+			try {
+				return UnsafeSupport.newAtomicReferenceFieldUpdater(tclass, fieldName);
+			} catch (Throwable ignore) {
+				// ignore
+			}
+		}
+		return AtomicReferenceFieldUpdater.newUpdater(tclass, (Class<W>)Object.class, fieldName);
 	}
 
 	/**
@@ -293,27 +230,13 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 * @return a safe or unsafe sequence set to the passed init value
 	 */
 	public static Sequence newSequence(long init) {
-		if (Reactor.hasUnsafe()) {
+		if (hasUnsafe()) {
 			return new UnsafeSequence(init);
 		}
 		else {
 			return new AtomicSequence(init);
 		}
     }
-
-	/**
-	 * Signal a new {@link Slot} value to a {@link RingBuffer} typed with them.
-	 *
-	 * @param value the data to store
-	 * @param ringBuffer the target {@link RingBuffer} of {@link Slot}
-	 * @param <E> the {@link Slot} reified type
-	 */
-	public static <E> void onNext(E value, RingBuffer<Slot<E>> ringBuffer) {
-		final long seqId = ringBuffer.next();
-		final Slot<E> signal = ringBuffer.get(seqId);
-		signal.value = value;
-		ringBuffer.publish(seqId);
-	}
 
 	/**
 	 * Throw a signal singleton exception that can be checked against
@@ -324,59 +247,16 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	/**
-	 * Spin CPU until the request {@link LongSupplier} is populated at least once by a strict positive value.
-	 * To relieve the spin loop, the read sequence itself will be used against so it will wake up only when a signal
-	 * is emitted upstream or other stopping condition including terminal signals thrown by the
-	 * {@link RingBufferReceiver} waiting barrier.
-	 *
-	 * @param pendingRequest the {@link LongSupplier} request to observe
-	 * @param barrier {@link RingBufferReceiver} to wait on
-	 * @param isRunning {@link AtomicBoolean} calling loop running state
-	 * @param nextSequence {@link LongSupplier} ring buffer read cursor
-	 * @param waiter an optional extra spin observer for the wait strategy in {@link RingBufferReceiver}
-	 *
-	 * @return true if a request has been received, false in any other case.
-	 */
-	public static boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
-			RingBufferReceiver barrier,
-			AtomicBoolean isRunning,
-			LongSupplier nextSequence,
-			Runnable waiter) {
-		try {
-			long waitedSequence;
-			while (pendingRequest.getAsLong() <= 0L) {
-				//pause until first request
-				waitedSequence = nextSequence.getAsLong() + 1;
-				if (waiter != null) {
-					waiter.run();
-					barrier.waitFor(waitedSequence, waiter);
-				}
-				else {
-					barrier.waitFor(waitedSequence);
-				}
-				if (!isRunning.get()) {
-					throw Exceptions.CancelException.INSTANCE;
-				}
-				LockSupport.parkNanos(1L);
-			}
-		}
-		catch (Exceptions.CancelException | AlertException ae) {
-			return false;
-		}
-		catch (InterruptedException ie) {
-			Thread.currentThread()
-			      .interrupt();
-		}
-
-		return true;
-	}
-
-	/**
 	 * Add the specified gating sequence to this instance of the Disruptor.  It will safely and atomically be added to
 	 * the list of gating sequences and not RESET to the current ringbuffer cursor.
 	 * @param gatingSequence The sequences to add.
 	 */
 	abstract public void addGatingSequence(Sequence gatingSequence);
+
+	/**
+	 * @return the fixed buffer size
+	 */
+	abstract public int bufferSize();
 
 	/**
 	 * <p>Get the event for a given sequence in the RingBuffer.</p>
@@ -386,8 +266,8 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 * RingBuffer#publish(long)}.</p>
 	 *
 	 * <p>Secondly use this call when consuming data from the ring buffer.  After calling {@link
-	 * RingBufferReceiver#waitFor(long)} call this method with any value greater than that your current consumer sequence
-	 * and less than or equal to the value returned from the {@link RingBufferReceiver#waitFor(long)} method.</p>
+	 * RingBufferReader#waitFor(long)} call this method with any value greater than that your current consumer sequence
+	 * and less than or equal to the value returned from the {@link RingBufferReader#waitFor(long)} method.</p>
 	 * @param sequence for the event
 	 * @return the event for the given sequence
 	 */
@@ -438,11 +318,6 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	abstract public Sequence getSequence();
 
 	/**
-	 * @return the fixed buffer size
-	 */
-	abstract public int bufferSize();
-
-	/**
 	 *
 	 * @return the current list of read cursors
 	 */
@@ -450,28 +325,15 @@ public abstract class RingBuffer<E> implements LongSupplier {
 		return getSequencer().getGatingSequences();
 	}
 
-	abstract RingBufferProducer getSequencer();/*
-
-	*//*
-	 * Mark the remaining capacity of this buffer to 0 to prevent later next.
-	 *//*
-	public final void markAsTerminated(){
-		addGatingSequence(newSequence(getCursor()));
-		try{
-			tryNext((int)remainingCapacity());
-		}
-		catch (Exceptions.AlertException | Exceptions.InsufficientCapacityException ice){
-			//ignore;
-		}
-	}*/
-
 	/**
-	 * Create a new {@link RingBufferReceiver} to be used by an EventProcessor to track which messages are available to be read
+	 * Create a new {@link RingBufferReader} to track
+	 * which
+	 * messages are available to be read
 	 * from the ring buffer given a list of sequences to track.
 	 * @return A sequence barrier that will track the ringbuffer.
-	 * @see RingBufferReceiver
+	 * @see RingBufferReader
 	 */
-	abstract public RingBufferReceiver newBarrier();
+	abstract public RingBufferReader newReader();
 
 	/**
 	 * Increment and return the next sequence for the ring buffer.  Calls of this method should ensure that they always
@@ -577,6 +439,21 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 */
 	abstract public long tryNext(int n) throws Exceptions.InsufficientCapacityException;
 
+	abstract RingBufferProducer getSequencer();/*
+
+	*//*
+	 * Mark the remaining capacity of this buffer to 0 to prevent later next.
+	 *//*
+	public final void markAsTerminated(){
+		addGatingSequence(newSequence(getCursor()));
+		try{
+			tryNext((int)remainingCapacity());
+		}
+		catch (Exceptions.AlertException | Exceptions.InsufficientCapacityException ice){
+			//ignore;
+		}
+	}*/
+
 	/**
 	 * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
 	 * <p>
@@ -604,274 +481,158 @@ public abstract class RingBuffer<E> implements LongSupplier {
 		}
 
 	}
-}
 
-abstract class SPSCQueue<T> implements Queue<T> {
-
-	final Sequence pollCursor;
-	final RingBuffer<Slot<T>> buffer;
-
-
-	SPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
-		this.buffer = buffer;
-		this.pollCursor = RingBuffer.newSequence(startingSequence);
-		buffer.addGatingSequence(pollCursor);
-		this.pollCursor.set(startingSequence);
+	/**
+	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
+	 * direct memory access.
+	 * @return true if unsafe is present
+	 */
+	static boolean hasUnsafe() {
+		return HAS_UNSAFE;
 	}
 
-	@Override
-	final public void clear() {
-		pollCursor.set(buffer.getCursor());
-	}
+	static boolean hasUnsafe0() {
 
-	@Override
-	final public T element() {
-		T e = peek();
-		if (e == null) {
-			throw new NoSuchElementException();
-		}
-		return e;
-	}
-
-	@Override
-	final public boolean isEmpty() {
-		return buffer.getCursor() == pollCursor.getAsLong();
-	}
-
-	@Override
-	public Iterator<T> iterator() {
-		return new QueueSupplier.QueueIterator<>(this);
-	}
-
-	@Override
-	final public T peek() {
-		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.getAsLong() + 1L;
-
-		if (cachedSequence <= current) {
-			return buffer.get(cachedSequence).value;
-		}
-		return null;
-	}
-
-	@Override
-	final public T poll() {
-		long current = buffer.getCursor();
-		long cachedSequence = pollCursor.getAsLong() + 1L;
-
-		if (cachedSequence <= current) {
-			T v = buffer.get(cachedSequence).value;
-			if (v != null) {
-				pollCursor.set(cachedSequence);
-			}
-			return v;
-		}
-		return null;
-	}
-
-	@Override
-	final public T remove() {
-		T e = poll();
-		if (e == null) {
-			throw new NoSuchElementException();
-		}
-		return e;
-	}
-
-	@Override
-	public final boolean add(T o) {
-		long seq = buffer.next();
-
-		buffer.get(seq).value = o;
-		buffer.publish(seq);
-		return true;
-	}
-
-	@Override
-	public final boolean addAll(Collection<? extends T> c) {
-		if (c.isEmpty()) {
+		if (isAndroid()) {
 			return false;
 		}
-		for (T t : c) {
-			add(t);
+
+		try {
+			return UnsafeSupport.hasUnsafe();
+		} catch (Throwable t) {
+			// Probably failed to initialize Reactor0.
+			return false;
 		}
-		return true;
 	}
 
-	@Override
-	final public boolean contains(Object o) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	final public boolean containsAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	final public boolean remove(Object o) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	final public boolean removeAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	final public boolean retainAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public final int size() {
-		return (int) (buffer.getCursor() - pollCursor.getAsLong());
-	}
-	@Override
-	@SuppressWarnings("unchecked")
-	final public T[] toArray() {
-		return toArray((T[]) new Object[buffer.bufferSize()]);
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	final public <E> E[] toArray(E[] a) {
-
-		final long cursor = buffer.getCursor();
-		long s = pollCursor.getAsLong() + 1L;
-		final E[] array;
-		final int n = (int) (cursor - s);
-
-		if (n == 0) {
-			return a;
+	static boolean isAndroid() {
+		boolean android;
+		try {
+			Class.forName("android.app.Application", false, UnsafeSupport.getSystemClassLoader());
+			android = true;
+		} catch (Exception e) {
+			// Failed to load the class uniquely available in Android.
+			android = false;
 		}
 
-		if (a.length < n) {
-			array = (E[]) new Object[n];
-		}
-		else {
-			array = a;
-		}
-
-		int i = 0;
-		while (s < cursor) {
-			array[i++] = (E) buffer.get(cursor).value;
-			s++;
-		}
-		return array;
+		return android;
 	}
 
-	@Override
-	public String toString() {
-		return "SPSCQueue{" +
-				"pollCursor=" + pollCursor +
-				", parent=" + buffer.toString() +
-				'}';
-	}
+	private static final boolean HAS_UNSAFE = hasUnsafe0();
 }
 
-
-/**
- * An async request client for ring buffer impls
- *
- * @author Stephane Maldini
- */
-final class RequestTask implements Runnable {
-
-	final WaitStrategy waitStrategy;
-
-	final LongSupplier readCount;
-
-	final Subscription upstream;
-
-	final Runnable spinObserver;
-
-	final Consumer<Long> postWaitCallback;
-
-	final Subscriber<?> errorSubscriber;
-
-	final int prefetch;
-
-	public RequestTask(Subscription upstream,
-			Runnable stopCondition,
-			Consumer<Long> postWaitCallback,
-			LongSupplier readCount,
-			WaitStrategy waitStrategy,
-			Subscriber<?> errorSubscriber,
-			int prefetch) {
-		this.waitStrategy = waitStrategy;
-		this.readCount = readCount;
-		this.postWaitCallback = postWaitCallback;
-		this.errorSubscriber = errorSubscriber;
-		this.upstream = upstream;
-		this.spinObserver = stopCondition;
-		this.prefetch = prefetch;
-	}
-
-	@Override
-	public void run() {
-		final long bufferSize = prefetch;
-		final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
-		long cursor = -1;
+//
+abstract class UnsafeSupport {
+	static {
+		ByteBuffer direct = ByteBuffer.allocateDirect(1);
+		Field addressField;
 		try {
-			spinObserver.run();
-			upstream.request(bufferSize - 1);
-
-			for (; ; ) {
-				cursor = waitStrategy.waitFor(cursor + limit, readCount, spinObserver);
-				if (postWaitCallback != null) {
-					postWaitCallback.accept(cursor);
+			addressField = Buffer.class.getDeclaredField("address");
+			addressField.setAccessible(true);
+			if (addressField.getLong(ByteBuffer.allocate(1)) != 0) {
+				// A heap buffer must have 0 address.
+				addressField = null;
+			} else {
+				if (addressField.getLong(direct) == 0) {
+					// A direct buffer must have non-zero address.
+					addressField = null;
 				}
-				//spinObserver.accept(null);
-				upstream.request(limit);
 			}
+		} catch (Throwable t) {
+			// Failed to access the address field.
+			addressField = null;
 		}
-		catch (RingBuffer.AlertException e) {
-			//completed
-		}
-		catch (Exceptions.CancelException ce) {
-			upstream.cancel();
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread()
-			      .interrupt();
-		}
-		catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			errorSubscriber.onError(t);
-		}
-	}
-}
+		Unsafe unsafe;
+		if (addressField != null) {
+			try {
+				Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+				unsafeField.setAccessible(true);
+				unsafe = (Unsafe) unsafeField.get(null);
 
-final class NonBlockingSPSCQueue<T> extends SPSCQueue<T>{
-	NonBlockingSPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
-		super(buffer, startingSequence);
-	}
-
-	@Override
-	public final boolean offer(T o) {
-		try {
-			long seq = buffer.tryNext();
-
-			buffer.get(seq).value = o;
-			buffer.publish(seq);
-			return true;
+				// Ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK.
+				// https://github.com/netty/netty/issues/1061
+				// http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
+				try {
+					if (unsafe != null) {
+						unsafe.getClass().getDeclaredMethod(
+								"copyMemory", Object.class, long.class, Object.class, long.class, long.class);
+					}
+				} catch (NoSuchMethodError | NoSuchMethodException t) {
+					throw t;
+				}
+			} catch (Throwable cause) {
+				// Unsafe.copyMemory(Object, long, Object, long, long) unavailable.
+				unsafe = null;
+			}
+		} else {
+			// If we cannot access the address of a direct buffer, there's no point of using unsafe.
+			// Let's just pretend unsafe is unavailable for overall simplicity.
+			unsafe = null;
 		}
-		catch (Exceptions.InsufficientCapacityException ice) {
-			return false;
-		}
-	}
-}
-final class BlockingSPSCQueue<T> extends SPSCQueue<T>{
-	BlockingSPSCQueue(RingBuffer<Slot<T>> buffer, long startingSequence) {
-		super(buffer, startingSequence);
+
+		UNSAFE = unsafe;
 	}
 
-	@Override
-	public final boolean offer(T o) {
-			long seq = buffer.next();
-			buffer.get(seq).value = o;
-			buffer.publish(seq);
-			return true;
+	static ClassLoader getSystemClassLoader() {
+		if (System.getSecurityManager() == null) {
+			return ClassLoader.getSystemClassLoader();
+		} else {
+			return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
+		}
 	}
+
+	public static Unsafe getUnsafe(){
+		return UNSAFE;
+	}
+
+	static boolean hasUnsafe() {
+		return UNSAFE != null;
+	}
+
+	static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(
+			Class<U> tclass, String fieldName) throws Exception {
+		return new UnsafeAtomicReferenceFieldUpdater<>(tclass, fieldName);
+	}
+
+	UnsafeSupport() {
+	}
+
+	static final class UnsafeAtomicReferenceFieldUpdater<U, M> extends AtomicReferenceFieldUpdater<U, M> {
+		private final long offset;
+
+		UnsafeAtomicReferenceFieldUpdater(Class<U> tClass, String fieldName) throws NoSuchFieldException {
+			Field field = tClass.getDeclaredField(fieldName);
+			if (!Modifier.isVolatile(field.getModifiers())) {
+				throw new IllegalArgumentException("Must be volatile");
+			}
+			offset = UNSAFE.objectFieldOffset(field);
+		}
+
+		@Override
+		public boolean compareAndSet(U obj, M expect, M update) {
+			return UNSAFE.compareAndSwapObject(obj, offset, expect, update);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public M get(U obj) {
+			return (M) UNSAFE.getObjectVolatile(obj, offset);
+		}
+
+		@Override
+		public void lazySet(U obj, M newValue) {
+			UNSAFE.putOrderedObject(obj, offset, newValue);
+		}
+
+		@Override
+		public void set(U obj, M newValue) {
+			UNSAFE.putObjectVolatile(obj, offset, newValue);
+		}
+
+		@Override
+		public boolean weakCompareAndSet(U obj, M expect, M update) {
+			return UNSAFE.compareAndSwapObject(obj, offset, expect, update);
+		}
+	}
+	private static final Unsafe UNSAFE;
 }

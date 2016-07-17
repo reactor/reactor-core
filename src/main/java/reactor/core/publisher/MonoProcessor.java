@@ -32,7 +32,7 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
+import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -580,7 +580,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
     @SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
-		    Reactor.newAtomicReferenceFieldUpdater(MonoProcessor.class,
+		    RingBuffer.newAtomicReferenceFieldUpdater(MonoProcessor.class,
 				    "processor");
 	final static int       STATE_CANCELLED         = -1;
 	final static int       STATE_READY             = 0;

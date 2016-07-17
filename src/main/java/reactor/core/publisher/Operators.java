@@ -333,15 +333,12 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Log or Throw {@link IllegalStateException}
+	 * Log reportedSubscriptions
 	 */
 	public static void reportSubscriptionSet() {
-		if (!Reactor.TRACE_CANCEL) {
-			Reactor.getLogger(Operators.class)
-			      .trace("Duplicate Subscription has been detected");
-		}
-		else {
-			throw Exceptions.duplicateOnSubscribeException();
+		if (log.isDebugEnabled()) {
+			log.debug("Duplicate Subscription has been detected",
+					Exceptions.duplicateOnSubscribeException());
 		}
 	}
 
@@ -1340,4 +1337,6 @@ public abstract class Operators {
 			ONCE.lazySet(this, 1);
 		}
 	}
+
+	final static Reactor.Logger log = Reactor.getLogger(Operators.class);
 }

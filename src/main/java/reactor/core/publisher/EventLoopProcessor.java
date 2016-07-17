@@ -15,27 +15,32 @@
  */
 package reactor.core.publisher;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
+import reactor.core.Reactor;
 import reactor.core.Receiver;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
+import reactor.util.concurrent.RingBufferReader;
 import reactor.util.concurrent.Sequence;
-import reactor.util.concurrent.Slot;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -45,6 +50,140 @@ import reactor.util.concurrent.WaitStrategy;
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Receiver, Runnable, MultiProducer {
+
+	/**
+	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
+	 */
+	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
+			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
+
+	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
+			Sequence start){
+		Flux<E> bufferIterable = generate(start::getAsLong, (seq, sink) -> {
+			long s = ++seq;
+			if(s > ringBuffer.getCursor()){
+				sink.complete();
+			}
+			else {
+				E d = ringBuffer.get(s).value;
+				if (d != null) {
+					sink.next(d);
+				}
+			}
+			return s;
+		});
+		if (error != null) {
+			if (t != null) {
+				t.addSuppressed(error);
+				return concat(bufferIterable, Flux.error(t));
+			}
+			return concat(bufferIterable, Flux.error(error));
+		}
+		return bufferIterable;
+	}
+
+	/**
+	 * Create a {@link Runnable} event loop that will keep monitoring a {@link
+	 * LongSupplier} and compare it to a {@link RingBuffer}
+	 *
+	 * @param upstream the {@link Subscription} to request/cancel on
+	 * @param stopCondition {@link Runnable} evaluated in the spin loop that may throw
+	 * @param postWaitCallback a {@link Consumer} notified with the latest sequence read
+	 * @param readCount a {@link LongSupplier} a sequence cursor to wait on
+	 * @param waitStrategy a {@link WaitStrategy} to trade off cpu cycle for latency
+	 * @param errorSubscriber an error subscriber if request/cancel fails
+	 * @param prefetch the target prefetch size
+	 *
+	 * @return a {@link Runnable} loop to execute to start the requesting loop
+	 */
+	static Runnable createRequestTask(Subscription upstream,
+			Runnable stopCondition,
+			Consumer<Long> postWaitCallback,
+			LongSupplier readCount,
+			WaitStrategy waitStrategy,
+			Subscriber<?> errorSubscriber,
+			int prefetch) {
+		return new RequestTask(upstream,
+				stopCondition,
+				postWaitCallback,
+				readCount,
+				waitStrategy,
+				errorSubscriber,
+				prefetch);
+	}
+
+	/**
+	 * Create a new single producer RingBuffer using the default wait strategy  {@link
+	 * WaitStrategy#busySpin()}. <p>See {@code MultiProducer}.
+	 *
+	 * @param <E> the element type
+	 * @param bufferSize number of elements to create within the ring buffer.
+	 *
+	 * @return the new RingBuffer instance
+	 */
+	@SuppressWarnings("unchecked")
+	static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize) {
+		return RingBuffer.createSingleProducer(EMITTED,
+				bufferSize,
+				WaitStrategy.busySpin());
+	}
+
+	/**
+	 * Spin CPU until the request {@link LongSupplier} is populated at least once by a
+	 * strict positive value. To relieve the spin loop, the read sequence itself will be
+	 * used against so it will wake up only when a signal is emitted upstream or other
+	 * stopping condition including terminal signals thrown by the {@link
+	 * RingBufferReader} waiting barrier.
+	 *
+	 * @param pendingRequest the {@link LongSupplier} request to observe
+	 * @param barrier {@link RingBufferReader} to wait on
+	 * @param isRunning {@link AtomicBoolean} calling loop running state
+	 * @param nextSequence {@link LongSupplier} ring buffer read cursor
+	 * @param waiter an optional extra spin observer for the wait strategy in {@link
+	 * RingBufferReader}
+	 *
+	 * @return true if a request has been received, false in any other case.
+	 */
+	static boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
+			RingBufferReader barrier,
+			AtomicBoolean isRunning,
+			LongSupplier nextSequence,
+			Runnable waiter) {
+		try {
+			long waitedSequence;
+			while (pendingRequest.getAsLong() <= 0L) {
+				//pause until first request
+				waitedSequence = nextSequence.getAsLong() + 1;
+				if (waiter != null) {
+					waiter.run();
+					barrier.waitFor(waitedSequence, waiter);
+				}
+				else {
+					barrier.waitFor(waitedSequence);
+				}
+				if (!isRunning.get()) {
+					throw Exceptions.CancelException.INSTANCE;
+				}
+				LockSupport.parkNanos(1L);
+			}
+		}
+		catch (InterruptedException ie) {
+			Thread.currentThread()
+			      .interrupt();
+		}
+
+		catch (Exception e) {
+			if (RingBuffer.isAlert(e) || e instanceof Exceptions.CancelException) {
+				return false;
+			}
+			throw e;
+		}
+
+		return true;
+	}
+
+	@SuppressWarnings("rawtypes")
+	static final Supplier EMITTED = Slot::new;
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
@@ -103,7 +242,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @return a wrapped {@link Sequence}
 	 */
 	static Sequence wrap(long init, Object delegate) {
-		if (Reactor.TRACEABLE_RING_BUFFER_PROCESSOR) {
+		if (TRACEABLE_RING_BUFFER_PROCESSOR) {
 			return wrap(RingBuffer.newSequence(init), delegate);
 		}
 		else {
@@ -131,7 +270,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	final RingBuffer<Slot<IN>> ringBuffer;
 	final WaitStrategy readWait = WaitStrategy.liteBlocking();
-	
+
 	Subscription upstreamSubscription;
 	volatile        boolean         cancelled;
 	volatile        int             terminated;
@@ -151,7 +290,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 		}
-		
+
 		this.autoCancel = autoCancel;
 
 		contextClassLoader = new EventLoopContext();
@@ -304,13 +443,15 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
-
 	@Override
 	final public void onNext(IN o) {
 		if (o == null) {
 			throw Exceptions.argumentIsNullException();
 		}
-		RingBuffer.onNext(o, ringBuffer);
+		final long seqId = ringBuffer.next();
+		final Slot<IN> signal = ringBuffer.get(seqId);
+		signal.value = o;
+		ringBuffer.publish(seqId);
 	}
 
 	@Override
@@ -367,6 +508,80 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	}
 
+
+	/**
+	 * An async request client for ring buffer impls
+	 *
+	 * @author Stephane Maldini
+	 */
+	static final class RequestTask implements Runnable {
+
+		final WaitStrategy waitStrategy;
+
+		final LongSupplier readCount;
+
+		final Subscription upstream;
+
+		final Runnable spinObserver;
+
+		final Consumer<Long> postWaitCallback;
+
+		final Subscriber<?> errorSubscriber;
+
+		final int prefetch;
+
+		public RequestTask(Subscription upstream,
+				Runnable stopCondition,
+				Consumer<Long> postWaitCallback,
+				LongSupplier readCount,
+				WaitStrategy waitStrategy,
+				Subscriber<?> errorSubscriber,
+				int prefetch) {
+			this.waitStrategy = waitStrategy;
+			this.readCount = readCount;
+			this.postWaitCallback = postWaitCallback;
+			this.errorSubscriber = errorSubscriber;
+			this.upstream = upstream;
+			this.spinObserver = stopCondition;
+			this.prefetch = prefetch;
+		}
+
+		@Override
+		public void run() {
+			final long bufferSize = prefetch;
+			final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
+			long cursor = -1;
+			try {
+				spinObserver.run();
+				upstream.request(bufferSize - 1);
+
+				for (; ; ) {
+					cursor = waitStrategy.waitFor(cursor + limit, readCount, spinObserver);
+					if (postWaitCallback != null) {
+						postWaitCallback.accept(cursor);
+					}
+					//spinObserver.accept(null);
+					upstream.request(limit);
+				}
+			}
+			catch (Exceptions.CancelException ce) {
+				upstream.cancel();
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread()
+				      .interrupt();
+			}
+			catch (Throwable t) {
+				if(RingBuffer.isAlert(t)){
+					return;
+				}
+				Exceptions.throwIfFatal(t);
+				errorSubscriber.onError(t);
+			}
+		}
+	}
+
+
 	protected void requestTask(final Subscription s) {
 		//implementation might run a specific request task for the given subscription
 	}
@@ -418,40 +633,51 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
     static final AtomicIntegerFieldUpdater<EventLoopProcessor> SUBSCRIBER_COUNT =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "subscriberCount");
 	@SuppressWarnings("rawtypes")
-    final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED       =
+	final static AtomicIntegerFieldUpdater<EventLoopProcessor> TERMINATED =
 			AtomicIntegerFieldUpdater.newUpdater(EventLoopProcessor.class, "terminated");
 
+	/**
+	 * A simple reusable data container.
+	 *
+	 * @param <T> the value type
+	 */
+	public static final class Slot<T> implements Serializable {
+
+		private static final long serialVersionUID = 5172014386416785095L;
+
+		public T value;
+	}
+
+
+	final static class EventLoopFactory
+			implements ThreadFactory, Supplier<String> {
+		/** */
+
+		static final AtomicInteger COUNT = new AtomicInteger();
+
+		private static final long serialVersionUID = -3202326942393105842L;
+		final String  name;
+		final boolean daemon;
+
+		EventLoopFactory(String name, boolean daemon) {
+			this.name = name;
+			this.daemon = daemon;
+		}
+
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread t = new Thread(r, name + "-" + COUNT.incrementAndGet());
+			t.setDaemon(daemon);
+			return t;
+		}
+
+		@Override
+		public String get() {
+			return name;
+		}
+	}
 }
 
-
-
-final class EventLoopFactory
-		implements ThreadFactory, Supplier<String> {
-	/** */
-
-	static final AtomicInteger COUNT = new AtomicInteger();
-
-	private static final long serialVersionUID = -3202326942393105842L;
-	final String  name;
-	final boolean daemon;
-
-	EventLoopFactory(String name, boolean daemon) {
-		this.name = name;
-		this.daemon = daemon;
-	}
-
-	@Override
-	public Thread newThread(Runnable r) {
-		Thread t = new Thread(r, name + "-" + COUNT.incrementAndGet());
-		t.setDaemon(daemon);
-		return t;
-	}
-
-	@Override
-	public String get() {
-		return name;
-	}
-}
 
 final class Wrapped<E> implements Sequence, Producer {
 

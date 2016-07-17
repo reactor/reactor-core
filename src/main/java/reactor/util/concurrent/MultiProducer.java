@@ -18,7 +18,6 @@ package reactor.util.concurrent;
 import java.util.concurrent.locks.LockSupport;
 
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
 import sun.misc.Unsafe;
 
 /**
@@ -32,7 +31,7 @@ import sun.misc.Unsafe;
  */
 final class MultiProducer extends RingBufferProducer
 {
-    private static final Unsafe UNSAFE = Reactor.getUnsafe();
+    private static final Unsafe UNSAFE = RingBuffer.getUnsafe();
     private static final long   BASE   = UNSAFE.arrayBaseOffset(int[].class);
     private static final long   SCALE  = UNSAFE.arrayIndexScale(int[].class);
 

@@ -187,7 +187,7 @@ public abstract class WaitStrategy
      * @throws InterruptedException if the thread is interrupted.
      */
     public abstract long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
-            throws RingBuffer.AlertException, InterruptedException;
+            throws InterruptedException;
 
 
 
@@ -212,7 +212,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
             if ((availableSequence = cursorSequence.getAsLong()) < sequence)
@@ -246,7 +246,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
 
@@ -265,7 +265,7 @@ public abstract class WaitStrategy
         public long waitFor(final long sequence,
                 LongSupplier cursor,
                 final Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException {
+                throws InterruptedException {
             long availableSequence;
 
             while ((availableSequence = cursor.getAsLong()) < sequence) {
@@ -302,7 +302,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
             if ((availableSequence = cursorSequence.getAsLong()) < sequence)
@@ -365,7 +365,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(long sequence, LongSupplier cursor, Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
             long startTime = 0;
@@ -442,7 +442,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
             int counter = retries;
@@ -479,7 +479,7 @@ public abstract class WaitStrategy
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws RingBuffer.AlertException, InterruptedException
+                throws InterruptedException
         {
             long availableSequence;
             int counter = SPIN_TRIES;

@@ -17,8 +17,6 @@ package reactor.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Reactor;
-
 /**
  * Static Helpers to decorate an error with an associated data
  *
@@ -26,6 +24,18 @@ import reactor.core.Reactor;
  * @author Stephane Maldini
  */
 public abstract class Exceptions {
+
+	/**
+	 *
+	 */
+	public static final boolean CANCEL_STACKTRACE =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
+
+	/**
+	 *
+	 */
+	public static final boolean INSUFFICIENT_CAPACITY_STACKTRACE =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.nocapacity", "false"));
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
@@ -113,7 +123,7 @@ public abstract class Exceptions {
 	 * @return a {@link CancelException}
 	 */
 	public static CancelException failWithCancel() {
-		return Reactor.TRACE_CANCEL ? new CancelException() : CancelException.INSTANCE;
+		return CANCEL_STACKTRACE ? new CancelException() : CancelException.INSTANCE;
 	}
 
 	/**
@@ -121,7 +131,7 @@ public abstract class Exceptions {
 	 * @return an {@link InsufficientCapacityException}
 	 */
 	public static InsufficientCapacityException failWithOverflow() {
-		return Reactor.TRACE_NOCAPACITY ? new InsufficientCapacityException() :
+		return INSUFFICIENT_CAPACITY_STACKTRACE ? new InsufficientCapacityException() :
 				InsufficientCapacityException.INSTANCE;
 	}
 
@@ -278,7 +288,7 @@ public abstract class Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return Reactor.TRACE_CANCEL ? super.fillInStackTrace() : this;
+			return CANCEL_STACKTRACE ? super.fillInStackTrace() : this;
 		}
 
 	}
@@ -300,7 +310,7 @@ public abstract class Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return Reactor.TRACE_NOCAPACITY ? super.fillInStackTrace() : this;
+			return INSUFFICIENT_CAPACITY_STACKTRACE ? super.fillInStackTrace() : this;
 		}
 
 	}

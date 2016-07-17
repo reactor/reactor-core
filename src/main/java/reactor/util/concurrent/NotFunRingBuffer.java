@@ -140,7 +140,7 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public RingBufferReceiver newBarrier()
+    public RingBufferReader newReader()
     {
         return sequenceProducer.newBarrier();
     }
