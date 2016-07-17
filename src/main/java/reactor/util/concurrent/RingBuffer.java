@@ -211,19 +211,6 @@ public abstract class RingBuffer<E> implements LongSupplier {
 		return r;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(
-			Class<U> tclass, String fieldName) {
-		if (hasUnsafe()) {
-			try {
-				return UnsafeSupport.newAtomicReferenceFieldUpdater(tclass, fieldName);
-			} catch (Throwable ignore) {
-				// ignore
-			}
-		}
-		return AtomicReferenceFieldUpdater.newUpdater(tclass, (Class<W>)Object.class, fieldName);
-	}
-
 	/**
 	 * @param init the initial value
 	 *

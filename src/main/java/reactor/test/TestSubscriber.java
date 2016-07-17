@@ -37,9 +37,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.publisher.Operators;
 import reactor.core.Trackable;
-import reactor.util.concurrent.RingBuffer;
+import reactor.core.publisher.Operators;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -98,7 +97,8 @@ public class TestSubscriber<T>
 
 	@SuppressWarnings("rawtypes")
 	private static final AtomicReferenceFieldUpdater<TestSubscriber, List> NEXT_VALUES =
-			RingBuffer.newAtomicReferenceFieldUpdater(TestSubscriber.class, "values");
+			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, List.class,
+					"values");
 
 	private static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, Subscription.class, "s");

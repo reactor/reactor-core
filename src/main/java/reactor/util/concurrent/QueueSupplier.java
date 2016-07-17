@@ -60,6 +60,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(int batchSize) {
 		if (batchSize == Integer.MAX_VALUE) {
 			return CLQ_SUPPLIER;

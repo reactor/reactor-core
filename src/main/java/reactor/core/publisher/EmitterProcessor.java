@@ -163,14 +163,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
-			RingBuffer.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+					Throwable.class,
 					"error");
 
 	volatile EmitterSubscriber<?>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
-			RingBuffer.newAtomicReferenceFieldUpdater(EmitterProcessor.class,
+			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+					EmitterSubscriber[].class,
 					"subscribers");
 	@SuppressWarnings("unused")
 	private volatile int running;
@@ -667,7 +669,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		@SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
-				RingBuffer.newAtomicReferenceFieldUpdater(EmitterSubscriber.class,
+				AtomicReferenceFieldUpdater.newUpdater(EmitterSubscriber.class,
+						Sequence.class,
 						"pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {

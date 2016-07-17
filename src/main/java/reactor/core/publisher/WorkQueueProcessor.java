@@ -511,8 +511,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer> RETRY_REF =
-			RingBuffer
-			.newAtomicReferenceFieldUpdater(WorkQueueProcessor.class, "retryBuffer");
+			AtomicReferenceFieldUpdater.newUpdater(WorkQueueProcessor.class,
+					RingBuffer.class, "retryBuffer");
 
 	final WaitStrategy writeWait;
 

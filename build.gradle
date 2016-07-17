@@ -186,8 +186,10 @@ task testNG(type: Test) {
 
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
-  test {
-    jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
+  if (!JavaVersion.current().isJava9Compatible()) {
+	test {
+	  jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
+	}
   }
 
 
