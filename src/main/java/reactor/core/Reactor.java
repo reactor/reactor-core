@@ -19,22 +19,15 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 
 /**
- * Expose Common Reactor runtime properties and methods and internal logger.
+ * Expose common Reactor runtime properties, methods and internal logger.
  */
 public abstract class Reactor {
 
-	/**
-	 *
-	 */
-	public static final long     DEFAULT_TIMEOUT                 =
+	public static final long DEFAULT_TIMEOUT =
 			Long.parseLong(System.getProperty("reactor.await.defaultTimeout", "30000"));
 
-	/**
-	 *
-	 */
 	public static boolean TRACE_OPERATOR_STACKTRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-					"false"));
+			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace", "false"));
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
@@ -114,6 +107,9 @@ public abstract class Reactor {
 		TRACE_OPERATOR_STACKTRACE = false;
 	}
 
+	/**
+	 * Logger interface designed for internal Reactor usage.
+	 */
 	public interface Logger {
 
 		int SUBSCRIBE     = 0b010000000;
