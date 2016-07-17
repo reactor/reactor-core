@@ -109,7 +109,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doOnSubscribe(Subscription subscription) {
 			if ((options & Logger.ON_SUBSCRIBE) == Logger.ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalType.onSubscribe, this.subscription, this);
+				log(SignalType.ON_SUBSCRIBE, this.subscription, this);
 			}
 			subscriber.onSubscribe(this);
 		}
@@ -117,7 +117,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doNext(IN in) {
 			if ((options & Logger.ON_NEXT) == Logger.ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalType.onNext, in, this);
+				log(SignalType.ON_NEXT, in, this);
 			}
 			subscriber.onNext(in);
 		}
@@ -126,7 +126,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		protected void doError(Throwable throwable) {
 			if ((options & Logger.ON_ERROR) == Logger.ON_ERROR && log.isErrorEnabled()) {
 				log.error(concatId() + " " + LOG_TEMPLATE,
-						SignalType.onError,
+						SignalType.ON_ERROR,
 						throwable,
 						this);
 				log.error(concatId(), throwable);
@@ -142,7 +142,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doComplete() {
 			if ((options & Logger.ON_COMPLETE) == Logger.ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalType.onComplete, "", this);
+				log(SignalType.ON_COMPLETE, "", this);
 			}
 			subscriber.onComplete();
 		}
@@ -150,7 +150,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doRequest(long n) {
 			if ((options & Logger.REQUEST) == Logger.REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalType.request, Long.MAX_VALUE == n ? "unbounded" : n, this);
+				log(SignalType.REQUEST, Long.MAX_VALUE == n ? "unbounded" : n, this);
 			}
 			super.doRequest(n);
 		}
@@ -158,7 +158,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 		@Override
 		protected void doCancel() {
 			if ((options & Logger.CANCEL) == Logger.CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
-				log(SignalType.cancel, "", this);
+				log(SignalType.CANCEL, "", this);
 			}
 			super.doCancel();
 		}

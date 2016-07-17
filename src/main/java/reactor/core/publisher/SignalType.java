@@ -20,5 +20,5 @@ package reactor.core.publisher;
  * Reactive Stream notification type
  */
 public enum SignalType {
-	request, onSubscribe, onNext, onError, onComplete, cancel, graph
+	REQUEST, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE, CANCEL, GRAPH
 }

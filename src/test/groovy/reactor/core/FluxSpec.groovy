@@ -1992,8 +1992,8 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onNext, value=Two}', 'Signal{type=onNext, value=One}',
-					'Signal{type=onComplete}', 'complete']
+			res == ['Signal{type=ON_NEXT, value=Three}', 'Signal{type=ON_NEXT, value=Two}', 'Signal{type=ON_NEXT, value=One}',
+					'Signal{type=ON_COMPLETE}', 'complete']
 
 		when:
 			'A source flux emits next signals followed by complete'
@@ -2012,7 +2012,7 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onError, throwable=java.lang.Exception}',
+			res == ['Signal{type=ON_NEXT, value=Three}', 'Signal{type=ON_ERROR, throwable=java.lang.Exception}',
 					'complete']
 	}
 

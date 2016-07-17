@@ -36,7 +36,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	private static final long serialVersionUID = 8430680363917273272L;
 
 	private static final Signal<Void> ON_COMPLETE =
-			new Signal<>(SignalType.onComplete, null, null, null);
+			new Signal<>(SignalType.ON_COMPLETE, null, null, null);
 
 	private final SignalType type;
 	private final Throwable  throwable;
@@ -53,7 +53,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
-		return new Signal<>(SignalType.onNext, t, null, null);
+		return new Signal<>(SignalType.ON_NEXT, t, null, null);
 	}
 
 	/**
@@ -64,7 +64,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
-		return new Signal<>(SignalType.onError, null, e, null);
+		return new Signal<>(SignalType.ON_ERROR, null, e, null);
 	}
 
 	/**
@@ -86,7 +86,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> subscribe(Subscription subscription) {
-		return new Signal<>(SignalType.onSubscribe, null, null, subscription);
+		return new Signal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
 	private Signal(SignalType type, T value, Throwable e, Subscription subscription) {
@@ -157,7 +157,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onError} event
 	 */
 	public boolean isOnError() {
-		return getType() == SignalType.onError;
+		return getType() == SignalType.ON_ERROR;
 	}
 
 	/**
@@ -166,7 +166,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnComplete() {
-		return getType() == SignalType.onComplete;
+		return getType() == SignalType.ON_COMPLETE;
 	}
 
 	/**
@@ -175,7 +175,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
 	 */
 	public boolean isOnSubscribe() {
-		return getType() == SignalType.onSubscribe;
+		return getType() == SignalType.ON_SUBSCRIBE;
 	}
 
 	/**
@@ -184,7 +184,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal represents an {@code onNext} event
 	 */
 	public boolean isOnNext() {
-		return getType() == SignalType.onNext;
+		return getType() == SignalType.ON_NEXT;
 	}
 
 	@Override
