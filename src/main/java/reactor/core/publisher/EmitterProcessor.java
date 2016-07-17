@@ -31,6 +31,7 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.Slot;
@@ -55,7 +56,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		implements MultiProducer, Receiver {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -66,18 +67,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param autoCancel automatically cancel
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(Reactor.SMALL_BUFFER_SIZE, autoCancel);
+		return create(QueueSupplier.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -88,7 +89,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -100,7 +101,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
@@ -112,7 +113,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Reactor#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
 	 * Strategy and auto-cancel. 
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals

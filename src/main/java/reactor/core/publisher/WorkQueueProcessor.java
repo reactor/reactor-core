@@ -32,6 +32,7 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.util.Exceptions;
 import reactor.core.Reactor;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.RingBufferReceiver;
 import reactor.util.concurrent.Sequence;
@@ -66,7 +67,7 @@ import reactor.util.concurrent.WaitStrategy;
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitely created.
 	 * @param <E> Type of processed signals
@@ -74,12 +75,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create() {
 		return create(WorkQueueProcessor.class.getSimpleName(),
-				Reactor.SMALL_BUFFER_SIZE,
+				QueueSupplier.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
 	 * ThreadExecutorPool will be implicitely created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
@@ -89,12 +90,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create(boolean autoCancel) {
 		return create(WorkQueueProcessor.class.getSimpleName(),
-				Reactor.SMALL_BUFFER_SIZE,
+				QueueSupplier.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -103,11 +104,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service) {
-		return create(service, Reactor.SMALL_BUFFER_SIZE, null, true);
+		return create(service, QueueSupplier.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -119,7 +120,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			boolean autoCancel) {
-		return create(service, Reactor.SMALL_BUFFER_SIZE, null,
+		return create(service, QueueSupplier.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 
@@ -133,7 +134,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create(String name) {
-		return create(name, Reactor.SMALL_BUFFER_SIZE);
+		return create(name, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -279,7 +280,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitely created.
@@ -288,12 +289,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share() {
 		return share(WorkQueueProcessor.class.getSimpleName(),
-				Reactor.SMALL_BUFFER_SIZE,
+				QueueSupplier.SMALL_BUFFER_SIZE,
 				null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
@@ -304,12 +305,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share(boolean autoCancel) {
 		return share(WorkQueueProcessor.class.getSimpleName(),
-				Reactor.SMALL_BUFFER_SIZE,
+				QueueSupplier.SMALL_BUFFER_SIZE,
 				null, autoCancel);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -318,11 +319,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service) {
-		return share(service, Reactor.SMALL_BUFFER_SIZE, null, true);
+		return share(service, QueueSupplier.SMALL_BUFFER_SIZE, null, true);
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Reactor#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -335,7 +336,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 */
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			boolean autoCancel) {
-		return share(service, Reactor.SMALL_BUFFER_SIZE, null,
+		return share(service, QueueSupplier.SMALL_BUFFER_SIZE, null,
 				autoCancel);
 	}
 

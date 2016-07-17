@@ -35,7 +35,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -61,7 +60,7 @@ public abstract class ParallelFlux<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
 		return from(source,
 				Runtime.getRuntime()
-				       .availableProcessors(), Reactor.SMALL_BUFFER_SIZE,
+				       .availableProcessors(), QueueSupplier.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -78,7 +77,7 @@ public abstract class ParallelFlux<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
 			int parallelism) {
 		return from(source,
-				parallelism, Reactor.SMALL_BUFFER_SIZE,
+				parallelism, QueueSupplier.SMALL_BUFFER_SIZE,
 				QueueSupplier.small());
 	}
 
@@ -460,7 +459,7 @@ public abstract class ParallelFlux<T> {
 	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper,
 				false,
-				Integer.MAX_VALUE, Reactor.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -479,7 +478,7 @@ public abstract class ParallelFlux<T> {
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
-				Integer.MAX_VALUE, Reactor.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -502,7 +501,7 @@ public abstract class ParallelFlux<T> {
 			int maxConcurrency) {
 		return flatMap(mapper,
 				delayError,
-				maxConcurrency, Reactor.SMALL_BUFFER_SIZE);
+				maxConcurrency, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -637,7 +636,7 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler) {
-		return runOn(scheduler, Reactor.SMALL_BUFFER_SIZE);
+		return runOn(scheduler, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -686,7 +685,7 @@ public abstract class ParallelFlux<T> {
 	 * @see ParallelFlux#sequential(int)
 	 */
 	public final Flux<T> sequential() {
-		return sequential(Reactor.SMALL_BUFFER_SIZE);
+		return sequential(QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**

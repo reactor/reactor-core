@@ -19,14 +19,28 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import reactor.core.Reactor;
-
 /**
  * Provide a queue adapted for a given capacity
  *
  * @param <T> the queue element type
  */
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
+
+	/**
+	 * A larger default of available slots in a given container, e.g. mutualized processors, intensive pipelines or
+	 * larger subscribers number
+	 */
+	public static final  int     MEDIUM_BUFFER_SIZE              = 8192;
+	/**
+	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
+	 * subscribers
+	 */
+	public static final  int XS_BUFFER_SIZE    = 32;
+	/**
+	 * A small default of available slots in a given container, compromise between intensive pipelines, small
+	 * subscribers numbers and memory use.
+	 */
+	public static final  int SMALL_BUFFER_SIZE = 256;
 
 	/**
 	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
@@ -47,42 +61,19 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	public static <T> Supplier<Queue<T>> get(int batchSize) {
-		return get(batchSize, false, false);
-	}
-
-	/**
-	 * @param batchSize the bounded or unbounded (int.max) queue size
-	 * @param waiting if true {@link Queue#offer(Object)} will be spinning if under capacity
-	 * @param multiproducer if true {@link Queue#offer(Object)} will support concurrent calls
-	 * @param <T> the reified {@link Queue} generic type
-	 *
-	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> get(long batchSize, boolean waiting, boolean multiproducer) {
 		if (batchSize == Integer.MAX_VALUE) {
 			return CLQ_SUPPLIER;
 		}
-		if (batchSize == Reactor.XS_BUFFER_SIZE) {
-			if(waiting) {
-				return WAITING_XSRB_SUPPLIER;
-			}
-			else{
-				return XSRB_SUPPLIER;
-			}
+		if (batchSize == XS_BUFFER_SIZE) {
+			return XS_SUPPLIER;
 		}
-		if (batchSize == Reactor.SMALL_BUFFER_SIZE) {
-			if(waiting) {
-				return WAITING_SMALLRB_SUPPLIER;
-			}
-			else{
-				return SMALLRB_SUPPLIER;
-			}
+		if (batchSize == SMALL_BUFFER_SIZE) {
+			return SMALL_SUPPLIER;
 		}
-		if (batchSize == 1 && !waiting) {
+		if (batchSize == 1) {
 			return ONE_SUPPLIER;
 		}
-		return new QueueSupplier<>(batchSize, waiting, multiproducer);
+		return new QueueSupplier<>(batchSize);
 	}
 
 	/**
@@ -111,23 +102,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> small() {
-		return SMALLRB_SUPPLIER;
-	}
-
-	/**
-	 * @param waiting if true {@link Queue#offer(Object)} will be spinning if under capacity
-	 * @param <T> the reified {@link Queue} generic type
-	 *
-	 * @return a bounded {@link Queue} {@link Supplier}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> small(boolean waiting) {
-		if (!waiting) {
-			return SMALLRB_SUPPLIER;
-		}
-		else {
-			return WAITING_SMALLRB_SUPPLIER;
-		}
+		return SMALL_SUPPLIER;
 	}
 
 	/**
@@ -157,52 +132,22 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> xs() {
-		return XSRB_SUPPLIER;
-	}
-
-	/**
-	 *
-	 * @param waiting if true {@link Queue#offer(Object)} will be spinning if under capacity
-	 * @param <T> the reified {@link Queue} generic type
-	 * @return a bounded {@link Queue} {@link Supplier}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> xs(boolean waiting) {
-		if (!waiting) {
-			return XSRB_SUPPLIER;
-		}
-		else {
-			return WAITING_XSRB_SUPPLIER;
-		}
+		return XS_SUPPLIER;
 	}
 	final long    batchSize;
-	final boolean waiting;
-	final boolean multiproducer;
 
-	QueueSupplier(long batchSize, boolean waiting, boolean multiproducer) {
+	QueueSupplier(long batchSize) {
 		this.batchSize = batchSize;
-		this.waiting = waiting;
-		this.multiproducer = multiproducer;
 	}
 
 	@Override
 	public Queue<T> get() {
 
 		if(batchSize > 10_000_000){
-			return new SpscLinkedArrayQueue<>(Reactor.SMALL_BUFFER_SIZE);
+			return new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
-			if(waiting){
-				throw new IllegalArgumentException("Cannot create blocking queues of " +
-						"size one");
-			}
 			return new OneQueue<>();
-		}
-		else if(waiting) {
-			return RingBuffer.blockingBoundedQueue(
-					multiproducer ? RingBuffer.createSingleProducer((int) batchSize) :
-							RingBuffer .createMultiProducer((int) batchSize),
-					-1L);
 		}
 		else{
 			return new SpscArrayQueue<>((int)batchSize);
@@ -350,15 +295,11 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 	}
 	@SuppressWarnings("rawtypes")
-    static final Supplier CLQ_SUPPLIER          = new QueueSupplier<>(Long.MAX_VALUE, false, false);
+    static final Supplier    CLQ_SUPPLIER      = new QueueSupplier<>(Long.MAX_VALUE);
     @SuppressWarnings("rawtypes")
-	static final Supplier ONE_SUPPLIER          = new QueueSupplier<>(1, false, true);
-    @SuppressWarnings("rawtypes")
-	static final Supplier XSRB_SUPPLIER         = new QueueSupplier<>(Reactor.XS_BUFFER_SIZE, false, false);
-    @SuppressWarnings("rawtypes")
-	static final Supplier SMALLRB_SUPPLIER      = new QueueSupplier<>(Reactor.SMALL_BUFFER_SIZE, false, false);
-    @SuppressWarnings("rawtypes")
-	static final Supplier WAITING_XSRB_SUPPLIER = new QueueSupplier<>(Reactor.XS_BUFFER_SIZE, true, false);
-    @SuppressWarnings("rawtypes")
-	static final Supplier WAITING_SMALLRB_SUPPLIER = new QueueSupplier<>(Reactor.SMALL_BUFFER_SIZE, true, false);
+	static final Supplier    ONE_SUPPLIER      = new QueueSupplier<>(1);
+	@SuppressWarnings("rawtypes")
+	static final Supplier    XS_SUPPLIER       = new QueueSupplier<>(XS_BUFFER_SIZE);
+	@SuppressWarnings("rawtypes")
+	static final Supplier    SMALL_SUPPLIER    = new QueueSupplier<>(SMALL_BUFFER_SIZE);
 }

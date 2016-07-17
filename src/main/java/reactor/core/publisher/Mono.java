@@ -1480,7 +1480,7 @@ public abstract class Mono<T> implements Publisher<T> {
 				Flux.identityFunction(),
 				false,
 				Integer.MAX_VALUE,
-				QueueSupplier.xs(), Reactor.XS_BUFFER_SIZE,
+				QueueSupplier.xs(), QueueSupplier.XS_BUFFER_SIZE,
 				QueueSupplier.xs()
 		));
 	}

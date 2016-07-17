@@ -46,33 +46,6 @@ public abstract class Reactor {
 	public static final  boolean TRACE_NOCAPACITY                =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.nocapacity", "false"));
 	/**
-	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
-	 * subscribers
-	 */
-	public static final  int     XS_BUFFER_SIZE                  = 32;
-	/**
-	 * A small default of available slots in a given container, compromise between intensive pipelines, small
-	 * subscribers numbers and memory use.
-	 */
-	public static final  int     SMALL_BUFFER_SIZE               = 256;
-	/**
-	 * A larger default of available slots in a given container, e.g. mutualized processors, intensive pipelines or
-	 * larger subscribers number
-	 */
-	public static final  int     MEDIUM_BUFFER_SIZE              = 8192;
-	/**
-	 * The size, in bytes, of a small buffer. Can be configured using the {@code reactor.io.defaultBufferSize} system
-	 * property. Default to 16384 bytes.
-	 */
-	public static final  int     SMALL_IO_BUFFER_SIZE            =
-			Integer.parseInt(System.getProperty("reactor.io.defaultBufferSize", "" + 1024 * 16));
-	/**
-	 * The maximum allowed buffer size in bytes. Can be configured using the {@code reactor.io.maxBufferSize} system
-	 * property. Defaults to 16384000 bytes.
-	 */
-	public static final  int     MAX_IO_BUFFER_SIZE              =
-			Integer.parseInt(System.getProperty("reactor.io.maxBufferSize", "" + 1024 * 1000 * 16));
-	/**
 	 *
 	 */
 	public static final long     DEFAULT_TIMEOUT                 =

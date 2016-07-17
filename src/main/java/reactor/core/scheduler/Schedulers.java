@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
@@ -187,7 +187,7 @@ public class Schedulers {
 	public static Scheduler newComputation(String name, int parallelism, boolean daemon) {
 		return newComputation(name,
 				parallelism,
-				Reactor.MEDIUM_BUFFER_SIZE,
+				QueueSupplier.MEDIUM_BUFFER_SIZE,
 				daemon);
 	}
 
