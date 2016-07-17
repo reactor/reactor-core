@@ -60,7 +60,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			Sequence start){
 		Flux<E> bufferIterable = generate(start::getAsLong, (seq, sink) -> {
-			long s = ++seq;
+			long s = seq + 1;
 			if(s > ringBuffer.getCursor()){
 				sink.complete();
 			}

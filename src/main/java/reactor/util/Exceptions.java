@@ -32,12 +32,6 @@ public abstract class Exceptions {
 			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
 
 	/**
-	 *
-	 */
-	public static final boolean INSUFFICIENT_CAPACITY_STACKTRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.nocapacity", "false"));
-
-	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
@@ -131,8 +125,7 @@ public abstract class Exceptions {
 	 * @return an {@link InsufficientCapacityException}
 	 */
 	public static InsufficientCapacityException failWithOverflow() {
-		return INSUFFICIENT_CAPACITY_STACKTRACE ? new InsufficientCapacityException() :
-				InsufficientCapacityException.INSTANCE;
+		return new InsufficientCapacityException();
 	}
 
 	/**
@@ -306,11 +299,6 @@ public abstract class Exceptions {
 
 		private InsufficientCapacityException() {
 			super("The subscriber is overrun by more signals than expected (bounded queue...)");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return INSUFFICIENT_CAPACITY_STACKTRACE ? super.fillInStackTrace() : this;
 		}
 
 	}
