@@ -4115,7 +4115,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
-		return scanWith(() -> initial, accumulator))
+		return scanWith(() -> initial, accumulator);
 	}
 
 	/**

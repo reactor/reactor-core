@@ -2249,7 +2249,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;
-			return onAssembly(new MonoSubscribeOnCallable<T>(c,
+			return onAssembly(new MonoSubscribeOnCallable<>(c,
 					scheduler));
 		}
 		return onAssembly(new MonoSubscribeOn<>(this, scheduler));
