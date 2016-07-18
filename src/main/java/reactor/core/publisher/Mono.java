@@ -316,9 +316,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
-		if (source == null) {
-			return empty();
-		}
 		if (source instanceof Mono) {
 			return (Mono<T>) source;
 		}

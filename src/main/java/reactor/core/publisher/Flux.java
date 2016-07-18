@@ -132,7 +132,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, int prefetch,
 			Publisher<? extends T>... sources) {
-		if (sources == null || sources.length == 0) {
+		if (sources.length == 0) {
 			return empty();
 		}
 
@@ -572,10 +572,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} eventually subscribed to one of the sources or empty
 	 */
 	public static <I> Flux<I> firstEmitting(Iterable<? extends Publisher<? extends I>> sources) {
-		if (sources == null) {
-			return empty();
-		}
-
 		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
@@ -616,7 +612,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromArray(T[] array) {
-		if (array == null || array.length == 0) {
+		if (array.length == 0) {
 			return empty();
 		}
 		if (array.length == 1) {
@@ -939,7 +935,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
-		if (sources == null || sources.length == 0) {
+		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
@@ -1284,10 +1280,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			int prefetch,
 			final Function<? super Object[], ? extends O> combinator) {
 
-		if (sources == null) {
-			return empty();
-		}
-
 		return onAssembly(new FluxZip<>(sources,
 				combinator,
 				QueueSupplier.get(prefetch),
@@ -1336,7 +1328,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			int prefetch,
 			Publisher<? extends I>... sources) {
 
-		if (sources == null || sources.length == 0) {
+		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
@@ -4359,9 +4351,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
 	 */
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
-		if (publisher == null) {
-			return this;
-		}
 		if (this instanceof FluxConcatArray) {
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceFirst(publisher);
