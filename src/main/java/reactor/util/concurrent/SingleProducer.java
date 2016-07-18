@@ -17,8 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.util.Exceptions;
-
 abstract class SingleProducerSequencerPad extends RingBufferProducer
 {
     protected long p1, p2, p3, p4, p5, p6, p7;

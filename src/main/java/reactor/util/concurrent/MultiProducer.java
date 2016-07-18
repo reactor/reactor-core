@@ -17,7 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.util.Exceptions;
 import sun.misc.Unsafe;
 
 /**

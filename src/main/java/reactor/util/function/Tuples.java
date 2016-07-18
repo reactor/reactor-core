@@ -440,7 +440,6 @@ public abstract class Tuples implements Function {
 
 
 
-	@SuppressWarnings("serial")
 	static final Tuples   empty            = new Tuples(){};
 
 	Tuples(){}

@@ -17,8 +17,6 @@ package reactor.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.util.concurrent.RingBuffer;
-
 /**
  * Static Helpers to decorate an error with an associated data
  *

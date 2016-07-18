@@ -17,8 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
-import reactor.util.Exceptions;
-
 /**
  * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
  * Suitable for use for sequencing across multiple publisher threads.</p>
