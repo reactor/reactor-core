@@ -1,189 +1,154 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Loopback;
+import reactor.core.Producer;
+import reactor.core.Receiver;
+import reactor.core.Trackable;
+import reactor.util.Exceptions;
 
 /**
- * Relays values from the main Publisher until another Publisher signals an event.
+ * Relays values until a predicate returns
+ * true, indicating the sequence should stop
+ * (checked after each value has been delivered).
  *
- * @param <T> the value type of the main Publisher
- * @param <U> the value type of the other Publisher
+ * @param <T> the value type
  */
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeUntil<T, U> extends FluxSource<T, T> {
+final class FluxTakeUntil<T> extends FluxSource<T, T> {
 
-	final Publisher<U> other;
+	final Predicate<? super T> predicate;
 
-	public FluxTakeUntil(Publisher<? extends T> source, Publisher<U> other) {
+	public FluxTakeUntil(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
-		this.other = Objects.requireNonNull(other, "other");
+		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
-	@Override
-	public long getPrefetch() {
-		return Long.MAX_VALUE;
+	public Predicate<? super T> predicate() {
+		return predicate;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		TakeUntilMainSubscriber<T> mainSubscriber = new TakeUntilMainSubscriber<>(s);
-
-		TakeUntilOtherSubscriber<U> otherSubscriber = new TakeUntilOtherSubscriber<>(mainSubscriber);
-
-		other.subscribe(otherSubscriber);
-
-		source.subscribe(mainSubscriber);
+		source.subscribe(new TakeUntilPredicateSubscriber<>(s, predicate));
 	}
 
-	static final class TakeUntilOtherSubscriber<U> implements Subscriber<U> {
-		final TakeUntilMainSubscriber<?> main;
+	static final class TakeUntilPredicateSubscriber<T>
+			implements Subscriber<T>, Producer, Receiver, Loopback, Subscription,
+			           Trackable {
+		final Subscriber<? super T> actual;
 
-		boolean once;
+		final Predicate<? super T> predicate;
 
-		public TakeUntilOtherSubscriber(TakeUntilMainSubscriber<?> main) {
-			this.main = main;
+		Subscription s;
+
+		boolean done;
+
+		public TakeUntilPredicateSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+			this.actual = actual;
+			this.predicate = predicate;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			main.setOther(s);
-
-			s.request(Long.MAX_VALUE);
-		}
-
-		@Override
-		public void onNext(U t) {
-			onComplete();
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (once) {
-				return;
-			}
-			once = true;
-			main.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (once) {
-				return;
-			}
-			once = true;
-			main.onComplete();
-		}
-
-
-	}
-
-	static final class TakeUntilMainSubscriber<T> implements Subscriber<T>, Subscription {
-		final Subscriber<T> actual;
-
-		volatile Subscription main;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, Subscription> MAIN =
-		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "main");
-
-		volatile Subscription other;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, Subscription> OTHER =
-		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "other");
-
-		public TakeUntilMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = Operators.serialize(actual);
-		}
-
-		void setOther(Subscription s) {
-			if (!OTHER.compareAndSet(this, null, s)) {
-				s.cancel();
-				if (other != Operators.cancelledSubscription()) {
-					Operators.reportSubscriptionSet();
-				}
-			}
-		}
-
-		@Override
-		public void request(long n) {
-			main.request(n);
-		}
-
-		void cancelMain() {
-			Subscription s = main;
-			if (s != Operators.cancelledSubscription()) {
-				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
-				if (s != null && s != Operators.cancelledSubscription()) {
-					s.cancel();
-				}
-			}
-		}
-
-		void cancelOther() {
-			Subscription s = other;
-			if (s != Operators.cancelledSubscription()) {
-				s = OTHER.getAndSet(this, Operators.cancelledSubscription());
-				if (s != null && s != Operators.cancelledSubscription()) {
-					s.cancel();
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			cancelMain();
-			cancelOther();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (!MAIN.compareAndSet(this, null, s)) {
-				s.cancel();
-				if (main != Operators.cancelledSubscription()) {
-					Operators.reportSubscriptionSet();
-				}
-			} else {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 				actual.onSubscribe(this);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Exceptions.onNextDropped(t);
+				return;
+			}
+
 			actual.onNext(t);
+
+			boolean b;
+
+			try {
+				b = predicate.test(t);
+			} catch (Throwable e) {
+				s.cancel();
+				Exceptions.throwIfFatal(e);
+				onError(Exceptions.unwrap(e));
+
+				return;
+			}
+
+			if (b) {
+				s.cancel();
+
+				onComplete();
+
+				return;
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-
-			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
-					Operators.error(actual, t);
-					return;
-				}
+			if (done) {
+				Exceptions.onErrorDropped(t);
+				return;
 			}
-			cancel();
+			done = true;
 
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
-					cancelOther();
-					Operators.complete(actual);
-					return;
-				}
+			if (done) {
+				return;
 			}
-			cancel();
+			done = true;
 
 			actual.onComplete();
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object connectedInput() {
+			return predicate;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+		
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+		
+		@Override
+		public void cancel() {
+			s.cancel();
 		}
 	}
 }

@@ -4281,7 +4281,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> skipMillis(long timespan) {
 		if(timespan != 0) {
-			return skipUntil(Mono.delayMillis(timespan, Schedulers.timer()));
+			return skipUntilOther(Mono.delayMillis(timespan, Schedulers.timer()));
 		}
 		else{
 			return this;
@@ -4301,11 +4301,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> skipMillis(long timespan, TimedScheduler timer) {
 		if(timespan != 0) {
-			return skipUntil(Mono.delayMillis(timespan, timer));
+			return skipUntilOther(Mono.delayMillis(timespan, timer));
 		}
 		else{
 			return this;
 		}
+	}
+
+	/**
+	 * Skips values from this {@link Flux} until a {@link Predicate} returns true for the
+	 * value. Will include the matched value.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/skipuntil.png" alt="">
+	 *
+	 * @param untilPredicate the {@link Predicate} evaluating to true to stop skipping.
+	 *
+	 * @return a dropping {@link Flux} until the {@link Predicate} matches
+	 */
+	public final Flux<T> skipUntil(Predicate<? super T> untilPredicate) {
+		return onAssembly(new FluxSkipUntil<>(this, untilPredicate));
 	}
 
 	/**
@@ -4320,8 +4335,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dropping {@link Flux} until the other {@link Publisher} emits
 	 *
 	 */
-	public final Flux<T> skipUntil(Publisher<?> other) {
-		return onAssembly(new FluxSkipUntil<>(this, other));
+	public final Flux<T> skipUntilOther(Publisher<?> other) {
+		return onAssembly(new FluxSkipUntilOther<>(this, other));
 	}
 
 	/**
@@ -4770,26 +4785,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> takeMillis(long timespan, TimedScheduler timer) {
 		if (timespan != 0) {
-			return takeUntil(Mono.delayMillis(timespan, timer));
+			return takeUntilOther(Mono.delayMillis(timespan, timer));
 		}
 		else {
 			return take(0);
 		}
-	}
-
-	/**
-	 * Relay values from this {@link Flux} until the given {@link Publisher} emits.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntil.png" alt="">
-	 *
-	 * @param other the {@link Publisher} to signal when to stop replaying signal from this {@link Flux}
-	 *
-	 * @return an eventually limited {@link Flux}
-	 *
-	 */
-	public final Flux<T> takeUntil(Publisher<?> other) {
-		return onAssembly(new FluxTakeUntil<>(this, other));
 	}
 
 	/**
@@ -4806,13 +4806,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> takeUntil(Predicate<? super T> predicate) {
-		return onAssembly(new FluxTakeUntilPredicate<>(this, predicate));
+		return onAssembly(new FluxTakeUntil<>(this, predicate));
+	}
+
+	/**
+	 * Relay values from this {@link Flux} until the given {@link Publisher} emits.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takeuntil.png" alt="">
+	 *
+	 * @param other the {@link Publisher} to signal when to stop replaying signal from this {@link Flux}
+	 *
+	 * @return an eventually limited {@link Flux}
+	 *
+	 */
+	public final Flux<T> takeUntilOther(Publisher<?> other) {
+		return onAssembly(new FluxTakeUntilOther<>(this, other));
 	}
 
 	/**
 	 * Relay values while a predicate returns
 	 * {@literal FALSE} for the values (checked before each value is delivered).
-	 * Unlike {@link #takeUntil}, this will exclude the matched data.
+	 * Unlike {@link #takeUntilOther}, this will exclude the matched data.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/takewhile.png" alt="">

@@ -22,19 +22,19 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new FluxTakeUntilPredicate<>(null, v -> true);
+		new FluxTakeUntil<>(null, v -> true);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void predicateNull() {
-		new FluxTakeUntilPredicate<>(FluxNever.instance(), null);
+		new FluxTakeUntil<>(FluxNever.instance(), null);
 	}
 
 	@Test
 	public void takeAll() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> false).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> false).subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
 		  .assertComplete()
@@ -45,7 +45,7 @@ public class FluxTakeUntilPredicateTest {
 	public void takeAllBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> false).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> false).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -68,7 +68,7 @@ public class FluxTakeUntilPredicateTest {
 	public void takeSome() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
 
 		ts.assertValues(1, 2, 3)
 		  .assertComplete()
@@ -79,7 +79,7 @@ public class FluxTakeUntilPredicateTest {
 	public void takeSomeBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> v == 3).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -102,7 +102,7 @@ public class FluxTakeUntilPredicateTest {
 	public void stopImmediately() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> true).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> true).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertComplete()
@@ -113,7 +113,7 @@ public class FluxTakeUntilPredicateTest {
 	public void stopImmediatelyBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> true).subscribe(ts);
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> true).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -130,7 +130,7 @@ public class FluxTakeUntilPredicateTest {
 	public void predicateThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxTakeUntilPredicate<>(new FluxRange(1, 5), v -> {
+		new FluxTakeUntil<>(new FluxRange(1, 5), v -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
