@@ -154,7 +154,7 @@ public abstract class Exceptions {
 	 * @return true if given error is a a bubbled wrapped exception.
 	 */
 	public static boolean isBubbling(Throwable t){
-		return t == CancelException.INSTANCE || t instanceof CancelException;
+		return t instanceof BubblingException;
 	}
 
 	/**
