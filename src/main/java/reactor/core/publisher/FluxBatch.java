@@ -109,6 +109,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		/**
 		 * @return has this {@link Subscriber} been cancelled
 		 */
+		@Override
 		public final boolean isCancelled() {
 			return terminated == TERMINATED_WITH_CANCEL;
 		}

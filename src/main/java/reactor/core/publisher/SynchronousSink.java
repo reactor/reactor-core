@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Trackable;
 
 /**
  * Interface to generate signals to a bridged {@link Subscriber}.

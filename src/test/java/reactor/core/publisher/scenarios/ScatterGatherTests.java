@@ -29,7 +29,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.TestSubscriber;
-import reactor.core.Reactor;
 
 public class ScatterGatherTests {
 

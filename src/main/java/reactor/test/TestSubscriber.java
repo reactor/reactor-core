@@ -92,7 +92,8 @@ public class TestSubscriber<T>
 	 */
 	public static final Duration DEFAULT_VALUES_TIMEOUT = Duration.ofSeconds(3);
 
-	private static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED =
+	@SuppressWarnings("rawtypes")
+    private static final AtomicLongFieldUpdater<TestSubscriber> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(TestSubscriber.class, "requested");
 
 	@SuppressWarnings("rawtypes")
@@ -100,7 +101,8 @@ public class TestSubscriber<T>
 			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, List.class,
 					"values");
 
-	private static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
+	@SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<TestSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(TestSubscriber.class, Subscription.class, "s");
 
 

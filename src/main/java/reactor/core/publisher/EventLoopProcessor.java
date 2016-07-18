@@ -34,7 +34,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
-import reactor.core.Reactor;
 import reactor.core.Receiver;
 import reactor.util.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
@@ -295,7 +294,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		contextClassLoader = new EventLoopContext();
 
-		String name = threadFactory instanceof Supplier ? ((Supplier)
+		@SuppressWarnings("rawtypes")
+        String name = threadFactory instanceof Supplier ? ((Supplier)
 				threadFactory).get().toString() : null;
 		this.name = null != name ? name : getClass().getSimpleName();
 
@@ -655,7 +655,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		static final AtomicInteger COUNT = new AtomicInteger();
 
-		private static final long serialVersionUID = -3202326942393105842L;
 		final String  name;
 		final boolean daemon;
 

@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Trackable;
 

@@ -4512,7 +4512,7 @@ public abstract class Flux<T> implements Publisher<T> {
 					new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
 		}
 		else {
-			consumerAction = new BoundedSubscriber<T>((int) c,
+			consumerAction = new BoundedSubscriber<>((int) c,
 					consumer,
 					errorConsumer,
 					completeConsumer);
@@ -4546,7 +4546,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;
-			return onAssembly(new FluxSubscribeOnCallable<T>(c, scheduler));
+			return onAssembly(new FluxSubscribeOnCallable<>(c, scheduler));
 		}
 		return onAssembly(new FluxSubscribeOn<>(this, scheduler));
 	}
