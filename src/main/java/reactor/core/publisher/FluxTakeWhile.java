@@ -25,7 +25,7 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Relays values while a predicate returns
@@ -154,12 +154,12 @@ final class FluxTakeWhile<T> extends FluxSource<T, T> {
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();

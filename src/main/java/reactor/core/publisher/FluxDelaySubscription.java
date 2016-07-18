@@ -20,7 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Delays the subscription to the main source until another Publisher

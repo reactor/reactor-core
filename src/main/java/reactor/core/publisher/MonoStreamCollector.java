@@ -24,7 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Given sorted rail sequences (according to the provided comparator) as List

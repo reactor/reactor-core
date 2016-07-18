@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.MultiReceiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Concatenates a fixed array of Publishers' values.

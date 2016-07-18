@@ -27,7 +27,7 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.

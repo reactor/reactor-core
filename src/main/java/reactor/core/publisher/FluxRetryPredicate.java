@@ -21,7 +21,7 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after

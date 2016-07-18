@@ -24,12 +24,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.core.Loopback;
 import reactor.core.Producer;
-import reactor.core.Reactor;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -1338,5 +1339,5 @@ public abstract class Operators {
 		}
 	}
 
-	final static Reactor.Logger log = Reactor.getLogger(Operators.class);
+	final static Logger log = Loggers.getLogger(Operators.class);
 }

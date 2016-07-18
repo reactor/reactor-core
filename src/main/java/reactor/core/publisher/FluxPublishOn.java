@@ -31,7 +31,7 @@ import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.

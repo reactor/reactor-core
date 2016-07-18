@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.

@@ -35,7 +35,7 @@ import reactor.core.Loopback;
 import reactor.core.MultiProducer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values to subscribers in a backpressure-aware

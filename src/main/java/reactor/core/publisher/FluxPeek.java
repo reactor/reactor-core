@@ -27,7 +27,7 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.

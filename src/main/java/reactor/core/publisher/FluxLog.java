@@ -21,8 +21,8 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Reactor;
-import static reactor.core.Reactor.Logger;
+import reactor.util.Loggers;
+import reactor.util.Logger;
 
 
 /**
@@ -32,6 +32,15 @@ import static reactor.core.Reactor.Logger;
  */
 final class FluxLog<IN> extends FluxSource<IN, IN> {
 
+	final static int SUBSCRIBE     = 0b010000000;
+	final static int ON_SUBSCRIBE  = 0b001000000;
+	final static int ON_NEXT       = 0b000100000;
+	final static int ON_ERROR      = 0b000010000;
+	final static int ON_COMPLETE   = 0b000001000;
+	final static int REQUEST       = 0b000000100;
+	final static int CANCEL        = 0b000000010;
+	final static int ALL           = CANCEL | ON_COMPLETE | ON_ERROR | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
+
 	private final Logger log;
 	private final Level  level;
 
@@ -39,18 +48,48 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 	private long uniqueId = 1L;
 
-	public FluxLog(Publisher<IN> source, final String category, Level level, int options) {
+	public FluxLog(Publisher<IN> source, final String category, Level level,
+			SignalType... options) {
 		super(source);
 		this.log =
-				category != null && !category.isEmpty() ? Reactor.getLogger(category) : Reactor.getLogger(FluxLog.class);
-		this.options = options;
+				category != null && !category.isEmpty() ? Loggers.getLogger(category) : Loggers.getLogger(FluxLog.class);
 		this.level = level;
+		if(options == null || options.length ==0){
+			this.options = ALL;
+		}
+		else{
+			int opts = 0;
+			for(SignalType option : options){
+				if(option == SignalType.CANCEL){
+					opts |= CANCEL;
+				}
+				else if(option == SignalType.ON_SUBSCRIBE){
+					opts |= ON_SUBSCRIBE;
+				}
+				else if(option == SignalType.REQUEST){
+					opts |= REQUEST;
+				}
+				else if(option == SignalType.ON_NEXT){
+					opts |= ON_NEXT;
+				}
+				else if(option == SignalType.ON_ERROR){
+					opts |= ON_ERROR;
+				}
+				else if(option == SignalType.ON_COMPLETE){
+					opts |= ON_COMPLETE;
+				}
+				else if(option == SignalType.SUBSCRIBE){
+					opts |= SUBSCRIBE;
+				}
+			}
+			this.options = opts;
+		}
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super IN> subscriber) {
 		long newId = uniqueId++;
-		if ((options & Logger.SUBSCRIBE) == Logger.SUBSCRIBE) {
+		if ((options & SUBSCRIBE) == SUBSCRIBE) {
 			if (log.isTraceEnabled()) {
 				log.trace("subscribe: [" + newId + "] " + subscriber.getClass()
 				                                                    .getSimpleName(), this);
@@ -108,7 +147,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doOnSubscribe(Subscription subscription) {
-			if ((options & Logger.ON_SUBSCRIBE) == Logger.ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
+			if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
 				log(SignalType.ON_SUBSCRIBE, this.subscription, this);
 			}
 			subscriber.onSubscribe(this);
@@ -116,7 +155,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doNext(IN in) {
-			if ((options & Logger.ON_NEXT) == Logger.ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
+			if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
 				log(SignalType.ON_NEXT, in, this);
 			}
 			subscriber.onNext(in);
@@ -124,7 +163,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doError(Throwable throwable) {
-			if ((options & Logger.ON_ERROR) == Logger.ON_ERROR && log.isErrorEnabled()) {
+			if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
 				log.error(concatId() + " " + LOG_TEMPLATE,
 						SignalType.ON_ERROR,
 						throwable,
@@ -141,7 +180,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doComplete() {
-			if ((options & Logger.ON_COMPLETE) == Logger.ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
+			if ((options & ON_COMPLETE) == ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
 				log(SignalType.ON_COMPLETE, "", this);
 			}
 			subscriber.onComplete();
@@ -149,7 +188,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doRequest(long n) {
-			if ((options & Logger.REQUEST) == Logger.REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
+			if ((options & REQUEST) == REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
 				log(SignalType.REQUEST, Long.MAX_VALUE == n ? "unbounded" : n, this);
 			}
 			super.doRequest(n);
@@ -157,7 +196,7 @@ final class FluxLog<IN> extends FluxSource<IN, IN> {
 
 		@Override
 		protected void doCancel() {
-			if ((options & Logger.CANCEL) == Logger.CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
+			if ((options & CANCEL) == CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
 				log(SignalType.CANCEL, "", this);
 			}
 			super.doCancel();

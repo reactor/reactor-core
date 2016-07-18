@@ -19,7 +19,7 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.

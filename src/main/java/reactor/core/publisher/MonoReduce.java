@@ -24,7 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Aggregates the source values with the help of an accumulator

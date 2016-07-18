@@ -27,7 +27,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import rx.Observable;
 import rx.Producer;
 import rx.internal.util.ScalarSynchronousObservable;

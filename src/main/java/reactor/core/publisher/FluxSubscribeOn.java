@@ -27,7 +27,7 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or

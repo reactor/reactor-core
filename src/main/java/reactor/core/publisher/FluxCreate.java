@@ -30,7 +30,7 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
 import reactor.core.Trackable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
 /**

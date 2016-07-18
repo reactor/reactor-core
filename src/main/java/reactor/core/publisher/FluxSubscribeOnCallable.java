@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.

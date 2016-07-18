@@ -28,7 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and

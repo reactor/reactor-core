@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are

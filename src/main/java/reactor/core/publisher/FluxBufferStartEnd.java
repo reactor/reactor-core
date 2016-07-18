@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined

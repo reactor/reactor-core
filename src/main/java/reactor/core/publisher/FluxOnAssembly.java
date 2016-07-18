@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 

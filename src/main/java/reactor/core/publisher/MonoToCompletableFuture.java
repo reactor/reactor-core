@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * @author Stephane Maldini

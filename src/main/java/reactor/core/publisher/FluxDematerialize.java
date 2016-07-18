@@ -21,7 +21,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * @author Stephane Maldini

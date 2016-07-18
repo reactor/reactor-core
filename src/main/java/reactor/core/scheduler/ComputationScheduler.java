@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.WaitStrategy;
 
 /**

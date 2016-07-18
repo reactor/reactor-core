@@ -26,7 +26,7 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Takes only the first N values from the source Publisher.

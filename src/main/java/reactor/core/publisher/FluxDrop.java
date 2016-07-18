@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Drops values if the subscriber doesn't request fast enough.

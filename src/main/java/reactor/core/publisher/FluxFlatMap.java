@@ -34,7 +34,7 @@ import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them 

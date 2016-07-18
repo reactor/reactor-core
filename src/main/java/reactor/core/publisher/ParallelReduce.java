@@ -19,7 +19,7 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.

@@ -25,7 +25,7 @@ import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * @author Stephane Maldini

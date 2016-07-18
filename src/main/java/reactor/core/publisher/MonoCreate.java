@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.Cancellation;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object

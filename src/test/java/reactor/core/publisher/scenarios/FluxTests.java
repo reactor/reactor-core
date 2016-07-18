@@ -51,7 +51,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Reactor;
+import reactor.util.Loggers;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
@@ -64,14 +64,15 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
-import static reactor.core.Reactor.Logger;
+
+import reactor.util.Logger;
 
 public class FluxTests extends AbstractReactorTest {
 
@@ -1230,7 +1231,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	class FooSubscriber implements Subscriber<String> {
 
-		private final Logger log = Reactor.getLogger(getClass());
+		private final Logger log = Loggers.getLogger(getClass());
 
 		private Subscription subscription;
 

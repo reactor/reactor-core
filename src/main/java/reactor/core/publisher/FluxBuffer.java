@@ -30,7 +30,7 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Buffers a certain number of subsequent elements and emits the buffers.

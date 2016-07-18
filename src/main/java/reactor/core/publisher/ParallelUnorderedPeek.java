@@ -20,7 +20,7 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.

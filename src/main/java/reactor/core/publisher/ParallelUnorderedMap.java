@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.

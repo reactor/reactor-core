@@ -26,7 +26,7 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Skips source values while a predicate returns

@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -47,6 +47,13 @@ import reactor.util.concurrent.QueueSupplier;
  * @author Stephane Maldini
  */
 public class Schedulers {
+
+	/**
+	 * Default number of processors available to the runtime on init (min 4)
+	 * @see Runtime#availableProcessors()
+	 */
+	public static final int DEFAULT_POOL_SIZE =
+			Math.max(Runtime.getRuntime().availableProcessors(), 4);
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based

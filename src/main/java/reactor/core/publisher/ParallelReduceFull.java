@@ -20,8 +20,8 @@ import java.util.function.BiFunction;
 
 import org.reactivestreams.*;
 
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.*;
 
 /**
  * Reduces all 'rails' into a single value which then gets reduced into a single

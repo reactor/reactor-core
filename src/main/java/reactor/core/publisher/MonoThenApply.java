@@ -22,8 +22,8 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.*;
 
 /**
  * Given a Mono source, applies a function on its single item and continues

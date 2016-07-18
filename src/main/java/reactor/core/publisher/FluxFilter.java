@@ -29,7 +29,7 @@ import reactor.core.Receiver;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Filters out values that make a filter function return false.

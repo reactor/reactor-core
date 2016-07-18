@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Reactor;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -68,7 +68,7 @@ public class ScatterGatherTests {
 
 	@Test
 	public void testTrace() throws Exception {
-		Reactor.enableOperatorStacktrace();
+		Exceptions.enableOperatorStacktrace();
 		try {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException();
@@ -82,7 +82,7 @@ public class ScatterGatherTests {
 			return;
 		}
 		finally {
-			Reactor.disableOperatorStacktrace();
+			Exceptions.disableOperatorStacktrace();
 		}
 		throw new IllegalStateException();
 	}
@@ -90,7 +90,7 @@ public class ScatterGatherTests {
 
 	@Test
 	public void testTrace2() throws Exception {
-		Reactor.enableOperatorStacktrace();
+		Exceptions.enableOperatorStacktrace();
 		try {
 			Mono.just(1)
 			    .map(d -> {
@@ -110,7 +110,7 @@ public class ScatterGatherTests {
 			return;
 		}
 		finally {
-			Reactor.disableOperatorStacktrace();
+			Exceptions.disableOperatorStacktrace();
 		}
 		throw new IllegalStateException();
 	}

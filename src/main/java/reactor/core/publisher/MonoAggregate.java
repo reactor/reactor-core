@@ -22,7 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.

@@ -23,7 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Emits a single boolean true if all values of the source sequence match

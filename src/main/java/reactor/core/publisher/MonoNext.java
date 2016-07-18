@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Emits a single item at most from the source.

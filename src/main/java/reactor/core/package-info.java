@@ -15,7 +15,7 @@
  */
 
 /**
- * Core components of the Reactor framework supporting Reactive Stream programming model.
+ * Core components of the Loggers framework supporting Reactive Stream programming model.
  *
  * Topology representation of reactive flows :
  * {@link reactor.core.Receiver upstream} ({@link reactor.core.MultiReceiver s}),

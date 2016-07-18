@@ -23,7 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}

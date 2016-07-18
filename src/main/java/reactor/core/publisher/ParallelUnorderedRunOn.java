@@ -21,9 +21,9 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.*;
 
 /**
  * Ensures each 'rail' from upstream runs on a Worker from a Scheduler.

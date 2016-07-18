@@ -37,11 +37,11 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 import reactor.util.function.Tuples;
@@ -51,7 +51,7 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 
-import static reactor.core.Reactor.Logger;
+import reactor.util.Logger;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -930,7 +930,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
@@ -939,13 +939,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block() {
-		return blockMillis(Reactor.DEFAULT_TIMEOUT);
+		return blockMillis(Exceptions.DEFAULT_TIMEOUT);
 	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -968,7 +968,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -988,7 +988,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Reactor#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in
 	 * other words, the result might
@@ -1005,7 +1005,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public T block(WaitStrategy waitStrategy) {
 		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(
-				Reactor.DEFAULT_TIMEOUT);
+				Exceptions.DEFAULT_TIMEOUT);
 	}
 
 	/**
@@ -1561,9 +1561,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
-	 * <pre>
-	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
@@ -1573,16 +1570,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see Flux#log()
 	 */
 	public final Mono<T> log() {
-		return log(null, Level.INFO, Logger.ALL);
+		return log(null, Level.INFO);
 	}
 
 	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
-	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
-	 * <pre>
-	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
@@ -1591,26 +1585,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> log(String category) {
-		return log(category, Level.INFO, Logger.ALL);
-	}
-
-	/**
-	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace implementation. Default will
-	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
-	 *
-	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
-	 * <pre>
-	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
-	 * <p>
-	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
-	 * @param level the level to enforce for this tracing Flux
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public final Mono<T> log(String category, Level level) {
-		return log(category, level, Logger.ALL);
+		return log(category, Level.INFO);
 	}
 
 	/**
@@ -1621,18 +1596,18 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
 	 * <pre>
-	 *     mono.log("category", Level.INFO, Logger.ON_NEXT | LOGGER.ON_ERROR)
+	 *     mono.log("category", SignalType.ON_NEXT, SignalType.ON_ERROR)
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
 	 * @param level the level to enforce for this tracing Flux
-	 * @param options a flag option that can be mapped with {@link Logger#ON_NEXT} etc.
+	 * @param options a vararg {@link SignalType} option to filter log messages
 	 *
 	 * @return a new {@link Mono}
 	 *
 	 */
-	public final Mono<T> log(String category, Level level, int options) {
+	public final Mono<T> log(String category, Level level, SignalType... options) {
 		return MonoSource.wrap(new FluxLog<>(this, category, level, options));
 	}
 
@@ -2550,7 +2525,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	static <T> Mono<T> onAssembly(Mono<T> source) {
-		if (Reactor.isOperatorStacktraceEnabled()) {
+		if (Exceptions.isOperatorStacktraceEnabled()) {
 			if (source instanceof Callable) {
 				return new MonoCallableOnAssembly<>(source);
 			}

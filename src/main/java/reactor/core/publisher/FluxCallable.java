@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.

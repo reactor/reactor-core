@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.

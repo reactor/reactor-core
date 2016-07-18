@@ -23,7 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * retries a source when a companion sequence signals

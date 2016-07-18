@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one

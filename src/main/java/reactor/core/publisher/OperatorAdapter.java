@@ -20,7 +20,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between

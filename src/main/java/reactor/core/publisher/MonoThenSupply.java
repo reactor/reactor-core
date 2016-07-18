@@ -25,9 +25,9 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
-import reactor.util.*;
 
 /**
  * Concatenates a several Mono sources with a final Mono source by

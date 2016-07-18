@@ -36,7 +36,7 @@ import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 

@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 final class MonoFlatMap<T, R> extends Flux<R> {
     final Mono<? extends T> source;

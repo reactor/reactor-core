@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items of a 

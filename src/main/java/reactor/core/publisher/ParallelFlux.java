@@ -619,7 +619,7 @@ public abstract class ParallelFlux<T> {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Reactor.SMALL_BUFFER_SIZE}.
+	 * Loggers.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -644,7 +644,7 @@ public abstract class ParallelFlux<T> {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Reactor.SMALL_BUFFER_SIZE}.
+	 * Loggers.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -678,7 +678,7 @@ public abstract class ParallelFlux<T> {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Reactor.SMALL_BUFFER_SIZE}.
+	 * Loggers.SMALL_BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *

@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.test.TestSubscriber;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 public class FluxPeekTest {
 	@Test(expected = NullPointerException.class)

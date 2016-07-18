@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.*;
 
-import reactor.util.*;
+import reactor.core.Exceptions;
 
 /**
  * Merges the individual 'rails' of the source ParallelFlux, unordered,

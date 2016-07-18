@@ -23,7 +23,7 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * A Stream that emits only one value and then complete.

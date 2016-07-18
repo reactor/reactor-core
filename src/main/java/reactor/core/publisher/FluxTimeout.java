@@ -10,7 +10,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item

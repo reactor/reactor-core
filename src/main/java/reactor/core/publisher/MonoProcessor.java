@@ -31,7 +31,7 @@ import reactor.core.Cancellation;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.WaitStrategy;
 
 /**

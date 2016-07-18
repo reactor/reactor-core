@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Reactor;
+import reactor.util.Loggers;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
@@ -40,14 +40,14 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.TestSubscriber;
-import static reactor.core.Reactor.Logger;
+import reactor.util.Logger;
 
 /**
  * @author Stephane Maldini
  */
 public class CombinationTests {
 
-	private static final Logger LOG = Reactor.getLogger(CombinationTests.class);
+	private static final Logger LOG = Loggers.getLogger(CombinationTests.class);
 
 	private FluxProcessor<SensorData, SensorData> sensorEven;
 	private FluxProcessor<SensorData, SensorData> sensorOdd;

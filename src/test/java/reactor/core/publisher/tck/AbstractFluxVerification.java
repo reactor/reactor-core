@@ -41,7 +41,7 @@ import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.Reactor;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * @author Stephane Maldini
@@ -189,7 +189,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 
 		long count = latch.getCount();
 		org.junit.Assert.assertTrue("Count > 0 : " + count + " (" + list + ")  , Running on " +
-				Reactor.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
+				Schedulers.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
 
 	}
 
@@ -247,7 +247,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		System.out.println(counters);
 		long count = latch.getCount();
 		org.junit.Assert.assertTrue("Count > 0 : " + count + "  , Running on " +
-				Reactor.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
+				Schedulers.DEFAULT_POOL_SIZE + " CPU", latch.getCount() == 0);
 
 
 		stream.onComplete();

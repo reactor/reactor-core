@@ -17,7 +17,7 @@ package reactor.util;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * @author Stephane Maldini

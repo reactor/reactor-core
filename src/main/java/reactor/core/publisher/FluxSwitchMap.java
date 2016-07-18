@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Switches to a new Publisher generated via a function whenever the upstream produces an item.

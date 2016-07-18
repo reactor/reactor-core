@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Trackable;
-import reactor.util.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.

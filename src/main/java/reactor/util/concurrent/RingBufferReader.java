@@ -17,8 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.function.LongSupplier;
 
-import reactor.util.Exceptions;
-
 /**
  * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
  * using the given WaitStrategy.
@@ -121,9 +119,9 @@ public final class RingBufferReader implements Runnable, LongSupplier {
     }
 
     /**
-     * Check if an alert has been raised and throw an {@link Exceptions alert} if it has.
+     * Check if an alert has been raised and throw an if it has.
      *
-     * @throws RingBuffer.AlertException a {@link Exceptions alert} if alert has been raised.
+     * @throws RingBuffer.AlertException if alert has been raised.
      */
     public void checkAlert() throws RingBuffer.AlertException {
         if (alerted)
