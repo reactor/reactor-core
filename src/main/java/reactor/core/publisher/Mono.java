@@ -930,7 +930,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will
+	 * be thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
@@ -939,13 +940,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block() {
-		return blockMillis(Exceptions.DEFAULT_TIMEOUT);
+		return blockMillis(30_000L);
 	}
 
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -968,7 +969,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -988,7 +989,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal Loggers#DEFAULT_TIMEOUT} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in
 	 * other words, the result might
@@ -1005,7 +1006,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public T block(WaitStrategy waitStrategy) {
 		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(
-				Exceptions.DEFAULT_TIMEOUT);
+				30_000L);
 	}
 
 	/**

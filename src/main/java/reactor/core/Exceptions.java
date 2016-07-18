@@ -32,23 +32,18 @@ public abstract class Exceptions {
 	public static final boolean CANCEL_STACKTRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
 
-	/**
-	 *
-	 */
-	public static final long DEFAULT_TIMEOUT =
-			Long.parseLong(System.getProperty("reactor.await.defaultTimeout", "30000"));
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
 
-	public static boolean TRACE_OPERATOR_STACKTRACE =
+	volatile static boolean TRACE_OPERATOR_STACKTRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 					"false"));
 
 	/**
-	 * Signal a desynchronization of demand and timer.
+	 *
 	 * @param <T> the parent instance type
 	 * @param field the target field updater
 	 * @param instance the parent instance for the field
@@ -89,6 +84,18 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble upstream.
+	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param t the root cause
+	 * @return an unchecked exception that should choose bubbling up over error callback path
+	 */
+	public static RuntimeException bubble(Throwable t) {
+		throwIfFatal(t);
+		return new BubblingException(t);
+	}
+
+	/**
 	 * Disable operator stack recorder.
 	 */
 	public static void disableOperatorStacktrace() {
@@ -114,45 +121,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * When enabled, producer declaration stacks are recorded via an intercepting
-	 * "assembly tracker" operator and added as Suppressed Exception if the source
-	 * producer fails.
-	 *
-	 * @return a true if assembly tracking is enabled
-	 */
-	public static boolean isOperatorStacktraceEnabled() {
-		return TRACE_OPERATOR_STACKTRACE;
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
-	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
-	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param t the root cause
-	 * @return an unchecked exception
-	 */
-	public static RuntimeException propagate(Throwable t) {
-		throwIfFatal(t);
-		if(t instanceof RuntimeException){
-			return (RuntimeException)t;
-		}
-		return new ReactiveException(t);
-	}
-
-	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble upstream.
-	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param t the root cause
-	 * @return an unchecked exception that should choose bubbling up over error callback path
-	 */
-	public static RuntimeException bubble(Throwable t) {
-		throwIfFatal(t);
-		return new BubblingException(t);
-	}
-
-	/**
 	 * Return a {@link CancelException}
 	 * @return a {@link CancelException}
 	 */
@@ -167,6 +135,17 @@ public abstract class Exceptions {
 	public static IllegalStateException failWithOverflow() {
 		return new IllegalStateException("The receiver is overrun by more signals than " +
 				"expected (bounded queue...)");
+	}
+
+	/**
+	 * When enabled, producer declaration stacks are recorded via an intercepting
+	 * "assembly tracker" operator and added as Suppressed Exception if the source
+	 * producer fails.
+	 *
+	 * @return a true if assembly tracking is enabled
+	 */
+	public static boolean isOperatorStacktraceEnabled() {
+		return TRACE_OPERATOR_STACKTRACE;
 	}
 
 	/**
@@ -210,6 +189,22 @@ public abstract class Exceptions {
 		if(t != null) {
 			throw failWithCancel();
 		}
+	}
+
+	/**
+	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
+	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
+	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param t the root cause
+	 * @return an unchecked exception
+	 */
+	public static RuntimeException propagate(Throwable t) {
+		throwIfFatal(t);
+		if(t instanceof RuntimeException){
+			return (RuntimeException)t;
+		}
+		return new ReactiveException(t);
 	}
 
 	/**
@@ -269,14 +264,14 @@ public abstract class Exceptions {
 		return _t;
 	}
 
+	Exceptions(){}
+
 	/**
 	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
 	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
 	 * dealing with boundaries (queues, combinations and async).
 	 */
 	public static class BubblingException extends ReactiveException {
-		private static final long serialVersionUID = 2491425277432776142L;
-
 		public BubblingException(String message) {
 			super(message);
 		}
@@ -284,14 +279,13 @@ public abstract class Exceptions {
 		public BubblingException(Throwable cause) {
 			super(cause);
 		}
+		private static final long serialVersionUID = 2491425277432776142L;
 	}
 
 	/**
 	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 */
 	static class ReactiveException extends RuntimeException {
-		private static final long serialVersionUID = 2491425227432776143L;
-
 		public ReactiveException(Throwable cause) {
 			super(cause);
 		}
@@ -304,6 +298,7 @@ public abstract class Exceptions {
 		public synchronized Throwable fillInStackTrace() {
 			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
 		}
+		private static final long serialVersionUID = 2491425227432776143L;
 	}
 
 	/**
@@ -315,7 +310,6 @@ public abstract class Exceptions {
 
 		public static final CancelException INSTANCE = new CancelException();
 
-		private static final long serialVersionUID = 2491425227432776144L;
 		private CancelException() {
 			super("The subscriber has denied dispatching");
 		}
@@ -324,8 +318,7 @@ public abstract class Exceptions {
 		public synchronized Throwable fillInStackTrace() {
 			return CANCEL_STACKTRACE ? super.fillInStackTrace() : this;
 		}
+		private static final long serialVersionUID = 2491425227432776144L;
 
 	}
-
-	Exceptions(){}
 }
