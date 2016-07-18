@@ -4115,6 +4115,36 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
+		return scanWith(() -> initial, accumulator))
+	}
+
+	/**
+	 * Aggregate this {@link Flux} values with the help of an accumulator {@link BiFunction}
+	 * and emits the intermediate results.
+	 * <p>
+	 * The accumulation works as follows:
+	 * <pre><code>
+	 * result[0] = initialValue;
+	 * result[1] = accumulator(result[0], source[0])
+	 * result[2] = accumulator(result[1], source[1])
+	 * result[3] = accumulator(result[2], source[2])
+	 * ...
+	 * </code></pre>
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/scan.png" alt="">
+	 *
+	 * @param initial the initial supplier to init the first value to pass to the reduce
+	 * function
+	 * @param accumulator the accumulating {@link BiFunction}
+	 * @param <A> the accumulated type
+	 *
+	 * @return an accumulating {@link Flux} starting with initial state
+	 *
+	 */
+	public final <A> Flux<A> scanWith(Supplier<A> initial, BiFunction<A, ?
+			super T,
+			A> accumulator) {
 		return onAssembly(new FluxScan<>(this, initial, accumulator));
 	}
 

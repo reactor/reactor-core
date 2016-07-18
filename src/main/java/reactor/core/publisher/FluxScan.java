@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -52,16 +53,30 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 
 	final BiFunction<R, ? super T, R> accumulator;
 
-	final R initialValue;
+	final Supplier<R> initialSupplier;
 
-	public FluxScan(Publisher<? extends T> source, R initialValue, BiFunction<R, ? super T, R> accumulator) {
+	public FluxScan(Publisher<? extends T> source, Supplier<R> initialSupplier,
+			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
-		this.initialValue = Objects.requireNonNull(initialValue, "initialValue");
+		this.initialSupplier = Objects.requireNonNull(initialSupplier, "initialSupplier");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
+		R initialValue;
+
+		try {
+			initialValue = initialSupplier.get();
+		} catch (Throwable e) {
+			Operators.error(s, e);
+			return;
+		}
+
+		if (initialValue == null) {
+			Operators.error(s, new NullPointerException("The initial value supplied is null"));
+			return;
+		}
 		source.subscribe(new ScanSubscriber<>(s, accumulator, initialValue));
 	}
 
