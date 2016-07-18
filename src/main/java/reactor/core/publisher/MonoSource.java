@@ -63,15 +63,7 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super O> s) {
-		try {
-			source.subscribe((Subscriber<? super I>) s);
-		}
-		catch (Exceptions.BubblingException rfe) {
-			if(rfe.getCause() instanceof RuntimeException){
-				throw (RuntimeException)rfe.getCause();
-			}
-			throw rfe;
-		}
+		source.subscribe((Subscriber<? super I>) s);
 	}
 
 	@Override

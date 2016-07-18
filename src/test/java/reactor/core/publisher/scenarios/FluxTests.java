@@ -240,8 +240,10 @@ public class FluxTests extends AbstractReactorTest {
 		try {
 			deferred.onNext("bravo");
 		}
-		catch (Exceptions.CancelException ise) {
-			// Swallow
+		catch (Exception e) {
+			if(!Exceptions.isCancelled(e)) {
+				throw e;
+			}
 		}
 		assertEquals(deferred.block(), "alpha");
 	}
@@ -255,8 +257,10 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext(error);
 			fail();
 		}
-		catch (Exceptions.BubblingException ise) {
-			// Swallow
+		catch (Exception ise) {
+			if(!Exceptions.isBubbling(ise)){
+				throw ise;
+			}
 		}
 		assertTrue(deferred.getError() instanceof Exception);
 	}
@@ -270,7 +274,10 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext("alpha");
 			fail();
 		}
-		catch (Exceptions.BubblingException ise) {
+		catch (RuntimeException ise) {
+			if(!Exceptions.isBubbling(ise)){
+				throw ise;
+			}
 		}
 		assertTrue(deferred.getError() instanceof Exception);
 	}

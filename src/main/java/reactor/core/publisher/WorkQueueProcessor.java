@@ -612,7 +612,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				() -> {
 					if (!alive()) {
 						if (cancelled) {
-							throw Exceptions.CancelException.INSTANCE;
+							throw Exceptions.failWithCancel();
 						}
 						else {
 							RingBuffer.throwAlert();
@@ -794,7 +794,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 									throw ce;
 								}
 								barrier.clearAlert();
-								throw Exceptions.CancelException.INSTANCE;
+								throw Exceptions.failWithCancel();
 							}
 
 							subscriber.onNext(event.value);

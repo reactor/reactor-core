@@ -121,10 +121,12 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return a {@link CancelException}
-	 * @return a {@link CancelException}
+	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
+	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
+	 * dealing with boundaries (queues, combinations and async).
+	 * @return a {@link RuntimeException} that can be checked via {@link #isCancelled}
 	 */
-	public static CancelException failWithCancel() {
+	public static RuntimeException failWithCancel() {
 		return CANCEL_STACKTRACE ? new CancelException() : CancelException.INSTANCE;
 	}
 
@@ -135,6 +137,24 @@ public abstract class Exceptions {
 	public static IllegalStateException failWithOverflow() {
 		return new IllegalStateException("The receiver is overrun by more signals than " +
 				"expected (bounded queue...)");
+	}
+
+	/**
+	 * Check if the given error is a cancel signal.
+	 * @param t the {@link Throwable} error to check
+	 * @return true if given error is a cancellation token.
+	 */
+	public static boolean isCancelled(Throwable t){
+		return t == CancelException.INSTANCE || t instanceof CancelException;
+	}
+
+	/**
+	 * Check if the given error is a bubbled wrapped exception.
+	 * @param t the {@link Throwable} error to check
+	 * @return true if given error is a a bubbled wrapped exception.
+	 */
+	public static boolean isBubbling(Throwable t){
+		return t == CancelException.INSTANCE || t instanceof CancelException;
 	}
 
 	/**
@@ -227,7 +247,7 @@ public abstract class Exceptions {
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error varieties. These
 	 * varieties are as follows:
 	 * <ul>
-	 * <li>{@link BubblingException}</li>
+	 * <li>{@code BubblingException}</li>
 	 * <li>{@code StackOverflowError}</li>
 	 * <li>{@code VirtualMachineError}</li>
 	 * <li>{@code ThreadDeath}</li>
@@ -251,7 +271,8 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Unwrap a particular {@code Throwable} only if it is a wrapped BubblingException or DownstreamException
+	 * Unwrap a particular {@code Throwable} only if it is a wrapped exception via
+	 * {@link #bubble} or {@link #propagate}.
 	 *
 	 * @param t the exception to wrap
 	 * @return the unwrapped exception
@@ -266,12 +287,7 @@ public abstract class Exceptions {
 
 	Exceptions(){}
 
-	/**
-	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
-	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
-	 * dealing with boundaries (queues, combinations and async).
-	 */
-	public static class BubblingException extends ReactiveException {
+	static class BubblingException extends ReactiveException {
 		public BubblingException(String message) {
 			super(message);
 		}

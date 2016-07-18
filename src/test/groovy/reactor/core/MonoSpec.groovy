@@ -335,8 +335,8 @@ class MonoSpec extends Specification {
 	promise.onNext 1
 	promise.onNext 1
 
-	then: "an CancelException is thrown"
-	thrown(Exceptions.CancelException)
+	then: "an Cancel Exception is thrown"
+	thrown(RuntimeException)
   }
 
   def "An IllegalStateException is thrown if an attempt is made to reject a rejected promise"() {

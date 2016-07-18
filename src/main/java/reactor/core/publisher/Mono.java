@@ -930,7 +930,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will
+	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException} will
 	 * be thrown.
 	 *
 	 * <p>
@@ -946,7 +946,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException}  will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -955,7 +955,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for in milliseconds before raising a {@link RuntimeException}
 	 *
 	 * @return T the result
 	 */
@@ -969,7 +969,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed,a {@link RuntimeException}  will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
 	 * miss signal from hot publishers.
@@ -978,7 +978,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
 	 *
 	 * @return T the result
 	 */
@@ -989,7 +989,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a CancelException will be thrown.
+	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException}  will be thrown.
 	 *
 	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in
 	 * other words, the result might

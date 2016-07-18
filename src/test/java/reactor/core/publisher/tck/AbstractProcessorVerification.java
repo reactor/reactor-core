@@ -47,7 +47,7 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 	@Override
 	public void required_spec208_mustBePreparedToReceiveOnNextSignalsAfterHavingCalledSubscriptionCancel()
 			throws Throwable {
-		throw new SkipException("Delivery guarantee with CancelException");
+		throw new SkipException("Delivery guarantee with Exception#failWithCancel");
 	}
 
 	@Override

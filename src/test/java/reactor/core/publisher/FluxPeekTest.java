@@ -211,7 +211,6 @@ public class FluxPeekTest {
 			Assert.fail();
 		}
 		catch (Exception e){
-			//fatal publisher exception (BubblingException)
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
 		}
 	}
