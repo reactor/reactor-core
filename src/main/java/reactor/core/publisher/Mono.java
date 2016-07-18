@@ -955,7 +955,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.util.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for in milliseconds before raising a {@literal reactor.core.Exceptions.CancelException}
 	 *
 	 * @return T the result
 	 */
@@ -978,7 +978,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
 	 * <p>
 	 *
-	 * @param timeout maximum time period to wait for before raising a {@literal reactor.util.Exceptions.CancelException}
+	 * @param timeout maximum time period to wait for before raising a {@literal reactor.core.Exceptions.CancelException}
 	 *
 	 * @return T the result
 	 */
