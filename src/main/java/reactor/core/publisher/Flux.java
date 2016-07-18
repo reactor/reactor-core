@@ -1378,9 +1378,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		                    }));
 	}
 
-	protected Flux() {
-	}
-
 	/**
 	 *
 	 * Emit a single boolean true if all values of this sequence match
