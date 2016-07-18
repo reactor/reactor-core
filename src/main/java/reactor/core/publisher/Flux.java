@@ -50,19 +50,19 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
+import reactor.core.Reactor;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Exceptions;
-import reactor.core.Reactor;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuples;
 
 import static reactor.core.Reactor.Logger;
 
@@ -4493,22 +4493,19 @@ public abstract class Flux<T> implements Publisher<T> {
 			Runnable completeConsumer,
 			int prefetch) {
 
-		long c = Math.min(Integer.MAX_VALUE, prefetch);
+		int c = Math.min(Integer.MAX_VALUE, prefetch);
 
-		LambdaSubscriber<T> consumerAction;
+		LambdaSubscriber<T> consumerAction =
+				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+
+		Flux<T> tail;
 		if (c == Integer.MAX_VALUE) {
-			consumerAction =
-					new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+			tail = this;
 		}
 		else {
-			consumerAction = new BoundedSubscriber<>((int) c,
-					consumer,
-					errorConsumer,
-					completeConsumer);
+			tail = publishOn(Schedulers.immediate(), c);
 		}
-
-		onAssembly(this).subscribe(consumerAction);
-		return consumerAction;
+		return onAssembly(tail).subscribeWith(consumerAction);
 	}
 
 	/**
