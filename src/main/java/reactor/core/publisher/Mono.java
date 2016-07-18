@@ -1977,7 +1977,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
-		return repeat(Flux.countingBooleanSupplier(predicate, numRepeat));
+		return Flux.defer(() -> repeat(Flux.countingBooleanSupplier(predicate, numRepeat)));
 	}
 
 	/**
@@ -2127,7 +2127,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final Mono<T> retry(long numRetries, Predicate<Throwable> retryMatcher) {
-		return retry(Flux.countingPredicate(retryMatcher, numRetries));
+		return defer(() -> retry(Flux.countingPredicate(retryMatcher, numRetries)));
 	}
 
 	/**
