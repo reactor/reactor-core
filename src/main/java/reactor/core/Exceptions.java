@@ -322,7 +322,7 @@ public abstract class Exceptions {
 	 *
 	 * @author Stephane Maldini
 	 */
-	public static final class CancelException extends BubblingException {
+	static final class CancelException extends BubblingException {
 
 		public static final CancelException INSTANCE = new CancelException();
 
