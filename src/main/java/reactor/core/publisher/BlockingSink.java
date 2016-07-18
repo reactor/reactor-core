@@ -193,10 +193,10 @@ public final class BlockingSink<E>
 			actual.onNext(data);
 			return Emission.OK;
 		}
-		catch (Exceptions.CancelException ce) {
-			return Emission.CANCELLED;
-		}
 		catch (Throwable t) {
+			if(Exceptions.isCancel(t)){
+				return Emission.CANCELLED;
+			}
 			Exceptions.throwIfFatal(t);
 			uncaughtException = t;
 			if (cancelled) {
@@ -255,10 +255,10 @@ public final class BlockingSink<E>
 			actual.onComplete();
 			return Emission.OK;
 		}
-		catch (Exceptions.CancelException ce) {
-			return Emission.CANCELLED;
-		}
 		catch (Throwable t) {
+			if(Exceptions.isCancel(t)){
+				return Emission.CANCELLED;
+			}
 			Exceptions.throwIfFatal(t);
 			uncaughtException = t;
 			return Emission.FAILED;

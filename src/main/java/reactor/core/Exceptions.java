@@ -124,7 +124,7 @@ public abstract class Exceptions {
 	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
 	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
 	 * dealing with boundaries (queues, combinations and async).
-	 * @return a {@link RuntimeException} that can be checked via {@link #isCancelled}
+	 * @return a {@link RuntimeException} that can be checked via {@link #isCancel}
 	 */
 	public static RuntimeException failWithCancel() {
 		return CANCEL_STACKTRACE ? new CancelException() : CancelException.INSTANCE;
@@ -144,7 +144,7 @@ public abstract class Exceptions {
 	 * @param t the {@link Throwable} error to check
 	 * @return true if given error is a cancellation token.
 	 */
-	public static boolean isCancelled(Throwable t){
+	public static boolean isCancel(Throwable t){
 		return t == CancelException.INSTANCE || t instanceof CancelException;
 	}
 

@@ -207,10 +207,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				inner.start();
 			}
 		}
-		catch (Exceptions.CancelException c) {
-			//IGNORE
-		}
 		catch (Throwable t) {
+			if(Exceptions.isCancel(t)){
+				return;
+			}
 			removeInner(inner, EMPTY);
 			Operators.error(s, t);
 		}
@@ -237,7 +237,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 		EmitterSubscriber<?>[] inner = subscribers;
 		if (autoCancel && inner == CANCELLED) {
-			//FIXME should entorse to the spec and throw CancelException
+			//FIXME should entorse to the spec and throw Exceptions.failWithCancel
 			return;
 		}
 

@@ -155,7 +155,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			try {
 				long endState = waitStrategy.waitFor(STATE_SUCCESS_VALUE, this,	() -> {
 					if (delay < System.nanoTime()) {
-						throw Exceptions.CancelException.INSTANCE;
+						throw Exceptions.failWithCancel();
 					}
 				});
 
@@ -172,9 +172,12 @@ public final class MonoProcessor<O> extends Mono<O>
 				}
 				throw new IllegalStateException("Mono has been cancelled");
 			}
-			catch (Exceptions.CancelException ce) {
-				cancel();
-				throw new IllegalStateException("Timeout on Mono blocking read");
+			catch (RuntimeException ce) {
+				if(Exceptions.isCancel(ce)) {
+					cancel();
+					throw new IllegalStateException("Timeout on Mono blocking read");
+				}
+				throw ce;
 			}
 		}
 		catch (InterruptedException ie) {

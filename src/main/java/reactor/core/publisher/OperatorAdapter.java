@@ -89,10 +89,10 @@ public class OperatorAdapter<I, O>
 		try {
 			doNext(i);
 		}
-		catch (Exceptions.CancelException c) {
-			throw c;
-		}
 		catch (Throwable throwable) {
+			if(Exceptions.isCancel(throwable)){
+				throw throwable;
+			}
 			Subscription subscription = this.subscription;
 			if(subscription != null){
 				subscription.cancel();

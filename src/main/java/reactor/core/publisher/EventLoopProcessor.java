@@ -32,10 +32,10 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.RingBufferReader;
@@ -161,7 +161,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 					barrier.waitFor(waitedSequence);
 				}
 				if (!isRunning.get()) {
-					throw Exceptions.CancelException.INSTANCE;
+					throw Exceptions.failWithCancel();
 				}
 				LockSupport.parkNanos(1L);
 			}
@@ -172,7 +172,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 
 		catch (Exception e) {
-			if (RingBuffer.isAlert(e) || e instanceof Exceptions.CancelException) {
+			if (RingBuffer.isAlert(e) || Exceptions.isCancel(e)) {
 				return false;
 			}
 			throw e;
@@ -564,14 +564,15 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 					upstream.request(limit);
 				}
 			}
-			catch (Exceptions.CancelException ce) {
-				upstream.cancel();
-			}
 			catch (InterruptedException e) {
 				Thread.currentThread()
 				      .interrupt();
 			}
 			catch (Throwable t) {
+				if(Exceptions.isCancel(t)){
+					upstream.cancel();
+					return;
+				}
 				if(RingBuffer.isAlert(t)){
 					return;
 				}

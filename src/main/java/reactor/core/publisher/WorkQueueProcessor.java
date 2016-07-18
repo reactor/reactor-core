@@ -845,11 +845,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						}
 
 					}
-					catch (Exceptions.CancelException ce) {
-						reschedule(event);
-						break;
-					}
 					catch (RuntimeException ce) {
+						if (Exceptions.isCancel(ce)){
+							reschedule(event);
+							break;
+						}
 						if (!RingBuffer.isAlert(ce)) {
 							throw ce;
 						}
@@ -928,9 +928,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					}
 
 				}
-				catch (Exceptions.CancelException ce) {
-					running.set(false);
-					return true;
+				catch (RuntimeException ce) {
+					if(Exceptions.isCancel(ce)) {
+						running.set(false);
+						return true;
+					}
+					throw ce;
 				}
 				finally {
 					REPLAYING.compareAndSet(processor, 1, 0);

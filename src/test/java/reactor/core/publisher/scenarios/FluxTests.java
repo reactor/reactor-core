@@ -241,7 +241,7 @@ public class FluxTests extends AbstractReactorTest {
 			deferred.onNext("bravo");
 		}
 		catch (Exception e) {
-			if(!Exceptions.isCancelled(e)) {
+			if(!Exceptions.isCancel(e)) {
 				throw e;
 			}
 		}

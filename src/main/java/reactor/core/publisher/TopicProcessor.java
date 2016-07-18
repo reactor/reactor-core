@@ -705,7 +705,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		new Thread(EventLoopProcessor.createRequestTask(s, () -> {
 					             if (!alive()) {
 						             if(cancelled){
-							             throw Exceptions.CancelException.INSTANCE;
+							             throw Exceptions.failWithCancel();
 						             }
 						             else {
 							             RingBuffer.throwAlert();
@@ -861,8 +861,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						break;
 					}
 					catch (Throwable ex) {
-						if(RingBuffer.isAlert(ex) ||
-								ex instanceof Exceptions.CancelException) {
+						if(RingBuffer.isAlert(ex) || Exceptions.isCancel(ex)) {
 
 							if (!running.get()) {
 								break;
