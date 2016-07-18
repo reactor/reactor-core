@@ -19,7 +19,8 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 
 /**
- * Expose common Loggers runtime properties, methods and internal logger.
+ * Expose static methods to get a logger depending on the environment (SLF4J or
+ * {@link java.util.logging.Logger}).
  */
 public abstract class Loggers {
 

@@ -16,7 +16,7 @@
 package reactor.util;
 
 /**
- * Logger interface designed for internal Loggers usage.
+ * Logger interface designed for internal Reactor usage.
  */
 public interface Logger {
 

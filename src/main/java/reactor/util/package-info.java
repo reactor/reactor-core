@@ -15,6 +15,6 @@
  */
 
 /**
- * Miscellaneous utility classes, such as tuples or queue suppliers and implementations.
+ * Miscellaneous utility classes, such as loggers, tuples or queue suppliers and implementations.
  */
 package reactor.util;
