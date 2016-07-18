@@ -196,9 +196,6 @@ public final class BlockingSink<E>
 		catch (Exceptions.CancelException ce) {
 			return Emission.CANCELLED;
 		}
-		catch (Exceptions.InsufficientCapacityException ice) {
-			return Emission.BACKPRESSURED;
-		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);
 			uncaughtException = t;
@@ -260,9 +257,6 @@ public final class BlockingSink<E>
 		}
 		catch (Exceptions.CancelException ce) {
 			return Emission.CANCELLED;
-		}
-		catch (Exceptions.InsufficientCapacityException ice) {
-			return Emission.BACKPRESSURED;
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);

@@ -155,7 +155,7 @@ final class MultiProducer extends RingBufferProducer
      * See {@code RingBufferProducer.tryNext()}.
      */
     @Override
-    public long tryNext() throws Exceptions.InsufficientCapacityException
+    public long tryNext() throws RingBuffer.InsufficientCapacityException
     {
         return tryNext(1);
     }
@@ -164,7 +164,7 @@ final class MultiProducer extends RingBufferProducer
      * See {@code RingBufferProducer.tryNext(int)}.
      */
     @Override
-    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
+    public long tryNext(int n) throws RingBuffer.InsufficientCapacityException
     {
         if (n < 1)
         {
@@ -181,7 +181,7 @@ final class MultiProducer extends RingBufferProducer
 
             if (!hasAvailableCapacity(gatingSequences, n, current))
             {
-                throw Exceptions.failWithOverflow();
+                throw RingBuffer.InsufficientCapacityException.INSTANCE;
             }
         }
         while (!cursor.compareAndSet(current, next));

@@ -132,7 +132,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
      * See {@code RingBufferProducer.tryNext()}.
      */
     @Override
-    public long tryNext() throws Exceptions.InsufficientCapacityException {
+    public long tryNext() throws RingBuffer.InsufficientCapacityException {
         return tryNext(1);
     }
 
@@ -140,7 +140,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
      * See {@code RingBufferProducer.tryNext(int)}.
      */
     @Override
-    public long tryNext(int n) throws Exceptions.InsufficientCapacityException {
+    public long tryNext(int n) throws RingBuffer.InsufficientCapacityException {
         if (n < 1)
         {
             throw new IllegalArgumentException("n must be > 0");
@@ -148,7 +148,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 
         if (!hasAvailableCapacity(n))
         {
-            throw Exceptions.failWithOverflow();
+            throw RingBuffer.InsufficientCapacityException.INSTANCE;
         }
 
         long nextSequence = this.nextValue += n;

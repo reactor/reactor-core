@@ -326,7 +326,7 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throw {@code Exceptions.InsufficientCapacityException}
+	 * Throw {@link IllegalStateException}
 	 */
 	public static void reportMoreProduced() {
 		throw Exceptions.failWithOverflow();

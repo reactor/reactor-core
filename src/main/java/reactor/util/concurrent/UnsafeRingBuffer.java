@@ -17,7 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.function.Supplier;
 
-import reactor.util.Exceptions;
 import sun.misc.Unsafe;
 
 abstract class RingBufferPad<E> extends RingBuffer<E>
@@ -126,13 +125,13 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
     }
 
     @Override
-    public long tryNext() throws Exceptions.InsufficientCapacityException
+    public long tryNext() throws InsufficientCapacityException
     {
         return sequenceProducer.tryNext();
     }
 
     @Override
-    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
+    public long tryNext(int n) throws InsufficientCapacityException
     {
         return sequenceProducer.tryNext(n);
     }

@@ -17,8 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.util.Exceptions;
-
 import static java.util.Arrays.copyOf;
 
 /**
@@ -208,9 +206,9 @@ abstract class RingBufferProducer {
 	 * number of the slot if there is at least <code>requiredCapacity</code> slots
 	 * available.
 	 * @return the claimed sequence value
-	 * @throws Exceptions.InsufficientCapacityException
+	 * @throws IllegalStateException
 	 */
-	public abstract long tryNext() throws Exceptions.InsufficientCapacityException;
+	public abstract long tryNext() throws IllegalStateException;
 
 	/**
 	 * Attempt to claim the next n events in sequence for publishing.  Will return the
@@ -220,9 +218,9 @@ abstract class RingBufferProducer {
 	 *
 	 * @param n the number of sequences to claim
 	 * @return the claimed sequence value
-	 * @throws Exceptions.InsufficientCapacityException
+	 * @throws IllegalStateException
 	 */
-	public abstract long tryNext(int n) throws Exceptions.InsufficientCapacityException;
+	public abstract long tryNext(int n) throws IllegalStateException;
 
 	/**
 	 * Publishes a sequence. Call when the event has been filled.

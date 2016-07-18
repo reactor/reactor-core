@@ -17,6 +17,8 @@ package reactor.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import reactor.util.concurrent.RingBuffer;
+
 /**
  * Static Helpers to decorate an error with an associated data
  *
@@ -121,11 +123,12 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return an {@link InsufficientCapacityException}
-	 * @return an {@link InsufficientCapacityException}
+	 * Return an {@link IllegalStateException}
+	 * @return an {@link IllegalStateException}
 	 */
-	public static InsufficientCapacityException failWithOverflow() {
-		return new InsufficientCapacityException();
+	public static IllegalStateException failWithOverflow() {
+		return new IllegalStateException("The receiver is overrun by more signals than " +
+				"expected (bounded queue...)");
 	}
 
 	/**
@@ -282,23 +285,6 @@ public abstract class Exceptions {
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return CANCEL_STACKTRACE ? super.fillInStackTrace() : this;
-		}
-
-	}
-
-	/**
-	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
-	 *
-	 * @author Stephane Maldini
-	 */
-	public static final class InsufficientCapacityException extends RuntimeException {
-
-		private static final long serialVersionUID = 2491425227432776145L;
-
-		private static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
-
-		private InsufficientCapacityException() {
-			super("The subscriber is overrun by more signals than expected (bounded queue...)");
 		}
 
 	}

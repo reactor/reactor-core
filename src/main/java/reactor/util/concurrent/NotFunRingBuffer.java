@@ -17,8 +17,6 @@ package reactor.util.concurrent;
 
 import java.util.function.Supplier;
 
-import reactor.util.Exceptions;
-
 abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {
     private final   long               indexMask;
@@ -97,13 +95,13 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
     }
 
     @Override
-    public long tryNext() throws Exceptions.InsufficientCapacityException
+    public long tryNext() throws InsufficientCapacityException
     {
         return sequenceProducer.tryNext();
     }
 
     @Override
-    public long tryNext(int n) throws Exceptions.InsufficientCapacityException
+    public long tryNext(int n) throws InsufficientCapacityException
     {
         return sequenceProducer.tryNext(n);
     }

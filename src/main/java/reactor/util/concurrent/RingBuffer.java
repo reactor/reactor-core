@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import reactor.util.Exceptions;
 import sun.misc.Unsafe;
 
 
@@ -411,20 +410,20 @@ public abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return The next sequence to publish to.
 	 *
-	 * @throws Exceptions.InsufficientCapacityException if the necessary space in the ring buffer is not available
+	 * @throws InsufficientCapacityException if the necessary space in the ring buffer is not available
 	 * @see RingBuffer#publish(long)
 	 * @see RingBuffer#get(long)
 	 */
-	abstract public long tryNext() throws Exceptions.InsufficientCapacityException;
+	abstract public long tryNext() throws InsufficientCapacityException;
 
 	/**
 	 * The same functionality as {@link RingBuffer#tryNext()}, but allows the caller to attempt to claim the next n
 	 * sequences.
 	 * @param n number of slots to claim
 	 * @return sequence number of the highest slot claimed
-	 * @throws Exceptions.InsufficientCapacityException if the necessary space in the ring buffer is not available
+	 * @throws InsufficientCapacityException if the necessary space in the ring buffer is not available
 	 */
-	abstract public long tryNext(int n) throws Exceptions.InsufficientCapacityException;
+	abstract public long tryNext(int n) throws InsufficientCapacityException;
 
 	abstract RingBufferProducer getSequencer();/*
 
@@ -503,6 +502,23 @@ public abstract class RingBuffer<E> implements LongSupplier {
 		}
 
 		return android;
+	}
+
+	/**
+	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
+	 *
+	 */
+	static final class InsufficientCapacityException extends RuntimeException {
+
+		static final long serialVersionUID = 2491425227432776145L;
+
+		static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
+
+		InsufficientCapacityException() {
+			super("The RingBuffer is overrun by more signals than expected (bounded " +
+					"queue...)");
+		}
+
 	}
 
 	private static final boolean HAS_UNSAFE = hasUnsafe0();
