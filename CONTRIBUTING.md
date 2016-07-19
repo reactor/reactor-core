@@ -42,7 +42,7 @@ immediately that this process is complete.
 
 ### Branch from `master`
 
-Master currently represents work toward Reactor 2.5. Please submit
+Master currently represents work toward Reactor 3.0. Please submit
 all pull requests there, even bug fixes and minor improvements. Backports to
 will be considered on a case-by-case basis.
 
@@ -136,7 +136,7 @@ For example:
  * ...
  *
  * @author First Last
- * @since 2.5.0
+ * @since 3.0.0
  * @see ...
  */
 ```

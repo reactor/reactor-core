@@ -1,6 +1,6 @@
 = Reactor Guide
 Stephane Maldini
-:appversion: 2.5.0.BUILD-SNAPSHOT (wiki)
+:appversion: 3.0.0.BUILD-SNAPSHOT (wiki)
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
 :doctype: book

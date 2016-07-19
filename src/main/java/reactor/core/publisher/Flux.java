@@ -104,7 +104,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> type of the value from sources
 	 * @param <V> The produced output after transformation by the given combinator
 	 *
-	 * @return a {@link Flux} based on the produced combinations , 2.5
+	 * @return a {@link Flux} based on the produced combinations , 3.0
 	 */
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, Publisher<? extends T>... sources) {
@@ -125,7 +125,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> type of the value from sources
 	 * @param <V> The produced output after transformation by the given combinator
 	 *
-	 * @return a {@link Flux} based on the produced combinations , 2.5
+	 * @return a {@link Flux} based on the produced combinations , 3.0
 	 */
 	@SafeVarargs
 	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, int prefetch,
@@ -307,7 +307,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The common base type of the source sequences
 	 * @param <V> The produced output after transformation by the given combinator
 	 *
-	 * @return a {@link Flux} based on the produced value , 2.5
+	 * @return a {@link Flux} based on the produced value , 3.0
 	 */
 	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			Function<Object[], V> combinator) {
@@ -328,7 +328,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> The common base type of the source sequences
 	 * @param <V> The produced output after transformation by the given combinator
 	 *
-	 * @return a {@link Flux} based on the produced value , 2.5
+	 * @return a {@link Flux} based on the produced value , 3.0
 	 */
 	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			int prefetch,
