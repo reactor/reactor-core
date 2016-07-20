@@ -2025,7 +2025,8 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=ON_NEXT, value=Three}', 'Signal{type=ON_ERROR, throwable=java.lang.Exception}',
+			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onError, ' +
+					'throwable=java.lang.Exception}',
 					'complete']
 	}
 
