@@ -20,5 +20,25 @@ package reactor.core.publisher;
  * Reactive Stream notification type
  */
 public enum SignalType {
-	REQUEST, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE, CANCEL, SUBSCRIBE
+	SUBSCRIBE, REQUEST, CANCEL, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE;
+
+	@Override
+	public String toString() {
+		switch (this) {
+			case ON_SUBSCRIBE:
+				return "onSubscribe";
+			case ON_NEXT:
+				return "onNext";
+			case ON_ERROR:
+				return "onError";
+			case ON_COMPLETE:
+				return "onComplete";
+			case REQUEST:
+				return "request";
+			case CANCEL:
+				return "cancel";
+			default:
+				return "subscribe";
+		}
+	}
 }
