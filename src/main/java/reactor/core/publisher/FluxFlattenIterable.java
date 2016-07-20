@@ -248,7 +248,9 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
+				s.cancel();
+
 				if (WIP.getAndIncrement(this) == 0) {
 					queue.clear();
 				}
@@ -308,7 +310,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 						catch (Throwable exc) {
 							Exceptions.throwIfFatal(exc);
-							onError(exc);
+							s.cancel();
+							onError(Exceptions.unwrap(exc));
 							it = null;
 							continue;
 						}
@@ -355,7 +358,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 						catch (Throwable exc) {
 							Exceptions.throwIfFatal(exc);
-							onError(exc);
+							s.cancel();
+							onError(Exceptions.unwrap(exc));
 							continue;
 						}
 						
@@ -376,7 +380,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 						catch (Throwable exc) {
 							Exceptions.throwIfFatal(exc);
-							onError(exc);
+							s.cancel();
+							onError(Exceptions.unwrap(exc));
 							continue;
 						}
 						
