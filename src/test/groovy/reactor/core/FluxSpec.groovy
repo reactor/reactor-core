@@ -929,7 +929,13 @@ class FluxSpec extends Specification {
 		given:
 			'a source composable with a mapping function that throws an error'
 			def source = EmitterProcessor.<Integer> create().connect()
-			Flux mapped = source.map { if (it == 1) throw new RuntimeException() else 'na' }
+			Flux mapped = source.map {
+			  if (it == 1) {
+				throw new RuntimeException()
+			  }
+			  else {
+				'na'
+			  } }
 			def errors = 0
 			mapped.doOnError(Exception) { errors++ }.subscribe()
 
@@ -978,7 +984,13 @@ class FluxSpec extends Specification {
 		given:
 			'a source composable with a filter function that throws an error'
 			def source = EmitterProcessor.<Integer> create().connect()
-			Flux filtered = source.filter { if (it == 1) throw new RuntimeException() else true }
+			Flux filtered = source.filter {
+			  if (it == 1) {
+				throw new RuntimeException()
+			  }
+			  else {
+				true
+			  } }
 			def errors = 0
 			filtered.doOnError(Exception) { errors++ }.subscribe()
 
@@ -1992,8 +2004,9 @@ class FluxSpec extends Specification {
 			)
 
 		then:
-			res == ['Signal{type=ON_NEXT, value=Three}', 'Signal{type=ON_NEXT, value=Two}', 'Signal{type=ON_NEXT, value=One}',
-					'Signal{type=ON_COMPLETE}', 'complete']
+			res == ['Signal{type=onNext, value=Three}', 'Signal{type=onNext, ' +
+					'value=Two}', 'Signal{type=onNext, value=One}',
+					'Signal{type=onComplete}', 'complete']
 
 		when:
 			'A source flux emits next signals followed by complete'
