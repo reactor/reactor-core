@@ -224,7 +224,7 @@ http://projectreactor.io/core/docs/api/
 https://github.com/reactor/lite-rx-api-hands-on
 
 ## Beyond Reactor Core
-- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IO](http://github.com/reactor/reactor-io).
+- Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](http://github.com/reactor/reactor-ipc).
 - [Reactor Addons](http://github.com/reactor/reactor-addons) include _Bus_ and _Pipes_ event routers plus a handful of extra reactive modules.
 
 -------------------------------------
