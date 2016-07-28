@@ -1053,10 +1053,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V> Mono<V> compose(Function<? super Mono<T>, ?
-			extends Mono<V>>
-			transformer) {
+	public final <V> Mono<V> compose(Function<? super Mono<T>, ? extends Mono<V>> transformer) {
 		return defer(() -> transformer.apply(this));
+	}
+
+	/**
+	 * Transforms this {@link Mono} in order to generate a target {@link Mono}.
+	 *
+	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
+	 * instance.
+	 * @param <V> the item type in the returned {@link Mono}
+	 *
+	 * @return a new {@link Mono}
+	 * @see #compose(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
+	 * @see #as for a loose conversion to an arbitrary type
+	 */
+	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Mono<V>> transformer) {
+		return from(transformer.apply(this));
 	}
 
 	/**
