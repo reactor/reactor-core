@@ -1053,10 +1053,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V> Mono<V> compose(Function<? super Mono<T>, ?
-			extends Mono<V>>
-			transformer) {
-		return defer(() -> transformer.apply(this));
+	public final <V> Mono<V> compose(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		return defer(() -> from(transformer.apply(this)));
 	}
 
 	/**
@@ -2514,6 +2512,25 @@ public abstract class Mono<T> implements Publisher<T> {
 	public String toString() {
 		return getClass().getSimpleName()
 		                 .replace(Mono.class.getSimpleName(), "");
+	}
+
+	/**
+	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
+	 * provided function is executed as part of assembly.
+	 *
+	 * {@code Function<Mono, Mono> applySchedulers = mono -> mono.subscribeOn(Schedulers.io()).publishOn(Schedulers.computation());
+	 *        mono.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
+	 *
+	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
+	 * instance.
+	 * @param <V> the item type in the returned {@link Mono}
+	 *
+	 * @return a new {@link Mono}
+	 * @see #compose(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
+	 * @see #as for a loose conversion to an arbitrary type
+	 */
+	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
+		return from(transformer.apply(this));
 	}
 
 	/**

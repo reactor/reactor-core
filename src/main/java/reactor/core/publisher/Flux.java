@@ -2035,22 +2035,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Defer the given transformation to this {@link Flux} in order to generate a
-	 * target {@link Publisher} type. A transformation will occur for each
-	 * {@link Subscriber}.
+	 * Defer the transformation of this {@link Flux} in order to generate a target {@link Flux} for each
+	 * new {@link Subscriber}.
 	 *
 	 * {@code flux.compose(Mono::from).subscribe(Subscribers.unbounded()) }
 	 *
-	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Publisher}
-	 * instance.
+	 * @param transformer the {@link Function} to map this {@link Flux} into a target {@link Publisher}
+	 * instance for each new subscriber
 	 * @param <V> the item type in the returned {@link Publisher}
 	 *
 	 * @return a new {@link Flux}
+	 * @see #transform for immmediate transformation of {@link Flux}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V> Flux<V> compose(Function<? super Flux<T>, ?
-			extends Publisher<V>>
-			transformer) {
+	public final <V> Flux<V> compose(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> transformer.apply(this));
 	}
 
@@ -2641,7 +2639,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
-		return compose(f -> f.map(new Elapsed<>()));
+		return transform(f -> f.map(new Elapsed<>()));
 	}
 
 	/**
@@ -5170,6 +5168,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	public String toString() {
 		return getClass().getSimpleName()
 		                 .replace(Flux.class.getSimpleName(), "");
+	}
+
+	/**
+	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
+	 * provided function is executed as part of assembly.
+	 *
+	 * {@code Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.io()).publishOn(Schedulers.computation());
+	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
+	 *
+	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
+	 * instance.
+	 * @param <V> the item type in the returned {@link Flux}
+	 *
+	 * @return a new {@link Flux}
+	 * @see #compose(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
+	 * @see #as for a loose conversion to an arbitrary type
+	 */
+	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
+		return from(transformer.apply(this));
 	}
 
 	/**
