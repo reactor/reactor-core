@@ -5171,7 +5171,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} in order to generate a target {@link Flux}.
+	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
+	 * provided function is executed as part of assembly.
+	 *
+	 * {@code Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.io()).publishOn(Schedulers.computation());
+	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.

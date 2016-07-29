@@ -2515,7 +2515,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Mono} in order to generate a target {@link Mono}.
+	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
+	 * provided function is executed as part of assembly.
+	 *
+	 * {@code Function<Mono, Mono> applySchedulers = mono -> mono.subscribeOn(Schedulers.io()).publishOn(Schedulers.computation());
+	 *        mono.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
 	 * instance.
