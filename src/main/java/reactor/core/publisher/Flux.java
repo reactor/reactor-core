@@ -2053,21 +2053,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transforms this {@link Flux} in order to generate a target {@link Flux}.
-	 *
-	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
-	 * instance.
-	 * @param <V> the item type in the returned {@link Flux}
-	 *
-	 * @return a new {@link Flux}
-	 * @see #compose(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
-	 * @see #as for a loose conversion to an arbitrary type
-	 */
-	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
-		return from(transformer.apply(this));
-	}
-
-	/**
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
 	 * Errors will immediately short circuit current concat backlog.
@@ -2654,7 +2639,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
-		return compose(f -> f.map(new Elapsed<>()));
+		return transform(f -> f.map(new Elapsed<>()));
 	}
 
 	/**
@@ -5183,6 +5168,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	public String toString() {
 		return getClass().getSimpleName()
 		                 .replace(Flux.class.getSimpleName(), "");
+	}
+
+	/**
+	 * Transforms this {@link Flux} in order to generate a target {@link Flux}.
+	 *
+	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
+	 * instance.
+	 * @param <V> the item type in the returned {@link Flux}
+	 *
+	 * @return a new {@link Flux}
+	 * @see #compose(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
+	 * @see #as for a loose conversion to an arbitrary type
+	 */
+	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
+		return from(transformer.apply(this));
 	}
 
 	/**

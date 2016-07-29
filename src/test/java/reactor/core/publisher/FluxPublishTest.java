@@ -112,7 +112,7 @@ public class FluxPublishTest {
 	public void pairWise() {
 		TestSubscriber<Tuple2<Integer, Integer>> ts = TestSubscriber.create();
 
-		range(1, 9).compose(o -> zip(o, o.skip(1)))
+		range(1, 9).transform(o -> zip(o, o.skip(1)))
 		           .subscribe(ts);
 
 		ts.assertValues(Tuples.of(1, 2),
