@@ -2639,7 +2639,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
-		return transform(f -> f.map(new Elapsed<>()));
+		return compose(f -> f.map(new Elapsed<>()));
 	}
 
 	/**
