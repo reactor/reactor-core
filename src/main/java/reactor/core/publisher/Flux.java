@@ -5171,7 +5171,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transforms this {@link Flux} in order to generate a target {@link Flux}.
+	 * Transform this {@link Flux} in order to generate a target {@link Flux}.
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.

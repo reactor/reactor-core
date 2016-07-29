@@ -2515,7 +2515,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transforms this {@link Mono} in order to generate a target {@link Mono}.
+	 * Transform this {@link Mono} in order to generate a target {@link Mono}.
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
 	 * instance.
