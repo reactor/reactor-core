@@ -78,9 +78,8 @@ Reactor uses a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/
 contract for arbitrary task execution. It provides some guarantees required by Reactive
 Streams flows like FIFO execution.
 
-You can use or create efficient [schedulers](http://projectreactor
-.io/core/docs/api/?reactor/core/schedulers/Schedulers.html) to jump thread on the
-producing flows (subscribeOn) or receiving flows (publishOn) :
+You can use or create efficient [schedulers](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Schedulers.html)
+to jump thread on the producing flows (subscribeOn) or receiving flows (publishOn):
 
 ```java
 
