@@ -53,7 +53,7 @@ final class FluxDefer<T> extends Flux<T>
 		try {
 			p = supplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 

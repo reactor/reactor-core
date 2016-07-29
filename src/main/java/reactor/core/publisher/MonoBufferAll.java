@@ -48,12 +48,12 @@ final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource
         try {
             collection = collectionSupplier.get();
         } catch (Throwable ex) {
-            Operators.error(s, Exceptions.mapOperatorError(null, ex));
+            Operators.error(s, Exceptions.mapOperatorError(ex));
             return;
         }
         
         if (collection == null) {
-            Operators.error(s, Exceptions.mapOperatorError(null, new NullPointerException
+            Operators.error(s, Exceptions.mapOperatorError(new NullPointerException
                     ("The " +
                     "collectionSupplier " +
                     "returned a null collection")));

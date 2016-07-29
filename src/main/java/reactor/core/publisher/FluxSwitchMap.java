@@ -75,12 +75,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}

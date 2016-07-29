@@ -85,7 +85,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		try {
 			q = mainQueueSupplier.get();
 		} catch (Throwable ex) {
-			Operators.error(s, Exceptions.mapOperatorError(null, ex));
+			Operators.error(s, Exceptions.mapOperatorError(ex));
 			return;
 		}
 		

@@ -134,7 +134,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
                             try {
                                 v = ((Callable<T>)m).call();
                             } catch (Throwable ex) {
-                                subscriber.onError(Exceptions.mapOperatorError(null, ex));
+                                subscriber.onError(Exceptions.mapOperatorError(ex));
                                 return;
                             }
                             
@@ -156,7 +156,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
                             try {
                                 ((Callable<?>)m).call();
                             } catch (Throwable ex) {
-                                subscriber.onError(Exceptions.mapOperatorError(null, ex));
+                                subscriber.onError(Exceptions.mapOperatorError(ex));
                                 return;
                             }
                             

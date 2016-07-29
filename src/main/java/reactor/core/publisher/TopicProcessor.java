@@ -886,7 +886,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							}
 							continue;
 						}
-						subscriber.onError(Exceptions.mapOperatorError(null, ex));
+						subscriber.onError(Exceptions.mapOperatorError(ex));
 						sequence.set(nextSequence);
 						nextSequence++;
 					}

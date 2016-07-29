@@ -65,7 +65,7 @@ extends Mono<T>
 		try {
 			t = callable.call();
 		} catch (Throwable e) {
-			s.onError(Exceptions.mapOperatorError(null, e));
+			s.onError(Exceptions.mapOperatorError(e));
 			return;
 		}
 

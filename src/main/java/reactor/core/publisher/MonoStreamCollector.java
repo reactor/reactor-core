@@ -61,7 +61,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			
 			finisher = collector.finisher();
 		} catch (Throwable ex) {
-			Operators.error(s, Exceptions.mapOperatorError(null, ex));
+			Operators.error(s, Exceptions.mapOperatorError(ex));
 			return;
 		}
 		
@@ -139,7 +139,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			try {
 				r = finisher.apply(a);
 			} catch (Throwable ex) {
-				subscriber.onError(Exceptions.mapOperatorError(null, ex));
+				subscriber.onError(Exceptions.mapOperatorError(ex));
 				return;
 			}
 			

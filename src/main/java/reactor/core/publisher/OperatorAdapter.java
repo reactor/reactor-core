@@ -118,7 +118,7 @@ public class OperatorAdapter<I, O>
 		try {
 			doComplete();
 		} catch (Throwable throwable) {
-			doOnSubscriberError(Exceptions.mapOperatorError(null, throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(throwable));
 		}
 	}
 
@@ -133,7 +133,7 @@ public class OperatorAdapter<I, O>
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
-			doOnSubscriberError(Exceptions.mapOperatorError(null, throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(throwable));
 		}
 	}
 

@@ -74,7 +74,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			try {
 				v = ((Callable<T>)source).call();
 			} catch (Throwable ex) {
-				Operators.error(s, Exceptions.mapOperatorError(null, ex));
+				Operators.error(s, Exceptions.mapOperatorError(ex));
 				return;
 			}
 			
@@ -90,7 +90,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				
 				it = iter.iterator();
 			} catch (Throwable ex) {
-				Operators.error(s, Exceptions.mapOperatorError(null, ex));
+				Operators.error(s, Exceptions.mapOperatorError(ex));
 				return;
 			}
 			

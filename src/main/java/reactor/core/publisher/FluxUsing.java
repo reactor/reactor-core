@@ -78,7 +78,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		try {
 			resource = resourceSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
@@ -91,11 +91,11 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 			try {
 				resourceCleanup.accept(resource);
 			} catch (Throwable ex) {
-				ex.addSuppressed(Exceptions.mapOperatorError(null, ex));
+				ex.addSuppressed(Exceptions.mapOperatorError(ex));
 				e = ex;
 			}
 
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
@@ -104,12 +104,12 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 			try {
 				resourceCleanup.accept(resource);
 			} catch (Throwable ex) {
-				Throwable _ex = Exceptions.mapOperatorError(null, ex);
+				Throwable _ex = Exceptions.mapOperatorError(ex);
 				_ex.addSuppressed(e);
 				e = _ex;
 			}
 
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
@@ -192,7 +192,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(null, e);
+					Throwable _e = Exceptions.mapOperatorError(e);
 					_e.addSuppressed(t);
 					t = _e;
 				}
@@ -211,7 +211,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					actual.onError(Exceptions.mapOperatorError(null, e));
+					actual.onError(Exceptions.mapOperatorError(e));
 					return;
 				}
 			}
@@ -321,7 +321,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(null, e);
+					Throwable _e = Exceptions.mapOperatorError(e);
 					_e.addSuppressed(t);
 					t = _e;
 				}
@@ -340,7 +340,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					actual.onError(Exceptions.mapOperatorError(null, e));
+					actual.onError(Exceptions.mapOperatorError(e));
 					return;
 				}
 			}
@@ -460,7 +460,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(null, e);
+					Throwable _e = Exceptions.mapOperatorError(e);
 					_e.addSuppressed(t);
 					t = _e;
 				}
@@ -479,7 +479,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				try {
 					resourceCleanup.accept(resource);
 				} catch (Throwable e) {
-					actual.onError(Exceptions.mapOperatorError(null, e));
+					actual.onError(Exceptions.mapOperatorError(e));
 					return;
 				}
 			}

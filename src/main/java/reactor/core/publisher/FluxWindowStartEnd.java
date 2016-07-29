@@ -75,12 +75,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		try {
 			q = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The drainQueueSupplier returned a null queue")));
 			return;
 		}

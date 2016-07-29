@@ -64,12 +64,12 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (collection == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The collectionSupplier returned a null collection")));
 			return;
 		}

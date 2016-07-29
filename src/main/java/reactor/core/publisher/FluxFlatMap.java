@@ -130,7 +130,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			try {
 				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
-				Operators.error(s, Exceptions.mapOperatorError(null, e));
+				Operators.error(s, Exceptions.mapOperatorError(e));
 				return true;
 			}
 
@@ -145,7 +145,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				p = mapper.apply(t);
 			}
 			catch (Throwable e) {
-				Operators.error(s, Exceptions.mapOperatorError(null, e));
+				Operators.error(s, Exceptions.mapOperatorError(e));
 				return true;
 			}
 
@@ -161,7 +161,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					v = ((Callable<R>)p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Exceptions.mapOperatorError(null, e));
+					Operators.error(s, Exceptions.mapOperatorError(e));
 					return true;
 				}
 

@@ -71,12 +71,12 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 			p = whenSourceFactory.apply(other);
 		}
 		catch (Throwable e) {
-			s.onError(Exceptions.mapOperatorError(null, e));
+			s.onError(Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (p == null) {
-			s.onError(Exceptions.mapOperatorError(null, new NullPointerException(
+			s.onError(Exceptions.mapOperatorError(new NullPointerException(
 					"The whenSourceFactory returned a null Publisher")));
 			return;
 		}

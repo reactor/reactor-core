@@ -53,7 +53,7 @@ final class FluxStream<T> extends Flux<T>
 		try {
 			it = stream.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 

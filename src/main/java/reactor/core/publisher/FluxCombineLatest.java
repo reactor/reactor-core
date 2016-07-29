@@ -111,12 +111,12 @@ extends Flux<R>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				Operators.error(s, Exceptions.mapOperatorError(null, e));
+				Operators.error(s, Exceptions.mapOperatorError(e));
 				return;
 			}
 
 			if (it == null) {
-				Operators.error(s, Exceptions.mapOperatorError(null, new
+				Operators.error(s, Exceptions.mapOperatorError(new
 						NullPointerException("The iterator returned is null")));
 				return;
 			}
@@ -128,7 +128,7 @@ extends Flux<R>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.mapOperatorError(null, e));
+					Operators.error(s, Exceptions.mapOperatorError(e));
 					return;
 				}
 
@@ -141,12 +141,12 @@ extends Flux<R>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.mapOperatorError(null, e));
+					Operators.error(s, Exceptions.mapOperatorError(e));
 					return;
 				}
 
 				if (p == null) {
-					Operators.error(s, Exceptions.mapOperatorError(null, new NullPointerException("The Publisher returned by the iterator is " +
+					Operators.error(s, Exceptions.mapOperatorError(new NullPointerException("The Publisher returned by the iterator is " +
 					  "null")));
 					return;
 				}
@@ -182,12 +182,12 @@ extends Flux<R>
 		try {
 			queue = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		
 		if (queue == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}

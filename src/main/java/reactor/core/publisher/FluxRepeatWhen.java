@@ -68,12 +68,12 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		try {
 			p = whenSourceFactory.apply(other);
 		} catch (Throwable e) {
-			s.onError(Exceptions.mapOperatorError(null, e));
+			s.onError(Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (p == null) {
-			s.onError(Exceptions.mapOperatorError(null, new NullPointerException("The " +
+			s.onError(Exceptions.mapOperatorError(new NullPointerException("The " +
 					"whenSourceFactory returned a null Publisher")));
 			return;
 		}

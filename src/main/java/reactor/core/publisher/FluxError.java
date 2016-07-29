@@ -76,7 +76,7 @@ final class FluxError<T>
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, e));
 		} else {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 		}
 	}
 	

@@ -59,12 +59,12 @@ extends FluxSource<T, T> implements Fuseable {
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (collection == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The collectionSupplier returned a null collection")));
 			return;
 		}

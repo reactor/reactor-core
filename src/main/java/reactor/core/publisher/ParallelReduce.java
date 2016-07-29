@@ -63,7 +63,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> {
 			try {
 				initialValue = initialSupplier.get();
 			} catch (Throwable ex) {
-				reportError(subscribers, Exceptions.mapOperatorError(null, ex));
+				reportError(subscribers, Exceptions.mapOperatorError(ex));
 				return;
 			}
 			

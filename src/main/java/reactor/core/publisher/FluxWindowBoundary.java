@@ -68,12 +68,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			q = processorQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (q == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The processorQueueSupplier returned a null queue")));
 			return;
 		}
@@ -83,12 +83,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			dq = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (dq == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The drainQueueSupplier returned a null queue")));
 			return;
 		}

@@ -67,12 +67,12 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		try {
 			q = (Queue)queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}

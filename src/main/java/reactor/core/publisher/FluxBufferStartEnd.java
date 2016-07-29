@@ -80,7 +80,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		

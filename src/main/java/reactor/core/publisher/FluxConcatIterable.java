@@ -55,12 +55,12 @@ final class FluxConcatIterable<T> extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (it == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The Iterator returned is null")));
 			return;
 		}

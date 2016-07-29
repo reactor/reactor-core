@@ -60,7 +60,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			it = other.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		
@@ -74,7 +74,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 		

@@ -77,7 +77,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 		try {
 			out = transform.apply(multicast);
 		} catch (Throwable ex) {
-			Operators.error(s, Exceptions.mapOperatorError(null, ex));
+			Operators.error(s, Exceptions.mapOperatorError(ex));
 			return;
 		}
 		

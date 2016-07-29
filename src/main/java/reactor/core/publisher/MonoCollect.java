@@ -58,12 +58,12 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		try {
 			container = supplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(null, e));
+			Operators.error(s, Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (container == null) {
-			Operators.error(s, Exceptions.mapOperatorError(null, new
+			Operators.error(s, Exceptions.mapOperatorError(new
 					NullPointerException("The supplier returned a null container")));
 			return;
 		}

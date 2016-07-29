@@ -64,7 +64,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 			try {
 				initialValue = initialCollection.get();
 			} catch (Throwable ex) {
-				reportError(subscribers, Exceptions.mapOperatorError(null, ex));
+				reportError(subscribers, Exceptions.mapOperatorError(ex));
 				return;
 			}
 			
