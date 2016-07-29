@@ -43,8 +43,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
         try {
             v = callable.call();
         } catch (Throwable ex) {
-            Exceptions.throwIfFatal(ex);
-            s.onError(ex);
+            s.onError(Exceptions.mapOperatorError(null, ex));
             return;
         }
         

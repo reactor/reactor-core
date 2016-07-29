@@ -208,8 +208,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				v = callable.call();
 			}
 			catch (Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				actual.onError(ex);
+				actual.onError(Exceptions.mapOperatorError(this, ex));
 				return;
 			}
 

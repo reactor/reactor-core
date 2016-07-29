@@ -130,8 +130,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			try {
 				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				Operators.error(s, Exceptions.unwrap(e));
+				Operators.error(s, Exceptions.mapOperatorError(null, e));
 				return true;
 			}
 
@@ -146,8 +145,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				p = mapper.apply(t);
 			}
 			catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				Operators.error(s, Exceptions.unwrap(e));
+				Operators.error(s, Exceptions.mapOperatorError(null, e));
 				return true;
 			}
 
@@ -163,8 +161,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					v = ((Callable<R>)p).call();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Operators.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.mapOperatorError(null, e));
 					return true;
 				}
 
@@ -330,9 +327,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				s.cancel();
-				Exceptions.throwIfFatal(e);
-				onError(e);
+				onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 			
@@ -348,8 +343,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				try {
 					v = ((Callable<R>)p).call();
 				} catch (Throwable e) {
-					s.cancel();
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 				emitScalar(v);
@@ -401,10 +395,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					try {
 						q = getOrCreateScalarQueue();
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						
-						s.cancel();
-						
+						ex = Exceptions.mapOperatorError(s, ex);
+
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							done = true;
 						}
@@ -442,9 +434,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					q = getOrCreateScalarQueue();
 				}
 				catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					
-					s.cancel();
+					ex = Exceptions.mapOperatorError(s, ex);
 					
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						done = true;
@@ -607,8 +597,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										v = q.poll();
 									}
 									catch (Throwable ex) {
-										Exceptions.throwIfFatal(ex);
-										inner.cancel();
+										ex = Exceptions.mapOperatorError(inner, ex);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
 											Exceptions.onErrorDropped(ex);
 										}
@@ -646,8 +635,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										empty = q.isEmpty();
 									}
 									catch (Throwable ex) {
-										Exceptions.throwIfFatal(ex);
-										inner.cancel();
+										ex = Exceptions.mapOperatorError(inner, ex);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
 											Exceptions.onErrorDropped(ex);
 										}
@@ -811,8 +799,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					try {
 						q = getOrCreateScalarQueue(inner);
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						inner.cancel();
+						ex = Exceptions.mapOperatorError(inner, ex);
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							inner.done = true;
 						} else {
@@ -847,8 +834,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				try {
 					q = getOrCreateScalarQueue(inner);
 				} catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					inner.cancel();
+					ex = Exceptions.mapOperatorError(inner, ex);
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						inner.done = true;
 					} else {

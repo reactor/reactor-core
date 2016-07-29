@@ -62,13 +62,13 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		try {
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
-			Exceptions.throwIfFatal(e);
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
 		if (worker == null) {
-			Operators.error(s, new NullPointerException("The scheduler returned a null Function"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The scheduler returned a null Function")));
 			return;
 		}
 

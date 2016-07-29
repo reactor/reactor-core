@@ -89,8 +89,7 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.getAsBoolean();
 			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				subscriber.onError(Exceptions.unwrap(e));
+				subscriber.onError(Exceptions.mapOperatorError(null, e));
 				return;
 			}
 			

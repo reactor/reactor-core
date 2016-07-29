@@ -63,7 +63,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		try {
 			buffer = bufferSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
@@ -192,9 +192,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			try {
 				c = bufferSupplier.get();
 			} catch (Throwable e) {
-				other.cancel();
-				
-				otherError(e);
+				otherError(Exceptions.mapOperatorError(other, e));
 				return;
 			}
 			

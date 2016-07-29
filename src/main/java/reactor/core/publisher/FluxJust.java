@@ -71,8 +71,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
 		}
 		catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
-			subscriber.onError(throwable);
+			subscriber.onError(Exceptions.mapOperatorError(null, throwable));
 		}
 	}
 

@@ -235,9 +235,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
 	    void error(Throwable e){
 		    done = true;
-		    s.cancel();
-		    Exceptions.throwIfFatal(e);
-		    actual.onError(Exceptions.unwrap(e));
+		    actual.onError(Exceptions.mapOperatorError(s, e));
 	    }
 	    
 	    @Override

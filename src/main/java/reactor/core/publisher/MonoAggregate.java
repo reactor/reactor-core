@@ -84,11 +84,9 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 				try {
 					r = aggregator.apply(r, t);
 				} catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					s.cancel();
 					result = null;
 					done = true;
-					subscriber.onError(ex);
+					subscriber.onError(Exceptions.mapOperatorError(s, ex));
 					return;
 				}
 				

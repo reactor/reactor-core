@@ -18,6 +18,8 @@ package reactor.core;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Subscription;
+
 /**
  * Global Reactor Core Exception handling and utils to operate on.
  *
@@ -166,6 +168,38 @@ public abstract class Exceptions {
 	 */
 	public static boolean isOperatorStacktraceEnabled() {
 		return TRACE_OPERATOR_STACKTRACE;
+	}
+
+	/**
+	 * Map an "operator" error. The
+	 * result error will be passed via onError to the operator downstream after
+	 * checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param error the callback or operator error
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable mapOperatorError(Throwable error) {
+		return mapOperatorError(null, error);
+	}
+	/**
+	 * Map an "operator" error given an operator parent {@link Subscription}. The
+	 * result error will be passed via onError to the operator downstream.
+	 * {@link Subscription} will be cancelled after checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param subscription the linked operator parent {@link Subscription}
+	 * @param error the callback or operator error
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable mapOperatorError(Subscription subscription, Throwable error) {
+		Exceptions.throwIfFatal(error);
+		if(subscription != null) {
+			subscription.cancel();
+		}
+		return unwrap(error);
 	}
 
 	/**

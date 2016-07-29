@@ -111,12 +111,13 @@ extends Flux<R>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				Operators.error(s, e);
+				Operators.error(s, Exceptions.mapOperatorError(null, e));
 				return;
 			}
 
 			if (it == null) {
-				Operators.error(s, new NullPointerException("The iterator returned is null"));
+				Operators.error(s, Exceptions.mapOperatorError(null, new
+						NullPointerException("The iterator returned is null")));
 				return;
 			}
 
@@ -127,7 +128,7 @@ extends Flux<R>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					Operators.error(s, e);
+					Operators.error(s, Exceptions.mapOperatorError(null, e));
 					return;
 				}
 
@@ -140,13 +141,13 @@ extends Flux<R>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					Operators.error(s, e);
+					Operators.error(s, Exceptions.mapOperatorError(null, e));
 					return;
 				}
 
 				if (p == null) {
-					Operators.error(s, new NullPointerException("The Publisher returned by the iterator is " +
-					  "null"));
+					Operators.error(s, Exceptions.mapOperatorError(null, new NullPointerException("The Publisher returned by the iterator is " +
+					  "null")));
 					return;
 				}
 
@@ -181,12 +182,13 @@ extends Flux<R>
 		try {
 			queue = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
 		if (queue == null) {
-			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
 		
@@ -435,13 +437,13 @@ extends Flux<R>
 					try {
 						w = combiner.apply(v.array);
 					} catch (Throwable ex) {
-						innerError(Exceptions.unwrap(ex));
-						Exceptions.throwIfFatal(ex);
+						innerError(Exceptions.mapOperatorError(this, ex));
 						continue;
 					}
 					
 					if (w == null) {
-						innerError(new NullPointerException("The combiner returned a null value"));
+						innerError(Exceptions.mapOperatorError(this, new
+								NullPointerException("The combiner returned a null value")));
 						continue;
 					}
 					

@@ -260,7 +260,7 @@ public final class BlockingSink<E>
 				return Emission.CANCELLED;
 			}
 			Exceptions.throwIfFatal(t);
-			uncaughtException = t;
+			uncaughtException = Exceptions.unwrap(t);
 			return Emission.FAILED;
 		}
 	}

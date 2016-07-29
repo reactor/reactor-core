@@ -109,9 +109,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				s.cancel();
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 
@@ -219,9 +217,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				s.cancel();
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 
@@ -248,9 +244,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				done = true;
-				Exceptions.throwIfFatal(e);
-				s.cancel();
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 				return true;
 			}
 

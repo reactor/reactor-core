@@ -32,6 +32,7 @@ import java.util.stream.StreamSupport;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 
@@ -92,8 +93,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			throwError(e);
-			return null;
+			throw Exceptions.propagate(e);
 		}
 		
 		if (q == null) {
@@ -116,13 +116,6 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 	@Override
 	public long getPending() {
 		return 0;
-	}
-
-	static void throwError(Throwable e) {
-		if (e instanceof RuntimeException) {
-			throw (RuntimeException)e;
-		}
-		throw new RuntimeException(e);
 	}
 
 	static final class SubscriberIterator<T>
@@ -169,8 +162,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 				if (d) {
 					Throwable e = error;
 					if (e != null) {
-						throwError(e);
-						return false;
+						throw Exceptions.propagate(e);
 					} else
 					if (empty) {
 						return false;
@@ -184,8 +176,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 						}
 					} catch (InterruptedException ex) {
 						run();
-						throwError(ex);
-						return false;
+						throw Exceptions.propagate(ex);
 					} finally {
 						lock.unlock();
 					}

@@ -98,8 +98,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             try {
                 m = mapper.apply(t);
             } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                subscriber.onError(ex);
+                subscriber.onError(Exceptions.mapOperatorError(s, ex));
                 return;
             }
             
@@ -116,8 +115,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 try {
                     v = c.call();
                 } catch (Throwable ex) {
-                    Exceptions.throwIfFatal(ex);
-                    subscriber.onError(ex);
+                    subscriber.onError(Exceptions.mapOperatorError(s, ex));
                     return;
                 }
                 
@@ -133,8 +131,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 m.subscribe(second);
             }
             catch (Throwable e){
-                Exceptions.throwIfFatal(e);
-                subscriber.onError(e);
+                subscriber.onError(Exceptions.mapOperatorError(this, e));
             }
         }
         

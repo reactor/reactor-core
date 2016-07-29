@@ -199,9 +199,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							s.cancel();
-							Operators.error(actual, ex);
+							Operators.error(actual, Exceptions.mapOperatorError(s, ex));
 							return;
 						}
 					}
@@ -323,9 +321,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							Exceptions.throwIfFatal(e);
-							s.cancel();
-							actual.onError(e);
+							actual.onError(Exceptions.mapOperatorError(s, e));
 							return;
 						}
 						
@@ -342,10 +338,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								Exceptions.throwIfFatal(e);
-								
-								s.cancel();
-								actual.onError(e);
+								actual.onError(Exceptions.mapOperatorError(s, e));
 								return;
 							}
 							
@@ -375,9 +368,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = callable.call();
 								} catch (Throwable e) {
-									Exceptions.throwIfFatal(e);
-									s.cancel();
-									actual.onError(Exceptions.unwrap(e));
+									actual.onError(Exceptions.mapOperatorError(s, e));
 									return;
 								}
 								
@@ -526,9 +517,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							s.cancel();
-							Operators.error(actual, ex);
+							Operators.error(actual, Exceptions.mapOperatorError(s, ex));
 							return;
 						}
 					}
@@ -536,9 +525,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						s.cancel();
-						Operators.error(actual, ex);
+						Operators.error(actual, Exceptions.mapOperatorError(s, ex));
 						return;
 					}
 				}
@@ -646,9 +633,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							Exceptions.throwIfFatal(e);
-							s.cancel();
-							actual.onError(e);
+							actual.onError(Exceptions.mapOperatorError(s, e));
 							return;
 						}
 						
@@ -670,10 +655,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								Exceptions.throwIfFatal(e);
-								
-								s.cancel();
-								actual.onError(e);
+								actual.onError(Exceptions.mapOperatorError(s, e));
 								return;
 							}
 							
@@ -702,9 +684,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
-									Exceptions.throwIfFatal(e);
-									s.cancel();
-									actual.onError(Exceptions.unwrap(e));
+									actual.onError(Exceptions.mapOperatorError(s, e));
 									return;
 								}
 								

@@ -464,9 +464,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				}
 			}
 			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				s.cancel();
-				onError(t);
+				onError(Exceptions.mapOperatorError(s, t));
 			}
 		}
 	}
@@ -481,8 +479,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			executor.shutdown();
 		}
 		catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			onError(t);
+			onError(Exceptions.mapOperatorError(null, t));
 		}
 	}
 
@@ -576,8 +573,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				if(RingBuffer.isAlert(t)){
 					return;
 				}
-				Exceptions.throwIfFatal(t);
-				errorSubscriber.onError(t);
+				errorSubscriber.onError(Exceptions.mapOperatorError(null, t));
 			}
 		}
 	}

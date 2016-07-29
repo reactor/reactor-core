@@ -58,8 +58,7 @@ final class FluxCreate<T> extends Flux<T> {
         try {
             emitter.accept(dfe);
         } catch (Throwable ex) {
-            Exceptions.throwIfFatal(ex);
-            dfe.fail(ex);
+            dfe.fail(Exceptions.mapOperatorError(null, ex));
         }
     }
     

@@ -75,12 +75,13 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		try {
 			q = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, new NullPointerException("The drainQueueSupplier returned a null queue"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The drainQueueSupplier returned a null queue")));
 			return;
 		}
 		
@@ -354,12 +355,15 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							try {
 								pq = processorQueueSupplier.get();
 							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, ex);
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, ex));
 								continue;
 							}
 							
 							if (pq == null) {
-								Exceptions.addThrowable(ERROR, this, new NullPointerException("The processorQueueSupplier returned a null queue"));
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, new NullPointerException
+												("The processorQueueSupplier returned a null queue")));
 								continue;
 							}
 							
@@ -368,13 +372,15 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							try {
 								p = end.apply(newWindow.value);
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
-								Exceptions.addThrowable(ERROR, this, Exceptions.unwrap(ex));
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, ex));
 								continue;
 							}
 
 							if (p == null) {
-								Exceptions.addThrowable(ERROR, this, new NullPointerException("The end returned a null publisher"));
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, new NullPointerException
+												("The end returned a null publisher")));
 								continue;
 							}
 

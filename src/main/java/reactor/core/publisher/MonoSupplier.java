@@ -64,8 +64,7 @@ extends Mono<T>
 		try {
 			t = supplier.get();
 		} catch (Throwable e) {
-			Exceptions.throwIfFatal(e);
-			s.onError(Exceptions.unwrap(e));
+			s.onError(Exceptions.mapOperatorError(sds, e));
 			return;
 		}
 

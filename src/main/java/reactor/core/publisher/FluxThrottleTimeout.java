@@ -67,12 +67,13 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 		try {
 			q = (Queue)queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
 		
@@ -170,8 +171,7 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 			try {
 				p = throttler.apply(t);
 			} catch (Throwable e) {
-				Exceptions.throwIfFatal(e);
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 

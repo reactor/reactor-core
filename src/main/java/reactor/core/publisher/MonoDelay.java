@@ -92,8 +92,7 @@ final class MonoDelay extends Mono<Long> {
 				}
 				}
 				catch (Throwable t){
-					Exceptions.throwIfFatal(t);
-					s.onError(t);
+					s.onError(Exceptions.mapOperatorError(null, t));
 				}
 			} else {
 				s.onError(new IllegalStateException("Could not emit value due to lack of requests"));

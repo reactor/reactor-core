@@ -77,8 +77,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 		try {
 			out = transform.apply(multicast);
 		} catch (Throwable ex) {
-			Exceptions.throwIfFatal(ex);
-			Operators.error(s, ex);
+			Operators.error(s, Exceptions.mapOperatorError(null, ex));
 			return;
 		}
 		
@@ -203,8 +202,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 				try {
 					queue = queueSupplier.get();
 				} catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					onError(ex);
+					onError(Exceptions.mapOperatorError(s, ex));
 					return;
 				}
 				connected = true;
@@ -298,9 +296,8 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 							try {
 								v = queue.poll();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
+								error = Exceptions.mapOperatorError(s, ex);
 								queue.clear();
-								error = ex;
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
@@ -332,9 +329,8 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 							try {
 								empty = queue.isEmpty();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
 								queue.clear();
-								error = ex;
+								error = Exceptions.mapOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
@@ -408,10 +404,8 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 							try {
 								v = queue.poll();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
-								s.cancel();
 								queue.clear();
-								error = ex;
+								error = Exceptions.mapOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
@@ -468,10 +462,8 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 							try {
 								empty = queue.isEmpty();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
-								s.cancel();
 								queue.clear();
-								error = ex;
+								error = Exceptions.mapOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);

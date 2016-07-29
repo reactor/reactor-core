@@ -74,8 +74,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			try {
 				v = ((Callable<T>)source).call();
 			} catch (Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				Operators.error(s, ex);
+				Operators.error(s, Exceptions.mapOperatorError(null, ex));
 				return;
 			}
 			
@@ -91,8 +90,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				
 				it = iter.iterator();
 			} catch (Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				Operators.error(s, ex);
+				Operators.error(s, Exceptions.mapOperatorError(null, ex));
 				return;
 			}
 			
@@ -197,9 +195,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				try {
 					queue = queueSupplier.get();
 				} catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					s.cancel();
-					Operators.error(actual, ex);
+					Operators.error(actual, Exceptions.mapOperatorError(s, ex));
 					return;
 				}
 
@@ -309,10 +305,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
-							s.cancel();
-							onError(Exceptions.unwrap(exc));
 							it = null;
+							onError(Exceptions.mapOperatorError(s, exc));
 							continue;
 						}
 						
@@ -357,9 +351,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							v = it.next();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
-							s.cancel();
-							onError(Exceptions.unwrap(exc));
+							onError(Exceptions.mapOperatorError(s, exc));
 							continue;
 						}
 						
@@ -379,9 +371,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
-							s.cancel();
-							onError(Exceptions.unwrap(exc));
+							onError(Exceptions.mapOperatorError(s, exc));
 							continue;
 						}
 						
@@ -488,9 +478,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
 							current = null;
-							a.onError(exc);
+							a.onError(Exceptions.mapOperatorError(s, exc));
 							return;
 						}
 
@@ -518,9 +507,8 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							v = it.next();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
 							current = null;
-							a.onError(exc);
+							a.onError(Exceptions.mapOperatorError(s, exc));
 							return;
 						}
 
@@ -540,8 +528,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
-							Exceptions.throwIfFatal(exc);
-							onError(exc);
+							onError(Exceptions.mapOperatorError(s, exc));
 							continue;
 						}
 

@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Trackable;
 
 /**
@@ -75,7 +76,7 @@ final class FluxError<T>
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, e));
 		} else {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 		}
 	}
 	

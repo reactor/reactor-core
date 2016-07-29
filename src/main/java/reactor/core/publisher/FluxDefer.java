@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Receiver;
 
 /**
@@ -52,12 +53,14 @@ final class FluxDefer<T> extends Flux<T>
 		try {
 			p = supplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 
 		if (p == null) {
-			Operators.error(s, new NullPointerException("The Producer returned by the supplier is null"));
+			Operators.error(s,
+					Exceptions.mapOperatorError(new NullPointerException(
+							"The Producer returned by the supplier is null")));
 			return;
 		}
 

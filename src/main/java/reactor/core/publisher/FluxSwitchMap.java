@@ -75,12 +75,13 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
 		
@@ -180,9 +181,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				s.cancel();
-				Exceptions.throwIfFatal(e);
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 			

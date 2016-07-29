@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import rx.exceptions.Exceptions;
+import reactor.core.Exceptions;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
@@ -37,8 +37,7 @@ final class MonoRunnable extends Mono<Void> {
         try {
             run.run();
         } catch (Throwable ex) {
-            Exceptions.throwIfFatal(ex);
-            Operators.error(s, ex);
+            Operators.error(s, Exceptions.mapOperatorError(null, ex));
             return;
         }
         Operators.complete(s);

@@ -66,9 +66,7 @@ public class OperatorAdapter<I, O>
 				doOnSubscribe(s);
 			}
 			catch (Throwable throwable) {
-				s.cancel();
-				Exceptions.throwIfFatal(throwable);
-				doOnSubscriberError(Exceptions.unwrap(throwable));
+				doOnSubscriberError(Exceptions.mapOperatorError(s, throwable));
 			}
 		}
 	}
@@ -90,15 +88,7 @@ public class OperatorAdapter<I, O>
 			doNext(i);
 		}
 		catch (Throwable throwable) {
-			if(Exceptions.isCancel(throwable)){
-				throw throwable;
-			}
-			Subscription subscription = this.subscription;
-			if(subscription != null){
-				subscription.cancel();
-			}
-			Exceptions.throwIfFatal(throwable);
-			doOnSubscriberError(Exceptions.unwrap(throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable));
 		}
 	}
 
@@ -128,8 +118,7 @@ public class OperatorAdapter<I, O>
 		try {
 			doComplete();
 		} catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
-			doOnSubscriberError(Exceptions.unwrap(throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(null, throwable));
 		}
 	}
 
@@ -144,8 +133,7 @@ public class OperatorAdapter<I, O>
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
-			Exceptions.throwIfFatal(throwable);
-			doOnSubscriberError(Exceptions.unwrap(throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(null, throwable));
 		}
 	}
 
@@ -161,8 +149,7 @@ public class OperatorAdapter<I, O>
 		try {
 			doCancel();
 		} catch (Throwable throwable) {
-			Exceptions.throwIfFatal(throwable);
-			doOnSubscriberError(Exceptions.unwrap(throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable));
 		}
 	}
 

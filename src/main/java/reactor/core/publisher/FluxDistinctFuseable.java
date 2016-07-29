@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
 
@@ -58,12 +59,13 @@ extends FluxSource<T, T> implements Fuseable {
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 
 		if (collection == null) {
-			Operators.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The collectionSupplier returned a null collection")));
 			return;
 		}
 		

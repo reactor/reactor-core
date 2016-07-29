@@ -114,8 +114,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					cancel();
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 			}
@@ -129,9 +128,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.cancel();
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 			}
@@ -145,9 +142,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					s.cancel();
-					actual.onSubscribe(Operators.emptySubscription());
-					onError(e);
+					Operators.error(actual, Exceptions.mapOperatorError(s, e));
 					return;
 				}
 			}
@@ -166,9 +161,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
-					cancel();
-					Exceptions.throwIfFatal(e);
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 			}
@@ -184,7 +177,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 			}
 			done = true;
 			if(parent.onErrorCall() != null) {
-				Exceptions.throwIfFatal(t);
 				parent.onErrorCall().accept(t);
 			}
 
@@ -195,9 +187,8 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Exceptions.unwrap(e);
-					e.addSuppressed(Exceptions.unwrap(t));
+					Throwable _e = Exceptions.mapOperatorError(null, e);
+					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}
@@ -217,8 +208,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(null, e));
 					return;
 				}
 			}
@@ -230,8 +220,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements FluxPeekHelper<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Exceptions.unwrap(e);
+					Throwable _e = Exceptions.mapOperatorError(null, e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}

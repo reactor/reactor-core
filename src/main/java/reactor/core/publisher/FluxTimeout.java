@@ -134,9 +134,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			try {
 				p = itemTimeout.apply(t);
 			} catch (Throwable e) {
-				cancel();
-				Exceptions.throwIfFatal(e);
-				subscriber.onError(Exceptions.unwrap(e));
+				subscriber.onError(Exceptions.mapOperatorError(this, e));
 				return;
 			}
 

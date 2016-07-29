@@ -105,10 +105,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.cancel();
-	
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 				if (b) {
@@ -137,10 +134,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.cancel();
-	
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return false;
 				}
 				if (b) {
@@ -309,10 +303,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.cancel();
-	
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 				if (b) {
@@ -341,10 +332,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 				try {
 					b = predicate.test(t);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.cancel();
-	
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return false;
 				}
 				if (b) {

@@ -60,7 +60,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			it = other.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
@@ -74,7 +74,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 		
@@ -128,9 +128,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				u = it.next();
 			} catch (Throwable e) {
 				done = true;
-				s.cancel();
-				
-				actual.onError(e);
+				actual.onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 			
@@ -140,9 +138,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				r = zipper.apply(t, u);
 			} catch (Throwable e) {
 				done = true;
-				s.cancel();
-				
-				actual.onError(e);
+				actual.onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 
@@ -163,9 +159,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				b = it.hasNext();
 			} catch (Throwable e) {
 				done = true;
-				s.cancel();
-				Exceptions.throwIfFatal(e);
-				actual.onError(Exceptions.unwrap(e));
+				actual.onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 			

@@ -154,8 +154,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				try {
 					r = combiner.apply(t, u);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(this, e));
 					return;
 				}
 

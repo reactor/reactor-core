@@ -154,8 +154,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					v = callable.call();
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Operators.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.mapOperatorError(null, e));
 					return;
 				}
 
@@ -228,8 +227,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Operators.error(s, Exceptions.unwrap(e));
+					Operators.error(s, Exceptions.mapOperatorError(null, e));
 					return;
 				}
 
@@ -270,8 +268,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(scalars);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					s.onError(e);
+					s.onError(Exceptions.mapOperatorError(null, e));
 					return;
 				}
 
@@ -363,8 +360,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(a);
 				} catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					subscriber.onError(e);
+					subscriber.onError(Exceptions.mapOperatorError(this, e));
 					return;
 				}
 
@@ -726,7 +722,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 								}
 							}
 							catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
+								ex = Exceptions.mapOperatorError(null, ex);
 
 								cancelAll();
 
@@ -750,7 +746,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						v = zipper.apply(values.clone());
 					}
 					catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
+						ex = Exceptions.mapOperatorError(null, ex);
 
 						cancelAll();
 
@@ -818,7 +814,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 								}
 							}
 							catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
+								ex = Exceptions.mapOperatorError(null, ex);
 
 								cancelAll();
 
@@ -928,9 +924,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable e) {
-							Exceptions.throwIfFatal(e);
-							s.cancel();
-							onError(e);
+							onError(Exceptions.mapOperatorError(s, e));
 							return;
 						}
 					}
@@ -939,9 +933,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						s.cancel();
-						onError(e);
+						onError(Exceptions.mapOperatorError(s, e));
 						return;
 					}
 

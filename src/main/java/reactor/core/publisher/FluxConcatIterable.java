@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.MultiReceiver;
 
 /**
@@ -54,12 +55,13 @@ final class FluxConcatIterable<T> extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 
 		if (it == null) {
-			Operators.error(s, new NullPointerException("The Iterator returned is null"));
+			Operators.error(s, Exceptions.mapOperatorError(null, new
+					NullPointerException("The Iterator returned is null")));
 			return;
 		}
 
@@ -111,7 +113,7 @@ final class FluxConcatIterable<T> extends Flux<T>
 					try {
 						b = a.hasNext();
 					} catch (Throwable e) {
-						onError(e);
+						onError(Exceptions.mapOperatorError(this, e));
 						return;
 					}
 
@@ -130,7 +132,7 @@ final class FluxConcatIterable<T> extends Flux<T>
 					try {
 						p = it.next();
 					} catch (Throwable e) {
-						subscriber.onError(e);
+						subscriber.onError(Exceptions.mapOperatorError(this, e));
 						return;
 					}
 
@@ -139,7 +141,9 @@ final class FluxConcatIterable<T> extends Flux<T>
 					}
 
 					if (p == null) {
-						subscriber.onError(new NullPointerException("The Publisher returned by the iterator is null"));
+						subscriber.onError(Exceptions.mapOperatorError(this, new
+								NullPointerException("The Publisher returned by the " +
+								"iterator is null")));
 						return;
 					}
 

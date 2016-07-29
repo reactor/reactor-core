@@ -164,8 +164,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 					try {
 						t = ds.get();
 					} catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						subscriber.onError(Exceptions.unwrap(e));
+						subscriber.onError(Exceptions.mapOperatorError(this, e));
 						return;
 					}
 

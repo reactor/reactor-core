@@ -91,9 +91,7 @@ final class FluxTakeWhile<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				s.cancel();
-				Exceptions.throwIfFatal(e);
-				onError(Exceptions.unwrap(e));
+				onError(Exceptions.mapOperatorError(s, e));
 
 				return;
 			}

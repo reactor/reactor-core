@@ -291,8 +291,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							s.cancel();
+							ex = Exceptions.mapOperatorError(s, ex);
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}
@@ -366,8 +365,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 					try {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						s.cancel();
+						ex = Exceptions.mapOperatorError(s, ex);
 						for (Subscriber<? super T> s : a) {
 							s.onError(ex);
 						}
@@ -390,8 +388,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							Exceptions.throwIfFatal(ex);
-							s.cancel();
+							ex = Exceptions.mapOperatorError(s, ex);
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}

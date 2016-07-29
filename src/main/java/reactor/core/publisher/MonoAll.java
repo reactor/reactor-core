@@ -94,9 +94,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 				b = predicate.test(t);
 			} catch (Throwable e) {
 				done = true;
-				s.cancel();
-				Exceptions.throwIfFatal(e);
-				subscriber.onError(Exceptions.unwrap(e));
+				subscriber.onError(Exceptions.mapOperatorError(s, e));
 				return;
 			}
 			if (!b) {

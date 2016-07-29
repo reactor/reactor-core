@@ -19,10 +19,11 @@ package reactor.core.publisher;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import rx.exceptions.Exceptions;
 
 /**
  * Buffers all values from the source Publisher and emits it as a single Collection.
@@ -47,13 +48,15 @@ final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource
         try {
             collection = collectionSupplier.get();
         } catch (Throwable ex) {
-            Exceptions.throwIfFatal(ex);
-            Operators.error(s, ex);
+            Operators.error(s, Exceptions.mapOperatorError(null, ex));
             return;
         }
         
         if (collection == null) {
-            Operators.error(s, new NullPointerException("The collectionSupplier returned a null collection"));
+            Operators.error(s, Exceptions.mapOperatorError(null, new NullPointerException
+                    ("The " +
+                    "collectionSupplier " +
+                    "returned a null collection")));
             return;
         }
         

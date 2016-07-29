@@ -92,12 +92,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			try {
 				overflowQueue = overflowQueueSupplier.get();
 			} catch (Throwable e) {
-				Operators.error(s, e);
+				Operators.error(s, Exceptions.mapOperatorError(null, e));
 				return;
 			}
 			
 			if (overflowQueue == null) {
-				Operators.error(s, new NullPointerException("The overflowQueueSupplier returned a null queue"));
+				Operators.error(s, Exceptions.mapOperatorError(null, new
+						NullPointerException("The overflowQueueSupplier returned a null queue")));
 				return;
 			}
 			

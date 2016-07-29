@@ -212,10 +212,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				try {
 					queue = parent.queueSupplier.get(); 
 				} catch (Throwable ex) {
-					Exceptions.throwIfFatal(ex);
-					s.cancel();
-					
-					error = ex;
+					error = Exceptions.mapOperatorError(s, ex);
 					done = true;
 					drain();
 					return;
@@ -420,9 +417,8 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 							try {
 								v = q.poll();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
-								
-								Exceptions.addThrowable(ERROR, this, ex);
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, ex));
 								d = true;
 								v = null;
 							}
@@ -450,9 +446,8 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 							try {
 								empty = q.isEmpty();
 							} catch (Throwable ex) {
-								Exceptions.throwIfFatal(ex);
-								
-								Exceptions.addThrowable(ERROR, this, ex);
+								Exceptions.addThrowable(ERROR, this, Exceptions
+										.mapOperatorError(s, ex));
 								d = true;
 								empty = true;
 							}

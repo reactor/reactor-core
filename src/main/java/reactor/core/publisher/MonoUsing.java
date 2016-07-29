@@ -76,8 +76,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 		try {
 			resource = resourceSupplier.call();
 		} catch (Throwable e) {
-			Exceptions.throwIfFatal(e);
-			Operators.error(s, Exceptions.unwrap(e));
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 
@@ -90,12 +89,11 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 			try {
 				resourceCleanup.accept(resource);
 			} catch (Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				ex.addSuppressed(Exceptions.unwrap(e));
+				ex.addSuppressed(Exceptions.mapOperatorError(null, ex));
 				e = ex;
 			}
 
-			Operators.error(s, Exceptions.unwrap(e));
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 
@@ -104,13 +102,12 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 			try {
 				resourceCleanup.accept(resource);
 			} catch (Throwable ex) {
-				Exceptions.throwIfFatal(ex);
-				Throwable _ex = Exceptions.unwrap(ex);
+				Throwable _ex = Exceptions.mapOperatorError(null, ex);
 				_ex.addSuppressed(e);
 				e = _ex;
 			}
 
-			Operators.error(s, e);
+			Operators.error(s, Exceptions.mapOperatorError(null, e));
 			return;
 		}
 

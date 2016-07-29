@@ -136,9 +136,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				try {
 					b = bufferSupplier.get();
 				} catch (Throwable e) {
-					cancel();
-					Exceptions.throwIfFatal(e);
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 
@@ -302,10 +300,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			if (i % skip == 0L) {
 				try {
 					b = bufferSupplier.get();
-				} catch (Throwable e) {
-					cancel();
-
-					onError(e);
+				}
+				catch (Throwable e) {
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 
@@ -505,9 +502,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				try {
 					b = bufferSupplier.get();
 				} catch (Throwable e) {
-					cancel();
-					Exceptions.throwIfFatal(e);
-					onError(Exceptions.unwrap(e));
+					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
 
