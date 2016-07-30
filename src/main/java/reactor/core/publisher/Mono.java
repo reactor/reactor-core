@@ -680,7 +680,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 *
-	 * @param monos The sources to use.
+	 * @param sources The sources to use.
 	 *
 	 * @return a {@link Mono}.
 	 */
