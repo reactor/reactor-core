@@ -17,6 +17,10 @@
 package reactor.core;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
 
@@ -319,6 +323,34 @@ public abstract class Exceptions {
 		return _t;
 	}
 
+	/**
+	 * Wrap a {@link ThrowingFunction} with a {@link Function} that will wrap and {@link #propagate(Throwable)}
+	 * any exceptions thrown by the {@link ThrowingFunction}.  Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * {@code flux.map(Exceptions.wrap(v -> legacyMethod()}.subscribe(Subscribers.unbounded())}
+	 *
+	 * @param function the function that throws a checked exception
+	 * @param <T> the type of the input to the function
+	 * @param <V> the type of the result of the function
+	 * @return function that wraps and {@link #propagate(Throwable)}'s checked exceptions
+	 */
+	public static <T, V> Function<T, V> wrap(ThrowingFunction<T, V> function) {
+		return t -> function.apply(t);
+	}
+
+	public static <T> Consumer<T> wrap(ThrowingConsumer<T> consumer) {
+		return t -> consumer.accept(t);
+	}
+
+	public static <T> Predicate<T> wrap(ThrowingPredicate<T> predicate) {
+		return t -> predicate.test(t);
+	}
+
+	public static <T> Supplier<T> wrap(ThrowingSupplier<T> supplier) {
+		return () -> supplier.get();
+	}
+
 	Exceptions(){}
 
 	static class BubblingException extends ReactiveException {
@@ -371,4 +403,65 @@ public abstract class Exceptions {
 		private static final long serialVersionUID = 2491425227432776144L;
 
 	}
+
+	@FunctionalInterface
+	public interface ThrowingFunction<T, V> extends Function<T, V> {
+
+		@Override
+		default V apply(T event) {
+			try {
+				return applyThrows(event);
+			} catch (Throwable t) {
+				throw propagate(t);
+			}
+		}
+
+		V applyThrows(T t) throws Throwable;
+	}
+
+	@FunctionalInterface
+	public interface ThrowingConsumer<T> extends Consumer<T> {
+
+		@Override
+		default void accept(T event) {
+			try {
+				acceptThrows(event);
+			} catch (Throwable t) {
+				throw propagate(t);
+			}
+		}
+
+		void acceptThrows(T t) throws Throwable;
+	}
+
+	@FunctionalInterface
+	public interface ThrowingPredicate<T> extends Predicate<T> {
+
+		@Override
+		default boolean test(T event) {
+			try {
+				return testThrows(event);
+			} catch (Throwable t) {
+				throw propagate(t);
+			}
+		}
+
+		boolean testThrows(T t) throws Throwable;
+	}
+
+	@FunctionalInterface
+	public interface ThrowingSupplier<T> extends Supplier<T> {
+
+		@Override
+		default T get() {
+			try {
+				return getThrows();
+			} catch (Throwable t) {
+				throw propagate(t);
+			}
+		}
+
+		T getThrows() throws Throwable;
+	}
+
 }
