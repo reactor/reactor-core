@@ -141,7 +141,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			if (p == null) {
 				subscriber.onError(Exceptions.mapOperatorError(this, new
 						NullPointerException("The itemTimeout returned a null " +
-						"Publisher"), t);
+						"Publisher"), t));
 				return;
 			}
 
