@@ -16,40 +16,29 @@
 
 package reactor.core.publisher.tck;
 
-import java.io.File;
-import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.locks.LockSupport;
-import java.util.logging.Level;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.SignalType;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.test.TestSubscriber;
-import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
-import static org.testng.Assert.assertEquals;
 import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
@@ -194,7 +183,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 
 	public static void submitInCurrentThread(BlockingSink<String> emitter) {
 		Random rand = new Random();
-		for (int i = 0; i < 100_000; i++) {
+		for (int i = 0; i < 1000; i++) {
 			long re = emitter.submit(e);
 			logger.debug("Submit element result " + re);
 			LockSupport.parkNanos(2_000_000 + rand.nextInt(200_000) - 100_000);
