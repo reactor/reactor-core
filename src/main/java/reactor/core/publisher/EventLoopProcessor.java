@@ -553,7 +553,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				upstream.request(bufferSize - 1);
 
 				for (; ; ) {
-					cursor = waitStrategy.waitFor(cursor + limit, readCount, spinObserver);
+					cursor = cursor + limit;
+					waitStrategy.waitFor(cursor, readCount, spinObserver);
 					if (postWaitCallback != null) {
 						postWaitCallback.accept(cursor);
 					}

@@ -21,18 +21,25 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.locks.LockSupport;
+import java.util.logging.Level;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.SignalType;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Schedulers;
@@ -42,6 +49,7 @@ import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
+import static org.testng.Assert.assertEquals;
 import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
@@ -141,7 +149,6 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 	public static void highRate() throws Exception {
 		WorkQueueProcessor<String> queueProcessor = WorkQueueProcessor.share("Processor", 256, liteBlocking());
 		TimedScheduler timer = Schedulers.newTimer("Timer");
-		AtomicReference<String> ar = new AtomicReference<>();
 		queueProcessor
 				.bufferMillis(32, 2, timer)
 				.subscribe(new Subscriber<List<String>>() {
