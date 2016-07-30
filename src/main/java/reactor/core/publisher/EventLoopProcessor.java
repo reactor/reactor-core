@@ -545,7 +545,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			this.prefetch = prefetch;
 		}
 
-		static Logger logger = Loggers.getLogger(RequestTask.class);
 		@Override
 		public void run() {
 			final long bufferSize = prefetch;
