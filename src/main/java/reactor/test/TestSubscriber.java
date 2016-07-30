@@ -752,15 +752,21 @@ public class TestSubscriber<T>
 	 * @return this
 	 */
 	public final TestSubscriber<T> awaitAndAssertNextValueCount(final long n) {
-		await(valuesTimeout, new Supplier<String>() {
-			@Override
-			public String get() {
-				return String.format("%d out of %d next values received within %d",
+		await(valuesTimeout, () -> {
+			if(valuesStorage){
+				return String.format("%d out of %d next values received within %d, " +
+						"values : %s",
 						valueCount - nextValueAssertedCount,
 						n,
-						valuesTimeout.toMillis());
+						valuesTimeout.toMillis(),
+						values.toString()
+						);
 			}
-		}, () -> valueCount == (nextValueAssertedCount + n));
+			return String.format("%d out of %d next values received within %d",
+					valueCount - nextValueAssertedCount,
+					n,
+					valuesTimeout.toMillis());
+		}, () -> valueCount >= (nextValueAssertedCount + n));
 		nextValueAssertedCount += n;
 		return this;
 	}
@@ -805,6 +811,15 @@ public class TestSubscriber<T>
 		valuesStorage = true;
 		final int expectedValueCount = expectations.length;
 		await(valuesTimeout, () -> {
+			if(valuesStorage){
+				return String.format("%d out of %d next values received within %d, " +
+								"values : %s",
+						valueCount - nextValueAssertedCount,
+						expectedValueCount,
+						valuesTimeout.toMillis(),
+						values.toString()
+				);
+			}
 			return String.format("%d out of %d next values received within %d ms",
 					valueCount - nextValueAssertedCount,
 					expectedValueCount,
