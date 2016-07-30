@@ -181,13 +181,13 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return;
 			}
 			
 			if (p == null) {
-				s.cancel();
-				onError(new NullPointerException("The mapper returned a null publisher"));
+				onError(Exceptions.mapOperatorError(s, new NullPointerException("The " +
+						"mapper returned a null publisher"), t));
 				return;
 			}
 			

@@ -143,7 +143,7 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 			try {
 				r = accumulator.apply(r, t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return;
 			}
 

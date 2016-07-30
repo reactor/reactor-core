@@ -108,8 +108,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			try {
 				accumulator.accept(container, t);
 			} catch (Throwable ex) {
-				onError(Exceptions.mapOperatorError(s, ex));
-				return;
+				onError(Exceptions.mapOperatorError(s, ex, t));
 			}
 		}
 		

@@ -79,7 +79,7 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 
 				return;
 			}

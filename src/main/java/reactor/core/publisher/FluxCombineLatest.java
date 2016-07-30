@@ -437,13 +437,14 @@ extends Flux<R>
 					try {
 						w = combiner.apply(v.array);
 					} catch (Throwable ex) {
-						innerError(Exceptions.mapOperatorError(this, ex));
+						innerError(Exceptions.mapOperatorError(this, ex, v.array));
 						continue;
 					}
 					
 					if (w == null) {
 						innerError(Exceptions.mapOperatorError(this, new
-								NullPointerException("The combiner returned a null value")));
+								NullPointerException("The combiner returned a null " +
+								"value"), v.array));
 						continue;
 					}
 					

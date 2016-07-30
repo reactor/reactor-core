@@ -108,7 +108,7 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.mapOperatorError(s, ex));
+				onError(Exceptions.mapOperatorError(s, ex, t));
 				return;
 			}
 			

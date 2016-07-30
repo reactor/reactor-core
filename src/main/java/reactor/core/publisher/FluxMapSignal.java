@@ -125,13 +125,15 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
                 v = parent.mapperNext.apply(t);
             }
             catch (Throwable e) {
-               error(e);
+	            done = true;
+	            actual.onError(Exceptions.mapOperatorError(s, e, t));
                 return;
             }
 
             if (v == null) {
-                done = true;
-	            error(new NullPointerException("The mapper returned a null value."));
+	            done = true;
+	            actual.onError(Exceptions.mapOperatorError(s, new NullPointerException
+			            ("The mapper returned a null value."), t));
                 return;
             }
 
@@ -159,13 +161,14 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 		        v = parent.mapperError.apply(t);
 	        }
 	        catch (Throwable e) {
-		        error(e);
+		        done = true;
+		        actual.onError(Exceptions.mapOperatorError(s, e, t));
 		        return;
 	        }
 
 	        if (v == null) {
 		        done = true;
-		        error(new NullPointerException("The mapper returned a null value."));
+		        actual.onError(Exceptions.mapOperatorError(s, new NullPointerException("The mapper returned a null value."), t));
 		        return;
 	        }
 
@@ -195,13 +198,14 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 		        v = parent.mapperComplete.get();
 	        }
 	        catch (Throwable e) {
-		        error(e);
+		        done = true;
+		        actual.onError(Exceptions.mapOperatorError(s, e));
 		        return;
 	        }
 
 	        if (v == null) {
 		        done = true;
-		        error(new NullPointerException("The mapper returned a null value."));
+		        actual.onError(Exceptions.mapOperatorError(s, new NullPointerException("The mapper returned a null value.")));
 		        return;
 	        }
 
@@ -233,11 +237,6 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             return s;
         }
 
-	    void error(Throwable e){
-		    done = true;
-		    actual.onError(Exceptions.mapOperatorError(s, e));
-	    }
-	    
 	    @Override
 	    public void request(long n) {
 	        if (Operators.validate(n)) {

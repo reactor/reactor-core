@@ -360,12 +360,14 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(a);
 				} catch (Throwable e) {
-					subscriber.onError(Exceptions.mapOperatorError(this, e));
+					subscriber.onError(Exceptions.mapOperatorError(this, e, value));
 					return;
 				}
 
 				if (r == null) {
-					subscriber.onError(new NullPointerException("The zipper returned a null value"));
+					subscriber.onError(Exceptions.mapOperatorError(this, new
+							NullPointerException("The zipper returned a null value"),
+							value));
 				} else {
 					complete(r);
 				}

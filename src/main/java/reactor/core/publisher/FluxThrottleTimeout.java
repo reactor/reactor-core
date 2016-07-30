@@ -171,12 +171,13 @@ final class FluxThrottleTimeout<T, U> extends FluxSource<T, T> {
 			try {
 				p = throttler.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return;
 			}
 
 			if (p == null) {
-				onError(new NullPointerException("The throttler returned a null publisher"));
+				onError(Exceptions.mapOperatorError(s, new NullPointerException("The " +
+						"throttler returned a null publisher"), t));
 				return;
 			}
 			

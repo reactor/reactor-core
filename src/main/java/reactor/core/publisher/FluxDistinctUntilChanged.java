@@ -106,7 +106,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				k = keyExtractor.apply(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return true;
 			}
 
@@ -222,7 +222,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 			try {
 				k = keyExtractor.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return;
 			}
 
@@ -247,7 +247,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				k = keyExtractor.apply(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return true;
 			}
 

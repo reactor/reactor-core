@@ -88,7 +88,7 @@ public class OperatorAdapter<I, O>
 			doNext(i);
 		}
 		catch (Throwable throwable) {
-			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable));
+			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable, i));
 		}
 	}
 

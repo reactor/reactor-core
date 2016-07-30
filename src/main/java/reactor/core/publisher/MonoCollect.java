@@ -115,7 +115,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 			try {
 				action.accept(value, t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(this, e));
+				onError(Exceptions.mapOperatorError(this, e, t));
 			}
 		}
 

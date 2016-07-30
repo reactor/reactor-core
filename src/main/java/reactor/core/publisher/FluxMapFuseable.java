@@ -21,12 +21,12 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -116,13 +116,14 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.mapOperatorError(s, e, t));
 					return;
 				}
 	
 				if (v == null) {
-					s.cancel();
-					onError(new NullPointerException("The mapper returned a null value."));
+					onError(Exceptions.mapOperatorError(s,
+							new NullPointerException("The mapper returned a null value."),
+							t));
 					return;
 				}
 	
@@ -276,14 +277,15 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.mapOperatorError(s, e, t));
 					return;
 				}
 	
 				if (v == null) {
 					done = true;
-					s.cancel();
-					actual.onError(new NullPointerException("The mapper returned a null value."));
+					actual.onError(Exceptions.mapOperatorError(s,
+							new NullPointerException("The mapper returned a null value."),
+							t));
 					return;
 				}
 	
@@ -309,14 +311,15 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.mapOperatorError(s, e, t));
 					return true;
 				}
 	
 				if (v == null) {
 					done = true;
-					s.cancel();
-					actual.onError(new NullPointerException("The mapper returned a null value."));
+					actual.onError(Exceptions.mapOperatorError(s, new
+							NullPointerException("The mapper returned a null value."),
+							t));
 					return true;
 				}
 	

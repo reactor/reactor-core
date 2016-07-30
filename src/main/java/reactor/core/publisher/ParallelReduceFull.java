@@ -211,13 +211,15 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 				try {
 					v = reducer.apply(v, t);
 				} catch (Throwable ex) {
-					onError(Exceptions.mapOperatorError(s, ex));
+					onError(Exceptions.mapOperatorError(s, ex, t));
 					return;
 				}
 				
 				if (v == null) {
-					s.cancel();
-					onError(new NullPointerException("The reducer returned a null value"));
+					onError(Exceptions.mapOperatorError(s, new NullPointerException
+							("The reducer returned a" +
+							" null " +
+							"value"), t));
 					return;
 				}
 				

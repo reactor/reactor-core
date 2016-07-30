@@ -133,8 +133,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 			try {
 				collector.accept(collection, t);
 			} catch (Throwable ex) {
-				onError(Exceptions.mapOperatorError(this, ex));
-				return;
+				onError(Exceptions.mapOperatorError(this, ex, t));
 			}
 		}
 		

@@ -26,8 +26,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
@@ -338,13 +338,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.mapOperatorError(s, e));
+								actual.onError(Exceptions.mapOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								s.cancel();
-								actual.onError(new NullPointerException("The mapper returned a null Publisher"));
+								actual.onError(Exceptions.mapOperatorError(s,
+										new NullPointerException("The mapper returned a " + "null Publisher"),
+										v));
 								return;
 							}
 							
@@ -368,7 +369,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = callable.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.mapOperatorError(s, e));
+									actual.onError(Exceptions.mapOperatorError(s, e, v));
 									return;
 								}
 								
@@ -655,13 +656,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.mapOperatorError(s, e));
+								actual.onError(Exceptions.mapOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								s.cancel();
-								actual.onError(new NullPointerException("The mapper returned a null Publisher"));
+								actual.onError(Exceptions.mapOperatorError(s,
+										new NullPointerException("The mapper returned a " + "null Publisher"),
+										v));
 								return;
 							}
 							
@@ -684,7 +686,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.mapOperatorError(s, e));
+									actual.onError(Exceptions.mapOperatorError(s, e, v));
 									return;
 								}
 								

@@ -64,12 +64,13 @@ extends Mono<T>
 		try {
 			t = supplier.get();
 		} catch (Throwable e) {
-			s.onError(Exceptions.mapOperatorError(sds, e));
+			s.onError(Exceptions.mapOperatorError(e));
 			return;
 		}
 
 		if (t == null) {
-			s.onError(new NullPointerException("The callable returned null"));
+			s.onError(Exceptions.mapOperatorError(new NullPointerException("The " +
+					"callable returned null")));
 			return;
 		}
 

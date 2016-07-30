@@ -154,12 +154,14 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				try {
 					r = combiner.apply(t, u);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(this, e));
+					onError(Exceptions.mapOperatorError(this, e, t));
 					return;
 				}
 
 				if (r == null) {
-					onError(new NullPointerException("The combiner returned a null value"));
+					onError(Exceptions.mapOperatorError(this, new NullPointerException
+							("The" +
+							" combiner returned a null value"), t));
 					return;
 				}
 

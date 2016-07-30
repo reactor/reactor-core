@@ -125,7 +125,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
             try {
                 p = mapper.apply(t);
             } catch (Throwable ex) {
-                actual.onError(Exceptions.mapOperatorError(this, ex));
+                actual.onError(Exceptions.mapOperatorError(this, ex, t));
                 return;
             }
             
@@ -133,7 +133,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 actual.onError(Exceptions.mapOperatorError(this, new NullPointerException
                         ("The mapper returned" +
                         " a null " +
-                        "Publisher.")));
+                        "Publisher."), t));
                 return;
             }
             
@@ -143,7 +143,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 try {
                     v = ((Callable<R>)p).call();
                 } catch (Throwable ex) {
-                    actual.onError(Exceptions.mapOperatorError(this, ex));
+                    actual.onError(Exceptions.mapOperatorError(this, ex, t));
                     return;
                 }
                 

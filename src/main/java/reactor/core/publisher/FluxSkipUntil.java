@@ -102,7 +102,7 @@ final class FluxSkipUntil<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 				return;
 			}
 
@@ -132,7 +132,7 @@ final class FluxSkipUntil<T> extends FluxSource<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e));
+				onError(Exceptions.mapOperatorError(s, e, t));
 
 				return true;
 			}

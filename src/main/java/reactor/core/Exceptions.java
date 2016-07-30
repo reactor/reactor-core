@@ -181,8 +181,9 @@ public abstract class Exceptions {
 	 *
 	 */
 	public static Throwable mapOperatorError(Throwable error) {
-		return mapOperatorError(null, error);
+		return mapOperatorError(null, error, null);
 	}
+
 	/**
 	 * Map an "operator" error given an operator parent {@link Subscription}. The
 	 * result error will be passed via onError to the operator downstream.
@@ -195,6 +196,25 @@ public abstract class Exceptions {
 	 *
 	 */
 	public static Throwable mapOperatorError(Subscription subscription, Throwable error) {
+		return mapOperatorError(subscription, error, null);
+	}
+
+
+	/**
+	 * Map an "operator" error given an operator parent {@link Subscription}. The
+	 * result error will be passed via onError to the operator downstream.
+	 * {@link Subscription} will be cancelled after checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param subscription the linked operator parent {@link Subscription}
+	 * @param error the callback or operator error
+	 * @param dataSignal the value (onNext or onError) signal processed during failure
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable mapOperatorError(Subscription subscription, Throwable
+			error, Object dataSignal) {
+
 		Exceptions.throwIfFatal(error);
 		if(subscription != null) {
 			subscription.cancel();

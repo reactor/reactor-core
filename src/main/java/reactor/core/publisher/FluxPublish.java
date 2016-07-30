@@ -26,9 +26,8 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
-import reactor.core.Fuseable;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and
@@ -220,7 +219,9 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 			
 			if (sourceMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
-					onError(new IllegalStateException("Queue full?!"));
+					onError(Exceptions.mapOperatorError(s,
+							new IllegalStateException("Queue full?!"),
+							t));
 					return;
 				}
 			}
