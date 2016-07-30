@@ -36,6 +36,8 @@ import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.RingBuffer;
 import reactor.util.concurrent.RingBufferReader;
@@ -543,6 +545,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			this.prefetch = prefetch;
 		}
 
+		static Logger logger = Loggers.getLogger(RequestTask.class);
 		@Override
 		public void run() {
 			final long bufferSize = prefetch;
@@ -552,14 +555,15 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				spinObserver.run();
 				upstream.request(bufferSize - 1);
 
+				long c;
 				for (; ; ) {
-					cursor = cursor + limit;
-					waitStrategy.waitFor(cursor, readCount, spinObserver);
+					c = cursor + limit;
+					cursor = waitStrategy.waitFor(c, readCount, spinObserver);
 					if (postWaitCallback != null) {
 						postWaitCallback.accept(cursor);
 					}
 					//spinObserver.accept(null);
-					upstream.request(limit);
+					upstream.request(limit + (cursor - (c - limit)));
 				}
 			}
 			catch (InterruptedException e) {
