@@ -672,20 +672,21 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Aggregate given void publishers into a new a {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 *
-	 * @param monos The monos to use.
+	 * @param monos The sources to use.
 	 *
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> monos) {
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, monos));
+	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -708,19 +709,26 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Aggregate given void publisher into a new a {@literal Mono} that will be fulfilled
+	 * when all of the given {@literal
 	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
 	 * returned {@link Flux}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
-	 * @param monos The monos to use.
+	 * @param sources The sources to use.
 	 *
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static Mono<Void> when(Mono<Void>... monos) {
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, monos));
+	public static Mono<Void> when(Publisher<Void>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
 	}
 
 
@@ -739,6 +747,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+		if (monos.length == 0) {
+			return empty();
+		}
+		if (monos.length == 1) {
+			return monos[0].map(d -> combinator.apply(new Object[]{d}));
+		}
 		return onAssembly(new MonoWhen<>(false, combinator, monos));
 	}
 
@@ -873,19 +887,26 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * Merge given void publishers into a new a {@literal Mono} that will be fulfilled
+	 * when all of the given {@literal Monos}
 	 * have been fulfilled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
-	 * @param monos The monos to use.
+	 * @param sources The sources to use.
 	 *
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static  Mono<Void> whenDelayError(Publisher<Void>... monos) {
-		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, monos));
+	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -904,6 +925,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <R>  Mono<R> whenDelayError(Function<? super Object[], ? extends R>
 			combinator, Mono<?>... monos) {
+		if (monos.length == 0) {
+			return empty();
+		}
+		if (monos.length == 1) {
+			return monos[0].map(d -> combinator.apply(new Object[]{d}));
+		}
 		return onAssembly(new MonoWhen<>(true, combinator, monos));
 	}
 
