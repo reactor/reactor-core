@@ -748,8 +748,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						v = zipper.apply(values.clone());
 					}
 					catch (Throwable ex) {
-						ex = Exceptions.mapOperatorError(ex);
 
+						ex = Exceptions.mapOperatorError(null, ex, values.clone());
 						cancelAll();
 
 						Exceptions.addThrowable(ERROR, this, ex);
@@ -761,11 +761,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					}
 
 					if (v == null) {
+
+						Throwable ex = Exceptions.mapOperatorError(null, new
+								NullPointerException(
+								"The zipper returned a null value"), values.clone());
+
 						cancelAll();
-
-						Throwable ex = new NullPointerException(
-								"The zipper returned a null value");
-
 						Exceptions.addThrowable(ERROR, this, ex);
 						ex = Exceptions.terminate(ERROR, this);
 
@@ -816,7 +817,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 								}
 							}
 							catch (Throwable ex) {
-								ex = Exceptions.mapOperatorError(ex);
+								ex = Exceptions.mapOperatorError(null, ex, values);
 
 								cancelAll();
 

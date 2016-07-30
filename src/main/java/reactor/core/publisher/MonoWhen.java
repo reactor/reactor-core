@@ -19,9 +19,12 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Function;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -30,41 +33,49 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the source value types
  */
-final class MonoWhen<T> extends Mono<T[]>  {
+final class MonoWhen<T, R> extends Mono<R> {
 
     final boolean delayError;
-    
-    final Mono<? extends T>[] sources;
 
-    final Iterable<? extends Mono<? extends T>> sourcesIterable;
+	final Publisher<? extends T>[] sources;
+
+	final Iterable<? extends Publisher<? extends T>> sourcesIterable;
+
+	final Function<? super Object[], ? extends R> zipper;
 
     @SafeVarargs
-    public MonoWhen(boolean delayError, Mono<? extends T>... sources) {
-        this.delayError = delayError;
-        this.sources = Objects.requireNonNull(sources, "sources");
+    public MonoWhen(boolean delayError,
+		    Function<? super Object[], ? extends R> zipper,
+		    Publisher<? extends T>... sources) {
+	    this.delayError = delayError;
+	    this.zipper = Objects.requireNonNull(zipper, "zipper");
+	    this.sources = Objects.requireNonNull(sources, "sources");
         this.sourcesIterable = null;
     }
 
-    public MonoWhen(boolean delayError, Iterable<? extends Mono<? extends T>> sourcesIterable) {
-        this.delayError = delayError;
-        this.sources = null;
-        this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
-    }
+	public MonoWhen(boolean delayError,
+			Function<? super Object[], ? extends R> zipper,
+			Iterable<? extends Publisher<? extends T>> sourcesIterable) {
+		this.delayError = delayError;
+		this.zipper = Objects.requireNonNull(zipper, "zipper");
+		this.sources = null;
+		this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
+	}
 
     @SuppressWarnings("unchecked")
     @Override
-    public void subscribe(Subscriber<? super T[]> s) {
-        Mono<? extends T>[] a;
-        int n = 0;
+    public void subscribe(Subscriber<? super R> s) {
+	    Publisher<? extends T>[] a;
+	    int n = 0;
         if (sources != null) {
             a = sources;
             n = a.length;
         } else {
             a = new Mono[8];
-            for (Mono<? extends T> m : sourcesIterable) {
-                if (n == a.length) {
-                    Mono<? extends T>[] b = new Mono[n + (n >> 2)];
-                    System.arraycopy(a, 0, b, 0, n);
+	        for (Publisher<? extends T> m : sourcesIterable) {
+		        if (n == a.length) {
+	                Publisher<? extends T>[] b = new Publisher[n + (n >> 2)];
+			        System.arraycopy(a, 0, b, 0, n);
                     a = b;
                 }
                 a[n++] = m;
@@ -75,37 +86,44 @@ final class MonoWhen<T> extends Mono<T[]>  {
             Operators.complete(s);
             return;
         }
-        
-        MonoWhenCoordinator<T> parent = new MonoWhenCoordinator<>(s, n, delayError);
-        s.onSubscribe(parent);
+
+	    MonoWhenCoordinator<T, R> parent =
+			    new MonoWhenCoordinator<>(s, n, delayError, zipper);
+	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
-    
-    static final class MonoWhenCoordinator<T>
-            extends Operators.DeferredScalarSubscriber<T, T[]>
-    implements Subscription {
-        final MonoWhenSubscriber<T>[] subscribers;
-        
-        final boolean delayError;
-        
-        volatile int done;
+
+	static final class MonoWhenCoordinator<T, R>
+			extends Operators.DeferredScalarSubscriber<T, R> implements Subscription {
+
+		final MonoWhenSubscriber<T, R>[] subscribers;
+
+		final boolean delayError;
+
+		final Function<? super Object[], ? extends R> zipper;
+
+		volatile int done;
         @SuppressWarnings("rawtypes")
         static final AtomicIntegerFieldUpdater<MonoWhenCoordinator> DONE =
                 AtomicIntegerFieldUpdater.newUpdater(MonoWhenCoordinator.class, "done");
 
         @SuppressWarnings("unchecked")
-        public MonoWhenCoordinator(Subscriber<? super T[]> subscriber, int n, boolean delayError) {
-            super(subscriber);
+        public MonoWhenCoordinator(Subscriber<? super R> subscriber,
+		        int n,
+		        boolean delayError,
+		        Function<? super Object[], ? extends R> zipper) {
+	        super(subscriber);
             this.delayError = delayError;
-            subscribers = new MonoWhenSubscriber[n];
+	        this.zipper = zipper;
+	        subscribers = new MonoWhenSubscriber[n];
             for (int i = 0; i < n; i++) {
                 subscribers[i] = new MonoWhenSubscriber<>(this);
             }
         }
-        
-        void subscribe(Mono<? extends T>[] sources) {
-            MonoWhenSubscriber<T>[] a = subscribers;
-            for (int i = 0; i < a.length; i++) {
+
+		void subscribe(Publisher<? extends T>[] sources) {
+			MonoWhenSubscriber<T, R>[] a = subscribers;
+			for (int i = 0; i < a.length; i++) {
                 sources[i].subscribe(a[i]);
             }
         }
@@ -124,8 +142,8 @@ final class MonoWhen<T> extends Mono<T[]>  {
         
         @SuppressWarnings("unchecked")
         void signal() {
-            MonoWhenSubscriber<T>[] a = subscribers;
-            int n = a.length;
+	        MonoWhenSubscriber<T, R>[] a = subscribers;
+	        int n = a.length;
             if (DONE.incrementAndGet(this) != n) {
                 return;
             }
@@ -136,8 +154,8 @@ final class MonoWhen<T> extends Mono<T[]>  {
             boolean hasEmpty = false;
             
             for (int i = 0; i < a.length; i++) {
-                MonoWhenSubscriber<T> m = a[i];
-                T v = m.value;
+	            MonoWhenSubscriber<T, R> m = a[i];
+	            T v = m.value;
                 if (v != null) {
                     o[i] = v;
                 } else {
@@ -165,10 +183,24 @@ final class MonoWhen<T> extends Mono<T[]>  {
             if (error != null) {
                 subscriber.onError(error);
             } else
-            if (hasEmpty) {
+            if (hasEmpty || zipper == VOID_FUNCTION) {
                 subscriber.onComplete();
             } else {
-                complete((T[])o);
+	            R r;
+	            try {
+		            r = zipper.apply(o);
+	            }
+	            catch (Throwable t) {
+		            subscriber.onError(Exceptions.mapOperatorError(null, t, o));
+		            return;
+	            }
+	            if (r == null) {
+		            subscriber.onError(Exceptions.mapOperatorError(null,
+				            new NullPointerException("zipper produced a null value"),
+				            o));
+		            return;
+	            }
+	            complete(r);
             }
         }
         
@@ -176,16 +208,16 @@ final class MonoWhen<T> extends Mono<T[]>  {
         public void cancel() {
             if (!isCancelled()) {
                 super.cancel();
-                for (MonoWhenSubscriber<T> ms : subscribers) {
-                    ms.cancel();
+	            for (MonoWhenSubscriber<T, R> ms : subscribers) {
+		            ms.cancel();
                 }
             }
         }
     }
-    
-    static final class MonoWhenSubscriber<T> implements Subscriber<T> {
-        
-        final MonoWhenCoordinator<T> parent;
+
+	static final class MonoWhenSubscriber<T, R> implements Subscriber<T> {
+
+		final MonoWhenCoordinator<T, R> parent;
 
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
@@ -194,9 +226,9 @@ final class MonoWhen<T> extends Mono<T[]>  {
         
         T value;
         Throwable error;
-        
-        public MonoWhenSubscriber(MonoWhenCoordinator<T> parent) {
-            this.parent = parent;
+
+		public MonoWhenSubscriber(MonoWhenCoordinator<T, R> parent) {
+			this.parent = parent;
         }
         
         @Override

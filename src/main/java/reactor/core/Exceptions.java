@@ -219,7 +219,17 @@ public abstract class Exceptions {
 		if(subscription != null) {
 			subscription.cancel();
 		}
-		return unwrap(error);
+
+		Throwable t = unwrap(error);
+		if(dataSignal != null){
+			if(dataSignal instanceof Throwable){
+				t.addSuppressed((Throwable)dataSignal);
+			}
+			else {
+				//FIXME add value wrapping
+			}
+		}
+		return t;
 	}
 
 	/**

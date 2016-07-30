@@ -553,7 +553,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(false, p1, p2).map(Tuples::fromArray));
+		return onAssembly(new MonoWhen<>(false, Tuples::fromArray, p1, p2));
 	}
 
 	/**
@@ -575,8 +575,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(false, p1, p2, p3).map(a -> (Tuple3) Tuples.fromArray
-				(a)));
+		return onAssembly(new MonoWhen<>(false, a ->
+				(Tuple3) Tuples.fromArray(a), p1, p2, p3));
 	}
 
 	/**
@@ -603,8 +603,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4).map(a -> (Tuple4) Tuples
-				.fromArray(a)));
+		return onAssembly(new MonoWhen<>(false, a ->
+				(Tuple4) Tuples.fromArray(a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -634,8 +634,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5).map(a -> (Tuple5)
-				Tuples.fromArray(a)));
+		return onAssembly(new MonoWhen<>(false, a ->
+				(Tuple5) Tuples.fromArray(a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -668,8 +668,44 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return onAssembly(new MonoWhen<>(false, p1, p2, p3, p4, p5, p6).map(a ->
-		        (Tuple6) Tuples.fromArray(a)));
+        return onAssembly(new MonoWhen<>(false, a ->
+		        (Tuple6) Tuples.fromArray(a), p1, p2, p3, p4, p5, p6));
+	}
+
+	/**
+	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param monos The monos to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> monos) {
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, monos));
+	}
+
+	/**
+	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, final Iterable<? extends Mono<?>> monos) {
+		return onAssembly(new MonoWhen<>(false, combinator, monos));
 	}
 
 	/**
@@ -680,13 +716,31 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
-	 * @param <T> The type of the function result.
 	 *
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static <T> Mono<T[]> when(Mono<? extends T>... monos) {
-		return onAssembly(new MonoWhen<>(false, monos));
+	public static Mono<Void> when(Mono<Void>... monos) {
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, monos));
+	}
+
+
+	/**
+	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+		return onAssembly(new MonoWhen<>(false, combinator, monos));
 	}
 
 	/**
@@ -703,9 +757,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(true, p1, p2).map(Tuples::fromArray));
+		return onAssembly(new MonoWhen<>(true, Tuples::fromArray, p1, p2));
 	}
 
 	/**
@@ -726,7 +779,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3).map(a -> (Tuple3) Tuples.fromArray(a)));
+		return onAssembly(new MonoWhen<>(true, a -> (Tuple3) Tuples.fromArray(a), p2, p3));
 	}
 
 	/**
@@ -752,8 +805,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4).map(a -> (Tuple4) Tuples
-				.fromArray(a)));
+		return onAssembly(new MonoWhen<>(true, a -> (Tuple4) Tuples
+				.fromArray(a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -782,8 +835,8 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5).map(a -> (Tuple5)
-				Tuples.fromArray(a)));
+		return onAssembly(new MonoWhen<>(true, a -> (Tuple5)
+				Tuples.fromArray(a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -815,25 +868,43 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return onAssembly(new MonoWhen<>(true, p1, p2, p3, p4, p5, p6).map(a ->
-				(Tuple6) Tuples.fromArray(a)));
+		return onAssembly(new MonoWhen<>(true, a ->
+				(Tuple6) Tuples.fromArray(a), p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
-	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
-	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
-	 * @param <T> The type of the function result.
 	 *
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static <T> Mono<T[]> whenDelayError(Mono<? extends T>... monos) {
-		return onAssembly(new MonoWhen<>(true, monos));
+	public static  Mono<Void> whenDelayError(Publisher<Void>... monos) {
+		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, monos));
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a combined {@link Mono}.
+	 */
+	public static <R>  Mono<R> whenDelayError(Function<? super Object[], ? extends R>
+			combinator, Mono<?>... monos) {
+		return onAssembly(new MonoWhen<>(true, combinator, monos));
 	}
 
 	/**
@@ -853,23 +924,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	@SafeVarargs
 	public static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
 		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
-	}
-
-	/**
-	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
-	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
-	 * <p>
-	 *
-	 * @param monos The monos to use.
-	 * @param <T> The type of the function result.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	public static <T> Mono<T[]> when(final Iterable<? extends Mono<? extends T>> monos) {
-		return onAssembly(new MonoWhen<>(false, monos));
 	}
 
 	/**
@@ -2551,4 +2605,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 		return source;
 	}
+
+	static final Function<? super Object[], Void>        VOID_FUNCTION       =
+			t -> { return null; };
 }

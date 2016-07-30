@@ -33,6 +33,13 @@ public class MonoWhenTest {
             )
             .block());
     }
+    @Test(timeout = 5000)
+    public void castCheck() {
+        Mono<String[]> mono = Mono.when(a ->  Arrays.copyOf(a, a.length, String[]
+		        .class), Mono.just("hello"), Mono.just
+			    ("world"));
+        mono.subscribe(System.out::println);
+    }
 
     @Test(timeout = 5000)
     public void someEmpty() {
@@ -62,7 +69,7 @@ public class MonoWhenTest {
                 monos[j] = Mono.delay(Duration.ofMillis(150 + 50 * j));
             }
             
-            Object[] out = Mono.when(monos).block();
+            Object[] out = Mono.when(a -> a, monos).block();
             
             Assert.assertArrayEquals(result, out);
         }
