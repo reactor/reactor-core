@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -31,61 +32,163 @@ import reactor.core.scheduler.TimedScheduler;
  */
 abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
-	final boolean        next;
-	final boolean        flush;
-	final boolean        first;
 	final int            batchSize;
 	final long           timespan;
 	final TimedScheduler timer;
 
 	public FluxBatch(Publisher<T> source,
 			int batchSize,
-			boolean next,
-			boolean first,
-			boolean flush,
-			long timespan, final TimedScheduler timer) {
+			long timespan,
+			final TimedScheduler timer) {
 		super(source);
-		if (timespan > 0) {
-			this.timespan = timespan;
-			this.timer = timer;
+		if (timespan <= 0) {
+			throw new IllegalArgumentException("Timeout period must be strictly " + "positive");
 		}
-		else {
-			this.timespan = -1L;
-			this.timer = null;
+		if (batchSize <= 0) {
+			throw new IllegalArgumentException("BatchSize period must be strictly " +
+					"positive");
 		}
-
-		this.first = first;
-		this.flush = flush;
-		this.next = next;
+		this.timer = Objects.requireNonNull(timer, "Timer");
+		this.timespan = timespan;
 		this.batchSize = batchSize;
 	}
 
 	final Subscriber<? super V> prepareSub(Subscriber<? super V> actual) {
-		if (timer != null) {
-			return Operators.serialize(actual);
-		}
-		else {
-			return actual;
-		}
+		return Operators.serialize(actual);
 	}
 
 	static abstract class BatchAction<T, V> extends OperatorAdapter<T, V> {
 
-		final static int NOT_TERMINATED = 0;
-		final static int TERMINATED_WITH_SUCCESS = 1;
-		final static int TERMINATED_WITH_ERROR = 2;
-		final static int TERMINATED_WITH_CANCEL = 3;
+		static final Exception FAILED_SATE =
+				new RuntimeException("Failed Subscriber") {
+					/** */
+					private static final long serialVersionUID = 7503907754069414227L;
 
-		private volatile       int                                             terminated = NOT_TERMINATED;
+					@Override
+					public synchronized Throwable fillInStackTrace() {
+						return null;
+					}
+				};
+		final static int NOT_TERMINATED          = 0;
+		final static int TERMINATED_WITH_SUCCESS = 1;
+		final static int TERMINATED_WITH_ERROR   = 2;
+
+		final static int TERMINATED_WITH_CANCEL  = 3;
+		final boolean                    first;
+		final int                        batchSize;
+		final long                       timespan;
+		final TimedScheduler.TimedWorker timer;
+		final Runnable                   flushTask;
+
+		volatile int                                    terminated =
+				NOT_TERMINATED;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
+		static final     AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
 				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "terminated");
 
-		private volatile       long                                         requested;
+
+		volatile long requested;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BatchAction.class, "requested");
 
+		volatile int index = 0;
+
+		static final     AtomicIntegerFieldUpdater<BatchAction> INDEX =
+				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "index");
+
+		volatile Cancellation timespanRegistration;
+
+		public BatchAction(Subscriber<? super V> actual,
+				int batchSize,
+				boolean first,
+				long timespan,
+				final TimedScheduler.TimedWorker timer) {
+
+			super(actual);
+
+			this.timespan = timespan;
+			this.timer = timer;
+			this.flushTask = () -> {
+				if (!isTerminated()) {
+					int index;
+					for(;;){
+						index = this.index;
+						if(index == 0){
+							return;
+						}
+						if(INDEX.compareAndSet(this, index, 0)){
+							break;
+						}
+					}
+					flushCallback(null);
+				}
+			};
+
+			this.first = first;
+			this.batchSize = batchSize;
+		}
+
+		void doRequested(long before, long n) {
+			if (isTerminated()) {
+				return;
+			}
+			if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
+				requestMore(Long.MAX_VALUE);
+			}
+			else {
+				requestMore(Operators.multiplyCap(n, batchSize));
+			}
+		}
+
+		void nextCallback(T event) {
+		}
+
+		void flushCallback(T event) {
+		}
+
+		void firstCallback(T event) {
+		}
+
+		@Override
+		protected void doNext(final T value) {
+			int index;
+			for(;;){
+				index = this.index + 1;
+				if(INDEX.compareAndSet(this, index - 1, index)){
+					break;
+				}
+			}
+
+			if (index == 1) {
+				timespanRegistration =
+						timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+				if (first) {
+					firstCallback(value);
+				}
+			}
+
+			nextCallback(value);
+
+			if (this.index % batchSize == 0) {
+				this.index = 0;
+				if (timespanRegistration != null) {
+					timespanRegistration.dispose();
+					timespanRegistration = null;
+				}
+				flushCallback(value);
+			}
+		}
+
+		void checkedComplete() {
+			try {
+				flushCallback(null);
+			}
+			finally {
+				subscriber.onComplete();
+			}
+		}
 
 		@Override
 		public boolean isTerminated() {
@@ -124,7 +227,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			doRequested(Operators.getAndAddCap(REQUESTED, this, n), n);
 		}
 
-		final void requestMore(long n){
+		final void requestMore(long n) {
 			Subscription s = this.subscription;
 			if (s != null) {
 				s.request(n);
@@ -147,7 +250,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		void checkedError(Throwable throwable){
+		void checkedError(Throwable throwable) {
 			subscriber.onError(throwable);
 		}
 
@@ -159,12 +262,12 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			}
 		}
 
-		void checkedCancel(){
+		void checkedCancel() {
 			super.doCancel();
 		}
 
-		void doTerminate(){
-			//TBD
+		void doTerminate() {
+			timer.shutdown();
 		}
 
 		@Override
@@ -172,141 +275,11 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			return isFailed() ? FAILED_SATE : null;
 		}
 
-		private static final Exception FAILED_SATE = new RuntimeException("Failed Subscriber"){
-			/** */
-            private static final long serialVersionUID = 7503907754069414227L;
-
-            @Override
-			public synchronized Throwable fillInStackTrace() {
-				return null;
-			}
-		};
-
-		final boolean        next;
-		final boolean        flush;
-		final boolean        first;
-		final int            batchSize;
-		final long           timespan;
-		final TimedScheduler timer;
-		final Runnable       flushTask;
-
-		private volatile int index = 0;
-		private Cancellation timespanRegistration;
-
-		public BatchAction(Subscriber<? super V> actual,
-				int batchSize,
-				boolean next,
-				boolean first,
-				boolean flush,
-				long timespan, final TimedScheduler timer) {
-
-			super(actual);
-
-			if (timespan > 0 && timer != null) {
-				this.timespan = timespan;
-				this.timer = timer;
-				this.flushTask = () -> {
-						if (!isTerminated()) {
-							synchronized (timer) {
-								if (index == 0) {
-									return;
-								}
-								else {
-									index = 0;
-								}
-							}
-							flushCallback(null);
-						}
-				};
-			}
-			else {
-				this.timespan = -1L;
-				this.timer = null;
-				this.flushTask = null;
-			}
-			this.first = first;
-			this.flush = flush;
-			this.next = next;
-			this.batchSize = batchSize;
-		}
-
-		void doRequested(long before, long n) {
-			if (isTerminated()) {
-				return;
-			}
-			if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
-				requestMore(Long.MAX_VALUE);
-			}
-			else {
-				requestMore(Operators.multiplyCap(n, batchSize));
-			}
-		}
-
-		void nextCallback(T event) {
-		}
-
-		void flushCallback(T event) {
-		}
-
-		void firstCallback(T event) {
-		}
-
-		@Override
-		protected void doNext(final T value) {
-			final int index;
-			if (timer != null) {
-				synchronized (timer) {
-					index = ++this.index;
-				}
-			}
-			else {
-				index = ++this.index;
-			}
-
-			if (index == 1) {
-				if (timer != null) {
-					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
-				}
-				if (first) {
-					firstCallback(value);
-				}
-			}
-
-			if (next) {
-				nextCallback(value);
-			}
-
-			if (index % batchSize == 0) {
-				if (timer != null && timespanRegistration != null) {
-					timespanRegistration.dispose();
-					timespanRegistration = null;
-				}
-				if (timer != null) {
-					synchronized (timer) {
-						this.index = 0;
-					}
-				}
-				else {
-					this.index = 0;
-				}
-				if (flush) {
-					flushCallback(value);
-				}
-			}
-		}
-
-		void checkedComplete() {
-			try {
-				flushCallback(null);
-			}
-			finally {
-				subscriber.onComplete();
-			}
-		}
 
 		@Override
 		public String toString() {
-			return super.toString() + "{" + (timer != null ? "timed - " + timespan + " ms" : "") + " batchSize=" +
+			return super.toString() + "{" + (timer != null ?
+					"timed - " + timespan + " ms" : "") + " batchSize=" +
 					index + "/" +
 					batchSize + " [" + (int) ((((float) index) / ((float) batchSize)) * 100) + "%]";
 		}

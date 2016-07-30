@@ -28,13 +28,19 @@ import reactor.core.scheduler.TimedScheduler;
  */
 final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 
-	public FluxBufferTimeOrSize(Publisher<T> source, int maxSize, long timespan, TimedScheduler timer) {
-		super(source, maxSize, true, false, true, timespan, timer);
+	public FluxBufferTimeOrSize(Publisher<T> source,
+			int maxSize,
+			long timespan,
+			TimedScheduler timer) {
+		super(source, maxSize, timespan, timer);
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super List<T>> subscriber) {
-		source.subscribe(new BufferAction<>(prepareSub(subscriber), batchSize, timespan, timer));
+		source.subscribe(new BufferAction<>(prepareSub(subscriber),
+				batchSize,
+				timespan,
+				timer.createWorker()));
 	}
 
 	final static class BufferAction<T> extends BatchAction<T, List<T>> {
@@ -44,19 +50,14 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 		public BufferAction(Subscriber<? super List<T>> actual,
 				int maxSize,
 				long timespan,
-				TimedScheduler timer) {
+				TimedScheduler.TimedWorker timer) {
 
-			super(actual, maxSize, true, false, true, timespan, timer);
+			super(actual, maxSize, false, timespan, timer);
 		}
 
 		@Override
 		protected void checkedError(Throwable ev) {
-			if (timer != null) {
-				synchronized (timer) {
-					values.clear();
-				}
-			}
-			else {
+			synchronized (values) {
 				values.clear();
 			}
 			subscriber.onError(ev);
@@ -64,12 +65,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 
 		@Override
 		public void nextCallback(T value) {
-			if (timer != null) {
-				synchronized (timer) {
-					values.add(value);
-				}
-			}
-			else {
+			synchronized (values) {
 				values.add(value);
 			}
 		}
@@ -77,16 +73,7 @@ final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
 		@Override
 		public void flushCallback(T ev) {
 			final List<T> toSend;
-			if (timer != null) {
-				synchronized (timer) {
-					if (values.isEmpty()) {
-						return;
-					}
-					toSend = new ArrayList<>(values);
-					values.clear();
-				}
-			}
-			else {
+			synchronized (values) {
 				if (values.isEmpty()) {
 					return;
 				}

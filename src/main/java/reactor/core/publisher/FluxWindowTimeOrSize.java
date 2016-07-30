@@ -30,11 +30,8 @@ import reactor.core.scheduler.TimedScheduler;
  */
 final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
-	final TimedScheduler timer;
-
 	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, TimedScheduler timer) {
-		super(source, backlog, true, true, true, timespan, timer);
-		this.timer = timer;
+		super(source, backlog, timespan, timer);
 	}
 
 	@Override
@@ -107,7 +104,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 				long timespan,
 				TimedScheduler timer) {
 
-			super(actual, backlog, true, true, true, timespan, timer);
+			super(actual, backlog, true, timespan, timer.createWorker());
 			this.timer = timer;
 		}
 

@@ -42,16 +42,15 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
+import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
-
-import reactor.util.Logger;
+import reactor.util.function.Tuples;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -757,6 +756,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return onAssembly(new MonoWhen<>(true, Tuples::fromArray, p1, p2));
 	}
@@ -2606,6 +2606,5 @@ public abstract class Mono<T> implements Publisher<T> {
 		return source;
 	}
 
-	static final Function<? super Object[], Void>        VOID_FUNCTION       =
-			t -> { return null; };
+	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;
 }

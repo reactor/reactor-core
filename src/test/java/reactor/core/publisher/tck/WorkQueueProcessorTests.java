@@ -16,18 +16,33 @@
 
 package reactor.core.publisher.tck;
 
+import java.io.File;
+import java.time.Duration;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
+import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.test.TestSubscriber;
 import reactor.core.Exceptions;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+
+import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
  * @author Stephane Maldini
@@ -111,6 +126,89 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 	@Override
 	public void mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream() throws Exception {
 		super.mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream();
+	}
+
+
+	public static final Logger logger = Loggers.getLogger(WorkQueueProcessorTests.class);
+
+	public static final String e = "Element";
+	public static final String s = "Synchronizer";
+
+	public static void main(String[] args) throws Exception {
+		highRate();
+	}
+
+	public static void highRate() throws Exception {
+		WorkQueueProcessor<String> queueProcessor = WorkQueueProcessor.share("Processor", 256, liteBlocking());
+		TimedScheduler timer = Schedulers.newTimer("Timer");
+		AtomicReference<String> ar = new AtomicReference<>();
+		queueProcessor
+				.bufferMillis(32, 2, timer)
+				.subscribe(new Subscriber<List<String>>() {
+					int counter;
+					@Override
+					public void onSubscribe(Subscription s) {
+						s.request(Long.MAX_VALUE);
+					}
+
+					@Override
+					public void onNext(List<String> strings) {
+						int size = strings.size();
+						counter += size;
+						if (strings.contains(s)) {
+							synchronized (s) {
+								//logger.debug("Synchronizer!");
+								s.notifyAll();
+							}
+						}
+					}
+
+					@Override
+					public void onError(Throwable t) {
+						t.printStackTrace();
+					}
+
+					@Override
+					public void onComplete() {
+						System.out.println("Consumed in total: " + counter);
+					}
+				});
+		BlockingSink<String> emitter = queueProcessor.connectSink();
+
+		try {
+			submitInCurrentThread(emitter);
+		} finally {
+			logger.debug("Finishing");
+			emitter.finish();
+			timer.shutdown();
+		}
+		TimeUnit.SECONDS.sleep(1);
+	}
+
+	public static void submitInCurrentThread(BlockingSink<String> emitter) {
+		Random rand = new Random();
+		for (int i = 0; i < 100_000; i++) {
+			long re = emitter.submit(e);
+			logger.debug("Submit element result " + re);
+			LockSupport.parkNanos(2_000_000 + rand.nextInt(200_000) - 100_000);
+			synchronized (s) {
+				long rd = emitter.submit(s);
+				logger.debug("Submit drain result " + rd);
+				timeoutWait(s);
+			}
+		}
+	}
+
+	private static void timeoutWait(Object o) {
+		long t0 = System.currentTimeMillis();
+		try {
+			o.wait(5_000);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+		if (System.currentTimeMillis() - t0 > 4_000) {
+			throw new RuntimeException("Timeout!");
+		}
 	}
 
 }

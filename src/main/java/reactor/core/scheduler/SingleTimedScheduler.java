@@ -339,7 +339,9 @@ final class SingleTimedScheduler implements TimedScheduler {
         
         @Override
         public String toString() {
-            return "TimedScheduledRunnable[cancelled=" + get() + ", task=" + task + "]";
+            return "TimedScheduledRunnable[cancelled=" + (get() == CANCELLED_FUTURE) +
+		            ", task=" + task +
+                    "]";
         }
     }
 
