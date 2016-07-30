@@ -320,6 +320,7 @@ public class TestSubscriber<T>
 	 * @return this
 	 */
 	public final TestSubscriber<T> assertComplete() {
+		assertNoError();
 		int c = completionCount;
 		if (c == 0) {
 			throw new AssertionError("Not completed", null);
@@ -370,6 +371,7 @@ public class TestSubscriber<T>
 	 * @return this
 	 */
 	public final TestSubscriber<T> assertError() {
+		assertNotComplete();
 		int s = errors.size();
 		if (s == 0) {
 			throw new AssertionError("No error", null);
@@ -386,6 +388,7 @@ public class TestSubscriber<T>
 	 * @return this
 	 */
 	public final TestSubscriber<T> assertError(Class<? extends Throwable> clazz) {
+		assertNotComplete();
 		 int s = errors.size();
 		if (s == 0) {
 			throw new AssertionError("No error", null);
@@ -404,6 +407,7 @@ public class TestSubscriber<T>
 	}
 
 	public final TestSubscriber<T> assertErrorMessage(String message) {
+		assertNotComplete();
 		int s = errors.size();
 		if (s == 0) {
 			assertionError("No error", null);
@@ -430,6 +434,7 @@ public class TestSubscriber<T>
 	 * @return this
 	 */
 	public final TestSubscriber<T> assertErrorWith(Consumer<? super Throwable> expectation) {
+		assertNotComplete();
 		int s = errors.size();
 		if (s == 0) {
 			throw new AssertionError("No error", null);
