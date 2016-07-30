@@ -485,7 +485,7 @@ class MonoSpec extends Specification {
 
 	when: "a combined promise is first created"
 	def combined = MonoProcessor.create()
-	Mono.when(promise1).log().subscribe(combined)
+	Mono.when({d -> d }, promise1).log().subscribe(combined)
 
 	then: "it is pending"
 	!combined.pending
