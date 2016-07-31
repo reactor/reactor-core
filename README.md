@@ -119,10 +119,6 @@ producing non concurrently, use `Flux#create`, `Mono#create`, or
 
 ```java
 Flux.create(emitter -> {
-         // setup backpressure mode, default is BUFFER
-
-         emitter.setBackpressureHandling(FluxSink.BackpressureHandling.LATEST);
-
          ActionListener al = e -> {
             emitter.next(textField.getText());
          };
@@ -135,11 +131,12 @@ Flux.create(emitter -> {
          emitter.setCancellation(() -> {
          	button.removeListener(al);
          });
-    })
+    },
+    // Overflow (backpressure) handling, default is BUFFER
+    FluxSink.OverflowStrategy.LATEST)
     .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe(System.out::println)
-
 ```
 
 ## Hot Publishing : Processors
