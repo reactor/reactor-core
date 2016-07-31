@@ -17,10 +17,12 @@
 package reactor.core;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Subscription;
 
@@ -99,6 +101,101 @@ public abstract class Exceptions {
 	public static RuntimeException bubble(Throwable t) {
 		throwIfFatal(t);
 		return new BubblingException(t);
+	}
+
+	/**
+	 * Adapt a {@link CheckedConsumer} to a {@link Consumer} propagating any exceptions thrown by the
+	 * {@link CheckedConsumer} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * {@code flux.subscribe(Exceptions.checked(v -> checkedMethod(v)}
+	 *
+	 * @param checkedConsumer the consumer that throws a checked exception
+	 * @param <T> the type of the input to the operation
+	 * @return consumer that adapts {@link CheckedConsumer} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T> Consumer<T> checkedConsumer(CheckedConsumer<T> checkedConsumer) {
+		return t -> checkedConsumer.accept(t);
+	}
+
+	/**
+	 * Adapt a {@link CheckedBiConsumer} to a {@link BiConsumer} propagating any exceptions thrown by the
+	 * {@link CheckedBiConsumer} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * @param checkedBiConsumer the biconsumer that throws a chedked exception
+	 * @param <T> the type of the first argument to the operation
+	 * @param <U> the type of the second argument to the operation
+	 * @return biconsumer that adapts {@link CheckedBiConsumer} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T, U> BiConsumer<T, U> checkedConsumer(CheckedBiConsumer<T, U> checkedBiConsumer) {
+		return (t, u) -> checkedBiConsumer.accept(t, u);
+	}
+
+	/**
+	 * Adapt a {@link CheckedFunction} to a {@link Function} propagating any exceptions thrown by the
+	 * {@link CheckedFunction} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * {@code flux.map(Exceptions.checked(v -> checkedMethod(v)).subscribe(Subscribers.unbounded())}
+	 *
+	 * @param checkedFunction the function that throws a checked exception
+	 * @param <T> the type of the input to the function
+	 * @param <R> the type of the result of the function
+	 * @return function that adapts {@link CheckedFunction} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T, R> Function<T, R> checkedFunction(CheckedFunction<T, R> checkedFunction) {
+		return t -> checkedFunction.apply(t);
+	}
+
+	/**
+	 * Adapt a {@link CheckedBiFunction} to a {@link BiFunction} propagating any exceptions thrown by the
+	 * {@link CheckedBiFunction} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * @param checkedBiFunction the bifunction that throws a checked exception
+	 * @param <T> the type of the first argument to the function
+	 * @param <U> the type of the second argument to the function
+	 * @param <R> the type of the result of the function
+	 * @return bifunction that adapts {@link CheckedBiFunction} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T, U, R> BiFunction<T, U, R> checkedFunction(CheckedBiFunction<T, U, R> checkedBiFunction) {
+		return (t, u) -> checkedBiFunction.apply(t, u);
+	}
+
+	/**
+	 * Adapt a {@link CheckedPredicate} to a {@link Predicate} propagating any exceptions thrown by the
+	 * {@link CheckedPredicate} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * {@code flux.filter(Exceptions.checked(v -> checkedMethod(v)).subscribe(Subscribers.unbounded())}
+	 *
+	 * @param checkedPredicate the predicate that throws a checked exception
+	 * @param <T> the type of the input to the predicate
+	 * @return predicate that adapts {@link CheckedPredicate} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T> Predicate<T> checkedPredicate(CheckedPredicate<T> checkedPredicate) {
+		return t -> checkedPredicate.test(t);
+	}
+
+	/**
+	 * Adapt a {@link CheckedBiPredicate} to a {@link BiPredicate} propagating any exceptions thrown by the
+	 * {@link CheckedBiPredicate} using {@link #propagate(Throwable)}. Useful when using existing methods which throw
+	 * checked exceptions to avoid try/catch blocks and improve readability.
+	 *
+	 * @param checkedBiPredicate  the bipredicate that throws a checked exception
+	 * @param <T> the type of the first argument to the predicate
+	 * @param <U> the type of the second argument the predicate
+	 * @return bipredicate that adapts {@link CheckedBiPredicate} and {@link #propagate(Throwable)}'s checked exceptions
+	 * @see #propagate(Throwable)
+	 */
+	public static <T, U> BiPredicate<T, U> checkedPredicate(CheckedBiPredicate<T, U> checkedBiPredicate) {
+		return (t, u) -> checkedBiPredicate.test(t, u);
 	}
 
 	/**
@@ -323,34 +420,6 @@ public abstract class Exceptions {
 		return _t;
 	}
 
-	/**
-	 * Wrap a {@link ThrowingFunction} with a {@link Function} that will wrap and {@link #propagate(Throwable)}
-	 * any exceptions thrown by the {@link ThrowingFunction}.  Useful when using existing methods which throw
-	 * checked exceptions to avoid try/catch blocks and improve readability.
-	 *
-	 * {@code flux.map(Exceptions.wrap(v -> legacyMethod()}.subscribe(Subscribers.unbounded())}
-	 *
-	 * @param function the function that throws a checked exception
-	 * @param <T> the type of the input to the function
-	 * @param <V> the type of the result of the function
-	 * @return function that wraps and {@link #propagate(Throwable)}'s checked exceptions
-	 */
-	public static <T, V> Function<T, V> wrap(ThrowingFunction<T, V> function) {
-		return t -> function.apply(t);
-	}
-
-	public static <T> Consumer<T> wrap(ThrowingConsumer<T> consumer) {
-		return t -> consumer.accept(t);
-	}
-
-	public static <T> Predicate<T> wrap(ThrowingPredicate<T> predicate) {
-		return t -> predicate.test(t);
-	}
-
-	public static <T> Supplier<T> wrap(ThrowingSupplier<T> supplier) {
-		return () -> supplier.get();
-	}
-
 	Exceptions(){}
 
 	static class BubblingException extends ReactiveException {
@@ -405,63 +474,93 @@ public abstract class Exceptions {
 	}
 
 	@FunctionalInterface
-	public interface ThrowingFunction<T, V> extends Function<T, V> {
+	public interface CheckedConsumer<T> extends Consumer<T> {
 
 		@Override
-		default V apply(T event) {
+		default void accept(T t) {
 			try {
-				return applyThrows(event);
-			} catch (Throwable t) {
-				throw propagate(t);
+				acceptChecked(t);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
 			}
 		}
 
-		V applyThrows(T t) throws Throwable;
+		void acceptChecked(T t) throws Throwable;
 	}
 
 	@FunctionalInterface
-	public interface ThrowingConsumer<T> extends Consumer<T> {
+	public interface CheckedBiConsumer<T, U> extends BiConsumer<T, U> {
 
 		@Override
-		default void accept(T event) {
+		default void accept(T t, U u) {
 			try {
-				acceptThrows(event);
-			} catch (Throwable t) {
-				throw propagate(t);
+				acceptChecked(t, u);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
 			}
 		}
 
-		void acceptThrows(T t) throws Throwable;
+		void acceptChecked(T t, U u) throws Throwable;
 	}
 
 	@FunctionalInterface
-	public interface ThrowingPredicate<T> extends Predicate<T> {
+	public interface CheckedFunction<T, R> extends Function<T, R> {
 
 		@Override
-		default boolean test(T event) {
+		default R apply(T t) {
 			try {
-				return testThrows(event);
-			} catch (Throwable t) {
-				throw propagate(t);
+				return applyChecked(t);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
 			}
 		}
 
-		boolean testThrows(T t) throws Throwable;
+		R applyChecked(T t) throws Throwable;
 	}
 
 	@FunctionalInterface
-	public interface ThrowingSupplier<T> extends Supplier<T> {
+	public interface CheckedBiFunction<T, U, R> extends BiFunction<T, U, R> {
 
 		@Override
-		default T get() {
+		default R apply(T t, U u) {
 			try {
-				return getThrows();
-			} catch (Throwable t) {
-				throw propagate(t);
+				return applyChecked(t, u);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
 			}
 		}
 
-		T getThrows() throws Throwable;
+		R applyChecked(T t, U u) throws Throwable;
+	}
+
+	@FunctionalInterface
+	public interface CheckedPredicate<T> extends Predicate<T> {
+
+		@Override
+		default boolean test(T t) {
+			try {
+				return testChecked(t);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
+			}
+		}
+
+		boolean testChecked(T t) throws Throwable;
+	}
+
+	@FunctionalInterface
+	public interface CheckedBiPredicate<T, U> extends BiPredicate<T, U> {
+
+		@Override
+		default boolean test(T t, U u) {
+			try {
+				return testChecked(t, u);
+			} catch (Throwable throwable) {
+				throw propagate(throwable);
+			}
+		}
+
+		boolean testChecked(T t, U u) throws Throwable;
 	}
 
 }
