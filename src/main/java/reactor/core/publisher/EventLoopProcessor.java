@@ -552,7 +552,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			long cursor = -1;
 			try {
 				spinObserver.run();
-				upstream.request(bufferSize - 1);
+				upstream.request(bufferSize);
 
 				long c;
 				for (; ; ) {
@@ -562,7 +562,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 						postWaitCallback.accept(cursor);
 					}
 					//spinObserver.accept(null);
-					upstream.request(limit + (cursor - (c - limit)));
+					upstream.request(limit + (cursor - c));
 				}
 			}
 			catch (InterruptedException e) {

@@ -131,11 +131,9 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 	public static final String e = "Element";
 	public static final String s = "Synchronizer";
 
-	public static void main(String[] args) throws Exception {
-		highRate();
-	}
 
-	public static void highRate() throws Exception {
+	@Test
+	public void highRate() throws Exception {
 		WorkQueueProcessor<String> queueProcessor = WorkQueueProcessor.share("Processor", 256, liteBlocking());
 		TimedScheduler timer = Schedulers.newTimer("Timer");
 		queueProcessor
