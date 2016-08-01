@@ -44,6 +44,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;
+	final boolean filterNullResult;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and mapper.
@@ -52,12 +53,13 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public FluxMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public FluxMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper, boolean filterNullResult) {
 		super(source);
 		if (!(source instanceof Fuseable)) {
 			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
 		}
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.filterNullResult = filterNullResult;
 	}
 
 	public Function<? super T, ? extends R> mapper() {
@@ -72,7 +74,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 			source.subscribe(new MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new MapFuseableSubscriber<>(s, mapper));
+		source.subscribe(new MapFuseableSubscriber<>(s, mapper, filterNullResult));
 	}
 
 	static final class MapFuseableSubscriber<T, R>
@@ -80,6 +82,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 			           SynchronousSubscription<R>, Trackable {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
+		final boolean filterNullResult;
 
 		boolean done;
 
@@ -87,9 +90,11 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		int sourceMode;
 
-		public MapFuseableSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapFuseableSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper,
+			                           boolean filterNullResult) {
 			this.actual = actual;
 			this.mapper = mapper;
+			this.filterNullResult = filterNullResult;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -119,11 +124,17 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 					onError(Exceptions.mapOperatorError(s, e));
 					return;
 				}
-	
+
 				if (v == null) {
-					s.cancel();
-					onError(new NullPointerException("The mapper returned a null value."));
-					return;
+					if(filterNullResult) {
+						done = true;
+						s.cancel();
+						actual.onError(new NullPointerException("The mapper returned a null value."));
+						return;
+					} else {
+						s.request(1);
+						return;
+					}
 				}
 	
 				actual.onNext(v);

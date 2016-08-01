@@ -42,6 +42,7 @@ import reactor.core.Exceptions;
 final class FluxMap<T, R> extends FluxSource<T, R> {
 
 	final Function<? super T, ? extends R> mapper;
+	final boolean filterNullResult;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and mapper.
@@ -50,9 +51,10 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public FluxMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public FluxMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper, boolean filterNullResult) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.filterNullResult = filterNullResult;
 	}
 
 	public Function<? super T, ? extends R> mapper() {
@@ -62,7 +64,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
-			source.subscribe(new MapFuseableSubscriber<>(s, mapper));
+			source.subscribe(new MapFuseableSubscriber<>(s, mapper, filterNullResult));
 			return;
 		}
 		if (s instanceof Fuseable.ConditionalSubscriber) {
@@ -70,7 +72,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			source.subscribe(new MapConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new MapSubscriber<>(s, mapper));
+		source.subscribe(new MapSubscriber<>(s, mapper, filterNullResult));
 	}
 
 	static final class MapSubscriber<T, R>
@@ -78,14 +80,16 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			           Trackable {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
+		final boolean filterNullResults;
 
 		boolean done;
 
 		Subscription s;
 
-		public MapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper, boolean filterNullResults) {
 			this.actual = actual;
 			this.mapper = mapper;
+			this.filterNullResults = filterNullResults;
 		}
 
 		@Override
@@ -114,10 +118,15 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			}
 
 			if (v == null) {
-				done = true;
-				s.cancel();
-				actual.onError(new NullPointerException("The mapper returned a null value."));
-				return;
+				if(filterNullResults) {
+					done = true;
+					s.cancel();
+					actual.onError(new NullPointerException("The mapper returned a null value."));
+					return;
+				} else {
+					s.request(1);
+					return;
+				}
 			}
 
 			actual.onNext(v);

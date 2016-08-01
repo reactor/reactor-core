@@ -173,7 +173,7 @@ extends Flux<R>
 				public R apply(T t) {
 					return combiner.apply(new Object[] { t });
 				}
-			}).subscribe(s);
+			}, false).subscribe(s);
 			return;
 		}
 		

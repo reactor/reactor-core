@@ -36,6 +36,7 @@ import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 final class MonoMap<T, R> extends MonoSource<T, R> {
 
 	final Function<? super T, ? extends R> mapper;
+	final boolean filterNullResult;
 
 	/**
 	 * Constructs a StreamMap instance with the given source and mapper.
@@ -44,9 +45,10 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public MonoMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public MonoMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper, boolean filterNullResult) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.filterNullResult = filterNullResult;
 	}
 
 	public Function<? super T, ? extends R> mapper() {
@@ -56,7 +58,7 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
-			source.subscribe(new MapFuseableSubscriber<>(s, mapper));
+			source.subscribe(new MapFuseableSubscriber<>(s, mapper, filterNullResult));
 			return;
 		}
 		if (s instanceof Fuseable.ConditionalSubscriber) {
@@ -64,6 +66,6 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 			source.subscribe(new FluxMap.MapConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new FluxMap.MapSubscriber<>(s, mapper));
+		source.subscribe(new FluxMap.MapSubscriber<>(s, mapper, filterNullResult));
 	}
 }

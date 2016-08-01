@@ -1623,9 +1623,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		if (this instanceof Fuseable) {
-			return onAssembly(new MonoMapFuseable<>(this, mapper));
+			return onAssembly(new MonoMapFuseable<>(this, mapper, false));
 		}
-		return onAssembly(new MonoMap<>(this, mapper));
+		return onAssembly(new MonoMap<>(this, mapper, false));
 	}
 
 	/**
@@ -1675,6 +1675,25 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return otherwise(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform the item emitted by this {@link Mono} by applying a function to each item  as long as the mapper
+	 * function result is not null. If the result is a {@code null} value then the source value is filtered rather than
+	 * mapped.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map1.png" alt="">
+	 * <p>
+	 * @param mapper the transforming function
+	 * @param <R> the transformed type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final <R> Mono<R> mapOrFilter(Function<? super T, ? extends R> mapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoMapFuseable<>(this, mapper, true));
+		}
+		return onAssembly(new MonoMap<>(this, mapper, true));
 	}
 
 	/**

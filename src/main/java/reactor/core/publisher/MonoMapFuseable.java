@@ -38,6 +38,7 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 		implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;
+	final boolean filterNullResult;
 
 	/**
 	 * Constructs a StreamMap instance with the given source and mapper.
@@ -46,12 +47,14 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper,
+		                     boolean filterNullResult) {
 		super(source);
 		if (!(source instanceof Fuseable)) {
 			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
 		}
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
+		this.filterNullResult = filterNullResult;
 	}
 
 	public Function<? super T, ? extends R> mapper() {
@@ -66,7 +69,7 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 			source.subscribe(new FluxMapFuseable.MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(s, mapper));
+		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(s, mapper, filterNullResult));
 	}
 
 }

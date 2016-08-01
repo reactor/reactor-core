@@ -138,10 +138,10 @@ public abstract class Flux<T> implements Publisher<T> {
             Publisher<? extends T> source = sources[0];
             if (source instanceof Fuseable) {
 	            return onAssembly(new FluxMapFuseable<>(source,
-			            v -> combinator.apply(new Object[]{v})));
+			            v -> combinator.apply(new Object[]{v}), false));
             }
 			return onAssembly(new FluxMap<>(source,
-					v -> combinator.apply(new Object[]{v})));
+					v -> combinator.apply(new Object[]{v}), false));
 		}
 
 		return onAssembly(new FluxCombineLatest<>(sources,
@@ -1333,10 +1333,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		    Publisher<? extends I> source = sources[0];
 		    if (source instanceof Fuseable) {
 			    return onAssembly(new FluxMapFuseable<>(source,
-					    v -> combinator.apply(new Object[]{v})));
+					    v -> combinator.apply(new Object[]{v}), false));
 		    }
 			return onAssembly(new FluxMap<>(source,
-					v -> combinator.apply(new Object[]{v})));
+					v -> combinator.apply(new Object[]{v}), false));
 		}
 
 		return onAssembly(new FluxZip<>(sources,
@@ -3080,9 +3080,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
 		if (this instanceof Fuseable) {
-			return onAssembly(new FluxMapFuseable<>(this, mapper));
+			return onAssembly(new FluxMapFuseable<>(this, mapper, false));
 		}
-		return onAssembly(new FluxMap<>(this, mapper));
+		return onAssembly(new FluxMap<>(this, mapper, false));
 	}
 
 	/**
@@ -3134,6 +3134,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResumeWith(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform the items emitted by this {@link Flux} by applying a function to each item  as long as the mapper
+	 * function result is not null. If the result is a {@code null} value then the source value is filtered rather than
+	 * mapped.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map.png" alt="">
+	 * <p>
+	 * @param mapper the transforming {@link Function}
+	 * @param <V> the transformed type
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <V> Flux<V> mapOrFilter(Function<? super T, ? extends V> mapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxMapFuseable<>(this, mapper, true));
+		}
+		return onAssembly(new FluxMap<>(this, mapper, true));
 	}
 
 	/**
