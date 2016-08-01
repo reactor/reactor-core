@@ -119,10 +119,6 @@ producing non concurrently, use `Flux#create`, `Mono#create`, or
 
 ```java
 Flux.create(emitter -> {
-         // setup backpressure mode, default is BUFFER
-
-         emitter.setBackpressureHandling(FluxSink.BackpressureHandling.LATEST);
-
          ActionListener al = e -> {
             emitter.next(textField.getText());
          };
@@ -135,11 +131,12 @@ Flux.create(emitter -> {
          emitter.setCancellation(() -> {
          	button.removeListener(al);
          });
-    })
+    },
+    // Overflow (backpressure) handling, default is BUFFER
+    FluxSink.OverflowStrategy.LATEST)
     .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe(System.out::println)
-
 ```
 
 ## Hot Publishing : Processors
@@ -211,7 +208,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/core/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+"Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 -------------------------------------
 ## Reference
