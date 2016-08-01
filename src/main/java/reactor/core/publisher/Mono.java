@@ -552,7 +552,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(false, Tuples::fromArray, p1, p2));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2));
 	}
 
 	/**
@@ -574,8 +574,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(false, a ->
-				(Tuple3) Tuples.fromArray(a), p1, p2, p3));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
 	/**
@@ -602,8 +601,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(false, a ->
-				(Tuple4) Tuples.fromArray(a), p1, p2, p3, p4));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -633,8 +631,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen<>(false, a ->
-				(Tuple5) Tuples.fromArray(a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -667,8 +664,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return onAssembly(new MonoWhen<>(false, a ->
-		        (Tuple6) Tuples.fromArray(a), p1, p2, p3, p4, p5, p6));
+        return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
@@ -684,7 +680,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
 	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
 		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
 	}
@@ -770,9 +765,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen<>(true, Tuples::fromArray, p1, p2));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2));
 	}
 
 	/**
@@ -793,7 +788,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen<>(true, a -> (Tuple3) Tuples.fromArray(a), p2, p3));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p2, p3));
 	}
 
 	/**
@@ -819,8 +814,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen<>(true, a -> (Tuple4) Tuples
-				.fromArray(a), p1, p2, p3, p4));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -849,8 +843,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen<>(true, a -> (Tuple5)
-				Tuples.fromArray(a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -882,8 +875,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return onAssembly(new MonoWhen<>(true, a ->
-				(Tuple6) Tuples.fromArray(a), p1, p2, p3, p4, p5, p6));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
 	/**

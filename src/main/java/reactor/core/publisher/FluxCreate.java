@@ -69,8 +69,6 @@ final class FluxCreate<T> extends Flux<T> {
         
         final OverflowStrategy handling;
         
-        boolean caughtUp;
-        
         Queue<T> queue;
 
         volatile T latest;
@@ -132,19 +130,14 @@ final class FluxCreate<T> extends Flux<T> {
                 break;
             }
             case BUFFER: {
-                if (caughtUp) {
-                    actual.onNext(value);
-                } else {
-                    queue.offer(value);
-                    if (drain()) {
-                        caughtUp = true;
-                    }
-                }
+                queue.offer(value);
+                drain();
                 break;
             }
             case LATEST: {
                 LATEST.lazySet(this, value);
                 drainLatest();
+                break;
             }
             case DROP: {
                 if (requested != 0L) {
@@ -176,13 +169,9 @@ final class FluxCreate<T> extends Flux<T> {
                 actual.onError(error);
                 break;
             case BUFFER:
-                if (caughtUp) {
-                    actual.onError(error);
-                } else {
-                    this.error = error;
-                    done = true;
-                    drain();
-                }
+                this.error = error;
+                done = true;
+                drain();
                 break;
             case LATEST:
                 this.error = error;
@@ -212,12 +201,6 @@ final class FluxCreate<T> extends Flux<T> {
                 actual.onComplete();
                 break;
             case BUFFER:
-                if (caughtUp) {
-                    cancel();
-                    actual.onComplete();
-                } else {
-                    drain();
-                }
                 drain();
                 break;
             case LATEST:
@@ -226,9 +209,9 @@ final class FluxCreate<T> extends Flux<T> {
             }
         }
         
-        boolean drain() {
+        void drain() {
             if (WIP.getAndIncrement(this) != 0) {
-                return false;
+                return;
             }
             
             int missed = 1;
@@ -243,7 +226,7 @@ final class FluxCreate<T> extends Flux<T> {
                 while (e != r) {
                     if (isCancelled()) {
                         q.clear();
-                        return false;
+                        return;
                     }
                     
                     boolean d = done;
@@ -259,7 +242,7 @@ final class FluxCreate<T> extends Flux<T> {
                         } else {
                             a.onComplete();
                         }
-                        return false;
+                        return;
                     }
                     
                     if (empty) {
@@ -274,7 +257,7 @@ final class FluxCreate<T> extends Flux<T> {
                 if (e == r) {
                     if (isCancelled()) {
                         q.clear();
-                        return false;
+                        return;
                     }
                     
                     if (done && q.isEmpty()) {
@@ -286,7 +269,7 @@ final class FluxCreate<T> extends Flux<T> {
                         } else {
                             a.onComplete();
                         }
-                        return false;
+                        return;
                     }
                 }
                 
@@ -298,7 +281,7 @@ final class FluxCreate<T> extends Flux<T> {
                 
                 missed = WIP.addAndGet(this, -missed);
                 if (missed == 0) {
-                    return r == Long.MAX_VALUE;
+                    return;
                 }
             }
         }
