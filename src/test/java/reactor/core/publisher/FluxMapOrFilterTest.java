@@ -26,7 +26,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import reactor.core.Fuseable;
 import reactor.test.TestSubscriber;
+
+import static reactor.core.Fuseable.ANY;
+import static reactor.core.Fuseable.ASYNC;
+import static reactor.core.Fuseable.SYNC;
 
 public class FluxMapOrFilterTest {
 
@@ -52,6 +57,36 @@ public class FluxMapOrFilterTest {
 		ts.assertContainValues(expectedValues)
 			.assertNoError()
 			.assertComplete();
+	}
+
+	@Test
+	public void normalFusion() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		ts.requestedFusionMode(ANY);
+
+		Flux.range(1, 5).mapOrFilter(v -> v * 2).subscribe(ts);
+
+		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
+		ts.assertContainValues(expectedValues)
+			.assertNoError()
+			.assertComplete()
+		  .assertFuseableSource()
+		  .assertFusionMode(SYNC);
+	}
+
+	@Test
+	public void filterNullMapResultFusionAsync() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		ts.requestedFusionMode(ASYNC);
+
+		Flux.range(1, 5).mapOrFilter(v -> v % 2 == 0 ? v * 2 : null).subscribe(ts);
+
+		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
+		ts.assertContainValues(expectedValues)
+			.assertNoError()
+			.assertComplete()
+		  .assertFuseableSource()
+			.assertFusionMode(SYNC);
 	}
 
 }

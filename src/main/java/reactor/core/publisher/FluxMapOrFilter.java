@@ -243,10 +243,7 @@ final class FluxMapOrFilter<T, R> extends FluxSource<T, R> {
 			}
 
 			if (v == null) {
-				done = true;
-				actual.onError(Exceptions.mapOperatorError(s, new NullPointerException
-						("The mapper returned a null value."), t));
-				return true;
+				return false;
 			}
 
 			return actual.tryOnNext(v);

@@ -194,15 +194,35 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					throw new NullPointerException();
+			if (sourceMode == ASYNC) {
+				long dropped = 0;
+				for (;;) {
+					T v = s.poll();
+					if(v != null) {
+						R u = mapper.apply(v);
+						if (u == null) {
+							if (dropped != 0) {
+								request(dropped);
+							}
+							return u;
+						}
+						dropped++;
+					}
+					return null;
 				}
-				return u;
+			} else {
+				for (;;) {
+					T v = s.poll();
+					if (v != null) {
+						R u = mapper.apply(v);
+						if(u != null) {
+							return u;
+					  }
+					} else {
+						return null;
+					}
+				}
 			}
-			return null;
 		}
 
 		@Override
@@ -283,14 +303,11 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 				}
 	
 				if (v == null) {
-					done = true;
-					actual.onError(Exceptions.mapOperatorError(s,
-							new NullPointerException("The mapper returned a null value."),
-							t));
-					return;
+					s.request(1);
+				} else {
+					actual.onNext(v);
 				}
-	
-				actual.onNext(v);
+
 			} else
 			if (m == 2) {
 				actual.onNext(null);
@@ -317,11 +334,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 				}
 	
 				if (v == null) {
-					done = true;
-					actual.onError(Exceptions.mapOperatorError(s, new
-							NullPointerException("The mapper returned a null value."),
-							t));
-					return true;
+					return false;
 				}
 	
 				return actual.tryOnNext(v);
@@ -396,7 +409,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 			if (v != null) {
 				R u = mapper.apply(v);
 				if (u == null) {
-					throw new NullPointerException();
+					s.request(1);
 				}
 				return u;
 			}
