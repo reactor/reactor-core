@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package reactor.core.publisher;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+
+import java.util.Objects;
+import java.util.function.Function;
+
+import reactor.core.Fuseable;
+import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
+import reactor.core.publisher.FluxMapOrFilterFuseable.MapOrFilterFuseableSubscriber;
+
+/**
+ * Maps the values of the source publisher one-on-one via a mapper function. If the result is not {code null} then the
+ * {@link Mono} will complete with this value.  If the result of the function is {@code null} then the {@link Mono}
+ * will complete without a value.
+ *
+ * @param <T> the source value type
+ * @param <R> the result value type
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ */
+final class MonoMapOrFilter<T, R> extends MonoSource<T, R> {
+
+	final Function<? super T, ? extends R> mapper;
+
+	/**
+	 * Constructs a StreamMap instance with the given source and mapper.
+	 *
+	 * @param source the source Publisher instance
+	 * @param mapper the mapper function
+	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
+	 */
+	public MonoMapOrFilter(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+		super(source);
+		this.mapper = Objects.requireNonNull(mapper, "mapper");
+	}
+
+	public Function<? super T, ? extends R> mapper() {
+		return mapper;
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super R> s) {
+		if (source instanceof Fuseable) {
+			source.subscribe(new MapOrFilterFuseableSubscriber<>(s, mapper));
+			return;
+		}
+		if (s instanceof Fuseable.ConditionalSubscriber) {
+			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
+			source.subscribe(new FluxMapOrFilter.MapOrFilterConditionalSubscriber<>(cs, mapper));
+			return;
+		}
+		source.subscribe(new FluxMapOrFilter.MapOrFilterSubscriber<>(s, mapper));
+	}
+}

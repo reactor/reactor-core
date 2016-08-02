@@ -1751,6 +1751,28 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the item emitted by this {@link Mono} by applying a function to each item. If the result is not
+	 * {code null} then the {@link Mono} will complete with this value.  If the result of the function is {@code null}
+	 * then the {@link Mono} will complete without a value.
+	 *
+	 * If the result is a {@code null} value then the source value is filtered rather than
+	 * mapped.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map1.png" alt="">
+	 * <p>
+	 * @param mapper the transforming function
+	 * @param <R> the transformed type
+	 *
+	 * @return a new {@link Mono}
+	 */
+ public final <R> Mono<R> mapOrFilter(Function<? super T, ? extends R> mapper) {
+	 if (this instanceof Fuseable) {
+		 return onAssembly(new MonoMapOrFilterFuseable<>(this, mapper));
+	 }
+	 return onAssembly(new MonoMapOrFilter<>(this, mapper));
+ }
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
