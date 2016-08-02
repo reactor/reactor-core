@@ -73,7 +73,7 @@ final class FluxMapOrFilter<T, R> extends FluxSource<T, R> {
 
 	static final class MapOrFilterSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
-			           Trackable {
+								 Fuseable.ConditionalSubscriber<T>, Trackable {
 		final Subscriber<? super R>			actual;
 		final Function<? super T, ? extends R> mapper;
 
@@ -97,9 +97,16 @@ final class FluxMapOrFilter<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onNext(T t) {
+			if (!tryOnNext(t)) {
+				s.request(1);
+			}
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Exceptions.onNextDropped(t);
-				return;
+				return false;
 			}
 
 			R v;
@@ -108,15 +115,13 @@ final class FluxMapOrFilter<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				onError(Exceptions.mapOperatorError(s, e, t));
-				return;
+				return false;
 			}
-
-			if (v == null) {
-				s.request(1);
-			} else {
+			if (v !=null) {
 				actual.onNext(v);
+				return true;
 			}
-
+			return false;
 		}
 
 		@Override

@@ -1765,12 +1765,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
- public final <R> Mono<R> mapOrFilter(Function<? super T, ? extends R> mapper) {
-	 if (this instanceof Fuseable) {
-		 return onAssembly(new MonoMapOrFilterFuseable<>(this, mapper));
-	 }
-	 return onAssembly(new MonoMapOrFilter<>(this, mapper));
- }
+	public final <R> Mono<R> mapOrFilter(Function<? super T, ? extends R> mapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoMapOrFilterFuseable<>(this, mapper));
+		}
+		return onAssembly(new MonoMapOrFilter<>(this, mapper));
+	}
 
 	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.

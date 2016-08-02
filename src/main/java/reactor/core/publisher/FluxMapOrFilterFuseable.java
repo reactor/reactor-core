@@ -198,16 +198,14 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 				long dropped = 0;
 				for (;;) {
 					T v = s.poll();
-					if(v != null) {
-						R u = mapper.apply(v);
-						if (u == null) {
-							if (dropped != 0) {
-								request(dropped);
-							}
-							return u;
+					R u = null;
+					if(v == null || (u = mapper.apply(v)) == null ) {
+						if (dropped != 0) {
+							request(dropped);
 						}
-						dropped++;
+						return u;
 					}
+					dropped++;
 					return null;
 				}
 			} else {
@@ -405,15 +403,33 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					s.request(1);
+			if (sourceMode == ASYNC) {
+				long dropped = 0;
+				for (;;) {
+					T v = s.poll();
+					R u = null;
+					if(v == null || (u = mapper.apply(v)) == null ) {
+						if (dropped != 0) {
+							request(dropped);
+						}
+						return u;
+					}
+					dropped++;
+					return null;
 				}
-				return u;
+			} else {
+				for (;;) {
+					T v = s.poll();
+					if (v != null) {
+						R u = mapper.apply(v);
+						if(u != null) {
+							return u;
+						}
+					} else {
+						return null;
+					}
+				}
 			}
-			return null;
 		}
 
 		@Override
