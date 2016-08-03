@@ -72,6 +72,16 @@ public class FluxCustomOperatorTest {
 	}
 
 	@Test
+	public void transformWithLifterHelperMethod() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		// Does not compile.  Integer generic type is not propagated to map() operator
+		just(1).transform(lifter(s -> new NullSafeMapOperatorAdapter<>(s, v -> v))).map(v -> v + 1).subscribe(ts);
+
+		ts.assertValues(2).assertComplete().assertNoError();
+	}
+
+	@Test
 	public void oldLiftLamda() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
@@ -109,6 +119,11 @@ public class FluxCustomOperatorTest {
 		// 4) Concise as no anonymous classes
 		just(1).lift(new NullSafeMapOperator<>(v -> v)).map(v -> v + 1).subscribe(ts);
 		ts.assertValues(2).assertComplete().assertNoError();
+	}
+
+	public static <T, R> Function<? super Flux<T>, ? extends Publisher<R>> lifter(Function<Subscriber<? super R>,
+			                                                                                   Subscriber<? super T>> lifter) {
+		return flux -> s -> flux.subscribe(lifter.apply(s));
 	}
 
 	class FluxNullSafeMap<T, R> extends FluxSource<T, R> {
