@@ -88,5 +88,7 @@ public class MonoTests {
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
 		promise.subscribe(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
+
+
 	}
 }
