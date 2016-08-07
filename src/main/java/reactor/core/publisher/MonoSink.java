@@ -29,23 +29,23 @@ public interface MonoSink<T> {
      * <p>Calling this method multiple times or after the other
      * terminating methods has no effect.
      */
-    void complete();
+    void success();
     
     /**
      * Complete with the given value.
      * <p>Calling this method multiple times or after the other
      * terminating methods has no effect.
-     * @param value the value to complete with
+     * @param value the value to success with
      */
-    void complete(T value);
+    void success(T value);
     
     /**
      * Terminate with the give exception
      * <p>Calling this method multiple times or after the other
      * terminating methods has no effect.
-     * @param e the exception to complete with
+     * @param e the exception to success with
      */
-    void fail(Throwable e);
+    void error(Throwable e);
     
     /**
      * Sets a cancellation callback triggered by

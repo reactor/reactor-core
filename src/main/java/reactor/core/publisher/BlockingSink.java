@@ -209,14 +209,14 @@ public final class BlockingSink<E>
 
 	/**
 	 *
-	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link BlockingSink#fail(Throwable)}
-	 * might fail itself with an
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link BlockingSink#error(Throwable)}
+	 * might error itself with an
 	 * unchecked exception if an error has already been recorded or it
 	 * has previously been terminated via {@link #cancel()}, {@link #finish()} or {@link #complete()}.
 	 *
 	 * @param error the exception to signal
 	 */
-	public void fail(Throwable error) {
+	public void error(Throwable error) {
 		if (uncaughtException == null) {
 			uncaughtException = error;
 			if(!cancelled) {

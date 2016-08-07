@@ -58,7 +58,7 @@ final class FluxCreate<T> extends Flux<T> {
         try {
             emitter.accept(dfe);
         } catch (Throwable ex) {
-            dfe.fail(Exceptions.mapOperatorError(ex));
+            dfe.error(Exceptions.mapOperatorError(ex));
         }
     }
     
@@ -106,7 +106,7 @@ final class FluxCreate<T> extends Flux<T> {
         @Override
         public void next(T value) {
             if (value == null) {
-                fail(new NullPointerException("value is null"));
+                error(new NullPointerException("value is null"));
                 return;
             }
             if (isCancelled() || done) {
@@ -125,7 +125,7 @@ final class FluxCreate<T> extends Flux<T> {
                         REQUESTED.decrementAndGet(this);
                     }
                 } else {
-                    fail(new IllegalStateException("Could not emit value due to lack of request"));
+                    error(new IllegalStateException("Could not emit value due to lack of request"));
                 }
                 break;
             }
@@ -152,7 +152,7 @@ final class FluxCreate<T> extends Flux<T> {
         }
         
         @Override
-        public void fail(Throwable error) {
+        public void error(Throwable error) {
             if (error == null) {
                 error = new NullPointerException("error is null");
             }

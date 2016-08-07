@@ -1936,7 +1936,7 @@ class FluxSpec extends Specification {
 				aSubscriber.next('Three')
 				aSubscriber.next('Two')
 				aSubscriber.next('One')
-				aSubscriber.fail(new Exception())
+				aSubscriber.error(new Exception())
 			}
 
 		and:
@@ -1969,7 +1969,7 @@ class FluxSpec extends Specification {
 				aSubscriber.next('Three')
 				aSubscriber.next('Two')
 				aSubscriber.next('One')
-				aSubscriber.fail(new Exception())
+				aSubscriber.error(new Exception())
 			}
 
 		and:
@@ -2013,7 +2013,7 @@ class FluxSpec extends Specification {
 			res = []
 			myFlux = Flux.create { aSubscriber ->
 				aSubscriber.next('Three')
-				aSubscriber.fail(new Exception())
+				aSubscriber.error(new Exception())
 			}
 
 		and:
@@ -2328,7 +2328,7 @@ class FluxSpec extends Specification {
 			def counter = 0
 			def value = Flux.create {
 				counter++
-				it.fail(new RuntimeException("always fails $counter"))
+				it.error(new RuntimeException("always fails $counter"))
 			}.retryWhen { attempts ->
 			  attempts.log('zipWith').zipWith(Flux.range(1, 3), { t1, t2 -> t2 }).flatMap { i ->
 					println "delay retry by " + i + " second(s)"

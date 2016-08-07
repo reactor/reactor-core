@@ -46,7 +46,7 @@ final class MonoCreate<T> extends Mono<T> {
         try {
             callback.accept(emitter);
         } catch (Throwable ex) {
-            emitter.fail(Exceptions.mapOperatorError(ex));
+            emitter.error(Exceptions.mapOperatorError(ex));
         }
     }
 
@@ -77,7 +77,7 @@ final class MonoCreate<T> extends Mono<T> {
         }
 
         @Override
-        public void complete() {
+        public void success() {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 cancellation = CANCELLED;
                 actual.onComplete();
@@ -85,7 +85,7 @@ final class MonoCreate<T> extends Mono<T> {
         }
 
         @Override
-        public void complete(T value) {
+        public void success(T value) {
             for (;;) {
                 int s = state;
                 if (s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
@@ -107,7 +107,7 @@ final class MonoCreate<T> extends Mono<T> {
         }
 
         @Override
-        public void fail(Throwable e) {
+        public void error(Throwable e) {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 cancellation = CANCELLED;
                 actual.onError(e);

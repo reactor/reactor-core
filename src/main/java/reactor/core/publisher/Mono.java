@@ -86,7 +86,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Creates a deferred emitter that can be used with callback-based
-	 * APIs to signal at most one value, a complete or an error signal.
+	 * APIs to signal at most one value, a success or an error signal.
 	 * <p>
 	 * Bridging legacy API involves mostly boilerplate code due to the lack
 	 * of standard types and methods. There are two kinds of API surfaces:
@@ -104,9 +104,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *         } else {
 	 *             String body = event.getBody();
 	 *             if (body.isEmpty()) {
-	 *                 emitter.complete();
+	 *                 emitter.success();
 	 *             } else {
-	 *                 emitter.complete(body.toLowerCase());
+	 *                 emitter.success(body.toLowerCase());
 	 *             }
 	 *         }
 	 *     };
@@ -129,7 +129,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *     Callback&lt;String&gt; callback = new Callback&lt;String&gt;() {
      *         &#64;Override
      *         public void onResult(String data) {
-     *             emitter.complete(data.toLowerCase());
+     *             emitter.success(data.toLowerCase());
      *         }
      *         
      *         &#64;Override
@@ -1191,7 +1191,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delaysubscriptionp1.png" alt="">
 	 *
 	 * @param subscriptionDelay a
-	 * {@link Publisher} to signal by next or complete this {@link Mono#subscribe(Subscriber)}
+	 * {@link Publisher} to signal by next or success this {@link Mono#subscribe(Subscriber)}
 	 * @param <U> the other source type
 	 *
 	 * @return a delayed {@link Mono}
@@ -1237,7 +1237,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * A "phantom-operator" working only if this
 	 * {@link Mono} is a emits onNext, onError or onComplete {@link Signal}. The relative {@link Subscriber}
-	 * callback will be invoked, error {@link Signal} will trigger onError and complete {@link Signal} will trigger
+	 * callback will be invoked, error {@link Signal} will trigger onError and success {@link Signal} will trigger
 	 * onComplete.
 	 *
 	 * <p>
@@ -1488,7 +1488,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Test the result if any of this {@link Mono} and replay it if predicate returns true.
-	 * Otherwise complete without value.
+	 * Otherwise success without value.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/filter1.png" alt="">
@@ -1530,7 +1530,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
-	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
+	 * @param mapperOnComplete the {@link Function} to call on success signal and returning a sequence to merge
 	 * @param <R> the type of the produced merged sequence
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
@@ -1753,7 +1753,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
-	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
+	 * emitted. Complete signal will first emit a {@code Signal.success()} and then effectively success the flux.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/materialize1.png" alt="">
@@ -2016,7 +2016,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatnb.png" alt="">
 	 *
-	 * @param numRepeat the number of times to re-subscribe on complete
+	 * @param numRepeat the number of times to re-subscribe on success
 	 * @param predicate the boolean to evaluate on onComplete
 	 *
 	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified OR matching
@@ -2266,7 +2266,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
-	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param completeConsumer the consumer to invoke on success signal
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
@@ -2316,7 +2316,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
+	 * Return a {@code Mono<Void>} which only listens for success and error signals from this {@link Mono} completes.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
