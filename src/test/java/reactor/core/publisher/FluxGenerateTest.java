@@ -76,7 +76,7 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxGenerate<Integer, Void>((s, o) -> {
-			o.fail(new RuntimeException("forced failure"));
+			o.error(new RuntimeException("forced failure"));
 			return s;
 		}).subscribe(ts);
 
@@ -193,8 +193,8 @@ public class FluxGenerateTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		new FluxGenerate<Integer, Integer>((s, o) -> {
-			o.fail(new RuntimeException("forced failure"));
-			o.fail(new RuntimeException("forced failure"));
+			o.error(new RuntimeException("forced failure"));
+			o.error(new RuntimeException("forced failure"));
 			return s;
 		}).subscribe(ts);
 

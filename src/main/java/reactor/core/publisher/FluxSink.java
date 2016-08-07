@@ -36,7 +36,7 @@ public interface FluxSink<T> {
      * @see Subscriber#onError(Throwable)
      * @param e the exception to signal, not null
      */
-    void fail(Throwable e);
+    void error(Throwable e);
 
     /**
      * Try emitting, might throw an unchecked exception.
