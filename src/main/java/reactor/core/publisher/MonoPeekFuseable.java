@@ -35,7 +35,7 @@ import reactor.core.Fuseable;
  *
  */
 final class MonoPeekFuseable<T> extends MonoSource<T, T>
-		implements Fuseable, FluxPeekHelper<T> {
+		implements Fuseable, PublisherPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 

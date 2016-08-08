@@ -38,7 +38,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeek<T> extends MonoSource<T, T> implements FluxPeekHelper<T> {
+final class MonoPeek<T> extends MonoSource<T, T> implements PublisherPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 

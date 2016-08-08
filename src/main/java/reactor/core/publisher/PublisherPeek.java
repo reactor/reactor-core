@@ -9,7 +9,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the value type of the sequence
  */
-interface FluxPeekHelper<T> {
+interface PublisherPeek<T> {
 	
 	Consumer<? super Subscription> onSubscribeCall();
 
