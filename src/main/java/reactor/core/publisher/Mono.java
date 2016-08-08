@@ -683,7 +683,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, final Iterable<? extends Mono<?>> monos) {
+	public static <R> Mono<R> when(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return onAssembly(new MonoWhen<>(false, combinator, monos));
 	}
 
