@@ -37,8 +37,8 @@ public abstract class AbstractReactorTest {
 
 	@BeforeClass
 	public static void loadEnv() {
-		ioGroup = Schedulers.newParallel("work", 4);
-		asyncGroup = Schedulers.newComputation("parallel", 4, 2048);
+		ioGroup = Schedulers.newElastic("work");
+		asyncGroup = Schedulers.newParallel("parallel", 4);
 	}
 
 	@AfterClass

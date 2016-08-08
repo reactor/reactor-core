@@ -191,7 +191,7 @@ class ProcessorsSpec extends Specification {
 
 		given:
 			"ring buffer eventBus"
-			def serviceRB = Schedulers.newComputation("rb", 4, 32)
+			def serviceRB = Schedulers.newParallel("rb", 4)
 		def r = serviceRB.createWorker()
 			def latch = new CountDownLatch(2)
 
@@ -220,7 +220,7 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = Schedulers.newComputation("rb", 1, 8)
+			def serviceRB = Schedulers.newSingle("rb", 1)
 		def dispatcher = serviceRB.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()

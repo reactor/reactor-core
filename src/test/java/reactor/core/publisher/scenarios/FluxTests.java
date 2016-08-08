@@ -1098,8 +1098,8 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void consistentMultithreadingWithPartition() throws InterruptedException {
-		Scheduler supplier1 = Schedulers.newComputation("groupByPool", 2, 32);
-		Scheduler supplier2 = Schedulers.newComputation("partitionPool", 5, 32);
+		Scheduler supplier1 = Schedulers.newParallel("groupByPool", 2);
+		Scheduler supplier2 = Schedulers.newParallel("partitionPool", 5);
 
 		CountDownLatch latch = new CountDownLatch(10);
 
@@ -1342,9 +1342,9 @@ public class FluxTests extends AbstractReactorTest {
 
 		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
-		Scheduler computation = Schedulers.newComputation("computation", 1, BACKLOG);
+		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
-		Scheduler forkJoin = Schedulers.newComputation("forkJoin", 2, BACKLOG);
+		Scheduler forkJoin = Schedulers.newParallel("forkJoin", 2);
 
 		final Flux<List<String>> computationStream =
 				computationEmitterProcessor.publishOn(computation)

@@ -35,7 +35,7 @@ public class SchedulerComputationTests extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		Scheduler scheduler = Schedulers.newComputation("shared-work", 2, bufferSize);
+		Scheduler scheduler = Schedulers.newParallel("shared-work", 2);
 		EmitterProcessor<Long> e = EmitterProcessor.create();
 		return FluxProcessor.wrap(e,
 				e.publishOn(scheduler)
@@ -57,7 +57,7 @@ public class SchedulerComputationTests extends AbstractProcessorVerification {
 
 	@Override
 	public void simpleTest() throws Exception {
-		Scheduler serviceRB = Schedulers.newComputation("rbWork", 1, 32);
+		Scheduler serviceRB = Schedulers.newSingle("rbWork");
 		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();
