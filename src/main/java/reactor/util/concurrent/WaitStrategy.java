@@ -196,11 +196,17 @@ public abstract class WaitStrategy
      *    need this as is notified upon update.
      * @param spinObserver Spin observer
      * @return the sequence that is available which may be greater than the requested sequence.
-     * @throws WaitStrategy.AlertException if the status has changed.
      * @throws InterruptedException if the thread is interrupted.
      */
     public abstract long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
             throws InterruptedException;
+
+	/**
+	 * Throw an Alert signal exception (singleton) that can be checked against {@link #isAlert(Throwable)}
+	 */
+    public static void alert(){
+	    throw AlertException.INSTANCE;
+    }
 
     /**
      * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
@@ -208,7 +214,7 @@ public abstract class WaitStrategy
      * It does not fill in a stack trace for performance reasons.
      */
     @SuppressWarnings("serial")
-    public static final class AlertException extends RuntimeException {
+    static final class AlertException extends RuntimeException {
 	    /** Pre-allocated exception to avoid garbage generation */
 	    public static final AlertException INSTANCE = new AlertException();
 

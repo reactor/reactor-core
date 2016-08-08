@@ -361,18 +361,6 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	abstract RingBufferProducer getSequencer();/*
 
-	*//*
-	 * Mark the remaining capacity of this buffer to 0 to prevent later next.
-	 *//*
-	public final void markAsTerminated(){
-		addGatingSequence(newSequence(getCursor()));
-		try{
-			tryNext((int)remainingCapacity());
-		}
-		catch (Exceptions.AlertException | Exceptions.InsufficientCapacityException ice){
-			//ignore;
-		}
-	}*/
 
 	/**
 	 * Return {@code true} if {@code sun.misc.Unsafe} was found on the classpath and can be used for acclerated
@@ -516,11 +504,10 @@ abstract class RingBuffer<E> implements LongSupplier {
 	     *
 	     * @param sequence to wait for
 	     * @return the sequence up to which is available
-	     * @throws WaitStrategy.AlertException if a status change has occurred for the Disruptor
 	     * @throws InterruptedException if the thread needs awaking on a condition variable.
 	     */
 	    public long waitFor(final long sequence)
-			    throws WaitStrategy.AlertException, InterruptedException {
+			    throws InterruptedException {
 	        checkAlert();
 
 	        long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, this);
@@ -538,11 +525,10 @@ abstract class RingBuffer<E> implements LongSupplier {
 	     * @param consumer a spin observer to invoke when nothing is available to read
 	     * @param sequence to wait for
 	     * @return the sequence up to which is available
-	     * @throws WaitStrategy.AlertException if a status change has occurred for the Disruptor
 	     * @throws InterruptedException if the thread needs awaking on a condition variable.
 	     */
 	    public long waitFor(final long sequence, Runnable consumer)
-			    throws WaitStrategy.AlertException, InterruptedException {
+			    throws InterruptedException {
 	        checkAlert();
 
 	        long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, consumer);
@@ -596,13 +582,11 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	    /**
 	     * Check if an alert has been raised and throw an if it has.
-	     *
-	     * @throws WaitStrategy.AlertException if alert has been raised.
 	     */
-	    public void checkAlert() throws WaitStrategy.AlertException {
+	    public void checkAlert() {
 	        if (alerted)
 	        {
-	            throw WaitStrategy.AlertException.INSTANCE;
+	            WaitStrategy.alert();
 	        }
 	    }
 
