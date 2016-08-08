@@ -122,34 +122,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * When default global {@link #onOperatorError} transforms operator errors driven
-	 * by a data signal, it wraps the value signal into a suppressed exception that can
-	 * be resolved back via this method. Any override of this strategy via
-	 * {@link #setOnOperatorErrorHook(BiFunction)} will defeat this util.
-	 *
-	 * @param error the error that might contain a value of the given type
-	 * @param typeExpectation the expected value type
-	 * @param <T> the refied value type
-	 *
-	 * @return a value found associated with error matching the given type
-	 * or {@literal null}
-	 */
-	public static <T> T findValueCause(Throwable error, Class<T> typeExpectation){
-		Objects.requireNonNull(error, "error");
-		Objects.requireNonNull(typeExpectation, "typeExpectation");
-		for(Throwable s : error.getSuppressed()){
-			if(s instanceof ValueCause && typeExpectation.isAssignableFrom(((ValueCause)
-					s).value.getClass())){
-
-				@SuppressWarnings("unchecked")
-				T v = (T) ((ValueCause)s).value;
-				return v;
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
 	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
 	 * dealing with boundaries (queues, combinations and async).
@@ -347,7 +319,7 @@ public abstract class Exceptions {
 
 	/**
 	 * Reset global operator error mapping to adding as suppressed
-	 * exception either data driven exception to fetch via {@link #findValueCause} or
+	 * exception either data driven exception or
 	 * error driven exception.
 	 */
 	public static void resetOnOperatorErrorHook() {
@@ -369,13 +341,12 @@ public abstract class Exceptions {
 	 * @param c the dropped next {@link Consumer} hook
 	 */
 	public static void setOnNextDroppedHook(Consumer<Object> c) {
-		onNextDroppedHook = Objects.requireNonNull(c, "onENextDroppedHook");
+		onNextDroppedHook = Objects.requireNonNull(c, "onNextDroppedHook");
 	}
 
 	/**
 	 * Override global operator error mapping which by default add as suppressed
-	 * exception either data driven exception to fetch via {@link #findValueCause} or
-	 * error driven exception.
+	 * exception either data driven exception or error driven exception.
 	 *
 	 * @param f the operator error {@link BiFunction} mapper, given the failure and an
 	 * eventual original context (data or error) and returning an arbitrary exception.
@@ -507,10 +478,10 @@ public abstract class Exceptions {
 
 	static final class ValueCause extends Exception {
 
-		final Object value;
+		final String value;
 
 		public ValueCause(Object value) {
-			this.value = value;
+			this.value = value.toString();
 		}
 
 		@Override
@@ -520,7 +491,7 @@ public abstract class Exceptions {
 
 		@Override
 		public String getMessage() {
-			return "Associated value: " + value.toString();
+			return "Associated value #toString: " + value;
 		}
 
 		private static final long serialVersionUID = 2491425227432776145L;
