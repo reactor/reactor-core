@@ -122,10 +122,10 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * When default global {@link #mapOperatorError} transforms operator errors driven
+	 * When default global {@link #onOperatorError} transforms operator errors driven
 	 * by a data signal, it wraps the value signal into a suppressed exception that can
 	 * be resolved back via this method. Any override of this strategy via
-	 * {@link #setMapOperatorErrorHook(BiFunction)} will defeat this util.
+	 * {@link #setOnOperatorErrorHook(BiFunction)} will defeat this util.
 	 *
 	 * @param error the error that might contain a value of the given type
 	 * @param typeExpectation the expected value type
@@ -198,73 +198,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Map an "operator" error. The
-	 * result error will be passed via onError to the operator downstream after
-	 * checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param error the callback or operator error
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable mapOperatorError(Throwable error) {
-		return mapOperatorError(null, error, null);
-	}
-
-	/**
-	 * Map an "operator" error given an operator parent {@link Subscription}. The
-	 * result error will be passed via onError to the operator downstream.
-	 * {@link Subscription} will be cancelled after checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param subscription the linked operator parent {@link Subscription}
-	 * @param error the callback or operator error
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable mapOperatorError(Subscription subscription, Throwable error) {
-		return mapOperatorError(subscription, error, null);
-	}
-
-
-	/**
-	 * Map an "operator" error given an operator parent {@link Subscription}. The
-	 * result error will be passed via onError to the operator downstream.
-	 * {@link Subscription} will be cancelled after checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param subscription the linked operator parent {@link Subscription}
-	 * @param error the callback or operator error
-	 * @param dataSignal the value (onNext or onError) signal processed during failure
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable mapOperatorError(Subscription subscription, Throwable
-			error, Object dataSignal) {
-
-		Exceptions.throwIfFatal(error);
-		if(subscription != null) {
-			subscription.cancel();
-		}
-
-		Throwable t = unwrap(error);
-		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
-				mapOperatorErrorHook;
-		if (hook == null) {
-			if (dataSignal != null) {
-				if (dataSignal instanceof Throwable) {
-					t.addSuppressed((Throwable) dataSignal);
-				}
-				else {
-					t.addSuppressed(new ValueCause(dataSignal));
-				}
-			}
-			return t;
-		}
-		return hook.apply(error, dataSignal);
-	}
-
-	/**
 	 * @param elements the invalid requested demand
 	 * @return a new {@link IllegalArgumentException} with a cause message abiding to reactive stream specification.
 	 */
@@ -316,6 +249,73 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Map an "operator" error. The
+	 * result error will be passed via onError to the operator downstream after
+	 * checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param error the callback or operator error
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable onOperatorError(Throwable error) {
+		return onOperatorError(null, error, null);
+	}
+
+	/**
+	 * Map an "operator" error given an operator parent {@link Subscription}. The
+	 * result error will be passed via onError to the operator downstream.
+	 * {@link Subscription} will be cancelled after checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param subscription the linked operator parent {@link Subscription}
+	 * @param error the callback or operator error
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable onOperatorError(Subscription subscription, Throwable error) {
+		return onOperatorError(subscription, error, null);
+	}
+
+
+	/**
+	 * Map an "operator" error given an operator parent {@link Subscription}. The
+	 * result error will be passed via onError to the operator downstream.
+	 * {@link Subscription} will be cancelled after checking for fatal error via
+	 * {@link #throwIfFatal(Throwable)}.
+	 *
+	 * @param subscription the linked operator parent {@link Subscription}
+	 * @param error the callback or operator error
+	 * @param dataSignal the value (onNext or onError) signal processed during failure
+	 * @return mapped {@link Throwable}
+	 *
+	 */
+	public static Throwable onOperatorError(Subscription subscription, Throwable
+			error, Object dataSignal) {
+
+		Exceptions.throwIfFatal(error);
+		if(subscription != null) {
+			subscription.cancel();
+		}
+
+		Throwable t = unwrap(error);
+		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
+				onOperatorErrorHook;
+		if (hook == null) {
+			if (dataSignal != null) {
+				if (dataSignal instanceof Throwable) {
+					t.addSuppressed((Throwable) dataSignal);
+				}
+				else {
+					t.addSuppressed(new ValueCause(dataSignal));
+				}
+			}
+			return t;
+		}
+		return hook.apply(error, dataSignal);
+	}
+
+	/**
 	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
 	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
 	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
@@ -350,8 +350,8 @@ public abstract class Exceptions {
 	 * exception either data driven exception to fetch via {@link #findValueCause} or
 	 * error driven exception.
 	 */
-	public static void resetMapOperatorErrorHook() {
-		mapOperatorErrorHook = null;
+	public static void resetOnOperatorErrorHook() {
+		onOperatorErrorHook = null;
 	}
 
 	/**
@@ -380,9 +380,9 @@ public abstract class Exceptions {
 	 * @param f the operator error {@link BiFunction} mapper, given the failure and an
 	 * eventual original context (data or error) and returning an arbitrary exception.
 	 */
-	public static void setMapOperatorErrorHook(BiFunction<? super Throwable, Object, ?
+	public static void setOnOperatorErrorHook(BiFunction<? super Throwable, Object, ?
 			extends Throwable> f) {
-		mapOperatorErrorHook = Objects.requireNonNull(f, "mapOperatorErrorHook");
+		onOperatorErrorHook = Objects.requireNonNull(f, "onOperatorErrorHook");
 	}
 
 	/**
@@ -450,7 +450,7 @@ public abstract class Exceptions {
 	volatile static Consumer<? super Throwable> onErrorDroppedHook;
 	volatile static Consumer<Object>            onNextDroppedHook;
 	volatile static BiFunction<? super Throwable, Object, ? extends Throwable>
-	                                            mapOperatorErrorHook;
+	                                            onOperatorErrorHook;
 
 	Exceptions(){}
 

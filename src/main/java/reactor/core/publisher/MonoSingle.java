@@ -164,12 +164,12 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 					try {
 						t = ds.get();
 					} catch (Throwable e) {
-						subscriber.onError(Exceptions.mapOperatorError(this, e));
+						subscriber.onError(Exceptions.onOperatorError(this, e));
 						return;
 					}
 
 					if (t == null) {
-						subscriber.onError(Exceptions.mapOperatorError(this, new
+						subscriber.onError(Exceptions.onOperatorError(this, new
 								NullPointerException("The defaultSupplier returned a " +
 								"null value")));
 						return;
@@ -177,7 +177,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 					complete(t);
 				} else {
-					subscriber.onError(Exceptions.mapOperatorError(this, new
+					subscriber.onError(Exceptions.onOperatorError(this, new
 							NoSuchElementException("Source was empty")));
 				}
 			} else if (c == 1) {

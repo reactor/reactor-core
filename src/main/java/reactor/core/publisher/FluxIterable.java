@@ -53,7 +53,7 @@ extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 
@@ -82,7 +82,7 @@ extends Flux<T>
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 		if (!b) {

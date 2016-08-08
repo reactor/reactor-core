@@ -126,13 +126,13 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             }
             catch (Throwable e) {
 	            done = true;
-	            actual.onError(Exceptions.mapOperatorError(s, e, t));
+	            actual.onError(Exceptions.onOperatorError(s, e, t));
                 return;
             }
 
             if (v == null) {
 	            done = true;
-	            actual.onError(Exceptions.mapOperatorError(s, new NullPointerException
+	            actual.onError(Exceptions.onOperatorError(s, new NullPointerException
 			            ("The mapper returned a null value."), t));
                 return;
             }
@@ -162,13 +162,13 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        }
 	        catch (Throwable e) {
 		        done = true;
-		        actual.onError(Exceptions.mapOperatorError(s, e, t));
+		        actual.onError(Exceptions.onOperatorError(s, e, t));
 		        return;
 	        }
 
 	        if (v == null) {
 		        done = true;
-		        actual.onError(Exceptions.mapOperatorError(s, new NullPointerException("The mapper returned a null value."), t));
+		        actual.onError(Exceptions.onOperatorError(s, new NullPointerException("The mapper returned a null value."), t));
 		        return;
 	        }
 
@@ -199,13 +199,13 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        }
 	        catch (Throwable e) {
 		        done = true;
-		        actual.onError(Exceptions.mapOperatorError(s, e));
+		        actual.onError(Exceptions.onOperatorError(s, e));
 		        return;
 	        }
 
 	        if (v == null) {
 		        done = true;
-		        actual.onError(Exceptions.mapOperatorError(s, new NullPointerException("The mapper returned a null value.")));
+		        actual.onError(Exceptions.onOperatorError(s, new NullPointerException("The mapper returned a null value.")));
 		        return;
 	        }
 

@@ -344,7 +344,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 			catch (Throwable t) {
-				onError(Exceptions.mapOperatorError(s, t));
+				onError(Exceptions.onOperatorError(s, t));
 			}
 		}
 	}

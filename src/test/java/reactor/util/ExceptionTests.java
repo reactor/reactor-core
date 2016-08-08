@@ -44,7 +44,7 @@ public class ExceptionTests {
 	@Test
 	public void testHooks() throws Exception {
 
-		Exceptions.setMapOperatorErrorHook((e, s) -> new TestException(s.toString()));
+		Exceptions.setOnOperatorErrorHook((e, s) -> new TestException(s.toString()));
 		Exceptions.setOnNextDroppedHook(d -> {
 			throw new TestException(d.toString());
 		});
@@ -52,7 +52,7 @@ public class ExceptionTests {
 			throw new TestException("errorDrop");
 		});
 
-		Throwable w = Exceptions.mapOperatorError(null, new Exception(), "hello");
+		Throwable w = Exceptions.onOperatorError(null, new Exception(), "hello");
 
 		Assert.assertTrue(w instanceof TestException);
 		Assert.assertTrue(w.getMessage()
@@ -79,7 +79,7 @@ public class ExceptionTests {
 			                   .equals("errorDrop"));
 		}
 
-		Exceptions.resetMapOperatorErrorHook();
+		Exceptions.resetOnOperatorErrorHook();
 		Exceptions.resetOnNextDroppedHook();
 		Exceptions.resetOnErrorDroppedHook();
 	}
@@ -88,11 +88,11 @@ public class ExceptionTests {
 	public void valueCause() throws Exception {
 		Throwable w;
 
-		w = Exceptions.mapOperatorError(null, new Exception(), "hello");
+		w = Exceptions.onOperatorError(null, new Exception(), "hello");
 		Assert.assertTrue(Exceptions.findValueCause(w, String.class)
 		                            .equals("hello"));
 
-		w = Exceptions.mapOperatorError(new Exception());
+		w = Exceptions.onOperatorError(new Exception());
 		Assert.assertTrue(Exceptions.findValueCause(w, String.class) == null);
 	}
 

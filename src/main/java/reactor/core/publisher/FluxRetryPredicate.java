@@ -89,7 +89,7 @@ final class FluxRetryPredicate<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				Throwable _t = Exceptions.mapOperatorError(e);
+				Throwable _t = Exceptions.onOperatorError(e);
 				_t.addSuppressed(t);
 				subscriber.onError(_t);
 				return;

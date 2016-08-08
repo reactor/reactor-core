@@ -145,7 +145,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			Supplier<? extends T> ds = defaultSupplier;
 
 			if (ds == null) {
-				subscriber.onError(Exceptions.mapOperatorError(new
+				subscriber.onError(Exceptions.onOperatorError(new
 						IndexOutOfBoundsException()));
 			} else {
 				T t;
@@ -153,12 +153,12 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 				try {
 					t = ds.get();
 				} catch (Throwable e) {
-					subscriber.onError(Exceptions.mapOperatorError(e));
+					subscriber.onError(Exceptions.onOperatorError(e));
 					return;
 				}
 
 				if (t == null) {
-					subscriber.onError(Exceptions.mapOperatorError(new
+					subscriber.onError(Exceptions.onOperatorError(new
 							NullPointerException("The defaultSupplier returned a null value")));
 					return;
 				}

@@ -76,7 +76,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 		try {
 			out = transform.apply(multicast);
 		} catch (Throwable ex) {
-			Operators.error(s, Exceptions.mapOperatorError(ex));
+			Operators.error(s, Exceptions.onOperatorError(ex));
 			return;
 		}
 		
@@ -201,7 +201,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 				try {
 					queue = queueSupplier.get();
 				} catch (Throwable ex) {
-					onError(Exceptions.mapOperatorError(s, ex));
+					onError(Exceptions.onOperatorError(s, ex));
 					return;
 				}
 				connected = true;
@@ -219,7 +219,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 			
 			if (sourceMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
-					onError(Exceptions.mapOperatorError(s,
+					onError(Exceptions.onOperatorError(s,
 							new IllegalStateException("Queue full?!"),
 							t));
 					return;
@@ -297,7 +297,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 							try {
 								v = queue.poll();
 							} catch (Throwable ex) {
-								error = Exceptions.mapOperatorError(s, ex);
+								error = Exceptions.onOperatorError(s, ex);
 								queue.clear();
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
@@ -331,7 +331,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 								empty = queue.isEmpty();
 							} catch (Throwable ex) {
 								queue.clear();
-								error = Exceptions.mapOperatorError(s, ex);
+								error = Exceptions.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
@@ -406,7 +406,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 								v = queue.poll();
 							} catch (Throwable ex) {
 								queue.clear();
-								error = Exceptions.mapOperatorError(s, ex);
+								error = Exceptions.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
@@ -464,7 +464,7 @@ final class FluxPublish<T, R> extends FluxSource<T, R> implements Fuseable {
 								empty = queue.isEmpty();
 							} catch (Throwable ex) {
 								queue.clear();
-								error = Exceptions.mapOperatorError(s, ex);
+								error = Exceptions.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);

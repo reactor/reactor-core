@@ -116,12 +116,12 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return;
 				}
 	
 				if (v == null) {
-					onError(Exceptions.mapOperatorError(s,
+					onError(Exceptions.onOperatorError(s,
 							new NullPointerException("The mapper returned a null value."),
 							t));
 					return;
@@ -277,13 +277,13 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return;
 				}
 	
 				if (v == null) {
 					done = true;
-					actual.onError(Exceptions.mapOperatorError(s,
+					actual.onError(Exceptions.onOperatorError(s,
 							new NullPointerException("The mapper returned a null value."),
 							t));
 					return;
@@ -311,13 +311,13 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return true;
 				}
 	
 				if (v == null) {
 					done = true;
-					actual.onError(Exceptions.mapOperatorError(s, new
+					actual.onError(Exceptions.onOperatorError(s, new
 							NullPointerException("The mapper returned a null value."),
 							t));
 					return true;

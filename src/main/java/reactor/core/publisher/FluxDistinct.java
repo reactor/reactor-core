@@ -64,12 +64,12 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		try {
 			collection = collectionSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 
 		if (collection == null) {
-			Operators.error(s, Exceptions.mapOperatorError(new
+			Operators.error(s, Exceptions.onOperatorError(new
 					NullPointerException("The collectionSupplier returned a null collection")));
 			return;
 		}
@@ -138,7 +138,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				k = keyExtractor.apply(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return true;
 			}
 
@@ -148,7 +148,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return true;
 			}
 
@@ -261,7 +261,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			try {
 				k = keyExtractor.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return;
 			}
 
@@ -270,7 +270,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			try {
 				b = collection.add(k);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return;
 			}
 
@@ -295,7 +295,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				k = keyExtractor.apply(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return true;
 			}
 
@@ -305,7 +305,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return true;
 			}
 
@@ -432,7 +432,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				k = keyExtractor.apply(t);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(qs, e, t));
+				onError(Exceptions.onOperatorError(qs, e, t));
 				return true;
 			}
 
@@ -442,7 +442,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(qs, e, t));
+				onError(Exceptions.onOperatorError(qs, e, t));
 				return true;
 			}
 

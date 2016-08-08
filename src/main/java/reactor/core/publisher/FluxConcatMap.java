@@ -199,7 +199,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Operators.error(actual, Exceptions.mapOperatorError(s, ex));
+							Operators.error(actual, Exceptions.onOperatorError(s, ex));
 							return;
 						}
 					}
@@ -321,7 +321,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							actual.onError(Exceptions.mapOperatorError(s, e));
+							actual.onError(Exceptions.onOperatorError(s, e));
 							return;
 						}
 						
@@ -338,12 +338,12 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.mapOperatorError(s, e, v));
+								actual.onError(Exceptions.onOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								actual.onError(Exceptions.mapOperatorError(s,
+								actual.onError(Exceptions.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
@@ -369,7 +369,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = callable.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.mapOperatorError(s, e, v));
+									actual.onError(Exceptions.onOperatorError(s, e, v));
 									return;
 								}
 								
@@ -518,7 +518,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Operators.error(actual, Exceptions.mapOperatorError(s, ex));
+							Operators.error(actual, Exceptions.onOperatorError(s, ex));
 							return;
 						}
 					}
@@ -526,7 +526,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
-						Operators.error(actual, Exceptions.mapOperatorError(s, ex));
+						Operators.error(actual, Exceptions.onOperatorError(s, ex));
 						return;
 					}
 				}
@@ -634,7 +634,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							actual.onError(Exceptions.mapOperatorError(s, e));
+							actual.onError(Exceptions.onOperatorError(s, e));
 							return;
 						}
 						
@@ -656,12 +656,12 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.mapOperatorError(s, e, v));
+								actual.onError(Exceptions.onOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								actual.onError(Exceptions.mapOperatorError(s,
+								actual.onError(Exceptions.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
@@ -686,7 +686,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.mapOperatorError(s, e, v));
+									actual.onError(Exceptions.onOperatorError(s, e, v));
 									return;
 								}
 								

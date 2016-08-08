@@ -114,7 +114,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -128,7 +128,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -142,7 +142,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Exceptions.mapOperatorError(s, e));
+					Operators.error(actual, Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -161,7 +161,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return;
 				}
 			}
@@ -187,7 +187,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(null, e, t);
+					Throwable _e = Exceptions.onOperatorError(null, e, t);
 					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
@@ -208,7 +208,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(e));
+					onError(Exceptions.onOperatorError(e));
 					return;
 				}
 			}
@@ -220,7 +220,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(e);
+					Throwable _e = Exceptions.onOperatorError(e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}

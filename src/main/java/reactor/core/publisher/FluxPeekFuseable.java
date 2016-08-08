@@ -111,7 +111,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -125,7 +125,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -140,7 +140,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Exceptions.mapOperatorError(s, e));
+					Operators.error(actual, Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -160,7 +160,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 						parent.onNextCall().accept(t);
 					}
 					catch (Throwable e) {
-						onError(Exceptions.mapOperatorError(s, e, t));
+						onError(Exceptions.onOperatorError(s, e, t));
 						return;
 					}
 				}
@@ -191,7 +191,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					Throwable _e = Exceptions.mapOperatorError(null, e, t);
+					Throwable _e = Exceptions.onOperatorError(null, e, t);
 					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
@@ -212,7 +212,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(e));
+					onError(Exceptions.onOperatorError(e));
 					return;
 				}
 			}
@@ -224,7 +224,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(e);
+					Throwable _e = Exceptions.onOperatorError(e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}
@@ -319,7 +319,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -333,7 +333,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -348,7 +348,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Exceptions.mapOperatorError(s, e));
+					Operators.error(actual, Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -368,7 +368,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 						parent.onNextCall().accept(t);
 					}
 					catch (Throwable e) {
-						onError(Exceptions.mapOperatorError(s, e, t));
+						onError(Exceptions.onOperatorError(s, e, t));
 						return;
 					}
 				}
@@ -391,7 +391,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 						parent.onNextCall().accept(t);
 					}
 					catch (Throwable e) {
-						onError(Exceptions.mapOperatorError(s, e, t));
+						onError(Exceptions.onOperatorError(s, e, t));
 						return true;
 					}
 				}
@@ -423,7 +423,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(null, e, t);
+					Throwable _e = Exceptions.onOperatorError(null, e, t);
 					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
@@ -444,7 +444,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(e));
+					onError(Exceptions.onOperatorError(e));
 					return;
 				}
 			}
@@ -456,7 +456,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(e);
+					Throwable _e = Exceptions.onOperatorError(e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}
@@ -576,7 +576,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -590,7 +590,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e));
+					onError(Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -604,7 +604,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Exceptions.mapOperatorError(s, e));
+					Operators.error(actual, Exceptions.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -623,7 +623,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return;
 				}
 			}
@@ -641,7 +641,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return true;
 				}
 			}
@@ -668,7 +668,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					Throwable _e = Exceptions.mapOperatorError(null, e, t);
+					Throwable _e = Exceptions.onOperatorError(null, e, t);
 					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
@@ -689,7 +689,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(e));
+					onError(Exceptions.onOperatorError(e));
 					return;
 				}
 			}
@@ -702,7 +702,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 				}
 				catch (Throwable e) {
 					Exceptions.throwIfFatal(e);
-					Throwable _e = Exceptions.mapOperatorError(e);
+					Throwable _e = Exceptions.onOperatorError(e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}

@@ -109,12 +109,12 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.mapOperatorError(s, ex, t));
+				onError(Exceptions.onOperatorError(s, ex, t));
 				return;
 			}
 			
 			if (v == null) {
-				onError(Exceptions.mapOperatorError(s, new NullPointerException("The " +
+				onError(Exceptions.onOperatorError(s, new NullPointerException("The " +
 						"mapper returned a null value"), t));
 				return;
 			}

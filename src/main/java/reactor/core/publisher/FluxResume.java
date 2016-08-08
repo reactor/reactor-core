@@ -89,7 +89,7 @@ final class FluxResume<T> extends FluxSource<T, T> {
 				try {
 					p = nextFactory.apply(t);
 				} catch (Throwable e) {
-					Throwable _e = Exceptions.mapOperatorError(e);
+					Throwable _e = Exceptions.onOperatorError(e);
 					_e.addSuppressed(t);
 					subscriber.onError(_e);
 					return;

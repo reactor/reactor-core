@@ -75,12 +75,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, Exceptions.mapOperatorError(new
+			Operators.error(s, Exceptions.onOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
@@ -181,12 +181,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(s, e, t));
+				onError(Exceptions.onOperatorError(s, e, t));
 				return;
 			}
 			
 			if (p == null) {
-				onError(Exceptions.mapOperatorError(s, new NullPointerException("The " +
+				onError(Exceptions.onOperatorError(s, new NullPointerException("The " +
 						"mapper returned a null publisher"), t));
 				return;
 			}

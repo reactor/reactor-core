@@ -54,12 +54,12 @@ extends Mono<T>
 		try {
 			p = supplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 
 		if (p == null) {
-			Operators.error(s, Exceptions.mapOperatorError(new
+			Operators.error(s, Exceptions.onOperatorError(new
 					NullPointerException("The Producer returned by the supplier is null")));
 			return;
 		}

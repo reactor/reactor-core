@@ -103,7 +103,7 @@ final class FluxAccumulate<T> extends FluxSource<T, T> {
 					t = accumulator.apply(v, t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 					return;
 				}
 				if (t == null) {

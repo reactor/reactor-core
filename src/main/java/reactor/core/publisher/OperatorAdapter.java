@@ -66,7 +66,7 @@ public class OperatorAdapter<I, O>
 				doOnSubscribe(s);
 			}
 			catch (Throwable throwable) {
-				doOnSubscriberError(Exceptions.mapOperatorError(s, throwable));
+				doOnSubscriberError(Exceptions.onOperatorError(s, throwable));
 			}
 		}
 	}
@@ -88,7 +88,7 @@ public class OperatorAdapter<I, O>
 			doNext(i);
 		}
 		catch (Throwable throwable) {
-			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable, i));
+			doOnSubscriberError(Exceptions.onOperatorError(subscription, throwable, i));
 		}
 	}
 
@@ -118,7 +118,7 @@ public class OperatorAdapter<I, O>
 		try {
 			doComplete();
 		} catch (Throwable throwable) {
-			doOnSubscriberError(Exceptions.mapOperatorError(throwable));
+			doOnSubscriberError(Exceptions.onOperatorError(throwable));
 		}
 	}
 
@@ -133,7 +133,7 @@ public class OperatorAdapter<I, O>
 			doRequest(n);
 		} catch (Throwable throwable) {
 			doCancel();
-			doOnSubscriberError(Exceptions.mapOperatorError(throwable));
+			doOnSubscriberError(Exceptions.onOperatorError(throwable));
 		}
 	}
 
@@ -149,7 +149,7 @@ public class OperatorAdapter<I, O>
 		try {
 			doCancel();
 		} catch (Throwable throwable) {
-			doOnSubscriberError(Exceptions.mapOperatorError(subscription, throwable));
+			doOnSubscriberError(Exceptions.onOperatorError(subscription, throwable));
 		}
 	}
 

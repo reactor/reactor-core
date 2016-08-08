@@ -57,12 +57,12 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 		try {
 			initialValue = initialSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 
 		if (initialValue == null) {
-			Operators.error(s, Exceptions.mapOperatorError(new
+			Operators.error(s, Exceptions.onOperatorError(new
 					NullPointerException("The initial value supplied is null")));
 			return;
 		}
@@ -116,12 +116,12 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 			try {
 				v = accumulator.apply(value, t);
 			} catch (Throwable e) {
-				onError(Exceptions.mapOperatorError(this, e, t));
+				onError(Exceptions.onOperatorError(this, e, t));
 				return;
 			}
 
 			if (v == null) {
-				onError(Exceptions.mapOperatorError(this, new NullPointerException("The" +
+				onError(Exceptions.onOperatorError(this, new NullPointerException("The" +
 						" accumulator returned a null value"), t));
 				return;
 			}

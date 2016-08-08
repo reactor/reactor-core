@@ -37,7 +37,7 @@ final class MonoRunnable extends Mono<Void> {
         try {
             run.run();
         } catch (Throwable ex) {
-            Operators.error(s, Exceptions.mapOperatorError(ex));
+            Operators.error(s, Exceptions.onOperatorError(ex));
             return;
         }
         Operators.complete(s);

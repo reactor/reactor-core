@@ -80,7 +80,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.mapOperatorError(e));
+			Operators.error(s, Exceptions.onOperatorError(e));
 			return;
 		}
 		
@@ -314,7 +314,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			try {
 				b = bufferSupplier.get();
 			} catch (Throwable e) {
-				anyError(Exceptions.mapOperatorError(starter, e, u));
+				anyError(Exceptions.onOperatorError(starter, e, u));
 				return;
 			}
 			
@@ -339,7 +339,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			try {
 				p = end.apply(u);
 			} catch (Throwable e) {
-				anyError(Exceptions.mapOperatorError(starter, e, u));
+				anyError(Exceptions.onOperatorError(starter, e, u));
 				return;
 			}
 			

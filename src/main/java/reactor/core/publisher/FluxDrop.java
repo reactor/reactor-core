@@ -134,7 +134,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 				try {
 					onDrop.accept(t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Exceptions.onOperatorError(s, e, t));
 				}
 			}
 		}

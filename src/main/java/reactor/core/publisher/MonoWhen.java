@@ -191,11 +191,11 @@ final class MonoWhen<T, R> extends Mono<R> {
 		            r = zipper.apply(o);
 	            }
 	            catch (Throwable t) {
-		            subscriber.onError(Exceptions.mapOperatorError(null, t, o));
+		            subscriber.onError(Exceptions.onOperatorError(null, t, o));
 		            return;
 	            }
 	            if (r == null) {
-		            subscriber.onError(Exceptions.mapOperatorError(null,
+		            subscriber.onError(Exceptions.onOperatorError(null,
 				            new NullPointerException("zipper produced a null value"),
 				            o));
 		            return;
