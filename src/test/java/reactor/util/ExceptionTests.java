@@ -89,11 +89,7 @@ public class ExceptionTests {
 		Throwable w;
 
 		w = Exceptions.onOperatorError(null, new Exception(), "hello");
-		Assert.assertTrue(Exceptions.findValueCause(w, String.class)
-		                            .equals("hello"));
-
-		w = Exceptions.onOperatorError(new Exception());
-		Assert.assertTrue(Exceptions.findValueCause(w, String.class) == null);
+		Assert.assertEquals(w.getSuppressed()[0].getMessage(), "Associated value #toString: hello");
 	}
 
 }
