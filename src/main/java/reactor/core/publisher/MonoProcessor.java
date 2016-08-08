@@ -28,10 +28,10 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -48,8 +48,8 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver, Producer,
-		           MonoSink<O>, LongSupplier {
+		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver,
+		           Producer, LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -336,36 +336,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public long getAsLong() {
 		return state;
-	}
-
-	@Override
-	public void complete() {
-		onComplete();
-	}
-
-	@Override
-	public void complete(O value) {
-		onNext(value);
-	}
-
-	@Override
-	public void fail(Throwable e) {
-		onError(e);
-	}
-
-	@Override
-	public void setCancellation(Cancellation c) {
-		onSubscribe(new Subscription() {
-			@Override
-			public void request(long n) {
-
-			}
-
-			@Override
-			public void cancel() {
-				c.dispose();
-			}
-		});
 	}
 
 	/**

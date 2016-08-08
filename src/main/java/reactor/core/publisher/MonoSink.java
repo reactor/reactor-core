@@ -29,7 +29,7 @@ public interface MonoSink<T> {
      * <p>Calling this method multiple times or after the other
      * terminating methods has no effect.
      */
-    void complete();
+    void success();
     
     /**
      * Complete with the given value.
@@ -37,7 +37,7 @@ public interface MonoSink<T> {
      * terminating methods has no effect.
      * @param value the value to complete with
      */
-    void complete(T value);
+    void success(T value);
     
     /**
      * Terminate with the give exception
@@ -45,7 +45,7 @@ public interface MonoSink<T> {
      * terminating methods has no effect.
      * @param e the exception to complete with
      */
-    void fail(Throwable e);
+    void error(Throwable e);
     
     /**
      * Sets a cancellation callback triggered by

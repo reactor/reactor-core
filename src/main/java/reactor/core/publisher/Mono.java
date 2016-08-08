@@ -97,23 +97,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * wire up the SingleEmitter inside it then add the listener
 	 * to the source:
 	 * <pre><code>
-	 * Mono.&lt;String&gt;create(emitter -&gt; {
+	 * Mono.&lt;String&gt;create(sink -&gt; {
 	 *     HttpListener listener = event -&gt; {
 	 *         if (event.getResponseCode() >= 400) {
-	 *             emitter.error(new RuntimeExeption("Failed"));
+	 *             sink.error(new RuntimeExeption("Failed"));
 	 *         } else {
 	 *             String body = event.getBody();
 	 *             if (body.isEmpty()) {
-	 *                 emitter.complete();
+	 *                 sink.success();
 	 *             } else {
-	 *                 emitter.complete(body.toLowerCase());
+	 *                 sink.success(body.toLowerCase());
 	 *             }
 	 *         }
 	 *     };
 	 *     
 	 *     client.addListener(listener);
 	 *     
-	 *     emitter.setCancellation(() -&gt; client.removeListener(listener));
+	 *     sink.setCancellation(() -&gt; client.removeListener(listener));
 	 * });
 	 * </code></pre>
 	 * Note that this works only with single-value emitting listeners. Otherwise,
@@ -125,16 +125,16 @@ public abstract class Mono<T> implements Publisher<T> {
      * successful completion and error are separated into different methods.
      * In addition, the legacy API may or may not support some cancellation mechanism.
      * <pre><code>
-     * Mono.&lt;String&gt;create(emitter -&gt; {
+     * Mono.&lt;String&gt;create(sink -&gt; {
      *     Callback&lt;String&gt; callback = new Callback&lt;String&gt;() {
      *         &#64;Override
      *         public void onResult(String data) {
-     *             emitter.complete(data.toLowerCase());
+     *             sink.success(data.toLowerCase());
      *         }
      *         
      *         &#64;Override
      *         public void onError(Exception e) {
-     *             emitter.error(e);
+     *             sink.error(e);
      *         }
      *     }
      *     
@@ -145,7 +145,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *     // with cancellation support:
      *     
      *     AutoCloseable cancel = client.call("query", callback);
-     *     emitter.setCancellation(() -> {
+     *     sink.setCancellation(() -> {
      *         try {
      *             cancel.close();
      *         } catch (Exception ex) {
@@ -341,22 +341,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<T> fromCallable(Callable<? extends T> supplier) {
 		return onAssembly(new MonoCallable<>(supplier));
-	}
-
-	/**
-	 * Create a {@link Mono} producing the value for the {@link Mono} using the given supplier.
-	 * Producing {@code null} will be considered as {@link #empty()}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromcallableempty.png" alt="">
-	 * <p>
-	 * @param supplier {@link Callable} that will produce the value
-	 * @param <T> type of the expected value
-	 *
-	 * @return A {@link Mono}.
-	 */
-	public static <T> Mono<T> fromCallableOrEmpty(Callable<? extends T> supplier) {
-		return onAssembly(new MonoCallableOrEmpty<>(supplier));
 	}
 
 	/**

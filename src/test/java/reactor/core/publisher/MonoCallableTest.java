@@ -39,16 +39,6 @@ public class MonoCallableTest {
     }
 
     @Test
-    public void callableEmptyReturnsNull() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
-
-        Mono.<Integer>fromCallableOrEmpty(() -> null).subscribe(ts);
-
-        ts.assertNoValues()
-          .assertComplete();
-    }
-
-    @Test
     public void normal() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 

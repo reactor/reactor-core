@@ -135,11 +135,11 @@ extends Flux<T> {
 				return;
 			}
 			if (hasValue) {
-				fail(new IllegalStateException("More than one call to onNext"));
+				error(new IllegalStateException("More than one call to onNext"));
 				return;
 			}
 			if (t == null) {
-				fail(new NullPointerException("The generator produced a null value"));
+				error(new NullPointerException("The generator produced a null value"));
 				return;
 			}
 			hasValue = true;
@@ -151,7 +151,7 @@ extends Flux<T> {
 		}
 
 		@Override
-		public void fail(Throwable e) {
+		public void error(Throwable e) {
 			if (terminate) {
 				return;
 			}
