@@ -16,7 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,12 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
-import reactor.util.concurrent.QueueSupplier;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
@@ -50,23 +46,12 @@ public class Schedulers {
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
+	 *
 	 * @see Runtime#availableProcessors()
 	 */
-	public static final int DEFAULT_POOL_SIZE =
-			Math.max(Runtime.getRuntime().availableProcessors(), 4);
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @return a reusable {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * Event-Loop based workers
-	 */
-	public static Scheduler computation() {
-		return cache(COMPUTATION, () -> newComputation(COMPUTATION, (Runtime.getRuntime()
-                                    .availableProcessors() + 1) / 2,
-                            true));
-	}
+	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
+	                                                            .availableProcessors(),
+			4);
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -135,118 +120,6 @@ public class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param name Thread prefix
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(String name) {
-		return newComputation(name,
-				(Runtime.getRuntime()
-				        .availableProcessors() + 1) / 2,
-				false);
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param name Thread prefix
-	 * @param parallelism Number of pooled workers.
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(String name, int parallelism) {
-		return newComputation(name, parallelism, false);
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param name Thread prefix
-	 * @param parallelism Number of pooled workers.
-	 * @param bufferSize backlog size to be used by event loops.
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(String name, int parallelism, int bufferSize) {
-		return newComputation(name, parallelism, bufferSize, false);
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param name Thread prefix
-	 * @param parallelism Number of pooled workers.
-	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(String name, int parallelism, boolean daemon) {
-		return newComputation(name,
-				parallelism,
-				QueueSupplier.MEDIUM_BUFFER_SIZE,
-				daemon);
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param name Thread prefix
-	 * @param parallelism Number of pooled workers.
-	 * @param bufferSize backlog size to be used by event loops.
-	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(String name,
-			int parallelism,
-			int bufferSize,
-			boolean daemon) {
-		return newComputation(parallelism,
-				bufferSize, new SchedulerFactory(name, daemon, ComputationScheduler.COUNTER));
-	}
-
-	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded Event Loop based
-	 * workers and is suited for non blocking work.
-	 *
-	 * @param parallelism Number of pooled workers.
-	 * @param bufferSize backlog size to be used by event loops.
-	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newComputation(int parallelism,
-			int bufferSize,
-			ThreadFactory threadFactory) {
-		try {
-			return (Scheduler) COMPUTATION_FACTORY.get()
-			                                      .invoke(null,
-					                                      parallelism,
-					                                      bufferSize,
-					                                      threadFactory);
-		}
-		catch (Exception e) {
-			throw Exceptions.bubble(e);
-		}
-	}
-
-	/**
 	 * {@link Scheduler} that dynamically creates ExecutorService-based Workers and caches
 	 * the thread pools, reusing them once the Workers have been shut down.
 	 * <p>
@@ -301,9 +174,9 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newElastic(String name, int ttlSeconds, boolean daemon) {
-		return new ElasticScheduler(new SchedulerFactory(name,
-				daemon,
-				ElasticScheduler.COUNTER), ttlSeconds);
+		return newElastic(ttlSeconds,
+				new SchedulerThreadFactory(name, daemon, ElasticScheduler.COUNTER));
+
 	}
 
 	/**
@@ -315,15 +188,14 @@ public class Schedulers {
 	 * This scheduler is not restartable.
 	 *
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
-	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
+	 * @param threadFactory a {@link ThreadFactory} to use each thread initialization
 	 *
 	 * @return a new {@link Scheduler} that dynamically creates ExecutorService-based
 	 * Workers and caches the thread pools, reusing them once the Workers have been shut
 	 * down.
 	 */
 	public static Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
-		return new ElasticScheduler(threadFactory, ttlSeconds);
+		return factory.newElastic(ttlSeconds, threadFactory);
 	}
 
 	/**
@@ -367,8 +239,8 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(String name, int parallelism, boolean daemon) {
-		return new ParallelScheduler(parallelism, new SchedulerFactory(name, daemon,
-				ParallelScheduler.COUNTER));
+		return newParallel(parallelism,
+				new SchedulerThreadFactory(name, daemon, ParallelScheduler.COUNTER));
 	}
 
 	/**
@@ -376,14 +248,14 @@ public class Schedulers {
 	 * workers and is suited for parallel work.
 	 *
 	 * @param parallelism Number of pooled workers.
-	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
+	 * @param threadFactory a {@link ThreadFactory} to use for the fixed initialized
+	 * number of {@link Thread}
 	 *
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
-		return new ParallelScheduler(parallelism, threadFactory);
+		return factory.newParallel(parallelism, threadFactory);
 	}
 
 	/**
@@ -411,7 +283,7 @@ public class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(String name, boolean daemon) {
-		return new SingleScheduler(new SchedulerFactory(name, daemon,
+		return newSingle(new SchedulerThreadFactory(name, daemon,
 				SingleScheduler.COUNTER));
 	}
 
@@ -426,14 +298,15 @@ public class Schedulers {
 	 * worker
 	 */
 	public static Scheduler newSingle(ThreadFactory threadFactory) {
-		return new ParallelScheduler(1, threadFactory);
+		return factory.newSingle(threadFactory);
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded
-	 * {@link java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}.
 	 *
 	 * @param name timer thread prefix
+	 *
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name) {
@@ -441,8 +314,8 @@ public class Schedulers {
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded
-	 * {@link java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}.
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
@@ -451,28 +324,30 @@ public class Schedulers {
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(String name, boolean daemon) {
-		return newTimer(new SchedulerFactory(name, daemon, SingleTimedScheduler.COUNTER));
+		return newTimer(new SchedulerThreadFactory(name,
+				daemon,
+				SingleTimedScheduler.COUNTER));
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded
-	 * {@link java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}.
 	 *
 	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
+	 * {@link TimedScheduler}
 	 *
 	 * @return a new {@link TimedScheduler}
 	 */
 	public static TimedScheduler newTimer(ThreadFactory threadFactory) {
-		return new SingleTimedScheduler(threadFactory);
+		return factory.newTimer(threadFactory);
 	}
 
 	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
 	 * workers and is suited for parallel work.
 	 *
-	 * @return a reusable {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers
+	 * @return a reusable {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * ExecutorService-based workers
 	 */
 	public static Scheduler parallel() {
 		return cache(PARALLEL,
@@ -483,25 +358,26 @@ public class Schedulers {
 	}
 
 	/**
-	 * Assign a {@link #newComputation} factory using the matching method signature in
-	 * the target class.
-	 *
-	 * @param factoryClass an arbitrary type with static methods matching {@link
-	 * #newComputation} signature(s).
+	 * Re-apply default factory to {@link Schedulers}
 	 */
-	public static void setComputationFactory(Class<?> factoryClass) {
-		Objects.requireNonNull(factoryClass, "factoryClass");
-		try {
-			Method m = factoryClass.getDeclaredMethod(NEW_COMPUTATION,
-					int.class,
-					int.class,
-					ThreadFactory.class);
-			m.setAccessible(true);
-			COMPUTATION_FACTORY.lazySet(m);
-		}
-		catch (NoSuchMethodException e) {
-			throw Exceptions.bubble(e);
-		}
+	public static void resetFactory(){
+		factory = DEFAULT;
+	}
+
+	/**
+	 * Override {@link Schedulers} finite signatures of {@link #newParallel}, {@link
+	 * #newSingle}, {@link #newTimer} and {@link #newElastic} factory using the matching
+	 * method signature in the target class. A finite signature corresponds to those
+	 * including a {@link ThreadFactory} argument and should be instance methods.
+	 * <p>
+	 *     This method should be called safely and with caution, typically on app startup.
+	 *
+	 *
+	 * @param factoryInstance an arbitrary {@link Factory} instance.
+	 */
+	public static void setFactory(Factory factoryInstance) {
+		Objects.requireNonNull(factoryInstance, "factoryInstance");
+		factory = factoryInstance;
 	}
 
 	/**
@@ -533,13 +409,13 @@ public class Schedulers {
 	}
 
 	/**
-	 * Wraps a single worker of some other {@link Scheduler} and
-	 * provides {@link reactor.core.scheduler.Scheduler.Worker} services on top of it.
+	 * Wraps a single worker of some other {@link Scheduler} and provides {@link
+	 * reactor.core.scheduler.Scheduler.Worker} services on top of it.
 	 * <p>
 	 * Use the {@link Scheduler#shutdown()} to release the wrapped worker.
 	 *
-	 * @param original a {@link Scheduler} to call upon to get the single
-	 * {@link reactor.core.scheduler.Scheduler.Worker}
+	 * @param original a {@link Scheduler} to call upon to get the single {@link
+	 * reactor.core.scheduler.Scheduler.Worker}
 	 *
 	 * @return a wrapping {@link Scheduler} consistently returning a same worker from a
 	 * source {@link Scheduler}
@@ -558,29 +434,80 @@ public class Schedulers {
 		return timedCache(TIMER, () -> newTimer(TIMER)).asTimedScheduler();
 	}
 
-	// Internals
+	/**
+	 * Public factory hook to override Schedulers behavior globally
+	 */
+	public interface Factory {
 
-	static final String COMPUTATION     = "computation"; //non blocking tasks
-	static final String ELASTIC         = "elastic"; // IO stuff
-	static final String PARALLEL        = "parallel";
-	static final String SINGLE          = "single";
-	static final String TIMER           = "timer";
-
-	static final String NEW_COMPUTATION = "newComputation";
-
-	static final AtomicReference<Method>                COMPUTATION_FACTORY =
-			new AtomicReference<>();
-	static final ConcurrentMap<String, CachedScheduler> cachedSchedulers    =
-			new ConcurrentHashMap<>();
-
-	static {
-		try {
-			setComputationFactory(ComputationScheduler.class);
+		/**
+		 * {@link Scheduler} that dynamically creates Workers resources and caches
+		 * eventually, reusing them once the Workers have been shut down.
+		 * <p>
+		 * The maximum number of created workers is unbounded.
+		 *
+		 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
+		 * @param threadFactory a {@link ThreadFactory} to use
+		 *
+		 * @return a new {@link Scheduler} that dynamically creates Workers resources and
+		 * caches eventually, reusing them once the Workers have been shut down.
+		 */
+		default Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
+			return new ElasticScheduler(threadFactory, ttlSeconds);
 		}
-		catch (Exception e) {
-			throw Exceptions.bubble(e);
+
+		/**
+		 * {@link Scheduler} that hosts a fixed pool of workers and is suited for parallel
+		 * work.
+		 *
+		 * @param parallelism Number of pooled workers.
+		 * @param threadFactory a {@link ThreadFactory} to use for the fixed initialized
+		 * number of {@link Thread}
+		 *
+		 * @return a new {@link Scheduler} that hosts a fixed pool of workers and is
+		 * suited for parallel work
+		 */
+		default Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
+			return new ParallelScheduler(parallelism, threadFactory);
+		}
+
+		/**
+		 * {@link Scheduler} that hosts a single worker and is suited for non-blocking
+		 * work.
+		 *
+		 * @param threadFactory a {@link ThreadFactory} to use for the unique resource of
+		 * the {@link Scheduler}
+		 *
+		 * @return a new {@link Scheduler} that hosts a single worker
+		 */
+		default Scheduler newSingle(ThreadFactory threadFactory) {
+			return new SingleScheduler(threadFactory);
+		}
+
+		/**
+		 * Create a new {@link TimedScheduler} backed by a dedicated resource.
+		 *
+		 * @param threadFactory a {@link ThreadFactory} to use for the eventual thread
+		 *
+		 * @return a new {@link TimedScheduler}
+		 */
+		default TimedScheduler newTimer(ThreadFactory threadFactory) {
+			return new SingleTimedScheduler(threadFactory);
 		}
 	}
+
+	// Internals
+	static final String ELASTIC  = "elastic"; // IO stuff
+	static final String PARALLEL = "parallel"; //scale up common tasks
+	static final String SINGLE   = "single"; //non blocking tasks
+	static final String TIMER    = "timer"; //timed tasks
+
+	static final ConcurrentMap<String, CachedScheduler> cachedSchedulers =
+			new ConcurrentHashMap<>();
+
+	static final Factory DEFAULT = new Factory() {
+	};
+
+	static volatile Factory factory = DEFAULT;
 
 	static CachedScheduler cache(String key, Supplier<Scheduler> schedulerSupplier) {
 		for (; ; ) {
@@ -596,7 +523,8 @@ public class Schedulers {
 		}
 	}
 
-	static CachedScheduler timedCache(String key, Supplier<TimedScheduler> schedulerSupplier) {
+	static CachedScheduler timedCache(String key,
+			Supplier<TimedScheduler> schedulerSupplier) {
 		for (; ; ) {
 			CachedScheduler s = cachedSchedulers.get(key);
 			if (s != null) {
@@ -610,13 +538,13 @@ public class Schedulers {
 		}
 	}
 
-	static final class SchedulerFactory implements ThreadFactory, Supplier<String>{
+	static final class SchedulerThreadFactory implements ThreadFactory, Supplier<String> {
 
 		final String     name;
 		final boolean    daemon;
 		final AtomicLong COUNTER;
 
-		SchedulerFactory(String name, boolean daemon, AtomicLong counter) {
+		SchedulerThreadFactory(String name, boolean daemon, AtomicLong counter) {
 			this.name = name;
 			this.daemon = daemon;
 			this.COUNTER = counter;
@@ -670,6 +598,26 @@ public class Schedulers {
 
 		TimedScheduler asTimedScheduler() {
 			throw new UnsupportedOperationException("Scheduler is not Timed");
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+
+			CachedScheduler scheduler = (CachedScheduler) o;
+
+			return cached.equals(scheduler.cached);
+
+		}
+
+		@Override
+		public int hashCode() {
+			return cached.hashCode();
 		}
 	}
 

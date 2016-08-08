@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
@@ -20,7 +21,8 @@ import org.reactivestreams.Subscriber;
 /**
  * Interface to generate signals to a bridged {@link Subscriber}.
  * <p>
- * At least one of the methods should be called per invocation of the generator function
+ * At most one {@link #next} call and/or one {@link #complete()} or {@link
+ * #error(Throwable)} should be called per invocation of the generator function
  *
  * @param <T> the output value type
  */
@@ -32,16 +34,19 @@ public interface SynchronousSink<T> {
 	void complete();
 
 	/**
-	 * @see Subscriber#onError(Throwable)
 	 * @param e the exception to signal, not null
+	 *
+	 * @see Subscriber#onError(Throwable)
 	 */
 	void error(Throwable e);
 
 	/**
 	 * Try emitting, might throw an unchecked exception.
-	 * @see Subscriber#onNext(Object)
+	 *
 	 * @param t the value to emit, not null
+	 *
 	 * @throws RuntimeException
+	 * @see Subscriber#onNext(Object)
 	 */
 	void next(T t);
 }
