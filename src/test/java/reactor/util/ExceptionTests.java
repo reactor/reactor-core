@@ -83,13 +83,4 @@ public class ExceptionTests {
 		Exceptions.resetOnNextDroppedHook();
 		Exceptions.resetOnErrorDroppedHook();
 	}
-
-	@Test
-	public void valueCause() throws Exception {
-		Throwable w;
-
-		w = Exceptions.onOperatorError(null, new Exception(), "hello");
-		Assert.assertEquals(w.getSuppressed()[0].getMessage(), "Associated value #toString: hello");
-	}
-
 }
