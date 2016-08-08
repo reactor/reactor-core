@@ -15,8 +15,8 @@
  */
 
 /**
- * Queue
- * {@link reactor.util.concurrent.QueueSupplier suppliers} and implementation of the bounded hardware friendly {@link reactor.util.concurrent.RingBuffer}.
+ * Queue {@link reactor.util.concurrent.QueueSupplier suppliers} and busy spin utils
+ * {@link reactor.util.concurrent.WaitStrategy}.
  * Used for operational serialization (serializing threads) or buffering (asynchronous boundary).
  *
  * @author Stephane Maldini

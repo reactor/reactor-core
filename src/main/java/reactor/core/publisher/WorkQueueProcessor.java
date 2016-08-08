@@ -32,9 +32,6 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferReader;
-import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -501,10 +498,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * Instance
 	 */
 
-	final Sequence workSequence =
+	final RingBuffer.Sequence workSequence =
 			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
-	final Sequence retrySequence =
+	final RingBuffer.Sequence retrySequence =
 			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
 	volatile RingBuffer<Slot<E>> retryBuffer;
@@ -615,7 +612,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							throw Exceptions.failWithCancel();
 						}
 						else {
-							RingBuffer.throwAlert();
+							WaitStrategy.throwAlert();
 						}
 					}
 				}, null,
@@ -652,7 +649,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	@Override
 	public void run() {
 		if (!alive()) {
-			RingBuffer.throwAlert();
+			WaitStrategy.throwAlert();
 		}
 	}
 
@@ -668,11 +665,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
-		private final Sequence sequence = wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
+		private final RingBuffer.Sequence
+				sequence = wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
-		private final Sequence pendingRequest = RingBuffer.newSequence(0);
+		private final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
 
-		private final RingBufferReader barrier;
+		private final RingBuffer.Reader barrier;
 
 		private final WorkQueueProcessor<T> processor;
 
@@ -683,7 +681,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
 						replay(pendingRequest.getAsLong() == Long.MAX_VALUE)) {
-					RingBuffer.throwAlert();
+					WaitStrategy.throwAlert();
 				}
 			}
 		};
@@ -702,7 +700,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			this.barrier = processor.ringBuffer.newReader();
 		}
 
-		public Sequence getSequence() {
+		public RingBuffer.Sequence getSequence() {
 			return sequence;
 		}
 
@@ -774,7 +772,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
 								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
 									if (!isRunning()) {
-										RingBuffer.throwAlert();
+										WaitStrategy.throwAlert();
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -790,7 +788,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								readNextEvent(unbounded);
 							}
 							catch (Exception ce) {
-								if (!RingBuffer.isAlert(ce)) {
+								if (!WaitStrategy.isAlert(ce)) {
 									throw ce;
 								}
 								barrier.clearAlert();
@@ -809,7 +807,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 										barrier.waitFor(nextSequence, waiter);
 							}
 							catch (Exception ce) {
-								if (!RingBuffer.isAlert(ce)) {
+								if (!WaitStrategy.isAlert(ce)) {
 									throw ce;
 								}
 								barrier.clearAlert();
@@ -828,7 +826,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 											break;
 										}
 										catch (Exception cee) {
-											if (!RingBuffer.isAlert(cee)) {
+											if (!WaitStrategy.isAlert(cee)) {
 												throw ce;
 											}
 											barrier.clearAlert();
@@ -850,7 +848,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							reschedule(event);
 							break;
 						}
-						if (!RingBuffer.isAlert(ce)) {
+						if (!WaitStrategy.isAlert(ce)) {
 							throw ce;
 						}
 						barrier.clearAlert();
@@ -961,7 +959,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				//pause until request
 			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {
-					RingBuffer.throwAlert();
+					WaitStrategy.throwAlert();
 				}
 				//Todo Use WaitStrategy?
 				LockSupport.parkNanos(1L);

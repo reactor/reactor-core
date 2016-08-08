@@ -31,9 +31,6 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferReader;
-import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -589,9 +586,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				autoCancel, null);
 	}
 
-	final RingBufferReader barrier;
+	final RingBuffer.Reader barrier;
 
-	final Sequence minimum;
+	final RingBuffer.Sequence minimum;
 
 	TopicProcessor(String name, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
@@ -634,7 +631,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}
 
 		//create a unique eventProcessor for this subscriber
-		final Sequence pendingRequest = RingBuffer.newSequence(0);
+		final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
 		final TopicSubscriberLoop<E> signalProcessor =
 				new TopicSubscriberLoop<>(this, pendingRequest, subscriber);
 
@@ -708,7 +705,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							             throw Exceptions.failWithCancel();
 						             }
 						             else {
-							             RingBuffer.throwAlert();
+							             WaitStrategy.throwAlert();
 						             }
 					             }
 				             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
@@ -728,7 +725,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	@Override
 	public void run() {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
-			RingBuffer.throwAlert();
+			WaitStrategy.throwAlert();
 		}
 	}
 
@@ -744,12 +741,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		private final AtomicBoolean running = new AtomicBoolean(false);
 
-		private final Sequence sequence =
+		private final RingBuffer.Sequence sequence =
 				wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
 		private final TopicProcessor<T> processor;
 
-		private final Sequence pendingRequest;
+		private final RingBuffer.Sequence pendingRequest;
 
 		private final Subscriber<? super T> subscriber;
 
@@ -757,7 +754,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			@Override
 			public void run() {
 				if (!running.get() || processor.isTerminated()) {
-					RingBuffer.throwAlert();
+					WaitStrategy.throwAlert();
 				}
 			}
 		};
@@ -771,14 +768,14 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param subscriber the output Subscriber instance
 		 */
 		public TopicSubscriberLoop(TopicProcessor<T> processor,
-		                            Sequence pendingRequest,
+		                            RingBuffer.Sequence pendingRequest,
 		                            Subscriber<? super T> subscriber) {
 			this.processor = processor;
 			this.pendingRequest = pendingRequest;
 			this.subscriber = subscriber;
 		}
 
-		public Sequence getSequence() {
+		public RingBuffer.Sequence getSequence() {
 			return sequence;
 		}
 
@@ -838,7 +835,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 												0) {
 									//Todo Use WaitStrategy?
 									if(!running.get() || processor.isTerminated()){
-										RingBuffer.throwAlert();
+										WaitStrategy.throwAlert();
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -861,7 +858,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						break;
 					}
 					catch (Throwable ex) {
-						if(RingBuffer.isAlert(ex) || Exceptions.isCancel(ex)) {
+						if(WaitStrategy.isAlert(ex) || Exceptions.isCancel(ex)) {
 
 							if (!running.get()) {
 								break;

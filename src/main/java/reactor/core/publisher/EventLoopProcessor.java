@@ -36,12 +36,7 @@ import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.RingBufferReader;
-import reactor.util.concurrent.Sequence;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -59,7 +54,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
 
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
-			Sequence start){
+			RingBuffer.Sequence start){
 		Flux<E> bufferIterable = generate(start::getAsLong, (seq, sink) -> {
 			long s = seq + 1;
 			if(s > ringBuffer.getCursor()){
@@ -134,19 +129,19 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * strict positive value. To relieve the spin loop, the read sequence itself will be
 	 * used against so it will wake up only when a signal is emitted upstream or other
 	 * stopping condition including terminal signals thrown by the {@link
-	 * RingBufferReader} waiting barrier.
+	 * RingBuffer.Reader} waiting barrier.
 	 *
 	 * @param pendingRequest the {@link LongSupplier} request to observe
-	 * @param barrier {@link RingBufferReader} to wait on
+	 * @param barrier {@link RingBuffer.Reader} to wait on
 	 * @param isRunning {@link AtomicBoolean} calling loop running state
 	 * @param nextSequence {@link LongSupplier} ring buffer read cursor
 	 * @param waiter an optional extra spin observer for the wait strategy in {@link
-	 * RingBufferReader}
+	 * RingBuffer.Reader}
 	 *
 	 * @return true if a request has been received, false in any other case.
 	 */
 	static boolean waitRequestOrTerminalEvent(LongSupplier pendingRequest,
-			RingBufferReader barrier,
+			RingBuffer.Reader barrier,
 			AtomicBoolean isRunning,
 			LongSupplier nextSequence,
 			Runnable waiter) {
@@ -174,7 +169,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 
 		catch (Exception e) {
-			if (RingBuffer.isAlert(e) || Exceptions.isCancel(e)) {
+			if (WaitStrategy.isAlert(e) || Exceptions.isCancel(e)) {
 				return false;
 			}
 			throw e;
@@ -195,7 +190,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 *
 	 * @return value before addition or Long.MAX_VALUE
 	 */
-	static long getAndAddCap(Sequence sequence, long toAdd) {
+	static long getAndAddCap(RingBuffer.Sequence sequence, long toAdd) {
 		long u, r;
 		do {
 			r = sequence.getAsLong();
@@ -217,7 +212,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 *
 	 * @return value before subscription, 0 or Long.MAX_VALUE
 	 */
-	static long getAndSub(Sequence sequence, long toSub) {
+	static long getAndSub(RingBuffer.Sequence sequence, long toSub) {
 		long r, u;
 		do {
 			r = sequence.getAsLong();
@@ -240,9 +235,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param init the initial sequence index
 	 * @param delegate the target to proxy
 	 *
-	 * @return a wrapped {@link Sequence}
+	 * @return a wrapped {@link RingBuffer.Sequence}
 	 */
-	static Sequence wrap(long init, Object delegate) {
+	static RingBuffer.Sequence wrap(long init, Object delegate) {
 		if (TRACEABLE_RING_BUFFER_PROCESSOR) {
 			return wrap(RingBuffer.newSequence(init), delegate);
 		}
@@ -258,9 +253,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param init the sequence reference
 	 * @param delegate the object to wrap
 	 *
-	 * @return a wrapped {@link Sequence}
+	 * @return a wrapped {@link RingBuffer.Sequence}
 	 */
-	static Sequence wrap(Sequence init, Object delegate){
+	static RingBuffer.Sequence wrap(RingBuffer.Sequence init, Object delegate){
 		return new Wrapped<>(delegate, init);
 	}
 
@@ -574,7 +569,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 					upstream.cancel();
 					return;
 				}
-				if(RingBuffer.isAlert(t)){
+				if(WaitStrategy.isAlert(t)){
 					return;
 				}
 				errorSubscriber.onError(Exceptions.mapOperatorError(t));
@@ -679,12 +674,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 }
 
 
-final class Wrapped<E> implements Sequence, Producer {
+final class Wrapped<E> implements RingBuffer.Sequence, Producer {
 
-	public final E        delegate;
-	public final Sequence sequence;
+	public final E                   delegate;
+	public final RingBuffer.Sequence sequence;
 
-	public Wrapped(E delegate, Sequence sequence) {
+	public Wrapped(E delegate, RingBuffer.Sequence sequence) {
 		this.delegate = delegate;
 		this.sequence = sequence;
 	}

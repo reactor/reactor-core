@@ -23,16 +23,12 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
+
 /**
  * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
  */
 public abstract class WaitStrategy
 {
-
-    final static WaitStrategy YIELDING  = new Yielding();
-    final static WaitStrategy PARKING   = new Parking();
-    final static WaitStrategy SLEEPING  = new Sleeping();
-    final static WaitStrategy BUSY_SPIN = new BusySpin();
 
     /**
      * Blocking strategy that uses a lock and condition variable for consumer waiting on a barrier.
@@ -53,6 +49,15 @@ public abstract class WaitStrategy
      */
     public static WaitStrategy busySpin() {
         return BUSY_SPIN;
+    }
+
+    /**
+     * Test if exception is alert
+     * @param t exception checked
+     * @return true if this is an alert signal
+     */
+    public static boolean isAlert(Throwable t){
+	    return t == AlertException.INSTANCE;
     }
 
     /**
@@ -143,18 +148,6 @@ public abstract class WaitStrategy
     }
 
     /**
-     * Yielding strategy that uses a Thread.yield() for consumers waiting on a 
-     * barrier
-     * after an initially spinning.
-     *
-     * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
-     * @return the wait strategy
-     */
-    public static WaitStrategy yielding() {
-        return YIELDING;
-    }
-
-    /**
      * Yielding strategy that uses a Thread.sleep(1) for consumers waiting on a
      * barrier
      * after an initially spinning.
@@ -164,6 +157,26 @@ public abstract class WaitStrategy
      */
     public static WaitStrategy sleeping() {
         return SLEEPING;
+    }
+
+    /**
+     * Throw a signal singleton exception that can be checked against
+     * {@link #isAlert(Throwable)}
+     */
+    public static void throwAlert() {
+	    throw AlertException.INSTANCE;
+    }
+
+    /**
+     * Yielding strategy that uses a Thread.yield() for consumers waiting on a
+     * barrier
+     * after an initially spinning.
+     *
+     * This strategy is a good compromise between performance and CPU resource without incurring significant latency spikes.
+     * @return the wait strategy
+     */
+    public static WaitStrategy yielding() {
+        return YIELDING;
     }
 
     /**
@@ -183,13 +196,39 @@ public abstract class WaitStrategy
      *    need this as is notified upon update.
      * @param spinObserver Spin observer
      * @return the sequence that is available which may be greater than the requested sequence.
-     * @throws RingBuffer.AlertException if the status of the Disruptor has changed.
+     * @throws WaitStrategy.AlertException if the status has changed.
      * @throws InterruptedException if the thread is interrupted.
      */
     public abstract long waitFor(long sequence, LongSupplier cursor, Runnable spinObserver)
             throws InterruptedException;
 
+    /**
+     * Used to alert consumers waiting with a {@link WaitStrategy} for status changes.
+     * <p>
+     * It does not fill in a stack trace for performance reasons.
+     */
+    @SuppressWarnings("serial")
+    public static final class AlertException extends RuntimeException {
+	    /** Pre-allocated exception to avoid garbage generation */
+	    public static final AlertException INSTANCE = new AlertException();
 
+	    /**
+	     * Private constructor so only a single instance any.
+	     */
+	    private AlertException() {
+	    }
+
+	    /**
+	     * Overridden so the stack trace is not filled in for this exception for performance reasons.
+	     *
+	     * @return this instance.
+	     */
+	    @Override
+	    public Throwable fillInStackTrace() {
+		    return this;
+	    }
+
+    }
 
     final static class Blocking extends WaitStrategy {
 
@@ -240,7 +279,6 @@ public abstract class WaitStrategy
             return availableSequence;
         }
     }
-
 
     final static class BusySpin extends WaitStrategy {
 
@@ -340,14 +378,11 @@ public abstract class WaitStrategy
         }
     }
 
-
     final static class PhasedOff extends WaitStrategy {
 
-        private static final int SPIN_TRIES = 10000;
         private final long spinTimeoutNanos;
         private final long yieldTimeoutNanos;
         private final WaitStrategy fallbackStrategy;
-
         PhasedOff(long spinTimeout, long yieldTimeout,
                                          TimeUnit units,
                                          WaitStrategy fallbackStrategy)
@@ -402,11 +437,10 @@ public abstract class WaitStrategy
             }
             while (true);
         }
+        private static final int SPIN_TRIES = 10000;
     }
 
     final static class Parking extends WaitStrategy {
-
-        private static final int DEFAULT_RETRIES = 200;
 
         private final int retries;
 
@@ -418,8 +452,23 @@ public abstract class WaitStrategy
             this.retries = retries;
         }
 
+        @Override
+        public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
+                throws InterruptedException
+        {
+            long availableSequence;
+            int counter = retries;
+
+            while ((availableSequence = cursor.getAsLong()) < sequence)
+            {
+                counter = applyWaitMethod(barrier, counter);
+            }
+
+            return availableSequence;
+        }
+
         private int applyWaitMethod(final Runnable barrier, int counter)
-                throws RingBuffer.AlertException
+                throws WaitStrategy.AlertException
         {
             barrier.run();
 
@@ -439,43 +488,10 @@ public abstract class WaitStrategy
 
             return counter;
         }
-
-        @Override
-        public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws InterruptedException
-        {
-            long availableSequence;
-            int counter = retries;
-
-            while ((availableSequence = cursor.getAsLong()) < sequence)
-            {
-                counter = applyWaitMethod(barrier, counter);
-            }
-
-            return availableSequence;
-        }
+        private static final int DEFAULT_RETRIES = 200;
     }
 
     final static class Yielding extends WaitStrategy {
-
-        private static final int SPIN_TRIES = 100;
-
-        private int applyWaitMethod(final Runnable barrier, int counter)
-                throws RingBuffer.AlertException
-        {
-            barrier.run();
-
-            if (0 == counter)
-            {
-                Thread.yield();
-            }
-            else
-            {
-                --counter;
-            }
-
-            return counter;
-        }
 
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
@@ -491,5 +507,27 @@ public abstract class WaitStrategy
 
             return availableSequence;
         }
+
+        private int applyWaitMethod(final Runnable barrier, int counter)
+                throws WaitStrategy.AlertException
+        {
+            barrier.run();
+
+            if (0 == counter)
+            {
+                Thread.yield();
+            }
+            else
+            {
+                --counter;
+            }
+
+            return counter;
+        }
+        private static final int SPIN_TRIES = 100;
     }
+    final static WaitStrategy YIELDING  = new Yielding();
+    final static WaitStrategy PARKING   = new Parking();
+    final static WaitStrategy SLEEPING  = new Sleeping();
+    final static WaitStrategy BUSY_SPIN = new BusySpin();
 }

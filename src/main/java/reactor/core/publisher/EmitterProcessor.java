@@ -31,8 +31,6 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.RingBuffer;
-import reactor.util.concurrent.Sequence;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
@@ -277,7 +275,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 					long r = is.requested;
 					is.unbounded = r == Long.MAX_VALUE;
-					Sequence poll = is.unbounded ? null : is.pollCursor;
+					RingBuffer.Sequence poll = is.unbounded ? null : is.pollCursor;
 
 					//no tracking and remaining demand positive
 					if (r > 0L && poll == null) {
@@ -429,7 +427,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			int n = inner.length;
 
 			if (n != 0) {
-				Sequence innerSequence;
+				RingBuffer.Sequence innerSequence;
 				long _r;
 
 				for (int i = 0; i < n; i++) {
@@ -512,7 +510,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	final void checkTerminal(EmitterSubscriber<T> is, Sequence innerSequence, long r) {
+	final void checkTerminal(EmitterSubscriber<T> is, RingBuffer.Sequence innerSequence, long r) {
 		Throwable e = error;
 		if ((e != null && r == 0) || innerSequence == null || is.unbounded || innerSequence.getAsLong() >= emitBuffer.getCursor()) {
 			removeInner(is, EMPTY);
@@ -528,7 +526,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	final void startAllTrackers(EmitterSubscriber<?>[] inner, long seq, int size) {
-		Sequence poll;
+		RingBuffer.Sequence poll;
 		for (int i = 0; i < size - 1; i++) {
 			poll = inner[i].pollCursor;
 			if (poll == null) {
@@ -588,7 +586,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				Sequence poll = inner.pollCursor;
+				RingBuffer.Sequence poll = inner.pollCursor;
 				if (poll != null) {
 					getMainQueue().removeGatingSequence(poll);
 				}
@@ -663,12 +661,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		static final AtomicLongFieldUpdater<EmitterSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(EmitterSubscriber.class, "requested");
 
-		volatile Sequence pollCursor;
+		volatile RingBuffer.Sequence pollCursor;
 
 		@SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<EmitterSubscriber, Sequence> CURSOR =
+        static final AtomicReferenceFieldUpdater<EmitterSubscriber, RingBuffer.Sequence> CURSOR =
 				AtomicReferenceFieldUpdater.newUpdater(EmitterSubscriber.class,
-						Sequence.class,
+						RingBuffer.Sequence.class,
 						"pollCursor");
 
 		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
@@ -703,7 +701,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		void startTracking(long seq) {
-			Sequence pollSequence = RingBuffer.newSequence(seq - 1L);
+			RingBuffer.Sequence pollSequence = RingBuffer.newSequence(seq - 1L);
 			if (CURSOR.compareAndSet(this, null, pollSequence)) {
 				parent.emitBuffer.addGatingSequence(pollSequence);
 			}
