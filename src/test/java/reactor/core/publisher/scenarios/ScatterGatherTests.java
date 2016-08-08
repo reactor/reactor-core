@@ -103,9 +103,9 @@ public class ScatterGatherTests {
 		}
 		catch(Exception e){
 			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[1].getMessage().contains
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("ScatterGatherTests.java:"));
-			Assert.assertTrue(e.getSuppressed()[1].getMessage().contains("|_\tMono.map" +
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
 					"(ScatterGatherTests.java:"));
 			return;
 		}

@@ -278,9 +278,9 @@ public abstract class Exceptions {
 				if (dataSignal instanceof Throwable) {
 					t.addSuppressed((Throwable) dataSignal);
 				}
-				else {
-					t.addSuppressed(new OriginValueToString(dataSignal.toString()));
-				}
+				//do not wrap original value to avoid strong references
+				/*else {
+				}*/
 			}
 			return t;
 		}
@@ -474,19 +474,5 @@ public abstract class Exceptions {
 		}
 		private static final long serialVersionUID = 2491425227432776144L;
 
-	}
-
-	static final class OriginValueToString extends Exception {
-
-		public OriginValueToString(String message) {
-			super(message);
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return this;
-		}
-
-		private static final long serialVersionUID = 2491425227432776145L;
 	}
 }
