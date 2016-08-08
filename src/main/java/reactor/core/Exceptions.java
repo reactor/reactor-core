@@ -279,7 +279,7 @@ public abstract class Exceptions {
 					t.addSuppressed((Throwable) dataSignal);
 				}
 				else {
-					t.addSuppressed(new ValueCause(dataSignal));
+					t.addSuppressed(new OriginValueToString(dataSignal.toString()));
 				}
 			}
 			return t;
@@ -476,22 +476,15 @@ public abstract class Exceptions {
 
 	}
 
-	static final class ValueCause extends Exception {
+	static final class OriginValueToString extends Exception {
 
-		final String value;
-
-		public ValueCause(Object value) {
-			this.value = value.toString();
+		public OriginValueToString(String message) {
+			super(message);
 		}
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return this;
-		}
-
-		@Override
-		public String getMessage() {
-			return "Associated value #toString: " + value;
 		}
 
 		private static final long serialVersionUID = 2491425227432776145L;
