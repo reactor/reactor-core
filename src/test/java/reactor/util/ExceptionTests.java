@@ -25,13 +25,75 @@ import reactor.core.Exceptions;
 public class ExceptionTests {
 
 	@Test
-	public void testExtension() throws Exception {
+	public void testWrapping() throws Exception {
 
 		Throwable t = new Exception("test");
 
 		Throwable w = Exceptions.bubble(Exceptions.propagate(t));
 
 		Assert.assertTrue(Exceptions.unwrap(w) == t);
+	}
+
+	static final class TestException extends RuntimeException {
+
+		public TestException(String message) {
+			super(message);
+		}
+	}
+
+	@Test
+	public void testHooks() throws Exception {
+
+		Exceptions.setMapOperatorErrorHook((e, s) -> new TestException(s.toString()));
+		Exceptions.setOnNextDroppedHook(d -> {
+			throw new TestException(d.toString());
+		});
+		Exceptions.setOnErrorDroppedHook(e -> {
+			throw new TestException("errorDrop");
+		});
+
+		Throwable w = Exceptions.mapOperatorError(null, new Exception(), "hello");
+
+		Assert.assertTrue(w instanceof TestException);
+		Assert.assertTrue(w.getMessage()
+		                   .equals("hello"));
+
+		try {
+			Exceptions.onNextDropped("hello");
+			Assert.fail();
+		}
+		catch (Throwable t) {
+			t.printStackTrace();
+			Assert.assertTrue(t instanceof TestException);
+			Assert.assertTrue(t.getMessage()
+			                   .equals("hello"));
+		}
+
+		try {
+			Exceptions.onErrorDropped(new Exception());
+			Assert.fail();
+		}
+		catch (Throwable t) {
+			Assert.assertTrue(t instanceof TestException);
+			Assert.assertTrue(t.getMessage()
+			                   .equals("errorDrop"));
+		}
+
+		Exceptions.resetMapOperatorErrorHook();
+		Exceptions.resetOnNextDroppedHook();
+		Exceptions.resetOnErrorDroppedHook();
+	}
+
+	@Test
+	public void valueCause() throws Exception {
+		Throwable w;
+
+		w = Exceptions.mapOperatorError(null, new Exception(), "hello");
+		Assert.assertTrue(Exceptions.findValueCause(w, String.class)
+		                            .equals("hello"));
+
+		w = Exceptions.mapOperatorError(new Exception());
+		Assert.assertTrue(Exceptions.findValueCause(w, String.class) == null);
 	}
 
 }

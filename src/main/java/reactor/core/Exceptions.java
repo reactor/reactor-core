@@ -16,7 +16,10 @@
 
 package reactor.core;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
 
@@ -39,10 +42,6 @@ public abstract class Exceptions {
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
-
-	volatile static boolean TRACE_OPERATOR_STACKTRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-					"false"));
 
 	/**
 	 *
@@ -120,6 +119,34 @@ public abstract class Exceptions {
 	 */
 	public static void enableOperatorStacktrace() {
 		TRACE_OPERATOR_STACKTRACE = true;
+	}
+
+	/**
+	 * When default global {@link #mapOperatorError} transforms operator errors driven
+	 * by a data signal, it wraps the value signal into a suppressed exception that can
+	 * be resolved back via this method. Any override of this strategy via
+	 * {@link #setMapOperatorErrorHook(BiFunction)} will defeat this util.
+	 *
+	 * @param error the error that might contain a value of the given type
+	 * @param typeExpectation the expected value type
+	 * @param <T> the refied value type
+	 *
+	 * @return a value found associated with error matching the given type
+	 * or {@literal null}
+	 */
+	public static <T> T findValueCause(Throwable error, Class<T> typeExpectation){
+		Objects.requireNonNull(error, "error");
+		Objects.requireNonNull(typeExpectation, "typeExpectation");
+		for(Throwable s : error.getSuppressed()){
+			if(s instanceof ValueCause && typeExpectation.isAssignableFrom(((ValueCause)
+					s).value.getClass())){
+
+				@SuppressWarnings("unchecked")
+				T v = (T) ((ValueCause)s).value;
+				return v;
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -221,15 +248,20 @@ public abstract class Exceptions {
 		}
 
 		Throwable t = unwrap(error);
-		if(dataSignal != null){
-			if(dataSignal instanceof Throwable){
-				t.addSuppressed((Throwable)dataSignal);
+		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
+				mapOperatorErrorHook;
+		if (hook == null) {
+			if (dataSignal != null) {
+				if (dataSignal instanceof Throwable) {
+					t.addSuppressed((Throwable) dataSignal);
+				}
+				else {
+					t.addSuppressed(new ValueCause(dataSignal));
+				}
 			}
-			else {
-				//FIXME add value wrapping
-			}
+			return t;
 		}
-		return t;
+		return hook.apply(error, dataSignal);
 	}
 
 	/**
@@ -260,7 +292,11 @@ public abstract class Exceptions {
 	 * @param e the exception to handle
 	 */
 	public static void onErrorDropped(Throwable e) {
-		throw bubble(e);
+		Consumer<? super Throwable> hook = onErrorDroppedHook;
+		if (hook == null) {
+			throw bubble(e);
+		}
+		hook.accept(e);
 	}
 
 	/**
@@ -271,7 +307,11 @@ public abstract class Exceptions {
 	 */
 	public static <T> void onNextDropped(T t) {
 		if(t != null) {
-			throw failWithCancel();
+			Consumer<Object> hook = onNextDroppedHook;
+			if (hook == null) {
+				throw failWithCancel();
+			}
+			hook.accept(t);
 		}
 	}
 
@@ -289,6 +329,60 @@ public abstract class Exceptions {
 			return (RuntimeException)t;
 		}
 		return new ReactiveException(t);
+	}
+
+	/**
+	 * Reset global error dropped strategy to bubbling back the error.
+	 */
+	public static void resetOnErrorDroppedHook() {
+		onErrorDroppedHook = null;
+	}
+
+	/**
+	 * Reset global data dropped strategy to throwing via {@link #failWithCancel()}
+	 */
+	public static void resetOnNextDroppedHook() {
+		onNextDroppedHook = null;
+	}
+
+	/**
+	 * Reset global operator error mapping to adding as suppressed
+	 * exception either data driven exception to fetch via {@link #findValueCause} or
+	 * error driven exception.
+	 */
+	public static void resetMapOperatorErrorHook() {
+		mapOperatorErrorHook = null;
+	}
+
+	/**
+	 * Override global error dropped strategy which by default bubble back the error.
+	 *
+	 * @param c the dropped error {@link Consumer} hook
+	 */
+	public static void setOnErrorDroppedHook(Consumer<? super Throwable> c) {
+		onErrorDroppedHook = Objects.requireNonNull(c, "onErrorDroppedHook");
+	}
+
+	/**
+	 * Override global data dropped strategy which by default throw {@link #failWithCancel()}
+	 *
+	 * @param c the dropped next {@link Consumer} hook
+	 */
+	public static void setOnNextDroppedHook(Consumer<Object> c) {
+		onNextDroppedHook = Objects.requireNonNull(c, "onENextDroppedHook");
+	}
+
+	/**
+	 * Override global operator error mapping which by default add as suppressed
+	 * exception either data driven exception to fetch via {@link #findValueCause} or
+	 * error driven exception.
+	 *
+	 * @param f the operator error {@link BiFunction} mapper, given the failure and an
+	 * eventual original context (data or error) and returning an arbitrary exception.
+	 */
+	public static void setMapOperatorErrorHook(BiFunction<? super Throwable, Object, ?
+			extends Throwable> f) {
+		mapOperatorErrorHook = Objects.requireNonNull(f, "mapOperatorErrorHook");
 	}
 
 	/**
@@ -349,6 +443,15 @@ public abstract class Exceptions {
 		return _t;
 	}
 
+	volatile static boolean TRACE_OPERATOR_STACKTRACE =
+			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
+					"false"));
+
+	volatile static Consumer<? super Throwable> onErrorDroppedHook;
+	volatile static Consumer<Object>            onNextDroppedHook;
+	volatile static BiFunction<? super Throwable, Object, ? extends Throwable>
+	                                            mapOperatorErrorHook;
+
 	Exceptions(){}
 
 	static class BubblingException extends ReactiveException {
@@ -400,5 +503,26 @@ public abstract class Exceptions {
 		}
 		private static final long serialVersionUID = 2491425227432776144L;
 
+	}
+
+	static final class ValueCause extends Exception {
+
+		final Object value;
+
+		public ValueCause(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
+		}
+
+		@Override
+		public String getMessage() {
+			return "Associated value: " + value.toString();
+		}
+
+		private static final long serialVersionUID = 2491425227432776145L;
 	}
 }
