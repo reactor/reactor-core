@@ -220,16 +220,22 @@ class ProcessorsSpec extends Specification {
 	def "RingBufferDispatcher executes tasks in correct thread"() {
 
 		given:
-			def serviceRB = Schedulers.newSingle("rb", 1)
-		def dispatcher = serviceRB.createWorker()
+			def serviceRB = Schedulers.newSingle("rb")
+		    def dispatcher = serviceRB.createWorker()
 			def t1 = Thread.currentThread()
 			def t2 = Thread.currentThread()
+			def cdl = new CountDownLatch(1)
+			
+			var b = false;
 
 		when:
-		dispatcher.schedule({ t2 = Thread.currentThread() })
-			Thread.sleep(500)
+		    dispatcher.schedule({ t2 = Thread.currentThread(); cdl.countDown(); })
+		
+		    b = cdl.await(5, TimeUnit.MILLISECONDS)
 
 		then:
+		    b
+		    
 			t1 != t2
 
 		cleanup:

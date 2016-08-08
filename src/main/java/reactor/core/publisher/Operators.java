@@ -989,77 +989,75 @@ public abstract class Operators {
 		}
 
 		public final void set(Subscription s) {
-			if (cancelled) {
-				s.cancel();
-				return;
-			}
+		    if (cancelled) {
+	            s.cancel();
+	            return;
+	        }
 
-			Objects.requireNonNull(s);
+	        Objects.requireNonNull(s);
+	        
+	        if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+	            Subscription a = actual;
+	            
+	            if (a != null && shouldCancelCurrent()) {
+	                a.cancel();
+	            }
+	            
+	            actual = s;
+	            
+	            long r = requested;
+	            
+	            if (WIP.decrementAndGet(this) != 0) {
+	                drainLoop();
+	            }
+	            
+	            if (s != null && r != 0L) {
+	                s.request(r);
+	            }
 
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				Subscription a = actual;
+	            return;
+	        }
 
-				if (a != null && shouldCancelCurrent()) {
-					a.cancel();
-				}
-
-				actual = s;
-
-				long r = requested;
-				if (r != 0L) {
-					s.request(r);
-				}
-
-				if (WIP.decrementAndGet(this) == 0) {
-					return;
-				}
-
-				drainLoop();
-
-				return;
-			}
-
-			Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
-			if (a != null) {
-				a.cancel();
-			}
-			drain();
+	        Subscription a = MISSED_SUBSCRIPTION.getAndSet(this, s);
+	        if (a != null && shouldCancelCurrent()) {
+	            a.cancel();
+	        }
+	        drain();
 		}
 
 		@Override
 		public final void request(long n) {
-			if (validate(n)) {
-				if (unbounded) {
-					return;
-				}
-				if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-					long r = requested;
+		    if (validate(n)) {
+	            if (unbounded) {
+	                return;
+	            }
+	            if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+	                long r = requested;
 
-					if (r != Long.MAX_VALUE) {
-						r = addCap(r, n);
-						requested = r;
-						if (r == Long.MAX_VALUE) {
-							unbounded = true;
-						}
-					}
-					Subscription a = actual;
-					if (a != null) {
-						a.request(n);
-					}
+	                if (r != Long.MAX_VALUE) {
+	                    r = addCap(r, n);
+	                    requested = r;
+	                    if (r == Long.MAX_VALUE) {
+	                        unbounded = true;
+	                    }
+	                }
+	                Subscription a = actual;
 
-					if (WIP.decrementAndGet(this) == 0) {
-						return;
-					}
+	                if (WIP.decrementAndGet(this) != 0) {
+	                    drainLoop();
+	                }
+	                
+	                if (a != null) {
+	                    a.request(n);
+	                }
+	                
+	                return;
+	            }
 
-					drainLoop();
+	            getAndAddCap(MISSED_REQUESTED, this, n);
 
-					return;
-				}
-
-				getAndAddCap(MISSED_REQUESTED, this, n);
-
-				drain();
-			}
+	            drain();
+	        }
 		}
 
 		public final void producedOne() {
@@ -1148,72 +1146,80 @@ public abstract class Operators {
 		}
 
 		final void drainLoop() {
-			int missed = 1;
+		    int missed = 1;
 
-			for (; ; ) {
+	        long requestAmount = 0L;
+	        Subscription requestTarget = null;
+	        
+	        for (; ; ) {
 
-				Subscription ms = missedSubscription;
+	            Subscription ms = missedSubscription;
 
-				if (ms != null) {
-					ms = MISSED_SUBSCRIPTION.getAndSet(this, null);
-				}
+	            if (ms != null) {
+	                ms = MISSED_SUBSCRIPTION.getAndSet(this, null);
+	            }
 
-				long mr = missedRequested;
-				if (mr != 0L) {
-					mr = MISSED_REQUESTED.getAndSet(this, 0L);
-				}
+	            long mr = missedRequested;
+	            if (mr != 0L) {
+	                mr = MISSED_REQUESTED.getAndSet(this, 0L);
+	            }
 
-				long mp = missedProduced;
-				if (mp != 0L) {
-					mp = MISSED_PRODUCED.getAndSet(this, 0L);
-				}
+	            long mp = missedProduced;
+	            if (mp != 0L) {
+	                mp = MISSED_PRODUCED.getAndSet(this, 0L);
+	            }
 
-				Subscription a = actual;
+	            Subscription a = actual;
 
-				if (cancelled) {
-					if (a != null) {
-						a.cancel();
-						actual = null;
-					}
-					if (ms != null) {
-						ms.cancel();
-					}
-				} else {
-					long r = requested;
-					if (r != Long.MAX_VALUE) {
-						long u = addCap(r, mr);
+	            if (cancelled) {
+	                if (a != null) {
+	                    a.cancel();
+	                    actual = null;
+	                }
+	                if (ms != null) {
+	                    ms.cancel();
+	                }
+	            } else {
+	                long r = requested;
+	                if (r != Long.MAX_VALUE) {
+	                    long u = addCap(r, mr);
 
-						if (u != Long.MAX_VALUE) {
-							long v = u - mp;
-							if (v < 0L) {
-								reportMoreProduced();
-								v = 0;
-							}
-							r = v;
-						} else {
-							r = u;
-						}
-						requested = r;
-					}
+	                    if (u != Long.MAX_VALUE) {
+	                        long v = u - mp;
+	                        if (v < 0L) {
+	                            reportMoreProduced();
+	                            v = 0;
+	                        }
+	                        r = v;
+	                    } else {
+	                        r = u;
+	                    }
+	                    requested = r;
+	                }
 
-					if (ms != null) {
-						if (a != null && shouldCancelCurrent()) {
-							a.cancel();
-						}
-						actual = ms;
-						if (r != 0L) {
-							ms.request(r);
-						}
-					} else if (mr != 0L && a != null) {
-						a.request(mr);
-					}
-				}
+	                if (ms != null) {
+	                    if (a != null && shouldCancelCurrent()) {
+	                        a.cancel();
+	                    }
+	                    actual = ms;
+	                    if (r != 0L) {
+	                        requestAmount = addCap(requestAmount, r);
+	                        requestTarget = ms;
+	                    }
+	                } else if (mr != 0L && a != null) {
+	                    requestAmount = addCap(requestAmount, mr);
+	                    requestTarget = a;
+	                }
+	            }
 
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					return;
-				}
-			}
+	            missed = WIP.addAndGet(this, -missed);
+	            if (missed == 0) {
+	                if (requestAmount != 0L) {
+	                    requestTarget.request(requestAmount);
+	                }
+	                return;
+	            }
+	        }
 		}
 
 		@Override
