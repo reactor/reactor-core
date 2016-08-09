@@ -102,6 +102,17 @@ class PublisherConversionSpec extends Specification {
 	queue.awaitAndAssertNextValues([1])
 			.assertComplete()
 
+	when: "No Values"
+	obs = CompletableFuture.runAsync{ println "done" }
+	pub = Mono.fromFuture(obs)
+	queue = TestSubscriber.create()
+
+	pub.subscribe(queue)
+
+	then: "queues values correct"
+	queue.await()
+			.assertNoValues()
+			.assertComplete()
 
 	when: "Iterable publisher of 1 to completable future"
 	def newPub = Mono.just(1)

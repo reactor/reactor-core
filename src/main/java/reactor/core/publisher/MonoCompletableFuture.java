@@ -62,7 +62,7 @@ extends Mono<T>
             } else if (v != null) {
                 sds.complete(v);
             } else {
-                s.onError(new NullPointerException("The future produced a null value"));
+                s.onComplete();
             }
         });
     }
