@@ -78,7 +78,8 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 			connect(cancelSupport);
 			return this;
 		}
-		return new ConnectableFluxAutoConnect<>(this, minSubscribers, cancelSupport);
+		return onAssembly(new ConnectableFluxAutoConnect<>(this, minSubscribers,
+				cancelSupport));
 	}
 
 	/**
@@ -130,7 +131,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * @return a reference counting {@link Flux}
 	 */
 	public final Flux<T> refCount(int minSubscribers) {
-		return new ConnectableFluxRefCount<>(this, minSubscribers);
+		return onAssembly(new ConnectableFluxRefCount<>(this, minSubscribers));
 	}
 
 	static final Consumer<Cancellation> NOOP_DISCONNECT = runnable -> {

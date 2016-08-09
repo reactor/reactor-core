@@ -114,6 +114,12 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				if (row.contains("MonoCallableOnAssembly.")) {
 					continue;
 				}
+				if (row.contains("FluxCallableOnAssembly.")) {
+					continue;
+				}
+				if (row.contains("OnPublisherAssemblyHook")) {
+					continue;
+				}
 				if (row.contains(".junit.runner")) {
 					continue;
 				}
@@ -189,7 +195,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		@Override
 		public String getMessage() {
 			StringBuilder sb = new StringBuilder(super.getMessage()).append(
-					"Backtraced Operator chain :\n");
+					"Composition chain until failing Operator :\n");
 
 			Map<Integer, String> op;
 			Tuple2<Integer, Integer> next;

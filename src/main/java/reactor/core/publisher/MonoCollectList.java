@@ -31,12 +31,12 @@ import reactor.core.Fuseable;
  * @param <T> the source value type
  * @param <C> the collection type that takes any supertype of T
  */
-final class MonoBufferAll<T, C extends Collection<? super T>> extends MonoSource<T, C>
+final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSource<T, C>
         implements Fuseable {
 
     final Supplier<C> collectionSupplier;
     
-    protected MonoBufferAll(Publisher<? extends T> source, Supplier<C> collectionSupplier) {
+    protected MonoCollectList(Publisher<? extends T> source, Supplier<C> collectionSupplier) {
         super(source);
         this.collectionSupplier = collectionSupplier;
     }

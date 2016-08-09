@@ -42,7 +42,7 @@ import reactor.core.Exceptions;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
-                                                                    PublisherPeek<T> {
+                                                                    Operators.SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -57,6 +57,17 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 	final LongConsumer onRequestCall;
 
 	final Runnable onCancelCall;
+
+	public FluxPeekFuseable(Publisher<? extends T> source, Operators.SignalPeek<T> peekHelper) {
+		this(source,
+				peekHelper.onSubscribeCall(),
+				peekHelper.onNextCall(),
+				peekHelper.onErrorCall(),
+				peekHelper.onCompleteCall(),
+				peekHelper.onAfterTerminateCall(),
+				peekHelper.onRequestCall(),
+				peekHelper.onCancelCall());
+	}
 
 	public FluxPeekFuseable(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall, Consumer<? super Throwable>
@@ -91,7 +102,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		final Subscriber<? super T> actual;
 
-		final PublisherPeek<T> parent;
+		final Operators.SignalPeek<T> parent;
 
 		QueueSubscription<T> s;
 
@@ -99,7 +110,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		boolean done;
 
-		public PeekFuseableSubscriber(Subscriber<? super T> actual, PublisherPeek<T> parent) {
+		public PeekFuseableSubscriber(Subscriber<? super T> actual, Operators.SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -299,7 +310,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		final ConditionalSubscriber<? super T> actual;
 
-		final PublisherPeek<T> parent;
+		final Operators.SignalPeek<T> parent;
 
 		QueueSubscription<T> s;
 
@@ -307,7 +318,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		boolean done;
 
-		public PeekFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual, PublisherPeek<T> parent) {
+		public PeekFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual, Operators.SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -558,13 +569,13 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		final ConditionalSubscriber<? super T> actual;
 
-		final PublisherPeek<T> parent;
+		final Operators.SignalPeek<T> parent;
 
 		Subscription s;
 
 		boolean done;
 
-		public PeekConditionalSubscriber(ConditionalSubscriber<? super T> actual, PublisherPeek<T> parent) {
+		public PeekConditionalSubscriber(ConditionalSubscriber<? super T> actual, Operators.SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}

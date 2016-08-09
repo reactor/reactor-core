@@ -37,7 +37,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -349,7 +348,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 * <p>
-	 * @param future {@link CompletableFuture} that will produce the value
+	 * @param future {@link CompletableFuture} that will produce the value or null to
+	 * complete immediately
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 */
@@ -1620,6 +1620,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
+	 * The default log category will be "Mono".
 	 *
 	 * @return a new {@link Mono}
 	 *
@@ -1664,7 +1665,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final Mono<T> log(String category, Level level, SignalType... options) {
-		return MonoSource.wrap(new FluxLog<>(this, category, level, options));
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoPeekFuseable<>(this,
+					Operators.signalLogger(this, category, level, options)));
+		}
+		return onAssembly(new MonoPeek<>(this, Operators.signalLogger(this, category, level, options)));
 	}
 
 	/**
@@ -2195,7 +2200,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			s = (MonoProcessor<T>)this;
 		}
 		else{
-			s = new MonoProcessor<>(onAssembly(this));
+			s = new MonoProcessor<>(this);
 		}
 		s.connect();
 		return s;
@@ -2599,14 +2604,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return the potentially wrapped source
 	 */
+	@SuppressWarnings("unchecked")
 	static <T> Mono<T> onAssembly(Mono<T> source) {
-		if (Exceptions.isOperatorStacktraceEnabled()) {
-			if (source instanceof Callable) {
-				return new MonoCallableOnAssembly<>(source);
-			}
-			return new MonoOnAssembly<>(source);
+		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		if(hook == null) {
+			return source;
 		}
-		return source;
+		return (Mono<T>)hook.apply(source);
 	}
 
 	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;

@@ -97,28 +97,10 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Disable operator stack recorder.
-	 */
-	public static void disableOperatorStacktrace() {
-		TRACE_OPERATOR_STACKTRACE = false;
-	}
-
-	/**
 	 * @return a new {@link IllegalStateException} with a cause message abiding to reactive stream specification.
 	 */
 	public static IllegalStateException duplicateOnSubscribeException() {
 		return new IllegalStateException("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once (based on object equality)");
-	}
-
-	/**
-	 * Enable operator stack recorder. When a producer is declared, an "assembly tracker"
-	 * operator is automatically added to capture declaration stack. Errors are observed
-	 * and enriched with a Suppressed Exception detailing the original stack. Must be
-	 * called before producers (e.g. Flux.map, Mono.fromCallable) are actually called to
-	 * intercept the right stack information.
-	 */
-	public static void enableOperatorStacktrace() {
-		TRACE_OPERATOR_STACKTRACE = true;
 	}
 
 	/**
@@ -156,17 +138,6 @@ public abstract class Exceptions {
 	 */
 	public static boolean isBubbling(Throwable t){
 		return t instanceof BubblingException;
-	}
-
-	/**
-	 * When enabled, producer declaration stacks are recorded via an intercepting
-	 * "assembly tracker" operator and added as Suppressed Exception if the source
-	 * producer fails.
-	 *
-	 * @return a true if assembly tracking is enabled
-	 */
-	public static boolean isOperatorStacktraceEnabled() {
-		return TRACE_OPERATOR_STACKTRACE;
 	}
 
 	/**
@@ -413,10 +384,6 @@ public abstract class Exceptions {
 		}
 		return _t;
 	}
-
-	volatile static boolean TRACE_OPERATOR_STACKTRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
-					"false"));
 
 	volatile static Consumer<? super Throwable> onErrorDroppedHook;
 	volatile static Consumer<Object>            onNextDroppedHook;

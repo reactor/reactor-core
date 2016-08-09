@@ -21,13 +21,13 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
-import reactor.core.Exceptions;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -44,7 +44,7 @@ import reactor.core.Exceptions;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
+final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -59,6 +59,17 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 	final LongConsumer onRequestCall;
 
 	final Runnable onCancelCall;
+
+	public FluxPeek(Publisher<? extends T> source, Operators.SignalPeek<T> peekHelper) {
+		this(source,
+				peekHelper.onSubscribeCall(),
+				peekHelper.onNextCall(),
+				peekHelper.onErrorCall(),
+				peekHelper.onCompleteCall(),
+				peekHelper.onAfterTerminateCall(),
+				peekHelper.onRequestCall(),
+				peekHelper.onCancelCall());
+	}
 
 	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
@@ -96,13 +107,13 @@ final class FluxPeek<T> extends FluxSource<T, T> implements PublisherPeek<T> {
 
 		final Subscriber<? super T> actual;
 
-		final PublisherPeek<T> parent;
+		final Operators.SignalPeek<T> parent;
 
 		Subscription s;
 
 		boolean done;
 
-		public PeekSubscriber(Subscriber<? super T> actual, PublisherPeek<T> parent) {
+		public PeekSubscriber(Subscriber<? super T> actual, Operators.SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}

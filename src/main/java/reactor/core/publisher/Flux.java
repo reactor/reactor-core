@@ -596,7 +596,7 @@ public abstract class Flux<T> implements Publisher<T> {
             }
 			return empty();
 		}
-		return onAssembly(FluxSource.wrap(source));
+		return FluxSource.wrap(source);
 	}
 	
 	/**
@@ -1851,7 +1851,7 @@ public abstract class Flux<T> implements Publisher<T> {
 				return list;
 			}));
 		}
-		return Mono.onAssembly(new MonoBufferAll<>(this, LIST_SUPPLIER));
+		return Mono.onAssembly(new MonoCollectList<>(this, LIST_SUPPLIER));
 	}
 
 	/**
@@ -3023,7 +3023,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
 	 * <p>
-	 * The default log category will be "reactor.core.publisher.FluxLog".
+	 * The default log category will be "Flux".
 	 *
 	 * @return a new unaltered {@link Flux}
 	 */
@@ -3065,7 +3065,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level, SignalType... options) {
-		return onAssembly(new FluxLog<>(this, category, level, options));
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxPeekFuseable<>(this,
+					Operators.signalLogger(this, category, level, options)));
+		}
+		return onAssembly(new FluxPeek<>(this, Operators.signalLogger(this, category, level, options)));
 	}
 	
 	/**
@@ -4488,7 +4492,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		LambdaSubscriber<T> consumerAction =
 				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
 
-		onAssembly(this).subscribe(consumerAction);
+		subscribe(consumerAction);
 		return consumerAction;
 	}
 
@@ -4529,7 +4533,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		else {
 			tail = publishOn(Schedulers.immediate(), c);
 		}
-		return onAssembly(tail).subscribeWith(consumerAction);
+		return subscribeWith(consumerAction);
 	}
 
 	/**
@@ -5655,11 +5659,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the potentially wrapped source
 	 */
+	@SuppressWarnings("unchecked")
 	static <T> Flux<T> onAssembly(Flux<T> source) {
-		if (Exceptions.isOperatorStacktraceEnabled()) {
-			return new FluxOnAssembly<>(source);
+		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		if(hook == null) {
+			return source;
 		}
-		return source;
+		return (Flux<T>)hook.apply(source);
 	}
 
 	/**
@@ -5671,11 +5677,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the potentially wrapped source
 	 */
+	@SuppressWarnings("unchecked")
 	static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
-		if (Exceptions.isOperatorStacktraceEnabled()) {
-			return new ConnectableFluxOnAssembly<>(source);
+		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		if(hook == null) {
+			return source;
 		}
-		return source;
+		return (ConnectableFlux<T>)hook.apply(source);
 	}
 
 

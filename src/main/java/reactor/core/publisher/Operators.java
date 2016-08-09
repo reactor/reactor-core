@@ -16,21 +16,27 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.logging.Level;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.Logger;
-import reactor.util.Loggers;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -42,6 +48,87 @@ import reactor.core.Exceptions;
  *
  */
 public abstract class Operators {
+
+	/**
+	 * Peek into the lifecycle and sequence signals.
+	 * <p>
+	 * The callbacks are all optional.
+	 *
+	 * @param <T> the value type of the sequence
+	 */
+	public interface SignalPeek<T> {
+
+		/**
+		 * A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
+		 *
+		 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
+		 */
+		default Consumer<? super Subscription> onSubscribeCall(){
+			return null;
+		}
+
+		/**
+		 * A consumer that will observe {@link Subscriber#onNext(Object)}
+		 *
+		 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
+		 */
+
+		default Consumer<? super T> onNextCall(){
+			return null;
+		}
+
+		/**
+		 * A consumer that will observe {@link Subscriber#onError(Throwable)}}
+		 *
+		 * @return A consumer that will observe {@link Subscriber#onError(Throwable)}
+		 */
+		default Consumer<? super Throwable> onErrorCall(){
+			return null;
+		}
+
+		/**
+		 * A task that will run on {@link Subscriber#onComplete()}
+		 *
+		 * @return A task that will run on {@link Subscriber#onComplete()}
+		 */
+		default Runnable onCompleteCall(){
+			return null;
+		}
+
+		/**
+		 * A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
+		 *
+		 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
+		 */
+		default Runnable onAfterTerminateCall(){
+			return null;
+		}
+
+		/**
+		 * A consumer of long that will observe {@link Subscription#request(long)}}
+		 *
+		 * @return A consumer of long that will observe {@link Subscription#request(long)}}
+		 */
+		default LongConsumer onRequestCall(){
+			return null;
+		}
+
+		/**
+		 * A task that will run on {@link Subscription#cancel()}
+		 *
+		 * @return A task that will run on {@link Subscription#cancel()}
+		 */
+		default Runnable onCancelCall(){
+			return null;
+		}
+
+		/**
+		 * A singleton used by {@link #setOnAssemblyHook(Function)} to ignore a given
+		 * publisher hook.
+		 */
+		SignalPeek IGNORE = new SignalPeek() {
+		};
+	}
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
@@ -181,6 +268,21 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Disable operator stack recorder.
+	 */
+	public static void disableAssemblyStacktrace() {
+		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
+		if (hook != null && hook.traceAssembly) {
+			if (hook.hook != null) {
+				onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(hook.hook, false);
+			}
+			else {
+				onPublisherAssemblyHook = null;
+			}
+		}
+	}
+
+	/**
 	 * A singleton enumeration that represents a no-op Subscription instance that
 	 * can be freely given out to clients.
 	 * <p>
@@ -192,6 +294,25 @@ public abstract class Operators {
 	 */
 	public static Subscription emptySubscription() {
 		return EmptySubscription.INSTANCE;
+	}
+
+	/**
+	 * Enable operator stack recorder. When a producer is declared, an "assembly tracker"
+	 * operator is automatically added to capture declaration stack. Errors are observed
+	 * and enriched with a Suppressed Exception detailing the original stack. Must be
+	 * called before producers (e.g. Flux.map, Mono.fromCallable) are actually called to
+	 * intercept the right stack information.
+	 */
+	public static void enableAssemblyStacktrace() {
+		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
+		if (hook == null || !hook.traceAssembly) {
+			if (hook != null && hook.hook != null) {
+				onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(hook.hook, true);
+			}
+			else {
+				onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(null, true);
+			}
+		}
 	}
 
 	/**
@@ -271,6 +392,18 @@ public abstract class Operators {
 		} while (!sequence.compareAndSet(r, u));
 
 		return r;
+	}
+
+	/**
+	 * When enabled, producer declaration stacks are recorded via an intercepting
+	 * "assembly tracker" operator and added as Suppressed Exception if the source
+	 * producer fails.
+	 *
+	 * @return true if assembly tracking is enabled
+	 */
+	public static boolean isAssemblyStacktraceEnabled() {
+		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
+		return hook != null && hook.traceAssembly;
 	}
 
 	/**
@@ -406,6 +539,50 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Set a global "assembly" hook to intercept signals produced by the passed {@link
+	 * Publisher} ({@link Flux} or {@link Mono}). The passed function must result in a
+	 * value different from null, and {@link SignalPeek#IGNORE} can be used to discard
+	 * assembly tracking for a given {@link Publisher}.
+	 * <p>
+	 * Can be reset via {@link #resetOnAssemblyHook()}
+	 *
+	 * @param newHook a callback for each assembly that must return a {@link SignalPeek}
+	 * @param <T> the arbitrary assembled sequence type
+	 */
+	static <T> void setOnAssemblyHook(Function<? super Publisher<T>, ? extends
+			SignalPeek<T>> newHook) {
+		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
+
+		onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(newHook,
+				hook != null && hook.traceAssembly);
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * use {@link Logger} support to
+	 * handle trace
+	 * implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
+	 *
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 *
+	 * @param publisher the source {@link Publisher} to log
+	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param level the level to enforce for this tracing Flux
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 * @param <T> the sequence data type to monitor
+	 *
+	 * @return a new {@link SignalPeek}
+	 */
+	public static <T> SignalPeek<T> signalLogger(Publisher<T> publisher, String category, Level level, SignalType... options){
+		return new SignalLogger<>(publisher, category, level, options);
+	}
+
+	/**
 	 * Cap a substraction to 0
 	 *
 	 * @param a left operand
@@ -431,6 +608,21 @@ public abstract class Operators {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Reset global "assembly" hook tracking
+	 */
+	static void resetOnAssemblyHook() {
+		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
+		if (hook != null) {
+			if (hook.traceAssembly) {
+				onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(null, true);
+			}
+			else {
+				onPublisherAssemblyHook = null;
+			}
+		}
 	}
 
 	/**
@@ -515,6 +707,23 @@ public abstract class Operators {
 	 */
 	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {
 		return new SerializedSubscriber<>(subscriber);
+	}
+
+	final static Logger log = Loggers.getLogger(Operators.class);
+
+	static volatile OnPublisherAssemblyHook<?> onPublisherAssemblyHook;
+
+	static {
+		boolean globalTrace =
+				Boolean.parseBoolean(System.getProperty("reactor.trace" + ".operatorStacktrace",
+						"false"));
+
+		if (globalTrace) {
+			onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(null, true);
+		}
+	}
+
+	Operators() {
 	}
 
 	enum EmptySubscription implements Fuseable.QueueSubscription<Object> {
@@ -1261,7 +1470,6 @@ public abstract class Operators {
 		}
 	}
 
-	Operators(){}
 
 	/**
 	 * Represents a fuseable Subscription that emits a single constant value synchronously
@@ -1297,14 +1505,16 @@ public abstract class Operators {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Subscriber<? super T> a = actual;
 					a.onNext(value);
-					a.onComplete();
+					if(once != 2) {
+						a.onComplete();
+					}
 				}
 			}
 		}
 
 		@Override
 		public void cancel() {
-			ONCE.lazySet(this, 1);
+			ONCE.lazySet(this, 2);
 		}
 
 		@Override
@@ -1345,5 +1555,67 @@ public abstract class Operators {
 		}
 	}
 
-	final static Logger log = Loggers.getLogger(Operators.class);
+	final static class OnPublisherAssemblyHook<T>
+			implements Function<Publisher<T>, Publisher<T>> {
+
+		final Function<? super Publisher<T>, ? extends SignalPeek<T>> hook;
+		final boolean                                                 traceAssembly;
+
+		public OnPublisherAssemblyHook(Function<? super Publisher<T>, ? extends SignalPeek<T>> hook,
+				boolean traceAssembly) {
+			this.hook = hook;
+			this.traceAssembly = traceAssembly;
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public Publisher<T> apply(Publisher<T> publisher) {
+			Publisher<T> source = null;
+			if (hook != null && !(publisher instanceof ConnectableFlux)) {
+				SignalPeek<T> peek =
+						Objects.requireNonNull(hook.apply(publisher), "hook");
+
+				if(peek == SignalPeek.IGNORE){
+					return publisher;
+				}
+
+				if (publisher instanceof Mono) {
+					if (publisher instanceof Fuseable) {
+						source = new MonoPeekFuseable<>(publisher, peek);
+					}
+					else {
+						source = new MonoPeek<>(publisher, peek);
+					}
+				}
+				else if (publisher instanceof Fuseable) {
+					source = new FluxPeekFuseable<>(publisher, peek);
+				}
+				else {
+					source = new FluxPeek<>(publisher, peek);
+				}
+			}
+
+			if (source == null) {
+				source = publisher;
+			}
+
+			if (traceAssembly) {
+				if (source instanceof Callable) {
+					if (source instanceof Mono) {
+						return new MonoCallableOnAssembly<>(source);
+					}
+					return new FluxCallableOnAssembly<>(source);
+				}
+				if (source instanceof Mono) {
+					return new MonoOnAssembly<>(source);
+				}
+				if (source instanceof ConnectableFlux) {
+					return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) source);
+				}
+				return new FluxOnAssembly<>(source);
+			}
+
+			return source;
+		}
+	}
 }

@@ -20,7 +20,8 @@ package reactor.core.publisher;
  * Reactive Stream notification type
  */
 public enum SignalType {
-	SUBSCRIBE, REQUEST, CANCEL, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE;
+	SUBSCRIBE, REQUEST, CANCEL, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE,
+	AFTER_TERMINATE;
 
 	@Override
 	public String toString() {
@@ -37,6 +38,8 @@ public enum SignalType {
 				return "request";
 			case CANCEL:
 				return "cancel";
+			case AFTER_TERMINATE:
+				return "afterTerminate";
 			default:
 				return "subscribe";
 		}
