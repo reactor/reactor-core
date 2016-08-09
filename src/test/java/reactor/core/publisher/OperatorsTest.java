@@ -44,7 +44,7 @@ public class OperatorsTest {
 		Queue<String> q = new LinkedTransferQueue<>();
 
 		Operators.enableAssemblyStacktrace();
-		Operators.setOnAssemblyHook(p -> new Operators.SignalPeek<Object>() {
+		Operators.setOnAssemblyHook(p -> new Operators.SignalObserver<Object>() {
 					@Override
 					public Consumer<Object> onNextCall() {
 						return d -> q.offer(p.toString()+ ": "+d);

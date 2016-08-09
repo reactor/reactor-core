@@ -56,7 +56,7 @@ public abstract class Operators {
 	 *
 	 * @param <T> the value type of the sequence
 	 */
-	public interface SignalPeek<T> {
+	public interface SignalObserver<T> {
 
 		/**
 		 * A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
@@ -126,7 +126,7 @@ public abstract class Operators {
 		 * A singleton used by {@link #setOnAssemblyHook(Function)} to ignore a given
 		 * publisher hook.
 		 */
-		SignalPeek IGNORE = new SignalPeek() {
+		SignalObserver IGNORE = new SignalObserver() {
 		};
 	}
 
@@ -541,16 +541,16 @@ public abstract class Operators {
 	/**
 	 * Set a global "assembly" hook to intercept signals produced by the passed {@link
 	 * Publisher} ({@link Flux} or {@link Mono}). The passed function must result in a
-	 * value different from null, and {@link SignalPeek#IGNORE} can be used to discard
+	 * value different from null, and {@link SignalObserver#IGNORE} can be used to discard
 	 * assembly tracking for a given {@link Publisher}.
 	 * <p>
 	 * Can be reset via {@link #resetOnAssemblyHook()}
 	 *
-	 * @param newHook a callback for each assembly that must return a {@link SignalPeek}
+	 * @param newHook a callback for each assembly that must return a {@link SignalObserver}
 	 * @param <T> the arbitrary assembled sequence type
 	 */
 	static <T> void setOnAssemblyHook(Function<? super Publisher<T>, ? extends
-			SignalPeek<T>> newHook) {
+			SignalObserver<T>> newHook) {
 		OnPublisherAssemblyHook<?> hook = onPublisherAssemblyHook;
 
 		onPublisherAssemblyHook = new OnPublisherAssemblyHook<>(newHook,
@@ -576,9 +576,9 @@ public abstract class Operators {
 	 * @param options a vararg {@link SignalType} option to filter log messages
 	 * @param <T> the sequence data type to monitor
 	 *
-	 * @return a new {@link SignalPeek}
+	 * @return a new {@link SignalObserver}
 	 */
-	public static <T> SignalPeek<T> signalLogger(Publisher<T> publisher, String category, Level level, SignalType... options){
+	public static <T> SignalObserver<T> signalLogger(Publisher<T> publisher, String category, Level level, SignalType... options){
 		return new SignalLogger<>(publisher, category, level, options);
 	}
 
@@ -1558,10 +1558,10 @@ public abstract class Operators {
 	final static class OnPublisherAssemblyHook<T>
 			implements Function<Publisher<T>, Publisher<T>> {
 
-		final Function<? super Publisher<T>, ? extends SignalPeek<T>> hook;
-		final boolean                                                 traceAssembly;
+		final Function<? super Publisher<T>, ? extends SignalObserver<T>> hook;
+		final boolean                                                     traceAssembly;
 
-		public OnPublisherAssemblyHook(Function<? super Publisher<T>, ? extends SignalPeek<T>> hook,
+		public OnPublisherAssemblyHook(Function<? super Publisher<T>, ? extends SignalObserver<T>> hook,
 				boolean traceAssembly) {
 			this.hook = hook;
 			this.traceAssembly = traceAssembly;
@@ -1572,10 +1572,10 @@ public abstract class Operators {
 		public Publisher<T> apply(Publisher<T> publisher) {
 			Publisher<T> source = null;
 			if (hook != null && !(publisher instanceof ConnectableFlux)) {
-				SignalPeek<T> peek =
+				SignalObserver<T> peek =
 						Objects.requireNonNull(hook.apply(publisher), "hook");
 
-				if(peek == SignalPeek.IGNORE){
+				if(peek == SignalObserver.IGNORE){
 					return publisher;
 				}
 

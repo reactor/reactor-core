@@ -44,7 +44,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalPeek<T> {
+final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObserver<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -60,7 +60,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalPeek
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source, Operators.SignalPeek<T> peekHelper) {
+	public FluxPeek(Publisher<? extends T> source, Operators.SignalObserver<T> peekHelper) {
 		this(source,
 				peekHelper.onSubscribeCall(),
 				peekHelper.onNextCall(),
@@ -107,13 +107,13 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalPeek
 
 		final Subscriber<? super T> actual;
 
-		final Operators.SignalPeek<T> parent;
+		final Operators.SignalObserver<T> parent;
 
 		Subscription s;
 
 		boolean done;
 
-		public PeekSubscriber(Subscriber<? super T> actual, Operators.SignalPeek<T> parent) {
+		public PeekSubscriber(Subscriber<? super T> actual, Operators.SignalObserver<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
