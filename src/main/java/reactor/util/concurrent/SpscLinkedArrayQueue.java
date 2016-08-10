@@ -17,6 +17,7 @@ package reactor.util.concurrent;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.function.BiPredicate;
 
 /**
  * An unbounded, array-backed single-producer, single-consumer queue with a fixed link size.
@@ -30,7 +31,7 @@ import java.util.concurrent.atomic.*;
  * 
  * @param <T> the value type
  */
-final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
+final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> implements BiPredicate<T, T>{
 
 	final int mask;
 	
@@ -153,6 +154,47 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T> {
 	public void clear() {
 		while (poll() != null && !isEmpty());
 	}
+
+	/**
+	 * Offer two elements at the same time.
+	 * <p>Don't use the regular offer() with this at all!
+	 * @param first the first value, not null
+	 * @param second the second value, not null
+	 * @return true if the queue accepted the two new values
+	 */
+	@Override
+	public boolean test(T first, T second) {
+		final AtomicReferenceArray<Object> buffer = producerArray;
+		final long p = producerIndex;
+		final int m = mask;
+
+		int pi = (int)(p + 2) & m;
+
+		if (null == buffer.get(pi)) {
+			pi = (int)p & m;
+			buffer.lazySet(pi + 1, second);
+			buffer.lazySet(pi, first);
+			PRODUCER_INDEX.lazySet(this, p + 2);
+		} else {
+			final int capacity = buffer.length();
+			final AtomicReferenceArray<Object> newBuffer = new AtomicReferenceArray<>
+					(capacity);
+			producerArray = newBuffer;
+
+			pi = (int)p & m;
+			newBuffer.lazySet(pi + 1, second);// StoreStore
+			newBuffer.lazySet(pi, first);
+			buffer.lazySet(buffer.length() - 1, newBuffer);
+
+			buffer.lazySet(pi, NEXT); // new buffer is visible after element is
+
+			PRODUCER_INDEX.lazySet(this, p + 2);// this ensures correctness on 32bit
+			// platforms
+		}
+
+		return true;
+	}
+
 
 	@Override
 	public Iterator<T> iterator() {

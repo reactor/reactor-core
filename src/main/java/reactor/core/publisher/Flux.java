@@ -2944,6 +2944,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupjoin.png" alt="">
+	 *
+	 * @param other
+	 * @param leftEnd
+	 * @param rightEnd
+	 * @param resultSelector
+	 * @param <TRight>
+	 * @param <TLeftEnd>
+	 * @param <TRightEnd>
+	 * @param <R>
+	 * @return
+	 */
+	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> groupJoin(
+			Publisher<? extends TRight> other,
+			Function<? super T, ? extends Publisher<TLeftEnd>> leftEnd,
+			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
+			BiFunction<? super T, ? super Flux<TRight>, ? extends R> resultSelector
+	) {
+		return new FluxGroupJoin<T, TRight, TLeftEnd, TRightEnd, R>(
+				this, other, leftEnd, rightEnd, resultSelector,
+				QueueSupplier.unbounded(),
+				QueueSupplier.unbounded());
+	}
+
+	/**
 	 * Emit a single boolean true if any of the values of this {@link Flux} sequence match
 	 * the  constant.
 	 * <p>
@@ -2999,6 +3026,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Mono<T> ignoreElements() {
 		return Mono.ignoreElements(this);
+	}
+
+	/**
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/join.png" alt="">
+	 *
+	 * @param other
+	 * @param leftEnd
+	 * @param rightEnd
+	 * @param resultSelector
+	 * @param <TRight>
+	 * @param <TLeftEnd>
+	 * @param <TRightEnd>
+	 * @param <R>
+	 * @return
+	 */
+	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> join(
+			Publisher<? extends TRight> other,
+			Function<? super T, ? extends Publisher<TLeftEnd>> leftEnd,
+			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
+			BiFunction<? super T, ? super TRight, ? extends R> resultSelector
+	) {
+		return new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
+				this, other, leftEnd, rightEnd, resultSelector, QueueSupplier.unbounded());
 	}
 
 	/**

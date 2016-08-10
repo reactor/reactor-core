@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Dynamically creates ExecutorService-based Workers and caches the thread pools, reusing
@@ -253,7 +254,7 @@ final class ElasticScheduler implements Scheduler {
             }
             
             if (!set.isEmpty()) {
-                Object[] keys = set.keys;
+                Object[] keys = set.keys();
                 for (Object o : keys) {
                     if (o != null) {
                         ((CachedTask)o).cancelFuture();

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
@@ -196,7 +197,7 @@ final class ParallelScheduler implements Scheduler {
             }
             
             if (set != null) {
-                Object[] a = set.keys;
+                Object[] a = set.keys();
                 for (Object o : a) {
                     if (o != null) {
                         ((ParallelWorkerTask)o).cancelFuture();

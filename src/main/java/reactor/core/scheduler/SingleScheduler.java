@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that works with a single-threaded ExecutorService and is suited for
@@ -167,7 +168,7 @@ final class SingleScheduler implements Scheduler {
             }
             
             if (set != null && !set.isEmpty()) {
-                Object[] a = set.keys;
+                Object[] a = set.keys();
                 for (Object o : a) {
                     if (o != null) {
                         ((SingleWorkerTask)o).cancelFuture();

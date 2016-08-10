@@ -20,12 +20,10 @@
  * https://github.com/vigna/fastutil/blob/master/drv/OpenHashSet.drv
  */
 
-package reactor.core.scheduler;
+package reactor.util.concurrent;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
-
-import reactor.util.concurrent.QueueSupplier;
 
 /**
  * A simple open hash set with add, remove and clear capabilities only.
@@ -33,7 +31,7 @@ import reactor.util.concurrent.QueueSupplier;
  *
  * @param <T> the element type
  */
-final class OpenHashSet<T> {
+public final class OpenHashSet<T> {
     final float loadFactor;
     int mask;
     int size;
@@ -43,15 +41,7 @@ final class OpenHashSet<T> {
     public OpenHashSet() {
         this(16, 0.75f);
     }
-    
-    /**
-     * Creates an OpenHashSet with the initial capacity and load factor of 0.75f.
-     * @param capacity the initial capacity
-     */
-    public OpenHashSet(int capacity) {
-        this(capacity, 0.75f);
-    }
-    
+
     @SuppressWarnings("unchecked")
     public OpenHashSet(int capacity, float loadFactor) {
         this.loadFactor = loadFactor;
@@ -190,42 +180,6 @@ final class OpenHashSet<T> {
         return h ^ (h >>> 16);
     }
     
-    public void forEach(Consumer<? super T> consumer) {
-        for (T k : keys) {
-            if (k != null) {
-                consumer.accept(k);
-            }
-        }
-    }
-
-    /**
-     * Loops through all values in the set and collects any exceptions from the consumer
-     * into a Throwable.
-     * @param consumer the consumer to call
-     * @return if not null, contains a CompositeException with all the suppressed exceptions
-     */
-    public Throwable forEachSuppress(Consumer<? super T> consumer) {
-        RuntimeException ex = null;
-        int count = 0;
-        for (T k : keys) {
-            if (k != null) {
-                try {
-                    consumer.accept(k);
-                } catch (Throwable e) {
-                    if (ex == null) {
-                        ex = new RuntimeException("Multiple exceptions");
-                    }
-                    count++;
-                    ex.addSuppressed(e);
-                }
-            }
-        }
-        if (count == 1) {
-            return ex.getSuppressed()[0];
-        }
-        return ex;
-    }
-    
     public boolean isEmpty() {
         return size == 0;
     }
@@ -234,7 +188,7 @@ final class OpenHashSet<T> {
         return size;
     }
     
-    public T[] rawKeys() {
+    public Object[] keys() {
         return keys;
     }
 }

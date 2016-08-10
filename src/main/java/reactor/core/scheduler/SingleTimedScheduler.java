@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A TimedScheduler with an embedded, single-threaded ScheduledExecutorService,
@@ -213,7 +214,7 @@ final class SingleTimedScheduler implements TimedScheduler {
             }
             
             if (!set.isEmpty()) {
-                Object[] keys = set.keys;
+                Object[] keys = set.keys();
                 for (Object c : keys) {
                     if (c != null) {
                         ((CancelFuture)c).cancelFuture();

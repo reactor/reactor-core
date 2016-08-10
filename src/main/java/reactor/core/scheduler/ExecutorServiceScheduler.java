@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule Runnables for async operators.
@@ -113,7 +114,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 
 				if (!coll.isEmpty()) {
-					Object[] a = coll.keys;
+					Object[] a = coll.keys();
 					for (Object o : a) {
 						if (o != null) {
 							((ScheduledRunnable)o).cancelFuture();

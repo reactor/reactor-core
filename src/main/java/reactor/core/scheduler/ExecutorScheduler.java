@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
@@ -217,7 +218,7 @@ final class ExecutorScheduler implements Scheduler {
             }
 
             if (!list.isEmpty()) {
-                Object[] a = list.keys;
+                Object[] a = list.keys();
                 for (Object o : a) {
                     if (o != null) {
                         ((ExecutorTrackedRunnable) o).dispose();
