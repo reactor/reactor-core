@@ -88,7 +88,7 @@ public abstract class Hooks {
 	/**
 	 * Set a global "assembly" hook to intercept signals produced by the passed {@link
 	 * Publisher} ({@link Flux} or {@link Mono}). The passed function must result in a
-	 * value different from null, and {@link HookOptions#ignore()} can be used to discard
+	 * value different from null, and {@link OperatorHook#ignore()} can be used to discard
 	 * a specific {@link Publisher} from transformations.
 	 * <p>
 	 * Can be reset via {@link #resetOnOperator()}
@@ -96,7 +96,7 @@ public abstract class Hooks {
 	 * @param newHook a callback for each assembly that must return a {@link SignalPeek}
 	 * @param <T> the arbitrary assembled sequence type
 	 */
-	public static <T> void onOperator(Function<? super HookOptions<T>, ? extends HookOptions<T>>
+	public static <T> void onOperator(Function<? super OperatorHook<T>, ? extends OperatorHook<T>>
 			newHook) {
 		onOperatorCreate = new OnOperatorCreate<>(newHook);
 	}
@@ -118,7 +118,7 @@ public abstract class Hooks {
 	 * @param <T> arbitrary sequence type
 	 */
 	@SuppressWarnings("unchecked")
-	public static final class HookOptions<T> {
+	public static final class OperatorHook<T> {
 
 		/**
 		 * Peek into sequence signals.
@@ -129,9 +129,9 @@ public abstract class Hooks {
 		 * @param onErrorCall A consumer that will observe {@link Subscriber#onError(Throwable)}}
 		 * @param onCompleteCall A task that will run on {@link Subscriber#onComplete()}
 		 * @param onAfterTerminateCall A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
-		 * @return an observing {@link HookOptions}
+		 * @return an observing {@link OperatorHook}
 		 */
-		public final HookOptions<T> doOnEach(
+		public final OperatorHook<T> doOnEach(
 				Consumer<? super T> onNextCall,
 				Consumer<? super Throwable> onErrorCall,
 				Runnable onCompleteCall,
@@ -149,9 +149,9 @@ public abstract class Hooks {
 		 * @param onSubscribeCall A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
 		 * @param onRequestCall A consumer of long that will observe {@link Subscription#request(long)}}
 		 * @param onCancelCall A task that will run on {@link Subscription#cancel()}
-		 * @return an observing {@link HookOptions}
+		 * @return an observing {@link OperatorHook}
 		 */
-		public final HookOptions<T> doOnLifecycle(
+		public final OperatorHook<T> doOnLifecycle(
 				Consumer<? super Subscription> onSubscribeCall,
 				LongConsumer onRequestCall,
 				Runnable onCancelCall
@@ -172,9 +172,9 @@ public abstract class Hooks {
 		 * @param onAfterTerminateCall A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 		 * @param onRequestCall A consumer of long that will observe {@link Subscription#request(long)}}
 		 * @param onCancelCall A task that will run on {@link Subscription#cancel()}
-		 * @return an observing {@link HookOptions}
+		 * @return an observing {@link OperatorHook}
 		 */
-		public final HookOptions<T> doOnSignal(
+		public final OperatorHook<T> doOnSignal(
 				Consumer<? super Subscription> onSubscribeCall,
 				Consumer<? super T> onNextCall,
 				Consumer<? super Throwable> onErrorCall,
@@ -188,75 +188,75 @@ public abstract class Hooks {
 			}
 			if (publisher instanceof Mono) {
 				if (publisher instanceof Fuseable) {
-					return new HookOptions<>(new MonoPeekFuseable<T>(publisher,
+					return new OperatorHook<>(new MonoPeekFuseable<T>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 							onAfterTerminateCall, onRequestCall, onCancelCall),
 							traced);
 				}
 				else {
-					return new HookOptions<>(new MonoPeek<T>(publisher,
+					return new OperatorHook<>(new MonoPeek<T>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 							onAfterTerminateCall, onRequestCall, onCancelCall), traced);
 				}
 			}
 			else if (publisher instanceof Fuseable) {
-				return new HookOptions<>(new FluxPeekFuseable<T>(publisher,
+				return new OperatorHook<>(new FluxPeekFuseable<T>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onRequestCall, onCancelCall), traced);
 			}
 			else {
-				return new HookOptions<>(new FluxPeek<T>(publisher,
+				return new OperatorHook<>(new FluxPeek<T>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onRequestCall, onCancelCall), traced);
 			}
 		}
 
 		/**
-		 * Discard all {@link HookOptions} applied to the current {@link #publisher()}
+		 * Discard all {@link OperatorHook} applied to the current {@link #publisher()}
 		 *
-		 * @return an ignoring {@link HookOptions}
+		 * @return an ignoring {@link OperatorHook}
 		 */
 		@SuppressWarnings("unchecked")
-		public final HookOptions<T> ignore(){
-			return HookOptions.IGNORE;
+		public final OperatorHook<T> ignore(){
+			return OperatorHook.IGNORE;
 		}
 
 		/**
 		 * Apply hook only if {@link #publisher()} is {@link Flux}
-		 * @return a possibly ignoring {@link HookOptions}
+		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final HookOptions<T> ifFlux(){
-			return publisher() instanceof Flux ? this : HookOptions.IGNORE;
+		public final OperatorHook<T> ifFlux(){
+			return publisher() instanceof Flux ? this : OperatorHook.IGNORE;
 		}
 
 		/**
 		 * Apply hook only if {@link #publisher()} is {@link Mono}
-		 * @return a possibly ignoring {@link HookOptions}
+		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final HookOptions<T> ifMono(){
-			return publisher() instanceof Mono ? this : HookOptions.IGNORE;
+		public final OperatorHook<T> ifMono(){
+			return publisher() instanceof Mono ? this : OperatorHook.IGNORE;
 		}
 
 		/**
 		 * Apply hook only if {@link #publisher()} if operator name match the type name
 		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
 		 *
-		 * @return a possibly ignoring {@link HookOptions}
+		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final HookOptions<T> ifOperatorName(String name){
+		public final OperatorHook<T> ifName(String name){
 			return publisher().getClass().getSimpleName().replaceAll("Flux|Mono|Fuseable",
-					"").equalsIgnoreCase(name) ? this : HookOptions.IGNORE;
+					"").equalsIgnoreCase(name) ? this : OperatorHook.IGNORE;
 		}
 
 		/**
 		 * Apply hook only if {@link #publisher()} if operator name match the type name
 		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
 		 *
-		 * @return a possibly ignoring {@link HookOptions}
+		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final HookOptions<T> ifOperatorNameContains(String name){
+		public final OperatorHook<T> ifNameContains(String name){
 			return publisher().getClass().getSimpleName().replaceAll("Flux|Mono|Fuseable",
-					"").contains(name) ? this : HookOptions.IGNORE;
+					"").contains(name) ? this : OperatorHook.IGNORE;
 		}
 
 		/**
@@ -279,9 +279,9 @@ public abstract class Hooks {
 		 * @param level the level to enforce for this tracing Flux
 		 * @param options a vararg {@link SignalType} option to filter log messages
 		 *
-		 * @return a logging {@link HookOptions}
+		 * @return a logging {@link OperatorHook}
 		 */
-		public HookOptions<T> log(String category, Level level, SignalType... options){
+		public OperatorHook<T> log(String category, Level level, SignalType... options){
 			SignalLogger peek = new SignalLogger<>(publisher, category, level, options);
 			return doOnSignal(peek.onSubscribeCall(), peek.onNextCall(), peek
 					.onErrorCall(), peek.onCompleteCall(), peek.onAfterTerminateCall(),
@@ -294,9 +294,9 @@ public abstract class Hooks {
 		 * called before producers (e.g. Flux.map, Mono.fromCallable) are actually called to
 		 * intercept the right stack information.
 		 *
-		 * @return a operator stack capture {@link HookOptions}
+		 * @return a operator stack capture {@link OperatorHook}
 		 */
-		public HookOptions<T> operatorStacktrace(){
+		public OperatorHook<T> operatorStacktrace(){
 			traced = true;
 			return this;
 		}
@@ -310,17 +310,17 @@ public abstract class Hooks {
 			return publisher;
 		}
 
-		static final HookOptions IGNORE = new HookOptions(null);
+		static final OperatorHook IGNORE = new OperatorHook(null);
 
 		final Publisher<T> publisher;
 
 		boolean traced;
 
-		HookOptions(Publisher<T> p) {
+		OperatorHook(Publisher<T> p) {
 			this(p, false);
 		}
 
-		HookOptions(Publisher<T> p, boolean traced) {
+		OperatorHook(Publisher<T> p, boolean traced) {
 			this.traced = traced;
 			this.publisher = p;
 		}
@@ -338,7 +338,7 @@ public abstract class Hooks {
 						"false"));
 
 		if (globalTrace) {
-			onOperatorCreate = new OnOperatorCreate<>(HookOptions::operatorStacktrace);
+			onOperatorCreate = new OnOperatorCreate<>(OperatorHook::operatorStacktrace);
 		}
 	}
 
@@ -348,9 +348,9 @@ public abstract class Hooks {
 	final static class OnOperatorCreate<T>
 			implements Function<Publisher<T>, Publisher<T>> {
 
-		final Function<? super HookOptions<T>, ? extends HookOptions<T>> hook;
+		final Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook;
 
-		OnOperatorCreate(Function<? super HookOptions<T>, ? extends HookOptions<T>> hook) {
+		OnOperatorCreate(Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook) {
 			this.hook = hook;
 		}
 
@@ -358,10 +358,10 @@ public abstract class Hooks {
 		@SuppressWarnings("unchecked")
 		public Publisher<T> apply(Publisher<T> publisher) {
 			if (hook != null && !(publisher instanceof ConnectableFlux)) {
-				HookOptions<T> hooks =
-						Objects.requireNonNull(hook.apply(new HookOptions<>(publisher)), "hook");
+				OperatorHook<T> hooks =
+						Objects.requireNonNull(hook.apply(new OperatorHook<>(publisher)), "hook");
 
-				if (hooks != HookOptions.IGNORE) {
+				if (hooks != OperatorHook.IGNORE) {
 					publisher = hooks.publisher();
 					boolean trace = hooks.traced;
 

@@ -26,7 +26,6 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.OperatorAdapter;
 import reactor.core.publisher.Operators;
 
 /**
@@ -147,7 +146,7 @@ public class HooksTest {
 
 	@Test
 	public void testTrace() throws Exception {
-		Hooks.onOperator(Hooks.HookOptions::operatorStacktrace);
+		Hooks.onOperator(Hooks.OperatorHook::operatorStacktrace);
 		try {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException();
@@ -169,7 +168,7 @@ public class HooksTest {
 
 	@Test
 	public void testTrace2() throws Exception {
-		Hooks.onOperator(hooks -> hooks.ifOperatorName("map")
+		Hooks.onOperator(hooks -> hooks.ifName("map")
 		                               .operatorStacktrace());
 		try {
 			Mono.just(1)
