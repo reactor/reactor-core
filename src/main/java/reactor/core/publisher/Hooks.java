@@ -265,7 +265,7 @@ public abstract class Hooks {
 		 */
 		public final OperatorHook<T> ifNameContains(String name){
 			return publisher().getClass().getSimpleName().replaceAll("Flux|Mono|Fuseable",
-					"").contains(name) ? this : OperatorHook.IGNORE;
+					"").toLowerCase().contains(name.toLowerCase()) ? this : OperatorHook.IGNORE;
 		}
 
 		/**
