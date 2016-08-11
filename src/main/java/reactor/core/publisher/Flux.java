@@ -3193,6 +3193,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the items emitted by this {@link Flux} by applying a function to each item  as long as the mapper
+	 * function result is not null. If the result is a {@code null} value then the source value is filtered rather than
+	 * mapped.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map.png" alt="">
+	 * <p>
+	 * @param mapper the transforming {@link Function}
+	 * @param <V> the transformed type
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <V> Flux<V> mapOrFilter(Function<? super T, ? extends V> mapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxMapOrFilterFuseable<>(this, mapper));
+		}
+		return onAssembly(new FluxMapOrFilterFuseable<>(this, mapper));
+	}
+
+	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
