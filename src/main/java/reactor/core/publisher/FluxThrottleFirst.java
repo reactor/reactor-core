@@ -142,7 +142,7 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 					p = throttler.apply(t);
 				} catch (Throwable e) {
 					Operators.terminate(S, this);
-					error(Exceptions.onOperatorError(null, e, t));
+					error(Operators.onOperatorError(null, e, t));
 					return;
 				}
 				
@@ -176,7 +176,7 @@ final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
 					handleTermination();
 				}
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		

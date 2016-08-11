@@ -27,7 +27,6 @@ import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.
@@ -60,7 +59,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			it = other.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
@@ -74,7 +73,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
@@ -118,7 +117,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -128,7 +127,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				u = it.next();
 			} catch (Throwable e) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			
@@ -138,14 +137,14 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				r = zipper.apply(t, u);
 			} catch (Throwable e) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
 			
 			if (r == null) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, new NullPointerException
+				actual.onError(Operators.onOperatorError(s, new NullPointerException
 						("The zipper " +
 						"returned a null value"), t));
 				return;
@@ -159,7 +158,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				b = it.hasNext();
 			} catch (Throwable e) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			
@@ -173,7 +172,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			actual.onError(t);

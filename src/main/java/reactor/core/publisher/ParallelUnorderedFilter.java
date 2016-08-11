@@ -19,8 +19,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.
  *
@@ -108,7 +106,7 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t));
 				return;
 			}
 			
@@ -122,7 +120,7 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

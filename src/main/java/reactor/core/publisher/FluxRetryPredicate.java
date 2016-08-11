@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -89,7 +88,7 @@ final class FluxRetryPredicate<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				Throwable _t = Exceptions.onOperatorError(e);
+				Throwable _t = Operators.onOperatorError(e);
 				_t.addSuppressed(t);
 				subscriber.onError(_t);
 				return;

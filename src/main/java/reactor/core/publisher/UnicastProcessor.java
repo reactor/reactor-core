@@ -26,7 +26,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -288,7 +287,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onError(Throwable t) {
 		if (done || cancelled) {
-			Exceptions.onErrorDropped(t);
+			Operators.onErrorDropped(t);
 			return;
 		}
 

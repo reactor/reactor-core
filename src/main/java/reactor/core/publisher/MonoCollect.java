@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Collects the values of the source sequence into a container returned by
@@ -58,12 +57,12 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		try {
 			container = supplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (container == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The supplier returned a null container")));
 			return;
 		}
@@ -108,21 +107,21 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
 			try {
 				action.accept(value, t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(this, e, t));
+				onError(Operators.onOperatorError(this, e, t));
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

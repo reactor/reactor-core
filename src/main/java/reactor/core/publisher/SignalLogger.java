@@ -33,7 +33,7 @@ import reactor.util.Loggers;
  *
  * @author Stephane Maldini
  */
-final class SignalLogger<IN> implements Operators.SignalObserver<IN> {
+final class SignalLogger<IN> implements SignalPeek<IN> {
 
 	final static int SUBSCRIBE       = 0b010000000;
 	final static int ON_SUBSCRIBE    = 0b001000000;

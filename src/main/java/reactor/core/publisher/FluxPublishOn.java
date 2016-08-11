@@ -85,7 +85,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		try {
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
@@ -213,7 +213,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				}
 				catch (Throwable e) {
 					try {
-						Operators.error(actual, Exceptions.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e));
 					}
 					finally {
 						worker.shutdown();
@@ -243,7 +243,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			if (!queue.offer(t)) {
-				error = Exceptions.onOperatorError(s, new IllegalStateException
+				error = Operators.onOperatorError(s, new IllegalStateException
 						("Queue is full?!"), t);
 				done = true;
 			}
@@ -311,7 +311,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					try {
 						v = q.poll();
 					} catch (Throwable ex) {
-						doError(a, Exceptions.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex));
 						return;
 					}
 
@@ -338,7 +338,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					try {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
-						doError(a, Exceptions.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex));
 						return;
 					}
 
@@ -384,7 +384,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						s.cancel();
 						q.clear();
 
-						doError(a, Exceptions.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex));
 						return;
 					}
 
@@ -420,7 +420,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						s.cancel();
 						q.clear();
 
-						doError(a, Exceptions.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex));
 						return;
 					}
 
@@ -739,7 +739,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				}
 				catch (Throwable e) {
 					try {
-						Operators.error(actual, Exceptions.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e));
 					}
 					finally {
 						worker.shutdown();
@@ -839,7 +839,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					try {
 						v = q.poll();
 					} catch (Throwable ex) {
-						doError(a, Exceptions.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex));
 						return;
 					}
 
@@ -866,7 +866,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					try {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
-						doError(a, Exceptions.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex));
 						return;
 					}
 					
@@ -912,7 +912,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						s.cancel();
 						q.clear();
 						
-						doError(a, Exceptions.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex));
 						return;
 					}
 					boolean empty = v == null;
@@ -947,7 +947,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						s.cancel();
 						q.clear();
 						
-						doError(a, Exceptions.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex));
 						return;
 					}
 

@@ -160,7 +160,7 @@ public final class BlockingSink<E>
 			return;
 		}
 		if(emission.isCancelled()){
-			Exceptions.onNextDropped(t);
+			Operators.onNextDropped(t);
 			return;
 		}
 		if(getError() != null){

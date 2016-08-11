@@ -22,7 +22,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -88,7 +87,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
         @Override
         public void onNext(T t) {
             if (done) {
-                Exceptions.onNextDropped(t);
+                Operators.onNextDropped(t);
                 return;
             }
             done = true;
@@ -98,12 +97,12 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             try {
                 m = mapper.apply(t);
             } catch (Throwable ex) {
-                subscriber.onError(Exceptions.onOperatorError(s, ex, t));
+                subscriber.onError(Operators.onOperatorError(s, ex, t));
                 return;
             }
             
             if (m == null) {
-                subscriber.onError(Exceptions.onOperatorError(s, new NullPointerException
+                subscriber.onError(Operators.onOperatorError(s, new NullPointerException
                         ("The mapper " +
                         "returned a null Mono"), t));
                 return;
@@ -117,7 +116,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 try {
                     v = c.call();
                 } catch (Throwable ex) {
-                    subscriber.onError(Exceptions.onOperatorError(s, ex, t));
+                    subscriber.onError(Operators.onOperatorError(s, ex, t));
                     return;
                 }
                 
@@ -133,14 +132,14 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 m.subscribe(second);
             }
             catch (Throwable e){
-                subscriber.onError(Exceptions.onOperatorError(this, e, t));
+                subscriber.onError(Operators.onOperatorError(this, e, t));
             }
         }
         
         @Override
         public void onError(Throwable t) {
             if (done) {
-                Exceptions.onErrorDropped(t);
+                Operators.onErrorDropped(t);
                 return;
             }
             done = true;
@@ -196,7 +195,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             @Override
             public void onNext(R t) {
                 if (done) {
-                    Exceptions.onNextDropped(t);
+                    Operators.onNextDropped(t);
                     return;
                 }
                 done = true;
@@ -206,7 +205,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             @Override
             public void onError(Throwable t) {
                 if (done) {
-                    Exceptions.onErrorDropped(t);
+                    Operators.onErrorDropped(t);
                     return;
                 }
                 done = true;

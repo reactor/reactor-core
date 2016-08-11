@@ -65,12 +65,12 @@ extends Mono<T>
 		try {
 			t = callable.call();
 		} catch (Throwable e) {
-			s.onError(Exceptions.onOperatorError(e));
+			s.onError(Operators.onOperatorError(e));
 			return;
 		}
 
 		if (t == null) {
-			s.onError(Exceptions.onOperatorError(new NullPointerException("The " +
+			s.onError(Operators.onOperatorError(new NullPointerException("The " +
 					"callable returned null")));
 			return;
 		}

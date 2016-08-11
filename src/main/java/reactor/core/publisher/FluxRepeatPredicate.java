@@ -21,7 +21,6 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -89,7 +88,7 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.getAsBoolean();
 			} catch (Throwable e) {
-				subscriber.onError(Exceptions.onOperatorError(e));
+				subscriber.onError(Operators.onOperatorError(e));
 				return;
 			}
 			

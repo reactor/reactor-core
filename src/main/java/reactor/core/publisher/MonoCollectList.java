@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -48,12 +47,12 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
         try {
             collection = collectionSupplier.get();
         } catch (Throwable ex) {
-            Operators.error(s, Exceptions.onOperatorError(ex));
+            Operators.error(s, Operators.onOperatorError(ex));
             return;
         }
         
         if (collection == null) {
-            Operators.error(s, Exceptions.onOperatorError(new NullPointerException
+            Operators.error(s, Operators.onOperatorError(new NullPointerException
                     ("The " +
                     "collectionSupplier " +
                     "returned a null collection")));

@@ -22,7 +22,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.core.Exceptions;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -89,7 +88,7 @@ final class FluxResume<T> extends FluxSource<T, T> {
 				try {
 					p = nextFactory.apply(t);
 				} catch (Throwable e) {
-					Throwable _e = Exceptions.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e);
 					_e.addSuppressed(t);
 					subscriber.onError(_e);
 					return;

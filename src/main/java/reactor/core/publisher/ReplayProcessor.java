@@ -29,7 +29,6 @@ import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -268,7 +267,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	public void onNext(T t) {
 		Buffer<T> b = buffer;
 		if (b.isDone()) {
-			Exceptions.onNextDropped(t);
+			Operators.onNextDropped(t);
 		} else {
 			b.onNext(t);
 			for (ReplaySubscription<T> rp : subscribers) {
@@ -281,7 +280,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	public void onError(Throwable t) {
 		Buffer<T> b = buffer;
 		if (b.isDone()) {
-			Exceptions.onErrorDropped(t);
+			Operators.onErrorDropped(t);
 		} else {
 			b.onError(t);
 			

@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Expects and emits a single item from the source or signals
@@ -119,7 +118,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			value = t;
@@ -134,7 +133,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -164,12 +163,12 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 					try {
 						t = ds.get();
 					} catch (Throwable e) {
-						subscriber.onError(Exceptions.onOperatorError(this, e));
+						subscriber.onError(Operators.onOperatorError(this, e));
 						return;
 					}
 
 					if (t == null) {
-						subscriber.onError(Exceptions.onOperatorError(this, new
+						subscriber.onError(Operators.onOperatorError(this, new
 								NullPointerException("The defaultSupplier returned a " +
 								"null value")));
 						return;
@@ -177,7 +176,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 					complete(t);
 				} else {
-					subscriber.onError(Exceptions.onOperatorError(this, new
+					subscriber.onError(Operators.onOperatorError(this, new
 							NoSuchElementException("Source was empty")));
 				}
 			} else if (c == 1) {

@@ -24,7 +24,6 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -191,11 +190,11 @@ final class MonoWhen<T, R> extends Mono<R> {
 		            r = zipper.apply(o);
 	            }
 	            catch (Throwable t) {
-		            subscriber.onError(Exceptions.onOperatorError(null, t, o));
+		            subscriber.onError(Operators.onOperatorError(null, t, o));
 		            return;
 	            }
 	            if (r == null) {
-		            subscriber.onError(Exceptions.onOperatorError(null,
+		            subscriber.onError(Operators.onOperatorError(null,
 				            new NullPointerException("zipper produced a null value"),
 				            o));
 		            return;

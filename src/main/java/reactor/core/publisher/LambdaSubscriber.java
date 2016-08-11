@@ -123,7 +123,7 @@ class LambdaSubscriber<T> implements Subscriber<T>, Receiver, Cancellation, Trac
 			errorConsumer.accept(t);
 		}
 		else {
-			Exceptions.onErrorDropped(t);
+			Operators.onErrorDropped(t);
 		}
 	}
 

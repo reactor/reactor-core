@@ -20,7 +20,6 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -97,7 +96,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

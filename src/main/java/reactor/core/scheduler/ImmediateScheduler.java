@@ -17,6 +17,7 @@ package reactor.core.scheduler;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Operators;
 
 /**
  * Executes tasks on the caller's thread immediately.
@@ -43,7 +44,7 @@ final class ImmediateScheduler implements Scheduler {
             task.run();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
-            Exceptions.onErrorDropped(ex);
+            Operators.onErrorDropped(ex);
         }
         return EMPTY;
     }
@@ -66,7 +67,7 @@ final class ImmediateScheduler implements Scheduler {
                 task.run();
             } catch (Throwable ex) {
                 Exceptions.throwIfFatal(ex);
-                Exceptions.onErrorDropped(ex);
+                Operators.onErrorDropped(ex);
             }
             return EMPTY;
         }

@@ -72,7 +72,7 @@ final class MonoError<T> extends Mono<T> implements Trackable {
 			e = new NullPointerException("The Throwable returned by the supplier is null");
 		}
 
-		Operators.error(s, Exceptions.onOperatorError(e));
+		Operators.error(s, Operators.onOperatorError(e));
 	}
 
 	@Override

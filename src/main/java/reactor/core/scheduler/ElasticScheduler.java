@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -135,7 +136,7 @@ final class ElasticScheduler implements Scheduler {
                     task.run();
                 } catch (Throwable ex) {
                     Exceptions.throwIfFatal(ex);
-                    Exceptions.onErrorDropped(ex);
+                    Operators.onErrorDropped(ex);
                 }
             } finally {
                 release(exec);
@@ -146,7 +147,7 @@ final class ElasticScheduler implements Scheduler {
         try {
             f = exec.submit(wrapper);
         } catch (RejectedExecutionException ex) {
-            Exceptions.onErrorDropped(ex);
+            Operators.onErrorDropped(ex);
             return REJECTED;
         }
         return () -> f.cancel(true);
@@ -228,7 +229,7 @@ final class ElasticScheduler implements Scheduler {
             try {
                 f = executor.submit(ct);
             } catch (RejectedExecutionException ex) {
-                Exceptions.onErrorDropped(ex);
+                Operators.onErrorDropped(ex);
                 return REJECTED;
             }
             
@@ -307,7 +308,7 @@ final class ElasticScheduler implements Scheduler {
                     }
                 } catch (Throwable ex) {
                     Exceptions.throwIfFatal(ex);
-                    Exceptions.onErrorDropped(ex);
+                    Operators.onErrorDropped(ex);
                 } finally {
                     lazySet(FINISHED);
                     parent.remove(this);

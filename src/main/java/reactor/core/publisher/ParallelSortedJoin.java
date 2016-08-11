@@ -141,7 +141,7 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		

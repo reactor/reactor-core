@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -170,7 +171,7 @@ final class ParallelScheduler implements Scheduler {
             try {
                 f = exec.submit(pw);
             } catch (RejectedExecutionException ex) {
-                Exceptions.onErrorDropped(ex);
+                Operators.onErrorDropped(ex);
                 return REJECTED;
             }
             
@@ -263,7 +264,7 @@ final class ParallelScheduler implements Scheduler {
                         run.run();
                     } catch (Throwable ex) {
                         Exceptions.throwIfFatal(ex);
-                        Exceptions.onErrorDropped(ex);
+                        Operators.onErrorDropped(ex);
                     }
                 } finally {
                     for (;;) {

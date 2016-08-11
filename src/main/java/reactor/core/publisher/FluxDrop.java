@@ -25,7 +25,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Drops values if the subscriber doesn't request fast enough.
@@ -117,7 +116,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 				try {
 					onDrop.accept(t);
 				} catch (Throwable e) {
-					Exceptions.onErrorDropped(e);
+					Operators.onErrorDropped(e);
 				}
 				return;
 			}
@@ -134,7 +133,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 				try {
 					onDrop.accept(t);
 				} catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 				}
 			}
 		}
@@ -142,7 +141,7 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

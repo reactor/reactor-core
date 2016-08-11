@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Aggregates the source values with the help of an accumulator
@@ -57,12 +56,12 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 		try {
 			initialValue = initialSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (initialValue == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The initial value supplied is null")));
 			return;
 		}
@@ -116,12 +115,12 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 			try {
 				v = accumulator.apply(value, t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(this, e, t));
+				onError(Operators.onOperatorError(this, e, t));
 				return;
 			}
 
 			if (v == null) {
-				onError(Exceptions.onOperatorError(this, new NullPointerException("The" +
+				onError(Operators.onOperatorError(this, new NullPointerException("The" +
 						" accumulator returned a null value"), t));
 				return;
 			}
@@ -132,7 +131,7 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

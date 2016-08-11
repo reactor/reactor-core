@@ -212,7 +212,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				try {
 					queue = parent.queueSupplier.get(); 
 				} catch (Throwable ex) {
-					error = Exceptions.onOperatorError(s, ex);
+					error = Operators.onOperatorError(s, ex);
 					done = true;
 					drain();
 					return;
@@ -226,7 +226,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		public void onNext(T t) {
 			if (done) {
 				if(t != null) {
-					Exceptions.onNextDropped(t);
+					Operators.onNextDropped(t);
 				}
 				return;
 			}
@@ -238,7 +238,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 			if (!queue.offer(t)) {
 				Throwable ex = new IllegalStateException("Queue full?!");
 				if (!Exceptions.addThrowable(ERROR, this, ex)) {
-					Exceptions.onErrorDropped(ex);
+					Operators.onErrorDropped(ex);
 					return;
 				}
 				done = true;
@@ -249,14 +249,14 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 		
@@ -417,7 +417,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 							try {
 								v = q.poll();
 							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Exceptions
+								Exceptions.addThrowable(ERROR, this, Operators
 										.onOperatorError(s, ex));
 								d = true;
 								v = null;
@@ -446,7 +446,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 							try {
 								empty = q.isEmpty();
 							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Exceptions
+								Exceptions.addThrowable(ERROR, this, Operators
 										.onOperatorError(s, ex));
 								d = true;
 								empty = true;

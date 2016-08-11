@@ -246,7 +246,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		Subscription s = subscription;
 
 		if ((source != null && s == null) || this.error != null) {
-			Exceptions.onErrorDropped(cause);
+			Operators.onErrorDropped(cause);
 			return;
 		}
 
@@ -256,7 +256,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		int state = this.state;
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
-				Exceptions.onErrorDropped(cause);
+				Operators.onErrorDropped(cause);
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
@@ -275,7 +275,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		Subscription s = subscription;
 
 		if (value != null && ((source != null && s == null) || this.value != null)) {
-			Exceptions.onNextDropped(value);
+			Operators.onNextDropped(value);
 			return;
 		}
 		subscription = null;
@@ -295,7 +295,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
 				if(value != null) {
-					Exceptions.onNextDropped(value);
+					Operators.onNextDropped(value);
 				}
 				return;
 			}
@@ -357,7 +357,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				throw (RuntimeException) error;
 			}
 			else {
-				Exceptions.onErrorDropped(error);
+				Operators.onErrorDropped(error);
 				return null;
 			}
 		}
@@ -441,7 +441,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				throw (RuntimeException) error;
 			}
 			else {
-				Exceptions.onErrorDropped(error);
+				Operators.onErrorDropped(error);
 				return false;
 			}
 		}

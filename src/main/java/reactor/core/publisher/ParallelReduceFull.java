@@ -20,7 +20,6 @@ import java.util.function.BiFunction;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -130,7 +129,7 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 				cancel();
 				subscriber.onError(ex);
 			} else {
-				Exceptions.onErrorDropped(ex);
+				Operators.onErrorDropped(ex);
 			}
 		}
 		
@@ -144,7 +143,7 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 						try {
 							value = reducer.apply(sp.first, sp.second);
 						} catch (Throwable ex) {
-							innerError(Exceptions.onOperatorError(this, ex));
+							innerError(Operators.onOperatorError(this, ex));
 							return;
 						}
 						
@@ -211,12 +210,12 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 				try {
 					v = reducer.apply(v, t);
 				} catch (Throwable ex) {
-					onError(Exceptions.onOperatorError(s, ex, t));
+					onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
 				
 				if (v == null) {
-					onError(Exceptions.onOperatorError(s, new NullPointerException
+					onError(Operators.onOperatorError(s, new NullPointerException
 							("The reducer returned a" +
 							" null " +
 							"value"), t));
@@ -230,7 +229,7 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

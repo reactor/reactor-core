@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 
 /**
  * @author Stephane Maldini
@@ -59,7 +58,7 @@ final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements S
 			s.cancel();
 		}
 		else {
-			Exceptions.onNextDropped(t);
+			Operators.onNextDropped(t);
 		}
 	}
 

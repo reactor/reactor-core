@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -108,7 +107,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -127,7 +126,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -145,7 +144,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			Supplier<? extends T> ds = defaultSupplier;
 
 			if (ds == null) {
-				subscriber.onError(Exceptions.onOperatorError(new
+				subscriber.onError(Operators.onOperatorError(new
 						IndexOutOfBoundsException()));
 			} else {
 				T t;
@@ -153,12 +152,12 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 				try {
 					t = ds.get();
 				} catch (Throwable e) {
-					subscriber.onError(Exceptions.onOperatorError(e));
+					subscriber.onError(Operators.onOperatorError(e));
 					return;
 				}
 
 				if (t == null) {
-					subscriber.onError(Exceptions.onOperatorError(new
+					subscriber.onError(Operators.onOperatorError(new
 							NullPointerException("The defaultSupplier returned a null value")));
 					return;
 				}

@@ -32,7 +32,6 @@ import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * @param <T>
@@ -167,7 +166,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 		@Override
 		public void onNext(T t) {
 			if(isTerminated()){
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			processor.onNext(t);
@@ -179,7 +178,7 @@ final class ConnectableFluxProcess<T, U> extends ConnectableFlux<U> implements P
 				processor.onError(t);
 			}
 			else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 

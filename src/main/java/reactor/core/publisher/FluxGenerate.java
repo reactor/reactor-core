@@ -74,7 +74,7 @@ extends Flux<T> {
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		s.onSubscribe(new GenerateSubscription<>(s, state, generator, stateConsumer));
@@ -131,7 +131,7 @@ extends Flux<T> {
 		@Override
 		public void next(T t) {
 			if (terminate) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			if (hasValue) {
@@ -204,7 +204,7 @@ extends Flux<T> {
 				} catch (Throwable e) {
 					cleanup(s);
 
-					actual.onError(Exceptions.onOperatorError(e));
+					actual.onError(Operators.onOperatorError(e));
 					return;
 				}
 				if (terminate || cancelled) {
@@ -291,7 +291,7 @@ extends Flux<T> {
 
 				stateConsumer.accept(s);
 			} catch (Throwable e) {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		

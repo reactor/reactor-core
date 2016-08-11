@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.core.Exceptions;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -92,7 +91,7 @@ final class MonoDelay extends Mono<Long> {
 				}
 				}
 				catch (Throwable t){
-					s.onError(Exceptions.onOperatorError(t));
+					s.onError(Operators.onOperatorError(t));
 				}
 			} else {
 				s.onError(new IllegalStateException("Could not emit value due to lack of requests"));

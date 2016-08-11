@@ -23,8 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.Exceptions;
-
 /**
  * Combines values from a main Publisher with values from another
  * Publisher through a bi-function and emits the result.
@@ -154,12 +152,12 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				try {
 					r = combiner.apply(t, u);
 				} catch (Throwable e) {
-					onError(Exceptions.onOperatorError(this, e, t));
+					onError(Operators.onOperatorError(this, e, t));
 					return;
 				}
 
 				if (r == null) {
-					onError(Exceptions.onOperatorError(this, new NullPointerException
+					onError(Operators.onOperatorError(this, new NullPointerException
 							("The" +
 							" combiner returned a null value"), t));
 					return;

@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.
@@ -64,12 +63,12 @@ extends Mono<T>
 		try {
 			t = supplier.get();
 		} catch (Throwable e) {
-			s.onError(Exceptions.onOperatorError(e));
+			s.onError(Operators.onOperatorError(e));
 			return;
 		}
 
 		if (t == null) {
-			s.onError(Exceptions.onOperatorError(new NullPointerException("The " +
+			s.onError(Operators.onOperatorError(new NullPointerException("The " +
 					"callable returned null")));
 			return;
 		}

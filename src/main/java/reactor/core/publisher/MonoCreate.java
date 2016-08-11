@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import org.reactivestreams.*;
 
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -46,7 +45,7 @@ final class MonoCreate<T> extends Mono<T> {
         try {
             callback.accept(emitter);
         } catch (Throwable ex) {
-            emitter.error(Exceptions.onOperatorError(ex));
+            emitter.error(Operators.onOperatorError(ex));
         }
     }
 
@@ -112,7 +111,7 @@ final class MonoCreate<T> extends Mono<T> {
                 cancellation = CANCELLED;
                 actual.onError(e);
             } else {
-                Exceptions.onErrorDropped(e);
+                Operators.onErrorDropped(e);
             }
         }
 

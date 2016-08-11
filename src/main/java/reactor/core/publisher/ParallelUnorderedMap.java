@@ -19,8 +19,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.
  *
@@ -109,12 +107,12 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t));
 				return;
 			}
 			
 			if (v == null) {
-				onError(Exceptions.onOperatorError(s, new NullPointerException("The " +
+				onError(Operators.onOperatorError(s, new NullPointerException("The " +
 						"mapper returned a null value"), t));
 				return;
 			}
@@ -125,7 +123,7 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

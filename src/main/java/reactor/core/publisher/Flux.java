@@ -3118,9 +3118,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> log(String category, Level level, SignalType... options) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,
-					Operators.signalLogger(this, category, level, options)));
+					new SignalLogger<>(this, category, level, options)));
 		}
-		return onAssembly(new FluxPeek<>(this, Operators.signalLogger(this, category, level, options)));
+		return onAssembly(new FluxPeek<>(this,  new SignalLogger<>(this, category, level,
+				options)));
 	}
 	
 	/**
@@ -5712,7 +5713,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> Flux<T> onAssembly(Flux<T> source) {
-		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;
 		}
@@ -5730,7 +5731,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
-		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;
 		}

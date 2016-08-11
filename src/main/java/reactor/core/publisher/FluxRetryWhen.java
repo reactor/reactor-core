@@ -23,7 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
-import reactor.core.Exceptions;
 
 /**
  * retries a source when a companion sequence signals
@@ -71,12 +70,12 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 			p = whenSourceFactory.apply(other);
 		}
 		catch (Throwable e) {
-			s.onError(Exceptions.onOperatorError(e));
+			s.onError(Operators.onOperatorError(e));
 			return;
 		}
 
 		if (p == null) {
-			s.onError(Exceptions.onOperatorError(new NullPointerException(
+			s.onError(Operators.onOperatorError(new NullPointerException(
 					"The whenSourceFactory returned a null Publisher")));
 			return;
 		}

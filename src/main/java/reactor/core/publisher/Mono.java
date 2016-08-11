@@ -1667,9 +1667,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> log(String category, Level level, SignalType... options) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this,
-					Operators.signalLogger(this, category, level, options)));
+					new SignalLogger<>(this, category, level, options)));
 		}
-		return onAssembly(new MonoPeek<>(this, Operators.signalLogger(this, category, level, options)));
+		return onAssembly(new MonoPeek<>(this,  new SignalLogger<>(this, category, level,
+				options)));
 	}
 
 	/**
@@ -2606,7 +2607,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> onAssembly(Mono<T> source) {
-		Operators.OnPublisherAssemblyHook hook = Operators.onPublisherAssemblyHook;
+		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;
 		}

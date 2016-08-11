@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Emits a single boolean true if all values of the source sequence match
@@ -94,7 +93,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 				b = predicate.test(t);
 			} catch (Throwable e) {
 				done = true;
-				subscriber.onError(Exceptions.onOperatorError(s, e, t));
+				subscriber.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (!b) {
@@ -108,7 +107,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

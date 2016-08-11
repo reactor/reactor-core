@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -53,7 +52,7 @@ extends Flux<T>
 		try {
 			it = iterable.iterator();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
@@ -82,7 +81,7 @@ extends Flux<T>
 		try {
 			b = it.hasNext();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		if (!b) {

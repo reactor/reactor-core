@@ -239,7 +239,7 @@ extends Flux<T>
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				onComplete();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 

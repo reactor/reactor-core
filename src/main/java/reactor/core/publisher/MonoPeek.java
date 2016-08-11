@@ -38,7 +38,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeek<T> extends MonoSource<T, T> implements Operators.SignalObserver<T> {
+final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -54,7 +54,7 @@ final class MonoPeek<T> extends MonoSource<T, T> implements Operators.SignalObse
 
 	final Runnable onCancelCall;
 
-	public MonoPeek(Publisher<? extends T> source, Operators.SignalObserver<T> peekHelper) {
+	public MonoPeek(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
 		this(source,
 				peekHelper.onSubscribeCall(),
 				peekHelper.onNextCall(),

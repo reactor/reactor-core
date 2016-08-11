@@ -25,7 +25,6 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Accumulates the source values with an accumulator function and
@@ -92,7 +91,7 @@ final class FluxAccumulate<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -103,7 +102,7 @@ final class FluxAccumulate<T> extends FluxSource<T, T> {
 					t = accumulator.apply(v, t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
 				if (t == null) {
@@ -120,7 +119,7 @@ final class FluxAccumulate<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

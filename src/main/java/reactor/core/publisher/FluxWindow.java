@@ -32,7 +32,6 @@ import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -92,12 +91,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			try {
 				overflowQueue = overflowQueueSupplier.get();
 			} catch (Throwable e) {
-				Operators.error(s, Exceptions.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(e));
 				return;
 			}
 			
 			if (overflowQueue == null) {
-				Operators.error(s, Exceptions.onOperatorError(new
+				Operators.error(s, Operators.onOperatorError(new
 						NullPointerException("The overflowQueueSupplier returned a null queue")));
 				return;
 			}
@@ -153,7 +152,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			
@@ -206,7 +205,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			Processor<T, T> w = window;
@@ -351,7 +350,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			
@@ -409,7 +408,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			Processor<T, T> w = window;
@@ -581,7 +580,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			
@@ -649,7 +648,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 

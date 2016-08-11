@@ -21,7 +21,6 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Producer;
@@ -44,7 +43,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObserver<T> {
+final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
 
@@ -60,7 +59,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source, Operators.SignalObserver<T> peekHelper) {
+	public FluxPeek(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
 		this(source,
 				peekHelper.onSubscribeCall(),
 				peekHelper.onNextCall(),
@@ -107,13 +106,13 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 
 		final Subscriber<? super T> actual;
 
-		final Operators.SignalObserver<T> parent;
+		final SignalPeek<T> parent;
 
 		Subscription s;
 
 		boolean done;
 
-		public PeekSubscriber(Subscriber<? super T> actual, Operators.SignalObserver<T> parent) {
+		public PeekSubscriber(Subscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -125,7 +124,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -139,7 +138,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -153,7 +152,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onSubscribeCall().accept(s);
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Exceptions.onOperatorError(s, e));
+					Operators.error(actual, Operators.onOperatorError(s, e));
 					return;
 				}
 			}
@@ -164,7 +163,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			if(parent.onNextCall() != null) {
@@ -172,7 +171,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
 			}
@@ -183,7 +182,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -198,7 +197,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.onOperatorError(null, e, t);
+					Throwable _e = Operators.onOperatorError(null, e, t);
 					e.addSuppressed(t);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
@@ -219,7 +218,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Exceptions.onOperatorError(e));
+					onError(Operators.onOperatorError(e));
 					return;
 				}
 			}
@@ -231,7 +230,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements Operators.SignalObse
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Exceptions.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e);
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}

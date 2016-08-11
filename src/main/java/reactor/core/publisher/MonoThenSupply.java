@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 
@@ -134,7 +133,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
                             try {
                                 v = ((Callable<T>)m).call();
                             } catch (Throwable ex) {
-                                subscriber.onError(Exceptions.onOperatorError(ex));
+                                subscriber.onError(Operators.onOperatorError(ex));
                                 return;
                             }
                             
@@ -156,7 +155,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
                             try {
                                 ((Callable<?>)m).call();
                             } catch (Throwable ex) {
-                                subscriber.onError(Exceptions.onOperatorError(ex));
+                                subscriber.onError(Operators.onOperatorError(ex));
                                 return;
                             }
                             
@@ -252,7 +251,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         @Override
         public void onNext(T t) {
             if (done) {
-                Exceptions.onNextDropped(t);
+                Operators.onNextDropped(t);
                 return;
             }
             done = true;
@@ -262,7 +261,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         @Override
         public void onError(Throwable t) {
             if (done) {
-                Exceptions.onErrorDropped(t);
+                Operators.onErrorDropped(t);
                 return;
             }
             done = true;

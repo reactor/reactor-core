@@ -288,7 +288,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Exceptions.onOperatorError(this, exc, left));
+									Operators.onOperatorError(this, exc, left));
 							errorAll(a);
 							return;
 						}
@@ -322,7 +322,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 							catch (Throwable exc) {
 								Exceptions.addThrowable(ERROR,
 										this,
-										Exceptions.onOperatorError(this,
+										Operators.onOperatorError(this,
 												exc, right));
 								errorAll(a);
 								return;
@@ -354,7 +354,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 								if (upd < 0L) {
 									Exceptions.addThrowable(ERROR,
 											this,
-											Exceptions.onOperatorError(this,
+											Operators.onOperatorError(this,
 													Exceptions.failWithOverflow()));
 									errorAll(a);
 									return;
@@ -382,7 +382,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Exceptions.onOperatorError(this, exc, right));
+									Operators.onOperatorError(this, exc, right));
 							errorAll(a);
 							return;
 						}
@@ -416,7 +416,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 							catch (Throwable exc) {
 								Exceptions.addThrowable(ERROR,
 										this,
-										Exceptions.onOperatorError(this, exc, left));
+										Operators.onOperatorError(this, exc, left));
 								errorAll(a);
 								return;
 							}
@@ -447,7 +447,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 								if (upd < 0L) {
 									Exceptions.addThrowable(ERROR,
 											this,
-											Exceptions.onOperatorError(this,
+											Operators.onOperatorError(this,
 													Exceptions.failWithOverflow()));
 									errorAll(a);
 									return;
@@ -487,7 +487,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 				drain();
 			}
 			else {
-				Exceptions.onErrorDropped(ex);
+				Operators.onErrorDropped(ex);
 			}
 		}
 
@@ -520,7 +520,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 				drain();
 			}
 			else {
-				Exceptions.onErrorDropped(ex);
+				Operators.onErrorDropped(ex);
 			}
 		}
 	}

@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
@@ -63,7 +62,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		try {
 			buffer = bufferSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
@@ -145,7 +144,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 			}
 			
-			Exceptions.onNextDropped(t);
+			Operators.onNextDropped(t);
 		}
 
 		@Override
@@ -167,7 +166,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				
 				actual.onError(t);
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 
@@ -192,7 +191,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			try {
 				c = bufferSupplier.get();
 			} catch (Throwable e) {
-				otherError(Exceptions.onOperatorError(other, e));
+				otherError(Operators.onOperatorError(other, e));
 				return;
 			}
 			

@@ -24,7 +24,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Exceptions;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -61,7 +60,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			
 			finisher = collector.finisher();
 		} catch (Throwable ex) {
-			Operators.error(s, Exceptions.onOperatorError(ex));
+			Operators.error(s, Operators.onOperatorError(ex));
 			return;
 		}
 		
@@ -102,20 +101,20 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			try {
 				accumulator.accept(container, t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t));
 			}
 		}
 		
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -138,7 +137,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			try {
 				r = finisher.apply(a);
 			} catch (Throwable ex) {
-				subscriber.onError(Exceptions.onOperatorError(ex));
+				subscriber.onError(Operators.onOperatorError(ex));
 				return;
 			}
 			

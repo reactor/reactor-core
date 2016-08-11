@@ -23,7 +23,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Emits a single item at most from the source.
@@ -74,7 +73,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -86,7 +85,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

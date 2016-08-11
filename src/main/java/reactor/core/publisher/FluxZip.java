@@ -154,7 +154,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					v = callable.call();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -227,7 +227,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					v = ((Callable<? extends T>)p).call();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -268,7 +268,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(scalars);
 				} catch (Throwable e) {
-					s.onError(Exceptions.onOperatorError(e));
+					s.onError(Operators.onOperatorError(e));
 					return;
 				}
 
@@ -360,12 +360,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(a);
 				} catch (Throwable e) {
-					subscriber.onError(Exceptions.onOperatorError(this, e, value));
+					subscriber.onError(Operators.onOperatorError(this, e, value));
 					return;
 				}
 
 				if (r == null) {
-					subscriber.onError(Exceptions.onOperatorError(this, new
+					subscriber.onError(Operators.onOperatorError(this, new
 							NullPointerException("The zipper returned a null value"),
 							value));
 				} else {
@@ -379,7 +379,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				cancelAll();
 				subscriber.onError(e);
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 
@@ -461,7 +461,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			done = true;
@@ -473,7 +473,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -654,7 +654,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 
@@ -724,7 +724,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 								}
 							}
 							catch (Throwable ex) {
-								ex = Exceptions.onOperatorError(ex);
+								ex = Operators.onOperatorError(ex);
 
 								cancelAll();
 
@@ -749,7 +749,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					}
 					catch (Throwable ex) {
 
-						ex = Exceptions.onOperatorError(null, ex, values.clone());
+						ex = Operators.onOperatorError(null, ex, values.clone());
 						cancelAll();
 
 						Exceptions.addThrowable(ERROR, this, ex);
@@ -762,7 +762,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 					if (v == null) {
 
-						Throwable ex = Exceptions.onOperatorError(null, new
+						Throwable ex = Operators.onOperatorError(null, new
 								NullPointerException(
 								"The zipper returned a null value"), values.clone());
 
@@ -817,7 +817,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 								}
 							}
 							catch (Throwable ex) {
-								ex = Exceptions.onOperatorError(null, ex, values);
+								ex = Operators.onOperatorError(null, ex, values);
 
 								cancelAll();
 
@@ -927,7 +927,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable e) {
-							onError(Exceptions.onOperatorError(s, e));
+							onError(Operators.onOperatorError(s, e));
 							return;
 						}
 					}
@@ -936,7 +936,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable e) {
-						onError(Exceptions.onOperatorError(s, e));
+						onError(Operators.onOperatorError(s, e));
 						return;
 					}
 

@@ -117,7 +117,13 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				if (row.contains("FluxCallableOnAssembly.")) {
 					continue;
 				}
-				if (row.contains("OnPublisherAssemblyHook")) {
+				if (row.contains("OnOperatorCreate")) {
+					continue;
+				}
+				if (row.contains("operatorStacktrace")) {
+					continue;
+				}
+				if (row.contains("reactor.core.publisher.Hooks")) {
 					continue;
 				}
 				if (row.contains(".junit.runner")) {
@@ -258,7 +264,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 					first = false;
 					continue;
 				}
-				if (!s.contains("reactor.core.publisher.Mono") && !s.contains("reactor" + ".core.publisher.Flux")) {
+				if (!s.contains("reactor.core.publisher")) {
 					usercode = s.substring(s.indexOf('('));
 					break;
 				}

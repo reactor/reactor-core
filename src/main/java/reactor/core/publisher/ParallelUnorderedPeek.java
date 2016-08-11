@@ -20,8 +20,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
  *
@@ -109,7 +107,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onRequest.accept(n);
 			} catch (Throwable ex) {
-				Exceptions.onErrorDropped(Exceptions.onOperatorError(s, ex));
+				Operators.onErrorDropped(Operators.onOperatorError(s, ex));
 			}
 			s.request(n);
 		}
@@ -120,7 +118,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 				parent.onCancel.run();
 				s.cancel();
 			} catch (Throwable ex) {
-				Exceptions.onErrorDropped(Exceptions.onOperatorError(s, ex));
+				Operators.onErrorDropped(Operators.onOperatorError(s, ex));
 			}
 		}
 
@@ -133,7 +131,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 					parent.onSubscribe.accept(s);
 				} catch (Throwable ex) {
 					actual.onSubscribe(Operators.emptySubscription());
-					onError(Exceptions.onOperatorError(s, ex));
+					onError(Operators.onOperatorError(s, ex));
 					return;
 				}
 				
@@ -150,7 +148,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onNext.accept(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t));
 				return;
 			}
 			
@@ -159,14 +157,14 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onAfterNext.accept(t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t));
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -174,7 +172,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onError.accept(t);
 			} catch (Throwable ex) {
-				ex = Exceptions.onOperatorError(null, ex, t);
+				ex = Operators.onOperatorError(null, ex, t);
 				ex.addSuppressed(t);
 				t = ex;
 			}
@@ -183,7 +181,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onAfterTerminated.run();
 			} catch (Throwable ex) {
-				Exceptions.onErrorDropped(Exceptions.onOperatorError(null, ex, t));
+				Operators.onErrorDropped(Operators.onOperatorError(null, ex, t));
 			}
 		}
 
@@ -196,7 +194,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onComplete.run();
 			} catch (Throwable ex) {
-				actual.onError(Exceptions.onOperatorError(ex));
+				actual.onError(Operators.onOperatorError(ex));
 				return;
 			}
 			actual.onComplete();
@@ -204,7 +202,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			try {
 				parent.onAfterTerminated.run();
 			} catch (Throwable ex) {
-				Exceptions.onErrorDropped(Exceptions.onOperatorError(ex));
+				Operators.onErrorDropped(Operators.onOperatorError(ex));
 			}
 		}
 		

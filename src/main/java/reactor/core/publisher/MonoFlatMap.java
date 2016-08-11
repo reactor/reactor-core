@@ -21,8 +21,6 @@ import java.util.function.Function;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 final class MonoFlatMap<T, R> extends Flux<R> {
     final Mono<? extends T> source;
     
@@ -125,12 +123,12 @@ final class MonoFlatMap<T, R> extends Flux<R> {
             try {
                 p = mapper.apply(t);
             } catch (Throwable ex) {
-                actual.onError(Exceptions.onOperatorError(this, ex, t));
+                actual.onError(Operators.onOperatorError(this, ex, t));
                 return;
             }
             
             if (p == null) {
-                actual.onError(Exceptions.onOperatorError(this, new NullPointerException
+                actual.onError(Operators.onOperatorError(this, new NullPointerException
                         ("The mapper returned" +
                         " a null " +
                         "Publisher."), t));
@@ -143,7 +141,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 try {
                     v = ((Callable<R>)p).call();
                 } catch (Throwable ex) {
-                    actual.onError(Exceptions.onOperatorError(this, ex, t));
+                    actual.onError(Operators.onOperatorError(this, ex, t));
                     return;
                 }
                 
@@ -162,7 +160,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
         @Override
         public void onError(Throwable t) {
             if (hasValue) {
-                Exceptions.onErrorDropped(t);
+                Operators.onErrorDropped(t);
                 return;
             }
             actual.onError(t);

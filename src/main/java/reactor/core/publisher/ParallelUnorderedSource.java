@@ -25,7 +25,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Fuseable;
-import reactor.core.Exceptions;
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are
@@ -291,7 +290,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							ex = Exceptions.onOperatorError(s, ex);
+							ex = Operators.onOperatorError(s, ex);
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}
@@ -365,7 +364,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 					try {
 						empty = q.isEmpty();
 					} catch (Throwable ex) {
-						ex = Exceptions.onOperatorError(s, ex);
+						ex = Operators.onOperatorError(s, ex);
 						for (Subscriber<? super T> s : a) {
 							s.onError(ex);
 						}
@@ -388,7 +387,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							ex = Exceptions.onOperatorError(s, ex);
+							ex = Operators.onOperatorError(s, ex);
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}

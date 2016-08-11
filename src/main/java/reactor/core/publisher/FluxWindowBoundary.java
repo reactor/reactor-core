@@ -68,12 +68,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			q = processorQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (q == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The processorQueueSupplier returned a null queue")));
 			return;
 		}
@@ -83,12 +83,12 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		try {
 			dq = drainQueueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (dq == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The drainQueueSupplier returned a null queue")));
 			return;
 		}
@@ -183,7 +183,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 
@@ -239,7 +239,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 

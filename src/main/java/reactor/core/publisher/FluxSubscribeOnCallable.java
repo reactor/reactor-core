@@ -25,7 +25,6 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.Exceptions;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -208,7 +207,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				v = callable.call();
 			}
 			catch (Throwable ex) {
-				actual.onError(Exceptions.onOperatorError(this, ex));
+				actual.onError(Operators.onOperatorError(this, ex));
 				return;
 			}
 

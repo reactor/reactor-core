@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.TestSubscriber;
@@ -66,54 +66,6 @@ public class ScatterGatherTests {
 		s.shutdown();
 	}
 
-	@Test
-	public void testTrace() throws Exception {
-		Operators.enableAssemblyStacktrace();
-		try {
-			Mono.fromCallable(() -> {
-				throw new RuntimeException();
-			})
-			    .map(d -> d)
-			    .block();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("MonoCallable"));
-			return;
-		}
-		finally {
-			Operators.disableAssemblyStacktrace();
-		}
-		throw new IllegalStateException();
-	}
-
-
-	@Test
-	public void testTrace2() throws Exception {
-		Operators.enableAssemblyStacktrace();
-		try {
-			Mono.just(1)
-			    .map(d -> {
-				    throw new RuntimeException();
-			    })
-			    .filter(d -> true)
-			    .doOnNext(d -> System.currentTimeMillis())
-			    .map(d -> d)
-			    .block();
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("ScatterGatherTests.java:"));
-			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
-					"(ScatterGatherTests.java:"));
-			return;
-		}
-		finally {
-			Operators.disableAssemblyStacktrace();
-		}
-		throw new IllegalStateException();
-	}
 
 	final class Result {
 

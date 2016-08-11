@@ -21,8 +21,6 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 /**
  * @author Stephane Maldini
  */
@@ -78,7 +76,7 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		@Override
 		public void onNext(Signal<T> t) {
 		    if (done) {
-		        Exceptions.onNextDropped(t);
+		        Operators.onNextDropped(t);
 		        return;
 		    }
 		    if (t.isOnComplete()) {
@@ -103,7 +101,7 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		@Override
 		public void onError(Throwable t) {
 		    if (done) {
-		        Exceptions.onErrorDropped(t);
+		        Operators.onErrorDropped(t);
 		        return;
 		    }
 		    done = true;

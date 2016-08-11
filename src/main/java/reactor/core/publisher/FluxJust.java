@@ -23,7 +23,6 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * A Stream that emits only one value and then complete.
@@ -71,7 +70,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
 		}
 		catch (Throwable throwable) {
-			subscriber.onError(Exceptions.onOperatorError(throwable));
+			subscriber.onError(Operators.onOperatorError(throwable));
 		}
 	}
 

@@ -27,7 +27,6 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.Exceptions;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -62,12 +61,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		try {
 			worker = scheduler.createWorker();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
 		if (worker == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The scheduler returned a null Function")));
 			return;
 		}

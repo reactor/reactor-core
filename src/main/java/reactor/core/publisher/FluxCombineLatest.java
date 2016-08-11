@@ -111,12 +111,12 @@ extends Flux<R>
 			try {
 				it = iterable.iterator();
 			} catch (Throwable e) {
-				Operators.error(s, Exceptions.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(e));
 				return;
 			}
 
 			if (it == null) {
-				Operators.error(s, Exceptions.onOperatorError(new
+				Operators.error(s, Operators.onOperatorError(new
 						NullPointerException("The iterator returned is null")));
 				return;
 			}
@@ -128,7 +128,7 @@ extends Flux<R>
 				try {
 					b = it.hasNext();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -141,12 +141,12 @@ extends Flux<R>
 				try {
 					p = it.next();
 				} catch (Throwable e) {
-					Operators.error(s, Exceptions.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
 
 				if (p == null) {
-					Operators.error(s, Exceptions.onOperatorError(new NullPointerException("The Publisher returned by the iterator is " +
+					Operators.error(s, Operators.onOperatorError(new NullPointerException("The Publisher returned by the iterator is " +
 					  "null")));
 					return;
 				}
@@ -182,12 +182,12 @@ extends Flux<R>
 		try {
 			queue = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
 		if (queue == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
@@ -361,7 +361,7 @@ extends Flux<R>
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		
@@ -437,12 +437,12 @@ extends Flux<R>
 					try {
 						w = combiner.apply(v.array);
 					} catch (Throwable ex) {
-						innerError(Exceptions.onOperatorError(this, ex, v.array));
+						innerError(Operators.onOperatorError(this, ex, v.array));
 						continue;
 					}
 					
 					if (w == null) {
-						innerError(Exceptions.onOperatorError(this, new
+						innerError(Operators.onOperatorError(this, new
 								NullPointerException("The combiner returned a null " +
 								"value"), v.array));
 						continue;

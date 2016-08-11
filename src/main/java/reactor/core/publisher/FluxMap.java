@@ -27,7 +27,6 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -100,7 +99,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -109,13 +108,13 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
 			if (v == null) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, new NullPointerException
+				actual.onError(Operators.onOperatorError(s, new NullPointerException
 						("The mapper returned a null value."), t));
 				return;
 			}
@@ -126,7 +125,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 
@@ -208,7 +207,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -217,13 +216,13 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 			try {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
 			if (v == null) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, new NullPointerException
+				actual.onError(Operators.onOperatorError(s, new NullPointerException
 						("The mapper returned a null value."), t));
 				return;
 			}
@@ -234,7 +233,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return true;
 			}
 
@@ -244,13 +243,13 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				done = true;
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return true;
 			}
 
 			if (v == null) {
 				done = true;
-				actual.onError(Exceptions.onOperatorError(s, new NullPointerException
+				actual.onError(Operators.onOperatorError(s, new NullPointerException
 						("The mapper returned a null value."), t));
 				return true;
 			}
@@ -261,7 +260,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 

@@ -26,7 +26,6 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -119,7 +118,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -146,7 +145,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -256,7 +255,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -283,7 +282,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return true;
 			}
 
@@ -311,7 +310,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -427,7 +426,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -459,7 +458,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

@@ -30,7 +30,6 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Producer;
 import reactor.core.Trackable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -58,7 +57,7 @@ final class FluxCreate<T> extends Flux<T> {
         try {
             emitter.accept(dfe);
         } catch (Throwable ex) {
-            dfe.error(Exceptions.onOperatorError(ex));
+            dfe.error(Operators.onOperatorError(ex));
         }
     }
     
@@ -110,7 +109,7 @@ final class FluxCreate<T> extends Flux<T> {
                 return;
             }
             if (isCancelled() || done) {
-                Exceptions.onNextDropped(value);
+                Operators.onNextDropped(value);
                 return;
             }
             switch (this.handling) {
@@ -157,7 +156,7 @@ final class FluxCreate<T> extends Flux<T> {
                 error = new NullPointerException("error is null");
             }
             if (isCancelled() || done) {
-                Exceptions.onErrorDropped(error);
+                Operators.onErrorDropped(error);
                 return;
             }
             done = true;

@@ -130,7 +130,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			try {
 				t = ((Callable<? extends T>)source).call();
 			} catch (Throwable e) {
-				Operators.error(s, Exceptions.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(e));
 				return true;
 			}
 
@@ -145,7 +145,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				p = mapper.apply(t);
 			}
 			catch (Throwable e) {
-				Operators.error(s, Exceptions.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(e));
 				return true;
 			}
 
@@ -161,7 +161,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					v = ((Callable<R>)p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Exceptions.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e));
 					return true;
 				}
 
@@ -318,7 +318,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			
@@ -327,12 +327,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			
 			if (p == null) {
-				onError(Exceptions.onOperatorError(s, new NullPointerException("The " +
+				onError(Operators.onOperatorError(s, new NullPointerException("The " +
 						"mapper returned a null Publisher"), t));
 				return;
 			}
@@ -342,7 +342,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				try {
 					v = ((Callable<R>)p).call();
 				} catch (Throwable e) {
-					onError(Exceptions.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
 				emitScalar(v);
@@ -394,13 +394,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					try {
 						q = getOrCreateScalarQueue();
 					} catch (Throwable ex) {
-						ex = Exceptions.onOperatorError(s, ex, v);
+						ex = Operators.onOperatorError(s, ex, v);
 
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							done = true;
 						}
 						else {
-							Exceptions.onErrorDropped(ex);
+							Operators.onErrorDropped(ex);
 						}
 						
 						drainLoop();
@@ -415,7 +415,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							done = true;
 						} else {
-							Exceptions.onErrorDropped(e);
+							Operators.onErrorDropped(e);
 						}
 						drainLoop();
 						return;
@@ -433,12 +433,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					q = getOrCreateScalarQueue();
 				}
 				catch (Throwable ex) {
-					ex = Exceptions.onOperatorError(s, ex, v);
+					ex = Operators.onOperatorError(s, ex, v);
 					
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						done = true;
 					} else {
-						Exceptions.onErrorDropped(ex);
+						Operators.onErrorDropped(ex);
 					}
 					
 					drain();
@@ -453,7 +453,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						done = true;
 					} else {
-						Exceptions.onErrorDropped(e);
+						Operators.onErrorDropped(e);
 					}
 				}
 				drain();
@@ -472,14 +472,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 
@@ -596,9 +596,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										v = q.poll();
 									}
 									catch (Throwable ex) {
-										ex = Exceptions.onOperatorError(inner, ex);
+										ex = Operators.onOperatorError(inner, ex);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
-											Exceptions.onErrorDropped(ex);
+											Operators.onErrorDropped(ex);
 										}
 										v = null;
 										d = true;
@@ -634,9 +634,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										empty = q.isEmpty();
 									}
 									catch (Throwable ex) {
-										ex = Exceptions.onOperatorError(inner, ex);
+										ex = Operators.onOperatorError(inner, ex);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
-											Exceptions.onErrorDropped(ex);
+											Operators.onErrorDropped(ex);
 										}
 										empty = true;
 										d = true;
@@ -776,7 +776,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		
@@ -798,11 +798,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					try {
 						q = getOrCreateScalarQueue(inner);
 					} catch (Throwable ex) {
-						ex = Exceptions.onOperatorError(inner, ex, v);
+						ex = Operators.onOperatorError(inner, ex, v);
 						if (Exceptions.addThrowable(ERROR, this, ex)) {
 							inner.done = true;
 						} else {
-							Exceptions.onErrorDropped(ex);
+							Operators.onErrorDropped(ex);
 						}
 						drainLoop();
 						return;
@@ -811,14 +811,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (!q.offer(v)) {
 						inner.cancel();
 						
-						Throwable e = Exceptions.onOperatorError(inner, new
+						Throwable e = Operators.onOperatorError(inner, new
 								IllegalStateException("Scalar " +
 								"queue full?!"), v);
 						
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							inner.done = true;
 						} else {
-							Exceptions.onErrorDropped(e);
+							Operators.onErrorDropped(e);
 						}
 						drainLoop();
 						return;
@@ -835,24 +835,24 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				try {
 					q = getOrCreateScalarQueue(inner);
 				} catch (Throwable ex) {
-					ex = Exceptions.onOperatorError(inner, ex, v);
+					ex = Operators.onOperatorError(inner, ex, v);
 					if (Exceptions.addThrowable(ERROR, this, ex)) {
 						inner.done = true;
 					} else {
-						Exceptions.onErrorDropped(ex);
+						Operators.onErrorDropped(ex);
 					}
 					drain();
 					return;
 				}
 				
 				if (!q.offer(v)) {
-					Throwable e = Exceptions.onOperatorError(inner, new
+					Throwable e = Operators.onOperatorError(inner, new
 							IllegalStateException("Scalar queue full?!"), v);
 					
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						inner.done = true;
 					} else {
-						Exceptions.onErrorDropped(e);
+						Operators.onErrorDropped(e);
 					}
 				}
 				drain();

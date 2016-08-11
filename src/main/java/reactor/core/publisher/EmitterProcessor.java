@@ -315,7 +315,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			throw Exceptions.argumentIsNullException();
 		}
 		if (autoCancel && done) {
-			Exceptions.onErrorDropped(t);
+			Operators.onErrorDropped(t);
 		}
 		reportError(t);
 		done = true;
@@ -344,7 +344,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				}
 			}
 			catch (Throwable t) {
-				onError(Exceptions.onOperatorError(s, t));
+				onError(Operators.onOperatorError(s, t));
 			}
 		}
 	}

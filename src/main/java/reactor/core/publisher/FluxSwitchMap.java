@@ -75,12 +75,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		try {
 			q = queueSupplier.get();
 		} catch (Throwable e) {
-			Operators.error(s, Exceptions.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		
 		if (q == null) {
-			Operators.error(s, Exceptions.onOperatorError(new
+			Operators.error(s, Operators.onOperatorError(new
 					NullPointerException("The queueSupplier returned a null queue")));
 			return;
 		}
@@ -164,7 +164,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		public void onNext(T t) {
 			
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			
@@ -181,12 +181,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			try {
 				p = mapper.apply(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			
 			if (p == null) {
-				onError(Exceptions.onOperatorError(s, new NullPointerException("The " +
+				onError(Operators.onOperatorError(s, new NullPointerException("The " +
 						"mapper returned a null publisher"), t));
 				return;
 			}
@@ -202,7 +202,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			
@@ -216,7 +216,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 		
@@ -377,7 +377,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				inner.deactivate();
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		

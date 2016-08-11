@@ -10,8 +10,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import reactor.core.Exceptions;
-
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item
  * generated Publisher source fires an item or completes before the next item
@@ -116,12 +114,12 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				s.cancel();
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, idx + 1)) {
 				s.cancel();
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -134,12 +132,12 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			try {
 				p = itemTimeout.apply(t);
 			} catch (Throwable e) {
-				subscriber.onError(Exceptions.onOperatorError(this, e, t));
+				subscriber.onError(Operators.onOperatorError(this, e, t));
 				return;
 			}
 
 			if (p == null) {
-				subscriber.onError(Exceptions.onOperatorError(this, new
+				subscriber.onError(Operators.onOperatorError(this, new
 						NullPointerException("The itemTimeout returned a null " +
 						"Publisher"), t));
 				return;
@@ -158,11 +156,11 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, Long.MIN_VALUE)) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 

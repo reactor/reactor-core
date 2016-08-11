@@ -22,7 +22,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Exceptions;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.
@@ -74,7 +73,7 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 			T r = result;
@@ -86,14 +85,14 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 				} catch (Throwable ex) {
 					result = null;
 					done = true;
-					subscriber.onError(Exceptions.onOperatorError(s, ex, t));
+					subscriber.onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
 				
 				if (r == null) {
 					result = null;
 					done = true;
-					subscriber.onError(Exceptions.onOperatorError(s, new
+					subscriber.onError(Operators.onOperatorError(s, new
 							NullPointerException("The aggregator returned a null " +
 							"value"), t));
 					return;
@@ -106,7 +105,7 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			result = null;

@@ -19,8 +19,6 @@ import java.util.function.*;
 
 import org.reactivestreams.*;
 
-import reactor.core.Exceptions;
-
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
  *
@@ -64,7 +62,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 			try {
 				initialValue = initialCollection.get();
 			} catch (Throwable ex) {
-				reportError(subscribers, Exceptions.onOperatorError(ex));
+				reportError(subscribers, Operators.onOperatorError(ex));
 				return;
 			}
 			
@@ -133,14 +131,14 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 			try {
 				collector.accept(collection, t);
 			} catch (Throwable ex) {
-				onError(Exceptions.onOperatorError(this, ex, t));
+				onError(Operators.onOperatorError(this, ex, t));
 			}
 		}
 		
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

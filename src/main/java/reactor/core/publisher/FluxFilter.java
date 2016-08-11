@@ -29,7 +29,6 @@ import reactor.core.Receiver;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
 import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Filters out values that make a filter function return false.
@@ -98,7 +97,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -107,7 +106,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (b) {
@@ -120,7 +119,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return false;
 			}
 
@@ -129,7 +128,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
 			if (b) {
@@ -142,7 +141,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
@@ -223,7 +222,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -232,7 +231,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (b) {
@@ -245,7 +244,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return false;
 			}
 
@@ -254,7 +253,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
 			if (b) {
@@ -266,7 +265,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;

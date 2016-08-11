@@ -314,7 +314,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Exceptions.onOperatorError(this, exc, left));
+									Operators.onOperatorError(this, exc, left));
 							errorAll(a);
 							return;
 						}
@@ -341,7 +341,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						}
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
-									this, Exceptions.onOperatorError(this, exc, up));
+									this, Operators.onOperatorError(this, exc, up));
 							errorAll(a);
 							return;
 						}
@@ -359,7 +359,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 								if (upd < 0L) {
 									Exceptions.addThrowable(ERROR,
 											this,
-											Exceptions.onOperatorError(this,
+											Operators.onOperatorError(this,
 													Exceptions.failWithOverflow()));
 									errorAll(a);
 									return;
@@ -398,7 +398,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Exceptions.onOperatorError(this, exc, right));
+									Operators.onOperatorError(this, exc, right));
 							errorAll(a);
 							return;
 						}
@@ -452,7 +452,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				drain();
 			}
 			else {
-				Exceptions.onErrorDropped(ex);
+				Operators.onErrorDropped(ex);
 			}
 		}
 
@@ -485,7 +485,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				drain();
 			}
 			else {
-				Exceptions.onErrorDropped(ex);
+				Operators.onErrorDropped(ex);
 			}
 		}
 	}

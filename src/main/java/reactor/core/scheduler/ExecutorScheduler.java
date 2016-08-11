@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -86,7 +87,7 @@ final class ExecutorScheduler implements Scheduler {
                 }
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
-                Exceptions.onErrorDropped(e);
+                Operators.onErrorDropped(e);
             }
         }
         
@@ -136,7 +137,7 @@ final class ExecutorScheduler implements Scheduler {
                 }
             } catch (Throwable e) {
                 Exceptions.throwIfFatal(e);
-                Exceptions.onErrorDropped(e);
+                Operators.onErrorDropped(e);
             } finally {
                 if (callRemoveOnFinish) {
                     dispose();

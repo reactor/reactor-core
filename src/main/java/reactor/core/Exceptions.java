@@ -150,115 +150,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 * @param root the optional root cause to suppress
-	 */
-	public static void onErrorDropped(Throwable e, Throwable root) {
-		if(root != null) {
-			e.addSuppressed(root);
-		}
-		onErrorDropped(e);
-	}
-
-	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
-	 *
-	 * @param e the exception to handle
-	 */
-	public static void onErrorDropped(Throwable e) {
-		Consumer<? super Throwable> hook = onErrorDroppedHook;
-		if (hook == null) {
-			throw bubble(e);
-		}
-		hook.accept(e);
-	}
-
-	/**
-	 * An unexpected event is about to be dropped.
-	 *
-	 * @param <T> the dropped value type
-	 * @param t the dropping data
-	 */
-	public static <T> void onNextDropped(T t) {
-		if(t != null) {
-			Consumer<Object> hook = onNextDroppedHook;
-			if (hook == null) {
-				throw failWithCancel();
-			}
-			hook.accept(t);
-		}
-	}
-
-	/**
-	 * Map an "operator" error. The
-	 * result error will be passed via onError to the operator downstream after
-	 * checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param error the callback or operator error
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable onOperatorError(Throwable error) {
-		return onOperatorError(null, error, null);
-	}
-
-	/**
-	 * Map an "operator" error given an operator parent {@link Subscription}. The
-	 * result error will be passed via onError to the operator downstream.
-	 * {@link Subscription} will be cancelled after checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param subscription the linked operator parent {@link Subscription}
-	 * @param error the callback or operator error
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable onOperatorError(Subscription subscription, Throwable error) {
-		return onOperatorError(subscription, error, null);
-	}
-
-
-	/**
-	 * Map an "operator" error given an operator parent {@link Subscription}. The
-	 * result error will be passed via onError to the operator downstream.
-	 * {@link Subscription} will be cancelled after checking for fatal error via
-	 * {@link #throwIfFatal(Throwable)}.
-	 *
-	 * @param subscription the linked operator parent {@link Subscription}
-	 * @param error the callback or operator error
-	 * @param dataSignal the value (onNext or onError) signal processed during failure
-	 * @return mapped {@link Throwable}
-	 *
-	 */
-	public static Throwable onOperatorError(Subscription subscription, Throwable
-			error, Object dataSignal) {
-
-		Exceptions.throwIfFatal(error);
-		if(subscription != null) {
-			subscription.cancel();
-		}
-
-		Throwable t = unwrap(error);
-		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
-				onOperatorErrorHook;
-		if (hook == null) {
-			if (dataSignal != null) {
-				if (dataSignal instanceof Throwable) {
-					t.addSuppressed((Throwable) dataSignal);
-				}
-				//do not wrap original value to avoid strong references
-				/*else {
-				}*/
-			}
-			return t;
-		}
-		return hook.apply(error, dataSignal);
-	}
-
-	/**
 	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
 	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
 	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
@@ -272,59 +163,6 @@ public abstract class Exceptions {
 			return (RuntimeException)t;
 		}
 		return new ReactiveException(t);
-	}
-
-	/**
-	 * Reset global error dropped strategy to bubbling back the error.
-	 */
-	public static void resetOnErrorDroppedHook() {
-		onErrorDroppedHook = null;
-	}
-
-	/**
-	 * Reset global data dropped strategy to throwing via {@link #failWithCancel()}
-	 */
-	public static void resetOnNextDroppedHook() {
-		onNextDroppedHook = null;
-	}
-
-	/**
-	 * Reset global operator error mapping to adding as suppressed
-	 * exception either data driven exception or
-	 * error driven exception.
-	 */
-	public static void resetOnOperatorErrorHook() {
-		onOperatorErrorHook = null;
-	}
-
-	/**
-	 * Override global error dropped strategy which by default bubble back the error.
-	 *
-	 * @param c the dropped error {@link Consumer} hook
-	 */
-	public static void setOnErrorDroppedHook(Consumer<? super Throwable> c) {
-		onErrorDroppedHook = Objects.requireNonNull(c, "onErrorDroppedHook");
-	}
-
-	/**
-	 * Override global data dropped strategy which by default throw {@link #failWithCancel()}
-	 *
-	 * @param c the dropped next {@link Consumer} hook
-	 */
-	public static void setOnNextDroppedHook(Consumer<Object> c) {
-		onNextDroppedHook = Objects.requireNonNull(c, "onNextDroppedHook");
-	}
-
-	/**
-	 * Override global operator error mapping which by default add as suppressed
-	 * exception either data driven exception or error driven exception.
-	 *
-	 * @param f the operator error {@link BiFunction} mapper, given the failure and an
-	 * eventual original context (data or error) and returning an arbitrary exception.
-	 */
-	public static void setOnOperatorErrorHook(BiFunction<? super Throwable, Object, ?
-			extends Throwable> f) {
-		onOperatorErrorHook = Objects.requireNonNull(f, "onOperatorErrorHook");
 	}
 
 	/**
@@ -384,11 +222,6 @@ public abstract class Exceptions {
 		}
 		return _t;
 	}
-
-	volatile static Consumer<? super Throwable> onErrorDroppedHook;
-	volatile static Consumer<Object>            onNextDroppedHook;
-	volatile static BiFunction<? super Throwable, Object, ? extends Throwable>
-	                                            onOperatorErrorHook;
 
 	Exceptions(){}
 

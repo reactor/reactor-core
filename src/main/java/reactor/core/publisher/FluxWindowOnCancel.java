@@ -31,7 +31,6 @@ import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -100,7 +99,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -142,7 +141,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			Processor<T, T> w = window;

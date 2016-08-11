@@ -199,7 +199,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Operators.error(actual, Exceptions.onOperatorError(s, ex));
+							Operators.error(actual, Operators.onOperatorError(s, ex));
 							return;
 						}
 					}
@@ -245,7 +245,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 		
@@ -287,7 +287,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		
@@ -321,7 +321,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							actual.onError(Exceptions.onOperatorError(s, e));
+							actual.onError(Operators.onOperatorError(s, e));
 							return;
 						}
 						
@@ -338,12 +338,12 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.onOperatorError(s, e, v));
+								actual.onError(Operators.onOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								actual.onError(Exceptions.onOperatorError(s,
+								actual.onError(Operators.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
@@ -369,7 +369,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = callable.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.onOperatorError(s, e, v));
+									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}
 								
@@ -518,7 +518,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							queue = queueSupplier.get();
 						} catch (Throwable ex) {
-							Operators.error(actual, Exceptions.onOperatorError(s, ex));
+							Operators.error(actual, Operators.onOperatorError(s, ex));
 							return;
 						}
 					}
@@ -526,7 +526,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					try {
 						queue = queueSupplier.get();
 					} catch (Throwable ex) {
-						Operators.error(actual, Exceptions.onOperatorError(s, ex));
+						Operators.error(actual, Operators.onOperatorError(s, ex));
 						return;
 					}
 				}
@@ -556,7 +556,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				done = true;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 		
@@ -587,7 +587,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				active = false;
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		
@@ -634,7 +634,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						try {
 							v = queue.poll();
 						} catch (Throwable e) {
-							actual.onError(Exceptions.onOperatorError(s, e));
+							actual.onError(Operators.onOperatorError(s, e));
 							return;
 						}
 						
@@ -656,12 +656,12 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							try {
 								p = mapper.apply(v);
 							} catch (Throwable e) {
-								actual.onError(Exceptions.onOperatorError(s, e, v));
+								actual.onError(Operators.onOperatorError(s, e, v));
 								return;
 							}
 							
 							if (p == null) {
-								actual.onError(Exceptions.onOperatorError(s,
+								actual.onError(Operators.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
@@ -686,7 +686,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								try {
 									vr = supplier.call();
 								} catch (Throwable e) {
-									actual.onError(Exceptions.onOperatorError(s, e, v));
+									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}
 								

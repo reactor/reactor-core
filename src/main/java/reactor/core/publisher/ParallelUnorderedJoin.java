@@ -159,7 +159,7 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
 				cancelAll();
 				drain();
 			} else {
-				Exceptions.onErrorDropped(e);
+				Operators.onErrorDropped(e);
 			}
 		}
 		

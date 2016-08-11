@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
@@ -43,7 +42,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
         try {
             v = callable.call();
         } catch (Throwable ex) {
-            s.onError(Exceptions.onOperatorError(ex));
+            s.onError(Operators.onOperatorError(ex));
             return;
         }
         

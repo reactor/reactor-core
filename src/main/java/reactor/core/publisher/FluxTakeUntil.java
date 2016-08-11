@@ -10,7 +10,6 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Relays values until a predicate returns
@@ -68,7 +67,7 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -79,7 +78,7 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				onError(Exceptions.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t));
 
 				return;
 			}
@@ -96,7 +95,7 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 			done = true;
