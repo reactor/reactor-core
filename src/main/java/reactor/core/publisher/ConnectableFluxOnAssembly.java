@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
@@ -48,23 +49,20 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 		Fuseable, AssemblyOp {
 
 	final ConnectableFlux<T> source;
+	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 	
 	final String stacktrace;
 	
-	public ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
+	public ConnectableFluxOnAssembly(ConnectableFlux<T> source, Function<? super
+			Subscriber<? super T>, ? extends Subscriber<? super T>> lift, boolean trace) {
 		this.source = source;
-		this.stacktrace = FluxOnAssembly.takeStacktrace(source);
+		this.lift = lift;
+		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace,
-					this));
-		} else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
-		}
+		FluxOnAssembly.subscribe(s, source, stacktrace, this, lift);
 	}
 
 	@Override

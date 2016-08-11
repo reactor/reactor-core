@@ -33,7 +33,7 @@ import reactor.core.Exceptions;
  * @param <O> the output value type
  */
 public class OperatorAdapter<I, O>
-		implements Subscriber<I>, Subscription, Trackable, Receiver, Producer {
+		implements Subscriber<I>, Subscription, Trackable, Receiver, Producer{
 
 	protected final Subscriber<? super O> subscriber;
 

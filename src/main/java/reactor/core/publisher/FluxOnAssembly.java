@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -52,7 +53,8 @@ import reactor.util.function.Tuple2;
  */
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 
-	final String stacktrace;
+	final String                                                                   stacktrace;
+	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
@@ -62,9 +64,12 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	public FluxOnAssembly(Publisher<? extends T> source) {
+	public FluxOnAssembly(Publisher<? extends T> source,
+			Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
+					lift, boolean trace) {
 		super(source);
-		this.stacktrace = takeStacktrace(source);
+		this.lift = lift;
+		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
 	static Publisher<?> getParentOrThis(Publisher<?> parent) {
@@ -168,15 +173,30 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		return sb.toString();
 	}
 
+	@SuppressWarnings("unchecked")
+	static <T> void subscribe(Subscriber<? super T> s, Publisher<? extends T> source,
+			String stacktrace, Publisher<T> parent, Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
+			lift){
+
+		if(lift != null){
+			s = lift.apply(s);
+		}
+		if(stacktrace != null) {
+			if (s instanceof ConditionalSubscriber) {
+				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
+				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
+						stacktrace,
+						parent));
+			}
+			else {
+				source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, parent));
+			}
+		}
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace, this));
-		}
-		else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
-		}
+		subscribe(s, source, stacktrace, this, lift);
 	}
 
 	/**

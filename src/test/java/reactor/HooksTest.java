@@ -19,7 +19,6 @@ package reactor;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 import org.junit.Assert;
@@ -27,6 +26,7 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.OperatorAdapter;
 import reactor.core.publisher.Operators;
 
 /**
@@ -95,16 +95,51 @@ public class HooksTest {
 
 	@Test
 	public void verboseExtension() {
-		Hooks.onOperatorCreate(hooks -> hooks.operatorStacktrace().log("", Level
-				.INFO));
+		Queue<String> q = new LinkedTransferQueue<>();
+
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace()
+		                               .doOnEach(d -> q.offer(hooks.publisher() + ": " + d),
+				                               t -> q.offer(hooks.publisher() + "! " +
+						                               (t.getSuppressed().length != 0)),
+				                               null,
+				                               null));
 
 		simpleFlux();
 
-		Hooks.onOperatorCreate(hooks -> hooks.ifMono().log("", Level.INFO));
+		Assert.assertArrayEquals(q.toArray(),
+				new String[]{"Just: 1", "{ operator : \"MapFuseable\" }: 2",
+						"{ operator : \"PeekFuseable\" }! false",
+						"{ operator : \"CollectList\" }! true", "Just: [2]",
+						"{ operator : \"Otherwise\" }: [2]"});
+
+		q.clear();
+
+		Hooks.onOperator(hooks -> hooks.log("", Level.INFO)
+		                               .doOnEach(d -> q.offer(hooks.publisher() + ": " + d),
+				                               t -> q.offer(hooks.publisher() + "! " +
+						                               (t.getSuppressed().length != 0)),
+				                               null,
+				                               null));
 
 		simpleFlux();
 
-		Hooks.resetOnOperatorCreate();
+		Assert.assertArrayEquals(q.toArray(),
+				new String[]{"Just: 1", "{ operator : \"MapFuseable\" }: 2",
+						"{ operator : \"PeekFuseable\" }! false",
+						"{ operator : \"CollectList\" }! false", "Just: [2]",
+						"{ operator : \"Otherwise\" }: [2]"});
+
+		q.clear();
+
+		Hooks.onOperator(hooks -> hooks.log("", Level.INFO));
+
+		simpleFlux();
+
+		Assert.assertArrayEquals(q.toArray(), new String[0]);
+
+		q.clear();
+
+		Hooks.resetOnOperator();
 
 		simpleFlux();
 	}
@@ -112,7 +147,7 @@ public class HooksTest {
 
 	@Test
 	public void testTrace() throws Exception {
-		Hooks.onOperatorCreate(Hooks::operatorStacktrace);
+		Hooks.onOperator(Hooks.HookOptions::operatorStacktrace);
 		try {
 			Mono.fromCallable(() -> {
 				throw new RuntimeException();
@@ -126,7 +161,7 @@ public class HooksTest {
 			return;
 		}
 		finally {
-			Hooks.resetOnOperatorCreate();
+			Hooks.resetOnOperator();
 		}
 		throw new IllegalStateException();
 	}
@@ -134,7 +169,8 @@ public class HooksTest {
 
 	@Test
 	public void testTrace2() throws Exception {
-		Hooks.onOperatorCreate(hooks -> hooks.ifOperatorName("map").operatorStacktrace());
+		Hooks.onOperator(hooks -> hooks.ifOperatorName("map")
+		                               .operatorStacktrace());
 		try {
 			Mono.just(1)
 			    .map(d -> {
@@ -154,7 +190,7 @@ public class HooksTest {
 			return;
 		}
 		finally {
-			Hooks.resetOnOperatorCreate();
+			Hooks.resetOnOperator();
 		}
 		throw new IllegalStateException();
 	}

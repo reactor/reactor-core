@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -45,23 +46,20 @@ final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
 	final String stacktrace;
+	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
-
-	public FluxCallableOnAssembly(Publisher<? extends T> source) {
+	public FluxCallableOnAssembly(Publisher<? extends T> source,
+			Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
+			lift, boolean trace) {
 		super(source);
-		this.stacktrace = FluxOnAssembly.takeStacktrace(source);
+		this.lift = lift;
+		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
-			source.subscribe(new OnAssemblyConditionalSubscriber<>(cs, stacktrace, this));
-		}
-		else {
-			source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, this));
-		}
+		FluxOnAssembly.subscribe(s, source, stacktrace, this, lift);
 	}
 
 	@SuppressWarnings("unchecked")
