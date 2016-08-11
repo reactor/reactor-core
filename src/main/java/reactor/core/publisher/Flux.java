@@ -5703,8 +5703,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Wrap the source into a PublisherOnAssembly or PublisherCallableOnAssembly if {@code
-	 * trackAssembly} is set to true.
+	 * Invoke {@link Hooks} pointcut given a {@link Flux} and returning an eventually
+	 * new {@link Flux}
 	 *
 	 * @param <T> the value type
 	 * @param source the source to wrap
@@ -5712,7 +5712,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> Flux<T> onAssembly(Flux<T> source) {
+	protected static <T> Flux<T> onAssembly(Flux<T> source) {
 		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;
@@ -5721,8 +5721,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Wrap the source into a ConnectablePublisherOnAssembly if {@code trackAssembly} is
-	 * set to true.
+	 * Invoke {@link Hooks} pointcut given a {@link ConnectableFlux} and returning an eventually
+	 * new {@link ConnectableFlux}
 	 *
 	 * @param <T> the value type
 	 * @param source the source to wrap
@@ -5730,7 +5730,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
+	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
 		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;

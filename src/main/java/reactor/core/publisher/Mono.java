@@ -2597,8 +2597,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Wrap the source into a PublisherOnAssembly or PublisherCallableOnAssembly if {@code
-	 * trackAssembly} is set to true.
+	 * Invoke {@link Hooks} pointcut given a {@link Mono} and returning an eventually
+	 * new {@link Mono}
 	 *
 	 * @param <T> the value type
 	 * @param source the source to wrap
@@ -2606,7 +2606,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> Mono<T> onAssembly(Mono<T> source) {
+	protected static <T> Mono<T> onAssembly(Mono<T> source) {
 		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
 		if(hook == null) {
 			return source;
