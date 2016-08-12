@@ -313,9 +313,6 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
 				m = Fuseable.NONE;
 			}
-			else if ((requestedMode & Fuseable.SYNC) != 0) {
-				m = s.requestFusion(Fuseable.SYNC);
-			}
 			else {
 				m = s.requestFusion(requestedMode);
 			}
@@ -621,11 +618,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
+				m = Fuseable.NONE;
 			} else {
 				m = s.requestFusion(requestedMode);
 			}
