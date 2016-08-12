@@ -45,7 +45,7 @@ import reactor.core.Trackable;
 final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		implements Fuseable {
 
-	final BiConsumer<SynchronousSink<R>, ? super T> handler;
+	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 	/**
 	 * Constructs a FluxMap instance with the given source and handler.
@@ -55,7 +55,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 	 * @throws NullPointerException if either {@code source} or {@code handler} is null.
 	 */
 	public FluxHandleFuseable(Publisher<? extends T> source,
-			BiConsumer<SynchronousSink<R>, ? super T> handler) {
+			BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}
@@ -75,7 +75,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
 			           SynchronousSubscription<R>, Trackable, SynchronousSink<R> {
 		final Subscriber<? super R>			actual;
-		final BiConsumer<SynchronousSink<R>, ? super T> handler;
+		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
 		Throwable error;
@@ -85,7 +85,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 		int sourceMode;
 
-		public HandleFuseableSubscriber(Subscriber<? super R> actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+		public HandleFuseableSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -110,7 +110,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			
 			if (m == NONE) {
 				try {
-					handler.accept(this, t);
+					handler.accept(t, this);
 				} catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
@@ -209,7 +209,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 					T v = s.poll();
 					R u;
 					if(v != null){
-						handler.accept(this, v);
+						handler.accept(v, this);
 						u = data;
 						data = null;
 						if(done){
@@ -232,7 +232,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				for (;;) {
 					T v = s.poll();
 					if (v != null) {
-						handler.accept(this, v);
+						handler.accept(v, this);
 						R u = data;
 						data = null;
 						if(done){
@@ -309,7 +309,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
 			           SynchronousSubscription<R>, Trackable, SynchronousSink<R> {
 		final ConditionalSubscriber<? super R>			actual;
-		final BiConsumer<SynchronousSink<R>, ? super T> handler;
+		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
 		Throwable error;
@@ -320,7 +320,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		int sourceMode;
 
 		public HandleFuseableConditionalSubscriber(ConditionalSubscriber<? super R>
-				actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+				actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -345,7 +345,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			
 			if (m == 0) {
 				try {
-					handler.accept(this, t);
+					handler.accept(t, this);
 				} catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
@@ -383,7 +383,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 			
 			if (m == 0) {
 				try {
-					handler.accept(this, t);
+					handler.accept(t, this);
 				} catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return false;
@@ -508,7 +508,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 					T v = s.poll();
 					R u;
 					if(v != null){
-						handler.accept(this, v);
+						handler.accept(v, this);
 						u = data;
 						data = null;
 						if(done){
@@ -534,7 +534,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				for (;;) {
 					T v = s.poll();
 					if (v != null) {
-						handler.accept(this, v);
+						handler.accept(v, this);
 						R u = data;
 						data = null;
 						if(done){

@@ -2981,7 +2981,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <R> Flux<R> handle(BiConsumer<SynchronousSink<R>, ? super T> handler) {
+	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxHandleFuseable<>(this, handler));
 		}

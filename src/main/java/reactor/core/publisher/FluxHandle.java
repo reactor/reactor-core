@@ -38,9 +38,9 @@ import reactor.core.Trackable;
  */
 final class FluxHandle<T, R> extends FluxSource<T, R> {
 
-	final BiConsumer<SynchronousSink<R>, ? super T> handler;
+	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	public FluxHandle(Publisher<? extends T> source, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+	public FluxHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}
@@ -64,7 +64,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 								 Fuseable.ConditionalSubscriber<T>, Trackable,
                        SynchronousSink<R> {
 		final Subscriber<? super R>			actual;
-		final BiConsumer<SynchronousSink<R>, ? super T> handler;
+		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
 		Throwable error;
@@ -72,7 +72,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		Subscription s;
 
-		public HandleSubscriber(Subscriber<? super R> actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+		public HandleSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -94,7 +94,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			}
 
 			try {
-				handler.accept(this, t);
+				handler.accept(t, this);
 			} catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
@@ -126,7 +126,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 
 			try {
-				handler.accept(this, t);
+				handler.accept(t, this);
 			} catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
@@ -231,7 +231,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			implements Fuseable.ConditionalSubscriber<T>, Receiver, Producer, Loopback,
 			           Subscription, Trackable, SynchronousSink<R> {
 		final Fuseable.ConditionalSubscriber<? super R> actual;
-		final BiConsumer<SynchronousSink<R>, ? super T> handler;
+		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
 		Throwable error;
@@ -239,7 +239,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		Subscription s;
 
-		public HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+		public HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -261,7 +261,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			}
 
 			try {
-				handler.accept(this, t);
+				handler.accept(t, this);
 			} catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
@@ -293,7 +293,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 
 			try {
-				handler.accept(this, t);
+				handler.accept(t, this);
 			} catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
