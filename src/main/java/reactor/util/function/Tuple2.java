@@ -37,8 +37,8 @@ public class Tuple2<T1, T2> implements Iterable, Serializable {
 	/** */
     private static final long serialVersionUID = 4839927936743208499L;
     
-    public final T1 t1;
-	public final T2 t2;
+    final T1 t1;
+	final T2 t2;
 
 	Tuple2(T1 t1, T2 t2) {
 		this.t1 = t1;
