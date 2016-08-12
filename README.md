@@ -19,7 +19,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
     dependencies {
       //compile "io.projectreactor:reactor-core:3.0.0.BUILD-SNAPSHOT"
-      compile "io.projectreactor:reactor-core:3.0.0.RC1"
+      compile "io.projectreactor:reactor-core:3.0.0.RC2"
     }
 ```
 
