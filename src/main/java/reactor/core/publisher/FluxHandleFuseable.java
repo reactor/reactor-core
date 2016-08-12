@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -73,6 +74,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 	static final class HandleFuseableSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
+			           ConditionalSubscriber<T>,
 			           SynchronousSubscription<R>, Trackable, SynchronousSink<R> {
 		final Subscriber<? super R>			actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
@@ -88,6 +90,46 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		public HandleFuseableSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return true;
+			}
+
+			int m = sourceMode;
+
+			if (m == 0) {
+				try {
+					handler.accept(t, this);
+				} catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, t));
+					return false;
+				}
+				R v = data;
+				data = null;
+				if (v != null) {
+					actual.onNext(v);
+				}
+				if(done){
+					s.cancel();
+					if(error != null){
+						actual.onError(error);
+					}
+					else {
+						actual.onComplete();
+					}
+				}
+				if(v == null){
+					return false;
+				}
+			} else
+			if (m == 2) {
+				actual.onNext(null);
+			}
+			return true;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -199,12 +241,12 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		public R poll() {
 			if(done){
 				if(error != null){
-					actual.onError(error);
+					throw Exceptions.propagate(error);
 				}
 				return null;
 			}
 			if (sourceMode == ASYNC) {
-				long dropped = 0;
+				long dropped = 0L;
 				for (;;) {
 					T v = s.poll();
 					R u;
@@ -224,8 +266,12 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						}
 						dropped++;
 					}
-					else if (dropped != 0) {
+					else if (dropped != 0L) {
 						request(dropped);
+						dropped = 0L;
+					}
+					else {
+						return null;
 					}
 				}
 			} else {
@@ -237,7 +283,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						data = null;
 						if(done){
 							if(error != null){
-								actual.onError(error);
+								throw Exceptions.propagate(error);
 							}
 							return u;
 						}
@@ -265,12 +311,12 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
-			} else {
+				m = Fuseable.NONE;
+			}
+			else if ((requestedMode & Fuseable.SYNC) != 0) {
+				m = s.requestFusion(Fuseable.SYNC);
+			}
+			else {
 				m = s.requestFusion(requestedMode);
 			}
 			sourceMode = m;
@@ -502,12 +548,12 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		public R poll() {
 			if (done){
 				if(error != null){
-					actual.onError(error);
+					throw Exceptions.propagate(error);
 				}
 				return null;
 			}
 			if (sourceMode == ASYNC) {
-				long dropped = 0;
+				long dropped = 0L;
 				for (;;) {
 					T v = s.poll();
 					R u;
@@ -530,8 +576,12 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						}
 						dropped++;
 					}
-					else if (dropped != 0) {
+					else if (dropped != 0L) {
 						request(dropped);
+						dropped = 0L;
+					}
+					else {
+						return null;
 					}
 				}
 			} else {
@@ -543,7 +593,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						data = null;
 						if(done){
 							if(error != null){
-								actual.onError(error);
+								throw Exceptions.propagate(error);
 							}
 							return u;
 						}
