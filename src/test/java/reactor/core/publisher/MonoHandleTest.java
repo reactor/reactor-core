@@ -17,22 +17,17 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import reactor.test.TestSubscriber;
 
 import static java.util.Collections.singleton;
 
-public class MonoMapOrFilterTest {
+public class MonoHandleTest {
 
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
-		Mono.just(1).mapOrFilter(v -> v * 2).subscribe(ts);
+		Mono.just(1).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
 
 		ts.assertContainValues(singleton(2))
 		.assertNoError()
@@ -43,7 +38,7 @@ public class MonoMapOrFilterTest {
 	public void filterNullMapResult() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Mono.just(1).mapOrFilter(v -> (Integer) null).subscribe(ts);
+		Mono.just(1).<Integer>handle((s, v) -> {}).subscribe(ts);
 
 		ts.assertValueCount(0)
 			.assertNoError()

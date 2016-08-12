@@ -19,7 +19,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 import reactor.core.Fuseable;
 
@@ -36,28 +36,14 @@ import reactor.core.Fuseable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoMapOrFilterFuseable<T, R> extends MonoSource<T, R>
+final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 		implements Fuseable {
 
-	final Function<? super T, ? extends R> mapper;
+	final BiConsumer<SynchronousSink<R>, ? super T> handler;
 
-	/**
-	 * Constructs a StreamMap instance with the given source and mapper.
-	 *
-	 * @param source the source Publisher instance
-	 * @param mapper the mapper function
-	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
-	 */
-	public MonoMapOrFilterFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<SynchronousSink<R>, ? super T> handler) {
 		super(source);
-		if (!(source instanceof Fuseable)) {
-			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
-		}
-		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
+		this.handler = Objects.requireNonNull(handler, "handler");
 	}
 
 	@Override
@@ -65,10 +51,10 @@ final class MonoMapOrFilterFuseable<T, R> extends MonoSource<T, R>
 		if (s instanceof ConditionalSubscriber) {
 			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new FluxMapOrFilterFuseable.MapOrFilterFuseableConditionalSubscriber<>(cs, mapper));
+			source.subscribe(new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(cs, handler));
 			return;
 		}
-		source.subscribe(new FluxMapOrFilterFuseable.MapOrFilterFuseableSubscriber<>(s, mapper));
+		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));
 	}
 
 }

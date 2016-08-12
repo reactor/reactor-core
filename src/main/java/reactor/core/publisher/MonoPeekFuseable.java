@@ -71,10 +71,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 			LongConsumer onRequestCall,
 			Runnable onCancelCall) {
 		super(source);
-		if (!(source instanceof Fuseable)) {
-			throw new IllegalArgumentException(
-					"The source must implement the Fuseable interface for this operator to work");
-		}
 
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;

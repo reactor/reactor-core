@@ -48,9 +48,6 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 	 */
 	public MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
 		super(source);
-		if (!(source instanceof Fuseable)) {
-			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
-		}
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
 

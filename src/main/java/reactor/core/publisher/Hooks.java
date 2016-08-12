@@ -169,21 +169,7 @@ public abstract class Hooks {
 					null, onRequestCall, onCancelCall);
 		}
 
-		/**
-		 * Peek into the lifecycle and sequence signals.
-		 * <p>
-		 * The callbacks are all optional.
-		 *
-		 * @param onSubscribeCall A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
-		 * @param onNextCall A consumer that will observe {@link Subscriber#onNext(Object)}
-		 * @param onErrorCall A consumer that will observe {@link Subscriber#onError(Throwable)}}
-		 * @param onCompleteCall A task that will run on {@link Subscriber#onComplete()}
-		 * @param onAfterTerminateCall A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
-		 * @param onRequestCall A consumer of long that will observe {@link Subscription#request(long)}}
-		 * @param onCancelCall A task that will run on {@link Subscription#cancel()}
-		 * @return an observing {@link OperatorHook}
-		 */
-		public final OperatorHook<T> doOnSignal(
+		final OperatorHook<T> doOnSignal(
 				Consumer<? super Subscription> onSubscribeCall,
 				Consumer<? super T> onNextCall,
 				Consumer<? super Throwable> onErrorCall,

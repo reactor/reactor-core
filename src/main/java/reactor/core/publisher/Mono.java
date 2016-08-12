@@ -1589,6 +1589,24 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Handle the items emitted by this {@link Mono} by calling a biconsumer with the
+	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
+	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
+	 * {@link SynchronousSink#complete()}.
+	 *
+	 * @param handler the handling {@link BiConsumer}
+	 * @param <R> the transformed type
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	public final <R> Mono<R> handle(BiConsumer<SynchronousSink<R>, ? super T> handler) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoHandleFuseable<>(this, handler));
+		}
+		return onAssembly(new MonoHandle<>(this, handler));
+	}
+
+	/**
 	 * Hides the identity of this {@link Mono} instance.
 	 * 
 	 * <p>The main purpose of this operator is to prevent certain identity-based
@@ -1738,28 +1756,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return otherwise(predicate, e -> Mono.error(mapper.apply(e)));
-	}
-
-	/**
-	 * Transform the item emitted by this {@link Mono} by applying a function to each item. If the result is not
-	 * {code null} then the {@link Mono} will complete with this value.  If the result of the function is {@code null}
-	 * then the {@link Mono} will complete without a value.
-	 *
-	 * If the result is a {@code null} value then the source value is filtered rather than
-	 * mapped.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map1.png" alt="">
-	 * <p>
-	 * @param mapper the transforming function
-	 * @param <R> the transformed type
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public final <R> Mono<R> mapOrFilter(Function<? super T, ? extends R> mapper) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoMapOrFilterFuseable<>(this, mapper));
-		}
-		return onAssembly(new MonoMapOrFilter<>(this, mapper));
 	}
 
 	/**

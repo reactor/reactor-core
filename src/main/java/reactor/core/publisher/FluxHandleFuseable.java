@@ -20,9 +20,9 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -30,7 +30,7 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 
 /**
- * Maps the values of the source publisher one-on-one via a mapper function.
+ * Maps the values of the source publisher one-on-one via a handler function.
  * <p>
  * This variant allows composing fuseable stages.
  * 
@@ -42,28 +42,22 @@ import reactor.core.Trackable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
+final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 		implements Fuseable {
 
-	final Function<? super T, ? extends R> mapper;
+	final BiConsumer<SynchronousSink<R>, ? super T> handler;
 
 	/**
-	 * Constructs a FluxMap instance with the given source and mapper.
+	 * Constructs a FluxMap instance with the given source and handler.
 	 *
 	 * @param source the source Publisher instance
-	 * @param mapper the mapper function
-	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
+	 * @param handler the handler function
+	 * @throws NullPointerException if either {@code source} or {@code handler} is null.
 	 */
-	public FluxMapOrFilterFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	public FluxHandleFuseable(Publisher<? extends T> source,
+			BiConsumer<SynchronousSink<R>, ? super T> handler) {
 		super(source);
-		if (!(source instanceof Fuseable)) {
-			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
-		}
-		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
+		this.handler = Objects.requireNonNull(handler, "handler");
 	}
 
 	@Override
@@ -71,27 +65,29 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		if (s instanceof ConditionalSubscriber) {
 			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new MapOrFilterFuseableConditionalSubscriber<>(cs, mapper));
+			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
 			return;
 		}
-		source.subscribe(new MapOrFilterFuseableSubscriber<>(s, mapper));
+		source.subscribe(new HandleFuseableSubscriber<>(s, handler));
 	}
 
-	static final class MapOrFilterFuseableSubscriber<T, R>
+	static final class HandleFuseableSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
-			           SynchronousSubscription<R>, Trackable {
+			           SynchronousSubscription<R>, Trackable, SynchronousSink<R> {
 		final Subscriber<? super R>			actual;
-		final Function<? super T, ? extends R> mapper;
+		final BiConsumer<SynchronousSink<R>, ? super T> handler;
 
 		boolean done;
+		Throwable error;
+		R data;
 
 		QueueSubscription<T> s;
 
 		int sourceMode;
 
-		public MapOrFilterFuseableSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public HandleFuseableSubscriber(Subscriber<? super R> actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
 			this.actual = actual;
-			this.mapper = mapper;
+			this.handler = handler;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -106,27 +102,34 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
 			int m = sourceMode;
 			
 			if (m == NONE) {
-				R v;
-	
 				try {
-					v = mapper.apply(t);
+					handler.accept(this, t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
-	
-				if (v == null) {
-					s.request(1);
-				}
-				else{
+				R v = data;
+				data = null;
+				if (v != null) {
 					actual.onNext(v);
+				}
+				if(done){
+					s.cancel();
+					if(error != null){
+						actual.onError(error);
+						return;
+					}
+					actual.onComplete();
+				}
+				else if(v == null){
+					s.request(1L);
 				}
 	
 			} else
@@ -138,7 +141,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 
@@ -174,7 +177,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public Object connectedInput() {
-			return mapper;
+			return handler;
 		}
 
 		@Override
@@ -194,28 +197,53 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
+			if(done){
+				if(error != null){
+					actual.onError(error);
+				}
+				return null;
+			}
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
 				for (;;) {
 					T v = s.poll();
-					R u = null;
-					if(v == null || (u = mapper.apply(v)) == null ) {
-						if (dropped != 0) {
-							request(dropped);
+					R u;
+					if(v != null){
+						handler.accept(this, v);
+						u = data;
+						data = null;
+						if(done){
+							s.cancel();
+							if(error != null){
+								actual.onError(error);
+							}
+							return u;
 						}
-						return u;
+						if(u != null){
+							return u;
+						}
+						dropped++;
 					}
-					dropped++;
-					return null;
+					else if (dropped != 0) {
+						request(dropped);
+					}
 				}
 			} else {
 				for (;;) {
 					T v = s.poll();
 					if (v != null) {
-						R u = mapper.apply(v);
+						handler.accept(this, v);
+						R u = data;
+						data = null;
+						if(done){
+							if(error != null){
+								actual.onError(error);
+							}
+							return u;
+						}
 						if(u != null) {
 							return u;
-					  }
+						}
 					} else {
 						return null;
 					}
@@ -253,23 +281,48 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		public int size() {
 			return s.size();
 		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public void complete() {
+			done = true;
+		}
+
+		@Override
+		public void error(Throwable e) {
+			Objects.requireNonNull(e, "error");
+			done = true;
+			error = e;
+		}
+
+		@Override
+		public void next(R o) {
+			data = o;
+		}
 	}
 
-	static final class MapOrFilterFuseableConditionalSubscriber<T, R>
+	static final class HandleFuseableConditionalSubscriber<T, R>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           SynchronousSubscription<R>, Trackable {
+			           SynchronousSubscription<R>, Trackable, SynchronousSink<R> {
 		final ConditionalSubscriber<? super R>			actual;
-		final Function<? super T, ? extends R> mapper;
+		final BiConsumer<SynchronousSink<R>, ? super T> handler;
 
 		boolean done;
+		Throwable error;
+		R data;
 
 		QueueSubscription<T> s;
 
 		int sourceMode;
 
-		public MapOrFilterFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public HandleFuseableConditionalSubscriber(ConditionalSubscriber<? super R>
+				actual, BiConsumer<SynchronousSink<R>, ? super T> handler) {
 			this.actual = actual;
-			this.mapper = mapper;
+			this.handler = handler;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -284,28 +337,35 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return;
 			}
 
 			int m = sourceMode;
 			
 			if (m == 0) {
-				R v;
-	
 				try {
-					v = mapper.apply(t);
+					handler.accept(this, t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
-	
-				if (v == null) {
-					s.request(1);
-				} else {
+				R v = data;
+				data = null;
+				if (v != null) {
 					actual.onNext(v);
 				}
-
+				if(done){
+					s.cancel();
+					if(error != null){
+						actual.onError(error);
+						return;
+					}
+					actual.onComplete();
+				}
+				else if(v == null){
+					s.request(1L);
+				}
 			} else
 			if (m == 2) {
 				actual.onNext(null);
@@ -315,27 +375,38 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Exceptions.onNextDropped(t);
+				Operators.onNextDropped(t);
 				return true;
 			}
 
 			int m = sourceMode;
 			
 			if (m == 0) {
-				R v;
-	
 				try {
-					v = mapper.apply(t);
+					handler.accept(this, t);
 				} catch (Throwable e) {
-					onError(Exceptions.mapOperatorError(s, e, t));
-					return true;
-				}
-	
-				if (v == null) {
+					onError(Operators.onOperatorError(s, e, t));
 					return false;
 				}
-	
-				return actual.tryOnNext(v);
+				R v = data;
+				data = null;
+				boolean emit = false;
+				if (v != null) {
+					emit = actual.tryOnNext(v);
+				}
+				if(done){
+					s.cancel();
+					if(error != null){
+						actual.onError(error);
+					}
+					else {
+						actual.onComplete();
+					}
+					return emit;
+				}
+				else if(v == null){
+					return false;
+				}
 			} else
 			if (m == 2) {
 				actual.onNext(null);
@@ -347,7 +418,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Exceptions.onErrorDropped(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 
@@ -367,6 +438,28 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 		}
 
 		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public void complete() {
+			done = true;
+		}
+
+		@Override
+		public void error(Throwable e) {
+			Objects.requireNonNull(e, "error");
+			done = true;
+			error = e;
+		}
+
+		@Override
+		public void next(R o) {
+			data = o;
+		}
+
+		@Override
 		public boolean isStarted() {
 			return s != null && !done;
 		}
@@ -383,7 +476,7 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public Object connectedInput() {
-			return mapper;
+			return handler;
 		}
 
 		@Override
@@ -403,25 +496,53 @@ final class FluxMapOrFilterFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public R poll() {
+			if (done){
+				if(error != null){
+					actual.onError(error);
+				}
+				return null;
+			}
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
 				for (;;) {
 					T v = s.poll();
-					R u = null;
-					if(v == null || (u = mapper.apply(v)) == null ) {
-						if (dropped != 0) {
-							request(dropped);
+					R u;
+					if(v != null){
+						handler.accept(this, v);
+						u = data;
+						data = null;
+						if(done){
+							s.cancel();
+							if(error != null){
+								actual.onError(error);
+							}
+							else {
+								actual.onComplete();
+							}
+							return u;
 						}
-						return u;
+						if(u != null){
+							return u;
+						}
+						dropped++;
 					}
-					dropped++;
-					return null;
+					else if (dropped != 0) {
+						request(dropped);
+					}
 				}
 			} else {
 				for (;;) {
 					T v = s.poll();
 					if (v != null) {
-						R u = mapper.apply(v);
+						handler.accept(this, v);
+						R u = data;
+						data = null;
+						if(done){
+							if(error != null){
+								actual.onError(error);
+							}
+							return u;
+						}
 						if(u != null) {
 							return u;
 						}

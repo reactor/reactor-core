@@ -15,32 +15,25 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.testng.collections.Sets;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.TestSubscriber;
 
-import static reactor.core.Fuseable.ANY;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
-public class FluxMapOrFilterTest {
+public class FluxHandleTest {
 
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
-		Flux.range(1, 5).mapOrFilter(v -> v * 2).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.assertContainValues(expectedValues)
@@ -52,7 +45,11 @@ public class FluxMapOrFilterTest {
 	public void filterNullMapResult() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 5).mapOrFilter(v -> v % 2 == 0 ? v * 2 : null).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> {
+			if(v % 2 == 0){
+				s.next(v * 2);
+			}
+		}).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.assertContainValues(expectedValues)
@@ -65,7 +62,8 @@ public class FluxMapOrFilterTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(SYNC);
 
-		Flux.range(1, 5).mapOrFilter(v -> v * 2).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2))
+		    .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.assertContainValues(expectedValues)
@@ -80,7 +78,7 @@ public class FluxMapOrFilterTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
-		Flux.range(1, 5).mapOrFilter(v -> v * 2).publishOn(Schedulers.single()).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).publishOn(Schedulers.single()).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.await()
@@ -96,7 +94,11 @@ public class FluxMapOrFilterTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(SYNC);
 
-		Flux.range(1, 5).mapOrFilter(v -> v % 2 == 0 ? v * 2 : null).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> {
+			if(v % 2 == 0){
+				s.next(v * 2);
+			}
+		}).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.assertContainValues(expectedValues)
@@ -111,7 +113,11 @@ public class FluxMapOrFilterTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
-		Flux.range(1, 5).mapOrFilter(v -> v % 2 == 0 ? v * 2 : null).publishOn(Schedulers.single()).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> {
+			if(v % 2 == 0){
+				s.next(v * 2);
+			}
+		}).publishOn(Schedulers.single()).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.await()

@@ -2971,6 +2971,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Handle the items emitted by this {@link Flux} by calling a biconsumer with the
+	 * output sink for each onNext. At most one {@link SynchronousSink#next(Object)}
+	 * call must be performed and/or 0 or 1 {@link SynchronousSink#error(Throwable)} or
+	 * {@link SynchronousSink#complete()}.
+	 *
+	 * @param handler the handling {@link BiConsumer}
+	 * @param <R> the transformed type
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <R> Flux<R> handle(BiConsumer<SynchronousSink<R>, ? super T> handler) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxHandleFuseable<>(this, handler));
+		}
+		return onAssembly(new FluxHandle<>(this, handler));
+	}
+
+	/**
 	 * Emit a single boolean true if any of the values of this {@link Flux} sequence match
 	 * the  constant.
 	 * <p>
@@ -3190,26 +3208,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResumeWith(predicate, e -> Mono.error(mapper.apply(e)));
-	}
-
-	/**
-	 * Transform the items emitted by this {@link Flux} by applying a function to each item  as long as the mapper
-	 * function result is not null. If the result is a {@code null} value then the source value is filtered rather than
-	 * mapped.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/map.png" alt="">
-	 * <p>
-	 * @param mapper the transforming {@link Function}
-	 * @param <V> the transformed type
-	 *
-	 * @return a transformed {@link Flux}
-	 */
-	public final <V> Flux<V> mapOrFilter(Function<? super T, ? extends V> mapper) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxMapOrFilterFuseable<>(this, mapper));
-		}
-		return onAssembly(new FluxMapOrFilterFuseable<>(this, mapper));
 	}
 
 	/**

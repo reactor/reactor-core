@@ -38,9 +38,6 @@ final class MonoFilterFuseable<T> extends MonoSource<T, T>
 
 	public MonoFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
-		if (!(source instanceof Fuseable)) {
-			throw new IllegalArgumentException("The source must implement the Fuseable interface for this operator to work");
-		}
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
