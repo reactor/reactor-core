@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher;
 
-import org.junit.Test;
+package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.TestSubscriber;
 
@@ -31,44 +31,43 @@ public class FluxHandleTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
-
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
-		ts.assertContainValues(expectedValues)
-		.assertNoError()
-		.assertComplete();
+
+		Flux.range(1, 5)
+		    .handle((s, v) -> s.next(v * 2))
+		    .subscribeWith(TestSubscriber.create())
+		    .assertContainValues(expectedValues)
+		    .assertNoError()
+		    .assertComplete();
 	}
 
 	@Test
 	public void filterNullMapResult() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.range(1, 5).<Integer>handle((s, v) -> {
-			if(v % 2 == 0){
-				s.next(v * 2);
-			}
-		}).subscribe(ts);
-
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
-		ts.assertContainValues(expectedValues)
-			.assertNoError()
-			.assertComplete();
+
+		Flux.range(1, 5)
+		    .handle((s, v) -> {
+			    if (v % 2 == 0) {
+				    s.next(v * 2);
+			    }
+		    })
+		    .subscribeWith(TestSubscriber.create())
+		    .assertContainValues(expectedValues)
+		    .assertNoError()
+		    .assertComplete();
 	}
 
 	@Test
 	public void normalSyncFusion() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.requestedFusionMode(SYNC);
 
-		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2))
-		    .subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
 
-		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.assertContainValues(expectedValues)
-			.assertNoError()
-			.assertComplete()
+		  .assertNoError()
+		  .assertComplete()
 		  .assertFuseableSource()
 		  .assertFusionMode(SYNC);
 	}
@@ -78,15 +77,17 @@ public class FluxHandleTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
-		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).publishOn(Schedulers.single()).subscribe(ts);
+		Flux.range(1,
+				5).<Integer>handle((s, v) -> s.next(v * 2)).publishOn(Schedulers.single())
+		                                                   .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.await()
 		  .assertContainValues(expectedValues)
-			.assertNoError()
-			.assertComplete()
-			.assertFuseableSource()
-			.assertFusionMode(ASYNC);
+		  .assertNoError()
+		  .assertComplete()
+		  .assertFuseableSource()
+		  .assertFusionMode(ASYNC);
 	}
 
 	@Test
@@ -95,17 +96,17 @@ public class FluxHandleTest {
 		ts.requestedFusionMode(SYNC);
 
 		Flux.range(1, 5).<Integer>handle((s, v) -> {
-			if(v % 2 == 0){
+			if (v % 2 == 0) {
 				s.next(v * 2);
 			}
 		}).subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.assertContainValues(expectedValues)
-			.assertNoError()
-			.assertComplete()
+		  .assertNoError()
+		  .assertComplete()
 		  .assertFuseableSource()
-			.assertFusionMode(SYNC);
+		  .assertFusionMode(SYNC);
 	}
 
 	@Test
@@ -114,18 +115,19 @@ public class FluxHandleTest {
 		ts.requestedFusionMode(ASYNC);
 
 		Flux.range(1, 5).<Integer>handle((s, v) -> {
-			if(v % 2 == 0){
+			if (v % 2 == 0) {
 				s.next(v * 2);
 			}
-		}).publishOn(Schedulers.single()).subscribe(ts);
+		}).publishOn(Schedulers.single())
+		  .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 		ts.await()
-			.assertContainValues(expectedValues)
-			.assertNoError()
-			.assertComplete()
-			.assertFuseableSource()
-			.assertFusionMode(ASYNC);
+		  .assertContainValues(expectedValues)
+		  .assertNoError()
+		  .assertComplete()
+		  .assertFuseableSource()
+		  .assertFusionMode(ASYNC);
 	}
 
 }

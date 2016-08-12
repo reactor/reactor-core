@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-
 import reactor.test.TestSubscriber;
 
 import static java.util.Collections.singleton;
@@ -25,24 +24,23 @@ public class MonoHandleTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		Mono.just(1).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
-
-		ts.assertContainValues(singleton(2))
-		.assertNoError()
-		.assertComplete();
+		Mono.just(1)
+		    .handle((s, v) -> s.next(v * 2))
+		    .subscribeWith(TestSubscriber.create())
+		    .assertContainValues(singleton(2))
+		    .assertNoError()
+		    .assertComplete();
 	}
 
 	@Test
 	public void filterNullMapResult() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Mono.just(1).<Integer>handle((s, v) -> {}).subscribe(ts);
-
-		ts.assertValueCount(0)
-			.assertNoError()
-			.assertComplete();
+		Mono.just(1)
+		    .handle((s, v) -> { /*ignore*/ })
+		    .subscribeWith(TestSubscriber.create())
+		    .assertValueCount(0)
+		    .assertNoError()
+		    .assertComplete();
 	}
 
 }
