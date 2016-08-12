@@ -301,7 +301,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void next(R o) {
-			data = o;
+			data = Objects.requireNonNull(o, "data");
 		}
 	}
 
@@ -456,7 +456,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void next(R o) {
-			data = o;
+			data = Objects.requireNonNull(o, "data");
 		}
 
 		@Override

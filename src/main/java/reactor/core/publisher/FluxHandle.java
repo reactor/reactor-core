@@ -188,7 +188,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void next(R o) {
-			data = o;
+			data = Objects.requireNonNull(o, "data");
 		}
 
 		@Override
@@ -377,7 +377,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void next(R o) {
-			data = o;
+			data = Objects.requireNonNull(o, "data");
 		}
 
 		@Override
