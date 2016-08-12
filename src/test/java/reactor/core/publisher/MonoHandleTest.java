@@ -25,7 +25,7 @@ public class MonoHandleTest {
 	@Test
 	public void normal() {
 		Mono.just(1)
-		    .handle((s, v) -> s.next(v * 2))
+		    .handle((v, s) -> s.next(v * 2))
 		    .subscribeWith(TestSubscriber.create())
 		    .assertContainValues(singleton(2))
 		    .assertNoError()
@@ -36,7 +36,7 @@ public class MonoHandleTest {
 	public void filterNullMapResult() {
 
 		Mono.just(1)
-		    .handle((s, v) -> { /*ignore*/ })
+		    .handle((v, s) -> { /*ignore*/ })
 		    .subscribeWith(TestSubscriber.create())
 		    .assertValueCount(0)
 		    .assertNoError()

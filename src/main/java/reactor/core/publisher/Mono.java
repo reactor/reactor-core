@@ -1599,7 +1599,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Mono}
 	 */
-	public final <R> Mono<R> handle(BiConsumer<SynchronousSink<R>, ? super T> handler) {
+	public final <R> Mono<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoHandleFuseable<>(this, handler));
 		}

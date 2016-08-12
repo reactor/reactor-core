@@ -39,9 +39,9 @@ import reactor.core.Fuseable;
 final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 		implements Fuseable {
 
-	final BiConsumer<SynchronousSink<R>, ? super T> handler;
+	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	public MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<SynchronousSink<R>, ? super T> handler) {
+	public MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}

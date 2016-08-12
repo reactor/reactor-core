@@ -34,7 +34,7 @@ public class FluxHandleTest {
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 
 		Flux.range(1, 5)
-		    .handle((s, v) -> s.next(v * 2))
+		    .handle((v, s) -> s.next(v * 2))
 		    .subscribeWith(TestSubscriber.create())
 		    .assertContainValues(expectedValues)
 		    .assertNoError()
@@ -46,7 +46,7 @@ public class FluxHandleTest {
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 
 		Flux.range(1, 5)
-		    .handle((s, v) -> {
+		    .handle((v, s) -> {
 			    if (v % 2 == 0) {
 				    s.next(v * 2);
 			    }
@@ -63,7 +63,7 @@ public class FluxHandleTest {
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.requestedFusionMode(SYNC);
 
-		Flux.range(1, 5).<Integer>handle((s, v) -> s.next(v * 2)).subscribe(ts);
+		Flux.range(1, 5).<Integer>handle((v, s) -> s.next(v * 2)).subscribe(ts);
 
 		ts.assertContainValues(expectedValues)
 		  .assertNoError()
@@ -78,7 +78,7 @@ public class FluxHandleTest {
 		ts.requestedFusionMode(ASYNC);
 
 		Flux.range(1,
-				5).<Integer>handle((s, v) -> s.next(v * 2)).publishOn(Schedulers.single())
+				5).<Integer>handle((v, s) -> s.next(v * 2)).publishOn(Schedulers.single())
 		                                                   .subscribe(ts);
 
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
@@ -95,7 +95,7 @@ public class FluxHandleTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(SYNC);
 
-		Flux.range(1, 5).<Integer>handle((s, v) -> {
+		Flux.range(1, 5).<Integer>handle((v, s) -> {
 			if (v % 2 == 0) {
 				s.next(v * 2);
 			}
@@ -114,7 +114,7 @@ public class FluxHandleTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
-		Flux.range(1, 5).<Integer>handle((s, v) -> {
+		Flux.range(1, 5).<Integer>handle((v, s) -> {
 			if (v % 2 == 0) {
 				s.next(v * 2);
 			}
