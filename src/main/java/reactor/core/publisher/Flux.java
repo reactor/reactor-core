@@ -393,6 +393,71 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 */
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
+			T>> sources) {
+		return concatDelayError(sources, QueueSupplier.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param prefetch the inner source request size
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 */
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
+		return onAssembly(new FluxConcatMap<>(sources,
+				identityFunction(),
+				QueueSupplier.get(prefetch), prefetch,
+				FluxConcatMap.ErrorMode.END));
+	}
+
+
+	/**
+	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
+	 *
+	 * Errors will be delayed after the current concat backlog if delayUntilEnd is
+	 * false or after all sources if delayUntilEnd is true.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concatinner.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param delayUntilEnd delay error until all sources have been consumed instead of
+	 * after the current source
+	 * @param prefetch the inner source request size
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
+	 */
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
+			T>> sources, boolean delayUntilEnd, int prefetch) {
+		return onAssembly(new FluxConcatMap<>(sources,
+				identityFunction(),
+				QueueSupplier.get(prefetch), prefetch,
+				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode
+						.BOUNDARY));
+	}
+
+	/**
 	 * Concat all sources pulled from the given {@link Publisher} array.
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned Publisher.
@@ -407,6 +472,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SafeVarargs
 	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(false, sources));
+	}
+
+	/**
+	 * Concat all sources pulled from the given {@link Publisher} array.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned Publisher.
+	 * Any error will be delayed until all sources have been concatenated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all source sequences
+	 */
+	@SafeVarargs
+	public static <T> Flux<T> concatDelayError(Publisher<? extends T>... sources) {
+		return onAssembly(new FluxConcatArray<>(true, sources));
 	}
 	
 	/**
