@@ -21,10 +21,10 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -284,11 +284,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
+				m = Fuseable.NONE;
 			} else {
 				m = s.requestFusion(requestedMode);
 			}
@@ -514,10 +510,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			int m = s.requestFusion(requestedMode);
-			if (m != Fuseable.NONE) {
-				sourceMode = m == Fuseable.SYNC ? SYNC : ((requestedMode & Fuseable.THREAD_BARRIER) != 0 ? NONE : ASYNC);
+			int m;
+			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
+				m = Fuseable.NONE;
 			}
+			else {
+				m = s.requestFusion(requestedMode);
+			}
+			sourceMode = m;
 			return m;
 		}
 

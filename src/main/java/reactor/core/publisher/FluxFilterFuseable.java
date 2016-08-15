@@ -239,12 +239,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
-			} else {
+				m = Fuseable.NONE;
+			}
+			else {
 				m = s.requestFusion(requestedMode);
 			}
 			sourceMode = m;
@@ -441,12 +438,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
-			} else {
+				m = Fuseable.NONE;
+			}
+			else {
 				m = s.requestFusion(requestedMode);
 			}
 			sourceMode = m;
