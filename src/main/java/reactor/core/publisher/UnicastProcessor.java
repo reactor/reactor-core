@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -75,6 +76,25 @@ public final class UnicastProcessor<T>
 	 */
 	public static <T> UnicastProcessor<T> create(Queue<T> queue, Runnable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
+	}
+
+	/**
+	 * Create a {@link FluxProcessor} from hot
+	 * {@link UnicastProcessor#create UnicastProcessor}
+	 * safely gated by a serializing {@link Subscriber}.
+	 * It will not propagate cancel upstream if {@link Subscription} has been set. Serialization uses thread-stealing
+	 * and a potentially unbounded queue that might starve a calling thread if races are too important and
+	 * {@link Subscriber} is slower.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 *
+	 * @param <T> the relayed type
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public static <T> FluxProcessor<T, T> serialize() {
+		Processor<T, T> processor = create();
+		return new DelegateProcessor<>(processor, Operators.serialize(processor));
 	}
 
 	final Queue<T> queue;
