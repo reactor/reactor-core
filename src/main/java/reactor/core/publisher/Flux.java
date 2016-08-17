@@ -393,6 +393,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Concat all sources pulled from the given {@link Publisher} array.
+	 * A complete signal from each source will delimit the individual sequences and will be eventually
+	 * passed to the returned Publisher.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
+	 * <p>
+	 * @param sources The {@link Publisher} of {@link Publisher} to concat
+	 * @param <T> The source type of the data sequence
+	 *
+	 * @return a new {@link Flux} concatenating all source sequences
+	 */
+	@SafeVarargs
+	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
+		return onAssembly(new FluxConcatArray<>(false, sources));
+	}
+
+	/**
 	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
 	 * passed to the returned {@link Publisher} which will stop listening if the main sequence has also completed.
@@ -408,6 +425,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			T>> sources) {
 		return concatDelayError(sources, QueueSupplier.XS_BUFFER_SIZE);
 	}
+
 
 	/**
 	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
@@ -428,7 +446,6 @@ public abstract class Flux<T> implements Publisher<T> {
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END));
 	}
-
 
 	/**
 	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
@@ -455,23 +472,6 @@ public abstract class Flux<T> implements Publisher<T> {
 				QueueSupplier.get(prefetch), prefetch,
 				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode
 						.BOUNDARY));
-	}
-
-	/**
-	 * Concat all sources pulled from the given {@link Publisher} array.
-	 * A complete signal from each source will delimit the individual sequences and will be eventually
-	 * passed to the returned Publisher.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/concat.png" alt="">
-	 * <p>
-	 * @param sources The {@link Publisher} of {@link Publisher} to concat
-	 * @param <T> The source type of the data sequence
-	 *
-	 * @return a new {@link Flux} concatenating all source sequences
-	 */
-	@SafeVarargs
-	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
-		return onAssembly(new FluxConcatArray<>(false, sources));
 	}
 
 	/**
@@ -1513,6 +1513,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <P> P as(Function<? super Flux<T>, P> transformer) {
 		return transformer.apply(this);
+	}
+
+	/**
+	 * Intercepts the onSubscribe call and makes sure calls to Subscription methods
+	 * only happen after the child Subscriber has returned from its onSubscribe method.
+	 *
+	 * <p>This helps with child Subscribers that don't expect a recursive call from
+	 * onSubscribe into their onNext because, for example, they request immediately from
+	 * their onSubscribe but don't finish their preparation before that and onNext
+	 * runs into a half-prepared state. This can happen with non Reactor mentality based Subscribers.
+	 *
+	 * @return non reentrant onSubscribe {@link Flux}
+	 */
+	public final Flux<T> awaitOnSubscribe() {
+		return onAssembly(new FluxAwaitOnSubscribe<>(this));
 	}
 
 	/**
@@ -3027,19 +3042,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Returns a {@link Flux} that correlates two Publishers when they overlap in time
+	 * and groups the results.
+	 * <p>
+	 * There are no guarantees in what order the items get combined when multiple items from
+	 * one or both source Publishers overlap.
+	 * <p> Unlike {@link Flux#join}, items from the right Publisher will be streamed
+	 * into the right resultSelector argument {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupjoin.png" alt="">
 	 *
-	 * @param other
-	 * @param leftEnd
-	 * @param rightEnd
-	 * @param resultSelector
-	 * @param <TRight>
-	 * @param <TLeftEnd>
-	 * @param <TRightEnd>
-	 * @param <R>
-	 * @return
+	 * @param other the other Publisher to correlate items from the source Publisher with
+	 * @param leftEnd a function that returns a Publisher whose emissions indicate the
+	 * duration of the values of the source Publisher
+	 * @param rightEnd a function that returns a Publisher whose emissions indicate the
+	 * duration of the values of the {@code right} Publisher
+	 * @param resultSelector a function that takes an item emitted by each Publisher and returns the
+	 * value to be emitted by the resulting Publisher
+	 * @param <TRight> the type of the right Publisher
+	 * @param <TLeftEnd> this {@link Flux} timeout type
+	 * @param <TRightEnd> the right Publisher timeout type
+	 * @param <R> the combined result type
+	 *
+	 * @return a joining {@link Flux}
 	 */
 	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> groupJoin(
 			Publisher<? extends TRight> other,
@@ -3130,18 +3156,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Returns a {@link Flux} that correlates two Publishers when they overlap in time
+	 * and groups the results.
+	 * <p>
+	 * There are no guarantees in what order the items get combined when multiple items from
+	 * one or both source Publishers overlap.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/join.png" alt="">
 	 *
-	 * @param other
-	 * @param leftEnd
-	 * @param rightEnd
-	 * @param resultSelector
-	 * @param <TRight>
-	 * @param <TLeftEnd>
-	 * @param <TRightEnd>
-	 * @param <R>
-	 * @return
+	 * @param other the other Publisher to correlate items from the source Publisher with
+	 * @param leftEnd a function that returns a Publisher whose emissions indicate the
+	 * duration of the values of the source Publisher
+	 * @param rightEnd a function that returns a Publisher whose emissions indicate the
+	 * duration of the values of the {@code right} Publisher
+	 * @param resultSelector a function that takes an item emitted by each Publisher and returns the
+	 * value to be emitted by the resulting Publisher
+	 * @param <TRight> the type of the right Publisher
+	 * @param <TLeftEnd> this {@link Flux} timeout type
+	 * @param <TRightEnd> the right Publisher timeout type
+	 * @param <R> the combined result type
+	 *
+	 * @return a joining {@link Flux}
 	 */
 	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> join(
 			Publisher<? extends TRight> other,

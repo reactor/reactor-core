@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -31,9 +33,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
-import reactor.core.Exceptions;
-import reactor.core.Trackable;
+import reactor.core.*;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -124,7 +124,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements Subscription, JoinSupport {
+			implements Subscription, JoinSupport, Trackable, Producer, MultiReceiver,
+			           reactor.core.MultiProducer {
 
 		final Subscriber<? super R> actual;
 
@@ -205,6 +206,41 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			this.rightEnd = rightEnd;
 			this.resultSelector = resultSelector;
 			ACTIVE.lazySet(this, 2);
+		}
+
+		@Override
+		public Iterator<?> downstreams() {
+			return lefts.values().iterator();
+		}
+
+		@Override
+		public long downstreamCount() {
+			return lefts.size();
+		}
+
+		@Override
+		public Iterator<?> upstreams() {
+			return Arrays.asList(cancellations.keys()).iterator();
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public long upstreamCount() {
+			return cancellations.keys().length;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
 		}
 
 		@Override
@@ -491,7 +527,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class LeftRightSubscriber
-			implements Subscriber<Object>, Cancellation, Trackable {
+			implements Subscriber<Object>, Cancellation, Trackable, Receiver {
 
 		final JoinSupport parent;
 
@@ -550,10 +586,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			parent.innerComplete(this);
 		}
 
+		@Override
+		public Object upstream() {
+			return subscription;
+		}
 	}
 
 	static final class LeftRightEndSubscriber
-			implements Subscriber<Object>, Cancellation, Trackable {
+			implements Subscriber<Object>, Cancellation, Trackable, Receiver {
 
 		final JoinSupport parent;
 
@@ -624,5 +664,9 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			parent.innerClose(isLeft, this);
 		}
 
+		@Override
+		public Object upstream() {
+			return subscription;
+		}
 	}
 }

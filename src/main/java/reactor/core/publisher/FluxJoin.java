@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -33,27 +35,13 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.MultiReceiver;
+import reactor.core.Producer;
+import reactor.core.Trackable;
 import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
 import reactor.util.concurrent.OpenHashSet;
-
-/**
- * Returns a Publisher that correlates two Publishers when they overlap in time and groups
- * the results.
- * <p>
- * There are no guarantees in what order the items get combined when multiple items from
- * one or both source Publishers overlap.
- *
- * @param <TLeft> the left Publisher to correlate items from the source Publisher with
- * @param <TRight> the other Publisher to correlate items from the source Publisher with
- * @param <TLeftEnd> a function that returns a Publisher whose emissions indicate the
- * duration of the values of the source Publisher
- * @param <TRightEnd> a function that returns a Publisher whose emissions indicate the
- * duration of the values of the {@code right} Publisher
- * @param <R> a function that takes an item emitted by each Publisher and returns the
- * value to be emitted by the resulting Publisher
- */
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -107,7 +95,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements Subscription, JoinSupport {
+			implements Subscription, JoinSupport, Trackable, MultiReceiver, Producer {
 
 		final Subscriber<? super R> actual;
 
@@ -183,6 +171,31 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 			this.rightEnd = rightEnd;
 			this.resultSelector = resultSelector;
 			ACTIVE.lazySet(this, 2);
+		}
+
+		@Override
+		public Iterator<?> upstreams() {
+			return Arrays.asList(cancellations.keys()).iterator();
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public long upstreamCount() {
+			return cancellations.keys().length;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
 		}
 
 		@Override
