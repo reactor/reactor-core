@@ -54,6 +54,11 @@ final class MonoError<T> extends Mono<T> implements Trackable {
 	}
 
 	@Override
+	public T blockMillis(long m) {
+		throw Exceptions.propagate(getError());
+	}
+
+	@Override
 	public T block() {
 		throw Exceptions.propagate(getError());
 	}

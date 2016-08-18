@@ -62,6 +62,11 @@ extends Mono<Object>
 	}
 
 	@Override
+	public Object blockMillis(long m) {
+		return null;
+	}
+
+	@Override
 	public Object block() {
 		return null;
 	}

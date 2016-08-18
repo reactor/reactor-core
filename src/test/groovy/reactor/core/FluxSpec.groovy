@@ -1227,16 +1227,16 @@ class FluxSpec extends Specification {
 
 		when:
 			'non overlapping buffers'
-			res = numbers.delay(Duration.ofMillis(90))
+			res = numbers.delayMillis(90)
 					.log('beforeBuffer')
 					.buffer (Duration.ofMillis(200), Duration .ofMillis(300))
 					.log('afterBuffer')
 					.buffer()
-					.next()
+					.blockLast(Duration.ofSeconds(5))
 
 		then:
 			'the collected lists are available'
-			res.block(Duration.ofSeconds(5)) == [[1, 2], [4, 5], [7, 8]]
+			res == [[1, 2], [4, 5], [7, 8]] || res == [[1], [4, 5], [7, 8]]
 	}
 
 

@@ -1003,8 +1003,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
 	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException} will
-	 * be thrown.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
@@ -1013,7 +1011,29 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block() {
-		return blockMillis(30_000L);
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet();
+	}
+
+	/**
+	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
+	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
+	 * If the default timeout {@literal 30 seconds} has elapsed,a {@link RuntimeException}  will be thrown.
+	 *
+	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
+	 * miss signal from hot publishers.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
+	 * <p>
+	 *
+	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 *
+	 * @return T the result
+	 */
+	public final T block(Duration timeout) {
+		return blockMillis(timeout.toMillis());
 	}
 
 	/**
@@ -1033,53 +1053,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T blockMillis(long timeout) {
-		if(this instanceof Callable){
-			return block();
-		}
-		return subscribe().blockMillis(timeout);
-	}
-
-	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed,a {@link RuntimeException}  will be thrown.
-	 *
-	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
-	 * <p>
-	 *
-	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
-	 *
-	 * @return T the result
-	 */
-	public T block(Duration timeout) {
-		return blockMillis(timeout.toMillis());
-	}
-
-	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException}  will be thrown.
-	 *
-	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in
-	 * other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/block.png" alt="">
-	 * <p>
-	 *
-	 * @param waitStrategy a {@link WaitStrategy} to use for waiting on the result. e.g
-	 * . {@code WaitStrategy.busySprin()} will trade off cpu cycles for lower latency.
-	 *
-	 * @return T the result
-	 */
-	public T block(WaitStrategy waitStrategy) {
-		return subscribeWith(new MonoProcessor<>(this, waitStrategy)).blockMillis(
-				30_000L);
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
 	}
 
 	/**

@@ -43,9 +43,15 @@ final class MonoRunnable extends Mono<Void> {
     }
     
     @Override
-    public Void block() {
+    public Void blockMillis(long m) {
         run.run();
         return null;
+    }
+
+    @Override
+    public Void block() {
+	    run.run();
+	    return null;
     }
 
 }

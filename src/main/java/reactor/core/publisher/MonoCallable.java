@@ -19,9 +19,9 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -77,9 +77,14 @@ extends Mono<T>
 
 		sds.complete(t);
 	}
-	
+
 	@Override
 	public T block() {
+		return blockMillis(-1L);
+	}
+
+	@Override
+	public T blockMillis(long m) {
 		try {
 			return callable.call();
 		} catch (Throwable e) {

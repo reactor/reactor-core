@@ -1531,6 +1531,73 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Blocks until the upstream signals its first value or completes.
+	 *
+	 * @return the first value or null
+	 */
+	public final T blockFirst() {
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet();
+	}
+
+	/**
+	 * Blocks until the upstream signals its first value or completes.
+	 *
+	 * @param d max duration timeout to wait for.
+	 * @return the first value or null
+	 */
+	public final T blockFirst(Duration d) {
+		return blockFirstMillis(d.toMillis());
+	}
+
+	/**
+	 * Blocks until the upstream signals its first value or completes.
+	 *
+	 * @param timeout max duration timeout in millis to wait for.
+	 * @return the first value or null
+	 */
+	public final T blockFirstMillis(long timeout) {
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Blocks until the upstream completes and return the last emitted value.
+	 *
+	 * @return the last value or null
+	 */
+	public final T blockLast() {
+		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet();
+	}
+
+
+	/**
+	 * Blocks until the upstream completes and return the last emitted value.
+	 *
+	 * @param d max duration timeout to wait for.
+	 * @return the last value or null
+	 */
+	public final T blockLast(Duration d) {
+		return blockLastMillis(d.toMillis());
+	}
+
+	/**
+	 * Blocks until the upstream completes and return the last emitted value.
+	 *
+	 * @param timeout max duration timeout in millis to wait for.
+	 * @return the last value or null
+	 */
+	public final T blockLastMillis(long timeout) {
+		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
+	}
+
+	/**
 	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Mono} on complete only.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffer.png"

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
@@ -36,6 +37,11 @@ extends Mono<T>
 
 	@Override
 	public T call() {
+		return value;
+	}
+
+	@Override
+	public T blockMillis(long m) {
 		return value;
 	}
 

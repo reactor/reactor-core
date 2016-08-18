@@ -57,6 +57,11 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	}
 
 	@Override
+	public T block() {
+		return blockMillis(-1L);
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public T blockMillis(long timeout) {
 		try {

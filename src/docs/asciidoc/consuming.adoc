@@ -88,6 +88,9 @@ TODO
 === Filtering
 TODO
 
+=== Grouping
+TODO
+
 === Extracting
 TODO
 

@@ -130,6 +130,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		return !isPending() ? 0L : (requested != 0L ? 1L : 0L);
 	}
 
+	@Override
+	public O block() {
+		return blockMillis(30_0000L);
+	}
+
 	/**
 	 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
 	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.

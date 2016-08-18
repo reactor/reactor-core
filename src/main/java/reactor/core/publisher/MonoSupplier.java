@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
@@ -77,8 +78,13 @@ extends Mono<T>
 	}
 	
 	@Override
-	public T block() {
+	public T blockMillis(long m) {
         return supplier.get();
+	}
+
+	@Override
+	public T block() {
+		return supplier.get();
 	}
 	
 	@Override
