@@ -1,0 +1,9 @@
+[[adapting]]
+= Adapters
+TODO
+
+== RxJava1
+TODO
+
+== Java 9 Flow
+TODO

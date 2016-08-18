@@ -2,26 +2,106 @@
 = Consuming API
 TODO
 
-[[backpressure-consuming]]
-== Backpressure Rules
+[[mono-consuming]]
+== Mono [0|1]
 TODO
 
-[[mono-consuming]]
-== Mono, Sequence of 0 or 1 signals
+=== Composing
 TODO
+
+=== Transforming
+TODO
+
+=== Filtering
+TODO
+
+=== Combining
+TODO
+
+=== Error Handling
+TODO
+
+=== Subscribing
+TODO
+
+[[backpressure-mono]]
+=== Backpressure Rules
+TODO
+
 
 [[flux-consuming]]
-== Flux, Sequence of N signals
+== Flux [N]
 TODO
 
-=== ConnectableFlux
+=== Composing
 TODO
 
-== ParallelFlux, Starving CPU's
+=== Transforming
+TODO
+
+=== Filtering
+TODO
+
+=== Collecting
+TODO
+
+=== Reducing
+TODO
+
+=== Combining
+TODO
+
+=== Error Handling
+TODO
+
+=== Extracting
+TODO
+
+=== Subscribing
+TODO
+
+=== Connecting
+TODO
+
+[[backpressure-mono]]
+=== Backpressure Rules
+TODO
+
+== ParallelFlux [N]
+TODO
+
+=== Composing
+TODO
+
+=== Transforming
+TODO
+
+=== Filtering
+TODO
+
+=== Extracting
+TODO
+
+=== Subscribing
 TODO
 
 == Custom Operators
 TODO
 
+=== Operators
+TODO
+
 == Global Hooks
+TODO
+
+=== Debugging
+TODO
+
+== Automatic Optimizations
+TODO
+
+=== Micro Fusion
+TODO
+
+=== Macro Fusion
 TODO
