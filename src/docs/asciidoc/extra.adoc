@@ -1,0 +1,5 @@
+[[extra]]
+ifndef::env-github[]
+= Resources
+endif::[]
+
