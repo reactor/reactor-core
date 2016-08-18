@@ -57,7 +57,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		return Operators.serialize(actual);
 	}
 
-	static abstract class BatchAction<T, V> extends OperatorAdapter<T, V> {
+	static abstract class BatchAction<T, V> extends Operators.SubscriberAdapter<T, V> {
 
 		static final Exception FAILED_SATE =
 				new RuntimeException("Failed Subscriber") {

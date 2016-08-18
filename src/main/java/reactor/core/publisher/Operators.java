@@ -675,7 +675,7 @@ public abstract class Operators {
 	 * Base class for Subscribers that will receive their Subscriptions at any time yet
 	 * they need to be cancelled or requested at any time.
 	 */
-	static class DeferredSubscription
+	public static class DeferredSubscription
 			implements Subscription, Receiver, Trackable {
 
 		volatile Subscription s;
@@ -798,7 +798,7 @@ public abstract class Operators {
 	 * @param <I> The upstream sequence type
 	 * @param <O> The downstream sequence type
 	 */
-	static class MonoSubscriber<I, O> implements Subscriber<I>, Loopback,
+	public static class MonoSubscriber<I, O> implements Subscriber<I>, Loopback,
 	                                                    Trackable,
 	                                                    Receiver, Producer,
 	                                                    Fuseable.QueueSubscription<O> {
@@ -975,6 +975,171 @@ public abstract class Operators {
 		@Override
 		public int size() {
 			return isEmpty() ? 0 : 1;
+		}
+	}
+
+	/**
+	 * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between
+	 * a Publisher and a Subscriber, it doesn't implement
+	 * the {@link org.reactivestreams.Processor} interface allowing multiple subscribes.
+	 *
+	 * @param <I> the input value type
+	 * @param <O> the output value type
+	 */
+	public static class SubscriberAdapter<I, O>
+			implements Subscriber<I>, Subscription, Trackable, Receiver, Producer{
+
+		protected final Subscriber<? super O> subscriber;
+
+		protected Subscription subscription;
+
+		public SubscriberAdapter(Subscriber<? super O> subscriber) {
+			this.subscriber = subscriber;
+		}
+
+		@Override
+		public Subscription upstream() {
+			return subscription;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return subscription != null;
+		}
+
+		@Override
+		public Subscriber<? super O> downstream() {
+			return subscriber;
+		}
+
+		@Override
+		public final void onSubscribe(Subscription s) {
+			if (validate(subscription, s)) {
+				try {
+					subscription = s;
+					doOnSubscribe(s);
+				}
+				catch (Throwable throwable) {
+					doOnSubscriberError(onOperatorError(s, throwable));
+				}
+			}
+		}
+
+		/**
+		 *
+		 * @param subscription
+		 */
+		protected void doOnSubscribe(Subscription subscription) {
+			subscriber.onSubscribe(this);
+		}
+
+		@Override
+		public final void onNext(I i) {
+			if (i == null) {
+				throw Exceptions.argumentIsNullException();
+			}
+			try {
+				doNext(i);
+			}
+			catch (Throwable throwable) {
+				doOnSubscriberError(onOperatorError(subscription, throwable, i));
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		protected void doNext(I i) {
+			subscriber.onNext((O) i);
+		}
+
+		@Override
+		public final void onError(Throwable t) {
+			if (t == null) {
+				throw Exceptions.argumentIsNullException();
+			}
+			doError(t);
+		}
+
+		protected void doError(Throwable throwable) {
+			subscriber.onError(throwable);
+		}
+
+		protected void doOnSubscriberError(Throwable throwable){
+			subscriber.onError(throwable);
+		}
+
+		@Override
+		public final void onComplete() {
+			try {
+				doComplete();
+			} catch (Throwable throwable) {
+				doOnSubscriberError(onOperatorError(throwable));
+			}
+		}
+
+		protected void doComplete() {
+			subscriber.onComplete();
+		}
+
+		@Override
+		public final void request(long n) {
+			try {
+				checkRequest(n);
+				doRequest(n);
+			} catch (Throwable throwable) {
+				doCancel();
+				doOnSubscriberError(onOperatorError(throwable));
+			}
+		}
+
+		protected void doRequest(long n) {
+			Subscription s = this.subscription;
+			if (s != null) {
+				s.request(n);
+			}
+		}
+
+		@Override
+		public final void cancel() {
+			try {
+				doCancel();
+			} catch (Throwable throwable) {
+				doOnSubscriberError(onOperatorError(subscription, throwable));
+			}
+		}
+
+		protected void doCancel() {
+			Subscription s = this.subscription;
+			if (s != null) {
+				this.subscription = null;
+				s.cancel();
+			}
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return null != subscription && subscription instanceof Trackable && (
+					(Trackable) subscription).isTerminated();
+		}
+
+		@Override
+		public long getCapacity() {
+			return subscriber != null && Trackable.class.isAssignableFrom(subscriber
+					.getClass()) ?
+					((Trackable) subscriber).getCapacity() :
+					Long.MAX_VALUE;
+		}
+
+		@Override
+		public long getPending() {
+			return subscriber != null && Trackable.class.isAssignableFrom(subscriber
+					.getClass()) ?
+					((Trackable) subscriber).getPending() :
+					-1L;
+		}
+
+		@Override
+		public String toString() {
+			return getClass().getSimpleName();
 		}
 	}
 
@@ -1411,4 +1576,6 @@ public abstract class Operators {
 			ONCE.lazySet(this, 1);
 		}
 	}
+
+
 }
