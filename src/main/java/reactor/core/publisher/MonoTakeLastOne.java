@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.*;
 import reactor.core.Fuseable;
+import reactor.core.Receiver;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.
@@ -31,6 +32,60 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new FluxTakeLastOne.TakeLastOneSubscriber<>(s));
+        source.subscribe(new TakeLastOneSubscriber<>(s));
     }
+
+	static final class TakeLastOneSubscriber<T>
+			extends Operators.MonoSubscriber<T, T>
+			implements Receiver {
+
+		Subscription s;
+
+		public TakeLastOneSubscriber(Subscriber<? super T> actual) {
+			super(actual);
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				subscriber.onSubscribe(this);
+
+				s.request(Long.MAX_VALUE);
+			}
+
+		}
+
+		@Override
+		public void onNext(T t) {
+			value = t;
+		}
+
+		@Override
+		public void onComplete() {
+			T v = value;
+			if (v == null) {
+				subscriber.onComplete();
+				return;
+			}
+			complete(v);
+		}
+
+		@Override
+		public void cancel() {
+			super.cancel();
+			s.cancel();
+		}
+
+		@Override
+		public void setValue(T value) {
+			// value is always in a field
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+	}
 }

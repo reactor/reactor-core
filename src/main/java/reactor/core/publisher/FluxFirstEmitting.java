@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.MultiReceiver;
+import reactor.core.Producer;
 import reactor.core.Trackable;
 
 /**
@@ -145,7 +146,7 @@ extends Flux<T>
 			return;
 		}
 
-		AmbCoordinator<T> coordinator = new AmbCoordinator<>(n);
+		RaceCoordinator<T> coordinator = new RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, s);
 	}
@@ -172,29 +173,29 @@ extends Flux<T>
 		return null;
 	}
 
-	static final class AmbCoordinator<T>
+	static final class RaceCoordinator<T>
 			implements Subscription, MultiReceiver, Trackable {
 
-		final AmbSubscriber<T>[] subscribers;
+		final FirstEmittingSubscriber<T>[] subscribers;
 
 		volatile boolean cancelled;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<AmbCoordinator> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(AmbCoordinator.class, "wip");
+		static final AtomicIntegerFieldUpdater<RaceCoordinator> WIP =
+		  AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		public AmbCoordinator(int n) {
-			subscribers = new AmbSubscriber[n];
+		public RaceCoordinator(int n) {
+			subscribers = new FirstEmittingSubscriber[n];
 			wip = Integer.MIN_VALUE;
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n, Subscriber<? super T> actual) {
-			AmbSubscriber<T>[] a = subscribers;
+			FirstEmittingSubscriber<T>[] a = subscribers;
 
 			for (int i = 0; i < n; i++) {
-				a[i] = new AmbSubscriber<>(actual, this, i);
+				a[i] = new FirstEmittingSubscriber<>(actual, this, i);
 			}
 
 			actual.onSubscribe(this);
@@ -225,7 +226,7 @@ extends Flux<T>
 				if (w >= 0) {
 					subscribers[w].request(n);
 				} else {
-					for (AmbSubscriber<T> s : subscribers) {
+					for (FirstEmittingSubscriber<T> s : subscribers) {
 						s.request(n);
 					}
 				}
@@ -243,7 +244,7 @@ extends Flux<T>
 			if (w >= 0) {
 				subscribers[w].cancel();
 			} else {
-				for (AmbSubscriber<T> s : subscribers) {
+				for (FirstEmittingSubscriber<T> s : subscribers) {
 					s.cancel();
 				}
 			}
@@ -253,7 +254,7 @@ extends Flux<T>
 			if (wip == Integer.MIN_VALUE) {
 				if (WIP.compareAndSet(this, Integer.MIN_VALUE, index)) {
 
-					AmbSubscriber<T>[] a = subscribers;
+					FirstEmittingSubscriber<T>[] a = subscribers;
 					int n = a.length;
 
 					for (int i = 0; i < n; i++) {
@@ -284,48 +285,61 @@ extends Flux<T>
 		}
 	}
 
-	static final class AmbSubscriber<T> extends
-	                                    Operators.DeferredSubscriptionSubscriber<T, T> {
+	static final class FirstEmittingSubscriber<T> extends Operators.DeferredSubscription
+		implements Subscriber<T>, Producer
+	{
 
-		final AmbCoordinator<T> parent;
+		final RaceCoordinator<T> parent;
+
+		final Subscriber<? super T> actual;
 
 		final int index;
 
 		boolean won;
 
-		public AmbSubscriber(Subscriber<? super T> actual, AmbCoordinator<T> parent, int index) {
-			super(actual);
+		public FirstEmittingSubscriber(Subscriber<? super T> actual, RaceCoordinator<T> parent, int index) {
+			this.actual = actual;
 			this.parent = parent;
 			this.index = index;
 		}
 
 		@Override
+		public void onSubscribe(Subscription s) {
+			set(s);
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
 		public void onNext(T t) {
 			if (won) {
-				subscriber.onNext(t);
+				actual.onNext(t);
 			} else if (parent.tryWin(index)) {
 				won = true;
-				subscriber.onNext(t);
+				actual.onNext(t);
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			if (won) {
-				subscriber.onError(t);
+				actual.onError(t);
 			} else if (parent.tryWin(index)) {
 				won = true;
-				subscriber.onError(t);
+				actual.onError(t);
 			}
 		}
 
 		@Override
 		public void onComplete() {
 			if (won) {
-				subscriber.onComplete();
+				actual.onComplete();
 			} else if (parent.tryWin(index)) {
 				won = true;
-				subscriber.onComplete();
+				actual.onComplete();
 			}
 		}
 	}

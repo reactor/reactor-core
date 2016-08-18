@@ -47,7 +47,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
-			extends Operators.DeferredScalarSubscriber<T, T>
+			extends Operators.MonoSubscriber<T, T>
 			implements Receiver {
 
 		Subscription s;

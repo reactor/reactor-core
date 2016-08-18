@@ -19,12 +19,13 @@ package reactor.core.publisher;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Fuseable;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
  * @param <T> the value type;
  */
-final class FluxCallable<T> extends Flux<T> implements Callable<T> {
+final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 
     final Callable<T> callable;
     
@@ -34,8 +35,8 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        Operators.DeferredScalarSubscriber<T, T>
-                wrapper = new Operators.DeferredScalarSubscriber<>(s);
+        Operators.MonoSubscriber<T, T>
+                wrapper = new Operators.MonoSubscriber<>(s);
         s.onSubscribe(wrapper);
         
         T v;

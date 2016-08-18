@@ -46,8 +46,7 @@ final class MonoAggregate<T> extends MonoSource<T, T> implements Fuseable {
 		source.subscribe(new AggregateSubscriber<>(s, aggregator));
 	}
 	
-	static final class AggregateSubscriber<T> extends
-	                                          Operators.DeferredScalarSubscriber<T, T> {
+	static final class AggregateSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 		final BiFunction<T, T, T> aggregator;
 
 		Subscription s;

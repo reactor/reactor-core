@@ -70,7 +70,7 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 	}
 
 	static final class ReduceSubscriber<T, R>
-			extends Operators.DeferredScalarSubscriber<T, R>
+			extends Operators.MonoSubscriber<T, R>
 			implements Receiver {
 
 		final BiFunction<R, ? super T, R> accumulator;

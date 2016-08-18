@@ -1,6 +1,6 @@
 = Reactor Guide
 Stephane Maldini
-:appversion: 3.0.0.BUILD-SNAPSHOT (wiki)
+:appversion: 3.0.0.RELEASE (wiki)
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
 :doctype: book
@@ -13,17 +13,17 @@ include::nav.html[]
 endif::[]
 
 //include::gettingstarted.adoc[]
-
-//include::20to25.adoc[]
-
 [[reactor-core]]
-= *reactor-core*
-//include::core.adoc[]
-//include::core-publisher.adoc[]
-//include::core-subscriber.adoc[]
-//include::core-processor.adoc[]
-//include::core-timer.adoc[]
+= *Reactor Core*
 
-//[[reactor-samples]]
-//== Cookbook
-//include::recipes.adoc[]
+[[consuming]]
+= *Consuming Reactive Sequences*
+
+[[producing]]
+= *Producing Reactive Sequences*
+
+[[gems]]
+= *Reactive Gems*
+
+[[ressources]]
+= *Additional Resources*

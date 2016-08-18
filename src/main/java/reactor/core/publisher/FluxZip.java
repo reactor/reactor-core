@@ -258,8 +258,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 				coordinator.subscribe(n, sc, srcs);
 			} else {
-				Operators.DeferredScalarSubscriber<R, R>
-						sds = new Operators.DeferredScalarSubscriber<>(s);
+				Operators.MonoSubscriber<R, R>
+						sds = new Operators.MonoSubscriber<>(s);
 
 				s.onSubscribe(sds);
 
@@ -306,7 +306,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		return sources == null ? -1 : sources.length;
 	}
 
-	static final class ZipSingleCoordinator<T, R> extends Operators.DeferredScalarSubscriber<R, R>
+	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R>
 			implements MultiReceiver, Trackable {
 
 		final Function<? super Object[], ? extends R> zipper;

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.function.*;
 
 import org.reactivestreams.*;
+import reactor.core.Fuseable;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -25,7 +26,7 @@ import org.reactivestreams.*;
  * @param <T> the input value type
  * @param <C> the collection type
  */
-final class ParallelCollect<T, C> extends ParallelFlux<C> {
+final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 	
 	final ParallelFlux<? extends T> source;
 	
@@ -94,7 +95,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> {
 	}
 
 	static final class ParallelCollectSubscriber<T, C> extends
-	                                                   Operators.DeferredScalarSubscriber<T, C> {
+	                                                   Operators.MonoSubscriber<T, C> {
 
 		final BiConsumer<C, T> collector;
 

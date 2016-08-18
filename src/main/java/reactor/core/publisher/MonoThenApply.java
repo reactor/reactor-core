@@ -57,8 +57,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 		source.subscribe(manager);
 	}
 	
-	static final class MonoThenApplyManager<T, R> extends
-                                                  Operators.DeferredScalarSubscriber<T, R> {
+	static final class MonoThenApplyManager<T, R> extends Operators.MonoSubscriber<T, R> {
 
 	    final Function<? super T, ? extends Mono<? extends R>> mapper;
 

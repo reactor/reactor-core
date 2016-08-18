@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Producer;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -52,17 +53,25 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class DelaySubscriptionOtherSubscriber<T, U>
-			extends Operators.DeferredSubscriptionSubscriber<U, T> {
+			extends Operators.DeferredSubscription implements Producer,
+			                                                        Subscriber<U> {
 
 		final Publisher<? extends T> source;
+
+		final Subscriber<? super T> actual;
 
 		Subscription s;
 
 		boolean done;
 
 		public DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, Publisher<? extends T> source) {
-			super(actual);
+			this.actual = actual;
 			this.source = source;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
 		}
 
 		@Override
@@ -76,7 +85,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
@@ -100,7 +109,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 				return;
 			}
 			done = true;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -114,17 +123,17 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		}
 
 		void subscribeSource() {
-			source.subscribe(new DelaySubscriptionMainSubscriber<>(subscriber, this));
+			source.subscribe(new DelaySubscriptionMainSubscriber<>(actual, this));
 		}
 
 		static final class DelaySubscriptionMainSubscriber<T> implements Subscriber<T> {
 
 			final Subscriber<? super T> actual;
 
-			final Operators.DeferredSubscriptionSubscriber<?, ?> arbiter;
+			final DelaySubscriptionOtherSubscriber<?, ?> arbiter;
 
 			public DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
-															Operators.DeferredSubscriptionSubscriber<?, ?> arbiter) {
+					DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
 				this.actual = actual;
 				this.arbiter = arbiter;
 			}

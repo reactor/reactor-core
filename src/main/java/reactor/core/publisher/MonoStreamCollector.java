@@ -68,7 +68,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 	}
 	
 	static final class StreamCollectorSubscriber<T, A, R>
-			extends Operators.DeferredScalarSubscriber<T, R> {
+			extends Operators.MonoSubscriber<T, R> {
 		final BiConsumer<A, T> accumulator;
 		
 		final Function<A, R> finisher;

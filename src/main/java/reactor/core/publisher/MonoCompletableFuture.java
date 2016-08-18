@@ -47,8 +47,8 @@ extends Mono<T>
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        Operators.DeferredScalarSubscriber<T, T>
-                sds = new Operators.DeferredScalarSubscriber<>(s);
+        Operators.MonoSubscriber<T, T>
+                sds = new Operators.MonoSubscriber<>(s);
 
         s.onSubscribe(sds);
 

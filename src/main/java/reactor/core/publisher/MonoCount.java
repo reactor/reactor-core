@@ -42,7 +42,7 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 		source.subscribe(new CountSubscriber<>(s));
 	}
 
-	static final class CountSubscriber<T> extends Operators.DeferredScalarSubscriber<T, Long>
+	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>
 			implements Receiver {
 
 		long counter;

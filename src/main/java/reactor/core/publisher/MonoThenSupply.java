@@ -84,7 +84,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
     }
     
     static final class MonoConcatIgnoreManager<T>
-            extends Operators.DeferredScalarSubscriber<T, T> {
+            extends Operators.MonoSubscriber<T, T> {
         final MonoConcatIgnoreSubscriber ignore;
         
         final MonoConcatAcceptSubscriber<T> accept;

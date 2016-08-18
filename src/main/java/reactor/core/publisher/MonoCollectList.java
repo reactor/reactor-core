@@ -63,7 +63,7 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
     }
     
     static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>
-            extends Operators.DeferredScalarSubscriber<T, C>
+            extends Operators.MonoSubscriber<T, C>
     implements Subscriber<T>, Subscription {
         
         final Subscriber<? super C> actual;

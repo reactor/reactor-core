@@ -793,14 +793,15 @@ public abstract class Operators {
 	/**
 	 * A Subscriber/Subscription barrier that holds a single value at most and properly gates asynchronous behaviors
 	 * resulting from concurrent request or cancel and onXXX signals.
+	 * Publisher Operators using this Subscriber can be fused (implement Fuseable).
 	 *
 	 * @param <I> The upstream sequence type
 	 * @param <O> The downstream sequence type
 	 */
-	static class DeferredScalarSubscriber<I, O> implements Subscriber<I>, Loopback,
-	                                                       Trackable,
-	                                                       Receiver, Producer,
-	                                                       Fuseable.QueueSubscription<O> {
+	static class MonoSubscriber<I, O> implements Subscriber<I>, Loopback,
+	                                                    Trackable,
+	                                                    Receiver, Producer,
+	                                                    Fuseable.QueueSubscription<O> {
 
 		static final int SDS_NO_REQUEST_NO_VALUE   = 0;
 		static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
@@ -813,8 +814,8 @@ public abstract class Operators {
 
 		volatile int state;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<DeferredScalarSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(DeferredScalarSubscriber.class, "state");
+		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 
 		protected byte outputFused;
 
@@ -822,7 +823,7 @@ public abstract class Operators {
 		static final byte OUTPUT_HAS_VALUE = 2;
 		static final byte OUTPUT_COMPLETE = 3;
 
-		public DeferredScalarSubscriber(Subscriber<? super O> subscriber) {
+		public MonoSubscriber(Subscriber<? super O> subscriber) {
 			this.subscriber = subscriber;
 		}
 
@@ -974,56 +975,6 @@ public abstract class Operators {
 		@Override
 		public int size() {
 			return isEmpty() ? 0 : 1;
-		}
-	}
-
-	/**
-	 * Arbitrates the requests and cancellation for a Subscription that may be set onSubscribe once only.
-	 * <p>
-	 * Note that {@link #request(long)} doesn't validate the amount.
-	 *
-	 * @param <I> the input value type
-	 * @param <O> the output value type
-	 */
-	static class DeferredSubscriptionSubscriber<I, O>
-			extends DeferredSubscription
-	implements Subscriber<I>, Producer {
-
-		protected final Subscriber<? super O> subscriber;
-
-		/**
-		 * Constructs a SingleSubscriptionArbiter with zero initial request.
-		 *
-		 * @param subscriber the actual subscriber
-		 */
-		public DeferredSubscriptionSubscriber(Subscriber<? super O> subscriber) {
-			this.subscriber = Objects.requireNonNull(subscriber, "subscriber");
-		}
-
-		@Override
-		public final Subscriber<? super O> downstream() {
-			return subscriber;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			set(s);
-		}
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public void onNext(I t) {
-			subscriber.onNext((O) t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			subscriber.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			subscriber.onComplete();
 		}
 	}
 
