@@ -9,6 +9,9 @@ TODO
 === Composing
 TODO
 
+=== Observing
+TODO
+
 === Transforming
 TODO
 
@@ -34,6 +37,9 @@ TODO
 TODO
 
 === Composing
+TODO
+
+=== Observing
 TODO
 
 === Transforming
@@ -71,6 +77,9 @@ TODO
 TODO
 
 === Composing
+TODO
+
+=== Observing
 TODO
 
 === Transforming
