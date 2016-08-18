@@ -20,6 +20,7 @@ package reactor.core.publisher;
  * Blocks until the upstream signals its first value or completes.
  *
  * @param <T> the value type
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class BlockingFirstSubscriber<T> extends BlockingSingleSubscriber<T> {
 

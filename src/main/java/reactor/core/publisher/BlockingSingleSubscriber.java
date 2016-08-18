@@ -25,6 +25,10 @@ import reactor.core.Exceptions;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 
+/**
+ *
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
+ */
 abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 implements Subscriber<T>, Cancellation, Trackable, Receiver {
 
