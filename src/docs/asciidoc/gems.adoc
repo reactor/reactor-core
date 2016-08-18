@@ -1,5 +1,3 @@
 [[gems]]
-ifndef::env-github[]
-= Reactive Gems
-endif::[]
-
+== Reactive Gems
+TODO

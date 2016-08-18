@@ -1,5 +1,0 @@
-[[20to25]]
-ifndef::env-github[]
-= Migrating from 2.0 to 3.0
-endif::[]
-

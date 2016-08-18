@@ -1,18 +1,27 @@
 [[consuming]]
-ifndef::env-github[]
-= Consuming Reactive Sequences
-endif::[]
+= Consuming API
+TODO
 
+[[backpressure-consuming]]
 == Backpressure Rules
+TODO
 
+[[mono-consuming]]
 == Mono, Sequence of 0 or 1 signals
+TODO
 
+[[flux-consuming]]
 == Flux, Sequence of N signals
+TODO
 
-=== Cold to Hot : ConnectableFlux
+=== ConnectableFlux
+TODO
 
 == ParallelFlux, Starving CPU's
+TODO
 
 == Custom Operators
+TODO
 
 == Global Hooks
+TODO

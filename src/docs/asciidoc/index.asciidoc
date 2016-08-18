@@ -13,29 +13,9 @@ include::nav.html[]
 endif::[]
 
 //include::gettingstarted.adoc[]
-[[reactor-core]]
-= *Reactor Core*
 include::intro.adoc[]
-
-== *Migrating from 2.0*
-include::20to30.adoc[]
-
-[[scheduler]]
-= *Scheduling and Execution Model*
-include::scheduler.adoc[]
-
-[[consuming]]
-= *Consuming Reactive Sequences*
+include::migrating.adoc[]
 include::consuming.adoc[]
-
-[[producing]]
-= *Producing Reactive Sequences*
 include::producing.adoc[]
-
-[[gems]]
-= *Reactive Gems*
-include::gems.adoc[]
-
-[[ressources]]
-= *Additional Resources*
+include::scheduler.adoc[]
 include::extra.adoc[]

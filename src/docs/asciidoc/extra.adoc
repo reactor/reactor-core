@@ -1,5 +1,8 @@
 [[extra]]
-ifndef::env-github[]
-= Resources
-endif::[]
+= Appendix
+TODO
 
+include::gems.adoc[]
+
+== Resources
+TODO
