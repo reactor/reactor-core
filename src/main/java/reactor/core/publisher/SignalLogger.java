@@ -24,6 +24,7 @@ import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -51,17 +52,20 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	final Publisher<IN> source;
 
 	final Logger log;
+	final boolean fuseable;
 	final int    options;
 	final Level  level;
 	final long   id;
 
 	static final String LOG_TEMPLATE = "{}({})";
+	static final String LOG_TEMPLATE_FUSEABLE = "| {}({})";
 
 	public SignalLogger(Publisher<IN> source, String category, Level level,
 			SignalType... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
+		this.fuseable = source instanceof Fuseable;
 
 		boolean generated = category == null || category.isEmpty() || category.endsWith(".");
 
@@ -120,19 +124,19 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 	void log(Object... args) {
 		if (level == Level.FINEST) {
-			log.trace(LOG_TEMPLATE, args);
+			log.trace(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
 		}
 		else if (level == Level.FINE) {
-			log.debug(LOG_TEMPLATE, args);
+			log.debug(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
 		}
 		else if (level == Level.INFO) {
-			log.info(LOG_TEMPLATE, args);
+			log.info(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
 		}
 		else if (level == Level.WARNING) {
-			log.warn(LOG_TEMPLATE, args);
+			log.warn(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
 		}
 		else if (level == Level.SEVERE) {
-			log.error(LOG_TEMPLATE, args);
+			log.error(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
 		}
 	}
 
@@ -156,7 +160,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	public Consumer<? super Throwable> onErrorCall() {
 		if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
 			return e -> {
-				log.error(LOG_TEMPLATE, SignalType.ON_ERROR, e, source);
+				log.error(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, SignalType.ON_ERROR, e, source);
 				log.error("", e);
 			};
 		}

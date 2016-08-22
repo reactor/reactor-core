@@ -113,7 +113,7 @@ public class HooksTest {
 
 		q.clear();
 
-		Hooks.onOperator(hooks -> hooks.log("reactor", Level.INFO)
+		Hooks.onOperator(hooks -> hooks.log("reactor.", Level.INFO)
 		                               .doOnEach(d -> q.offer(hooks.publisher() + ": " + d),
 				                               t -> q.offer(hooks.publisher() + "! " +
 						                               (t.getSuppressed().length != 0)),
