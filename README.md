@@ -18,8 +18,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.0.0.BUILD-SNAPSHOT"
-      compile "io.projectreactor:reactor-core:3.0.0.RC2"
+      //compile "io.projectreactor:reactor-core:3.0.1.BUILD-SNAPSHOT"
+      compile "io.projectreactor:reactor-core:3.0.0.RELEASE"
     }
 ```
 
@@ -29,7 +29,7 @@ New to Reactive Programming or bored of reading already ? Try the [Introduction 
 
 ## Flux
 
-A Reactive Streams Publisher with basic Rx operators. 
+A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
@@ -212,7 +212,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 -------------------------------------
 ## Reference
-http://projectreactor.io/core/docs/reference/
+http://projectreactor.io/core/docs/reference/ [WIP]
 
 ## Javadoc
 http://projectreactor.io/core/docs/api/
