@@ -149,7 +149,15 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public void onError(Throwable t) {
+			Subscription s = this.s;
+			if(s != null){
+				this.s = null;
+			}
+			else{
+				Operators.onErrorDropped(t);
+			}
 			boolean report;
+
 			synchronized (this) {
 				C b = buffer;
 				
@@ -172,16 +180,28 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public void onComplete() {
+			Subscription s = this.s;
+			if(s != null){
+				this.s = null;
+			}
+			else{
+				return;
+			}
+
 			C b;
 			synchronized (this) {
 				b = buffer;
 				buffer = null;
 			}
-			
+
+			other.cancel();
 			if (b != null && !b.isEmpty()) {
 				if (emit(b)) {
 					actual.onComplete();
 				}
+			}
+			else {
+				actual.onComplete();
 			}
 		}
 		
@@ -205,12 +225,13 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			C b;
 			synchronized (this) {
 				b = buffer;
-				if (b == null) {
-					return;
-				}
 				buffer = c;
 			}
-			
+
+			if (b.isEmpty()) {
+				return;
+			}
+
 			emit(b);
 		}
 		

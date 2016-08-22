@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
 import java.util.function.Predicate
 import java.util.function.Supplier
+import java.util.logging.Level
 
 import static reactor.core.publisher.Flux.error
 
@@ -256,6 +257,28 @@ class FluxSpec extends Specification {
 			'first and last'
 			first == 1
 			last == 5
+	}
+
+	def "flux empty buffer just"() {
+	  when:
+	  def ranges = Flux.empty()
+			  .buffer(Flux.just(1))
+			  .collectList()
+			  .block()
+
+	  then:
+	  ranges == []
+	}
+
+	def "flux empty buffer"() {
+	  when:
+	  def ranges = Flux.empty()
+			  .buffer(Flux.never())
+			  .collectList()
+			  .block(Duration.ofMillis(100))
+
+	  then:
+	  ranges == []
 	}
 
 	def 'A Flux can sample values over time'() {

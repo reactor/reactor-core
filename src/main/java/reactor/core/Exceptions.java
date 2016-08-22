@@ -186,7 +186,6 @@ public abstract class Exceptions {
 	 * varieties are as follows:
 	 * <ul>
 	 * <li>{@code BubblingException}</li>
-	 * <li>{@code StackOverflowError}</li>
 	 * <li>{@code VirtualMachineError}</li>
 	 * <li>{@code ThreadDeath}</li>
 	 * <li>{@code LinkageError}</li>
@@ -197,8 +196,6 @@ public abstract class Exceptions {
 	public static void throwIfFatal(Throwable t) {
 		if (t instanceof BubblingException) {
 			throw (BubblingException) t;
-		} else if (t instanceof StackOverflowError) {
-			throw (StackOverflowError) t;
 		} else if (t instanceof VirtualMachineError) {
 			throw (VirtualMachineError) t;
 		} else if (t instanceof ThreadDeath) {
