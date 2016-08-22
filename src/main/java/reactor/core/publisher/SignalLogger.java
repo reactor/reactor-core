@@ -65,7 +65,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 		boolean generated = category == null || category.isEmpty() || category.endsWith(".");
 
-		category = generated && category == null ? "" : category;
+		category = generated && category == null ? "reactor." : category;
 		if (generated) {
 			if (source instanceof Mono) {
 				category += "Mono." + source.getClass()

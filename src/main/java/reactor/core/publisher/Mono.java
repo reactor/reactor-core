@@ -1630,7 +1630,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
-	 * The default log category will be "Mono".
+	 * The default log category will be "Mono". A generated operator
+	 * suffix will complete, e.g. "reactor.Flux.Map".
 	 *
 	 * @return a new {@link Mono}
 	 *
@@ -1647,7 +1648,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
-	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.Flux.Map".
 	 *
 	 * @return a new {@link Mono}
 	 */
@@ -1667,7 +1670,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log1.png" alt="">
 	 * <p>
-	 * @param category to be mapped into logger configuration (e.g. org.springframework.reactor).
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.Flux.Map".
 	 * @param level the level to enforce for this tracing Flux
 	 * @param options a vararg {@link SignalType} option to filter log messages
 	 *

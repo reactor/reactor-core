@@ -270,7 +270,8 @@ public abstract class Hooks {
 		 * alt="">
 		 *
 		 * @param category to be mapped into logger configuration (e.g.
-		 * org.springframework.reactor).
+		 * org.springframework.reactor). If category is null, empty or ends with "." like
+		 * "reactor.", a generated operator suffix will complete, e.g. "reactor.Flux.Map".
 		 * @param level the level to enforce for this tracing Flux
 		 * @param options a vararg {@link SignalType} option to filter log messages
 		 *
