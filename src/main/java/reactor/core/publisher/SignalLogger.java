@@ -63,15 +63,17 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
 
-		if (category == null || category.isEmpty()) {
-			Objects.requireNonNull(source, "source");
+		boolean generated = category == null || category.isEmpty() || category.endsWith(".");
+
+		category = generated && category == null ? "" : category;
+		if (generated) {
 			if (source instanceof Mono) {
-				category = "Mono." + source.getClass()
+				category += "Mono." + source.getClass()
 				                           .getSimpleName()
 				                           .replace("Mono", "");
 			}
 			else {
-				category = "Flux." + source.getClass()
+				category += "Flux." + source.getClass()
 				                           .getSimpleName()
 				                           .replace("Flux", "");
 			}
