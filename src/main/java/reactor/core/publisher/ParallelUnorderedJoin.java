@@ -164,7 +164,9 @@ final class ParallelUnorderedJoin<T> extends Flux<T> {
 		}
 		
 		void onComplete() {
-			DONE.decrementAndGet(this);
+			if(DONE.decrementAndGet(this) < 0){
+				return;
+			}
 			drain();
 		}
 		

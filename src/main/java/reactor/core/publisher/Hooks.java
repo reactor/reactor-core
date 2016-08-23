@@ -195,6 +195,16 @@ public abstract class Hooks {
 							, tracedCategory, tracedLevel, tracedSignals);
 				}
 			}
+			else if (publisher instanceof ParallelFlux){
+				Publisher<T> _p = new ParallelUnorderedPeek<T>(
+						(ParallelFlux<T>)publisher,
+						onNextCall, null, onErrorCall, onCompleteCall,
+						onAfterTerminateCall, onSubscribeCall, onRequestCall,
+						onCancelCall);
+
+				return new OperatorHook<>(_p, traced
+						, tracedCategory, tracedLevel, tracedSignals);
+			}
 			else if (publisher instanceof Fuseable) {
 				return new OperatorHook<>(new FluxPeekFuseable<T>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
@@ -236,6 +246,14 @@ public abstract class Hooks {
 		}
 
 		/**
+		 * Apply hook only if {@link #publisher()} is {@link ParallelFlux}
+		 * @return a possibly ignoring {@link OperatorHook}
+		 */
+		public final OperatorHook<T> ifParallelFlux(){
+			return publisher() instanceof ParallelFlux ? this : OperatorHook.IGNORE;
+		}
+
+		/**
 		 * Apply hook only if {@link #publisher()} if operator name match the type name
 		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
 		 *
@@ -246,7 +264,7 @@ public abstract class Hooks {
 			if(this == IGNORE) return this;
 			String className = publisher().getClass()
 			                              .getSimpleName()
-			                              .replaceAll("Flux|Mono|Fuseable", "");
+			                              .replaceAll("Flux|Mono|Parallel|Fuseable", "");
 			for (String name : names) {
 				if (className.equalsIgnoreCase(name)) {
 					return this;
@@ -266,7 +284,7 @@ public abstract class Hooks {
 			if(this == IGNORE) return this;
 			String className = publisher().getClass()
 			                              .getSimpleName()
-			                              .replaceAll("Flux|Mono|Fuseable", "")
+			                              .replaceAll("Flux|Mono|Parallel|Fuseable", "")
 			                              .toLowerCase();
 
 			for (String name : names) {
@@ -464,6 +482,10 @@ public abstract class Hooks {
 							return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
 									null,
 									trace);
+						}
+						if (publisher instanceof ParallelFlux){
+							return new ParallelFluxOnAssembly<>((ParallelFlux<T>)
+									publisher, null, trace);
 						}
 						return new FluxOnAssembly<>(publisher, null, trace);
 					}

@@ -201,6 +201,10 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
 			if (sourceMode == Fuseable.NONE) {
 				if (!queue.offer(t)) {
 					cancel();
@@ -213,6 +217,10 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 
 		@Override
 		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
 			error = t;
 			done = true;
 			drain();
@@ -220,6 +228,9 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 
 		@Override
 		public void onComplete() {
+			if(done){
+				return;
+			}
 			done = true;
 			drain();
 		}

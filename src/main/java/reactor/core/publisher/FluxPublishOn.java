@@ -238,6 +238,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
 			if (sourceMode == Fuseable.ASYNC) {
 				trySchedule();
 				return;

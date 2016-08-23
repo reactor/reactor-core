@@ -194,6 +194,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 			T v = value;

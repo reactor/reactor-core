@@ -92,6 +92,12 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 				                           .getSimpleName()
 				                           .replace("Mono", "");
 			}
+			else if(source instanceof ParallelFlux){
+				category += "Parallel." + source.getClass()
+				                            .getSimpleName()
+				                            .replace("Parallel", "")
+				                            .replace("Unordered", "");
+			}
 			else {
 				category += "Flux." + source.getClass()
 				                           .getSimpleName()

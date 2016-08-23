@@ -111,6 +111,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
 					continue;
 				}
+				if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
+					continue;
+				}
 				if (row.contains("reactor.core.publisher.SignalLogger")) {
 					continue;
 				}

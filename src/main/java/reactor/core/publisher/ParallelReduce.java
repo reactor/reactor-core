@@ -124,6 +124,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 			

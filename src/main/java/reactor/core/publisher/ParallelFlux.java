@@ -29,24 +29,27 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Abstract base class for Parallel publishers that take an array of Subscribers.
  * <p>
  * Use {@code from()} to start processing a regular Publisher in 'rails'. Use {@code
- * runOn()} to introduce where each 'rail' shoud run on thread-vise. Use {@code sequential()} to
- * merge the sources back into a single Publisher.
+ * runOn()} to introduce where each 'rail' shoud run on thread-vise.
+ * Use {@code sequential()} to merge the sources back into a single {@link Flux} or if
+ * you simply want to subscribe to the merged sequence use {@link #subscribe(Subscriber)}.
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> {
+public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (number of CPUs) in
@@ -109,10 +112,9 @@ public abstract class ParallelFlux<T> {
 		Objects.requireNonNull(queueSupplier, "queueSupplier");
 		Objects.requireNonNull(source, "queueSupplier");
 
-		return new ParallelUnorderedSource<>(source,
+		return onAssembly(new ParallelUnorderedSource<>(source,
 				parallelism,
-				prefetch,
-				queueSupplier);
+				prefetch, queueSupplier));
 	}
 
 	/**
@@ -129,7 +131,7 @@ public abstract class ParallelFlux<T> {
 		if (publishers.length == 0) {
 			throw new IllegalArgumentException("Zero publishers not supported");
 		}
-		return new ParallelUnorderedFrom<>(publishers);
+		return onAssembly(new ParallelUnorderedFrom<>(publishers));
 	}
 
 	/**
@@ -159,7 +161,7 @@ public abstract class ParallelFlux<T> {
 	 */
 	public final <C> ParallelFlux<C> collect(Supplier<C> collectionSupplier,
 			BiConsumer<C, T> collector) {
-		return new ParallelCollect<>(this, collectionSupplier, collector);
+		return onAssembly(new ParallelCollect<>(this, collectionSupplier, collector));
 	}
 
 	/**
@@ -297,15 +299,14 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doAfterTerminated(Runnable onAfterTerminate) {
-		return new ParallelUnorderedPeek<>(this,
+		return onAssembly(new ParallelUnorderedPeek<>(this,
 				null,
 				null,
 				null,
 				null,
 				onAfterTerminate,
 				null,
-				null,
-				null);
+				null, null));
 	}
 
 	/**
@@ -317,15 +318,14 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnCancel(Consumer<? super Subscription> onSubscribe) {
-		return new ParallelUnorderedPeek<>(this,
+		return onAssembly(new ParallelUnorderedPeek<>(this,
 				null,
 				null,
 				null,
 				null,
 				null,
 				onSubscribe,
-				null,
-				null);
+				null, null));
 	}
 
 	/**
@@ -336,14 +336,13 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
-		return new ParallelUnorderedPeek<>(this, null,
+		return onAssembly(new ParallelUnorderedPeek<>(this, null,
 				null,
 				null,
 				null,
 				null,
 				null,
-				null,
-				onCancel);
+				null, onCancel));
 	}
 
 	/**
@@ -354,15 +353,14 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
-		return new ParallelUnorderedPeek<>(this,
+		return onAssembly(new ParallelUnorderedPeek<>(this,
 				null,
 				null,
 				null,
 				onComplete,
 				null,
 				null,
-				null,
-				null);
+				null, null));
 	}
 
 	/**
@@ -373,14 +371,13 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
-		return new ParallelUnorderedPeek<>(this, null,
+		return onAssembly(new ParallelUnorderedPeek<>(this, null,
 				null,
 				onError,
 				null,
 				null,
 				null,
-				null,
-				null);
+				null, null));
 	}
 
 	/**
@@ -391,13 +388,12 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
-		return new ParallelUnorderedPeek<>(this, onNext, null,
+		return onAssembly(new ParallelUnorderedPeek<>(this, onNext, null,
 				null,
 				null,
 				null,
 				null,
-				null,
-				null);
+				null, null));
 	}
 
 	/**
@@ -409,14 +405,13 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
-		return new ParallelUnorderedPeek<>(this, null,
+		return onAssembly(new ParallelUnorderedPeek<>(this, null,
 				null,
 				null,
 				null,
 				null,
 				null,
-				onRequest,
-				null);
+				onRequest, null));
 	}
 
 	/**
@@ -431,7 +426,7 @@ public abstract class ParallelFlux<T> {
 	 */
 	public final ParallelFlux<T> filter(Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		return new ParallelUnorderedFilter<>(this, predicate);
+		return onAssembly(new ParallelUnorderedFilter<>(this, predicate));
 	}
 
 	/**
@@ -512,13 +507,12 @@ public abstract class ParallelFlux<T> {
 			boolean delayError,
 			int maxConcurrency,
 			int prefetch) {
-		return new ParallelFlatMap<>(this,
+		return onAssembly(new ParallelFlatMap<>(this,
 				mapper,
 				delayError,
 				maxConcurrency,
 				QueueSupplier.get(maxConcurrency),
-				prefetch,
-				QueueSupplier.get(prefetch));
+				prefetch, QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -531,7 +525,7 @@ public abstract class ParallelFlux<T> {
 	 * @return the new Flux instance
 	 */
 	public final Flux<GroupedFlux<Integer, T>> groups() {
-		return new ParallelGroup<>(this);
+		return Flux.onAssembly(new ParallelGroup<>(this));
 	}
 
 	/**
@@ -541,6 +535,105 @@ public abstract class ParallelFlux<T> {
 	 */
 	public abstract boolean isOrdered();
 
+	/**
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace
+	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
+	 * is available, it will be used instead.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+	 * alt="">
+	 * <p>
+	 * The default log category will be "reactor.*", a generated operator suffix will
+	 * complete, e.g. "reactor.Parallel.Map".
+	 *
+	 * @return a new unaltered {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> log() {
+		return log(null, Level.INFO);
+	}
+
+	/**
+	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace
+	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
+	 * is available, it will be used instead.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+	 * alt="">
+	 * <p>
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator suffix
+	 * will complete, e.g. "reactor.Parallel.Map".
+	 *
+	 * @return a new unaltered {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> log(String category) {
+		return log(category, Level.INFO);
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+	 * {@link Logger} support to handle trace implementation. Default will use the passed
+	 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
+	 * instead.
+	 * <p>
+	 * Options allow fine grained filtering of the traced signal, for instance to only
+	 * capture onNext and onError:
+	 * <pre>
+	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
+	 * SignalType.ON_ERROR)
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+	 * alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.Parallel.Map".
+	 * @param level the level to enforce for this tracing ParallelFlux
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new unaltered {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> log(String category,
+			Level level,
+			SignalType... options) {
+		return onAssembly(new ParallelUnorderedPeek<>(this,
+				new SignalLogger<>(this, category, level, options)));
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+	 * {@link Logger} support to handle trace implementation. Default will use the passed
+	 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
+	 * instead.
+	 * <p>
+	 * Options allow fine grained filtering of the traced signal, for instance to only
+	 * capture onNext and onError:
+	 * <pre>
+	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
+	 * SignalType.ON_ERROR)
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+	 * alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.ParallelFlux.Map".
+	 * @param level the level to enforce for this tracing ParallelFlux
+	 * @param showOperatorLine capture the current stack to display operator
+	 * class/line number.
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new unaltered {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> log(String category,
+			Level level,
+			boolean showOperatorLine,
+			SignalType... options) {
+		return onAssembly(new ParallelUnorderedPeek<>(this,
+				new SignalLogger<>(this, category, level, showOperatorLine, options)));
+	}
+	
 	/**
 	 * Maps the source values on each 'rail' to another value.
 	 * <p>
@@ -554,7 +647,7 @@ public abstract class ParallelFlux<T> {
 	 */
 	public final <U> ParallelFlux<U> map(Function<? super T, ? extends U> mapper) {
 		Objects.requireNonNull(mapper, "mapper");
-		return new ParallelUnorderedMap<>(this, mapper);
+		return onAssembly(new ParallelUnorderedMap<>(this, mapper));
 	}
 
 	/**
@@ -578,7 +671,7 @@ public abstract class ParallelFlux<T> {
 	 */
 	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
-		return new ParallelReduceFull<>(this, reducer);
+		return Mono.onAssembly(new ParallelReduceFull<>(this, reducer));
 	}
 
 	/**
@@ -600,7 +693,7 @@ public abstract class ParallelFlux<T> {
 			BiFunction<R, T, R> reducer) {
 		Objects.requireNonNull(initialSupplier, "initialSupplier");
 		Objects.requireNonNull(reducer, "reducer");
-		return new ParallelReduce<>(this, initialSupplier, reducer);
+		return onAssembly(new ParallelReduce<>(this, initialSupplier, reducer));
 	}
 
 	/**
@@ -655,10 +748,10 @@ public abstract class ParallelFlux<T> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		Objects.requireNonNull(scheduler, "scheduler");
-		return new ParallelUnorderedRunOn<>(this,
+		return onAssembly(new ParallelUnorderedRunOn<>(this,
 				scheduler,
 				prefetch,
-				QueueSupplier.get(prefetch));
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -691,7 +784,9 @@ public abstract class ParallelFlux<T> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 
-		return new ParallelUnorderedJoin<>(this, prefetch, QueueSupplier.get(prefetch));
+		return Flux.onAssembly(new ParallelUnorderedJoin<>(this,
+				prefetch,
+				QueueSupplier.get(prefetch)));
 	}
 
 	/**
@@ -721,8 +816,7 @@ public abstract class ParallelFlux<T> {
 	 */
 	public final Flux<T> sorted(Comparator<? super T> comparator, int capacityHint) {
 		int ch = capacityHint / parallelism() + 1;
-		ParallelFlux<List<T>> railReduced =
-				reduce(() -> new ArrayList<>(ch), (a, b) -> {
+		ParallelFlux<List<T>> railReduced = reduce(() -> new ArrayList<>(ch), (a, b) -> {
 					a.add(b);
 					return a;
 				});
@@ -731,9 +825,7 @@ public abstract class ParallelFlux<T> {
 			return list;
 		});
 
-		Flux<T> merged = new ParallelSortedJoin<>(railSorted, comparator);
-
-		return merged;
+		return Flux.onAssembly(new ParallelSortedJoin<>(railSorted, comparator));
 	}
 
 	/**
@@ -841,11 +933,11 @@ public abstract class ParallelFlux<T> {
 	final <R> ParallelFlux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int prefetch,
 			ErrorMode errorMode) {
-		return new ParallelUnorderedConcatMap<>(this,
+		return onAssembly(new ParallelUnorderedConcatMap<>(this,
 				mapper,
 				QueueSupplier.get(prefetch),
 				prefetch,
-				errorMode);
+				errorMode));
 	}
 
 	/**
@@ -879,16 +971,39 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	final <R> ParallelFlux<R> concatMapDelayError(Function<? super T, ? extends
-			Publisher<? extends R>> mapper,
-			int prefetch) {
+			Publisher<? extends R>> mapper, int prefetch) {
 		return concatMap(mapper, prefetch, ErrorMode.END);
 	}
 
 	/**
 	 * The prefetch configuration of the component
+	 *
 	 * @return the prefetch configuration of the component
 	 */
 	public long getPrefetch() {
 		return -1L;
+	}
+
+	@Override
+	public final void subscribe(Subscriber<? super T> s) {
+		sequential().subscribe(s);
+	}
+
+	/**
+	 * Invoke {@link Hooks} pointcut given a {@link ParallelFlux} and returning an
+	 * eventually new {@link ParallelFlux}
+	 *
+	 * @param <T> the value type
+	 * @param source the source to wrap
+	 *
+	 * @return the potentially wrapped source
+	 */
+	@SuppressWarnings("unchecked")
+	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
+		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
+		if (hook == null) {
+			return source;
+		}
+		return (ParallelFlux<T>) hook.apply(source);
 	}
 }

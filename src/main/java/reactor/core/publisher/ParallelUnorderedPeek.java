@@ -15,10 +15,11 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -37,7 +38,19 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> implements SignalPe
 	final Consumer<? super Subscription> onSubscribe;
 	final LongConsumer onRequest;
 	final Runnable onCancel;
-	
+
+	ParallelUnorderedPeek(ParallelFlux<T> source, SignalPeek<T> peeker){
+		this(source,
+				peeker.onNextCall(),
+				peeker.onAfterNextCall(),
+				peeker.onErrorCall(),
+				peeker.onCompleteCall(),
+				peeker.onAfterTerminateCall(),
+				peeker.onSubscribeCall(),
+				peeker.onRequestCall(),
+				peeker.onCancelCall());
+	}
+
 	public ParallelUnorderedPeek(ParallelFlux<T> source,
 			Consumer<? super T> onNext,
 			Consumer<? super T> onAfterNext,

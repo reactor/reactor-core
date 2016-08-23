@@ -16,6 +16,7 @@
 
 package reactor;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -27,6 +28,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
+import reactor.core.publisher.ParallelFlux;
+import reactor.core.publisher.SignalType;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.TestSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -90,6 +96,41 @@ public class HooksTest {
 		Hooks.resetOnOperatorError();
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
+	}
+
+	@Test
+	public void parallelModeFused() {
+		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE));
+		Flux<Integer> source = Flux.range(1, 1000);
+		int ncpu = Math.max(8,
+				Runtime.getRuntime()
+				       .availableProcessors());
+
+			Scheduler scheduler = Schedulers.newParallel("test", ncpu);
+
+			try {
+				Flux<Integer> result = ParallelFlux.from(source, ncpu)
+				                                   .runOn(scheduler)
+				                                   .map(v -> v + 1)
+				                                   .log("test", Level.INFO, true, SignalType.ON_SUBSCRIBE)
+				                                   .sequential();
+
+				TestSubscriber<Integer> ts = TestSubscriber.create();
+
+				result.subscribe(ts);
+
+				ts.await(Duration.ofSeconds(10));
+
+				ts.assertSubscribed()
+				  .assertValueCount(1000)
+				  .assertComplete()
+				  .assertNoError();
+			}
+			finally {
+				Hooks.resetOnOperator();
+				scheduler.shutdown();
+			}
+
 	}
 
 	@Test
