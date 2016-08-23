@@ -80,4 +80,12 @@ interface SignalPeek<T> {
 	 * @return A task that will run on {@link Subscription#cancel()}
 	 */
 	Runnable onCancelCall();
+
+	/**
+	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}
+	 * @return A task that will run after (finally) {@link Subscriber#onNext(Object)}
+	 */
+	default Consumer<? super T> onAfterNextCall(){
+		return null;
+	}
 }

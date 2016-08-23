@@ -28,7 +28,7 @@ import reactor.core.Fuseable;
  *
  * @param <T> the value type
  */
-final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
+final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 
 	final ParallelFlux<? extends T> source;
 	
@@ -47,11 +47,6 @@ final class ParallelReduceFull<T> extends Flux<T> implements Fuseable {
 		source.subscribe(parent.subscribers);
 	}
 
-	@Override
-	public long getPrefetch() {
-		return Long.MAX_VALUE;
-	}
-	
 	static final class ParallelReduceFullMainSubscriber<T> extends
 	                                                       Operators.MonoSubscriber<T, T> {
 

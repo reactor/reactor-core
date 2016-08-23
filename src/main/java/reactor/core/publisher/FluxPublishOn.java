@@ -252,6 +252,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
 			error = t;
 			done = true;
 			trySchedule();
@@ -259,6 +263,9 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		@Override
 		public void onComplete() {
+			if (done) {
+				return;
+			}
 			done = true;
 			trySchedule();
 		}

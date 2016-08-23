@@ -25,13 +25,13 @@ import org.reactivestreams.*;
  *
  * @param <T> the value type
  */
-final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
+final class ParallelUnorderedPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 
 	final ParallelFlux<T> source;
 	
 	final Consumer<? super T> onNext;
 	final Consumer<? super T> onAfterNext;
-	final Consumer<Throwable> onError;
+	final Consumer<? super Throwable> onError;
 	final Runnable onComplete;
 	final Runnable onAfterTerminated;
 	final Consumer<? super Subscription> onSubscribe;
@@ -41,7 +41,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 	public ParallelUnorderedPeek(ParallelFlux<T> source,
 			Consumer<? super T> onNext,
 			Consumer<? super T> onAfterNext,
-			Consumer<Throwable> onError,
+			Consumer<? super Throwable> onError,
 			Runnable onComplete,
 			Runnable onAfterTerminated,
 			Consumer<? super Subscription> onSubscribe,
@@ -49,15 +49,15 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 			Runnable onCancel
 	) {
 		this.source = source;
-		
-		this.onNext = Objects.requireNonNull(onNext, "onNext");
-		this.onAfterNext = Objects.requireNonNull(onAfterNext, "onAfterNext");
-		this.onError = Objects.requireNonNull(onError, "onError");
-		this.onComplete = Objects.requireNonNull(onComplete, "onComplete");
-		this.onAfterTerminated = Objects.requireNonNull(onAfterTerminated, "onAfterTerminated");
-		this.onSubscribe = Objects.requireNonNull(onSubscribe, "onSubscribe");
-		this.onRequest = Objects.requireNonNull(onRequest, "onRequest");
-		this.onCancel = Objects.requireNonNull(onCancel, "onCancel");
+
+		this.onNext = onNext;
+		this.onAfterNext = onAfterNext;
+		this.onError = onError;
+		this.onComplete = onComplete;
+		this.onAfterTerminated = onAfterTerminated;
+		this.onSubscribe = onSubscribe;
+		this.onRequest = onRequest;
+		this.onCancel = onCancel;
 	}
 
 	@Override
@@ -71,7 +71,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 		Subscriber<? super T>[] parents = new Subscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			parents[i] = new ParallelPeekSubscriber<>(subscribers[i], this);
+			parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], this);
 		}
 		
 		source.subscribe(parents);
@@ -86,125 +86,44 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> {
 	public boolean isOrdered() {
 		return false;
 	}
-	
-	static final class ParallelPeekSubscriber<T, R> implements Subscriber<T>, Subscription {
 
-		final Subscriber<? super T> actual;
-		
-		final ParallelUnorderedPeek<T> parent;
-		
-		Subscription s;
-		
-		boolean done;
-		
-		public ParallelPeekSubscriber(Subscriber<? super T> actual, ParallelUnorderedPeek<T> parent) {
-			this.actual = actual;
-			this.parent = parent;
-		}
+	@Override
+	public Consumer<? super Subscription> onSubscribeCall() {
+		return onSubscribe;
+	}
 
-		@Override
-		public void request(long n) {
-			try {
-				parent.onRequest.accept(n);
-			} catch (Throwable ex) {
-				Operators.onErrorDropped(Operators.onOperatorError(s, ex));
-			}
-			s.request(n);
-		}
+	@Override
+	public Consumer<? super T> onNextCall() {
+		return onNext;
+	}
 
-		@Override
-		public void cancel() {
-			try {
-				parent.onCancel.run();
-				s.cancel();
-			} catch (Throwable ex) {
-				Operators.onErrorDropped(Operators.onOperatorError(s, ex));
-			}
-		}
+	@Override
+	public Consumer<? super Throwable> onErrorCall() {
+		return onError;
+	}
 
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				
-				try {
-					parent.onSubscribe.accept(s);
-				} catch (Throwable ex) {
-					actual.onSubscribe(Operators.emptySubscription());
-					onError(Operators.onOperatorError(s, ex));
-					return;
-				}
-				
-				actual.onSubscribe(this);
-			}
-		}
+	@Override
+	public Runnable onCompleteCall() {
+		return onComplete;
+	}
 
-		@Override
-		public void onNext(T t) {
-			if (done) {
-				return;
-			}
-			
-			try {
-				parent.onNext.accept(t);
-			} catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
-				return;
-			}
-			
-			actual.onNext(t);
-			
-			try {
-				parent.onAfterNext.accept(t);
-			} catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
-			}
-		}
+	@Override
+	public Runnable onAfterTerminateCall() {
+		return onAfterTerminated;
+	}
 
-		@Override
-		public void onError(Throwable t) {
-			if (done) {
-				Operators.onErrorDropped(t);
-				return;
-			}
-			done = true;
-			
-			try {
-				parent.onError.accept(t);
-			} catch (Throwable ex) {
-				ex = Operators.onOperatorError(null, ex, t);
-				ex.addSuppressed(t);
-				t = ex;
-			}
-			actual.onError(t);
-			
-			try {
-				parent.onAfterTerminated.run();
-			} catch (Throwable ex) {
-				Operators.onErrorDropped(Operators.onOperatorError(null, ex, t));
-			}
-		}
+	@Override
+	public LongConsumer onRequestCall() {
+		return onRequest;
+	}
 
-		@Override
-		public void onComplete() {
-			if (done) {
-				return;
-			}
-			done = true;
-			try {
-				parent.onComplete.run();
-			} catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(ex));
-				return;
-			}
-			actual.onComplete();
-			
-			try {
-				parent.onAfterTerminated.run();
-			} catch (Throwable ex) {
-				Operators.onErrorDropped(Operators.onOperatorError(ex));
-			}
-		}
-		
+	@Override
+	public Runnable onCancelCall() {
+		return onCancel;
+	}
+
+	@Override
+	public Consumer<? super T> onAfterNextCall() {
+		return onAfterNext;
 	}
 }

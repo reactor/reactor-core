@@ -47,7 +47,7 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 		Subscriber<? super T>[] parents = new Subscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			parents[i] = new ParallelMapSubscriber<>(subscribers[i], mapper);
+			parents[i] = new FluxMap.MapSubscriber<>(subscribers[i], mapper);
 		}
 		
 		source.subscribe(parents);
@@ -61,83 +61,5 @@ final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
 	@Override
 	public boolean isOrdered() {
 		return false;
-	}
-	
-	static final class ParallelMapSubscriber<T, R> implements Subscriber<T>, Subscription {
-
-		final Subscriber<? super R> actual;
-		
-		final Function<? super T, ? extends R> mapper;
-		
-		Subscription s;
-		
-		boolean done;
-		
-		public ParallelMapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
-			this.actual = actual;
-			this.mapper = mapper;
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			if (done) {
-				return;
-			}
-			R v;
-			
-			try {
-				v = mapper.apply(t);
-			} catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
-				return;
-			}
-			
-			if (v == null) {
-				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-						"mapper returned a null value"), t));
-				return;
-			}
-			
-			actual.onNext(v);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (done) {
-				Operators.onErrorDropped(t);
-				return;
-			}
-			done = true;
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (done) {
-				return;
-			}
-			done = true;
-			actual.onComplete();
-		}
-		
 	}
 }

@@ -172,7 +172,7 @@ public abstract class ParallelFlux<T> {
 	 *
 	 * @return the new Flux instannce
 	 */
-	public final Flux<List<T>> collectSortedList(Comparator<? super T> comparator) {
+	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
 		return collectSortedList(comparator, 16);
 	}
 
@@ -185,9 +185,9 @@ public abstract class ParallelFlux<T> {
 	 * @param comparator the comparator to compare elements
 	 * @param capacityHint the expected number of total elements
 	 *
-	 * @return the new Flux instannce
+	 * @return the new Mono instannce
 	 */
-	public final Flux<List<T>> collectSortedList(Comparator<? super T> comparator,
+	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator,
 			int capacityHint) {
 		int ch = capacityHint / parallelism() + 1;
 		ParallelFlux<List<T>> railReduced =
@@ -200,7 +200,7 @@ public abstract class ParallelFlux<T> {
 			return list;
 		});
 
-		Flux<List<T>> merged = railSorted.reduce((a, b) -> {
+		Mono<List<T>> merged = railSorted.reduce((a, b) -> {
 			int n = a.size() + b.size();
 			if (n == 0) {
 				return new ArrayList<>();
@@ -243,19 +243,6 @@ public abstract class ParallelFlux<T> {
 		return merged;
 	}
 
-	/**
-	 * Allows composing operators, in assembly time, on top of this {@link ParallelFlux} and
-	 * returns another {@link ParallelFlux} with composed features.
-	 *
-	 * @param <U> the output value type
-	 * @param composer the composer function from {@link ParallelFlux} (this) to another
-	 * ParallelFlux
-	 *
-	 * @return the {@link ParallelFlux} returned by the function
-	 */
-	public final <U> ParallelFlux<U> compose(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
-		return as(composer);
-	}
 
 	/**
 	 * Generates and concatenates Publishers on each 'rail', signalling errors immediately
@@ -310,14 +297,15 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doAfterTerminated(Runnable onAfterTerminate) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, e -> {
-		}, () -> {
-		}, onAfterTerminate, s -> {
-		}, r -> {
-		}, () -> {
-		});
+		return new ParallelUnorderedPeek<>(this,
+				null,
+				null,
+				null,
+				null,
+				onAfterTerminate,
+				null,
+				null,
+				null);
 	}
 
 	/**
@@ -329,14 +317,15 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnCancel(Consumer<? super Subscription> onSubscribe) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, e -> {
-		}, () -> {
-		}, () -> {
-		}, onSubscribe, r -> {
-		}, () -> {
-		});
+		return new ParallelUnorderedPeek<>(this,
+				null,
+				null,
+				null,
+				null,
+				null,
+				onSubscribe,
+				null,
+				null);
 	}
 
 	/**
@@ -347,14 +336,14 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, e -> {
-		}, () -> {
-		}, () -> {
-		}, s -> {
-		}, r -> {
-		}, onCancel);
+		return new ParallelUnorderedPeek<>(this, null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				onCancel);
 	}
 
 	/**
@@ -365,14 +354,15 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, e -> {
-		}, onComplete, () -> {
-		}, s -> {
-		}, r -> {
-		}, () -> {
-		});
+		return new ParallelUnorderedPeek<>(this,
+				null,
+				null,
+				null,
+				onComplete,
+				null,
+				null,
+				null,
+				null);
 	}
 
 	/**
@@ -382,15 +372,15 @@ public abstract class ParallelFlux<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnError(Consumer<Throwable> onError) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, onError, () -> {
-		}, () -> {
-		}, s -> {
-		}, r -> {
-		}, () -> {
-		});
+	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
+		return new ParallelUnorderedPeek<>(this, null,
+				null,
+				onError,
+				null,
+				null,
+				null,
+				null,
+				null);
 	}
 
 	/**
@@ -401,14 +391,13 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
-		return new ParallelUnorderedPeek<>(this, onNext, v -> {
-		}, e -> {
-		}, () -> {
-		}, () -> {
-		}, s -> {
-		}, r -> {
-		}, () -> {
-		});
+		return new ParallelUnorderedPeek<>(this, onNext, null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null);
 	}
 
 	/**
@@ -420,14 +409,14 @@ public abstract class ParallelFlux<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
-		return new ParallelUnorderedPeek<>(this, v -> {
-		}, v -> {
-		}, e -> {
-		}, () -> {
-		}, () -> {
-		}, s -> {
-		}, onRequest, () -> {
-		});
+		return new ParallelUnorderedPeek<>(this, null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				onRequest,
+				null);
 	}
 
 	/**
@@ -584,10 +573,10 @@ public abstract class ParallelFlux<T> {
 	 *
 	 * @param reducer the function to reduce two values into one.
 	 *
-	 * @return the new Flux instance emitting the reduced value or empty if the
+	 * @return the new Mono instance emitting the reduced value or empty if the
 	 * {@link ParallelFlux} was empty
 	 */
-	public final Flux<T> reduce(BiFunction<T, T, T> reducer) {
+	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
 		return new ParallelReduceFull<>(this, reducer);
 	}
@@ -619,7 +608,7 @@ public abstract class ParallelFlux<T> {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Loggers.SMALL_BUFFER_SIZE}.
+	 * QueueSupplier.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -644,7 +633,7 @@ public abstract class ParallelFlux<T> {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Loggers.SMALL_BUFFER_SIZE}.
+	 * QueueSupplier.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -678,7 +667,7 @@ public abstract class ParallelFlux<T> {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Loggers.SMALL_BUFFER_SIZE}.
+	 * QueueSupplier.SMALL_BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *
@@ -801,6 +790,20 @@ public abstract class ParallelFlux<T> {
 		}
 
 		subscribe(subscribers);
+	}
+
+	/**
+	 * Allows composing operators, in assembly time, on top of this {@link ParallelFlux}
+	 * and returns another {@link ParallelFlux} with composed features.
+	 *
+	 * @param <U> the output value type
+	 * @param composer the composer function from {@link ParallelFlux} (this) to another
+	 * ParallelFlux
+	 *
+	 * @return the {@link ParallelFlux} returned by the function
+	 */
+	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
+		return as(composer);
 	}
 
 	/**

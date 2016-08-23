@@ -46,7 +46,7 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 		Subscriber<? super T>[] parents = new Subscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			parents[i] = new ParallelFilterSubscriber<>(subscribers[i], predicate);
+			parents[i] = new FluxFilter.FilterSubscriber<>(subscribers[i], predicate);
 		}
 		
 		source.subscribe(parents);
@@ -60,81 +60,5 @@ final class ParallelUnorderedFilter<T> extends ParallelFlux<T> {
 	@Override
 	public boolean isOrdered() {
 		return false;
-	}
-	
-	static final class ParallelFilterSubscriber<T> implements Subscriber<T>, Subscription {
-
-		final Subscriber<? super T> actual;
-		
-		final Predicate<? super T> predicate;
-		
-		Subscription s;
-		
-		boolean done;
-		
-		public ParallelFilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
-			this.actual = actual;
-			this.predicate = predicate;
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-				
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			if (done) {
-				return;
-			}
-			boolean b;
-			
-			try {
-				b = predicate.test(t);
-			} catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
-				return;
-			}
-			
-			if (b) {
-				actual.onNext(t);
-			} else {
-				s.request(1);
-			}
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (done) {
-				Operators.onErrorDropped(t);
-				return;
-			}
-			done = true;
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (done) {
-				return;
-			}
-			done = true;
-			actual.onComplete();
-		}
-		
 	}
 }

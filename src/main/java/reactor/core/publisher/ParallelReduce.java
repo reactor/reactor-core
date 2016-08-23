@@ -26,7 +26,7 @@ import reactor.core.Fuseable;
  * @param <T> the input value type
  * @param <R> the result value type
  */
-final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable{
+final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 	
 	final ParallelFlux<? extends T> source;
 	
