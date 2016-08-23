@@ -51,10 +51,11 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 	final Publisher<IN> source;
 
-	final Logger log;
+	final Logger  log;
 	final boolean fuseable;
-	final int    options;
-	final Level  level;
+	final int     options;
+	final Level   level;
+	final String  operatorLine;
 	final long   id;
 
 	static final String LOG_TEMPLATE = "{}({})";
@@ -62,10 +63,25 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 	public SignalLogger(Publisher<IN> source, String category, Level level,
 			SignalType... options) {
+		this(source, category, level, false, options);
+	}
+
+	public SignalLogger(Publisher<IN> source,
+			String category,
+			Level level,
+			boolean correlateStack,
+			SignalType... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
 		this.fuseable = source instanceof Fuseable;
+
+		if(correlateStack){
+			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.takeStacktrace(null),false);
+		}
+		else{
+			operatorLine = null;
+		}
 
 		boolean generated = category == null || category.isEmpty() || category.endsWith(".");
 
@@ -123,20 +139,24 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	void log(Object... args) {
+		String line = fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE;
+		if(operatorLine != null){
+			line = line + " " + operatorLine;
+		}
 		if (level == Level.FINEST) {
-			log.trace(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
+			log.trace(line, args);
 		}
 		else if (level == Level.FINE) {
-			log.debug(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
+			log.debug(line, args);
 		}
 		else if (level == Level.INFO) {
-			log.info(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
+			log.info(line, args);
 		}
 		else if (level == Level.WARNING) {
-			log.warn(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
+			log.warn(line, args);
 		}
 		else if (level == Level.SEVERE) {
-			log.error(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, args);
+			log.error(line, args);
 		}
 	}
 

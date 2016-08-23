@@ -186,23 +186,26 @@ public abstract class Hooks {
 					return new OperatorHook<>(new MonoPeekFuseable<T>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 							onAfterTerminateCall, onRequestCall, onCancelCall),
-							traced);
+							traced, tracedCategory, tracedLevel, tracedSignals);
 				}
 				else {
 					return new OperatorHook<>(new MonoPeek<T>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
-							onAfterTerminateCall, onRequestCall, onCancelCall), traced);
+							onAfterTerminateCall, onRequestCall, onCancelCall), traced
+							, tracedCategory, tracedLevel, tracedSignals);
 				}
 			}
 			else if (publisher instanceof Fuseable) {
 				return new OperatorHook<>(new FluxPeekFuseable<T>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
-						onAfterTerminateCall, onRequestCall, onCancelCall), traced);
+						onAfterTerminateCall, onRequestCall, onCancelCall), traced
+						, tracedCategory, tracedLevel, tracedSignals);
 			}
 			else {
 				return new OperatorHook<>(new FluxPeek<T>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
-						onAfterTerminateCall, onRequestCall, onCancelCall), traced);
+						onAfterTerminateCall, onRequestCall, onCancelCall), traced
+						, tracedCategory, tracedLevel, tracedSignals);
 			}
 		}
 
@@ -240,6 +243,7 @@ public abstract class Hooks {
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
 		public final OperatorHook<T> ifName(String... names) {
+			if(this == IGNORE) return this;
 			String className = publisher().getClass()
 			                              .getSimpleName()
 			                              .replaceAll("Flux|Mono|Fuseable", "");
@@ -259,6 +263,7 @@ public abstract class Hooks {
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
 		public final OperatorHook<T> ifNameContains(String... names){
+			if(this == IGNORE) return this;
 			String className = publisher().getClass()
 			                              .getSimpleName()
 			                              .replaceAll("Flux|Mono|Fuseable", "")
@@ -297,10 +302,49 @@ public abstract class Hooks {
 		 */
 		public OperatorHook<T> log(String category, Level level, SignalType... options){
 			if(this == IGNORE) return this;
+			Objects.requireNonNull(level, "level");
 			SignalLogger peek = new SignalLogger<>(publisher, category, level, options);
 			return doOnSignal(peek.onSubscribeCall(), peek.onNextCall(), peek
 					.onErrorCall(), peek.onCompleteCall(), peek.onAfterTerminateCall(),
 					peek.onRequestCall(), peek.onCancelCall());
+		}
+
+		/**
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+		 * {@link Logger} support to handle trace implementation. Default will use the passed
+		 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
+		 * instead.
+		 * <p>
+		 * Options allow fine grained filtering of the traced signal, for instance to only
+		 * capture onNext and onError:
+		 * <pre>
+		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
+		 * SignalType.ON_ERROR)
+		 *
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+		 * alt="">
+		 *
+		 * @param category to be mapped into logger configuration (e.g.
+		 * org.springframework.reactor). If category is null, empty or ends with "." like
+		 * "reactor.", a generated operator suffix will complete, e.g. "reactor.Flux.Map".
+		 * @param level the level to enforce for this tracing Flux
+		 * @param showOperatorLine capture the current stack to display operator
+		 * class/line number.
+		 * @param options a vararg {@link SignalType} option to filter log messages
+		 *
+		 * @return a logging {@link OperatorHook}
+		 */
+		public OperatorHook<T> log(String category, Level level, boolean showOperatorLine,
+				SignalType... options){
+			if(this == IGNORE) return this;
+			Objects.requireNonNull(level, "level");
+			if(showOperatorLine){
+				tracedCategory = category;
+				tracedLevel = level;
+				tracedSignals = options;
+				return this;
+			}
+			return log(category, level, options);
 		}
 
 		/**
@@ -312,6 +356,7 @@ public abstract class Hooks {
 		 * @return a operator stack capture {@link OperatorHook}
 		 */
 		public OperatorHook<T> operatorStacktrace(){
+			if(this == IGNORE) return this;
 			traced = true;
 			return this;
 		}
@@ -329,15 +374,23 @@ public abstract class Hooks {
 
 		final Publisher<T> publisher;
 
+		String tracedCategory;
+		Level tracedLevel;
+		SignalType[] tracedSignals;
+
 		boolean traced;
 
 		OperatorHook(Publisher<T> p) {
-			this(p, false);
+			this(p, false, null, null, null);
 		}
 
-		OperatorHook(Publisher<T> p, boolean traced) {
+		OperatorHook(Publisher<T> p, boolean traced, String tracedCategory, Level
+				tracedLevel, SignalType[] tracedSignals) {
 			this.traced = traced;
 			this.publisher = p;
+			this.tracedSignals = tracedSignals;
+			this.tracedLevel = tracedLevel;
+			this.tracedCategory = tracedCategory;
 		}
 	}
 
@@ -376,8 +429,22 @@ public abstract class Hooks {
 				OperatorHook<T> hooks =
 						Objects.requireNonNull(hook.apply(new OperatorHook<>(publisher)), "hook");
 
+				if(hooks.tracedLevel != null){
+					SignalLogger peek = new SignalLogger<>(publisher, hooks
+							.tracedCategory, hooks.tracedLevel, true, hooks
+							.tracedSignals);
+
+					hooks = hooks.doOnSignal(peek.onSubscribeCall(), peek
+									.onNextCall(),
+							peek
+									.onErrorCall(), peek.onCompleteCall(), peek.onAfterTerminateCall(),
+							peek.onRequestCall(), peek.onCancelCall());
+				}
+
 				if (hooks != OperatorHook.IGNORE) {
-					publisher = hooks.publisher();
+					publisher = hooks.publisher;
+
+
 					boolean trace = hooks.traced;
 
 					if (trace){

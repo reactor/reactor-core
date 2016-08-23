@@ -43,7 +43,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.WaitStrategy;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -1686,6 +1685,45 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 		return onAssembly(new MonoPeek<>(this,  new SignalLogger<>(this, category, level,
 				options)));
+	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and
+	 * use {@link Logger} support to
+	 * handle trace
+	 * implementation. Default will
+	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
+	 *
+	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
+	 * <pre>
+	 *     mono.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png" alt="">
+	 * <p>
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.Mono.Map".
+	 * @param level the level to enforce for this tracing Mono
+	 * @param showOperatorLine capture the current stack to display operator
+	 * class/line number.
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new unaltered {@link Mono}
+	 */
+	public final Mono<T> log(String category,
+			Level level,
+			boolean showOperatorLine,
+			SignalType... options) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoPeekFuseable<>(this,
+					new SignalLogger<>(this,
+							category,
+							level,
+							showOperatorLine,
+							options)));
+		}
+		return onAssembly(new MonoPeek<>(this,
+				new SignalLogger<>(this, category, level, showOperatorLine, options)));
 	}
 
 	/**

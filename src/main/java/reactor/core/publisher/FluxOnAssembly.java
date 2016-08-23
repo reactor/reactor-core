@@ -24,11 +24,11 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
-import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * Captures the current stacktrace when this publisher is created and
@@ -94,9 +94,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		                                 .getStackTrace();
 
 		StringBuilder sb =
-				new StringBuilder("\nAssembly trace from producer [" + source.getClass()
-				                                                           .getName() + "] " +
-						":\n");
+				new StringBuilder(null != source ? "\nAssembly trace from producer [" +
+						source.getClass()
+						      .getName() + "] " +
+						":\n" : "");
 
 		for (StackTraceElement e : stes) {
 			String row = e.toString();
@@ -108,6 +109,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 					continue;
 				}
 				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
+					continue;
+				}
+				if (row.contains("reactor.core.publisher.SignalLogger")) {
 					continue;
 				}
 				if (row.contains("FluxOnAssembly.")) {
@@ -194,6 +198,31 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 	}
 
+	static String extract(String source, boolean skipFirst) {
+		String usercode = null;
+		String last = null;
+		boolean first = skipFirst;
+		for (String s : source.split("\n")) {
+			if (s.isEmpty()) {
+				continue;
+			}
+			if (first) {
+				first = false;
+				continue;
+			}
+			if (!s.contains("reactor.core.publisher")) {
+				usercode = s.substring(s.indexOf('('));
+				break;
+			}
+			else {
+				last = s.replace("reactor.core.publisher.", "");
+				last = last.substring(0, last.indexOf("("));
+			}
+		}
+
+		return (skipFirst && last != null ? last : "") + usercode;
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		subscribe(s, source, stacktrace, this, lift);
@@ -213,7 +242,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		public OnAssemblyException(String message, Publisher<?> parent) {
 			super(message);
 			Map<Integer, String> thiz = new HashMap<>();
-			thiz.put(parent.hashCode(), extract(message));
+			thiz.put(parent.hashCode(), extract(message, true));
 			stackByPublisher.put(0, thiz);
 			this.parent = parent;
 		}
@@ -266,35 +295,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 						s = new HashMap<>();
 					}
 					//only one publisher occurence possible?
-					s.put(parent.hashCode(), extract(stacktrace));
+					s.put(parent.hashCode(), extract(stacktrace, true));
 					return s;
 				});
 			}
-		}
-
-		String extract(String source) {
-			String usercode = null;
-			String last = null;
-			boolean first = true;
-			for (String s : source.split("\n")) {
-				if (s.isEmpty()) {
-					continue;
-				}
-				if (first) {
-					first = false;
-					continue;
-				}
-				if (!s.contains("reactor.core.publisher")) {
-					usercode = s.substring(s.indexOf('('));
-					break;
-				}
-				else {
-					last = s.replace("reactor.core.publisher.", "");
-					last = last.substring(0, last.indexOf("("));
-				}
-			}
-
-			return (last != null ? last : "") + usercode;
 		}
 	}
 

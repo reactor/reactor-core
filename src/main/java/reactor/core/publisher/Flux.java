@@ -3332,6 +3332,46 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxPeek<>(this,  new SignalLogger<>(this, category, level,
 				options)));
 	}
+
+	/**
+	 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+	 * {@link Logger} support to handle trace implementation. Default will use the passed
+	 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
+	 * instead.
+	 * <p>
+	 * Options allow fine grained filtering of the traced signal, for instance to only
+	 * capture onNext and onError:
+	 * <pre>
+	 *     flux.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
+	 *
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+	 * alt="">
+	 *
+	 * @param category to be mapped into logger configuration (e.g. org.springframework
+	 * .reactor). If category ends with "." like "reactor.", a generated operator
+	 * suffix will complete, e.g. "reactor.Flux.Map".
+	 * @param level the level to enforce for this tracing Flux
+	 * @param showOperatorLine capture the current stack to display operator
+	 * class/line number.
+	 * @param options a vararg {@link SignalType} option to filter log messages
+	 *
+	 * @return a new unaltered {@link Flux}
+	 */
+	public final Flux<T> log(String category,
+			Level level,
+			boolean showOperatorLine,
+			SignalType... options) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxPeekFuseable<>(this,
+					new SignalLogger<>(this,
+							category,
+							level,
+							showOperatorLine,
+							options)));
+		}
+		return onAssembly(new FluxPeek<>(this,
+				new SignalLogger<>(this, category, level, showOperatorLine, options)));
+	}
 	
 	/**
 	 * Transform the items emitted by this {@link Flux} by applying a function to each item.
