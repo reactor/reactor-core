@@ -168,7 +168,7 @@ public class HooksTest {
 
 	@Test
 	public void testTrace2() throws Exception {
-		Hooks.onOperator(hooks -> hooks.ifName("map")
+		Hooks.onOperator(hooks -> hooks.ifName("map", "filter")
 		                               .operatorStacktrace());
 		try {
 			Mono.just(1)

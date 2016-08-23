@@ -236,22 +236,40 @@ public abstract class Hooks {
 		 * Apply hook only if {@link #publisher()} if operator name match the type name
 		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
 		 *
+		 * @param names a list of possible names that can match
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final OperatorHook<T> ifName(String name){
-			return publisher().getClass().getSimpleName().replaceAll("Flux|Mono|Fuseable",
-					"").equalsIgnoreCase(name) ? this : OperatorHook.IGNORE;
+		public final OperatorHook<T> ifName(String... names) {
+			String className = publisher().getClass()
+			                              .getSimpleName()
+			                              .replaceAll("Flux|Mono|Fuseable", "");
+			for (String name : names) {
+				if (className.equalsIgnoreCase(name)) {
+					return this;
+				}
+			}
+			return OperatorHook.IGNORE;
 		}
 
 		/**
 		 * Apply hook only if {@link #publisher()} if operator name match the type name
 		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
 		 *
+		 * @param names a list of possible names that can match
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
-		public final OperatorHook<T> ifNameContains(String name){
-			return publisher().getClass().getSimpleName().replaceAll("Flux|Mono|Fuseable",
-					"").toLowerCase().contains(name.toLowerCase()) ? this : OperatorHook.IGNORE;
+		public final OperatorHook<T> ifNameContains(String... names){
+			String className = publisher().getClass()
+			                              .getSimpleName()
+			                              .replaceAll("Flux|Mono|Fuseable", "")
+			                              .toLowerCase();
+
+			for (String name : names) {
+				if (className.contains(name.toLowerCase())) {
+					return this;
+				}
+			}
+			return OperatorHook.IGNORE;
 		}
 
 		/**
