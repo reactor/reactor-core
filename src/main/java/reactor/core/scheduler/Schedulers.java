@@ -88,7 +88,23 @@ public class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutorService(ExecutorService executorService) {
-		return new ExecutorServiceScheduler(executorService);
+		return fromExecutorService(executorService, false);
+	}
+
+	/**
+	 * Create a {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
+	 * Runnables for async operators.
+	 *
+	 * @param executorService an {@link ExecutorService}
+	 * @param interruptOnCancel delegate to
+	 * {@link java.util.concurrent.Future#cancel(boolean) future.cancel(true)}  on
+	 * {@link Cancellation#dispose()}
+	 *
+	 * @return a new {@link Scheduler}
+	 */
+	public static Scheduler fromExecutorService(ExecutorService executorService,
+			boolean interruptOnCancel) {
+		return new ExecutorServiceScheduler(executorService, interruptOnCancel);
 	}
 
 	/**

@@ -132,7 +132,7 @@ final class ParallelScheduler implements Scheduler {
     public Cancellation schedule(Runnable task) {
         ExecutorService exec = pick();
         Future<?> f = exec.submit(task);
-        return () -> f.cancel(true);
+        return () -> f.cancel(false);
     }
 
     @Override
@@ -290,7 +290,7 @@ final class ParallelScheduler implements Scheduler {
                         f = FUTURE.getAndSet(this, CANCELLED);
                         if (f != CANCELLED && f != FINISHED) {
                             if (f != null) {
-                                f.cancel(true);
+                                f.cancel(parent.shutdown);
                             }
                             
                             parent.remove(this);
@@ -302,7 +302,7 @@ final class ParallelScheduler implements Scheduler {
             void setFuture(Future<?> f) {
                 if (future != null || !FUTURE.compareAndSet(this, null, f)) {
                     if (future != FINISHED) {
-                        f.cancel(true);
+                        f.cancel(false);
                     }
                 }
             }

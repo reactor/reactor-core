@@ -68,6 +68,7 @@ final class MonoDelay extends Mono<Long> {
 		volatile boolean requested;
 
 		static final Cancellation CANCELLED = () -> { };
+		static final Cancellation FINISHED = () -> { };
 
 		public MonoDelayRunnable(Subscriber<? super Long> s) {
 			this.s = s;
@@ -83,7 +84,7 @@ final class MonoDelay extends Mono<Long> {
 		public void run() {
 			if (requested) {
 				try {
-				if (cancel != CANCELLED) {
+				if (CANCEL.getAndSet(this, FINISHED) != CANCELLED) {
 					s.onNext(0L);
 				}
 				if (cancel != CANCELLED) {
@@ -101,9 +102,9 @@ final class MonoDelay extends Mono<Long> {
 		@Override
 		public void cancel() {
 			Cancellation c = cancel;
-			if (c != CANCELLED) {
+			if (c != CANCELLED && c != FINISHED) {
 				c =  CANCEL.getAndSet(this, CANCELLED);
-				if (c != null && c != CANCELLED) {
+				if (c != null && c != CANCELLED && c != FINISHED) {
 					c.dispose();
 				}
 			}

@@ -54,7 +54,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     public Cancellation schedule(Runnable task) {
         try {
             Future<?> f = executor.submit(task);
-            return () -> f.cancel(true);
+            return () -> f.cancel(false);
         } catch (RejectedExecutionException ex) {
             return REJECTED;
         }
@@ -64,7 +64,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
         try {
             Future<?> f = executor.schedule(task, delay, unit);
-            return () -> f.cancel(true);
+            return () -> f.cancel(false);
         } catch (RejectedExecutionException ex) {
             return REJECTED;
         }
@@ -74,7 +74,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     public Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
         try {
             Future<?> f = executor.scheduleAtFixedRate(task, initialDelay, period, unit);
-            return () -> f.cancel(true);
+            return () -> f.cancel(false);
         } catch (RejectedExecutionException ex) {
             return REJECTED;
         }
@@ -401,7 +401,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         }
         
         void doCancel(Future<?> a) {
-            a.cancel(Thread.currentThread() != current);
+            a.cancel(false);
         }
         
         @Override

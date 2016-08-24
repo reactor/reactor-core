@@ -39,32 +39,36 @@ final class ExecutorServiceScheduler implements Scheduler {
 	static final Future<?> FINISHED = new FutureTask<>(EMPTY, null);
 
 	final ExecutorService executor;
+	final boolean interruptOnCancel;
 
-	public ExecutorServiceScheduler(ExecutorService executor) {
+	public ExecutorServiceScheduler(ExecutorService executor, boolean interruptOnCancel) {
 		this.executor = executor;
+		this.interruptOnCancel = interruptOnCancel;
 	}
 	
 	@Override
 	public Worker createWorker() {
-		return new ExecutorServiceWorker(executor);
+		return new ExecutorServiceWorker(executor, interruptOnCancel);
 	}
 	
 	@Override
 	public Cancellation schedule(Runnable task) {
 		Future<?> f = executor.submit(task);
-		return () -> f.cancel(true);
+		return () -> f.cancel(interruptOnCancel);
 	}
 
 	static final class ExecutorServiceWorker implements Worker {
 
 		final ExecutorService executor;
+		final boolean interruptOnCancel;
 
 		volatile boolean terminated;
 
 		OpenHashSet<ScheduledRunnable> tasks;
 
-		public ExecutorServiceWorker(ExecutorService executor) {
+		public ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
+			this.interruptOnCancel = interruptOnCancel;
 			this.tasks = new OpenHashSet<>();
 		}
 
@@ -169,7 +173,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		void doCancel(Future<?> a) {
-			a.cancel(Thread.currentThread() != current);
+			a.cancel(parent.interruptOnCancel);
 		}
 
 		void cancelFuture() {
