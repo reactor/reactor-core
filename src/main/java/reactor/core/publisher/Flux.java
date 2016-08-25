@@ -4489,8 +4489,8 @@ public abstract class Flux<T> implements Publisher<T> {
                 return Mono.just(v);
 	        }
 		    @SuppressWarnings("unchecked")
-		    Callable<T> thiz = (Callable<T>)this)
-		    return Mono.onAssembly(new MonoCallable<>(thiz);
+		    Callable<T> thiz = (Callable<T>)this;
+		    return Mono.onAssembly(new MonoCallable<>(thiz));
 	    }
 		return Mono.onAssembly(new MonoSingle<>(this));
 	}
@@ -4520,7 +4520,7 @@ public abstract class Flux<T> implements Publisher<T> {
                 return Mono.just(v);
             }
 	        @SuppressWarnings("unchecked")
-	        Callable<T> thiz = (Callable<T>)this)
+	        Callable<T> thiz = (Callable<T>)this;
 	        return Mono.onAssembly(new MonoCallable<>(thiz));
         }
 		return Mono.onAssembly(new MonoSingle<>(this, defaultSupplier));

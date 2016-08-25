@@ -1570,7 +1570,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	            return Flux.just(v);
 	        }
 		    @SuppressWarnings("unchecked") Callable<T> thiz = (Callable<T>) this;
-		    return Flux.onAssembly(new FluxCallable<>(thiz);
+		    return Flux.onAssembly(new FluxCallable<>(thiz));
 	    }
 		return FluxSource.wrap(this);
 	}
@@ -1781,7 +1781,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
 		@SuppressWarnings("unchecked")
-		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
 		return mapError(type::isInstance, handler);
 	}
 
