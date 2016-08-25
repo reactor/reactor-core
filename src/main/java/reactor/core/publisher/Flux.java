@@ -2531,7 +2531,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return onAssembly(new FluxConcatArray<>(false, this, other));
+		@SuppressWarnings({ "unchecked" })
+		Flux<T> concat = new FluxConcatArray<>(false, this, other);
+		return onAssembly(concat);
 	}
 
 	/**

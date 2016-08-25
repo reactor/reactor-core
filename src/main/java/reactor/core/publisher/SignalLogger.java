@@ -180,8 +180,13 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	public Consumer<? super Throwable> onErrorCall() {
 		if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
+			String line = fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE;
+			if(operatorLine != null){
+				line = line + " " + operatorLine;
+			}
+			String s = line;
 			return e -> {
-				log.error(fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE, SignalType.ON_ERROR, e, source);
+				log.error(s, SignalType.ON_ERROR, e, source);
 				log.error("", e);
 			};
 		}
