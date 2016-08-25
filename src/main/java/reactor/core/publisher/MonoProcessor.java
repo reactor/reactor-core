@@ -186,7 +186,6 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 		}
 		catch (InterruptedException ie) {
-			System.out.println("---------");
 			Thread.currentThread().interrupt();
 
 			throw new IllegalStateException("Thread Interruption on Mono blocking read");
