@@ -61,11 +61,6 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	static final String LOG_TEMPLATE = "{}({})";
 	static final String LOG_TEMPLATE_FUSEABLE = "| {}({})";
 
-	public SignalLogger(Publisher<IN> source, String category, Level level,
-			SignalType... options) {
-		this(source, category, level, false, options);
-	}
-
 	public SignalLogger(Publisher<IN> source,
 			String category,
 			Level level,
@@ -230,5 +225,10 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	public String toString() {
 		return "/loggers/" + log.getName() + "/" + id;
+	}
+
+	@Override
+	public Publisher<? extends IN> upstream() {
+		return source;
 	}
 }

@@ -58,17 +58,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 	final Runnable onCancelCall;
 
-	public FluxPeekFuseable(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
-		this(source,
-				peekHelper.onSubscribeCall(),
-				peekHelper.onNextCall(),
-				peekHelper.onErrorCall(),
-				peekHelper.onCompleteCall(),
-				peekHelper.onAfterTerminateCall(),
-				peekHelper.onRequestCall(),
-				peekHelper.onCancelCall());
-	}
-
 	public FluxPeekFuseable(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall, Consumer<? super Throwable>
 			onErrorCall, Runnable

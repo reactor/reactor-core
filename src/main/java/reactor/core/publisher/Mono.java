@@ -313,7 +313,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
-			return (Mono<T>) source;
+			@SuppressWarnings("unchecked")
+			Mono<T> casted = (Mono<T>) source;
+			return casted;
 		}
 		if (source instanceof Fuseable.ScalarCallable) {
 			@SuppressWarnings("unchecked")
@@ -1244,16 +1246,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
-		Objects.requireNonNull(afterTerminate, "afterTerminate");
 		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null,  afterSuccess, afterSuccess.errorConsumer,
+		return doOnSignal(this, null,  afterSuccess, afterSuccess.errorConsumer,
 					null, afterSuccess, null,
-					null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, afterSuccess, afterSuccess.errorConsumer,
-				null,
-				afterSuccess, null, null));
+					null);
 	}
 
 	/**
@@ -1269,12 +1265,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
-					null, null, onCancel));
-		}
-		return onAssembly(new MonoPeek<>(this, null, null, null, null, null, null,
-				onCancel));
+		return doOnSignal(this, null, null, null, null, null, null, onCancel);
 	}
 
 
@@ -1290,12 +1281,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null, onNext, null, null,
-					null, null, null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, onNext, null, null, null, null,
-				null));
+		return doOnSignal(this, null, onNext, null, null, null, null, null);
 	}
 
 	/**
@@ -1316,15 +1302,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
-		Objects.requireNonNull(onSuccess, "onSuccess");
 		MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null,  _onSuccess, null, _onSuccess, null,
-					null,
-					null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, _onSuccess, null,  _onSuccess,
-				null, null, null));
+		return doOnSignal(this, null, _onSuccess, null,  _onSuccess, null, null, null);
 	}
 
 	/**
@@ -1339,12 +1318,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null, null, onError, null,
-					null, null, null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, null, onError, null, null, null,
-				null));
+		return doOnSignal(this, null, null, onError, null, null, null, null);
 	}
 
 
@@ -1400,12 +1374,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
-					null, consumer, null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, null, null, null, null, consumer,
-				null));
+		return doOnSignal(this, null, null, null, null, null, consumer, null);
 	}
 
 	/**
@@ -1420,12 +1389,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, onSubscribe,  null, null,
-					null, null, null, null));
-		}
-		return onAssembly(new MonoPeek<>(this, onSubscribe, null, null,  null, null,
-				null, null));
+		return doOnSignal(this, onSubscribe, null, null,  null, null, null, null);
 	}
 
 	/**
@@ -1448,12 +1412,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		Objects.requireNonNull(onTerminate, "onTerminate");
 		MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
 		Consumer<Throwable> error = e -> onTerminate.accept(null, e);
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this, null,  onSuccess, error, onSuccess, null, null,
-					null));
-		}
-		return onAssembly(new MonoPeek<>(this, null, onSuccess, error,  onSuccess,
-				null, null, null));
+		return doOnSignal(this, null,  onSuccess, error, onSuccess, null, null, null);
 	}
 
 	/**
@@ -1688,12 +1647,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final Mono<T> log(String category, Level level, SignalType... options) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this,
-					new SignalLogger<>(this, category, level, options)));
-		}
-		return onAssembly(new MonoPeek<>(this,  new SignalLogger<>(this, category, level,
-				options)));
+		return log(category, level, false, options);
 	}
 
 	/**
@@ -1723,16 +1677,17 @@ public abstract class Mono<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new MonoPeekFuseable<>(this,
-					new SignalLogger<>(this,
-							category,
-							level,
-							showOperatorLine,
-							options)));
-		}
-		return onAssembly(new MonoPeek<>(this,
-				new SignalLogger<>(this, category, level, showOperatorLine, options)));
+		SignalLogger<T> log = new SignalLogger<>(this, category, level,
+				showOperatorLine, options);
+
+		return doOnSignal(this,
+				log.onSubscribeCall(),
+				log.onNextCall(),
+				log.onErrorCall(),
+				log.onCompleteCall(),
+				log.onAfterTerminateCall(),
+				log.onRequestCall(),
+				log.onCancelCall());
 	}
 
 	/**
@@ -2695,5 +2650,34 @@ public abstract class Mono<T> implements Publisher<T> {
 		return (Mono<T>)hook.apply(source);
 	}
 
+	@SuppressWarnings("unchecked")
+	static <T> Mono<T> doOnSignal(Publisher<T> source,
+			Consumer<? super Subscription> onSubscribe,
+			Consumer<? super T> onNext,
+			Consumer<? super Throwable> onError,
+			Runnable onComplete,
+			Runnable onAfterTerminate,
+			LongConsumer onRequest,
+			Runnable onCancel) {
+		if (source instanceof Fuseable) {
+			return onAssembly(new MonoPeekFuseable<>(source,
+					onSubscribe,
+					onNext,
+					onError,
+					onComplete,
+					onAfterTerminate,
+					onRequest,
+					onCancel));
+		}
+		return onAssembly(new MonoPeek<>(source,
+				onSubscribe,
+				onNext,
+				onError,
+				onComplete,
+				onAfterTerminate,
+				onRequest,
+				onCancel));
+	}
+	
 	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;
 }

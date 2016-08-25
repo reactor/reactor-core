@@ -59,17 +59,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
-		this(source,
-				peekHelper.onSubscribeCall(),
-				peekHelper.onNextCall(),
-				peekHelper.onErrorCall(),
-				peekHelper.onCompleteCall(),
-				peekHelper.onAfterTerminateCall(),
-				peekHelper.onRequestCall(),
-				peekHelper.onCancelCall());
-	}
-
 	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
 			Consumer<? super Throwable> onErrorCall,

@@ -294,38 +294,13 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	/**
 	 * Run the specified runnable when a 'rail' completes or signals an error.
 	 *
-	 * @param onAfterTerminate the callback
+	 * @param afterTerminate the callback
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doAfterTerminated(Runnable onAfterTerminate) {
-		return onAssembly(new ParallelUnorderedPeek<>(this,
-				null,
-				null,
-				null,
-				null,
-				onAfterTerminate,
-				null,
-				null, null));
-	}
-
-	/**
-	 * Call the specified callback when a 'rail' receives a Subscription from its
-	 * upstream.
-	 *
-	 * @param onSubscribe the callback
-	 *
-	 * @return the new {@link ParallelFlux} instance
-	 */
-	public final ParallelFlux<T> doOnCancel(Consumer<? super Subscription> onSubscribe) {
-		return onAssembly(new ParallelUnorderedPeek<>(this,
-				null,
-				null,
-				null,
-				null,
-				null,
-				onSubscribe,
-				null, null));
+	public final ParallelFlux<T> doAfterTerminate(Runnable afterTerminate) {
+		Objects.requireNonNull(afterTerminate, "afterTerminate");
+		return doOnSignal(this, null, null, null, null, afterTerminate, null, null, null);
 	}
 
 	/**
@@ -336,13 +311,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
-		return onAssembly(new ParallelUnorderedPeek<>(this, null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null, onCancel));
+		Objects.requireNonNull(onCancel, "onCancel");
+		return doOnSignal(this, null, null, null, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -353,14 +323,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
-		return onAssembly(new ParallelUnorderedPeek<>(this,
-				null,
-				null,
-				null,
-				onComplete,
-				null,
-				null,
-				null, null));
+		Objects.requireNonNull(onComplete, "onComplete");
+		return doOnSignal(this, null, null, null, onComplete, null, null, null, null);
 	}
 
 	/**
@@ -371,13 +335,21 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
-		return onAssembly(new ParallelUnorderedPeek<>(this, null,
-				null,
-				onError,
-				null,
-				null,
-				null,
-				null, null));
+		Objects.requireNonNull(onError, "onError");
+		return doOnSignal(this, null, null, onError, null, null, null, null, null);
+	}
+
+	/**
+	 * Call the specified callback when a 'rail' receives a Subscription from its
+	 * upstream.
+	 *
+	 * @param onSubscribe the callback
+	 *
+	 * @return the new {@link ParallelFlux} instance
+	 */
+	public final ParallelFlux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+		Objects.requireNonNull(onSubscribe, "onSubscribe");
+		return doOnSignal(this, null, null, null, null, null, onSubscribe, null, null);
 	}
 
 	/**
@@ -388,12 +360,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
-		return onAssembly(new ParallelUnorderedPeek<>(this, onNext, null,
-				null,
-				null,
-				null,
-				null,
-				null, null));
+		Objects.requireNonNull(onNext, "onNext");
+		return doOnSignal(this, onNext, null, null, null, null, null, null, null);
 	}
 
 	/**
@@ -405,13 +373,27 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
-		return onAssembly(new ParallelUnorderedPeek<>(this, null,
+		Objects.requireNonNull(onRequest, "onRequest");
+		return doOnSignal(this, null, null, null, null, null, null, onRequest, null);
+	}
+
+	/**
+	 * Triggered when the {@link ParallelFlux} terminates, either by completing successfully or with an error.
+	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
+	 *
+	 * @return an observed  {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> doOnTerminate(Runnable onTerminate) {
+		Objects.requireNonNull(onTerminate, "onTerminate");
+		return doOnSignal(this,
+				null,
+				null,
+				e -> onTerminate.run(),
+				onTerminate,
 				null,
 				null,
 				null,
-				null,
-				null,
-				onRequest, null));
+				null);
 	}
 
 	/**
@@ -529,6 +511,17 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Hides the identities of this {@link ParallelFlux} and its {@link Subscription}
+	 * as well.
+	 *
+	 * @return a new {@link ParallelFlux} defeating any {@link Publisher} / {@link Subscription} feature-detection
+	 */
+	public final ParallelFlux<T> hide() {
+		return new ParallelFluxHide<>(this);
+	}
+
+
+	/**
 	 * Returns true if the parallel sequence has to be ordered when joining back.
 	 *
 	 * @return true if the parallel sequence has to be ordered when joining back
@@ -597,8 +590,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public final ParallelFlux<T> log(String category,
 			Level level,
 			SignalType... options) {
-		return onAssembly(new ParallelUnorderedPeek<>(this,
-				new SignalLogger<>(this, category, level, options)));
+		return log(category, level, false, options);
 	}
 
 	/**
@@ -630,8 +622,19 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		return onAssembly(new ParallelUnorderedPeek<>(this,
-				new SignalLogger<>(this, category, level, showOperatorLine, options)));
+
+		SignalLogger<T> log =
+				new SignalLogger<>(this, category, level, showOperatorLine, options);
+
+		return doOnSignal(this,
+				log.onNextCall(),
+				log.onAfterNextCall(),
+				log.onErrorCall(),
+				log.onCompleteCall(),
+				log.onAfterTerminateCall(),
+				log.onSubscribeCall(),
+				log.onRequestCall(),
+				log.onCancelCall());
 	}
 	
 	/**
@@ -1005,5 +1008,26 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			return source;
 		}
 		return (ParallelFlux<T>) hook.apply(source);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> ParallelFlux<T> doOnSignal(ParallelFlux<T> source,
+			Consumer<? super T> onNext,
+			Consumer<? super T> onAfterNext,
+			Consumer<? super Throwable> onError,
+			Runnable onComplete,
+			Runnable onAfterTerminate,
+			Consumer<? super Subscription> onSubscribe,
+			LongConsumer onRequest,
+			Runnable onCancel) {
+		return onAssembly(new ParallelUnorderedPeek<>(source,
+				onNext,
+				onAfterNext,
+				onError,
+				onComplete,
+				onAfterTerminate,
+				onSubscribe,
+				onRequest,
+				onCancel));
 	}
 }

@@ -28,6 +28,7 @@ import java.time.Duration
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.BiFunction
+import java.util.function.Function
 import java.util.function.Predicate
 import java.util.function.Supplier
 import java.util.logging.Level
@@ -1291,7 +1292,7 @@ class FluxSpec extends Specification {
 			def bucketOpening = EmitterProcessor.<Integer> create().connect()
 			boundaryFlux = EmitterProcessor.<Integer> create(false).connect()
 			numbers = EmitterProcessor.<Integer> create().connect()
-			res = numbers.log('numb').buffer(bucketOpening) { boundaryFlux.log('boundary') }.log('promise').buffer()
+			res = numbers.log('numb').buffer(bucketOpening, { boundaryFlux.log('boundary') } as Function).log('promise').buffer()
 					.publishNext()
 
 			res.subscribe()

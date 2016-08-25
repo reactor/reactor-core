@@ -319,11 +319,11 @@ public abstract class Hooks {
 		 * @return a logging {@link OperatorHook}
 		 */
 		public OperatorHook<T> log(String category, Level level, SignalType... options){
-			if(this == IGNORE) return this;
 			Objects.requireNonNull(level, "level");
-			SignalLogger peek = new SignalLogger<>(publisher, category, level, options);
+			SignalLogger peek = new SignalLogger<>(publisher, category, level, false,
+					options);
 			return doOnSignal(peek.onSubscribeCall(), peek.onNextCall(), peek
-					.onErrorCall(), peek.onCompleteCall(), peek.onAfterTerminateCall(),
+							.onErrorCall(), peek.onCompleteCall(), peek.onAfterTerminateCall(),
 					peek.onRequestCall(), peek.onCancelCall());
 		}
 

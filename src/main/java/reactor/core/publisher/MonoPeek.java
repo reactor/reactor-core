@@ -54,17 +54,6 @@ final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	public MonoPeek(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
-		this(source,
-				peekHelper.onSubscribeCall(),
-				peekHelper.onNextCall(),
-				peekHelper.onErrorCall(),
-				peekHelper.onCompleteCall(),
-				peekHelper.onAfterTerminateCall(),
-				peekHelper.onRequestCall(),
-				peekHelper.onCancelCall());
-	}
-
 	public MonoPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall, Consumer<? super Throwable> onErrorCall, Runnable
 			onCompleteCall,

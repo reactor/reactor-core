@@ -19,8 +19,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Receiver;
 
 /**
  * Peek into the lifecycle and sequence signals.
@@ -29,7 +31,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the value type of the sequence
  */
-interface SignalPeek<T> {
+interface SignalPeek<T> extends Receiver {
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
@@ -88,4 +90,7 @@ interface SignalPeek<T> {
 	default Consumer<? super T> onAfterNextCall(){
 		return null;
 	}
+
+	@Override
+	Publisher<? extends T> upstream();
 }

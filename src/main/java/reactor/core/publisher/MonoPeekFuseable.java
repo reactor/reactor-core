@@ -51,17 +51,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 
 	final Runnable onCancelCall;
 
-	public MonoPeekFuseable(Publisher<? extends T> source, SignalPeek<T> peekHelper) {
-		this(source,
-				peekHelper.onSubscribeCall(),
-				peekHelper.onNextCall(),
-				peekHelper.onErrorCall(),
-				peekHelper.onCompleteCall(),
-				peekHelper.onAfterTerminateCall(),
-				peekHelper.onRequestCall(),
-				peekHelper.onCancelCall());
-	}
-
 	public MonoPeekFuseable(Publisher<? extends T> source,
 			Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,

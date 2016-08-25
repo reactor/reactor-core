@@ -668,7 +668,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		if (source instanceof Flux) {
-			return (Flux<T>) source;
+			@SuppressWarnings("unchecked")
+			Flux<T> casted = (Flux<T>) source;
+			return casted;
 		}
 
 		if (source instanceof Fuseable.ScalarCallable) {
@@ -2152,13 +2154,15 @@ public abstract class Flux<T> implements Publisher<T> {
 				});
 
 			}
-			return Mono.onAssembly(new MonoCallable<>((Callable<T>)this).map(u -> {
-				List<T> list = (List<T>)LIST_SUPPLIER.get();
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoCallable<>(thiz).map(u -> {
+				List<T> list = Flux.<T>listSupplier().get();
 				list.add(u);
 				return list;
 			}));
 		}
-		return Mono.onAssembly(new MonoCollectList<>(this, LIST_SUPPLIER));
+		return Mono.onAssembly(new MonoCollectList<>(this, listSupplier()));
 	}
 
 	/**
@@ -2328,13 +2332,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of all sorted values from this {@link Flux}
 	 *
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
 		return collectList().map(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
 			if (comparator != null) {
 				Collections.sort(list, comparator);
 			} else {
-				@SuppressWarnings({ "unchecked", "rawtypes" })
+
 				List<Comparable> l = (List<Comparable>)list;
 				Collections.sort(l);
 			}
@@ -2761,12 +2766,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null,
-					afterTerminate, null, null));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, null, null, afterTerminate,
-				null, null));
+		Objects.requireNonNull(afterTerminate, "afterTerminate");
+		return doOnSignal(this, null, null, null, null, afterTerminate, null, null);
 	}
 
 	/**
@@ -2780,11 +2781,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
-					null, onCancel));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, null, null, null, null, onCancel));
+		return doOnSignal(this, null, null, null, null, null, null, onCancel);
 	}
 
 	/**
@@ -2798,12 +2795,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, onComplete,
-					null, null, null));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, null, onComplete, null, null,
-				null));
+		return doOnSignal(this, null, null, null, onComplete, null, null, null);
 	}
 
 	/**
@@ -2817,12 +2809,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, onError, null,
-					null, null, null));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, onError, null, null, null,
-				null));
+		return doOnSignal(this, null, null, onError, null, null, null, null);
 	}
 
 	/**
@@ -2877,12 +2864,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this, null, onNext, null, null, null,
-					null, null));
-		}
-		return onAssembly(new FluxPeek<>(this, null, onNext, null, null, null, null,
-				null));
+		return doOnSignal(this, null, onNext, null, null, null, null, null);
 	}
 
 	/**
@@ -2897,12 +2879,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
-					consumer, null));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, null, null, null, consumer,
-				null));
+		return doOnSignal(this, null, null, null, null, null, consumer, null);
 	}
 
 	/**
@@ -2916,12 +2893,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this, onSubscribe, null, null,
-					null, null, null, null));
-		}
-		return onAssembly(new FluxPeek<>(this, onSubscribe, null, null, null, null,
-				null, null));
+		return doOnSignal(this, onSubscribe, null, null, null, null, null, null);
 	}
 
 	/**
@@ -2935,12 +2907,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,null, null, null,
-					onTerminate, null, null, null));
-		}
-		return onAssembly(new FluxPeek<>(this,null, null, null, onTerminate, null,
-				null, null));
+		return doOnSignal(this,
+				null,
+				null,
+				e -> onTerminate.run(),
+				onTerminate,
+				null,
+				null,
+				null);
 	}
 
 	/**
@@ -3476,12 +3450,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new unaltered {@link Flux}
 	 */
 	public final Flux<T> log(String category, Level level, SignalType... options) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,
-					new SignalLogger<>(this, category, level, options)));
-		}
-		return onAssembly(new FluxPeek<>(this,  new SignalLogger<>(this, category, level,
-				options)));
+		return log(category, level, false, options);
 	}
 
 	/**
@@ -3512,16 +3481,17 @@ public abstract class Flux<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-		if (this instanceof Fuseable) {
-			return onAssembly(new FluxPeekFuseable<>(this,
-					new SignalLogger<>(this,
-							category,
-							level,
-							showOperatorLine,
-							options)));
-		}
-		return onAssembly(new FluxPeek<>(this,
-				new SignalLogger<>(this, category, level, showOperatorLine, options)));
+		SignalLogger<T> log = new SignalLogger<>(this, category, level,
+				showOperatorLine, options);
+
+		return doOnSignal(this,
+				log.onSubscribeCall(),
+				log.onNextCall(),
+				log.onErrorCall(),
+				log.onCompleteCall(),
+				log.onAfterTerminateCall(),
+				log.onRequestCall(),
+				log.onCancelCall());
 	}
 	
 	/**
@@ -6164,6 +6134,35 @@ public abstract class Flux<T> implements Publisher<T> {
 			return source;
 		}
 		return (ConnectableFlux<T>)hook.apply(source);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Flux<T> doOnSignal(Publisher<T> source,
+			Consumer<? super Subscription> onSubscribe,
+			Consumer<? super T> onNext,
+			Consumer<? super Throwable> onError,
+			Runnable onComplete,
+			Runnable onAfterTerminate,
+			LongConsumer onRequest,
+			Runnable onCancel) {
+		if (source instanceof Fuseable) {
+			return onAssembly(new FluxPeekFuseable<>(source,
+					onSubscribe,
+					onNext,
+					onError,
+					onComplete,
+					onAfterTerminate,
+					onRequest,
+					onCancel));
+		}
+		return onAssembly(new FluxPeek<>(source,
+				onSubscribe,
+				onNext,
+				onError,
+				onComplete,
+				onAfterTerminate,
+				onRequest,
+				onCancel));
 	}
 
 
