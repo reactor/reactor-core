@@ -25,7 +25,7 @@ import rx.Single;
  * @author Stephane Maldini
  */
 @Test
-public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
+public class RxJavaSinglePublisherTests extends PublisherVerification<Integer> {
 
 	public RxJavaSinglePublisherTests() {
 		super(new TestEnvironment(500, true), 1000);
@@ -42,12 +42,12 @@ public class RxJavaSinglePublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
-	public Publisher<Long> createPublisher(long elements) {
-		return RxJava1Adapter.singleToMono(Single.just(0)).cast(Long.class);
+	public Publisher<Integer> createPublisher(long elements) {
+		return RxJava1Adapter.singleToMono(Single.just(0));
 	}
 
 	@Override
-	public Publisher<Long> createFailedPublisher() {
+	public Publisher<Integer> createFailedPublisher() {
 		return RxJava1Adapter.singleToMono(Single.error(new Exception("single-test")));
 	}
 }
