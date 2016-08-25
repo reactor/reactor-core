@@ -1935,13 +1935,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast.png" alt="">
 	 *
 	 * @param <E> the {@link Flux} output type
-	 * @param stream the target class to cast to
+	 * @param clazz the target class to cast to
 	 *
 	 * @return a casted {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
-	public final <E> Flux<E> cast(Class<E> stream) {
-		return (Flux<E>) this;
+	public final <E> Flux<E> cast(Class<E> clazz) {
+		Objects.requireNonNull(clazz, "clazz");
+		return map(clazz::cast);
 	}
 
 	/**
@@ -2186,14 +2186,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of all sorted values from this {@link Flux}
 	 *
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
 		return collectList().map(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
 			if (comparator != null) {
 				Collections.sort(list, comparator);
 			} else {
-				Collections.sort((List<Comparable>)list);
+				@SuppressWarnings({ "unchecked", "rawtypes" })
+				List<Comparable> l = (List<Comparable>)list;
+				Collections.sort(l);
 			}
 			return list;
 		});
@@ -2376,13 +2377,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		if (this instanceof FluxConcatArray) {
+			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		return onAssembly(new FluxConcatArray(false, this, other));
+		return onAssembly(new FluxConcatArray<>(false, this, other));
 	}
 
 	/**
@@ -2537,8 +2539,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a dematerialized {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <X> Flux<X> dematerialize() {
+		@SuppressWarnings("unchecked")
 		Flux<Signal<X>> thiz = (Flux<Signal<X>>) this;
 		return onAssembly(new FluxDematerialize<>(thiz));
 	}
@@ -3482,6 +3484,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Mono<T> next() {
 		return Mono.from(this);
+	}
+
+	/**
+	 * Evaluate each accepted value against the given {@link Class} type. If the
+	 * predicate test succeeds, the value is
+	 * passed into the new {@link Flux}. If the predicate test fails, the value is ignored and a request of 1 is
+	 * emitted.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/filter.png" alt="">
+	 *
+	 * @param clazz the {@link Class} type to test values against
+	 *
+	 * @return a new {@link Flux} reduced to items converted to the matched type
+	 */
+	public final <U> Flux<U> ofType(final Class<U> clazz) {
+			Objects.requireNonNull(clazz, "clazz");
+			return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
 	}
 
 	/**

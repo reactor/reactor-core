@@ -1064,13 +1064,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cast1.png" alt="">
 	 *
 	 * @param <E> the {@link Mono} output type
-	 * @param stream the target type to cast to
+	 * @param clazz the target type to cast to
 	 *
 	 * @return a casted {@link Mono}
 	 */
 	@SuppressWarnings("unchecked")
-	public final <E> Mono<E> cast(Class<E> stream) {
-		return (Mono<E>) this;
+	public final <E> Mono<E> cast(Class<E> clazz) {
+		Objects.requireNonNull(clazz, "clazz");
+		return map(clazz::cast);
 	}
 
 	/**
@@ -1834,6 +1835,24 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
 		return first(this, other);
+	}
+
+	/**
+	 * Evaluate the accepted value against the given {@link Class} type. If the
+	 * predicate test succeeds, the value is
+	 * passed into the new {@link Mono}. If the predicate test fails, the value is
+	 * ignored.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/filter.png" alt="">
+	 *
+	 * @param clazz the {@link Class} type to test values against
+	 *
+	 * @return a new {@link Mono} reduced to items converted to the matched type
+	 */
+	public final <U> Mono<U> ofType(final Class<U> clazz) {
+		Objects.requireNonNull(clazz, "clazz");
+		return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
 	}
 
 	/**
