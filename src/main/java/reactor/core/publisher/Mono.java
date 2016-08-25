@@ -233,9 +233,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a completed {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> empty() {
-		return (Mono<T>) MonoEmpty.instance();
+		return MonoEmpty.instance();
 	}
 
 	/**
@@ -249,9 +248,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new completable {@link Mono}.
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Mono<Void> empty(Publisher<T> source) {
-		return onAssembly((Mono<Void>)new MonoIgnoreThen<>(source));
+		@SuppressWarnings("unchecked")
+		Mono<Void> then = (Mono<Void>)new MonoIgnoreThen<>(source);
+		return onAssembly(then);
 	}
 
 	/**
@@ -311,12 +311,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return the next item emitted as a {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Mono<T> from(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
 			return (Mono<T>) source;
 		}
 		if (source instanceof Fuseable.ScalarCallable) {
+			@SuppressWarnings("unchecked")
             T t = ((Fuseable.ScalarCallable<T>) source).call();
             if (t != null) {
                 return just(t);
@@ -1068,7 +1068,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a casted {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E> Mono<E> cast(Class<E> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return map(clazz::cast);
@@ -1222,8 +1221,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a dematerialized {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <X> Mono<X> dematerialize() {
+		@SuppressWarnings("unchecked")
 		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
 		return onAssembly(new MonoDematerialize<>(thiz));
 	}
@@ -1245,6 +1244,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
+		Objects.requireNonNull(afterTerminate, "afterTerminate");
 		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null,  afterSuccess, afterSuccess.errorConsumer,
@@ -1268,6 +1268,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnCancel(Runnable onCancel) {
+		Objects.requireNonNull(onCancel, "onCancel");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
 					null, null, onCancel));
@@ -1288,6 +1289,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
+		Objects.requireNonNull(onNext, "onNext");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null, onNext, null, null,
 					null, null, null));
@@ -1314,6 +1316,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
+		Objects.requireNonNull(onSuccess, "onSuccess");
 		MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null,  _onSuccess, null, _onSuccess, null,
@@ -1335,6 +1338,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
+		Objects.requireNonNull(onError, "onError");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null, null, onError, null,
 					null, null, null));
@@ -1356,11 +1360,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an observed  {@link Mono}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Mono<T> doOnError(Class<E> exceptionType,
 			final Consumer<? super E> onError) {
 		Objects.requireNonNull(exceptionType, "type");
-		return doOnError(exceptionType::isInstance, (Consumer<Throwable>)onError);
+		@SuppressWarnings("unchecked")
+		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
+		return doOnError(exceptionType::isInstance, handler);
 	}
 
 	/**
@@ -1394,6 +1399,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an observed  {@link Mono}
 	 */
 	public final Mono<T> doOnRequest(final LongConsumer consumer) {
+		Objects.requireNonNull(consumer, "consumer");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, null, null, null, null,
 					null, consumer, null));
@@ -1413,6 +1419,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(this, onSubscribe,  null, null,
 					null, null, null, null));
@@ -1438,6 +1445,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
+		Objects.requireNonNull(onTerminate, "onTerminate");
 		MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
 		Consumer<Throwable> error = e -> onTerminate.accept(null, e);
 		if (this instanceof Fuseable) {
@@ -1552,7 +1560,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
     public final Flux<T> flux() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
@@ -1562,7 +1569,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	            }
 	            return Flux.just(v);
 	        }
-	        return Flux.onAssembly(new FluxCallable<>((Callable<T>)this));
+		    @SuppressWarnings("unchecked") Callable<T> thiz = (Callable<T>) this;
+		    return Flux.onAssembly(new FluxCallable<>(thiz);
 	    }
 		return FluxSource.wrap(this);
 	}
@@ -1770,10 +1778,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
-		return mapError(type::isInstance, (Function<Throwable, Throwable>)mapper);
+		@SuppressWarnings("unchecked")
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper
+		return mapError(type::isInstance, handler);
 	}
 
 	/**
@@ -1886,12 +1895,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Mono<T> otherwise(Class<E> type,
 			Function<? super E, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
-		return otherwise(type::isInstance,
-				(Function<? super Throwable, Mono<? extends T>>)fallback);
+		@SuppressWarnings("unchecked")
+		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
+				Throwable, Mono<? extends T>>)fallback;
+		return otherwise(type::isInstance, handler);
 	}
 
 	/**
@@ -2453,10 +2463,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
-		return Flux.onAssembly((Flux<V>)new FluxConcatArray<>(false, ignoreElement(), 
-				other));
+		@SuppressWarnings("unchecked")
+		Flux<V> then = (Flux<V>) new FluxConcatArray<>(false, ignoreElement(), other);
+		return Flux.onAssembly(then);
 	}
 
 	/**
@@ -2624,9 +2634,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a timestamped {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<Tuple2<Long, T>> timestamp() {
-		return map(Flux.TIMESTAMP_OPERATOR);
+		return map(Flux.timestamOperator());
 	}
 
 	/**

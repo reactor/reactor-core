@@ -199,7 +199,7 @@ public abstract class Tuples implements Function {
 	 * @return The unchecked conversion function to {@link Tuples}.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Function<Object[], Tuples> fnAny() {
+	public static Function<Object[], Tuple2> fnAny() {
 		return empty;
 	}
 
@@ -211,7 +211,7 @@ public abstract class Tuples implements Function {
 	 *
 	 * @return The unchecked conversion function to R.
 	 */
-	public static <R> Function<Object[], R> fnAny(final Function<Tuples, R> delegate) {
+	public static <R> Function<Object[], R> fnAny(final Function<Tuple2, R> delegate) {
 		return objects -> delegate.apply(Tuples.fnAny().apply(objects));
 	}
 

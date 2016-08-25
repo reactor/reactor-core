@@ -1312,7 +1312,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static Flux<Tuples> zip(Iterable<? extends Publisher<?>> sources) {
+	public static Flux<Tuple2> zip(Iterable<? extends Publisher<?>> sources) {
 		return zip(sources, Tuples.fnAny());
 	}
 
@@ -1446,14 +1446,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced value
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <TUPLE extends Tuples, V> Flux<V> zip(Publisher<? extends Publisher<?>> sources,
+    public static <TUPLE extends Tuple2, V> Flux<V> zip(Publisher<? extends
+			Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
-		return onAssembly(new FluxBuffer(sources, Integer.MAX_VALUE, LIST_SUPPLIER)
+		return onAssembly(new FluxBuffer<>(sources, Integer.MAX_VALUE, listSupplier())
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
-				                    return zip(Tuples.fnAny((Function<Tuples, V>)combinator), publishers.toArray(new Publisher[publishers
+				                    return zip(Tuples.fnAny((Function<Tuple2, V>)
+						                    combinator), publishers.toArray(new Publisher[publishers
 						                    .size()]));
 			                    }
 		                    }));
@@ -2637,6 +2639,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
+		Objects.requireNonNull(onCancel, "onCancel");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
 					null, onCancel));
@@ -2654,6 +2657,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnComplete(Runnable onComplete) {
+		Objects.requireNonNull(onComplete, "onComplete");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, onComplete,
 					null, null, null));
@@ -2671,7 +2675,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<T> doOnError(Consumer<Throwable> onError) {
+	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
+		Objects.requireNonNull(onError, "onError");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,null, null, onError, null,
 					null, null, null));
@@ -2692,10 +2697,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Flux<T> doOnError(Class<E> exceptionType,
 			final Consumer<? super E> onError) {
 		Objects.requireNonNull(exceptionType, "type");
+		@SuppressWarnings("unchecked")
+		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
 		return doOnError(exceptionType::isInstance, (Consumer<Throwable>)onError);
 	}
 
@@ -2730,6 +2736,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
+		Objects.requireNonNull(onNext, "onNext");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this, null, onNext, null, null, null,
 					null, null));
@@ -2749,6 +2756,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnRequest(LongConsumer consumer) {
+		Objects.requireNonNull(consumer, "consumer");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,null, null, null, null, null,
 					consumer, null));
@@ -2767,6 +2775,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this, onSubscribe, null, null,
 					null, null, null, null));
@@ -2785,6 +2794,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnTerminate(Runnable onTerminate) {
+		Objects.requireNonNull(onTerminate, "onTerminate");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(this,null, null, null,
 					onTerminate, null, null, null));
@@ -3601,12 +3611,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
 			Function<? super E, ? extends Publisher<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
-		return onErrorResumeWith(type::isInstance,
-				(Function<? super Throwable, Publisher<? extends T>>)fallback);
+		@SuppressWarnings("unchecked")
+		Function<? super Throwable, Publisher<? extends T>> handler = (Function<?
+				super Throwable, Publisher<? extends T>>)fallback;
+		return onErrorResumeWith(type::isInstance, handler);
 	}
 
 	/**
@@ -3983,10 +3994,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 *
 	 */
-    @SuppressWarnings("unchecked")
 	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
 		if (this instanceof Callable){
-		    return convertToMono((Callable<T>)this);
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+		    return convertToMono(thiz);
 		}
 	    return Mono.onAssembly(new MonoAggregate<>(this, aggregator));
 	}
@@ -4464,10 +4476,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the eventual single item or an error signal
 	 */
-	@SuppressWarnings("unchecked")
     public final Mono<T> single() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
+		        @SuppressWarnings("unchecked")
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
                 T v = scalarCallable.call();
@@ -4476,7 +4488,9 @@ public abstract class Flux<T> implements Publisher<T> {
                 }
                 return Mono.just(v);
 	        }
-		    return Mono.onAssembly(new MonoCallable<>((Callable<T>)this));
+		    @SuppressWarnings("unchecked")
+		    Callable<T> thiz = (Callable<T>)this)
+		    return Mono.onAssembly(new MonoCallable<>(thiz);
 	    }
 		return Mono.onAssembly(new MonoSingle<>(this));
 	}
@@ -4493,10 +4507,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the eventual single item or a supplied default value
 	 */
-	@SuppressWarnings("unchecked")
     public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
         if (this instanceof Callable) {
             if (this instanceof Fuseable.ScalarCallable) {
+	            @SuppressWarnings("unchecked")
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
                 T v = scalarCallable.call();
@@ -4505,7 +4519,9 @@ public abstract class Flux<T> implements Publisher<T> {
                 }
                 return Mono.just(v);
             }
-	        return Mono.onAssembly(new MonoCallable<>((Callable<T>)this));
+	        @SuppressWarnings("unchecked")
+	        Callable<T> thiz = (Callable<T>)this)
+	        return Mono.onAssembly(new MonoCallable<>(thiz));
         }
 		return Mono.onAssembly(new MonoSingle<>(this, defaultSupplier));
 	}
@@ -4518,10 +4534,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the eventual single item or no item
 	 */
-	@SuppressWarnings("unchecked")
     public final Mono<T> singleOrEmpty() {
 	    if (this instanceof Callable) {
-	        return convertToMono((Callable<T>)this);
+		    @SuppressWarnings("unchecked")
+		    Callable<T> thiz = (Callable<T>)this;
+	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoSingle<>(this, MonoSingle
 				.completeOnEmptySequence()));
@@ -5154,9 +5171,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @return a new {@link Mono}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<Void> then() {
-		return Mono.onAssembly((Mono<Void>) new MonoIgnoreThen<>(this));
+		@SuppressWarnings("unchecked")
+		Mono<Void> then = (Mono<Void>) new MonoIgnoreThen<>(this);
+		return Mono.onAssembly(then);
 	}
 
 	/**
@@ -5202,9 +5220,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
-		return (Flux<V>)concat(ignoreElements(), other);
+		@SuppressWarnings("unchecked")
+		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
+		return concat;
 	}
 
 	/**
@@ -5405,9 +5424,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a timestamped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<Tuple2<Long, T>> timestamp() {
-		return map(TIMESTAMP_OPERATOR);
+		return map(timestamOperator());
 	}
 
 	/**
@@ -6061,6 +6079,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
+	static <O> Supplier<List<O>> listSupplier() {
+		return LIST_SUPPLIER;
+	}
+
+	@SuppressWarnings("unchecked")
 	static <U, V> Function<U, V> hashcodeSupplier() {
 		return HASHCODE_EXTRACTOR;
 	}
@@ -6068,6 +6091,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	static <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Function<T, Tuple2<Long, T>> timestamOperator(){
+		return TIMESTAMP_OPERATOR;
 	}
 
 	@SuppressWarnings("rawtypes")
