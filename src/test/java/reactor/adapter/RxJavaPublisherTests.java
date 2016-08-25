@@ -25,7 +25,7 @@ import rx.Observable;
  * @author Stephane Maldini
  */
 @Test
-public class RxJavaPublisherTests extends PublisherVerification<Long> {
+public class RxJavaPublisherTests extends PublisherVerification<Integer> {
 
 	public RxJavaPublisherTests() {
 		super(new TestEnvironment(500, true), 1000);
@@ -42,16 +42,14 @@ public class RxJavaPublisherTests extends PublisherVerification<Long> {
 	}
 
 	@Override
-	public Publisher<Long> createPublisher(long elements) {
+	public Publisher<Integer> createPublisher(long elements) {
 		return RxJava1Adapter.observableToFlux(Observable.range
 				(0,
-				(int)Math.min(Integer.MAX_VALUE,
-				elements))).cast(Long.class);
+				(int)Math.min(Integer.MAX_VALUE, elements)));
 	}
 
 	@Override
-	public Publisher<Long> createFailedPublisher() {
-		return RxJava1Adapter.observableToFlux(Observable.error(new Exception
-				("obs-test"))).cast(Long.class);
+	public Publisher<Integer> createFailedPublisher() {
+		return RxJava1Adapter.observableToFlux(Observable.error(new Exception("obs-test")));
 	}
 }
