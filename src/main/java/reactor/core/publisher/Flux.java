@@ -1622,9 +1622,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(int maxSize) {
-		return onAssembly(new FluxBuffer<>(this, maxSize, LIST_SUPPLIER));
+		return buffer(maxSize, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link Collection} buckets that will be
+	 * pushed into the returned {@link Flux}
+	 * when the given max size is reached or onComplete is received.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the maximum collected size
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection}
+	 */
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Supplier<C> bufferSupplier) {
+		return onAssembly(new FluxBuffer<>(this, maxSize, bufferSupplier));
 	}
 
 	/**
@@ -1652,9 +1669,43 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of possibly overlapped or gapped {@link List}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(int maxSize, int skip) {
-		return onAssembly(new FluxBuffer<>(this, maxSize, skip, LIST_SUPPLIER));
+		return buffer(maxSize, skip, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link Collection} that will be pushed into
+	 * the returned {@link Flux} when the
+	 * given max size is reached or onComplete is received. A new container
+	 * {@link Collection} will be created every given
+	 * skip count.
+	 * <p>
+	 * When Skip > Max Size : dropping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersizeskip.png"
+	 * alt="">
+	 * <p>
+	 * When Skip < Max Size : overlapping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersizeskipover.png"
+	 * alt="">
+	 * <p>
+	 * When Skip == Max Size : exact buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
+	 * alt="">
+	 *
+	 * @param skip the number of items to skip before creating a new bucket
+	 * @param maxSize the max collected size
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 *
+	 * @return a microbatched {@link Flux} of possibly overlapped or gapped
+	 * {@link Collection}
+	 */
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize,
+			int skip, Supplier<C> bufferSupplier) {
+		return onAssembly(new FluxBuffer<>(this, maxSize, skip, bufferSupplier));
 	}
 
 	/**
@@ -1665,10 +1716,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param other the other {@link Publisher}  to subscribe to for emiting and recycling receiving bucket
 	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by a {@link Publisher}
+	 * @return a microbatched {@link Flux} of {@link List} delimited by a
+	 * {@link Publisher}
 	 */
 	public final Flux<List<T>> buffer(Publisher<?> other) {
-		return onAssembly(new FluxBufferBoundary<>(this, other, listSupplier()));
+		return buffer(other, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link Collection} delimited by the given {@link Publisher} signals.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/bufferboundary.png"
+	 * alt="">
+	 *
+	 * @param other the other {@link Publisher}  to subscribe to for emiting and recycling receiving bucket
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by a {@link Publisher}
+	 */
+	public final <C extends Collection<? super T>> Flux<C> buffer(Publisher<?> other, Supplier<C> bufferSupplier) {
+		return onAssembly(new FluxBufferBoundary<>(this, other, bufferSupplier));
 	}
 
 	/**
@@ -1701,10 +1769,47 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * closing {@link Publisher}
 	 */
 	public final <U, V> Flux<List<T>> buffer(Publisher<U> bucketOpening,
-			final Function<? super U, ? extends Publisher<V>> closeSelector) {
+			Function<? super U, ? extends Publisher<V>> closeSelector) {
+		return buffer(bucketOpening, closeSelector, listSupplier());
+	}
 
+	/**
+	 * Collect incoming values into multiple {@link Collection} delimited by the given {@link Publisher} signals. Each {@link
+	 * Collection} bucket will last until the mapped {@link Publisher} receiving the boundary signal emits, thus releasing the
+	 * bucket to the returned {@link Flux}.
+	 * <p>
+	 * When Open signal is strictly not overlapping Close signal : dropping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/bufferopenclose.png"
+	 * alt="">
+	 * <p>
+	 * When Open signal is strictly more frequent than Close signal : overlapping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/bufferopencloseover.png"
+	 * alt="">
+	 * <p>
+	 * When Open signal is exactly coordinated with Close signal : exact buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/bufferboundary.png"
+	 * alt="">
+	 *
+	 * @param bucketOpening a {@link Publisher} to subscribe to for creating new receiving bucket signals.
+	 * @param closeSelector a {@link Publisher} factory provided the opening signal and returning a {@link Publisher} to
+	 * subscribe to for emitting relative bucket.
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <U> the element type of the bucket-opening sequence
+	 * @param <V> the element type of the bucket-closing sequence
+	 * @param <C> the supplied {@link Collection} type
+	 *
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by an opening {@link Publisher} and a relative
+	 * closing {@link Publisher}
+	 */
+	public final <U, V, C extends Collection<? super T>> Flux<C> buffer(Publisher<U>
+			bucketOpening,
+			Function<? super U, ? extends Publisher<V>> closeSelector,
+			Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferStartEnd<>(this, bucketOpening, closeSelector,
-				listSupplier(), QueueSupplier.xs()));
+				bufferSupplier, QueueSupplier.xs()));
 	}
 
 	/**
@@ -1764,7 +1869,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> buffer(int maxSize, Duration timespan) {
-		return bufferMillis(maxSize, timespan.toMillis());
+		return buffer(maxSize, timespan, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered list
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 */
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
+		return bufferMillis(maxSize, timespan.toMillis(), Schedulers.timer(),
+				bufferSupplier);
 	}
 	
 	/**
@@ -1893,7 +2016,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer));
+		return bufferMillis(maxSize, timespan, timer, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered collection
+	 * @param timer the {@link TimedScheduler} to run on
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 */
+	public final  <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan, TimedScheduler
+			timer, Supplier<C> bufferSupplier) {
+		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer, bufferSupplier));
 	}
 
 	/**
@@ -2700,7 +2842,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		Objects.requireNonNull(exceptionType, "type");
 		@SuppressWarnings("unchecked")
 		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
-		return doOnError(exceptionType::isInstance, (handler);
+		return doOnError(exceptionType::isInstance, (handler));
 	}
 
 	/**

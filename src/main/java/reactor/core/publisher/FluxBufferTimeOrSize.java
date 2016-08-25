@@ -16,71 +16,87 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.scheduler.TimedScheduler;
 
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeOrSize<T> extends FluxBatch<T, List<T>> {
+final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxBatch<T, C> {
+
+	final Supplier<C> bufferSupplier;
 
 	public FluxBufferTimeOrSize(Publisher<T> source,
 			int maxSize,
 			long timespan,
-			TimedScheduler timer) {
+			TimedScheduler timer,
+			Supplier<C> bufferSupplier) {
 		super(source, maxSize, timespan, timer);
+		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super List<T>> subscriber) {
+	public void subscribe(Subscriber<? super C> subscriber) {
 		source.subscribe(new BufferAction<>(prepareSub(subscriber),
 				batchSize,
 				timespan,
-				timer.createWorker()));
+				timer.createWorker(),
+				bufferSupplier));
 	}
 
-	final static class BufferAction<T> extends BatchAction<T, List<T>> {
+	final static class BufferAction<T, C extends Collection<? super T>> extends BatchAction<T, C> {
 
-		private final List<T> values = new ArrayList<>();
+		final Supplier<C> bufferSupplier;
+		volatile C values;
 
-		public BufferAction(Subscriber<? super List<T>> actual,
+		public BufferAction(Subscriber<? super C> actual,
 				int maxSize,
 				long timespan,
-				TimedScheduler.TimedWorker timer) {
-
+				TimedScheduler.TimedWorker timer,
+				Supplier<C> bufferSupplier) {
 			super(actual, maxSize, false, timespan, timer);
+			this.bufferSupplier = bufferSupplier;
+		}
+
+		@Override
+		protected void doOnSubscribe(Subscription subscription) {
+			values = bufferSupplier.get();
+			subscriber.onSubscribe(this);
 		}
 
 		@Override
 		protected void checkedError(Throwable ev) {
-			synchronized (values) {
-				values.clear();
+			C v = values;
+			if(v != null) {
+				v.clear();
+				values = null;
 			}
 			subscriber.onError(ev);
 		}
 
 		@Override
 		public void nextCallback(T value) {
-			synchronized (values) {
-				values.add(value);
+			C v = values;
+			if(v == null) {
+				v = bufferSupplier.get();
+				values = v;
 			}
+			v.add(value);
 		}
 
 		@Override
 		public void flushCallback(T ev) {
-			final List<T> toSend;
-			synchronized (values) {
-				if (values.isEmpty()) {
-					return;
-				}
-				toSend = new ArrayList<>(values);
-				values.clear();
+			C v = values;
+			if(v != null && !v.isEmpty()) {
+				values = bufferSupplier.get();
+				subscriber.onNext(v);
 			}
-			subscriber.onNext(toSend);
 		}
 	}
 }
