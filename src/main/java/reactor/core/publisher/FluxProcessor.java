@@ -112,6 +112,16 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return Long.MAX_VALUE;
 	}
 
+	/**
+	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
+	 * {@link Subscriber#onNext(Object)}.
+	 *
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public final FluxProcessor<IN, OUT> serialize() {
+		return new DelegateProcessor<>(this, Operators.serialize(this));
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super OUT> s) {
 		if (s == null) {

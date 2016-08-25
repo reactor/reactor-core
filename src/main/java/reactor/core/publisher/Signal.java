@@ -46,14 +46,14 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	private transient final Subscription subscription;
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a value.
-	 *
+	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
 	 * @param <T> the value type
-	 * @param t the item to assign to the signal as its value
-	 * @return an {@code OnNext} variety of {@code Signal}
+	 *
+	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
-	public static <T> Signal<T> next(T t) {
-		return new Signal<>(SignalType.ON_NEXT, t, null, null);
+	@SuppressWarnings("unchecked")
+	public static <T> Signal<T> complete() {
+		return (Signal<T>) ON_COMPLETE;
 	}
 
 	/**
@@ -68,14 +68,30 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
-	 * @param <T> the value type
+	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a value.
 	 *
-	 * @return an {@code OnCompleted} variety of {@code Signal}
+	 * @param <T> the value type
+	 * @param t the item to assign to the signal as its value
+	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Signal<T> complete() {
-		return (Signal<T>) ON_COMPLETE;
+	public static <T> Signal<T> next(T t) {
+		return new Signal<>(SignalType.ON_NEXT, t, null, null);
+	}
+
+	/**
+	 * @param o is the given object a complete {@link Signal}
+	 * @return true if completition signal
+	 */
+	public static boolean isComplete(Object o){
+		return o == ON_COMPLETE;
+	}
+
+	/**
+	 * @param o is the given object a complete {@link Signal}
+	 * @return true if completition signal
+	 */
+	public static boolean isError(Object o){
+		return o instanceof Signal && ((Signal)o).type == SignalType.ON_ERROR;
 	}
 
 	/**

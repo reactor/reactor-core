@@ -15,14 +15,16 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -30,6 +32,8 @@ import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
+import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -115,71 +119,201 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
-		return new ReplayProcessor<>(historySize, unbounded);
+		ReplayBuffer<E> buffer;
+		if (unbounded) {
+			buffer = new UnboundedReplayBuffer<>(historySize);
+		}
+		else {
+			buffer = new SizeBoundReplayBuffer<>(historySize);
+		}
+		return new ReplayProcessor<>(buffer);
 	}
 
 	/**
-	 * Create a {@link FluxProcessor} from hot
-	 * {@link ReplayProcessor#create ReplayProcessor}
-	 * safely gated by a serializing {@link Subscriber}.
-	 * It will not propagate cancel upstream if {@link Subscription} has been set. Serialization uses thread-stealing
-	 * and a potentially unbounded queue that might starve a calling thread if races are too important and
-	 * {@link Subscriber} is slower.
-	 *
+	 * Creates a time-bounded replay processor.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
+	 * In this setting, the {@code ReplayProcessor} internally tags each observed item 
+	 * with
+	 * a timestamp value supplied by the {@link Schedulers#timer()} and keeps only those whose
+	 * age
+	 * is less than the supplied time value converted to milliseconds. For example, an
+	 * item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first item is then
+	 * evicted by any subsequent item or termination signal, leaving the buffer empty.
+	 * <p>
+	 * Once the processor is terminated, subscribers subscribing to it will receive items that
+	 * remained in the buffer after the terminal signal, regardless of their age.
+	 * <p>
+	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * observe only those items from within the buffer that have an age less than the
+	 * specified time, and each item observed thereafter, even if the buffer evicts items
+	 * due to the time constraint in the mean time. In other words, once an subscriber
+	 * subscribes, it observes items without gaps in the sequence except for any outdated
+	 * items at the beginning of the sequence.
+	 * <p>
+	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
+	 * eviction as well. For example, with a max age of 5, the first item is observed at
+	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber
+	 * subscribes at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
+	 * onCompleted} signal.
 	 *
-	 * @param <T> the relayed type
-	 * @return a serializing {@link FluxProcessor}
+	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param maxAge the maximum age of the contained items
+	 *
+	 * @return a new {@link ReplayProcessor}
 	 */
-	public static <T> FluxProcessor<T, T> serialize() {
-		Processor<T, T> processor = create();
-		return new DelegateProcessor<>(processor, Operators.serialize(processor));
+	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
+		return createTimeoutMillis(maxAge.toMillis(), Schedulers.timer());
 	}
 
-	final Buffer<T> buffer;
+	/**
+	 * Creates a time-bounded replay processor.
+	 * <p>
+	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
+	 * with a timestamp value supplied by the {@link TimedScheduler} and keeps only those
+	 * whose age is less than the supplied time value converted to milliseconds. For
+	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
+	 * item is then evicted by any subsequent item or termination signal, leaving the
+	 * buffer empty.
+	 * <p>
+	 * Once the processor is terminated, subscribers subscribing to it will receive items
+	 * that remained in the buffer after the terminal signal, regardless of their age.
+	 * <p>
+	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * observe only those items from within the buffer that have an age less than the
+	 * specified time, and each item observed thereafter, even if the buffer evicts items
+	 * due to the time constraint in the mean time. In other words, once an subscriber
+	 * subscribes, it observes items without gaps in the sequence except for any outdated
+	 * items at the beginning of the sequence.
+	 * <p>
+	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
+	 * eviction as well. For example, with a max age of 5, the first item is observed at
+	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
+	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
+	 * onCompleted} signal.
+	 *
+	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param maxAge the maximum age of the contained items in milliseconds
+	 * @param scheduler the {@link TimedScheduler} that provides the current time
+	 *
+	 * @return a new {@link ReplayProcessor}
+	 */
+	public static <T> ReplayProcessor<T> createTimeoutMillis(long maxAge,
+			TimedScheduler scheduler) {
+		return createSizeAndTimeoutMillis(Integer.MAX_VALUE, maxAge, scheduler);
+	}
+
+	/**
+	 * Creates a time- and size-bounded replay processor.
+	 * <p>
+	 * In this setting, the {@code ReplayProcessor} internally tags each received item
+	 * with a timestamp value supplied by the {@link Schedulers#timer()} and holds at most
+	 * {@code size} items in its internal buffer. It evicts items from the start of the
+	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
+	 * or the buffer reaches its {@code size} limit.
+	 * <p>
+	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
+	 * the items that remained in the buffer after the terminal signal, regardless of
+	 * their age, but at most {@code size} items.
+	 * <p>
+	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * observe only those items from within the buffer that have age less than the
+	 * specified time and each subsequent item, even if the buffer evicts items due to the
+	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
+	 * observes items without gaps in the sequence except for the outdated items at the
+	 * beginning of the sequence.
+	 * <p>
+	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
+	 * eviction as well. For example, with a max age of 5, the first item is observed at
+	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
+	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
+	 * onCompleted} signal.
+	 *
+	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param maxAge the maximum age of the contained items
+	 * @param size the maximum number of buffered items
+	 *
+	 * @return a new {@link ReplayProcessor}
+	 */
+	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
+		return createSizeAndTimeoutMillis(size, maxAge.toMillis(), Schedulers.timer());
+	}
+
+	/**
+	 * Creates a time- and size-bounded replay processor.
+	 * <p>
+	 * In this setting, the {@code ReplayProcessor} internally tags each received item
+	 * with a timestamp value supplied by the {@link TimedScheduler} and holds at most
+	 * {@code size} items in its internal buffer. It evicts items from the start of the
+	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
+	 * or the buffer reaches its {@code size} limit.
+	 * <p>
+	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
+	 * the items that remained in the buffer after the terminal signal, regardless of
+	 * their age, but at most {@code size} items.
+	 * <p>
+	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
+	 * observe only those items from within the buffer that have age less than the
+	 * specified time and each subsequent item, even if the buffer evicts items due to the
+	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
+	 * observes items without gaps in the sequence except for the outdated items at the
+	 * beginning of the sequence.
+	 * <p>
+	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
+	 * eviction as well. For example, with a max age of 5, the first item is observed at
+	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
+	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
+	 * onCompleted} signal.
+	 *
+	 * @param <T> the type of items observed and emitted by the Processor
+	 * @param maxAge the maximum age of the contained items in milliseconds
+	 * @param size the maximum number of buffered items
+	 * @param scheduler the {@link TimedScheduler} that provides the current time
+	 *
+	 * @return a new {@link ReplayProcessor}
+	 */
+	public static <T> ReplayProcessor<T> createSizeAndTimeoutMillis(int size,
+			long maxAge,
+			TimedScheduler scheduler) {
+		Objects.requireNonNull(scheduler, "scheduler is null");
+		if (size <= 0) {
+			throw new IllegalArgumentException("size > 0 required but it was " + size);
+		}
+		return new ReplayProcessor<>(new SizeAndTimeBoundReplayBuffer<>(size,
+				maxAge, TimeUnit.MILLISECONDS, scheduler));
+	}
+
+	final ReplayBuffer<T> buffer;
 
 	Subscription subscription;
-	
+
 	volatile ReplaySubscription<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ReplayProcessor, ReplaySubscription[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class, ReplaySubscription[].class, "subscribers");
+	static final AtomicReferenceFieldUpdater<ReplayProcessor, ReplaySubscription[]>
+			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class, ReplaySubscription[].class, "subscribers");
 	
 	@SuppressWarnings("rawtypes")
-	static final ReplaySubscription[] EMPTY = new ReplaySubscription[0];
+	static final ReplaySubscription[] EMPTY      = new ReplaySubscription[0];
 	@SuppressWarnings("rawtypes")
 	static final ReplaySubscription[] TERMINATED = new ReplaySubscription[0];
 	
-	/**
-	 * Constructs a ReplayProcessor with bounded or unbounded
-	 * buffering.
-	 * @param bufferSize if unbounded, this number represents the link size of the shared buffer,
-	 *				   if bounded, this is the maximum number of retained items
-	 * @param unbounded should the replay buffer be unbounded
-	 */
-	public ReplayProcessor(int bufferSize, boolean unbounded) {
-		if (unbounded) {
-			this.buffer = new UnboundedBuffer<>(bufferSize);
-		} else {
-			this.buffer = new BoundedBuffer<>(bufferSize);
-		}
+	ReplayProcessor(ReplayBuffer<T> buffer) {
+		this.buffer = buffer;
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		
+
 		ReplaySubscription<T> rp = new ReplaySubscription<>(s, this);
 		s.onSubscribe(rp);
-		
+
 		if (add(rp)) {
 			if (rp.cancelled) {
 				remove(rp);
 				return;
 			}
 		}
-		buffer.drain(rp);
+		buffer.replay(rp);
 	}
 
 	@Override
@@ -285,45 +419,47 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 	@Override
 	public void onNext(T t) {
-		Buffer<T> b = buffer;
+		ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
 			Operators.onNextDropped(t);
-		} else {
-			b.onNext(t);
+		}
+		else {
+			b.add(t);
 			for (ReplaySubscription<T> rp : subscribers) {
-				b.drain(rp);
+				b.replay(rp);
 			}
 		}
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		Buffer<T> b = buffer;
+		ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
 			Operators.onErrorDropped(t);
-		} else {
+		}
+		else {
 			b.onError(t);
 			
-			@SuppressWarnings("unchecked")
-			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
+					SUBSCRIBERS.getAndSet(this, TERMINATED);
 			
 			for (ReplaySubscription<T> rp : a) {
-				b.drain(rp);
+				b.replay(rp);
 			}
 		}
 	}
 
 	@Override
 	public void onComplete() {
-		Buffer<T> b = buffer;
+		ReplayBuffer<T> b = buffer;
 		if (!b.isDone()) {
 			b.onComplete();
 			
 			@SuppressWarnings("unchecked")
 			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
-			
+
 			for (ReplaySubscription<T> rp : a) {
-				b.drain(rp);
+				b.replay(rp);
 			}
 		}
 	}
@@ -334,45 +470,45 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		return this;
 	}
 
-	interface Buffer<T> {
-		
-		void onNext(T value);
-		
+	interface ReplayBuffer<T> {
+
+		void add(T value);
+
 		void onError(Throwable ex);
 		
 		void onComplete();
-		
-		void drain(ReplaySubscription<T> rp);
+
+		void replay(ReplaySubscription<T> rp);
 		
 		boolean isDone();
-		
+
 		T poll(ReplaySubscription<T> rp);
-		
+
 		void clear(ReplaySubscription<T> rp);
 		
 		boolean isEmpty(ReplaySubscription<T> rp);
-		
+
 		int size(ReplaySubscription<T> rp);
 
 		int capacity();
 	}
-	
-	static final class UnboundedBuffer<T> implements Buffer<T> {
+
+	static final class UnboundedReplayBuffer<T> implements ReplayBuffer<T> {
 
 		final int batchSize;
-		
+
 		volatile int size;
-		
+
 		final Object[] head;
-		
+
 		Object[] tail;
-		
+
 		int tailIndex;
-		
+
 		volatile boolean done;
 		Throwable error;
-		
-		public UnboundedBuffer(int batchSize) {
+
+		public UnboundedReplayBuffer(int batchSize) {
 			this.batchSize = batchSize;
 			Object[] n = new Object[batchSize + 1];
 			this.tail = n;
@@ -385,7 +521,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public void onNext(T value) {
+		public void add(T value) {
 			int i = tailIndex;
 			Object[] a = tail;
 			if (i == a.length - 1) {
@@ -412,18 +548,18 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			done = true;
 		}
 
-		void drainNormal(ReplaySubscription<T> rp) {
+		void replayNormal(ReplaySubscription<T> rp) {
 			int missed = 1;
 			
 			final Subscriber<? super T> a = rp.actual;
 			final int n = batchSize;
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				long r = rp.requested;
 				long e = 0L;
-				
-				Object[] node = (Object[])rp.node;
+
+				Object[] node = (Object[]) rp.node;
 				if (node == null) {
 					node = head;
 				}
@@ -474,7 +610,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						rp.node = null;
 						return;
 					}
-					
+
 					boolean d = done;
 					boolean empty = index == size;
 
@@ -483,23 +619,24 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						} else {
+						}
+						else {
 							a.onComplete();
 						}
 						return;
 					}
 				}
-				
+
 				if (e != 0L) {
 					if (r != Long.MAX_VALUE) {
 						rp.produced(e);
 					}
 				}
-				
+
 				rp.index = index;
 				rp.tailIndex = tailIndex;
 				rp.node = node;
-				
+
 				missed = rp.leave(missed);
 				if (missed == 0) {
 					break;
@@ -507,7 +644,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			}
 		}
 		
-		void drainFused(ReplaySubscription<T> rp) {
+		void replayFused(ReplaySubscription<T> rp) {
 			int missed = 1;
 			
 			final Subscriber<? super T> a = rp.actual;
@@ -527,29 +664,30 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					} else {
+					}
+					else {
 						a.onComplete();
 					}
 					return;
 				}
-				
+
 				missed = rp.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		@Override
-		public void drain(ReplaySubscription<T> rp) {
+		public void replay(ReplaySubscription<T> rp) {
 			if (!rp.enter()) {
 				return;
 			}
-			
+
 			if (rp.fusionMode == NONE) {
-				drainNormal(rp);
+				replayNormal(rp);
 			} else {
-				drainFused(rp);
+				replayFused(rp);
 			}
 		}
 
@@ -564,14 +702,14 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			if (index == size) {
 				return null;
 			}
-			Object[] node = (Object[])rp.node;
+			Object[] node = (Object[]) rp.node;
 			if (node == null) {
 				node = head;
 				rp.node = node;
 			}
 			int tailIndex = rp.tailIndex;
 			if (tailIndex == batchSize) {
-				node = (Object[])node[tailIndex];
+				node = (Object[]) node[tailIndex];
 				tailIndex = 0;
 			}
 			@SuppressWarnings("unchecked")
@@ -595,23 +733,23 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public int size(ReplaySubscription<T> rp) {
 			return size - rp.index;
 		}
-		
+
 	}
-	
-	static final class BoundedBuffer<T> implements Buffer<T> {
+
+	static final class SizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
 
 		final int limit;
 		
 		volatile Node<T> head;
-		
+
 		Node<T> tail;
 
 		int size;
 
 		volatile boolean done;
 		Throwable error;
-		
-		public BoundedBuffer(int limit) {
+
+		public SizeBoundReplayBuffer(int limit) {
 			this.limit = limit;
 			Node<T> n = new Node<>(null);
 			this.tail = n;
@@ -624,14 +762,15 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public void onNext(T value) {
+		public void add(T value) {
 			Node<T> n = new Node<>(value);
 			tail.set(n);
 			tail = n;
 			int s = size;
 			if (s == limit) {
 				head = head.get();
-			} else {
+			}
+			else {
 				size = s + 1;
 			}
 		}
@@ -647,32 +786,32 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			done = true;
 		}
 
-		void drainNormal(ReplaySubscription<T> rp) {
+		void replayNormal(ReplaySubscription<T> rp) {
 			final Subscriber<? super T> a = rp.actual;
-			
+
 			int missed = 1;
-			
+
 			for (;;) {
-				
+
 				long r = rp.requested;
 				long e = 0L;
-				
+
 				@SuppressWarnings("unchecked")
 				Node<T> node = (Node<T>)rp.node;
 				if (node == null) {
 					node = head;
 				}
-				
+
 				while (e != r) {
 					if (rp.cancelled) {
 						rp.node = null;
 						return;
 					}
-					
+
 					boolean d = done;
 					Node<T> next = node.get();
 					boolean empty = next == null;
-					
+
 					if (d && empty) {
 						rp.node = null;
 						Throwable ex = error;
@@ -683,26 +822,26 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						}
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					a.onNext(next.value);
-					
+
 					e++;
 					node = next;
 				}
-				
+
 				if (e == r) {
 					if (rp.cancelled) {
 						rp.node = null;
 						return;
 					}
-					
+
 					boolean d = done;
 					boolean empty = node.get() == null;
-					
+
 					if (d && empty) {
 						rp.node = null;
 						Throwable ex = error;
@@ -714,23 +853,23 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						return;
 					}
 				}
-				
+
 				if (e != 0L) {
 					if (r != Long.MAX_VALUE) {
 						rp.produced(e);
 					}
 				}
-				
+
 				rp.node = node;
-				
+
 				missed = rp.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
-		void drainFused(ReplaySubscription<T> rp) {
+
+		void replayFused(ReplaySubscription<T> rp) {
 			int missed = 1;
 			
 			final Subscriber<? super T> a = rp.actual;
@@ -750,29 +889,30 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					} else {
+					}
+					else {
 						a.onComplete();
 					}
 					return;
 				}
-				
+
 				missed = rp.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		@Override
-		public void drain(ReplaySubscription<T> rp) {
+		public void replay(ReplaySubscription<T> rp) {
 			if (!rp.enter()) {
 				return;
 			}
 			
 			if (rp.fusionMode == NONE) {
-				drainNormal(rp);
+				replayNormal(rp);
 			} else {
-				drainFused(rp);
+				replayFused(rp);
 			}
 		}
 
@@ -834,29 +974,336 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				node = head;
 			}
 			int count = 0;
-			
+
 			Node<T> next;
 			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
 				count++;
 				node = next;
 			}
-			
+
 			return count;
 		}
 	}
-	
+
+	static final class SizeAndTimeBoundReplayBuffer<T> implements ReplayBuffer<T> {
+
+		static final class TimedNode<T> extends AtomicReference<TimedNode<T>> {
+
+			final T    value;
+			final long time;
+
+			public TimedNode(T value, long time) {
+				this.value = value;
+				this.time = time;
+			}
+		}
+
+		final int            limit;
+		final long           maxAge;
+		final TimeUnit       unit;
+		final TimedScheduler scheduler;
+		int size;
+
+		volatile TimedNode<T> head;
+
+		TimedNode<T> tail;
+
+		Throwable error;
+		volatile boolean done;
+
+		public SizeAndTimeBoundReplayBuffer(int limit,
+				long maxAge,
+				TimeUnit unit,
+				TimedScheduler scheduler) {
+			this.limit = limit;
+			this.maxAge = maxAge;
+			this.unit = unit;
+			this.scheduler = scheduler;
+			TimedNode<T> h = new TimedNode<>(null, 0L);
+			this.tail = h;
+			this.head = h;
+		}
+
+		@SuppressWarnings("unchecked")
+		void replayNormal(ReplaySubscription<T> rs) {
+			int missed = 1;
+			final Subscriber<? super T> a = rs.actual;
+
+			for (; ; ) {
+				@SuppressWarnings("unchecked") TimedNode<T> node = (TimedNode<T>) rs.node;
+				if (node == null) {
+					node = head;
+					if (!done) {
+						// skip old entries
+						long limit = scheduler.now(unit) - maxAge;
+						TimedNode<T> next = node;
+						while (next != null) {
+							long ts = next.time;
+							if (ts > limit) {
+								break;
+							}
+							node = next;
+							next = node.get();
+						}
+					}
+				}
+
+				long r = rs.requested;
+				long e = 0L;
+
+				while (e != r) {
+					if (rs.cancelled) {
+						rs.node = null;
+						return;
+					}
+
+					boolean d = done;
+					TimedNode<T> next = node.get();
+					boolean empty = next == null;
+
+					if (d && empty) {
+						rs.node = null;
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(next.value);
+
+					e++;
+					node = next;
+				}
+
+				if (e == r) {
+					if (rs.cancelled) {
+						rs.node = null;
+						return;
+					}
+
+					boolean d = done;
+					boolean empty = node.get() == null;
+
+					if (d && empty) {
+						rs.node = null;
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0L) {
+					if (r != Long.MAX_VALUE) {
+						rs.produced(e);
+					}
+				}
+
+				rs.node = node;
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void replayFused(ReplaySubscription<T> rp) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rp.actual;
+
+			for (; ; ) {
+
+				if (rp.cancelled) {
+					rp.node = null;
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rp.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			done = true;
+			error = ex;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		@SuppressWarnings("unchecked")
+		TimedNode<T> latestHead(ReplaySubscription<T> rp) {
+			long now = scheduler.now(unit) - maxAge;
+
+			TimedNode<T> h = (TimedNode<T>)rp.node;
+			if(h == null){
+				h = head;
+			}
+			TimedNode<T> n;
+			while ((n = h.get()) != null) {
+				if (n.time > now) {
+					break;
+				}
+				h = n;
+			}
+			return h;
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rp) {
+			TimedNode<T> node = latestHead(rp);
+			TimedNode<T> next;
+			long now = scheduler.now(unit) - maxAge;
+			while ((next = node.get()) != null) {
+				if (next.time > now) {
+					node = next;
+					break;
+				}
+				node = next;
+			}
+			if (next == null) {
+				return null;
+			}
+			rp.node = next;
+
+			return node.value;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rp) {
+			rp.node = null;
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public boolean isEmpty(ReplaySubscription<T> rp) {
+			TimedNode<T> node = latestHead(rp);
+			return node.get() == null;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rp) {
+			TimedNode<T> node = latestHead(rp);
+			int count = 0;
+
+			TimedNode<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int capacity() {
+			return limit;
+		}
+
+		@Override
+		public void add(T value) {
+			TimedNode<T> n = new TimedNode<>(value, scheduler.now(unit));
+			tail.set(n);
+			tail = n;
+			int s = size;
+			if (s == limit) {
+				head = head.get();
+			}
+			else {
+				size = s + 1;
+			}
+			long limit = scheduler.now(unit) - maxAge;
+
+			TimedNode<T> h = head;
+			TimedNode<T> next;
+			int removed = 0;
+			for (; ; ) {
+				next = h.get();
+				if (next == null) {
+					break;
+				}
+
+				if (next.time > limit) {
+					if (removed != 0) {
+						size = size - removed;
+						head = h;
+					}
+					break;
+				}
+
+				h = next;
+				removed++;
+			}
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public void replay(ReplaySubscription<T> rp) {
+			if (!rp.enter()) {
+				return;
+			}
+
+			if (rp.fusionMode == NONE) {
+				replayNormal(rp);
+			}
+			else {
+				replayFused(rp);
+			}
+		}
+	}
+
 	static final class ReplaySubscription<T> implements QueueSubscription<T>, Producer,
 	                                                    Trackable, Receiver {
+
 		final Subscriber<? super T> actual;
 		
 		final ReplayProcessor<T> parent;
-		
-		final Buffer<T> buffer;
+
+		final ReplayBuffer<T> buffer;
 
 		int index;
-		
+
 		int tailIndex;
-		
+
 		Object node;
 		
 		volatile int wip;
@@ -927,14 +1374,14 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public int size() {
 			return buffer.size(this);
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				if (fusionMode == NONE) {
 					Operators.getAndAddCap(REQUESTED, this, n);
 				}
-				buffer.drain(this);
+				buffer.replay(this);
 			}
 		}
 		
@@ -942,7 +1389,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
 				parent.remove(this);
 				
 				if (enter()) {

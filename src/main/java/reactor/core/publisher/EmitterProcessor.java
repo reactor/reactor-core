@@ -121,23 +121,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize);
 	}
 
-	/**
-	 * Create a {@link FluxProcessor} from hot {@link EmitterProcessor#create EmitterProcessor}  safely gated by a serializing {@link Subscriber}.
-	 * It will not propagate cancel upstream if {@link Subscription} has been set. Serialization uses thread-stealing
-	 * and a potentially unbounded queue that might starve a calling thread if races are too important and
-	 * {@link Subscriber} is slower.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/serialize.png" alt="">
-	 *
-	 * @param <T> the relayed type
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public static <T> FluxProcessor<T, T> serialize() {
-		Processor<T, T> processor = create();
-		return new DelegateProcessor<>(processor, Operators.serialize(processor));
-	}
-
 	final int maxConcurrency;
 	final int bufferSize;
 	final int limit;
