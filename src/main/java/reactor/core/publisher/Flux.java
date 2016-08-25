@@ -2554,9 +2554,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a filtering {@link Flux} with unique values
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<T> distinct() {
-		return onAssembly(new FluxDistinct<>(this, HASHCODE_EXTRACTOR, hashSetSupplier
+		return onAssembly(new FluxDistinct<>(this, hashcodeSupplier(), hashSetSupplier
 				()));
 	}
 
@@ -2589,9 +2588,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a filtering {@link Flux} with conflated repeated elements
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<T> distinctUntilChanged() {
-		return onAssembly(new FluxDistinctUntilChanged<T, T>(this, HASHCODE_EXTRACTOR));
+		return distinctUntilChanged(hashcodeSupplier());
 	}
 
 	/**
@@ -4124,7 +4122,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}.
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted
+	 * signals for further {@link Subscriber}.
 	 * Will retain up to the given history size onNext signals. Completion and Error will also be
 	 * replayed.
 	 *
@@ -4138,7 +4137,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
-		return process(ReplayProcessor.create(history));
+		return process(() -> ReplayProcessor.create(history));
 	}
 
 	/**
@@ -6062,7 +6061,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static final <T> Function<T, T> identityFunction(){
+	static <U, V> Function<U, V> hashcodeSupplier() {
+		return HASHCODE_EXTRACTOR;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;
 	}
 
