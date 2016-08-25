@@ -666,13 +666,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		if (source instanceof Flux) {
 			return (Flux<T>) source;
 		}
 
 		if (source instanceof Fuseable.ScalarCallable) {
+			@SuppressWarnings("unchecked")
             T t = ((Fuseable.ScalarCallable<T>) source).call();
             if (t != null) {
                 return just(t);
@@ -1667,9 +1667,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by a {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final Flux<List<T>> buffer(Publisher<?> other) {
-		return onAssembly(new FluxBufferBoundary<>(this, other, LIST_SUPPLIER));
+		return onAssembly(new FluxBufferBoundary<>(this, other, listSupplier()));
 	}
 
 	/**
@@ -1701,12 +1700,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by an opening {@link Publisher} and a relative
 	 * closing {@link Publisher}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <U, V> Flux<List<T>> buffer(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
 
 		return onAssembly(new FluxBufferStartEnd<>(this, bucketOpening, closeSelector,
-				LIST_SUPPLIER, QueueSupplier.<List<T>>xs()));
+				listSupplier(), QueueSupplier.xs()));
 	}
 
 	/**
@@ -1995,18 +1993,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 *
 	 */
-	@SuppressWarnings("unchecked")
 	public final Mono<List<T>> collectList() {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
 				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
 				T v = scalarCallable.call();
 				if (v == null) {
-					return Mono.onAssembly(new MonoSupplier<>(LIST_SUPPLIER));
+					return Mono.onAssembly(new MonoSupplier<>(listSupplier()));
 				}
 				return Mono.just(v).map(u -> {
-					List<T> list = (List<T>)LIST_SUPPLIER.get();
+					List<T> list = Flux.<T>listSupplier().get();
 					list.add(u);
 					return list;
 				});
@@ -2702,7 +2700,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		Objects.requireNonNull(exceptionType, "type");
 		@SuppressWarnings("unchecked")
 		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
-		return doOnError(exceptionType::isInstance, (Consumer<Throwable>)onError);
+		return doOnError(exceptionType::isInstance, (handler);
 	}
 
 	/**
@@ -3274,10 +3272,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a limited {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
     public final Mono<T> last() {
 	    if (this instanceof Callable) {
-	        return convertToMono((Callable<T>)this);
+		    @SuppressWarnings("unchecked")
+		    Callable<T> thiz = (Callable<T>)this;
+	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this));
 	}
@@ -3427,10 +3426,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
 	public final <E extends Throwable> Flux<T> mapError(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
-		return mapError(type::isInstance, (Function<Throwable, Throwable>)mapper);
+		@SuppressWarnings("unchecked")
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
+		return mapError(type::isInstance, handler);
 	}
 
 	/**
