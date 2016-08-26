@@ -2279,7 +2279,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
-		Objects.requireNonNull(consumer, "consumer");
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}

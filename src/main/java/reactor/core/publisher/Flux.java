@@ -4918,7 +4918,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
-		Objects.requireNonNull(consumer, "consumer");
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
