@@ -31,7 +31,7 @@ import reactor.core.Trackable;
  *
  * @param <T> the value type
  */
-final class LambdaSubscriber<T>
+final class LambdaFirstSubscriber<T>
 		implements Subscriber<T>, Receiver, Cancellation, Trackable {
 
 	final Consumer<? super T>         consumer;
@@ -39,8 +39,8 @@ final class LambdaSubscriber<T>
 	final Runnable                    completeConsumer;
 
 	volatile Subscription subscription;
-	static final AtomicReferenceFieldUpdater<LambdaSubscriber, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(LambdaSubscriber.class,
+	static final AtomicReferenceFieldUpdater<LambdaFirstSubscriber, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(LambdaFirstSubscriber.class,
 					Subscription.class,
 					"subscription");
 
@@ -56,7 +56,7 @@ final class LambdaSubscriber<T>
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
 	 * context if any
 	 */
-	public LambdaSubscriber(Consumer<? super T> consumer,
+	public LambdaFirstSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		this.consumer = consumer;
@@ -86,7 +86,7 @@ final class LambdaSubscriber<T>
 	@Override
 	public final void onComplete() {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-		if ( s == Operators.cancelledSubscription()) {
+		if (s == Operators.cancelledSubscription()) {
 			return;
 		}
 		if (completeConsumer != null) {
@@ -123,18 +123,22 @@ final class LambdaSubscriber<T>
 		if (x == null) {
 			throw Exceptions.argumentIsNullException();
 		}
-		try {
-			if (consumer != null) {
+		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
+		if (s != null && s != Operators.cancelledSubscription()) {
+			s.cancel();
+		}
+		else {
+			Operators.onNextDropped(x);
+			return;
+		}
+		if (consumer != null) {
+			try {
 				consumer.accept(x);
 			}
-		}
-		catch (Throwable t) {
-			Exceptions.throwIfFatal(t);
-			Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-			if (s != null && s != Operators.cancelledSubscription()) {
-				s.cancel();
+			catch (Throwable t) {
+				Exceptions.throwIfFatal(t);
+				onError(t);
 			}
-			onError(t);
 		}
 	}
 

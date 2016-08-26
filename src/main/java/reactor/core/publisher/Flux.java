@@ -1505,7 +1505,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Immediately apply the given transformation to this {@link Flux} in order to generate a target type.
 	 *
-	 * {@code flux.as(Mono::from).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.as(Mono::from).subscribe() }
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux}
 	 * into a target type
@@ -2351,7 +2351,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Defer the transformation of this {@link Flux} in order to generate a target {@link Flux} for each
 	 * new {@link Subscriber}.
 	 *
-	 * {@code flux.compose(Mono::from).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.compose(Mono::from).subscribe() }
 	 *
 	 * @param transformer the {@link Function} to map this {@link Flux} into a target {@link Publisher}
 	 * instance for each new subscriber
@@ -3268,8 +3268,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	) {
 		return new FluxGroupJoin<T, TRight, TLeftEnd, TRightEnd, R>(
 				this, other, leftEnd, rightEnd, resultSelector,
-				QueueSupplier.unbounded(),
-				QueueSupplier.unbounded());
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE));
 	}
 
 	/**
@@ -3379,7 +3379,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			BiFunction<? super T, ? super TRight, ? extends R> resultSelector
 	) {
 		return new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
-				this, other, leftEnd, rightEnd, resultSelector, QueueSupplier.unbounded());
+				this, other, leftEnd, rightEnd, resultSelector, QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE));
 	}
 
 	/**
@@ -4466,8 +4466,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
 		return onAssembly(new FluxThrottleTimeout<>(this,
 				throttlerFactory,
-				QueueSupplier.unbounded(QueueSupplier
-				.XS_BUFFER_SIZE)));
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -4487,9 +4486,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>>
-			throttlerFactory, int
-			maxConcurrency) {
-		if(maxConcurrency == Long.MAX_VALUE){
+			throttlerFactory, int maxConcurrency) {
+		if(maxConcurrency == Integer.MAX_VALUE){
 			return sampleTimeout(throttlerFactory);
 		}
 		return onAssembly(new FluxThrottleTimeout<>(this, throttlerFactory,
@@ -4574,9 +4572,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an accumulating {@link Flux} starting with initial state
 	 *
 	 */
-	public final <A> Flux<A> scanWith(Supplier<A> initial, BiFunction<A, ?
-			super T,
-			A> accumulator) {
+	public final <A> Flux<A> scanWith(Supplier<A> initial, BiFunction<A, ? super T, A>
+			accumulator) {
 		return onAssembly(new FluxScan<>(this, initial, accumulator));
 	}
 
@@ -4880,6 +4877,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer) {
+		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
 
@@ -4901,6 +4899,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer, int prefetch) {
+		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null, prefetch);
 	}
 
@@ -4919,6 +4918,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+		Objects.requireNonNull(consumer, "consumer");
+		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
 
@@ -4984,7 +4985,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		else {
 			tail = publishOn(Schedulers.immediate(), c);
 		}
-		return subscribeWith(consumerAction);
+		return tail.subscribeWith(consumerAction);
 	}
 
 	/**
@@ -5021,7 +5022,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
 	 * emitter (e.g. {@link FluxProcessor} or {@link MonoProcessor}).
 	 *
-	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe(Subscribers.unbounded()) }
+	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe and return
 	 * @param <E> the reified type from the input/output subscriber
@@ -5631,7 +5632,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * provided function is executed as part of assembly.
 	 *
 	 * {@code Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
+	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe()}
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.

@@ -182,7 +182,7 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 		AbstractFluxVerification s = new FluxWithSchedulerTests();
 		Processor p = s.createProcessor(256);
 		BlockingSink sess = BlockingSink.create(p);
-		p.subscribe(Subscribers.unbounded());
+		p.subscribe();
 		Nexus nexus = Nexus.create.withSystemStats();
 		nexus.monitor(p);
 		nexus.startAndAwait();

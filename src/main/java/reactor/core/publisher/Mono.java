@@ -2259,6 +2259,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer) {
+		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
 
@@ -2278,6 +2279,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+		Objects.requireNonNull(consumer, "consumer");
+		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
 
@@ -2300,7 +2303,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Cancellation subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
-		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer));
+		return subscribeWith(new LambdaFirstSubscriber<>(consumer, errorConsumer,
+				completeConsumer));
 	}
 
 	/**
@@ -2618,7 +2622,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * provided function is executed as part of assembly.
 	 *
 	 * {@code Function<Mono, Mono> applySchedulers = mono -> mono.subscribeOn(Schedulers.io()).publishOn(Schedulers.parallel());
-	 *        mono.transform(applySchedulers).map(v -> v * v).subscribe(Subscribers.unbounded())}
+	 *        mono.transform(applySchedulers).map(v -> v * v).subscribe()}
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
 	 * instance.
