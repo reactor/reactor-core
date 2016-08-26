@@ -297,6 +297,61 @@ public abstract class Hooks {
 
 		/**
 		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+		 * {@link Logger} support to handle trace implementation. Default will use the
+		 * passed java.util.logging. If SLF4J is available, it will be used
+		 * instead.
+		 * <p>
+		 * Options allow fine grained filtering of the traced signal, for instance to only
+		 * capture onNext and onError:
+		 * <pre>
+		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
+		 * SignalType.ON_ERROR)
+		 *
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+		 * alt="">
+		 *
+		 * @param category to be mapped into logger configuration (e.g.
+		 * org.springframework.reactor). If category is null, empty or ends with "." like
+		 * "reactor.", a generated operator suffix will complete, e.g. "reactor.Flux.Map".
+		 * @param options a vararg {@link SignalType} option to filter log messages
+		 *
+		 * @return a logging {@link OperatorHook}
+		 */
+		public OperatorHook<T> log(String category, SignalType... options){
+			return log(category, Level.INFO, options);
+		}
+
+		/**
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
+		 * {@link Logger} support to handle trace implementation. Default will use the
+		 * passed java.util.logging. If SLF4J is available, it will be used
+		 * instead.
+		 * <p>
+		 * Options allow fine grained filtering of the traced signal, for instance to only
+		 * capture onNext and onError:
+		 * <pre>
+		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
+		 * SignalType.ON_ERROR)
+		 *
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/log.png"
+		 * alt="">
+		 *
+		 * @param category to be mapped into logger configuration (e.g.
+		 * org.springframework.reactor). If category is null, empty or ends with "." like
+		 * "reactor.", a generated operator suffix will complete, e.g. "reactor.Flux.Map".
+		 * @param showOperatorLine capture the current stack to display operator
+		 * class/line number.
+		 * @param options a vararg {@link SignalType} option to filter log messages
+		 *
+		 * @return a logging {@link OperatorHook}
+		 */
+		public OperatorHook<T> log(String category, boolean showOperatorLine,
+				SignalType... options){
+			return log(category, Level.INFO, showOperatorLine, options);
+		}
+
+		/**
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
 		 * {@link Logger} support to handle trace implementation. Default will use the passed
 		 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
 		 * instead.
