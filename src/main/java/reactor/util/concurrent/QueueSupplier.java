@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * Provide a queue adapted for a given capacity
+ * Provide a 1-producer/1-consumer ready queue adapted for a given capacity.
  *
  * @param <T> the queue element type
  */
@@ -63,7 +63,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> get(int batchSize) {
 		if (batchSize == Integer.MAX_VALUE) {
-			return CLQ_SUPPLIER;
+			return SMALL_UNBOUNDED;
 		}
 		if (batchSize == XS_BUFFER_SIZE) {
 			return XS_SUPPLIER;
@@ -113,7 +113,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> unbounded() {
-		return CLQ_SUPPLIER;
+		return SMALL_UNBOUNDED;
 	}
 
 	/**
@@ -123,6 +123,12 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
+		if (linkSize == XS_BUFFER_SIZE) {
+			return XS_UNBOUNDED;
+		}
+		else if (linkSize == SMALL_BUFFER_SIZE) {
+			return SMALL_UNBOUNDED;
+		}
 		return  () -> new SpscLinkedArrayQueue<>(linkSize);
 	}
 
@@ -295,12 +301,15 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			queue.remove();
 		}
 	}
-	@SuppressWarnings("rawtypes")
-    static final Supplier    CLQ_SUPPLIER      = new QueueSupplier<>(Long.MAX_VALUE);
     @SuppressWarnings("rawtypes")
-	static final Supplier    ONE_SUPPLIER      = new QueueSupplier<>(1);
+    static final Supplier ONE_SUPPLIER   = OneQueue::new;
 	@SuppressWarnings("rawtypes")
-	static final Supplier    XS_SUPPLIER       = new QueueSupplier<>(XS_BUFFER_SIZE);
+    static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(XS_BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
-	static final Supplier    SMALL_SUPPLIER    = new QueueSupplier<>(SMALL_BUFFER_SIZE);
+    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(SMALL_BUFFER_SIZE);
+
+	static final Supplier SMALL_UNBOUNDED =
+			() -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
+
+	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE);
 }

@@ -140,6 +140,15 @@ final class LambdaFirstSubscriber<T>
 				onError(t);
 			}
 		}
+		if (completeConsumer != null) {
+			try {
+				completeConsumer.run();
+			}
+			catch (Throwable t) {
+				Exceptions.throwIfFatal(t);
+				onError(t);
+			}
+		}
 	}
 
 	@Override

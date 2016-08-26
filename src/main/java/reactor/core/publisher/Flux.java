@@ -5823,8 +5823,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
-		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis()
-				, Schedulers.timer()));
+		return windowMillis(maxSize, timespan.toMillis() , Schedulers.timer());
 	}
 
 	/**
