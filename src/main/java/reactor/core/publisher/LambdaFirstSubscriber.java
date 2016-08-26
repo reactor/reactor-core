@@ -137,7 +137,13 @@ final class LambdaFirstSubscriber<T>
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);
-				onError(t);
+				if (errorConsumer != null) {
+					errorConsumer.accept(t);
+				}
+				else {
+					Operators.onErrorDropped(t);
+				}
+				return;
 			}
 		}
 		if (completeConsumer != null) {

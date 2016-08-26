@@ -134,7 +134,12 @@ final class LambdaSubscriber<T>
 			if (s != null && s != Operators.cancelledSubscription()) {
 				s.cancel();
 			}
-			onError(t);
+			if (errorConsumer != null) {
+				errorConsumer.accept(t);
+			}
+			else {
+				Operators.onErrorDropped(t);
+			}
 		}
 	}
 
