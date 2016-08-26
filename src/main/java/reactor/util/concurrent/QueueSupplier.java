@@ -122,6 +122,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
 		if (linkSize == XS_BUFFER_SIZE) {
 			return XS_UNBOUNDED;
@@ -307,9 +308,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
     static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(XS_BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
     static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(SMALL_BUFFER_SIZE);
-
+	@SuppressWarnings("rawtypes")
 	static final Supplier SMALL_UNBOUNDED =
 			() -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
-
+	@SuppressWarnings("rawtypes")
 	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE);
 }
