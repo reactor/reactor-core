@@ -37,7 +37,7 @@ import reactor.core.Trackable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
+final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 	final int n;
 
@@ -53,8 +53,6 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 	public void subscribe(Subscriber<? super T> s) {
 		if (n == 0) {
 			source.subscribe(new TakeLastZeroSubscriber<>(s));
-		} else if (n == 1) {
-			source.subscribe(new TakeLastOneSubscriber<>(s, false));
 		} else {
 			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}
@@ -125,7 +123,8 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	static final class TakeLastManySubscriber<T>
-			implements Subscriber<T>, Subscription, BooleanSupplier, Producer, Trackable, Receiver {
+			implements Subscriber<T>, BooleanSupplier, Producer,
+			           Trackable, Subscription, Receiver {
 
 		final Subscriber<? super T> actual;
 

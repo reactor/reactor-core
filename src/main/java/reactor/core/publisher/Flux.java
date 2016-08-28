@@ -5181,6 +5181,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> takeLast(int n) {
+		if(n == 1){
+			return onAssembly(new FluxTakeLastOne<>(this));
+		}
 		return onAssembly(new FluxTakeLast<>(this, n));
 	}
 
