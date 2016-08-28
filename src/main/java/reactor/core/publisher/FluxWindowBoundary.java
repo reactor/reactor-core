@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 
 /**
@@ -105,7 +106,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowBoundaryMain<T, U>
-			implements Subscriber<T>, Subscription, Runnable {
+			implements Subscriber<T>, Subscription, Cancellation {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -197,7 +198,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (OPEN.decrementAndGet(this) == 0) {
 				cancelMain();
 				boundary.cancel();
@@ -218,7 +219,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				run();
+				dispose();
 			}
 		}
 

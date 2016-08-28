@@ -20,10 +20,12 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -62,7 +64,7 @@ public final class UnicastProcessor<T>
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <T> UnicastProcessor<T> create(Queue<T> queue) {
-		return create(queue, () -> {});
+		return new UnicastProcessor<>(queue);
 	}
 
 	/**
@@ -74,24 +76,40 @@ public final class UnicastProcessor<T>
 	 * @param <T> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <T> UnicastProcessor<T> create(Queue<T> queue, Runnable endcallback) {
+	public static <T> UnicastProcessor<T> create(Queue<T> queue, Cancellation endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
 
-	final Queue<T> queue;
+	/**
+	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * unbounded fashion.
+	 *
+	 * @param queue the buffering queue
+	 * @param endcallback called on any terminal signal
+	 * @param onOverflow called when queue.offer return false and unicastProcessor is
+	 * about to emit onError.
+	 * @param <T> the relayed type
+	 *
+	 * @return a unicast {@link FluxProcessor}
+	 */
+	public static <T> UnicastProcessor<T> create(Queue<T> queue,
+			Consumer<? super T> onOverflow,
+			Cancellation endcallback) {
+		return new UnicastProcessor<>(queue, onOverflow, endcallback);
+	}
 
-	volatile Runnable onTerminate;
+	final Queue<T>            queue;
+	final Consumer<? super T> onOverflow;
+
+	volatile Cancellation onTerminate;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<UnicastProcessor, Runnable> ON_TERMINATE =
-			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Runnable.class, "onTerminate");
+	static final AtomicReferenceFieldUpdater<UnicastProcessor, Cancellation> ON_TERMINATE =
+			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Cancellation.class, "onTerminate");
 
 	volatile boolean done;
 	Throwable error;
 
 	volatile Subscriber<? super T> actual;
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<UnicastProcessor, Subscriber> ACTUAL =
-			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Subscriber.class, "actual");
 
 	volatile boolean cancelled;
 
@@ -115,17 +133,27 @@ public final class UnicastProcessor<T>
 	public UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;
+		this.onOverflow = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue, Runnable onTerminate) {
+	public UnicastProcessor(Queue<T> queue, Cancellation onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
+		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
+		this.onOverflow = null;
+	}
+
+	public UnicastProcessor(Queue<T> queue,
+			Consumer<? super T> onOverflow,
+			Cancellation onTerminate) {
+		this.queue = Objects.requireNonNull(queue, "queue");
+		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}
 
 	void doTerminate() {
-		Runnable r = onTerminate;
+		Cancellation r = onTerminate;
 		if (r != null && ON_TERMINATE.compareAndSet(this, r, null)) {
-			r.run();
+			r.dispose();
 		}
 	}
 
@@ -279,7 +307,17 @@ public final class UnicastProcessor<T>
 		}
 
 		if (!queue.offer(t)) {
-			onError(new IllegalStateException("The queue is full"));
+			Throwable ex = Exceptions.failWithOverflow();
+			if(onOverflow != null) {
+				try {
+					onOverflow.accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					ex.initCause(e);
+				}
+			}
+			onError(Operators.onOperatorError(null, ex, t));
 			return;
 		}
 		drain();

@@ -28,6 +28,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Cancellation;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -106,7 +107,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowExactSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable, Producer, Receiver,
+			implements Subscriber<T>, Subscription, Cancellation, Producer, Receiver,
 			           MultiProducer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
@@ -243,12 +244,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				run();
+				dispose();
 			}
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (WIP.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
@@ -296,7 +297,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowSkipSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable, Receiver, MultiProducer,
+			implements Subscriber<T>, Subscription, Cancellation, Receiver, MultiProducer,
 			           Producer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
@@ -453,12 +454,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				run();
+				dispose();
 			}
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (WIP.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
@@ -506,7 +507,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOverlapSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable, Producer, MultiProducer,
+			implements Subscriber<T>, Subscription, Cancellation, Producer, MultiProducer,
 			           Receiver, Trackable {
 
 		final Subscriber<? super Flux<T>> actual;
@@ -774,12 +775,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		public void cancel() {
 			cancelled = true;
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				run();
+				dispose();
 			}
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (WIP.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
