@@ -15,7 +15,11 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.*;
+import java.util.NoSuchElementException;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
@@ -32,17 +36,19 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new TakeLastOneSubscriber<>(s));
+        source.subscribe(new TakeLastOneSubscriber<>(s, true));
     }
 
 	static final class TakeLastOneSubscriber<T>
 			extends Operators.MonoSubscriber<T, T>
 			implements Receiver {
 
+		final boolean mustEmit;
 		Subscription s;
 
-		public TakeLastOneSubscriber(Subscriber<? super T> actual) {
+		public TakeLastOneSubscriber(Subscriber<? super T> actual, boolean mustEmit) {
 			super(actual);
+			this.mustEmit = mustEmit;
 		}
 
 		@Override
@@ -66,7 +72,13 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 		public void onComplete() {
 			T v = value;
 			if (v == null) {
-				subscriber.onComplete();
+				if (mustEmit) {
+					subscriber.onError(Operators.onOperatorError(new NoSuchElementException(
+							"Flux#last() didn't observe any " + "onNext signal")));
+				}
+				else {
+					subscriber.onComplete();
+				}
 				return;
 			}
 			complete(v);

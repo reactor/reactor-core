@@ -54,7 +54,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> implements Fuseable {
 		if (n == 0) {
 			source.subscribe(new TakeLastZeroSubscriber<>(s));
 		} else if (n == 1) {
-			source.subscribe(new TakeLastOneSubscriber<>(s));
+			source.subscribe(new TakeLastOneSubscriber<>(s, false));
 		} else {
 			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}

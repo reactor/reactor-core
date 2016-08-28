@@ -33,14 +33,14 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
 	 * subscribers
 	 */
-	public static final int XS_BUFFER_SIZE    =
-			Integer.parseInt(System.getProperty("reactor.bufferSize.x", "32"));
+	public static final int XS_BUFFER_SIZE    = Math.max(8,
+			Integer.parseInt(System.getProperty("reactor.bufferSize.x", "32")));
 	/**
 	 * A small default of available slots in a given container, compromise between intensive pipelines, small
 	 * subscribers numbers and memory use.
 	 */
-	public static final int SMALL_BUFFER_SIZE =
-			Integer.parseInt(System.getProperty("reactor.bufferSize.small", "256"));
+	public static final int SMALL_BUFFER_SIZE = Math.max(16,
+			Integer.parseInt(System.getProperty("reactor.bufferSize.small", "256")));
 
 	/**
 	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
