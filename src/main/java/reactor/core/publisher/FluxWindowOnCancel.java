@@ -27,6 +27,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Cancellation;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -58,7 +59,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOnCancelSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable, Producer,
+			implements Subscriber<T>, Subscription, Cancellation, Producer,
 			           MultiProducer, Receiver, Trackable {
 
 		final Subscriber<? super Flux<T>> actual;
@@ -178,12 +179,12 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				run();
+				dispose();
 			}
 		}
 
 		@Override
-		public void run() {
+		public void dispose() {
 			if (WIP.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
