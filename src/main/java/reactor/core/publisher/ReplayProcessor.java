@@ -304,16 +304,16 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		ReplaySubscription<T> rp = new ReplaySubscription<>(s, this);
-		s.onSubscribe(rp);
+		ReplaySubscription<T> rs = new ReplayProcessorSubscription<>(s, this);
+		s.onSubscribe(rs);
 
-		if (add(rp)) {
-			if (rp.cancelled) {
-				remove(rp);
+		if (add(rs)) {
+			if (rs.isCancelled()) {
+				remove(rs);
 				return;
 			}
 		}
-		buffer.replay(rp);
+		buffer.replay(rs);
 	}
 
 	@Override
@@ -346,7 +346,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		return subscription;
 	}
 
-	boolean add(ReplaySubscription<T> rp) {
+	boolean add(ReplaySubscription<T> rs) {
 		for (;;) {
 			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED) {
@@ -355,9 +355,9 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			int n = a.length;
 			
 			@SuppressWarnings("unchecked")
-			ReplaySubscription<T>[] b = new ReplaySubscription[n + 1];
+			ReplaySubscription<T>[] b = new ReplayProcessorSubscription[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
-			b[n] = rp;
+			b[n] = rs;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
 				return true;
 			}
@@ -365,7 +365,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 	
 	@SuppressWarnings("unchecked")
-	void remove(ReplaySubscription<T> rp) {
+	void remove(ReplaySubscription<T> rs) {
 		outer:
 		for (;;) {
 			ReplaySubscription<T>[] a = subscribers;
@@ -375,13 +375,13 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			int n = a.length;
 			
 			for (int i = 0; i < n; i++) {
-				if (a[i] == rp) {
+				if (a[i] == rs) {
 					ReplaySubscription<T>[] b;
 					
 					if (n == 1) {
 						b = EMPTY;
 					} else {
-						b = new ReplaySubscription[n - 1];
+						b = new ReplayProcessorSubscription[n - 1];
 						System.arraycopy(a, 0, b, 0, i);
 						System.arraycopy(a, i + 1, b, i, n - i - 1);
 					}
@@ -425,8 +425,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 		else {
 			b.add(t);
-			for (ReplaySubscription<T> rp : subscribers) {
-				b.replay(rp);
+			for (ReplaySubscription<T> rs : subscribers) {
+				b.replay(rs);
 			}
 		}
 	}
@@ -443,8 +443,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
 					SUBSCRIBERS.getAndSet(this, TERMINATED);
 			
-			for (ReplaySubscription<T> rp : a) {
-				b.replay(rp);
+			for (ReplaySubscription<T> rs : a) {
+				b.replay(rs);
 			}
 		}
 	}
@@ -458,8 +458,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			@SuppressWarnings("unchecked")
 			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
-			for (ReplaySubscription<T> rp : a) {
-				b.replay(rp);
+			for (ReplaySubscription<T> rs : a) {
+				b.replay(rs);
 			}
 		}
 	}
@@ -475,20 +475,24 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		void add(T value);
 
 		void onError(Throwable ex);
+
+		Throwable getError();
 		
 		void onComplete();
 
-		void replay(ReplaySubscription<T> rp);
+		void replay(ReplaySubscription<T> rs);
 		
 		boolean isDone();
 
-		T poll(ReplaySubscription<T> rp);
+		T poll(ReplaySubscription<T> rs);
 
-		void clear(ReplaySubscription<T> rp);
+		void clear(ReplaySubscription<T> rs);
 		
-		boolean isEmpty(ReplaySubscription<T> rp);
+		boolean isEmpty(ReplaySubscription<T> rs);
 
-		int size(ReplaySubscription<T> rp);
+		int size(ReplaySubscription<T> rs);
+
+		int size();
 
 		int capacity();
 	}
@@ -513,6 +517,11 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			Object[] n = new Object[batchSize + 1];
 			this.tail = n;
 			this.head = n;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
 		}
 
 		@Override
@@ -548,27 +557,27 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			done = true;
 		}
 
-		void replayNormal(ReplaySubscription<T> rp) {
+		void replayNormal(ReplaySubscription<T> rs) {
 			int missed = 1;
 			
-			final Subscriber<? super T> a = rp.actual;
+			final Subscriber<? super T> a = rs.downstream();
 			final int n = batchSize;
 
 			for (; ; ) {
 
-				long r = rp.requested;
+				long r = rs.requestedFromDownstream();
 				long e = 0L;
 
-				Object[] node = (Object[]) rp.node;
+				Object[] node = (Object[]) rs.node();
 				if (node == null) {
 					node = head;
 				}
-				int tailIndex = rp.tailIndex;
-				int index = rp.index;
+				int tailIndex = rs.tailIndex();
+				int index = rs.index();
 				
 				while (e != r) {
-					if (rp.cancelled) {
-						rp.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 					
@@ -576,7 +585,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = index == size;
 
 					if (d && empty) {
-						rp.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -606,8 +615,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 				
 				if (e == r) {
-					if (rp.cancelled) {
-						rp.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 
@@ -615,7 +624,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = index == size;
 
 					if (d && empty) {
-						rp.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -629,30 +638,30 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 				if (e != 0L) {
 					if (r != Long.MAX_VALUE) {
-						rp.produced(e);
+						rs.produced(e);
 					}
 				}
 
-				rp.index = index;
-				rp.tailIndex = tailIndex;
-				rp.node = node;
+				rs.index(index);
+				rs.tailIndex(tailIndex);
+				rs.node(node);
 
-				missed = rp.leave(missed);
+				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
 		
-		void replayFused(ReplaySubscription<T> rp) {
+		void replayFused(ReplaySubscription<T> rs) {
 			int missed = 1;
 			
-			final Subscriber<? super T> a = rp.actual;
+			final Subscriber<? super T> a = rs.downstream();
 			
 			for (;;) {
 				
-				if (rp.cancelled) {
-					rp.node = null;
+				if (rs.isCancelled()) {
+					rs.node(null);
 					return;
 				}
 				
@@ -671,7 +680,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					return;
 				}
 
-				missed = rp.leave(missed);
+				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
@@ -679,15 +688,15 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public void replay(ReplaySubscription<T> rp) {
-			if (!rp.enter()) {
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
 				return;
 			}
 
-			if (rp.fusionMode == NONE) {
-				replayNormal(rp);
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
 			} else {
-				replayFused(rp);
+				replayFused(rs);
 			}
 		}
 
@@ -697,41 +706,46 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public T poll(ReplaySubscription<T> rp) {
-			int index = rp.index;
+		public T poll(ReplaySubscription<T> rs) {
+			int index = rs.index();
 			if (index == size) {
 				return null;
 			}
-			Object[] node = (Object[]) rp.node;
+			Object[] node = (Object[]) rs.node();
 			if (node == null) {
 				node = head;
-				rp.node = node;
+				rs.node(node);
 			}
-			int tailIndex = rp.tailIndex;
+			int tailIndex = rs.tailIndex();
 			if (tailIndex == batchSize) {
 				node = (Object[]) node[tailIndex];
 				tailIndex = 0;
 			}
 			@SuppressWarnings("unchecked")
 			T v = (T)node[tailIndex];
-			rp.index = index + 1;
-			rp.tailIndex = tailIndex + 1;
+			rs.index(index + 1);
+			rs.tailIndex(tailIndex + 1);
 			return v;
 		}
 
 		@Override
-		public void clear(ReplaySubscription<T> rp) {
-			rp.node = null;
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
 		}
 
 		@Override
-		public boolean isEmpty(ReplaySubscription<T> rp) {
-			return rp.index == size;
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			return rs.index() == size;
 		}
 
 		@Override
-		public int size(ReplaySubscription<T> rp) {
-			return size - rp.index;
+		public int size(ReplaySubscription<T> rs) {
+			return size - rs.index();
+		}
+
+		@Override
+		public int size() {
+			return size;
 		}
 
 	}
@@ -786,25 +800,25 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			done = true;
 		}
 
-		void replayNormal(ReplaySubscription<T> rp) {
-			final Subscriber<? super T> a = rp.actual;
+		void replayNormal(ReplaySubscription<T> rs) {
+			final Subscriber<? super T> a = rs.downstream();
 
 			int missed = 1;
 
 			for (;;) {
 
-				long r = rp.requested;
+				long r = rs.requestedFromDownstream();
 				long e = 0L;
 
 				@SuppressWarnings("unchecked")
-				Node<T> node = (Node<T>)rp.node;
+				Node<T> node = (Node<T>)rs.node();
 				if (node == null) {
 					node = head;
 				}
 
 				while (e != r) {
-					if (rp.cancelled) {
-						rp.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 
@@ -813,7 +827,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = next == null;
 
 					if (d && empty) {
-						rp.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -834,8 +848,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 
 				if (e == r) {
-					if (rp.cancelled) {
-						rp.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 
@@ -843,7 +857,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = node.get() == null;
 
 					if (d && empty) {
-						rp.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -856,28 +870,28 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 				if (e != 0L) {
 					if (r != Long.MAX_VALUE) {
-						rp.produced(e);
+						rs.produced(e);
 					}
 				}
 
-				rp.node = node;
+				rs.node(node);
 
-				missed = rp.leave(missed);
+				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
 
-		void replayFused(ReplaySubscription<T> rp) {
+		void replayFused(ReplaySubscription<T> rs) {
 			int missed = 1;
 			
-			final Subscriber<? super T> a = rp.actual;
+			final Subscriber<? super T> a = rs.downstream();
 			
 			for (;;) {
 				
-				if (rp.cancelled) {
-					rp.node = null;
+				if (rs.isCancelled()) {
+					rs.node(null);
 					return;
 				}
 				
@@ -896,7 +910,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					return;
 				}
 
-				missed = rp.leave(missed);
+				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
@@ -904,16 +918,21 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public void replay(ReplaySubscription<T> rp) {
-			if (!rp.enter()) {
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
 				return;
 			}
 			
-			if (rp.fusionMode == NONE) {
-				replayNormal(rp);
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
 			} else {
-				replayFused(rp);
+				replayFused(rs);
 			}
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
 		}
 
 		@Override
@@ -933,46 +952,60 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public T poll(ReplaySubscription<T> rp) {
+		public T poll(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rp.node;
+			Node<T> node = (Node<T>)rs.node();
 			if (node == null) {
 				node = head;
-				rp.node = node;
+				rs.node(node);
 			}
 			
 			Node<T> next = node.get();
 			if (next == null) {
 				return null;
 			}
-			rp.node = next;
+			rs.node(next);
 			
 			return next.value;
 		}
 
 		@Override
-		public void clear(ReplaySubscription<T> rp) {
-			rp.node = null;
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
 		}
 
 		@Override
-		public boolean isEmpty(ReplaySubscription<T> rp) {
+		public boolean isEmpty(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rp.node;
+			Node<T> node = (Node<T>)rs.node();
 			if (node == null) {
 				node = head;
-				rp.node = node;
+				rs.node(node);
 			}
 			return node.get() == null;
 		}
 
 		@Override
-		public int size(ReplaySubscription<T> rp) {
+		public int size(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rp.node;
+			Node<T> node = (Node<T>)rs.node();
 			if (node == null) {
 				node = head;
 			}
+			int count = 0;
+
+			Node<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int size() {
+			Node<T> node = head;
 			int count = 0;
 
 			Node<T> next;
@@ -1027,10 +1060,10 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		@SuppressWarnings("unchecked")
 		void replayNormal(ReplaySubscription<T> rs) {
 			int missed = 1;
-			final Subscriber<? super T> a = rs.actual;
+			final Subscriber<? super T> a = rs.downstream();
 
 			for (; ; ) {
-				@SuppressWarnings("unchecked") TimedNode<T> node = (TimedNode<T>) rs.node;
+				@SuppressWarnings("unchecked") TimedNode<T> node = (TimedNode<T>) rs.node();
 				if (node == null) {
 					node = head;
 					if (!done) {
@@ -1048,12 +1081,12 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					}
 				}
 
-				long r = rs.requested;
+				long r = rs.requestedFromDownstream();
 				long e = 0L;
 
 				while (e != r) {
-					if (rs.cancelled) {
-						rs.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 
@@ -1062,7 +1095,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = next == null;
 
 					if (d && empty) {
-						rs.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -1084,8 +1117,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 
 				if (e == r) {
-					if (rs.cancelled) {
-						rs.node = null;
+					if (rs.isCancelled()) {
+						rs.node(null);
 						return;
 					}
 
@@ -1093,7 +1126,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					boolean empty = node.get() == null;
 
 					if (d && empty) {
-						rs.node = null;
+						rs.node(null);
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
@@ -1111,7 +1144,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					}
 				}
 
-				rs.node = node;
+				rs.node(node);
 
 				missed = rs.leave(missed);
 				if (missed == 0) {
@@ -1120,15 +1153,15 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			}
 		}
 
-		void replayFused(ReplaySubscription<T> rp) {
+		void replayFused(ReplaySubscription<T> rs) {
 			int missed = 1;
 
-			final Subscriber<? super T> a = rp.actual;
+			final Subscriber<? super T> a = rs.downstream();
 
 			for (; ; ) {
 
-				if (rp.cancelled) {
-					rp.node = null;
+				if (rs.isCancelled()) {
+					rs.node(null);
 					return;
 				}
 
@@ -1147,7 +1180,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					return;
 				}
 
-				missed = rp.leave(missed);
+				missed = rs.leave(missed);
 				if (missed == 0) {
 					break;
 				}
@@ -1161,6 +1194,11 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
 		public void onComplete() {
 			done = true;
 		}
@@ -1171,10 +1209,10 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@SuppressWarnings("unchecked")
-		TimedNode<T> latestHead(ReplaySubscription<T> rp) {
+		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
 			long now = scheduler.now(unit) - maxAge;
 
-			TimedNode<T> h = (TimedNode<T>)rp.node;
+			TimedNode<T> h = (TimedNode<T>)rs.node();
 			if(h == null){
 				h = head;
 			}
@@ -1189,8 +1227,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public T poll(ReplaySubscription<T> rp) {
-			TimedNode<T> node = latestHead(rp);
+		public T poll(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
 			long now = scheduler.now(unit) - maxAge;
 			while ((next = node.get()) != null) {
@@ -1203,26 +1241,40 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			if (next == null) {
 				return null;
 			}
-			rp.node = next;
+			rs.node(next);
 
 			return node.value;
 		}
 
 		@Override
-		public void clear(ReplaySubscription<T> rp) {
-			rp.node = null;
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public boolean isEmpty(ReplaySubscription<T> rp) {
-			TimedNode<T> node = latestHead(rp);
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
 			return node.get() == null;
 		}
 
 		@Override
-		public int size(ReplaySubscription<T> rp) {
-			TimedNode<T> node = latestHead(rp);
+		public int size(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
+			int count = 0;
+
+			TimedNode<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int size() {
+			TimedNode<T> node = head;
 			int count = 0;
 
 			TimedNode<T> next;
@@ -1277,22 +1329,44 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public void replay(ReplaySubscription<T> rp) {
-			if (!rp.enter()) {
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
 				return;
 			}
 
-			if (rp.fusionMode == NONE) {
-				replayNormal(rp);
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
 			}
 			else {
-				replayFused(rp);
+				replayFused(rs);
 			}
 		}
 	}
+	
+	interface ReplaySubscription<T> extends Producer, Trackable, QueueSubscription<T> {
 
-	static final class ReplaySubscription<T> implements QueueSubscription<T>, Producer,
-	                                                    Trackable, Receiver {
+		@Override
+		Subscriber<? super T> downstream();
+		
+		boolean enter();
+		int leave(int missed);
+		void produced(long n);
+
+		void node(Object node);
+		Object node();
+
+		int tailIndex();
+		void tailIndex(int tailIndex);
+		int index();
+		void index(int index);
+
+		int fusionMode();
+	}
+
+	static final class ReplayProcessorSubscription<T> implements QueueSubscription<T>, 
+	                                                             Producer,
+	                                                             ReplaySubscription<T>,
+	                                                             Receiver {
 
 		final Subscriber<? super T> actual;
 		
@@ -1308,19 +1382,19 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ReplaySubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ReplaySubscription.class, "wip");
+		static final AtomicIntegerFieldUpdater<ReplayProcessorSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ReplayProcessorSubscription.class, "wip");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ReplaySubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ReplaySubscription.class, "requested");
+		static final AtomicLongFieldUpdater<ReplayProcessorSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(ReplayProcessorSubscription.class, "requested");
 		
 		volatile boolean cancelled;
 		
 		int fusionMode;
 
-		public ReplaySubscription(Subscriber<? super T> actual, ReplayProcessor<T> parent) {
+		public ReplayProcessorSubscription(Subscriber<? super T> actual, ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.buffer = parent.buffer;
@@ -1337,7 +1411,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> downstream() {
 			return actual;
 		}
 
@@ -1378,7 +1452,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (fusionMode == NONE) {
+				if (fusionMode() == NONE) {
 					Operators.getAndAddCap(REQUESTED, this, n);
 				}
 				buffer.replay(this);
@@ -1397,16 +1471,56 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 			}
 		}
-		
-		boolean enter() {
+
+		@Override
+		public void node(Object node) {
+			this.node = node;
+		}
+
+		@Override
+		public int fusionMode() {
+			return fusionMode;
+		}
+
+
+
+		@Override
+		public Object node() {
+			return node;
+		}
+
+		@Override
+		public int index() {
+			return index;
+		}
+
+		@Override
+		public void index(int index) {
+			this.index = index;
+		}
+
+		@Override
+		public int tailIndex() {
+			return tailIndex;
+		}
+
+		@Override
+		public void tailIndex(int tailIndex) {
+			this.tailIndex = tailIndex;
+		}
+
+		@Override
+		public boolean enter() {
 			return WIP.getAndIncrement(this) == 0;
 		}
-		
-		int leave(int missed) {
+
+		@Override
+		public int leave(int missed) {
 			return WIP.addAndGet(this, -missed);
 		}
-		
-		void produced(long n) {
+
+		@Override
+		public void produced(long n) {
 			REQUESTED.addAndGet(this, -n);
 		}
 	}

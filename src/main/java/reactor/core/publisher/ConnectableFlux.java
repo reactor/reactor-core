@@ -18,13 +18,13 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import reactor.core.Cancellation;
+import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
  * before they connect to their data source.
  *
- * @see #process
  * @see #publish
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @param <T> the input and output value type
@@ -77,6 +77,11 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 		if (minSubscribers == 0) {
 			connect(cancelSupport);
 			return this;
+		}
+		if(this instanceof Fuseable){
+			return onAssembly(new ConnectableFluxAutoConnectFuseable<>(this,
+					minSubscribers,
+					cancelSupport));
 		}
 		return onAssembly(new ConnectableFluxAutoConnect<>(this, minSubscribers,
 				cancelSupport));

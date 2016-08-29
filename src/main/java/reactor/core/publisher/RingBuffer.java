@@ -48,7 +48,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
-     * <p>See {@code MultiProducer}.
+     * <p>See {@code MultiProducerRingBuffer}.
 	 *
 	 * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
@@ -64,7 +64,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
-     * <p>See {@code MultiProducer}.
+     * <p>See {@code MultiProducerRingBuffer}.
 	 * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -77,7 +77,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
 		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
-			MultiProducer sequencer = new MultiProducer(bufferSize, waitStrategy, spinObserver);
+			MultiProducerRingBuffer sequencer = new MultiProducerRingBuffer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
@@ -91,7 +91,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	/**
 	 * Create a new single producer RingBuffer with the specified wait strategy.
-     * <p>See {@code MultiProducer}.
+     * <p>See {@code MultiProducerRingBuffer}.
 	 * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -106,7 +106,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	/**
 	 * Create a new single producer RingBuffer with the specified wait strategy.
-     * <p>See {@code MultiProducer}.
+     * <p>See {@code MultiProducerRingBuffer}.
      * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -242,7 +242,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@code
 	 * RingBufferProducer} that is being used.
 	 * <p>
-     * See {@code MultiProducer}.
+     * See {@code MultiProducerRingBuffer}.
      * See {@code SingleProducerSequencer}
 	 * @return the current cursor value
 	 */
@@ -271,7 +271,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@code
 	 * RingBufferProducer} that is being used.
      * <p>
-     * See {@code MultiProducer}.
+     * See {@code MultiProducerRingBuffer}.
      * See {@code SingleProducerSequencer}.
 	 * @return the current cursor sequence
 	 */
@@ -1841,7 +1841,7 @@ final class UnsafeSequence extends RhsPadding implements RingBuffer.Sequence, Lo
  * to {@code RingBufferProducer.next()}, to determine the highest available sequence that can be read, then
  * {@code RingBufferProducer.getHighestPublishedSequence(long, long)} should be used.
  */
-final class MultiProducer extends RingBufferProducer
+final class MultiProducerRingBuffer extends RingBufferProducer
 {
 	private static final Unsafe UNSAFE = RingBuffer.getUnsafe();
 	private static final long   BASE   = UNSAFE.arrayBaseOffset(int[].class);
@@ -1861,7 +1861,7 @@ final class MultiProducer extends RingBufferProducer
 	 * @param bufferSize the size of the buffer that this will sequence over.
 	 * @param waitStrategy for those waiting on sequences.
 	 */
-	MultiProducer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+	MultiProducerRingBuffer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 
 		if (!QueueSupplier.isPowerOfTwo(bufferSize)) {

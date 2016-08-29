@@ -74,7 +74,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		if (batchSize == 1) {
 			return ONE_SUPPLIER;
 		}
-		return new QueueSupplier<>(batchSize);
+		return new QueueSupplier<>(Math.max(8, batchSize));
 	}
 
 	/**

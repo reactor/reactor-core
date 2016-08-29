@@ -334,7 +334,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			int prefetch,
 			Function<Object[], V> combinator) {
 
-		return onAssembly(new FluxCombineLatest<>(sources,
+		return onAssembly(new FluxCombineLatest<T, V>(sources,
 				combinator,
 				QueueSupplier.get(prefetch), prefetch));
 	}
@@ -1363,7 +1363,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			int prefetch,
 			final Function<? super Object[], ? extends O> combinator) {
 
-		return onAssembly(new FluxZip<>(sources,
+		return onAssembly(new FluxZip<Object, O>(sources,
 				combinator,
 				QueueSupplier.get(prefetch),
 				prefetch));
@@ -2051,8 +2051,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link Flux}
 	 */
 	public final Flux<T> cache() {
-		return process(ReplayProcessor.create(QueueSupplier.SMALL_BUFFER_SIZE, true))
-				.autoConnect();
+		return cache(Integer.MAX_VALUE);
 	}
 
 	/**
@@ -2069,7 +2068,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> cache(int history) {
-		return process(ReplayProcessor.create(history)).autoConnect();
+		return replay(history).autoConnect();
 	}
 
 	/**
@@ -3628,7 +3627,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
-	 * demand is requested downstream.
+	 * demand is requested downstream. Errors will be delayed until the buffer gets consumed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressurebuffer.png" alt="">
@@ -3637,7 +3636,46 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer() {
-		return onAssembly(new FluxBackpressureBuffer<>(this));
+		return onAssembly(new FluxBackpressureBuffer<>(this, QueueSupplier
+				.SMALL_BUFFER_SIZE, true, null));
+	}
+
+	/**
+	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
+	 * demand is requested downstream. Errors will be immediately emitted on overflow
+	 * regardless of the pending buffer.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @param maxSize maximum buffer backlog size before immediate error
+	 *
+	 * @return a buffering {@link Flux}
+	 *
+	 */
+	public final Flux<T> onBackpressureBuffer(int maxSize) {
+		return onAssembly(new FluxBackpressureBuffer<>(this, maxSize, false, null));
+	}
+
+
+	/**
+	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
+	 * demand is requested downstream. Overflow error will be delayed after the current
+	 * backlog is consumed. However the {@link Consumer} will be immediately invoked.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param onOverflow callback to invoke on overflow
+	 *
+	 * @return a buffering {@link Flux}
+	 *
+	 */
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T>
+			onOverflow) {
+		Objects.requireNonNull(onOverflow, "onOverflow");
+		return onAssembly(new FluxBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
 
 	/**
@@ -3862,114 +3900,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
-	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
-	 * depending on the {@link Processor}.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
-	 *
-	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final ConnectableFlux<T> process(Processor<? super T, ? extends T> processor) {
-		return process(() -> processor);
-	}
-
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
-	 * when
-	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
-	 *
-	 * @param processorSupplier the {@link Processor} {@link Supplier} to call, subscribe to this {@link Flux} and
-	 * share.
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final ConnectableFlux<T> process(
-			Supplier<? extends Processor<? super T, ? extends T>> processorSupplier) {
-		return process(processorSupplier, identityFunction());
-	}
-
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to the given {@link Processor}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber} when {@link ConnectableFlux#connect()}
-	 *  is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The {@link Processor} will not be specifically reusable and multi-connect might not work as expected
-	 * depending on the {@link Processor}.
-	 *
-	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
-	 *
-	 * @param processor the {@link Processor} reference to subscribe to this {@link Flux} and share.
-	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
-	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
-	 * @param <U> produced type from the given selector
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final <U> ConnectableFlux<U> process(Processor<? super T, ? extends T>
-			processor, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
-		return process(() -> processor, selector);
-	}
-
-	/**
-	 * Prepare a
-	 * {@link ConnectableFlux} which subscribes this {@link Flux} sequence to a supplied {@link Processor}
-	 * when
-	 * {@link ConnectableFlux#connect()} is invoked manually or automatically via {@link ConnectableFlux#autoConnect} and {@link ConnectableFlux#refCount}.
-	 * The {@link Processor} will be itself subscribed by child {@link Subscriber}.
-	 *  Note that some {@link Processor} do not support multi-subscribe, multicast is non opinionated in fact and
-	 *  focuses on subscribe lifecycle.
-	 *
-	 * This will effectively turn any type of sequence into a hot sequence by sharing a single {@link Subscription}.
-	 * <p> The selector will be applied once per {@link Subscriber} and can be used to blackbox pre-processing.
-	 *
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/processp.png" alt="">
-	 *
-	 * @param processorSupplier the {@link Processor} {@link Supplier} to createWorker, subscribe to this {@link Flux} and
-	 * share.
-	 * @param selector a {@link Function} receiving a {@link Flux} derived from the supplied {@link Processor} and
-	 * returning the end {@link Publisher} subscribed by a unique {@link Subscriber}
-	 * @param <U> produced type from the given selector
-	 *
-	 * @return a new {@link ConnectableFlux} whose values are broadcasted to supported subscribers once connected via {@link Processor}
-	 *
-	 */
-	public final <U> ConnectableFlux<U> process(Supplier<? extends Processor<? super T, ? extends T>>
-			processorSupplier, Function<Flux<T>, ? extends Publisher<? extends U>> selector) {
-		return onAssembly(new ConnectableFluxProcess<>(this, processorSupplier,
-				selector));
-	}
-
-	/**
 	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
 	 * subscribers in a backpressure-aware manner. Prefetch will default to {@link QueueSupplier#SMALL_BUFFER_SIZE}.
 	 * This will effectively turn any type of sequence into a hot sequence.
@@ -4014,8 +3944,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
-			extends
-			R>> transform) {
+			extends R>> transform) {
 		return publish(transform, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
@@ -4235,7 +4164,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}. Will
-	 * retain up to {@link QueueSupplier#SMALL_BUFFER_SIZE} onNext signals. Completion and Error will also be
+	 * retain an unbounded amount of onNext signals. Completion and Error will also be
 	 * replayed.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
@@ -4244,7 +4173,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> replay() {
-		return replay(QueueSupplier.SMALL_BUFFER_SIZE);
+		return replay(Integer.MAX_VALUE);
 	}
 
 	/**
@@ -4263,7 +4192,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
-		return process(() -> ReplayProcessor.create(history));
+		return onAssembly(new ConnectableFluxReplay<>(this, history));
 	}
 
 	/**

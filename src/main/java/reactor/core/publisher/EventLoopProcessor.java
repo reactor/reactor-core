@@ -110,7 +110,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	/**
 	 * Create a new single producer RingBuffer using the default wait strategy  {@link
-	 * WaitStrategy#busySpin()}. <p>See {@code MultiProducer}.
+	 * WaitStrategy#busySpin()}. <p>See {@code MultiProducerRingBuffer}.
 	 *
 	 * @param <E> the element type
 	 * @param bufferSize number of elements to create within the ring buffer.

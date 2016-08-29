@@ -2208,6 +2208,74 @@ class FluxSpec extends Specification {
 	tail.await()
 		.assertValueCount(6)
 		.assertComplete()
+
+	when:
+	'we try to consume the tail to check if 6 has been buffered'
+	source.onNext(6)
+	tail.request(1)
+	source.onComplete()
+
+	then:
+	'last value known is 5'
+	tail.await()
+		.assertValueCount(6)
+		.assertComplete()
+  }
+
+  def 'onBackpressureBuffer will error with bounded and events non requested'() {
+	given:
+	'a source and a timeout'
+	def source = DirectProcessor.<Integer> create()
+
+	def tail = TestSubscriber.create(0)
+
+	def end = 0
+	source
+			.log("block")
+			.onBackpressureBuffer(8)
+			.log("after")
+			.subscribe(tail)
+
+
+	when:
+	'the first values are accepted on the source, but we only have 5 requested elements out of 6'
+	9.times { source.onNext(it) }
+
+	then:
+	'last value known is 5'
+	tail.assertError().assertValueCount(0)
+
+  }
+  def 'onBackpressureBuffer will error with bounded, callback, events non requested'() {
+	given:
+	'a source and a timeout'
+	def source = DirectProcessor.<Integer> create()
+
+	def tail = TestSubscriber.create(0)
+
+	def end = 0
+	source
+			.log("block")
+			.onBackpressureBuffer(8, { end = it })
+			.log("after")
+			.subscribe(tail)
+
+
+	when:
+	'the first values are accepted on the source, but we only have 5 requested elements out of 6'
+	9.times { source.onNext(it) }
+
+	then:
+	'last value known is 5'
+	end == 8
+
+	when: ' request'
+	tail.request(Long.MAX_VALUE)
+
+	then:
+	'last value known is 5'
+	tail.assertError().assertValues(0, 1, 2, 3, 4, 5, 6, 7)
+
   }
 
 	def 'A Flux can be throttled'() {

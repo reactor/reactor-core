@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
@@ -40,7 +41,7 @@ import reactor.core.Receiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class ConnectableFluxRefCount<T> extends Flux<T>
-		implements Receiver, Loopback {
+		implements Receiver, Loopback, Fuseable {
 
 	final ConnectableFlux<? extends T> source;
 	
@@ -174,13 +175,17 @@ final class ConnectableFluxRefCount<T> extends Flux<T>
 			return parent;
 		}
 
-		static final class InnerSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer, Loopback {
+		static final class InnerSubscriber<T> implements Subscriber<T>,
+		                                                 QueueSubscription<T>,
+		                                                 Receiver,
+		                                                 Producer, Loopback {
 
 			final Subscriber<? super T> actual;
 			
 			final State<T> parent;
 			
 			Subscription s;
+			QueueSubscription<T> qs;
 			
 			public InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
 				this.actual = actual;
@@ -241,6 +246,36 @@ final class ConnectableFluxRefCount<T> extends Flux<T>
 			@Override
 			public Object connectedOutput() {
 				return s;
+			}
+
+			@Override
+			@SuppressWarnings("unchecked")
+			public int requestFusion(int requestedMode) {
+				if(s instanceof QueueSubscription){
+					qs = (QueueSubscription<T>)s;
+					return qs.requestFusion(requestedMode);
+				}
+				return Fuseable.NONE;
+			}
+
+			@Override
+			public T poll() {
+				return qs.poll();
+			}
+
+			@Override
+			public int size() {
+				return qs.size();
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return qs.isEmpty();
+			}
+
+			@Override
+			public void clear() {
+				qs.clear();
 			}
 		}
 	}
