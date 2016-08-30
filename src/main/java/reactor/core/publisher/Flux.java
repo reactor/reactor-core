@@ -3963,7 +3963,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> publish(int prefetch) {
-		return onAssembly(new ConnectableFluxPublish<>(this, prefetch, QueueSupplier
+		return onAssembly(new FluxPublish<>(this, prefetch, QueueSupplier
 				.get(prefetch)));
 	}
 
@@ -3995,7 +3995,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
 			extends R>> transform, int prefetch) {
-		return onAssembly(new FluxPublish<>(this, transform, prefetch, QueueSupplier
+		return onAssembly(new FluxPublishMulticast<>(this, transform, prefetch, QueueSupplier
 				.get(prefetch)));
 	}
 
@@ -4226,7 +4226,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
-		return onAssembly(new ConnectableFluxReplay<>(this, history, 0L, null));
+		return onAssembly(new FluxReplay<>(this, history, 0L, null));
 	}
 
 	/**
@@ -4303,7 +4303,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			long ttl,
 			TimedScheduler timer) {
 		Objects.requireNonNull(timer, "timer");
-		return onAssembly(new ConnectableFluxReplay<>(this, history, ttl, timer));
+		return onAssembly(new FluxReplay<>(this, history, ttl, timer));
 	}
 
 	/**

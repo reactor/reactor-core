@@ -1966,7 +1966,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Mono<R> publish(Function<? super Mono<T>, ? extends Mono<? extends
 			R>> transform) {
-		return MonoSource.wrap(new FluxPublish<>(this, f -> transform.apply(from(f)),
+		return MonoSource.wrap(new FluxPublishMulticast<>(this, f -> transform.apply(from(f)),
 				Integer
 				.MAX_VALUE,
 				QueueSupplier

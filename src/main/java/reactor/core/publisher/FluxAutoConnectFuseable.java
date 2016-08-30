@@ -34,7 +34,7 @@ import reactor.core.Receiver;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class ConnectableFluxAutoConnectFuseable<T> extends Flux<T>
+final class FluxAutoConnectFuseable<T> extends Flux<T>
 		implements Receiver, Fuseable {
 
 	final ConnectableFlux<? extends T> source;
@@ -43,11 +43,11 @@ final class ConnectableFluxAutoConnectFuseable<T> extends Flux<T>
 
 	volatile int remaining;
 	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<ConnectableFluxAutoConnectFuseable> REMAINING =
-			AtomicIntegerFieldUpdater.newUpdater(ConnectableFluxAutoConnectFuseable.class, "remaining");
+	static final AtomicIntegerFieldUpdater<FluxAutoConnectFuseable> REMAINING =
+			AtomicIntegerFieldUpdater.newUpdater(FluxAutoConnectFuseable.class, "remaining");
 
 
-	public ConnectableFluxAutoConnectFuseable(ConnectableFlux<? extends T> source,
+	public FluxAutoConnectFuseable(ConnectableFlux<? extends T> source,
 			int n, Consumer<? super Cancellation> cancelSupport) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);

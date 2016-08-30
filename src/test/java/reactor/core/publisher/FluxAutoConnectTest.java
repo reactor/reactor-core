@@ -22,7 +22,7 @@ import org.junit.Test;
 import reactor.core.Cancellation;
 import reactor.test.TestSubscriber;
 
-public class ConnectableFluxAutoConnectTest {
+public class FluxAutoConnectTest {
 
 	/*@Test
 	public void constructors() {

@@ -13,123 +13,133 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
 import reactor.core.MultiProducer;
+import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
+import reactor.core.scheduler.TimedScheduler;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
- * A connectable publisher which shares an underlying source and dispatches source values to subscribers in a backpressure-aware
- * manner. 
- * @param <T> the value type
+ * @param <T>
  */
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
-		implements Receiver, Loopback {
-	/** The source observable. */
-	final Publisher<? extends T> source;
-	
-	/** The size of the prefetch buffer. */
-	final int prefetch;
+final class FluxReplay<T> extends ConnectableFlux<T>
+		implements Producer, Fuseable {
 
-	final Supplier<? extends Queue<T>> queueSupplier;
-	
+	final Publisher<T>   source;
+	final int            history;
+	final long           ttl;
+	final TimedScheduler scheduler;
+
 	volatile State<T> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<ConnectableFluxPublish, State> CONNECTION =
-			AtomicReferenceFieldUpdater.newUpdater(ConnectableFluxPublish.class, State.class, "connection");
-	
-	public ConnectableFluxPublish(Publisher<? extends T> source, int prefetch, Supplier<? extends Queue<T>> queueSupplier) {
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("bufferSize > 0 required but it was " + prefetch);
-		}
+	static final AtomicReferenceFieldUpdater<FluxReplay, State> CONNECTION =
+			AtomicReferenceFieldUpdater.newUpdater(FluxReplay.class,
+					State.class,
+					"connection");
+
+	FluxReplay(Publisher<T> source,
+			int history,
+			long ttl,
+			TimedScheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
-		this.prefetch = prefetch;
-		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
+		this.history = history;
+		if (scheduler != null && ttl < 0) {
+			throw new IllegalArgumentException("TTL cannot be negative : " + ttl);
+		}
+		this.ttl = ttl;
+		this.scheduler = scheduler;
+	}
+
+	@Override
+	public Object downstream() {
+		return connection;
+	}
+
+	State<T> newState() {
+		if (scheduler != null) {
+			return new State<>(new ReplayProcessor.SizeAndTimeBoundReplayBuffer<>(history,
+					ttl,
+					scheduler),
+					this);
+		}
+		if (history != Integer.MAX_VALUE) {
+			return new State<>(new ReplayProcessor.SizeBoundReplayBuffer<>(history),
+					this);
+		}
+		return new State<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
+					this);
 	}
 
 	@Override
 	public void connect(Consumer<? super Cancellation> cancelSupport) {
 		boolean doConnect;
 		State<T> s;
-		for (;;) {
+		for (; ; ) {
 			s = connection;
 			if (s == null || s.isTerminated()) {
-				State<T> u = new State<>(prefetch, this);
-				
+				State<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, s, u)) {
 					continue;
 				}
-				
+
 				s = u;
 			}
 
 			doConnect = s.tryConnect();
 			break;
 		}
-		
+
 		cancelSupport.accept(s);
 		if (doConnect) {
 			source.subscribe(s);
 		}
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		InnerSubscription<T> inner = new InnerSubscription<>(s);
 		s.onSubscribe(inner);
-		for (;;) {
+		for (; ; ) {
 			if (inner.isCancelled()) {
 				break;
 			}
-			
+
 			State<T> c = connection;
 			if (c == null || c.isTerminated()) {
-				State<T> u = new State<>(prefetch, this);
+				State<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
 				}
-				
+
 				c = u;
 			}
-			
+
 			if (c.trySubscribe(inner)) {
 				break;
 			}
 		}
-	}
-
-	@Override
-	public long getPrefetch() {
-		return prefetch;
-	}
-
-
-	@Override
-	public Object connectedOutput() {
-		return connection;
 	}
 
 	@Override
@@ -138,18 +148,18 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	static final class State<T>
-			implements Subscriber<T>, Receiver, MultiProducer, Trackable,
-			           Cancellation {
+			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Cancellation {
 
-		final int prefetch;
-		
-		final ConnectableFluxPublish<T> parent;
+		final FluxReplay<T>                   parent;
+		final ReplayProcessor.ReplayBuffer<T> buffer;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<State, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(State.class, Subscription.class, "s");
-		
+				AtomicReferenceFieldUpdater.newUpdater(State.class,
+						Subscription.class,
+						"s");
+
 		volatile InnerSubscription<T>[] subscribers;
 
 		volatile int wip;
@@ -163,109 +173,75 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				AtomicIntegerFieldUpdater.newUpdater(State.class, "connected");
 
 		@SuppressWarnings("rawtypes")
-		static final InnerSubscription[] EMPTY = new InnerSubscription[0];
+		static final InnerSubscription[] EMPTY      = new InnerSubscription[0];
 		@SuppressWarnings("rawtypes")
 		static final InnerSubscription[] TERMINATED = new InnerSubscription[0];
-		
-		volatile Queue<T> queue;
-		
-		int sourceMode;
-		
-		volatile boolean done;
-		volatile Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(State.class, Throwable.class, "error");
-		
+
 		volatile boolean cancelled;
-		
+
 		@SuppressWarnings("unchecked")
-		public State(int prefetch, ConnectableFluxPublish<T> parent) {
-			this.prefetch = prefetch;
+		public State(ReplayProcessor.ReplayBuffer<T> buffer,
+				FluxReplay<T> parent) {
+			this.buffer = buffer;
 			this.parent = parent;
 			this.subscribers = EMPTY;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
-				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked")
-					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
-					
-					int m = f.requestFusion(Fuseable.ANY);
-					if (m == Fuseable.SYNC) {
-						sourceMode = m;
-						queue = f;
-						done = true;
-						drain();
-						return;
-					} else
-					if (m == Fuseable.ASYNC) {
-						sourceMode = m;
-						queue = f;
-						s.request(prefetch);
-						return;
-					}
-				}
-				
-				try {
-					queue = parent.queueSupplier.get(); 
-				} catch (Throwable ex) {
-					error = Operators.onOperatorError(s, ex);
-					done = true;
-					drain();
-					return;
-				}
-				
-				s.request(prefetch);
+			if(buffer.isDone()){
+				s.cancel();
+			}
+			else if (Operators.setOnce(S, this, s)) {
+				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				if(t != null) {
-					Operators.onNextDropped(t);
+			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			if (b.isDone()) {
+				Operators.onNextDropped(t);
+			}
+			else {
+				b.add(t);
+				for (InnerSubscription<T> rs : subscribers) {
+					b.replay(rs);
 				}
-				return;
 			}
-			if (sourceMode == Fuseable.ASYNC) {
-				drain();
-				return;
-			}
-			
-			if (!queue.offer(t)) {
-				Throwable ex = new IllegalStateException("Queue full?!");
-				if (!Exceptions.addThrowable(ERROR, this, ex)) {
-					Operators.onErrorDropped(ex);
-					return;
-				}
-				done = true;
-			}
-			drain();
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
-			if (done) {
+			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			if (b.isDone()) {
 				Operators.onErrorDropped(t);
-				return;
 			}
-			if (Exceptions.addThrowable(ERROR, this, t)) {
-				done = true;
-				drain();
-			} else {
-				Operators.onErrorDropped(t);
+			else {
+				b.onError(t);
+
+				InnerSubscription<T>[] a = subscribers;
+
+				for (InnerSubscription<T> rs : a) {
+					b.replay(rs);
+				}
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
-			done = true;
-			drain();
+			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			if (!b.isDone()) {
+				b.onComplete();
+
+				InnerSubscription<T>[] a = subscribers;
+
+				for (ReplayProcessor.ReplaySubscription<T> rs : a) {
+					b.replay(rs);
+				}
+			}
 		}
-		
+
 		@Override
 		public void dispose() {
 			if (cancelled) {
@@ -279,15 +255,15 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				disconnectAction();
 			}
 		}
-		
+
 		void disconnectAction() {
-			queue.clear();
 			CancellationException ex = new CancellationException("Disconnected");
+			buffer.onError(ex);
 			for (InnerSubscription<T> inner : terminate()) {
 				inner.actual.onError(ex);
 			}
 		}
-		
+
 		boolean add(InnerSubscription<T> inner) {
 			if (subscribers == TERMINATED) {
 				return false;
@@ -298,17 +274,17 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 					return false;
 				}
 				int n = a.length;
-				
-				@SuppressWarnings("unchecked")
-				InnerSubscription<T>[] b = new InnerSubscription[n + 1];
+
+				@SuppressWarnings("unchecked") InnerSubscription<T>[] b =
+						new InnerSubscription[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = inner;
-				
+
 				subscribers = b;
 				return true;
 			}
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		void remove(InnerSubscription<T> inner) {
 			InnerSubscription<T>[] a = subscribers;
@@ -320,7 +296,7 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				if (a == TERMINATED || a == EMPTY) {
 					return;
 				}
-				
+
 				int j = -1;
 				int n = a.length;
 				for (int i = 0; i < n; i++) {
@@ -332,16 +308,17 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				if (j < 0) {
 					return;
 				}
-				
+
 				InnerSubscription<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
-				} else {
+				}
+				else {
 					b = new InnerSubscription[n - 1];
 					System.arraycopy(a, 0, b, 0, j);
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
-				
+
 				subscribers = b;
 			}
 		}
@@ -365,152 +342,34 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		public boolean isTerminated() {
 			return subscribers == TERMINATED;
 		}
-		
+
 		boolean tryConnect() {
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
-		
+
 		boolean trySubscribe(InnerSubscription<T> inner) {
 			if (add(inner)) {
 				if (inner.isCancelled()) {
 					remove(inner);
-				} else {
+				}
+				else {
 					inner.parent = this;
-					drain();
+					buffer.replay(inner);
 				}
 				return true;
-			}
-			return false;
-		}
-		
-		void replenish(long n) {
-			if (sourceMode != Fuseable.SYNC) {
-				s.request(n);
-			}
-		}
-		
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
-			
-			Queue<T> q = queue;
-			int missed = 1;
-			
-			for (;;) {
-
-				if (q != null) {
-					InnerSubscription<T>[] a = subscribers;
-					long r = Long.MAX_VALUE;
-					
-					for (InnerSubscription<T> inner : a) {
-						r = Math.min(r, inner.requested);
-					}
-	
-					if (a.length != 0 && r != 0) {
-						long e = 0L;
-						
-						while (e != r) {
-							boolean d = done;
-							T v;
-							
-							try {
-								v = q.poll();
-							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, ex));
-								d = true;
-								v = null;
-							}
-							
-							boolean empty = v == null;
-							
-							if (checkTerminated(d, empty)) {
-								return;
-							}
-							
-							if (empty) {
-								break;
-							}
-							
-							for (InnerSubscription<T> inner : a) {
-								inner.actual.onNext(v);
-							}
-							
-							e++;
-						}
-						
-						if (e == r) {
-							boolean d = done;
-							boolean empty;
-							try {
-								empty = q.isEmpty();
-							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, ex));
-								d = true;
-								empty = true;
-							}
-							if (checkTerminated(d, empty)) {
-								return;
-							}
-						}
-						
-						if (e != 0) {
-							replenish(e);
-							if (r != Long.MAX_VALUE) {
-								for (InnerSubscription<T> inner : a) {
-									inner.produced(e);
-								}
-							}
-						}
-					}
-				}
-				
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					break;
-				}
-				
-				if (q == null) {
-					q = queue;
-				}
-			}
-		}
-		
-		boolean checkTerminated(boolean d, boolean empty) {
-			if (cancelled) {
-				disconnectAction();
-				return true;
-			}
-			if (d) {
-				Throwable e = error;
-				if (e != null && e != Exceptions.TERMINATED) {
-					e = Exceptions.terminate(ERROR, this);
-					queue.clear();
-					for (InnerSubscription<T> inner : terminate()) {
-						inner.actual.onError(e);
-					}
-					return true;
-				} else 
-				if (empty) {
-					for (InnerSubscription<T> inner : terminate()) {
-						inner.actual.onComplete();
-					}
-					return true;
-				}
 			}
 			return false;
 		}
 
 		@Override
 		public long getCapacity() {
-			return prefetch;
+			return buffer instanceof ReplayProcessor.UnboundedReplayBuffer ?
+					Long.MAX_VALUE : buffer.capacity();
 		}
 
 		@Override
 		public long getPending() {
-			return queue.size();
+			return buffer.size();
 		}
 
 		@Override
@@ -520,17 +379,18 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 
 		@Override
 		public boolean isStarted() {
-			return !cancelled && !done && s != null;
+			return !cancelled && !buffer.isDone() && s != null;
 		}
 
 		@Override
 		public Throwable getError() {
-			return error;
+			return buffer.getError();
 		}
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(subscribers).iterator();
+			return Arrays.asList(subscribers)
+			             .iterator();
 		}
 
 		@Override
@@ -545,12 +405,26 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 	}
 
 	static final class InnerSubscription<T>
-			implements Subscription, Receiver, Trackable {
-		
+			implements ReplayProcessor.ReplaySubscription<T>, Receiver {
+
 		final Subscriber<? super T> actual;
-		
+
 		State<T> parent;
-		
+
+		int index;
+
+		int tailIndex;
+
+		Object node;
+
+		int fusionMode;
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<InnerSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class, "wip");
+
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<InnerSubscription> REQUESTED =
@@ -559,23 +433,26 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<InnerSubscription> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class, "cancelled");
-		
+				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class,
+						"cancelled");
+
 		public InnerSubscription(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				if (fusionMode() == NONE) {
+					Operators.getAndAddCap(REQUESTED, this, n);
+				}
 				State<T> p = parent;
 				if (p != null) {
-					p.drain();
+					p.buffer.replay(this);
 				}
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
@@ -583,12 +460,25 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 				if (p != null) {
 					p.remove(this);
 				}
+				if (enter()) {
+					node = null;
+				}
 			}
 		}
 
 		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
 		public boolean isCancelled() {
-			return cancelled != 0;
+			return cancelled == 1;
+		}
+
+		@Override
+		public Subscriber<? super T> downstream() {
+			return actual;
 		}
 
 		@Override
@@ -597,11 +487,98 @@ final class ConnectableFluxPublish<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & ASYNC) != 0) {
+				fusionMode = ASYNC;
+				return ASYNC;
+			}
+			return NONE;
 		}
 
-		void produced(long n) {
+		@Override
+		public T poll() {
+			State<T> p = parent;
+			if(p != null){
+				return p.buffer.poll(this);
+			}
+			return null;
+		}
+
+		@Override
+		public void clear() {
+			State<T> p = parent;
+			if(p != null) {
+				p.buffer.clear(this);
+			}
+		}
+
+		@Override
+		public boolean isEmpty() {
+			State<T> p = parent;
+			if(p != null) {
+				p.buffer.isEmpty(this);
+			}
+			return true;
+		}
+
+		@Override
+		public int size() {
+			State<T> p = parent;
+			if(p != null) {
+				p.buffer.size(this);
+			}
+			return 0;
+		}
+
+		@Override
+		public void node(Object node) {
+			this.node = node;
+		}
+
+		@Override
+		public int fusionMode() {
+			return fusionMode;
+		}
+
+
+
+		@Override
+		public Object node() {
+			return node;
+		}
+
+		@Override
+		public int index() {
+			return index;
+		}
+
+		@Override
+		public void index(int index) {
+			this.index = index;
+		}
+
+		@Override
+		public int tailIndex() {
+			return tailIndex;
+		}
+
+		@Override
+		public void tailIndex(int tailIndex) {
+			this.tailIndex = tailIndex;
+		}
+
+		@Override
+		public boolean enter() {
+			return WIP.getAndIncrement(this) == 0;
+		}
+
+		@Override
+		public int leave(int missed) {
+			return WIP.addAndGet(this, -missed);
+		}
+
+		@Override
+		public void produced(long n) {
 			REQUESTED.addAndGet(this, -n);
 		}
 	}
