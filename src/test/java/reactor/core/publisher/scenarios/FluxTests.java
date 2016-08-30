@@ -788,6 +788,21 @@ public class FluxTests extends AbstractReactorTest {
 
 		assertTrue("Latch is " + res, res == 2_000_000);
 	}
+	@Test
+	public void cancelOn() throws Exception {
+		CountDownLatch countDownLatch = new CountDownLatch(1);
+		AtomicReference<Thread> thread = new AtomicReference<>();
+		Cancellation res = Flux.never()
+		                  .doOnCancel(() -> {
+		                  	thread.set(Thread.currentThread());
+			                  countDownLatch.countDown();
+		                  })
+		                  .cancelOn(asyncGroup)
+				.subscribe();
+		res.dispose();
+		assertTrue(countDownLatch.await(3, TimeUnit.SECONDS));
+		assertTrue(thread.get() != Thread.currentThread());
+	}
 
 	@Test
 	public void zipOfNull() {

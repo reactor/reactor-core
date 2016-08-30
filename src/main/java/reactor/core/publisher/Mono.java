@@ -1088,6 +1088,18 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoProcessor<>(this));
 	}
 
+	/**
+	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
+	 * specified
+	 * {@link Scheduler}.
+	 *
+	 * @param scheduler the {@link Scheduler} to signal cancel  on
+	 *
+	 * @return a scheduled cancel {@link Mono}
+	 */
+	public final Mono<T> cancelOn(Scheduler scheduler) {
+		return onAssembly(new MonoCancelOn<>(this, scheduler));
+	}
 
 	/**
 	 * Defer the given transformation to this {@link Mono} in order to generate a

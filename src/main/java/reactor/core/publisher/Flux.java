@@ -2122,6 +2122,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Prepare this {@link Flux} so that subscribers will cancel from it on a
+	 * specified
+	 * {@link Scheduler}.
+	 *
+	 * @param scheduler the {@link Scheduler} to signal cancel  on
+	 *
+	 * @return a scheduled cancel {@link Flux}
+	 */
+	public final Flux<T> cancelOn(Scheduler scheduler) {
+		return onAssembly(new FluxCancelOn<>(this, scheduler));
+	}
+
+	/**
 	 * Collect the {@link Flux} sequence with the given collector and supplied container on subscribe.
 	 * The collected result will be emitted when this sequence completes.
 	 *
