@@ -337,7 +337,7 @@ public abstract class RxJava2Adapter {
         }
         
         static final class FluxAsFlowableSubscriber<T> implements Subscriber<T>, 
-        io.reactivex.internal.fuseable.QueueSubscription<T>, Fuseable.QueueSubscription<T> {
+        io.reactivex.internal.fuseable.QueueSubscription<T> {
             
             final Subscriber<? super T> actual;
 
@@ -393,11 +393,6 @@ public abstract class RxJava2Adapter {
             }
 
             @Override
-            public int size() {
-                return 0; // not supported
-            }
-
-            @Override
             public boolean isEmpty() {
                 return qs.isEmpty();
             }
@@ -412,17 +407,22 @@ public abstract class RxJava2Adapter {
                 if (qs != null) {
                     return qs.requestFusion(requestedMode);
                 }
-                return NONE;
+                return Fuseable.NONE;
+            }
+            
+            @Override
+            public boolean offer(T value) {
+                throw new UnsupportedOperationException("Should not be called");
             }
             
             @Override
             public boolean offer(T v1, T v2) {
-                throw new UnsupportedOperationException("Should not be called!");
+                throw new UnsupportedOperationException("Should not be called");
             }
         }
         
         static final class FluxAsFlowableConditionalSubscriber<T> implements 
-        Fuseable.ConditionalSubscriber<T>, Fuseable.QueueSubscription<T>, io.reactivex.internal.fuseable.QueueSubscription<T> {
+        Fuseable.ConditionalSubscriber<T>, io.reactivex.internal.fuseable.QueueSubscription<T> {
             
             final io.reactivex.internal.fuseable.ConditionalSubscriber<? super T> actual;
 
@@ -487,11 +487,6 @@ public abstract class RxJava2Adapter {
             }
 
             @Override
-            public int size() {
-                return 0; // not supported
-            }
-
-            @Override
             public boolean isEmpty() {
                 return qs.isEmpty();
             }
@@ -507,6 +502,11 @@ public abstract class RxJava2Adapter {
                     return qs.requestFusion(requestedMode);
                 }
                 return NONE;
+            }
+
+            @Override
+            public boolean offer(T v1) {
+                throw new UnsupportedOperationException("Should not be called!");
             }
 
             @Override
