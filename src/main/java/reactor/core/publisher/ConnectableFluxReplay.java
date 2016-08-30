@@ -29,12 +29,12 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -47,8 +47,10 @@ import reactor.util.concurrent.QueueSupplier;
 final class ConnectableFluxReplay<T> extends ConnectableFlux<T>
 		implements Producer, Fuseable {
 
-	final Publisher<T> source;
-	final int          history;
+	final Publisher<T>   source;
+	final int            history;
+	final long           ttl;
+	final TimedScheduler scheduler;
 
 	volatile State<T> connection;
 	@SuppressWarnings("rawtypes")
@@ -57,9 +59,17 @@ final class ConnectableFluxReplay<T> extends ConnectableFlux<T>
 					State.class,
 					"connection");
 
-	ConnectableFluxReplay(Publisher<T> source, int history) {
+	ConnectableFluxReplay(Publisher<T> source,
+			int history,
+			long ttl,
+			TimedScheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
+		if (scheduler != null && ttl < 0) {
+			throw new IllegalArgumentException("TTL cannot be negative : " + ttl);
+		}
+		this.ttl = ttl;
+		this.scheduler = scheduler;
 	}
 
 	@Override
@@ -68,14 +78,18 @@ final class ConnectableFluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	State<T> newState() {
+		if (scheduler != null) {
+			return new State<>(new ReplayProcessor.SizeAndTimeBoundReplayBuffer<>(history,
+					ttl,
+					scheduler),
+					this);
+		}
 		if (history != Integer.MAX_VALUE) {
 			return new State<>(new ReplayProcessor.SizeBoundReplayBuffer<>(history),
 					this);
 		}
-		else {
-			return new State<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
+		return new State<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
 					this);
-		}
 	}
 
 	@Override

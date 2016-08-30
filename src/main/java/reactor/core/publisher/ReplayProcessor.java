@@ -279,7 +279,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
 		}
 		return new ReplayProcessor<>(new SizeAndTimeBoundReplayBuffer<>(size,
-				maxAge, TimeUnit.MILLISECONDS, scheduler));
+				maxAge, scheduler));
 	}
 
 	final ReplayBuffer<T> buffer;
@@ -1033,7 +1033,6 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		final int            limit;
 		final long           maxAge;
-		final TimeUnit       unit;
 		final TimedScheduler scheduler;
 		int size;
 
@@ -1046,11 +1045,9 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		public SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
-				TimeUnit unit,
 				TimedScheduler scheduler) {
 			this.limit = limit;
 			this.maxAge = maxAge;
-			this.unit = unit;
 			this.scheduler = scheduler;
 			TimedNode<T> h = new TimedNode<>(null, 0L);
 			this.tail = h;
@@ -1068,7 +1065,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 					node = head;
 					if (!done) {
 						// skip old entries
-						long limit = scheduler.now(unit) - maxAge;
+						long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 						TimedNode<T> next = node;
 						while (next != null) {
 							long ts = next.time;
@@ -1210,7 +1207,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@SuppressWarnings("unchecked")
 		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
-			long now = scheduler.now(unit) - maxAge;
+			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 
 			TimedNode<T> h = (TimedNode<T>)rs.node();
 			if(h == null){
@@ -1230,7 +1227,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
-			long now = scheduler.now(unit) - maxAge;
+			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 			while ((next = node.get()) != null) {
 				if (next.time > now) {
 					node = next;
@@ -1293,7 +1290,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@Override
 		public void add(T value) {
-			TimedNode<T> n = new TimedNode<>(value, scheduler.now(unit));
+			TimedNode<T> n = new TimedNode<>(value, scheduler.now(TimeUnit.MILLISECONDS));
 			tail.set(n);
 			tail = n;
 			int s = size;
@@ -1303,7 +1300,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			else {
 				size = s + 1;
 			}
-			long limit = scheduler.now(unit) - maxAge;
+			long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 
 			TimedNode<T> h = head;
 			TimedNode<T> next;

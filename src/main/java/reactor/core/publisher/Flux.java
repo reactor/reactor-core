@@ -44,7 +44,6 @@ import java.util.logging.Level;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -2069,6 +2068,41 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> cache(int history) {
 		return replay(history).autoConnect();
+	}
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further
+	 * {@link Subscriber}. Will retain an unbounded history with per-item expiry timeout
+	 * Completion and Error will also be replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png"
+	 * alt="">
+	 *
+	 * @param ttl Time-to-live for each cached item.
+	 *
+	 * @return a replaying {@link Flux}
+	 */
+	public final Flux<T> cache(Duration ttl) {
+		return replay(Integer.MAX_VALUE, ttl).autoConnect();
+	}
+
+	/**
+	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further
+	 * {@link Subscriber}. Will retain up to the given history size  with per-item expiry
+	 * timeout.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/cache.png"
+	 * alt="">
+	 *
+	 * @param history number of events retained in history excluding complete and error
+	 * @param ttl Time-to-live for each cached item.
+	 *
+	 * @return a replaying {@link Flux}
+	 */
+	public final Flux<T> cache(int history, Duration ttl) {
+		return replay(history, ttl).autoConnect();
 	}
 
 	/**
@@ -4192,7 +4226,84 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final ConnectableFlux<T> replay(int history) {
-		return onAssembly(new ConnectableFluxReplay<>(this, history));
+		return onAssembly(new ConnectableFluxReplay<>(this, history, 0L, null));
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain each onNext up to the given per-item
+	 * expiry
+	 * timeout. Completion and Error will also be replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param ttl Per-item timeout duration
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replay(Duration ttl) {
+		return replay(Integer.MAX_VALUE, ttl);
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain up to the given history size onNext
+	 * signals and given a per-item ttl. Completion and Error will also be
+	 * replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param history number of events retained in history excluding complete and error
+	 * @param ttl Per-item timeout duration
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replay(int history, Duration ttl) {
+		return replayMillis(history, ttl.toMillis(), Schedulers.timer());
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain up to the given history size onNext
+	 * signals. Completion and Error will also be replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param ttl Per-item timeout duration in milliseconds
+	 * @param timer {@link TimedScheduler} to read current time from
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replayMillis(long ttl, TimedScheduler timer) {
+		return replayMillis(Integer.MAX_VALUE, ttl, timer);
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain up to the given history size onNext
+	 * signals. Completion and Error will also be replayed.
+	 * <p>
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param history number of events retained in history excluding complete and error
+	 * @param ttl Per-item timeout duration in milliseconds
+	 * @param timer {@link TimedScheduler} to read current time from
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replayMillis(int history,
+			long ttl,
+			TimedScheduler timer) {
+		Objects.requireNonNull(timer, "timer");
+		return onAssembly(new ConnectableFluxReplay<>(this, history, ttl, timer));
 	}
 
 	/**
@@ -5734,7 +5845,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return windowMillis(timespan.toMillis(), timeshift.toMillis());
+		return windowMillis(timespan.toMillis(), timeshift.toMillis(), Schedulers.timer());
 	}
 
 	/**
@@ -5781,35 +5892,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Flux<T>> windowMillis(long timespan, TimedScheduler timer) {
 		return window(intervalMillis(timespan, timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elpased.
-	 *
-	 * <p>
-	 * When timeshift > timespan : dropping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskip.png" alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizeskipover.png" alt="">
-	 * <p>
-	 * When timeshift == timespan : exact windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
-	 *
-	 * @param timespan the maximum {@link Flux} window duration in milliseconds
-	 * @param timeshift the period of time in milliseconds to create new {@link Flux} windows
-	 *
-	 * @return a windowing
-	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
-	 *
-	 */
-	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift) {
-		return windowMillis(timespan, timeshift, Schedulers.timer());
 	}
 
 	/**

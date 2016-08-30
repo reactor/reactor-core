@@ -1780,6 +1780,48 @@ class FluxSpec extends Specification {
 			nexts[3] + nexts[4] + nexts[5] < 50
 	}
 
+	def 'Caching Stream from publisher with ttl'() {
+		given:
+			'a slow source flux'
+			def s = Flux.<Integer> create {
+				it.next 1
+				sleep 200
+				it.next 2
+				sleep 200
+				it.next 3
+				it.complete()
+			}.log('beforeCache')
+					.cache(Duration.ofMillis(300))
+					.log('afterCache')
+					.elapsed()
+
+		when:
+			'consume it twice'
+			def latch = new CountDownLatch(2)
+			def nexts = []
+			def errors = []
+
+			s.subscribe(
+					{ nexts << it },
+					{ errors << it },
+					{ latch.countDown() }
+			)
+
+			s.subscribe(
+					{ nexts << it },
+					{ errors << it },
+					{ latch.countDown() }
+			)
+
+		then:
+			'dispatching works'
+			latch.await(2, TimeUnit.SECONDS)
+			!errors
+			nexts.size() == 5
+			nexts[0].t1 + nexts[1].t1 + nexts[2].t1 >= 400
+			nexts[3].t1 + nexts[4].t1  < 50
+	}
+
 	def 'Creating Mono from CompletableFuture'() {
 		given:
 			'a source flux pre-completed'
