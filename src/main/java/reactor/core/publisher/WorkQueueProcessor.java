@@ -276,20 +276,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
 	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
-	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
-	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
-	 * A new Cached ThreadExecutorPool will be implicitely created.
-	 * @param <E> Type of processed signals
-	 * @return a fresh processor
-	 */
-	public static <E> WorkQueueProcessor<E> share() {
-		return share(WorkQueueProcessor.class.getSimpleName(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				null, true);
-	}
-
-	/**
-	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.

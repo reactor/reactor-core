@@ -1833,17 +1833,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
 	 * Flux}.
 	 * <p>
-	 * When timeshift > timestamp : dropping buffers
+	 * When timeshift > timespan : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timestamp : overlapping buffers
+	 * When timeshift < timespan : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timestamp : exact buffers
+	 * When timeshift == timespan : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
 	 * alt="">
@@ -1927,17 +1927,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
 	 * Flux}.
 	 * <p>
-	 * When timeshift > timestamp : dropping buffers
+	 * When timeshift > timespan : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timestamp : overlapping buffers
+	 * When timeshift < timespan : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timestamp : exact buffers
+	 * When timeshift == timespan : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
 	 * alt="">
@@ -1956,17 +1956,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
 	 * Flux}.
 	 * <p>
-	 * When timeshift > timestamp : dropping buffers
+	 * When timeshift > timespan : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timestamp : overlapping buffers
+	 * When timeshift < timespan : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timestamp : exact buffers
+	 * When timeshift == timespan : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespan.png"
 	 * alt="">
@@ -3074,6 +3074,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 		return onAssembly(new FluxFilter<>(this, p));
 	}
+
 
 	/**
 	 * Emit from the fastest first sequence between this publisher and the given publisher
@@ -4650,6 +4651,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Returns a new {@link Flux} that multicasts (shares) the original {@link Flux}.
+	 * As long as
+	 * there is at least one {@link Subscriber} this {@link Flux} will be subscribed and
+	 * emitting data.
+	 * When all subscribers have cancelled it will cancel the source
+	 * {@link Flux}.
+	 * <p>This is an alias for {@link #publish()}.{@link ConnectableFlux#refCount()}.
+	 *
+	 * @return a {@link Flux} that upon first subcribe causes the source {@link
+	 * Flux} to subscribe once only, late subscribers might therefore miss items.
+	 */
+	public final Flux<T> share() {
+		return publish().refCount();
+	}
+
+	/**
 	 * Expect and emit a single item from this {@link Flux} source or signal
 	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
 	 * {@link IndexOutOfBoundsException} for a multi-item source.
@@ -5611,7 +5628,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a timestamped {@link Flux}
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp() {
-		return map(Schedulers.timer());
+		return timestamp(Schedulers.timer());
 	}
 
 	/**
