@@ -187,11 +187,22 @@ public final class BlockingSink<E>
 			return Emission.CANCELLED;
 		}
 		try {
-			if (requested == 0L) {
+			long r, u;
+			for(;;){
+				r = requested;
+				if(r == 0L || r == Long.MAX_VALUE){
+					break;
+				}
+				u = Operators.subOrZero(r, 1);
+				if(REQUESTED.compareAndSet(this, r, u){
+					break;
+				}
+			}
+			if (r == 0L) {
 				return Emission.BACKPRESSURED;
 			}
 			actual.onNext(data);
-			Operators.produced(REQUESTED, this, 1L);
+			
 			return Emission.OK;
 		}
 		catch (Throwable t) {
