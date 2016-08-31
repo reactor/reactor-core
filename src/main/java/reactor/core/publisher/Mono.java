@@ -2750,6 +2750,11 @@ public abstract class Mono<T> implements Publisher<T> {
 		return (Mono<T>)hook.apply(source);
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
+
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> doOnSignal(Publisher<T> source,
 			Consumer<? super Subscription> onSubscribe,

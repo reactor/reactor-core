@@ -62,7 +62,8 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 	@Override
 	public String toString() {
 		return "{" +
-				" operator : \"" + super.toString() + "\" " +
+				" operator : \"" + getClass().getSimpleName().replaceAll("Flux","") + "\"" +
+				" " +
 				'}';
 	}
 

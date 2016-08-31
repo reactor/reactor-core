@@ -6177,6 +6177,11 @@ public abstract class Flux<T> implements Publisher<T> {
 		return (ConnectableFlux<T>)hook.apply(source);
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
+
 	@SuppressWarnings("unchecked")
 	static <T> Flux<T> doOnSignal(Publisher<T> source,
 			Consumer<? super Subscription> onSubscribe,

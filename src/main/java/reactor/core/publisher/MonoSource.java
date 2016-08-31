@@ -69,7 +69,8 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 	@Override
 	public String toString() {
 		return "{" +
-				" operator : \"" + super.toString() + "\" " +
+				" operator : \"" + getClass().getSimpleName().replaceAll("Mono","") +
+				"\" " +
 				'}';
 	}
 

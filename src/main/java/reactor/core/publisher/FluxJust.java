@@ -51,7 +51,7 @@ import reactor.core.Trackable;
  * @author Stephane Maldini
  */
 final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Fuseable,
-		Loopback {
+		Receiver {
 
 	final T value;
 
@@ -75,7 +75,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	@Override
-	public Object connectedOutput() {
+	public Object upstream() {
 		return value;
 	}
 

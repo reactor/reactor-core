@@ -147,9 +147,9 @@ public class HooksTest {
 		simpleFlux();
 
 		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"Just: 1", "{ operator : \"MapFuseable\" }: 2",
+				new String[]{"FluxJust: 1", "{ operator : \"MapFuseable\" }: 2",
 						"{ operator : \"PeekFuseable\" }! false",
-						"{ operator : \"CollectList\" }! true", "Just: [2]",
+						"{ operator : \"CollectList\" }! true", "MonoJust: [2]",
 						"{ operator : \"Otherwise\" }: [2]"});
 
 		q.clear();
@@ -164,9 +164,9 @@ public class HooksTest {
 		simpleFlux();
 
 		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"Just: 1", "{ operator : \"MapFuseable\" }: 2",
+				new String[]{"FluxJust: 1", "{ operator : \"MapFuseable\" }: 2",
 						"{ operator : \"PeekFuseable\" }! false",
-						"{ operator : \"CollectList\" }! false", "Just: [2]",
+						"{ operator : \"CollectList\" }! false", "MonoJust: [2]",
 						"{ operator : \"Otherwise\" }: [2]"});
 
 		q.clear();
