@@ -194,7 +194,7 @@ public final class BlockingSink<E>
 					break;
 				}
 				u = Operators.subOrZero(r, 1);
-				if(REQUESTED.compareAndSet(this, r, u){
+				if(REQUESTED.compareAndSet(this, r, u)){
 					break;
 				}
 			}
