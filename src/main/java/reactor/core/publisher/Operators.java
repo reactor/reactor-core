@@ -239,9 +239,9 @@ public abstract class Operators {
 	 * @param updater  current field updater
 	 * @param instance current instance to update
 	 * @param toSub    delta to sub
-	 * @return value before subscription or zero
+	 * @return value after subscription or zero
 	 */
-	public static <T> long getAndSub(AtomicLongFieldUpdater<T> updater, T instance, long toSub) {
+	public static <T> long produced(AtomicLongFieldUpdater<T> updater, T instance, long toSub) {
 		long r, u;
 		do {
 			r = updater.get(instance);
@@ -251,7 +251,7 @@ public abstract class Operators {
 			u = subOrZero(r, toSub);
 		} while (!updater.compareAndSet(instance, r, u));
 
-		return r;
+		return u;
 	}
 
 	/**

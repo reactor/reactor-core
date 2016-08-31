@@ -187,10 +187,11 @@ public final class BlockingSink<E>
 			return Emission.CANCELLED;
 		}
 		try {
-			if (Operators.getAndSub(REQUESTED, this, 1L) == 0L) {
+			if (requested == 0L) {
 				return Emission.BACKPRESSURED;
 			}
 			actual.onNext(data);
+			Operators.produced(REQUESTED, this, 1L);
 			return Emission.OK;
 		}
 		catch (Throwable t) {

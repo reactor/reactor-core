@@ -405,7 +405,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 			if (requested != 0) {
 				actual.onNext(t);
-				Operators.getAndSub(REQUESTED, this, 1);
+				Operators.produced(REQUESTED, this, 1);
 			}
 			else {
 				onOverflow();
@@ -555,7 +555,7 @@ final class FluxCreate<T> extends Flux<T> {
 				}
 
 				if (e != 0) {
-					Operators.getAndSub(REQUESTED, this, e);
+					Operators.produced(REQUESTED, this, e);
 				}
 
 				missed = wip.addAndGet(-missed);
@@ -683,7 +683,7 @@ final class FluxCreate<T> extends Flux<T> {
 				}
 
 				if (e != 0) {
-					Operators.getAndSub(REQUESTED, this, e);
+					Operators.produced(REQUESTED, this, e);
 				}
 
 				missed = WIP.addAndGet(this, -missed);
