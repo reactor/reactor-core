@@ -29,12 +29,12 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them 
@@ -858,7 +858,35 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				drain();
 			}
 		}
-		
+
+		void innerComplete(FlatMapInner<R> inner) {
+			            if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+				                Queue<R> q = inner.queue;
+				                if (q == null || q.isEmpty()) {
+					                    remove(inner.index);
+					
+							                    boolean d = done;
+					                    Queue<R> sq = scalarQueue;
+					                    boolean noSources = isEmpty();
+					
+							                    if (checkTerminated(d, noSources && (sq == null || sq.isEmpty()), actual)) {
+						                        return;
+						                    }
+					
+							                    if (WIP.decrementAndGet(this) != 0) {
+						                        drainLoop();
+						                    }
+					                    s.request(1);
+					                    return;
+					                }
+				            } else {
+				                if (WIP.getAndIncrement(this) != 0) {
+					                    return;
+					                }
+				            }
+			            drainLoop();
+			        }
+			
 		Queue<R> getOrCreateScalarQueue(FlatMapInner<R> inner) {
 			Queue<R> q = inner.queue;
 			if (q == null) {
@@ -1011,7 +1039,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		public void onComplete() {
 			// onComplete is practically idempotent so there is no risk due to subscription-race in async mode
 			done = true;
-			parent.drain();
+			parent.innerComplete(this);
 		}
 
 		@Override
