@@ -83,7 +83,7 @@ public class EmitterProcessorDemandTests {
 
 		int i = 0;
 		for (; ; ) {
-			if (Operators.getAndSub(demand, 1) != 0) {
+			if (getAndSub(demand, 1) != 0) {
 				emitter.onNext("" + (i++));
 			}
 			else {
@@ -140,7 +140,7 @@ public class EmitterProcessorDemandTests {
 		String buffer = "Hello";
 		int i = 0;
 		for (; ; ) {
-			if (Operators.getAndSub(demand, 1) > 0) {
+			if (getAndSub(demand, 1) > 0) {
 				emitter.onNext(buffer);
 			}
 
@@ -303,6 +303,28 @@ public class EmitterProcessorDemandTests {
 				Assert.fail();
 			}
 		}
+
 	}
 
+
+	/**
+	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.
+	 * Any concurrent write will "happen" before this operation.
+	 *
+	 * @param sequence current atomic to update
+	 * @param toSub    delta to sub
+	 * @return value before subscription, 0 or Long.MAX_VALUE
+	 */
+	public static long getAndSub(AtomicLong sequence, long toSub) {
+		long r, u;
+		do {
+			r = sequence.get();
+			if (r == 0 || r == Long.MAX_VALUE) {
+				return r;
+			}
+			u = Operators.subOrZero(r, toSub);
+		} while (!sequence.compareAndSet(r, u));
+
+		return r;
+	}
 }

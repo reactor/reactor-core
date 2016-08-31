@@ -255,27 +255,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.
-	 * Any concurrent write will "happen" before this operation.
-	 *
-	 * @param sequence current atomic to update
-	 * @param toSub    delta to sub
-	 * @return value before subscription, 0 or Long.MAX_VALUE
-	 */
-	public static long getAndSub(AtomicLong sequence, long toSub) {
-		long r, u;
-		do {
-			r = sequence.get();
-			if (r == 0 || r == Long.MAX_VALUE) {
-				return r;
-			}
-			u = subOrZero(r, toSub);
-		} while (!sequence.compareAndSet(r, u));
-
-		return r;
-	}
-
-	/**
 	 * Cap a multiplication to Long.MAX_VALUE
 	 *
 	 * @param a left operand

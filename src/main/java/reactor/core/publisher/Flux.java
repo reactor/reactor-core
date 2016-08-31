@@ -524,7 +524,7 @@ public abstract class Flux<T> implements Publisher<T> {
      * @return a {@link Flux}
      */
     public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter) {
-	    return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER));
+	    return create(emitter, OverflowStrategy.BUFFER);
     }
 
 	/**

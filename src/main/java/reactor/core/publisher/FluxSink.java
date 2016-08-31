@@ -46,6 +46,25 @@ public interface FluxSink<T> {
      */
     void next(T t);
 
+	/**
+	 * The current outstanding request amount.
+	 * @return the current outstanding request amount
+	 */
+	long requestedFromDownstream();
+
+	/**
+	 * Returns true if the downstream cancelled the sequence.
+	 * @return true if the downstream cancelled the sequence
+	 */
+	boolean isCancelled();
+
+	/**
+	 * Ensures that calls to next, error and complete are properly serialized.
+	 * @return the serialized {@link FluxSink}
+	 */
+	FluxSink<T> serialize();
+
+
     /**
      * Associate a cancellation-based resource with this FluxSink
      * that will be disposed in case the downstream cancels the sequence

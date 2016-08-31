@@ -18,442 +18,679 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Fuseable;
-import reactor.core.Fuseable.QueueSubscription;
+import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Trackable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
- * Provides a multi-valued emitter API for a callback that is called for
+ * Provides a multi-valued sink API for a callback that is called for
  * each individual Subscriber.
  *
  * @param <T> the value type
  */
 final class FluxCreate<T> extends Flux<T> {
-    
-    final Consumer<? super FluxSink<T>> emitter;
-    
-    final OverflowStrategy backpressure;
-    
-    public FluxCreate(Consumer<? super FluxSink<T>> emitter, FluxSink.OverflowStrategy backpressure) {
-        this.emitter = Objects.requireNonNull(emitter, "emitter");
-        this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
-    }
-    
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        DefaultFluxSink<T> dfe = new DefaultFluxSink<>(s, backpressure);
-        s.onSubscribe(dfe);
-        
-        try {
-            emitter.accept(dfe);
-        } catch (Throwable ex) {
-            dfe.error(Operators.onOperatorError(ex));
-        }
-    }
-    
-    static final class DefaultFluxSink<T>
-            implements FluxSink<T>, QueueSubscription<T>, Producer, Trackable {
 
-        final Subscriber<? super T> actual; 
-        
-        final OverflowStrategy handling;
-        
-        Queue<T> queue;
+	final Consumer<? super FluxSink<T>> source;
 
-        volatile T latest;
-        
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultFluxSink, Object> LATEST =
-        AtomicReferenceFieldUpdater.newUpdater(DefaultFluxSink.class, Object.class, "latest");
-        
-        volatile boolean done;
-        Throwable error;
-        
-        volatile Cancellation cancel;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultFluxSink, Cancellation> CANCEL =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultFluxSink.class, Cancellation.class, "cancel");
-        
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<DefaultFluxSink> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(DefaultFluxSink.class, "requested");
-        
-        volatile int wip;
-        @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<DefaultFluxSink> WIP =
-                AtomicIntegerFieldUpdater.newUpdater(DefaultFluxSink.class, "wip");
-        
-        static final Cancellation CANCELLED = () -> { };
-        
-        public DefaultFluxSink(Subscriber<? super T> actual, OverflowStrategy handling) {
-            this.actual = actual;
-            this.queue = QueueSupplier.<T>unbounded().get();
-            this.handling = handling;
-        }
-        
-        @Override
-        public void next(T value) {
-            if (value == null) {
-                error(new NullPointerException("value is null"));
-                return;
-            }
-            if (isCancelled() || done) {
-                Operators.onNextDropped(value);
-                return;
-            }
-            switch (this.handling) {
-            case IGNORE: {
-                actual.onNext(value);
-                break;
-            }
-            case ERROR: {
-                if (requested != 0L) {
-                    actual.onNext(value);
-                    if (requested != Long.MAX_VALUE) {
-                        REQUESTED.decrementAndGet(this);
-                    }
-                } else {
-                    error(new IllegalStateException("Could not emit value due to lack of request"));
-                }
-                break;
-            }
-            case BUFFER: {
-                queue.offer(value);
-                drain();
-                break;
-            }
-            case LATEST: {
-                LATEST.lazySet(this, value);
-                drainLatest();
-                break;
-            }
-            case DROP: {
-                if (requested != 0L) {
-                    actual.onNext(value);
-                    if (requested != Long.MAX_VALUE) {
-                        REQUESTED.decrementAndGet(this);
-                    }
-                }
-                break;
-            }
-            }
-        }
-        
-        @Override
-        public void error(Throwable error) {
-            if (error == null) {
-                error = new NullPointerException("error is null");
-            }
-            if (isCancelled() || done) {
-                Operators.onErrorDropped(error);
-                return;
-            }
-            done = true;
-            switch (this.handling) {
-            case IGNORE:
-            case ERROR:
-            case DROP:
-                cancel();
-                actual.onError(error);
-                break;
-            case BUFFER:
-                this.error = error;
-                done = true;
-                drain();
-                break;
-            case LATEST:
-                this.error = error;
-                done = true;
-                drainLatest();
-                break;
-            }
-        }
+	final OverflowStrategy backpressure;
 
-        @Override
-        public boolean isCancelled() {
-            return cancel == CANCELLED;
-        }
-        
-        @Override
-        public void complete() {
-            if (isCancelled() || done) {
-                return;
-            }
-            done = true;
-            
-            switch (this.handling) {
-            case IGNORE:
-            case ERROR:
-            case DROP:
-                cancel();
-                actual.onComplete();
-                break;
-            case BUFFER:
-                drain();
-                break;
-            case LATEST:
-                drainLatest();
-                break;
-            }
-        }
-        
-        void drain() {
-            if (WIP.getAndIncrement(this) != 0) {
-                return;
-            }
-            
-            int missed = 1;
-            final Queue<T> q = queue;
-            final Subscriber<? super T> a = actual;
-            
-            for (;;) {
-                
-                long r = requested;
-                long e = 0L;
-                
-                while (e != r) {
-                    if (isCancelled()) {
-                        q.clear();
-                        return;
-                    }
-                    
-                    boolean d = done;
-                    T v = q.poll();
-                    boolean empty = v == null;
-                    
-                    if (d && empty) {
-                        cancelResource();
-                        q.clear();
-                        Throwable ex = error;
-                        if (ex != null) {
-                            a.onError(ex);
-                        } else {
-                            a.onComplete();
-                        }
-                        return;
-                    }
-                    
-                    if (empty) {
-                        break;
-                    }
-                    
-                    a.onNext(v);
-                    
-                    e++;
-                }
-                
-                if (e == r) {
-                    if (isCancelled()) {
-                        q.clear();
-                        return;
-                    }
-                    
-                    if (done && q.isEmpty()) {
-                        cancelResource();
-                        q.clear();
-                        Throwable ex = error;
-                        if (ex != null) {
-                            a.onError(ex);
-                        } else {
-                            a.onComplete();
-                        }
-                        return;
-                    }
-                }
-                
-                if (e != 0L) {
-                    if (r != Long.MAX_VALUE) {
-                        REQUESTED.addAndGet(this, -e);
-                    }
-                }
-                
-                missed = WIP.addAndGet(this, -missed);
-                if (missed == 0) {
-                    return;
-                }
-            }
-        }
-        
-        void drainLatest() {
-            if (WIP.getAndIncrement(this) != 0) {
-                return;
-            }
-            
-            int missed = 1;
-            final Subscriber<? super T> a = actual;
-            
-            for (;;) {
-                
-                long r = requested;
-                long e = 0L;
-                
-                while (e != r) {
-                    if (isCancelled()) {
-                        LATEST.lazySet(this, null);
-                        return;
-                    }
-                    
-                    boolean d = done;
-                    @SuppressWarnings("unchecked")
-                    T v = (T)LATEST.getAndSet(this, null);
-                    boolean empty = v == null;
-                    
-                    if (d && empty) {
-                        cancelResource();
-                        Throwable ex = error;
-                        if (ex != null) {
-                            a.onError(ex);
-                        } else {
-                            a.onComplete();
-                        }
-                        return;
-                    }
-                    
-                    if (empty) {
-                        break;
-                    }
-                    
-                    a.onNext(v);
-                    
-                    e++;
-                }
-                
-                if (e == r) {
-                    if (isCancelled()) {
-                        LATEST.lazySet(this, null);
-                        return;
-                    }
-                    
-                    if (done && latest == null) {
-                        cancelResource();
-                        Throwable ex = error;
-                        if (ex != null) {
-                            a.onError(ex);
-                        } else {
-                            a.onComplete();
-                        }
-                        return;
-                    }
-                }
-                
-                if (e != 0L) {
-                    if (r != Long.MAX_VALUE) {
-                        REQUESTED.addAndGet(this, -e);
-                    }
-                }
-                
-                missed = WIP.addAndGet(this, -missed);
-                if (missed == 0) {
-                    return;
-                }
-            }
-        }
-        @Override
-        public void setCancellation(Cancellation c) {
-            if (!CANCEL.compareAndSet(this, null, c)) {
-                if (cancel != CANCELLED && c != null) {
-                    c.dispose();
-                }
-            }
-        }
-        
-        @Override
-        public int requestFusion(int requestedMode) {
-// FIXME enable
-//            if ((requestedMode & Fuseable.ASYNC) != 0) {
-//                return Fuseable.ASYNC;
-//            }
-            return Fuseable.NONE;
-        }
-        
-        @Override
-        public T poll() {
-            return null;
-        }
-        
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-        
-        @Override
-        public int size() {
-            return 0;
-        }
-        
-        @Override
-        public void clear() {
-        }
-        
-        @Override
-        public void request(long n) {
-            if (Operators.validate(n)) {
-                Operators.getAndAddCap(REQUESTED, this, n);
-                if (handling == OverflowStrategy.BUFFER) {
-                    drain();
-                } else
-                if (handling == OverflowStrategy.LATEST) {
-                    drainLatest();
-                }
-            }
-        }
-        
-        void cancelResource() {
-            Cancellation c = cancel;
-            if (c != CANCELLED) {
-                c = CANCEL.getAndSet(this, CANCELLED);
-                if (c != null && c != CANCELLED) {
-                    c.dispose();
-                }
-            }
-        }
-        
-        @Override
-        public void cancel() {
-            cancelResource();
-            
-            if (WIP.getAndIncrement(this) == 0) {
-                Queue<T> q = queue;
-                if (q != null) {
-                    q.clear();
-                }
-            }
-        }
+	public FluxCreate(Consumer<? super FluxSink<T>> source,
+			FluxSink.OverflowStrategy backpressure) {
+		this.source = Objects.requireNonNull(source, "source");
+		this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
+	}
 
-        @Override
-        public long requestedFromDownstream() {
-            return requested;
-        }
+	@Override
+	public void subscribe(Subscriber<? super T> t) {
+		BaseSink<T> sink;
 
-        @Override
-        public long getCapacity() {
-            return Long.MAX_VALUE;
-        }
+		switch (backpressure) {
+			case IGNORE: {
+				sink = new IgnoreSink<>(t);
+				break;
+			}
+			case ERROR: {
+				sink = new ErrorAsyncSink<>(t);
+				break;
+			}
+			case DROP: {
+				sink = new DropAsyncSink<>(t);
+				break;
+			}
+			case LATEST: {
+				sink = new LatestAsyncSink<>(t);
+				break;
+			}
+			default: {
+				sink = new BufferAsyncSink<>(t, QueueSupplier.SMALL_BUFFER_SIZE);
+				break;
+			}
+		}
 
-        @Override
-        public long getPending() {
-            return queue != null ? queue.size() : (latest != null ? 1 : 0);
-        }
+		t.onSubscribe(sink);
+		try {
+			source.accept(sink);
+		}
+		catch (Throwable ex) {
+			Exceptions.throwIfFatal(ex);
+			sink.error(Operators.onOperatorError(ex));
+		}
+	}
 
-        @Override
-        public Throwable getError() {
-            return error;
-        }
+	/**
+	 * Serializes calls to onNext, onError and onComplete.
+	 *
+	 * @param <T> the value type
+	 */
+	static final class SerializedSink<T> implements FluxSink<T> {
 
-        @Override
-        public Object downstream() {
-            return actual;
-        }
-    }
+		final BaseSink<T> sink;
+
+		volatile Throwable error;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SerializedSink, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class, Throwable.class, "error");
+
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
+
+
+		final Queue<T> queue;
+
+		volatile boolean done;
+
+		public SerializedSink(BaseSink<T> sink) {
+			this.sink = sink;
+			this.queue = QueueSupplier.<T>unbounded(QueueSupplier.XS_BUFFER_SIZE).get();
+		}
+
+		@Override
+		public void next(T t) {
+			if (sink.isCancelled() || done) {
+				return;
+			}
+			if (t == null) {
+				throw new NullPointerException("t is null in sink.next(t)");
+			}
+			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+				sink.next(t);
+				if (WIP.decrementAndGet(this) == 0) {
+					return;
+				}
+			}
+			else {
+				Queue<T> q = queue;
+				synchronized (q) {
+					q.offer(t);
+				}
+				if (WIP.getAndIncrement(this) != 0) {
+					return;
+				}
+			}
+			drainLoop();
+		}
+
+		@Override
+		public void error(Throwable t) {
+			if (sink.isCancelled() || done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
+			if (t == null) {
+				throw new NullPointerException("t is null in sink.error(t)");
+			}
+			if (Exceptions.addThrowable(ERROR, this, t)) {
+				done = true;
+				drain();
+			}
+			else {
+				Operators.onErrorDropped(t);
+			}
+		}
+
+		@Override
+		public void complete() {
+			if (sink.isCancelled() || done) {
+				return;
+			}
+			done = true;
+			drain();
+		}
+
+		void drain() {
+			if (WIP.getAndIncrement(this) == 0) {
+				drainLoop();
+			}
+		}
+
+		void drainLoop() {
+			BaseSink<T> e = sink;
+			Queue<T> q = queue;
+			int missed = 1;
+			for (; ; ) {
+
+				for (; ; ) {
+					if (e.isCancelled()) {
+						q.clear();
+						return;
+					}
+
+					if (ERROR.get(this) != null) {
+						q.clear();
+						e.error(Exceptions.terminate(ERROR, this));
+						return;
+					}
+
+					boolean d = done;
+					T v;
+
+					try {
+						v = q.poll();
+					}
+					catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						// should never happen
+						v = null;
+					}
+
+					boolean empty = v == null;
+
+					if (d && empty) {
+						e.complete();
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					e.next(v);
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void setCancellation(Cancellation c) {
+			sink.setCancellation(c);
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return sink.requestedFromDownstream();
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return sink.isCancelled();
+		}
+
+		@Override
+		public FluxSink<T> serialize() {
+			return this;
+		}
+	}
+
+	static abstract class BaseSink<T>
+			implements FluxSink<T>, Subscription, Trackable, Producer {
+
+		final Subscriber<? super T> actual;
+
+		volatile Cancellation cancel;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<BaseSink, Cancellation> CANCEL =
+				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
+						Cancellation.class,
+						"cancel");
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
+
+		static final Cancellation CANCELLED = () -> {
+		};
+
+		public BaseSink(Subscriber<? super T> actual) {
+			this.actual = actual;
+		}
+
+		@Override
+		public void complete() {
+			if (isCancelled()) {
+				return;
+			}
+			try {
+				actual.onComplete();
+			}
+			finally {
+				cancelResource();
+			}
+		}
+
+		@Override
+		public void error(Throwable e) {
+			if (isCancelled()) {
+				return;
+			}
+			try {
+				actual.onError(e);
+			}
+			finally {
+				cancelResource();
+			}
+		}
+
+		@Override
+		public final void cancel() {
+			cancelResource();
+			onCancel();
+		}
+
+		void cancelResource() {
+			Cancellation c = cancel;
+			if (c != CANCELLED) {
+				c = CANCEL.getAndSet(this, CANCELLED);
+				if (c != null && c != CANCELLED) {
+					c.dispose();
+				}
+			}
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public long getCapacity() {
+			return Long.MAX_VALUE;
+		}
+
+		void onCancel() {
+			// default is no-op
+		}
+
+		@Override
+		public final boolean isCancelled() {
+			return cancel == CANCELLED;
+		}
+
+		@Override
+		public final void request(long n) {
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
+				onRequestedFromDownstream();
+			}
+		}
+
+		void onRequestedFromDownstream() {
+			// default is no-op
+		}
+
+		@Override
+		public Subscriber<? super T> downstream() {
+			return actual;
+		}
+
+		@Override
+		public final void setCancellation(Cancellation c) {
+			if (!CANCEL.compareAndSet(this, null, c)) {
+				if (cancel != CANCELLED && c != null) {
+					c.dispose();
+				}
+			}
+		}
+
+		@Override
+		public final FluxSink<T> serialize() {
+			return new SerializedSink<>(this);
+		}
+	}
+
+	static final class IgnoreSink<T> extends BaseSink<T> {
+
+		public IgnoreSink(Subscriber<? super T> actual) {
+			super(actual);
+		}
+
+		@Override
+		public void next(T t) {
+			if (isCancelled()) {
+				return;
+			}
+
+			actual.onNext(t);
+
+			for (; ; ) {
+				long r = requested;
+				if (r == 0L || REQUESTED.compareAndSet(this, r, r - 1)) {
+					return;
+				}
+			}
+		}
+
+	}
+
+	static abstract class NoOverflowBaseAsyncSink<T> extends BaseSink<T> {
+
+		public NoOverflowBaseAsyncSink(Subscriber<? super T> actual) {
+			super(actual);
+		}
+
+		@Override
+		public final void next(T t) {
+			if (isCancelled()) {
+				return;
+			}
+
+			if (requested != 0) {
+				actual.onNext(t);
+				Operators.getAndSub(REQUESTED, this, 1);
+			}
+			else {
+				onOverflow();
+			}
+		}
+
+		abstract void onOverflow();
+	}
+
+	static final class DropAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
+
+		public DropAsyncSink(Subscriber<? super T> actual) {
+			super(actual);
+		}
+
+		@Override
+		void onOverflow() {
+			// nothing to do
+		}
+
+	}
+
+	static final class ErrorAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
+
+		public ErrorAsyncSink(Subscriber<? super T> actual) {
+			super(actual);
+		}
+
+		@Override
+		void onOverflow() {
+			error(Exceptions.failWithOverflow());
+		}
+
+	}
+
+	static final class BufferAsyncSink<T> extends BaseSink<T> {
+
+		final Queue<T> queue;
+
+		Throwable error;
+		volatile boolean done;
+
+		final AtomicInteger wip;
+
+		public BufferAsyncSink(Subscriber<? super T> actual, int capacityHint) {
+			super(actual);
+			this.queue = QueueSupplier.<T>unbounded(capacityHint).get();
+			this.wip = new AtomicInteger();
+		}
+
+		@Override
+		public void next(T t) {
+			queue.offer(t);
+			drain();
+		}
+
+		@Override
+		public void error(Throwable e) {
+			error = e;
+			done = true;
+			drain();
+		}
+
+		@Override
+		public void complete() {
+			done = true;
+			drain();
+		}
+
+		@Override
+		void onRequestedFromDownstream() {
+			drain();
+		}
+
+		@Override
+		void onCancel() {
+			if (wip.getAndIncrement() == 0) {
+				queue.clear();
+			}
+		}
+
+		void drain() {
+			if (wip.getAndIncrement() != 0) {
+				return;
+			}
+
+			int missed = 1;
+			final Subscriber<? super T> a = actual;
+			final Queue<T> q = queue;
+
+			for (; ; ) {
+				long r = requested;
+				long e = 0L;
+
+				while (e != r) {
+					if (isCancelled()) {
+						q.clear();
+						return;
+					}
+
+					boolean d = done;
+
+					T o = q.poll();
+
+					boolean empty = o == null;
+
+					if (d && empty) {
+						Throwable ex = error;
+						if (ex != null) {
+							super.error(ex);
+						}
+						else {
+							super.complete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(o);
+
+					e++;
+				}
+
+				if (e == r) {
+					if (isCancelled()) {
+						q.clear();
+						return;
+					}
+
+					boolean d = done;
+
+					boolean empty = q.isEmpty();
+
+					if (d && empty) {
+						Throwable ex = error;
+						if (ex != null) {
+							super.error(ex);
+						}
+						else {
+							super.complete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0) {
+					Operators.getAndSub(REQUESTED, this, e);
+				}
+
+				missed = wip.addAndGet(-missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+	}
+
+	static final class LatestAsyncSink<T> extends BaseSink<T> {
+
+		final AtomicReference<T> queue;
+
+		Throwable error;
+		volatile boolean done;
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<LatestAsyncSink> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(LatestAsyncSink.class, "wip");
+
+
+		public LatestAsyncSink(Subscriber<? super T> actual) {
+			super(actual);
+			this.queue = new AtomicReference<T>();
+		}
+
+		@Override
+		public void next(T t) {
+			queue.set(t);
+			drain();
+		}
+
+		@Override
+		public void error(Throwable e) {
+			error = e;
+			done = true;
+			drain();
+		}
+
+		@Override
+		public void complete() {
+			done = true;
+			drain();
+		}
+
+		@Override
+		void onRequestedFromDownstream() {
+			drain();
+		}
+
+		@Override
+		void onCancel() {
+			if (WIP.getAndIncrement(this) == 0) {
+				queue.lazySet(null);
+			}
+		}
+
+		void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			int missed = 1;
+			final Subscriber<? super T> a = actual;
+			final AtomicReference<T> q = queue;
+
+			for (; ; ) {
+				long r = requested;
+				long e = 0L;
+
+				while (e != r) {
+					if (isCancelled()) {
+						q.lazySet(null);
+						return;
+					}
+
+					boolean d = done;
+
+					T o = q.getAndSet(null);
+
+					boolean empty = o == null;
+
+					if (d && empty) {
+						Throwable ex = error;
+						if (ex != null) {
+							super.error(ex);
+						}
+						else {
+							super.complete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(o);
+
+					e++;
+				}
+
+				if (e == r) {
+					if (isCancelled()) {
+						q.lazySet(null);
+						return;
+					}
+
+					boolean d = done;
+
+					boolean empty = q.get() == null;
+
+					if (d && empty) {
+						Throwable ex = error;
+						if (ex != null) {
+							super.error(ex);
+						}
+						else {
+							super.complete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0) {
+					Operators.getAndSub(REQUESTED, this, e);
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+	}
 }
