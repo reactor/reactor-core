@@ -2976,7 +2976,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
-		return compose(f -> f.map(new Elapsed<>()));
+		return elapsed(Schedulers.timer());
+	}
+
+	/**
+	 * Map this {@link Flux} sequence into {@link reactor.util.function.Tuple2} of T1
+	 * {@link Long} timemillis and T2 {@code T} associated data. The timemillis
+	 * corresponds to the elapsed time between the subscribe and the first next signal OR
+	 * between two next signals.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/elapsed.png"
+	 * alt="">
+	 *
+	 * @param scheduler the {@link TimedScheduler} to read time from
+	 *
+	 * @return a transforming {@link Flux} that emits tuples of time elapsed in
+	 * milliseconds and matching data
+	 */
+	public final Flux<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
+		return onAssembly(new FluxElapsed<>(this, scheduler));
 	}
 
 	/**
@@ -5592,7 +5611,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a timestamped {@link Flux}
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp() {
-		return map(timestamOperator());
+		return map(Schedulers.timer());
+	}
+
+	/**
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
+	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp.png" alt="">
+	 *
+	 * @param scheduler the {@link TimedScheduler} to read time from
+	 * @return a timestamped {@link Flux}
+	 */
+	public final Flux<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
+		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
 
 	/**
@@ -6259,17 +6292,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		return IDENTITY_FUNCTION;
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T> Function<T, Tuple2<Long, T>> timestamOperator(){
-		return TIMESTAMP_OPERATOR;
-	}
-
 	@SuppressWarnings("rawtypes")
 	static final BiFunction      TUPLE2_BIFUNCTION       = Tuples::of;
 	@SuppressWarnings("rawtypes")
 	static final Supplier        LIST_SUPPLIER           = ArrayList::new;
-	@SuppressWarnings("rawtypes")
-	static final Function        TIMESTAMP_OPERATOR      = o -> Tuples.of(System.currentTimeMillis(), o);
 	@SuppressWarnings("rawtypes")
 	static final Supplier        SET_SUPPLIER            = HashSet::new;
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;

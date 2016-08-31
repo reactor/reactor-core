@@ -51,7 +51,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.util.Loggers;
+import reactor.core.Exceptions;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.EmitterProcessor;
@@ -63,16 +63,15 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.function.Tuples;
-import reactor.core.Exceptions;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
-
-import reactor.util.Logger;
 
 public class FluxTests extends AbstractReactorTest {
 
@@ -802,6 +801,17 @@ public class FluxTests extends AbstractReactorTest {
 		res.dispose();
 		assertTrue(countDownLatch.await(3, TimeUnit.SECONDS));
 		assertTrue(thread.get() != Thread.currentThread());
+	}
+
+	@Test
+	public void sequenceEqual() throws Exception {
+		boolean res = Mono.sequenceEqual(Flux.just(1, 2, 3), Flux.just(1, 2, 3))
+		                  .block();
+		assertTrue(res);
+
+		res = Mono.sequenceEqual(Flux.just(1, 3), Flux.just(1, 2, 3))
+		                  .block();
+		assertFalse(res);
 	}
 
 	@Test

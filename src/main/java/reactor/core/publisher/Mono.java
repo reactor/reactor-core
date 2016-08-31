@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -464,6 +465,67 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<T> never() {
 		return MonoNever.instance();
+	}
+
+	/**
+	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+	 * same by comparing the items emitted by each Publisher pairwise.
+	 * 
+	 * @param source1
+	 *            the first Publisher to compare
+	 * @param source2
+	 *            the second Publisher to compare
+	 * @param <T>
+	 *            the type of items emitted by each Publisher
+	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
+	 */
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
+		return sequenceEqual(source1, source2, equalsBiPredicate(), QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
+	 * equality function.
+	 *
+	 * @param source1
+	 *            the first Publisher to compare
+	 * @param source2
+	 *            the second Publisher to compare
+	 * @param isEqual
+	 *            a function used to compare items emitted by each Publisher
+	 * @param <T>
+	 *            the type of items emitted by each Publisher
+	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
+	 *         are the same according to the specified function
+	 */
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2,
+			BiPredicate<? super T, ? super T> isEqual) {
+		return sequenceEqual(source1, source2, isEqual, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
+	 * same by comparing the items emitted by each Publisher pairwise based on the results of a specified
+	 * equality function.
+	 *
+	 * @param source1
+	 *            the first Publisher to compare
+	 * @param source2
+	 *            the second Publisher to compare
+	 * @param isEqual
+	 *            a function used to compare items emitted by each Publisher
+	 * @param bufferSize
+	 *            the number of items to prefetch from the first and second source Publisher
+	 * @param <T>
+	 *            the type of items emitted by each Publisher
+	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
+	 *         are the same according to the specified function
+	 */
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, 
+			Publisher<? extends T> source2,
+			BiPredicate<? super T, ? super T> isEqual, int bufferSize) {
+		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, bufferSize));
 	}
 
 	/**
@@ -1438,7 +1500,22 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
-		return compose(f -> f.map(new Elapsed<>()));
+		return elapsed(Schedulers.timer());
+	}
+
+	/**
+	 * Map this {@link Mono} sequence into {@link reactor.util.function.Tuple2} of T1 {@link Long} timemillis and T2
+	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * next signal.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/elapsed1.png" alt="">
+	 *
+	 * @param scheduler the {@link TimedScheduler} to read time from
+	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
+	 */
+	public final Mono<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
+		return onAssembly(new MonoElapsed<>(this, scheduler));
 	}
 
 	/**
@@ -2605,7 +2682,21 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a timestamped {@link Mono}
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp() {
-		return map(Flux.timestamOperator());
+		return timestamp(Schedulers.timer());
+	}
+
+	/**
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
+	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timestamp1.png" alt="">
+	 *
+	 * @param scheduler the {@link TimedScheduler} to read time from
+	 * @return a timestamped {@link Mono}
+	 */
+	public final Mono<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
+		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
 
 	/**
@@ -2695,4 +2786,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 	
 	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;
+
+	@SuppressWarnings("unchecked")
+	static <T> BiPredicate<? super T, ? super T> equalsBiPredicate(){
+		return EQUALS_BIPREDICATE;
+	}
+	static final BiPredicate EQUALS_BIPREDICATE = Object::equals;
 }

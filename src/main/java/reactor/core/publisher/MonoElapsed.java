@@ -16,22 +16,26 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Function;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.Fuseable;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * @author Stephane Maldini
  */
-final class Elapsed<T> implements Function<T, Tuple2<Long, T>> {
+public class MonoElapsed<T> extends MonoSource<T, Tuple2<Long, T>> implements Fuseable {
 
-		long lastTime = System.currentTimeMillis();
+	final TimedScheduler scheduler;
 
-		@Override
-		public Tuple2<Long, T> apply(T ev) {
-			long previousTime = lastTime;
-			lastTime = System.currentTimeMillis();
-			return Tuples.of(lastTime - previousTime, ev);
-		}
+	public MonoElapsed(Publisher<T> source, TimedScheduler scheduler) {
+		super(source);
+		this.scheduler = scheduler;
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super Tuple2<Long, T>> s) {
+		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(s, scheduler));
+	}
 }
