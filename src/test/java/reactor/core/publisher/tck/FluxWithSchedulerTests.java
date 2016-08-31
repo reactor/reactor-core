@@ -59,7 +59,6 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 				                          .scan((prev, next) -> next)
 				                          .map(integer -> -integer)
 				                          .filter(integer -> integer <= 0)
-				                          .every(1)
 				                          .map(integer -> -integer)
 				                          .buffer(batch, Duration.ofMillis(50))
 				                          .flatMap(Flux::fromIterable)

@@ -31,7 +31,6 @@ import java.util.function.BiFunction
 import java.util.function.Function
 import java.util.function.Predicate
 import java.util.function.Supplier
-import java.util.logging.Level
 
 import static reactor.core.publisher.Flux.error
 
@@ -238,27 +237,6 @@ class FluxSpec extends Specification {
 	v2 == 2
 	v3 == 1000
   }
-
-	def 'A Flux with a known set of values makes those values available immediately'() {
-		given:
-			'a composable with values 1 to 5 inclusive'
-			Flux s = Flux.fromIterable([1, 2, 3, 4, 5])
-
-		when:
-			'the first value is retrieved'
-			def first
-			s.everyFirst(5).subscribe{ first = it }
-
-		and:
-			'the last value is retrieved'
-			def last
-			s.every(5).subscribe{ last = it }
-
-		then:
-			'first and last'
-			first == 1
-			last == 5
-	}
 
 	def "flux empty buffer just"() {
 	  when:
@@ -547,36 +525,6 @@ class FluxSpec extends Specification {
 			'its value is the last of the initial values'
 			tap == 'c'
 
-	}
-
-	def 'Last value of a batch is accessible'() {
-		given:
-			'a composable that will accept an unknown number of values'
-			def d = EmitterProcessor.<Integer> create().connect()
-			def composable = d
-
-		when:
-			'the expected accept count is set and that number of values is accepted'
-			def tap
-			composable.every(3).log().subscribe({ tap = it }, 3)
-			d.onNext(1)
-			d.onNext(2)
-			d.onNext(3)
-
-		then:
-			"last's value is now that of the last value"
-			tap == 3
-
-		when:
-			'the expected accept count is set and that number of values is accepted'
-			composable.every(3).subscribe{ tap = it }
-			d.onNext(1)
-			d.onNext(2)
-			d.onNext(3)
-
-		then:
-			"last's value is now that of the last value"
-			tap == 3
 	}
 
 	def "A Flux's values can be mapped"() {
@@ -887,7 +835,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element at index 2 is requested'
-			def tap = s.elementAtOrDefault(2, {-1}).block()
+			def tap = s.elementAt(2, {-1}).block()
 
 		then:
 			'3 is emitted'
@@ -895,7 +843,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element with index > number of values is requested'
-			tap = s.elementAtOrDefault(10, {-1}).block()
+			tap = s.elementAt(10, {-1}).block()
 
 		then:
 			'-1 is emitted'

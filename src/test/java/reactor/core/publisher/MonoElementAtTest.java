@@ -146,7 +146,7 @@ public class MonoElementAtTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0, () -> 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -157,7 +157,7 @@ public class MonoElementAtTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.<Integer>empty().elementAtOrDefault(0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0, () -> 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -174,7 +174,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAt(20, () -> 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -185,7 +185,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.range(1, 10).elementAtOrDefault(20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAt(20, () -> 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -202,7 +202,7 @@ public class MonoElementAtTest {
 	public void defaultReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().elementAtOrDefault(0, () -> null).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0, () -> null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -213,7 +213,7 @@ public class MonoElementAtTest {
 	public void defaultThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().elementAtOrDefault(0, () -> {
+		Flux.<Integer>empty().elementAt(0, () -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 

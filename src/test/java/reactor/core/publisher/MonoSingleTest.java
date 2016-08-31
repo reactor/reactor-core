@@ -43,7 +43,7 @@ public class MonoSingleTest {
 	public void defaultReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().singleOrDefault(() -> null).subscribe(ts);
+		Flux.<Integer>empty().single(() -> null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
@@ -54,7 +54,7 @@ public class MonoSingleTest {
 	public void defaultThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().singleOrDefault(() -> {
+		Flux.<Integer>empty().single(() -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
@@ -110,7 +110,7 @@ public class MonoSingleTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
+		Flux.<Integer>empty().single(() -> 1).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -121,7 +121,7 @@ public class MonoSingleTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.<Integer>empty().singleOrDefault(() -> 1).subscribe(ts);
+		Flux.<Integer>empty().single(() -> 1).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

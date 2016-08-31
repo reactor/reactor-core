@@ -3024,36 +3024,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of the item at a specified index or a default value
 	 */
-	public final Mono<T> elementAtOrDefault(int index, Supplier<? extends T> defaultValue) {
+	public final Mono<T> elementAt(int index, Supplier<? extends T> defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
-	}
-
-	/**
-	 * Emit only the last value of each batch counted from this {@link Flux} sequence.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/every.png" alt="">
-	 *
-	 * @param batchSize the batch size to count
-	 *
-	 * @return a new {@link Flux} whose values are the last value of each batch
-	 */
-	public final Flux<T> every(int batchSize) {
-		return window(batchSize).flatMap(Flux::last);
-	}
-
-	/**
-	 * Emit only the first value of each batch counted from this {@link Flux} sequence.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/everyfirst.png" alt="">
-	 *
-	 * @param batchSize the batch size to use
-	 *
-	 * @return a new {@link Flux} whose values are the first value of each batch
-	 */
-	public final Flux<T> everyFirst(int batchSize) {
-		return window(batchSize).flatMap(Flux::next);
 	}
 
 	/**
@@ -4707,7 +4679,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the eventual single item or a supplied default value
 	 */
-    public final Mono<T> singleOrDefault(Supplier<? extends T> defaultSupplier) {
+    public final Mono<T> single(Supplier<? extends T> defaultSupplier) {
         if (this instanceof Callable) {
             if (this instanceof Fuseable.ScalarCallable) {
 	            @SuppressWarnings("unchecked")
@@ -5721,12 +5693,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		final Supplier<Queue<T>> provider;
 		provider = QueueSupplier.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
-	}
-
-	@Override
-	public String toString() {
-		return getClass().getSimpleName()
-		                 .replace(Flux.class.getSimpleName(), "");
 	}
 
 	/**

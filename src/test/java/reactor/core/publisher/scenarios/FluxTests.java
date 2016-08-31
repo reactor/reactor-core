@@ -169,23 +169,6 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testFirstAndLast() throws InterruptedException {
-		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
-
-		Flux<Integer> first = s.everyFirst(5);
-		Flux<Integer> last = s.every(5);
-
-		assertThat("First is 1",
-				first.next()
-				     .block(),
-				is(1));
-		assertThat("Last is 5",
-				last.next()
-				    .block(),
-				is(5));
-	}
-
-	@Test
 	public void testStreamBatchesResults() {
 		Flux<String> stream = Flux.just("1", "2", "3", "4", "5");
 		Mono<List<Integer>> s = stream.map(STRING_2_INTEGER)

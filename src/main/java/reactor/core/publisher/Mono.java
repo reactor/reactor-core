@@ -2713,12 +2713,6 @@ public abstract class Mono<T> implements Publisher<T> {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
-	@Override
-	public String toString() {
-		return getClass().getSimpleName()
-		                 .replace(Mono.class.getSimpleName(), "");
-	}
-
 	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
