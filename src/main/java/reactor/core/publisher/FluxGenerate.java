@@ -42,7 +42,10 @@ import reactor.core.Trackable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxGenerate<T, S> 
-extends Flux<T> {
+extends Flux<T> implements Fuseable {
+
+
+	static final Callable EMPTY_CALLABLE = () -> null;
 
 	final Callable<S> stateSupplier;
 
@@ -50,8 +53,11 @@ extends Flux<T> {
 
 	final Consumer<? super S> stateConsumer;
 
-	public FluxGenerate(BiFunction<S, SynchronousSink<T>, S> generator) {
-		this(() -> null, generator, s -> {
+	@SuppressWarnings("unchecked")
+	public FluxGenerate(Consumer<SynchronousSink<T>> generator) {
+		this(EMPTY_CALLABLE, (state,sink) -> {
+			generator.accept(sink);
+			return null;
 		});
 	}
 

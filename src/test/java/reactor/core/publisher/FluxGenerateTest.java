@@ -46,9 +46,8 @@ public class FluxGenerateTest {
 	public void generateEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>((s, o) -> {
+		new FluxGenerate<Integer, Void>(o -> {
 			o.complete();
-			return s;
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -60,10 +59,9 @@ public class FluxGenerateTest {
 	public void generateJust() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>((s, o) -> {
+		new FluxGenerate<Integer, Void>(o -> {
 			o.next(1);
 			o.complete();
-			return s;
 		}).subscribe(ts);
 
 		ts.assertValues(1)
@@ -75,9 +73,8 @@ public class FluxGenerateTest {
 	public void generateError() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>((s, o) -> {
+		new FluxGenerate<Integer, Void>(o -> {
 			o.error(new RuntimeException("forced failure"));
-			return s;
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -92,10 +89,9 @@ public class FluxGenerateTest {
 	public void generateJustBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxGenerate<Integer, Void>((s, o) -> {
+		new FluxGenerate<Integer, Void>(o -> {
 			o.next(1);
 			o.complete();
-			return s;
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -178,7 +174,7 @@ public class FluxGenerateTest {
 	public void generatorThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>((s, o) -> {
+		new FluxGenerate<Integer, Integer>(o -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
@@ -192,10 +188,9 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnErrors() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>((s, o) -> {
+		new FluxGenerate<Integer, Integer>(o -> {
 			o.error(new RuntimeException("forced failure"));
 			o.error(new RuntimeException("forced failure"));
-			return s;
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -208,10 +203,9 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnCompletes() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>((s, o) -> {
+		new FluxGenerate<Integer, Integer>(o -> {
 			o.complete();
 			o.complete();
-			return s;
 		}).subscribe(ts);
 
 		ts.assertNoValues()
@@ -223,10 +217,9 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnNexts() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>((s, o) -> {
+		new FluxGenerate<Integer, Integer>(o -> {
 			o.next(1);
 			o.next(1);
-			return s;
 		}).subscribe(ts);
 
 		ts.assertValues(1)

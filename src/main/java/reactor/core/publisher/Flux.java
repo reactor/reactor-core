@@ -734,19 +734,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Generate signals one-by-one via a function callback.
+	 * Generate signals one-by-one via a consumer callback.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/generate.png" alt="">
 	 * <p>
 	 *
 	 * @param <T> the value type emitted
-	 * @param <S> the custom state per subscriber
-	 * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
-	 * expected to return a (new) state.
+	 * @param generator the consumer called with the SynchronousSink
+	 * API instance
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
-	public static <T, S> Flux<T> generate(BiFunction<S, SynchronousSink<T>, S> generator) {
+	public static <T> Flux<T> generate(Consumer<SynchronousSink<T>> generator) {
+		Objects.requireNonNull(generator, "generator");
 		return onAssembly(new FluxGenerate<>(generator));
 	}
 
