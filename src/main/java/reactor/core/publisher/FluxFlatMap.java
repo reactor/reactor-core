@@ -130,8 +130,9 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	 * @param source the source publisher
 	 * @param s the end consumer
 	 * @param mapper the mapper function
-	 * @param fuseableExpected if true, the parent class was marked Fuseable thus the mapping
-	 * output has to signal onSubscribe with a QueueSubscription
+	 * @param fuseableExpected if true, the parent class was marked Fuseable thus the
+	 * mapping output has to signal onSubscribe with a QueueSubscription
+	 *
 	 * @return true if the optimization worked
 	 */
 	@SuppressWarnings("unchecked")
@@ -567,39 +568,35 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				long e = 0L;
 				long replenishMain = 0L;
 
-				if (r != 0L) {
-					sq = scalarQueue;
-					if (sq != null) {
+				if (r != 0L && sq != null) {
 
-						while (e != r) {
-							d = done;
+					while (e != r) {
+						d = done;
 
-							R v = sq.poll();
+						R v = sq.poll();
 
-							boolean empty = v == null;
+						boolean empty = v == null;
 
-							if (checkTerminated(d, false, a)) {
-								return;
-							}
-
-							if (empty) {
-								break;
-							}
-
-							a.onNext(v);
-
-							e++;
+						if (checkTerminated(d, false, a)) {
+							return;
 						}
 
-						if (e != 0L) {
-							replenishMain += e;
-							if (r != Long.MAX_VALUE) {
-								r = REQUESTED.addAndGet(this, -e);
-							}
-							e = 0L;
-							again = true;
+						if (empty) {
+							break;
 						}
 
+						a.onNext(v);
+
+						e++;
+					}
+
+					if (e != 0L) {
+						replenishMain += e;
+						if (r != Long.MAX_VALUE) {
+							r = REQUESTED.addAndGet(this, -e);
+						}
+						e = 0L;
+						again = true;
 					}
 				}
 				if (r != 0L && !noSources) {
@@ -1030,14 +1027,22 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		volatile boolean done;
 
-		/** Represents the optimization mode of this inner subscriber. */
+		/**
+		 * Represents the optimization mode of this inner subscriber.
+		 */
 		int sourceMode;
 
-		/** Running with regular, arbitrary source. */
+		/**
+		 * Running with regular, arbitrary source.
+		 */
 		static final int NORMAL = 0;
-		/** Running with a source that implements SynchronousSource. */
+		/**
+		 * Running with a source that implements SynchronousSource.
+		 */
 		static final int SYNC   = 1;
-		/** Running with a source that implements AsynchronousSource. */
+		/**
+		 * Running with a source that implements AsynchronousSource.
+		 */
 		static final int ASYNC  = 2;
 
 		volatile int once;
@@ -1249,6 +1254,7 @@ abstract class SpscFreeListTracker<T> {
 				idx = n;
 			}
 			setIndex(entry, idx);
+			SIZE.lazySet(this, size); // make sure entry is released
 			a[idx] = entry;
 			SIZE.lazySet(this, size + 1);
 			return true;
