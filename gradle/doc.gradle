@@ -61,7 +61,7 @@ configure(rootProject) {
 				'compat-mode': '',
 				stylesdir: "stylesheets/",
 				stylesheet: 'golo.css',
-				appversion: "3.0.0.BUILD-SNAPSHOT",
+				appversion: "3.0.1.BUILD-SNAPSHOT",
 				'source-highlighter': 'coderay'
 
 		doLast {
