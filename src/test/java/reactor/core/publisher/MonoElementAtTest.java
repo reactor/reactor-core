@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.TestSubscriber;
 
@@ -29,7 +28,7 @@ public class MonoElementAtTest {
 
 	@Test(expected = NullPointerException.class)
 	public void source2Null() {
-		new MonoElementAt<>(null, 1, () -> 1);
+		new MonoElementAt<>(null, 1, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -44,7 +43,7 @@ public class MonoElementAtTest {
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void indexNegative2() {
-		new MonoElementAt<>(Mono.never(), -1, () -> 1);
+		new MonoElementAt<>(Mono.never(), -1, 1);
 	}
 
 	@Test
@@ -146,7 +145,7 @@ public class MonoElementAtTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().elementAt(0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0, 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -157,7 +156,7 @@ public class MonoElementAtTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.<Integer>empty().elementAt(0, () -> 20).subscribe(ts);
+		Flux.<Integer>empty().elementAt(0, 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -174,7 +173,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).elementAt(20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAt(20, 20).subscribe(ts);
 
 		ts.assertValues(20)
 		  .assertNoError()
@@ -185,7 +184,7 @@ public class MonoElementAtTest {
 	public void nonEmptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.range(1, 10).elementAt(20, () -> 20).subscribe(ts);
+		Flux.range(1, 10).elementAt(20, 20).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -198,28 +197,4 @@ public class MonoElementAtTest {
 		  .assertComplete();
 	}
 
-	@Test
-	public void defaultReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.<Integer>empty().elementAt(0, () -> null).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(NullPointerException.class)
-		  .assertNotComplete();
-	}
-
-	@Test
-	public void defaultThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.<Integer>empty().elementAt(0, () -> {
-			throw new RuntimeException("forced failure");
-		}).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
-		  .assertNotComplete();
-	}
 }
