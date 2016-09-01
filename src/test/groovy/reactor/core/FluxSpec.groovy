@@ -835,7 +835,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element at index 2 is requested'
-			def tap = s.elementAt(2, {-1}).block()
+			def tap = s.elementAt(2, -1).block()
 
 		then:
 			'3 is emitted'
@@ -843,7 +843,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'element with index > number of values is requested'
-			tap = s.elementAt(10, {-1}).block()
+			tap = s.elementAt(10, -1).block()
 
 		then:
 			'-1 is emitted'

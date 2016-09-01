@@ -141,7 +141,13 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			}
 			done = true;
 
-			complete(defaultValue);
+			if(defaultValue != null) {
+				complete(defaultValue);
+			}
+			else{
+				subscriber.onError(Operators.onOperatorError(new
+						IndexOutOfBoundsException()));
+			}
 		}
 
 
