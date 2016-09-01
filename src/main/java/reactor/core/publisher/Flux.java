@@ -4849,6 +4849,42 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Returns a {@link Flux} that sorts the events emitted by source {@link Flux}.
+	 * Each item emitted by the {@link Flux} must implement {@link Comparable} with
+	 * respect to all
+	 * other items in the sequence.
+	 *
+	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
+	 * might cause {@link OutOfMemoryError}. Use sequence splitting like
+	 * {@link #window} to sort batches in that case.
+	 *
+	 * @throws ClassCastException
+	 *             if any item emitted by the {@link Flux} does not implement
+	 *             {@link Comparable} with respect to
+	 *             all other items emitted by the {@link Flux}
+	 * @return a sorting {@link Flux}
+	 */
+	public final Flux<T> sort(){
+		return collectSortedList().flatMapIterable(identityFunction());
+	}
+
+	/**
+	 * Returns a {@link Flux} that sorts the events emitted by source {@link Flux}
+	 * given the {@link Comparator} function.
+	 *
+	 * <p>Note that calling {@code sorted} with long, non-terminating or infinite sources
+	 * might cause {@link OutOfMemoryError}
+	 *
+	 * @param sortFunction
+	 *            a function that compares two items emitted by this {@link Flux}
+	 *            that indicates their sort order
+	 * @return a sorting {@link Flux}
+	 */
+	public final Flux<T> sort(Comparator<? super T> sortFunction) {
+		return collectSortedList(sortFunction).flatMapIterable(identityFunction());
+	}
+
+	/**
 	 * Prepend the given {@link Iterable} before this {@link Flux} sequence.
 	 *
 	 * <p>
