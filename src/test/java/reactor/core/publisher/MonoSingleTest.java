@@ -33,16 +33,6 @@ public class MonoSingleTest {
 		new MonoSingle<>(Mono.never(), null, false);
 	}
 
-	@Test
-	public void defaultReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.<Integer>empty().single(null).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(NullPointerException.class)
-		  .assertNotComplete();
-	}
 
 	@Test
 	public void normal() {

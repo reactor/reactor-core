@@ -4685,7 +4685,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		    Callable<T> thiz = (Callable<T>)this;
 		    return Mono.onAssembly(new MonoCallable<>(thiz));
 	    }
-		return Mono.onAssembly(new MonoSingle<>(this, null, false));
+		return Mono.onAssembly(new MonoSingle<>(this));
 	}
 
 	/**
@@ -4708,7 +4708,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
                 T v = scalarCallable.call();
                 if (v == null) {
-	                return Mono.empty();
+	                return Mono.just(defaultValue);
                 }
                 return Mono.just(v);
             }

@@ -39,26 +39,14 @@ import reactor.core.Receiver;
  */
 final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
-	private static final Supplier<Object> COMPLETE_ON_EMPTY_SEQUENCE =
-			new Supplier<Object>() {
-				@Override
-				public Object get() {
-					return null; // Purposedly leave noop
-				}
-			};
-
-	/**
-	 * @param <T>
-	 *
-	 * @return a Supplier instance marker that bypass NoSuchElementException if empty
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<T> completeOnEmptySequence() {
-		return (Supplier<T>) COMPLETE_ON_EMPTY_SEQUENCE;
-	}
-
 	final T       defaultValue;
 	final boolean completeOnEmpty;
+
+	public MonoSingle(Publisher<? extends T> source) {
+		super(source);
+		this.defaultValue = null;
+		this.completeOnEmpty = false;
+	}
 
 	public MonoSingle(Publisher<? extends T> source,
 			T defaultValue,
