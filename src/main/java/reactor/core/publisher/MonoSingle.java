@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
@@ -38,43 +39,46 @@ import reactor.core.Receiver;
  */
 final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
-	private static final Supplier<Object> COMPLETE_ON_EMPTY_SEQUENCE = new Supplier<Object>() {
-		@Override
-		public Object get() {
-			return null; // Purposedly leave noop
-		}
-	};
+	private static final Supplier<Object> COMPLETE_ON_EMPTY_SEQUENCE =
+			new Supplier<Object>() {
+				@Override
+				public Object get() {
+					return null; // Purposedly leave noop
+				}
+			};
 
 	/**
 	 * @param <T>
+	 *
 	 * @return a Supplier instance marker that bypass NoSuchElementException if empty
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<T> completeOnEmptySequence() {
-		return (Supplier<T>)COMPLETE_ON_EMPTY_SEQUENCE;
+		return (Supplier<T>) COMPLETE_ON_EMPTY_SEQUENCE;
 	}
 
-	final Supplier<? extends T> defaultSupplier;
+	final T       defaultValue;
+	final boolean completeOnEmpty;
 
-	public MonoSingle(Publisher<? extends T> source) {
+	public MonoSingle(Publisher<? extends T> source,
+			T defaultValue,
+			boolean completeOnEmpty) {
 		super(source);
-		this.defaultSupplier = null;
-	}
-
-	public MonoSingle(Publisher<? extends T> source, Supplier<? extends T> defaultSupplier) {
-		super(source);
-		this.defaultSupplier = Objects.requireNonNull(defaultSupplier, "defaultSupplier");
+		this.defaultValue = completeOnEmpty ? defaultValue :
+				Objects.requireNonNull(defaultValue, "defaultValue");
+		this.completeOnEmpty = completeOnEmpty;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new SingleSubscriber<>(s, defaultSupplier));
+		source.subscribe(new SingleSubscriber<>(s, defaultValue, completeOnEmpty));
 	}
 
 	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>
 			implements Receiver {
 
-		final Supplier<? extends T> defaultSupplier;
+		final T       defaultValue;
+		final boolean completeOnEmpty;
 
 		Subscription s;
 
@@ -82,9 +86,12 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 		boolean done;
 
-		public SingleSubscriber(Subscriber<? super T> actual, Supplier<? extends T> defaultSupplier) {
+		public SingleSubscriber(Subscriber<? super T> actual,
+				T defaultValue,
+				boolean completeOnEmpty) {
 			super(actual);
-			this.defaultSupplier = defaultSupplier;
+			this.defaultValue = defaultValue;
+			this.completeOnEmpty = completeOnEmpty;
 		}
 
 		@Override
@@ -150,36 +157,23 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 			int c = count;
 			if (c == 0) {
-				Supplier<? extends T> ds = defaultSupplier;
-				if (ds != null) {
 
-					if (ds == COMPLETE_ON_EMPTY_SEQUENCE){
-						subscriber.onComplete();
-						return;
-					}
-
-					T t;
-
-					try {
-						t = ds.get();
-					} catch (Throwable e) {
-						subscriber.onError(Operators.onOperatorError(this, e));
-						return;
-					}
-
-					if (t == null) {
-						subscriber.onError(Operators.onOperatorError(this, new
-								NullPointerException("The defaultSupplier returned a " +
-								"null value")));
-						return;
-					}
-
-					complete(t);
-				} else {
-					subscriber.onError(Operators.onOperatorError(this, new
-							NoSuchElementException("Source was empty")));
+				if (completeOnEmpty) {
+					subscriber.onComplete();
+					return;
 				}
-			} else if (c == 1) {
+
+				T t = defaultValue;
+
+				if (t != null) {
+					complete(t);
+				}
+				else {
+					subscriber.onError(Operators.onOperatorError(this,
+							new NoSuchElementException("Source was empty")));
+				}
+			}
+			else if (c == 1) {
 				complete(value);
 			}
 		}
@@ -196,7 +190,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 		@Override
 		public Object connectedInput() {
-			return defaultSupplier != COMPLETE_ON_EMPTY_SEQUENCE ? defaultSupplier : null;
+			return value;
 		}
 
 	}

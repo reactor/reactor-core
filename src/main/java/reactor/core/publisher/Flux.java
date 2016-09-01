@@ -3024,7 +3024,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of the item at a specified index or a default value
 	 */
-	public final Mono<T> elementAt(int index, Supplier<? extends T> defaultValue) {
+	public final Mono<T> elementAt(int index, T defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
 	}
 
@@ -3421,7 +3421,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal the last element observed before complete signal.
+	 * Signal the last element observed before complete signal or emit
+	 * {@link NoSuchElementException} error if the source was empty.
+	 * For a passive version use {@link #takeLast(int)}
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/last.png" alt="">
@@ -3435,6 +3437,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this));
+	}
+
+	/**
+	 * Signal the last element observed before complete signal or emit
+	 * the defaultValue if empty.
+	 * For a passive version use {@link #takeLast(int)}
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/last.png" alt="">
+	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
+	 * @return a limited {@link Flux}
+	 */
+    public final Mono<T> last(T defaultValue) {
+	    if (this instanceof Callable) {
+		    @SuppressWarnings("unchecked")
+		    Callable<T> thiz = (Callable<T>)this;
+	        return convertToMono(thiz);
+	    }
+		return Mono.onAssembly(new MonoTakeLastOne<>(this, defaultValue));
 	}
 
 	/**
@@ -4664,22 +4685,22 @@ public abstract class Flux<T> implements Publisher<T> {
 		    Callable<T> thiz = (Callable<T>)this;
 		    return Mono.onAssembly(new MonoCallable<>(thiz));
 	    }
-		return Mono.onAssembly(new MonoSingle<>(this));
+		return Mono.onAssembly(new MonoSingle<>(this, null, false));
 	}
 
 	/**
 	 *
 	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
+	 * {@link java.util.NoSuchElementException} (or a default value) for empty source,
 	 * {@link IndexOutOfBoundsException} for a multi-item source.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/singleordefault.png" alt="">
-	 * @param defaultSupplier a {@link Supplier} of a single fallback item if this {@link Flux} is empty
+	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
 	 *
 	 * @return a {@link Mono} with the eventual single item or a supplied default value
 	 */
-    public final Mono<T> single(Supplier<? extends T> defaultSupplier) {
+    public final Mono<T> single(T defaultValue) {
         if (this instanceof Callable) {
             if (this instanceof Fuseable.ScalarCallable) {
 	            @SuppressWarnings("unchecked")
@@ -4687,7 +4708,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
                 T v = scalarCallable.call();
                 if (v == null) {
-	                return Mono.onAssembly(new MonoSupplier<>(defaultSupplier));
+	                return Mono.empty();
                 }
                 return Mono.just(v);
             }
@@ -4695,7 +4716,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	        Callable<T> thiz = (Callable<T>)this;
 	        return Mono.onAssembly(new MonoCallable<>(thiz));
         }
-		return Mono.onAssembly(new MonoSingle<>(this, defaultSupplier));
+		return Mono.onAssembly(new MonoSingle<>(this, defaultValue, false));
 	}
 
 	/**
@@ -4712,8 +4733,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		    Callable<T> thiz = (Callable<T>)this;
 	        return convertToMono(thiz);
 	    }
-		return Mono.onAssembly(new MonoSingle<>(this, MonoSingle
-				.completeOnEmptySequence()));
+		return Mono.onAssembly(new MonoSingle<>(this, null, true));
 	}
 
 	/**

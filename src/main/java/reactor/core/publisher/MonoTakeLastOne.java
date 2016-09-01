@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -30,13 +31,21 @@ import reactor.core.Receiver;
  */
 final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 
+	final T defaultValue;
+
     public MonoTakeLastOne(Publisher<? extends T> source) {
         super(source);
+	    this.defaultValue = null;
     }
+
+	public MonoTakeLastOne(Publisher<? extends T> source, T defaultValue) {
+		super(source);
+		this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
+	}
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new TakeLastOneSubscriber<>(s, true));
+        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true));
     }
 
 	static final class TakeLastOneSubscriber<T>
@@ -44,10 +53,14 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 			implements Receiver {
 
 		final boolean mustEmit;
+		final T       defaultValue;
 		Subscription s;
 
-		public TakeLastOneSubscriber(Subscriber<? super T> actual, boolean mustEmit) {
+		public TakeLastOneSubscriber(Subscriber<? super T> actual,
+				T defaultValue,
+				boolean mustEmit) {
 			super(actual);
+			this.defaultValue = defaultValue;
 			this.mustEmit = mustEmit;
 		}
 
@@ -73,8 +86,13 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 			T v = value;
 			if (v == null) {
 				if (mustEmit) {
-					subscriber.onError(Operators.onOperatorError(new NoSuchElementException(
-							"Flux#last() didn't observe any " + "onNext signal")));
+					if(defaultValue != null){
+						complete(defaultValue);
+					}
+					else {
+						subscriber.onError(Operators.onOperatorError(new NoSuchElementException(
+								"Flux#last() didn't observe any " + "onNext signal")));
+					}
 				}
 				else {
 					subscriber.onComplete();

@@ -23,45 +23,24 @@ import org.junit.Test;
 import reactor.test.TestSubscriber;
 
 public class MonoSingleTest {
-
 	@Test(expected = NullPointerException.class)
 	public void source1Null() {
-		new MonoSingle<>(null);
-	}
-
-	@Test(expected = NullPointerException.class)
-	public void source2Null() {
-		new MonoSingle<>(null, () -> 1);
+		new MonoSingle<>(null, 1, false);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void defaultSupplierNull() {
-		new MonoSingle<>(Mono.never(), null);
+		new MonoSingle<>(Mono.never(), null, false);
 	}
 
 	@Test
 	public void defaultReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().single(() -> null).subscribe(ts);
+		Flux.<Integer>empty().single(null).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
-		  .assertNotComplete();
-	}
-
-	@Test
-	public void defaultThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.<Integer>empty().single(() -> {
-			throw new RuntimeException("forced failure");
-		}).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage()
-		                                            .contains("forced failure")))
 		  .assertNotComplete();
 	}
 
@@ -110,7 +89,7 @@ public class MonoSingleTest {
 	public void emptyDefault() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.<Integer>empty().single(() -> 1).subscribe(ts);
+		Flux.<Integer>empty().single(1).subscribe(ts);
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -121,7 +100,7 @@ public class MonoSingleTest {
 	public void emptyDefaultBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.<Integer>empty().single(() -> 1).subscribe(ts);
+		Flux.<Integer>empty().single(1).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

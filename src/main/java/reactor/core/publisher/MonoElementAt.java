@@ -38,7 +38,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 
 	final long index;
 
-	final Supplier<? extends T> defaultSupplier;
+	final T defaultValue;
 
 	public MonoElementAt(Publisher<? extends T> source, long index) {
 		super(source);
@@ -46,27 +46,27 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			throw new IndexOutOfBoundsException("index >= required but it was " + index);
 		}
 		this.index = index;
-		this.defaultSupplier = null;
+		this.defaultValue = null;
 	}
 
-	public MonoElementAt(Publisher<? extends T> source, long index, Supplier<? extends T> defaultSupplier) {
+	public MonoElementAt(Publisher<? extends T> source, long index, T defaultValue) {
 		super(source);
 		if (index < 0) {
 			throw new IndexOutOfBoundsException("index >= required but it was " + index);
 		}
 		this.index = index;
-		this.defaultSupplier = Objects.requireNonNull(defaultSupplier, "defaultSupplier");
+		this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new ElementAtSubscriber<>(s, index, defaultSupplier));
+		source.subscribe(new ElementAtSubscriber<>(s, index, defaultValue));
 	}
 
 	static final class ElementAtSubscriber<T>
 			extends Operators.MonoSubscriber<T, T>
 			implements Receiver {
-		final Supplier<? extends T> defaultSupplier;
+		final T defaultValue;
 
 		long index;
 
@@ -75,10 +75,10 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 		boolean done;
 
 		public ElementAtSubscriber(Subscriber<? super T> actual, long index,
-											Supplier<? extends T> defaultSupplier) {
+											T defaultValue) {
 			super(actual);
 			this.index = index;
-			this.defaultSupplier = defaultSupplier;
+			this.defaultValue = defaultValue;
 		}
 
 		@Override
@@ -141,29 +141,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			}
 			done = true;
 
-			Supplier<? extends T> ds = defaultSupplier;
-
-			if (ds == null) {
-				subscriber.onError(Operators.onOperatorError(new
-						IndexOutOfBoundsException()));
-			} else {
-				T t;
-
-				try {
-					t = ds.get();
-				} catch (Throwable e) {
-					subscriber.onError(Operators.onOperatorError(e));
-					return;
-				}
-
-				if (t == null) {
-					subscriber.onError(Operators.onOperatorError(new
-							NullPointerException("The defaultSupplier returned a null value")));
-					return;
-				}
-
-				complete(t);
-			}
+			complete(defaultValue);
 		}
 
 
@@ -179,7 +157,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 
 		@Override
 		public Object connectedInput() {
-			return defaultSupplier;
+			return defaultValue;
 		}
 	}
 }
