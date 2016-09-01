@@ -61,6 +61,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
@@ -1443,4 +1444,40 @@ public class FluxTests extends AbstractReactorTest {
 		}
 	}
 
+	static final Logger logger = Loggers.getLogger(FluxTests.class);
+	@Test
+	public void demoComplexFluxInteraction() throws Exception {
+		final CountDownLatch latch = new CountDownLatch(100);
+
+		final WorkQueueProcessor<Integer> consumer = WorkQueueProcessor.create();
+		consumer.onBackpressureError().window(5).parallel().runOn(Schedulers
+				.newElastic("consumption_rail")).
+				subscribe(windowFlux -> {
+					AtomicInteger counter = new AtomicInteger(0);
+					windowFlux.subscribe(i -> logger.info("Logging value {} as element {} from the window", i, counter.incrementAndGet()));
+					latch.countDown();
+				});
+
+		AtomicInteger nextVal = new AtomicInteger();
+		Flux.<Integer>create(sink -> {
+			try {
+				while (!latch.await(10, TimeUnit.MILLISECONDS)) {
+					final Integer count = nextVal.incrementAndGet();
+					sink.next(count);
+					logger.info("New value {} injected!", count);
+				}
+
+			} catch (InterruptedException e) {
+				// swallow
+			}
+			sink.complete();
+			logger.info("Injection stopped");
+			sink.complete();
+		}).
+				subscribeOn(Schedulers.newSingle("num_gen")).
+				  publishOn(Schedulers.newSingle("to_downstream")).
+				  subscribeWith(consumer);
+
+		latch.await();
+	}
 }

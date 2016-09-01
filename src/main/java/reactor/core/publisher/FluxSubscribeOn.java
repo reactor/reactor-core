@@ -16,8 +16,8 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -38,7 +38,7 @@ import reactor.core.scheduler.Scheduler.Worker;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
+final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Scheduler scheduler;
 	
@@ -51,7 +51,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof ScalarCallable) {
+		if (source instanceof Fuseable.ScalarCallable) {
 			FluxSubscribeOnValue.singleScheduleOn(source, s, scheduler);
 			return;
 		}
@@ -71,7 +71,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 			return;
 		}
 
-		SubscribeOnPipeline<T> parent = new SubscribeOnPipeline<>(s, worker);
+		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(s, worker);
 		s.onSubscribe(parent);
 		
 		worker.schedule(new SourceSubscribeTask<>(parent, source));
@@ -87,33 +87,57 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		return null;
 	}
 
-	static final class SubscribeOnPipeline<T> extends Operators.DeferredSubscription
-			implements Subscriber<T>, Producer, Loopback, Runnable, QueueSubscription<T> {
+	static final class SubscribeOnSubscriber<T>
+			implements Subscription, Subscriber<T>, Producer, Loopback {
 
 		final Subscriber<? super T> actual;
 
 		final Worker worker;
 
+		volatile Subscription s;
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						Subscription.class,
+						"s");
+
+
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<SubscribeOnPipeline> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(SubscribeOnPipeline.class, "requested");
+		static final AtomicLongFieldUpdater<SubscribeOnSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						"requested");
 
-		volatile int wip;
+		volatile Thread thread;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<SubscribeOnPipeline> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(SubscribeOnPipeline.class, "wip");
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Thread> THREAD =
+				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						Thread.class,
+						"thread");
 
-		public SubscribeOnPipeline(Subscriber<? super T> actual, Worker worker) {
+		public SubscribeOnSubscriber(Subscriber<? super T> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			set(s);
+			if (Operators.setOnce(S, this, s)) {
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0L) {
+					requestUpstream(r, s);
+				}
+			}
+		}
+
+		void requestUpstream(final long n, final Subscription s) {
+			if (Thread.currentThread() == THREAD.get(this)) {
+				s.request(n);
+			}
+			else {
+				worker.schedule(() -> s.request(n));
+			}
 		}
 
 		@Override
@@ -143,37 +167,33 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if(WIP.getAndIncrement(this) == 0){
-					worker.schedule(this);
+				Subscription s = S.get(this);
+				if (s != null) {
+					requestUpstream(n, s);
 				}
-			}
-		}
+				else {
+					Operators.addAndGet(REQUESTED, this, n);
+					s = S.get(this);
+					if (s != null) {
+						long r = REQUESTED.getAndSet(this, 0L);
+						if (r != 0L) {
+							requestUpstream(r, s);
+						}
+					}
 
-		@Override
-		public void run() {
-			long r;
-			int missed = 1;
-			for(;;){
-				r = REQUESTED.getAndSet(this, 0L);
-
-				if(r != 0L) {
-					super.request(r);
-				}
-
-				if(r == Long.MAX_VALUE){
-					return;
-				}
-
-				missed = WIP.addAndGet(this, -missed);
-				if(missed == 0){
-					break;
 				}
 			}
 		}
 
 		@Override
 		public void cancel() {
-			super.cancel();
+			Subscription a = s;
+			if (a != Operators.cancelledSubscription()) {
+				a = S.getAndSet(this, Operators.cancelledSubscription());
+				if (a != null && a != Operators.cancelledSubscription()) {
+					a.cancel();
+				}
+			}
 			worker.shutdown();
 		}
 
@@ -192,45 +212,23 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback, Fus
 			return null;
 		}
 
-		@Override
-		public int requestFusion(int requestedMode) {
-			return Fuseable.NONE;
-		}
-
-		@Override
-		public T poll() {
-			return null;
-		}
-
-		@Override
-		public void clear() {
-
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return false;
-		}
-
-		@Override
-		public int size() {
-			return 0;
-		}
 	}
 
 	static final class SourceSubscribeTask<T> implements Runnable {
 
-		final Subscriber<? super T> actual;
+		final SubscribeOnSubscriber<T> actual;
 		
 		final Publisher<? extends T> source;
 
-		public SourceSubscribeTask(Subscriber<? super T> s, Publisher<? extends T> source) {
+		public SourceSubscribeTask(SubscribeOnSubscriber<T> s,
+				Publisher<? extends T> source) {
 			this.actual = s;
 			this.source = source;
 		}
 
 		@Override
 		public void run() {
+			SubscribeOnSubscriber.THREAD.lazySet(actual, Thread.currentThread());
 			source.subscribe(actual);
 		}
 	}

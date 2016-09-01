@@ -3696,7 +3696,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer() {
-		return onAssembly(new FluxBackpressureBuffer<>(this, QueueSupplier
+		return onAssembly(new FluxOnBackpressureBuffer<>(this, QueueSupplier
 				.SMALL_BUFFER_SIZE, true, null));
 	}
 
@@ -3714,7 +3714,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize) {
-		return onAssembly(new FluxBackpressureBuffer<>(this, maxSize, false, null));
+		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, null));
 	}
 
 
@@ -3735,7 +3735,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T>
 			onOverflow) {
 		Objects.requireNonNull(onOverflow, "onOverflow");
-		return onAssembly(new FluxBackpressureBuffer<>(this, maxSize, false, onOverflow));
+		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
 
 	/**
@@ -3749,7 +3749,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureDrop() {
-		return onAssembly(new FluxDrop<>(this));
+		return onAssembly(new FluxOnBackpressureDrop<>(this));
 	}
 
 	/**
@@ -3764,7 +3764,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureDrop(Consumer<? super T> onDropped) {
-		return onAssembly(new FluxDrop<>(this, onDropped));
+		return onAssembly(new FluxOnBackpressureDrop<>(this, onDropped));
 	}
 
 	/**
@@ -3793,7 +3793,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> onBackpressureLatest() {
-		return onAssembly(new FluxLatest<>(this));
+		return onAssembly(new FluxOnBackpressureLatest<>(this));
 	}
 
 	/**

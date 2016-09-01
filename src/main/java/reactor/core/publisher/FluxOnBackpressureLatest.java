@@ -36,9 +36,9 @@ import reactor.core.Trackable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxLatest<T> extends FluxSource<T, T> {
+final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 
-	public FluxLatest(Publisher<? extends T> source) {
+	public FluxOnBackpressureLatest(Publisher<? extends T> source) {
 		super(source);
 	}
 

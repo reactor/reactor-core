@@ -35,7 +35,7 @@ import reactor.core.Trackable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDrop<T> extends FluxSource<T, T> {
+final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 
 	static final Consumer<Object> NOOP = t -> {
 
@@ -43,13 +43,13 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 
 	final Consumer<? super T> onDrop;
 
-	public FluxDrop(Publisher<? extends T> source) {
+	public FluxOnBackpressureDrop(Publisher<? extends T> source) {
 		super(source);
 		this.onDrop = NOOP;
 	}
 
 
-	public FluxDrop(Publisher<? extends T> source, Consumer<? super T> onDrop) {
+	public FluxOnBackpressureDrop(Publisher<? extends T> source, Consumer<? super T> onDrop) {
 		super(source);
 		this.onDrop = Objects.requireNonNull(onDrop, "onDrop");
 	}
@@ -121,11 +121,10 @@ final class FluxDrop<T> extends FluxSource<T, T> {
 				return;
 			}
 
-			if (requested != 0L) {
-
+			long r = requested;
+			if (r != 0L) {
 				actual.onNext(t);
-
-				if (requested != Long.MAX_VALUE) {
+				if (r != Long.MAX_VALUE) {
 					REQUESTED.decrementAndGet(this);
 				}
 

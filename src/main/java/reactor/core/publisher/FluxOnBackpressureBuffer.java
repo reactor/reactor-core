@@ -34,14 +34,14 @@ import reactor.util.concurrent.QueueSupplier;
 /**
  * @author Stephane Maldini
  */
-final class FluxBackpressureBuffer<O> extends FluxSource<O, O> implements Fuseable {
+final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuseable {
 
 	final Consumer<? super O> onOverflow;
 	final int                 bufferSize;
 	final boolean             unbounded;
 	final boolean             delayError;
 
-	public FluxBackpressureBuffer(Publisher<? extends O> source,
+	public FluxOnBackpressureBuffer(Publisher<? extends O> source,
 			int bufferSize,
 			boolean unbounded,
 			Consumer<? super O> onOverflow) {
