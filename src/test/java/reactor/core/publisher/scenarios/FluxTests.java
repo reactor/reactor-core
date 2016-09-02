@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1133,6 +1134,28 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
+	public void fluxCreateDemoElasticScheduler() throws Exception {
+		final int inputCount = 1000;
+		final CountDownLatch latch = new CountDownLatch(inputCount);
+		Flux.create(
+				sink -> {
+					for (int i = 0; i < inputCount; i++) {
+						logger.info("Injecting {}", i);
+						sink.next(i);
+					}
+					sink.complete();
+				}).
+				    subscribeOn(Schedulers.newSingle("production")).
+				    publishOn(Schedulers.elastic()).
+				    subscribe(i -> {
+					    logger.info("Consuming {}", i);
+					    LockSupport.parkNanos(100L);
+					    latch.countDown();
+				    });
+		latch.await();
+	}
+
+	@Test
 	public void subscribeOnDispatchOn() throws InterruptedException {
 		CountDownLatch latch = new CountDownLatch(100);
 
@@ -1450,7 +1473,7 @@ public class FluxTests extends AbstractReactorTest {
 		final CountDownLatch latch = new CountDownLatch(100);
 
 		final WorkQueueProcessor<Integer> consumer = WorkQueueProcessor.create();
-		consumer.onBackpressureError().window(5).parallel().runOn(Schedulers
+		consumer.window(5).parallel().runOn(Schedulers
 				.newElastic("consumption_rail")).
 				subscribe(windowFlux -> {
 					AtomicInteger counter = new AtomicInteger(0);
@@ -1473,9 +1496,11 @@ public class FluxTests extends AbstractReactorTest {
 			sink.complete();
 			logger.info("Injection stopped");
 			sink.complete();
-		}).
+		}).log("sub").
 				subscribeOn(Schedulers.newSingle("num_gen")).
+				log("pub").
 				  publishOn(Schedulers.newSingle("to_downstream")).
+				log("p").
 				  subscribeWith(consumer);
 
 		latch.await();

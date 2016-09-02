@@ -4483,7 +4483,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by last item observed when the sampler signals
 	 */
 	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
-		return onAssembly(new FluxThrottleFirst<>(this, samplerFactory));
+		return onAssembly(new FluxSampleFirst<>(this, samplerFactory));
 	}
 
 	/**
@@ -4530,7 +4530,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
-		return onAssembly(new FluxThrottleTimeout<>(this,
+		return onAssembly(new FluxSampleTimeout<>(this,
 				throttlerFactory,
 				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
@@ -4556,7 +4556,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		if(maxConcurrency == Integer.MAX_VALUE){
 			return sampleTimeout(throttlerFactory);
 		}
-		return onAssembly(new FluxThrottleTimeout<>(this, throttlerFactory,
+		return onAssembly(new FluxSampleTimeout<>(this, throttlerFactory,
 				QueueSupplier.get(maxConcurrency)));
 	}
 

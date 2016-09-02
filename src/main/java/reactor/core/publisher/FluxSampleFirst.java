@@ -37,11 +37,11 @@ import reactor.core.Exceptions;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxThrottleFirst<T, U> extends FluxSource<T, T> {
+final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 
-	public FluxThrottleFirst(Publisher<? extends T> source,
+	public FluxSampleFirst(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<U>> throttler) {
 		super(source);
 		this.throttler = Objects.requireNonNull(throttler, "throttler");

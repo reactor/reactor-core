@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
-import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -101,7 +99,6 @@ final class SingleScheduler implements Scheduler {
             Future<?> f = executor.submit(task);
             return () -> f.cancel(false);
         } catch (RejectedExecutionException ex) {
-            Operators.onErrorDropped(ex);
             return REJECTED;
         }
     }
@@ -142,7 +139,6 @@ final class SingleScheduler implements Scheduler {
             try {
                 f = exec.submit(pw);
             } catch (RejectedExecutionException ex) {
-                Operators.onErrorDropped(ex);
                 return REJECTED;
             }
             
@@ -234,8 +230,7 @@ final class SingleScheduler implements Scheduler {
                     try {
                         run.run();
                     } catch (Throwable ex) {
-                        Exceptions.throwIfFatal(ex);
-                        Operators.onErrorDropped(ex);
+                        Schedulers.handleError(ex);
                     }
                 } finally {
                     for (;;) {

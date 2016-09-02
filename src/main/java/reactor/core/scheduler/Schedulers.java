@@ -30,6 +30,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
+import reactor.util.Logger;
+import reactor.util.Loggers;
+
+import static reactor.core.Exceptions.unwrap;
 
 /**
  * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
@@ -554,7 +559,10 @@ public class Schedulers {
 		}
 	}
 
-	static final class SchedulerThreadFactory implements ThreadFactory, Supplier<String> {
+	static final Logger log = Loggers.getLogger(Schedulers.class);
+
+	static final class SchedulerThreadFactory implements ThreadFactory,
+	                                                     Supplier<String>, Thread.UncaughtExceptionHandler {
 
 		final String     name;
 		final boolean    daemon;
@@ -570,12 +578,31 @@ public class Schedulers {
 		public Thread newThread(Runnable r) {
 			Thread t = new Thread(r, name + "-" + COUNTER.incrementAndGet());
 			t.setDaemon(daemon);
+			t.setUncaughtExceptionHandler(this);
 			return t;
+		}
+
+		@Override
+		public void uncaughtException(Thread t, Throwable e) {
+			log.error("Scheduler worker failed with an uncaught exception", e);
 		}
 
 		@Override
 		public String get() {
 			return name;
+		}
+	}
+
+	static void handleError(Throwable ex){
+		Throwable t = unwrap(ex);
+		Exceptions.throwIfFatal(t);
+		Thread.UncaughtExceptionHandler x = Thread.currentThread()
+		                                          .getUncaughtExceptionHandler();
+		if(x != null) {
+			x.uncaughtException(Thread.currentThread(), t);
+		}
+		else{
+			log.error("Scheduler worker failed with an uncaught exception", t);
 		}
 	}
 

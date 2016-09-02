@@ -25,8 +25,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
+
+import static reactor.core.Exceptions.unwrap;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
@@ -85,9 +86,8 @@ final class ExecutorScheduler implements Scheduler {
                 if (!get()) {
                     task.run();
                 }
-            } catch (Throwable e) {
-                Exceptions.throwIfFatal(e);
-                Operators.onErrorDropped(e);
+            } catch (Throwable ex) {
+                Schedulers.handleError(ex);
             }
         }
         
@@ -135,9 +135,8 @@ final class ExecutorScheduler implements Scheduler {
                 if (!get()) {
                     task.run();
                 }
-            } catch (Throwable e) {
-                Exceptions.throwIfFatal(e);
-                Operators.onErrorDropped(e);
+            } catch (Throwable ex) {
+                Schedulers.handleError(ex);
             } finally {
                 if (callRemoveOnFinish) {
                     dispose();

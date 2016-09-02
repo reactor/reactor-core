@@ -166,7 +166,6 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
 				Subscription s = S.get(this);
 				if (s != null) {
 					requestUpstream(n, s);

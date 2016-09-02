@@ -448,12 +448,14 @@ final class FluxCreate<T> extends Flux<T> {
 		Throwable error;
 		volatile boolean done;
 
-		final AtomicInteger wip;
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<BufferAsyncSink> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(BufferAsyncSink.class, "wip");
 
 		public BufferAsyncSink(Subscriber<? super T> actual, int capacityHint) {
 			super(actual);
 			this.queue = QueueSupplier.<T>unbounded(capacityHint).get();
-			this.wip = new AtomicInteger();
 		}
 
 		@Override
@@ -482,13 +484,13 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		void onCancel() {
-			if (wip.getAndIncrement() == 0) {
+			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
 			}
 		}
 
 		void drain() {
-			if (wip.getAndIncrement() != 0) {
+			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 
@@ -558,7 +560,7 @@ final class FluxCreate<T> extends Flux<T> {
 					Operators.produced(REQUESTED, this, e);
 				}
 
-				missed = wip.addAndGet(-missed);
+				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}

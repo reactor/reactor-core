@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
-import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -155,7 +154,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				try {
 					task.run();
 				} catch (Throwable e) {
-					Operators.onErrorDropped(e);
+					Schedulers.handleError(e);
 				}
 			} finally {
 				for (;;) {

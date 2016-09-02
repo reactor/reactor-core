@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
-import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -263,8 +262,8 @@ final class SingleTimedScheduler implements TimedScheduler {
             try {
                 try {
                     task.run();
-                } catch (Throwable e) {
-                    Operators.onErrorDropped(e);
+                } catch (Throwable ex) {
+                    Schedulers.handleError(ex);
                 }
             } finally {
                 for (;;) {
@@ -383,7 +382,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                 try {
                     task.run();
                 } catch (Throwable ex) {
-                    Operators.onErrorDropped(ex);
+                    Schedulers.handleError(ex);
                     for (;;) {
                         Future<?> a = get();
                         if (a == CANCELLED_FUTURE) {

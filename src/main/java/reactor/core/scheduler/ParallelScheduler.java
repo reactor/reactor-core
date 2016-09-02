@@ -26,8 +26,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Operators;
 import reactor.util.concurrent.OpenHashSet;
+
+import static reactor.core.Exceptions.unwrap;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
@@ -171,7 +172,6 @@ final class ParallelScheduler implements Scheduler {
             try {
                 f = exec.submit(pw);
             } catch (RejectedExecutionException ex) {
-                Operators.onErrorDropped(ex);
                 return REJECTED;
             }
             
@@ -263,8 +263,7 @@ final class ParallelScheduler implements Scheduler {
                     try {
                         run.run();
                     } catch (Throwable ex) {
-                        Exceptions.throwIfFatal(ex);
-                        Operators.onErrorDropped(ex);
+                        Schedulers.handleError(ex);
                     }
                 } finally {
                     for (;;) {
