@@ -1140,7 +1140,6 @@ public class FluxTests extends AbstractReactorTest {
 		Flux.create(
 				sink -> {
 					for (int i = 0; i < inputCount; i++) {
-						logger.info("Injecting {}", i);
 						sink.next(i);
 					}
 					sink.complete();
@@ -1148,7 +1147,6 @@ public class FluxTests extends AbstractReactorTest {
 				    subscribeOn(Schedulers.newSingle("production")).
 				    publishOn(Schedulers.elastic()).
 				    subscribe(i -> {
-					    logger.info("Consuming {}", i);
 					    LockSupport.parkNanos(100L);
 					    latch.countDown();
 				    });
