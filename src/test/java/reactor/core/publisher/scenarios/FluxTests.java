@@ -1466,43 +1466,4 @@ public class FluxTests extends AbstractReactorTest {
 			System.out.println();
 		}
 	}
-
-	static final Logger logger = Loggers.getLogger(FluxTests.class);
-	@Test
-	public void demoComplexFluxInteraction() throws Exception {
-		final CountDownLatch latch = new CountDownLatch(100);
-
-		final WorkQueueProcessor<Integer> consumer = WorkQueueProcessor.create();
-		consumer.window(5).parallel().runOn(Schedulers
-				.newElastic("consumption_rail")).
-				subscribe(windowFlux -> {
-					AtomicInteger counter = new AtomicInteger(0);
-					windowFlux.subscribe(i -> logger.info("Logging value {} as element {} from the window", i, counter.incrementAndGet()));
-					latch.countDown();
-				});
-
-		AtomicInteger nextVal = new AtomicInteger();
-		Flux.<Integer>create(sink -> {
-			try {
-				while (!latch.await(10, TimeUnit.MILLISECONDS)) {
-					final Integer count = nextVal.incrementAndGet();
-					sink.next(count);
-					logger.info("New value {} injected!", count);
-				}
-
-			} catch (InterruptedException e) {
-				// swallow
-			}
-			sink.complete();
-			logger.info("Injection stopped");
-			sink.complete();
-		}).log("sub").
-				subscribeOn(Schedulers.newSingle("num_gen")).
-				log("pub").
-				  publishOn(Schedulers.newSingle("to_downstream")).
-				log("p").
-				  subscribeWith(consumer);
-
-		latch.await();
-	}
 }
