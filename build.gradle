@@ -72,7 +72,23 @@ apply plugin: 'propdeps'
 apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'osgi'
+apply plugin: 'jacoco'
 apply from: "${gradleScriptDir}/ide.gradle"
+
+jacoco {
+  toolVersion = '0.7.7.201606060606'
+  // See http://www.eclemma.org/jacoco/.
+}
+
+jacocoTestReport {
+  reports {
+	xml.enabled = true
+	html.enabled = true
+	html.destination "${buildDir}/jacocoHtml"
+  }
+}
+
+build.dependsOn jacocoTestReport
 
 if (project.hasProperty('platformVersion')) {
   apply plugin: 'spring-io'
