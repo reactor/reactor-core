@@ -66,25 +66,23 @@ ext {
 
 }
 
+apply plugin: 'java'
+apply plugin: 'jacoco'
 apply from: "$gradleScriptDir/setup.gradle"
 apply from: "$gradleScriptDir/doc.gradle"
 apply plugin: 'propdeps'
-apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'osgi'
-apply plugin: 'jacoco'
 apply from: "${gradleScriptDir}/ide.gradle"
 
 jacoco {
   toolVersion = '0.7.7.201606060606'
-  reportsDir = file("$buildDir/reports/jacoco")
-  // See http://www.eclemma.org/jacoco/.
 }
 
 jacocoTestReport {
   reports {
-	xml.enabled true
-	html.enabled true
+	xml.enabled = true
+	html.enabled = true
   }
 }
 
@@ -219,4 +217,4 @@ task testNG(type: Test) {
   }
 }
 
-check.dependsOn testNG
+check.dependsOn jacocoTestReport, testNG
