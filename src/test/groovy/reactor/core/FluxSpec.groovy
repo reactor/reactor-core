@@ -497,7 +497,6 @@ class FluxSpec extends Specification {
 		then:
 			'it is passed to the consumer'
 			errors == 1
-			thrown RuntimeException
 
 		when:
 			'A new error consumer is subscribed'
@@ -505,7 +504,6 @@ class FluxSpec extends Specification {
 
 		then:
 			'it is called since publisher is in error state'
-			thrown RuntimeException
 			errors == 2
 	}
 
@@ -918,7 +916,6 @@ class FluxSpec extends Specification {
 		then:
 			'the error is passed on'
 		errors == 1
-		thrown Exception //because consume doesn't have error handler
 	}
 
 	def "When a processor is streamed"() {
@@ -973,7 +970,6 @@ class FluxSpec extends Specification {
 		then:
 			'the error is passed on'
 			errors == 1
-			thrown Exception //no error handler
 	}
 
 	def "A known set of values can be reduced"() {
