@@ -114,7 +114,7 @@ final class LambdaSubscriber<T>
 			errorConsumer.accept(t);
 		}
 		else {
-			Operators.onErrorDropped(t);
+			throw Exceptions.errorCallbackNotImplemented(t);
 		}
 	}
 
@@ -130,16 +130,7 @@ final class LambdaSubscriber<T>
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);
-			Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-			if (s != null && s != Operators.cancelledSubscription()) {
-				s.cancel();
-			}
-			if (errorConsumer != null) {
-				errorConsumer.accept(t);
-			}
-			else {
-				Operators.onErrorDropped(t);
-			}
+			onError(t);
 		}
 	}
 

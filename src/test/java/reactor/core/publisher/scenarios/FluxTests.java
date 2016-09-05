@@ -1165,6 +1165,22 @@ public class FluxTests extends AbstractReactorTest {
 
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}
+	@Test
+	public void unimplementedErrorCallback() throws InterruptedException {
+
+		Flux.error(new Exception("forced"))
+		       .log("error")
+		       .subscribe();
+
+		try{
+			Flux.error(new Exception("forced"))
+			    .subscribe();
+		}
+		catch(Exception e){
+			return;
+		}
+		fail();
+	}
 
 	@Test
 	public void delayEach() throws InterruptedException {

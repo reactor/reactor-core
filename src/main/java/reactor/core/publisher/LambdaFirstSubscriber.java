@@ -114,7 +114,7 @@ final class LambdaFirstSubscriber<T>
 			errorConsumer.accept(t);
 		}
 		else {
-			Operators.onErrorDropped(t);
+			throw Exceptions.errorCallbackNotImplemented(t);
 		}
 	}
 
@@ -137,12 +137,7 @@ final class LambdaFirstSubscriber<T>
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);
-				if (errorConsumer != null) {
-					errorConsumer.accept(t);
-				}
-				else {
-					Operators.onErrorDropped(t);
-				}
+				onError(t);
 				return;
 			}
 		}

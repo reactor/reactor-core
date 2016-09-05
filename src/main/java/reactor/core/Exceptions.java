@@ -18,16 +18,12 @@ package reactor.core;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-
-import org.reactivestreams.Subscription;
 
 /**
  * Global Reactor Core Exception handling and utils to operate on.
  *
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @author Stephane Maldini
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 public abstract class Exceptions {
 
@@ -37,19 +33,20 @@ public abstract class Exceptions {
 	public static final boolean CANCEL_STACKTRACE =
 			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
 
-
 	/**
-	 * A singleton instance of a Throwable indicating a terminal state for exceptions, don't leak this!
+	 * A singleton instance of a Throwable indicating a terminal state for exceptions,
+	 * don't leak this!
 	 */
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
 
 	/**
-	 *
 	 * @param <T> the parent instance type
 	 * @param field the target field updater
 	 * @param instance the parent instance for the field
 	 * @param exception the Throwable to add.
-	 * @return true if added, false if the field contained the {@link #TERMINATED} instance.
+	 *
+	 * @return true if added, false if the field contained the {@link #TERMINATED}
+	 * instance.
 	 */
 	public static <T> boolean addThrowable(AtomicReferenceFieldUpdater<T, Throwable> field,
 			T instance,
@@ -78,18 +75,21 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * @return a new {@link NullPointerException} with a cause message abiding to reactive stream specification.
+	 * @return a new {@link NullPointerException} with a cause message abiding to reactive
+	 * stream specification.
 	 */
 	public static NullPointerException argumentIsNullException() {
 		return new NullPointerException("Spec 2.13: Signal/argument cannot be null");
 	}
 
 	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble upstream.
-	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
+	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble
+	 * upstream. <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
-	 * @return an unchecked exception that should choose bubbling up over error callback path
+	 *
+	 * @return an unchecked exception that should choose bubbling up over error callback
+	 * path
 	 */
 	public static RuntimeException bubble(Throwable t) {
 		throwIfFatal(t);
@@ -97,16 +97,30 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * @return a new {@link IllegalStateException} with a cause message abiding to reactive stream specification.
+	 * @return a new {@link IllegalStateException} with a cause message abiding to
+	 * reactive stream specification.
 	 */
 	public static IllegalStateException duplicateOnSubscribeException() {
-		return new IllegalStateException("Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once (based on object equality)");
+		return new IllegalStateException(
+				"Spec. Rule 2.12 - Subscriber.onSubscribe MUST NOT be called more than once (based on object equality)");
 	}
 
 	/**
-	 * An exception that is propagated upward and considered as "fatal" as per Reactive Stream limited list of
-	 * exceptions allowed to bubble. It is not meant to be common error resolution but might assist implementors in
-	 * dealing with boundaries (queues, combinations and async).
+	 * Return an {@link UnsupportedOperationException}
+	 * @param cause original error not processed by a receiver.
+	 * @return an {@link UnsupportedOperationException}
+	 */
+	public static UnsupportedOperationException errorCallbackNotImplemented(Throwable cause) {
+		Objects.requireNonNull(cause, "cause");
+		return new ErrorCallbackNotImplemented(cause);
+	}
+
+	/**
+	 * An exception that is propagated upward and considered as "fatal" as per Reactive
+	 * Stream limited list of exceptions allowed to bubble. It is not meant to be common
+	 * error resolution but might assist implementors in dealing with boundaries (queues,
+	 * combinations and async).
+	 *
 	 * @return a {@link RuntimeException} that can be checked via {@link #isCancel}
 	 */
 	public static RuntimeException failWithCancel() {
@@ -115,38 +129,54 @@ public abstract class Exceptions {
 
 	/**
 	 * Return an {@link IllegalStateException}
+	 *
 	 * @return an {@link IllegalStateException}
 	 */
 	public static IllegalStateException failWithOverflow() {
-		return new IllegalStateException("The receiver is overrun by more signals than " +
-				"expected (bounded queue...)");
-	}
-
-	/**
-	 * Check if the given error is a cancel signal.
-	 * @param t the {@link Throwable} error to check
-	 * @return true if given error is a cancellation token.
-	 */
-	public static boolean isCancel(Throwable t){
-		return t == CancelException.INSTANCE || t instanceof CancelException;
+		return new IllegalStateException("The receiver is overrun by more signals than " + "expected (bounded queue...)");
 	}
 
 	/**
 	 * Check if the given error is a bubbled wrapped exception.
+	 *
 	 * @param t the {@link Throwable} error to check
+	 *
 	 * @return true if given error is a a bubbled wrapped exception.
 	 */
-	public static boolean isBubbling(Throwable t){
+	public static boolean isBubbling(Throwable t) {
 		return t instanceof BubblingException;
 	}
 
 	/**
+	 * Check if the given error is a cancel signal.
+	 *
+	 * @param t the {@link Throwable} error to check
+	 *
+	 * @return true if given error is a cancellation token.
+	 */
+	public static boolean isCancel(Throwable t) {
+		return t == CancelException.INSTANCE || t instanceof CancelException;
+	}
+
+	/**
+	 * Return an {@link UnsupportedOperationException}
+	 * @param cause original error not processed by a receiver.
+	 * @return an {@link UnsupportedOperationException}
+	 */
+	public static boolean isErrorCallbackNotImplemented(Throwable cause) {
+		return cause != null && cause.getClass().equals(ErrorCallbackNotImplemented
+				.class);
+	}
+
+	/**
 	 * @param elements the invalid requested demand
-	 * @return a new {@link IllegalArgumentException} with a cause message abiding to reactive stream specification.
+	 *
+	 * @return a new {@link IllegalArgumentException} with a cause message abiding to
+	 * reactive stream specification.
 	 */
 	public static IllegalArgumentException nullOrNegativeRequestException(long elements) {
-		return new IllegalArgumentException("Spec. Rule 3.9 - Cannot request a non strictly positive number: " +
-				elements);
+		return new IllegalArgumentException(
+				"Spec. Rule 3.9 - Cannot request a non strictly positive number: " + elements);
 	}
 
 	/**
@@ -155,25 +185,29 @@ public abstract class Exceptions {
 	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
+	 *
 	 * @return an unchecked exception
 	 */
 	public static RuntimeException propagate(Throwable t) {
 		throwIfFatal(t);
-		if(t instanceof RuntimeException){
-			return (RuntimeException)t;
+		if (t instanceof RuntimeException) {
+			return (RuntimeException) t;
 		}
 		return new ReactiveException(t);
 	}
 
 	/**
-	 * Atomic utility to safely mark a volatile throwable reference with a terminal marker.
+	 * Atomic utility to safely mark a volatile throwable reference with a terminal
+	 * marker.
 	 *
 	 * @param field the atomic container
 	 * @param instance the reference instance
 	 * @param <T> the instance type
+	 *
 	 * @return the previously masked throwable
 	 */
-	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field, T instance) {
+	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field,
+			T instance) {
 		Throwable current = field.get(instance);
 		if (current != TERMINATED) {
 			current = field.getAndSet(instance, TERMINATED);
@@ -182,26 +216,28 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error varieties. These
-	 * varieties are as follows:
-	 * <ul>
-	 * <li>{@code BubblingException}</li>
-	 * <li>{@code VirtualMachineError}</li>
-	 * <li>{@code ThreadDeath}</li>
-	 * <li>{@code LinkageError}</li>
-	 * </ul>
+	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
+	 * varieties. These varieties are as follows: <ul> <li>{@code BubblingException}</li>
+	 * <li>{@code VirtualMachineError}</li> <li>{@code ThreadDeath}</li> <li>{@code
+	 * LinkageError}</li> </ul>
 	 *
 	 * @param t the exception to evaluate
 	 */
 	public static void throwIfFatal(Throwable t) {
 		if (t instanceof BubblingException) {
 			throw (BubblingException) t;
-		} else if (t instanceof VirtualMachineError) {
+		}
+		if (t instanceof VirtualMachineError) {
 			throw (VirtualMachineError) t;
-		} else if (t instanceof ThreadDeath) {
+		}
+		if (t instanceof ThreadDeath) {
 			throw (ThreadDeath) t;
-		} else if (t instanceof LinkageError) {
+		}
+		if (t instanceof LinkageError) {
 			throw (LinkageError) t;
+		}
+		if (t instanceof ErrorCallbackNotImplemented) {
+			throw (ErrorCallbackNotImplemented) t;
 		}
 	}
 
@@ -210,19 +246,22 @@ public abstract class Exceptions {
 	 * {@link #bubble} or {@link #propagate}.
 	 *
 	 * @param t the exception to wrap
+	 *
 	 * @return the unwrapped exception
 	 */
 	public static Throwable unwrap(Throwable t) {
 		Throwable _t = t;
-		while(_t instanceof ReactiveException) {
+		while (_t instanceof ReactiveException) {
 			_t = _t.getCause();
 		}
 		return _t;
 	}
 
-	Exceptions(){}
+	Exceptions() {
+	}
 
 	static class BubblingException extends ReactiveException {
+
 		public BubblingException(String message) {
 			super(message);
 		}
@@ -230,6 +269,7 @@ public abstract class Exceptions {
 		public BubblingException(Throwable cause) {
 			super(cause);
 		}
+
 		private static final long serialVersionUID = 2491425277432776142L;
 	}
 
@@ -237,6 +277,7 @@ public abstract class Exceptions {
 	 * An exception that is propagated downward through {@link org.reactivestreams.Subscriber#onError(Throwable)}
 	 */
 	static class ReactiveException extends RuntimeException {
+
 		public ReactiveException(Throwable cause) {
 			super(cause);
 		}
@@ -247,13 +288,30 @@ public abstract class Exceptions {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			return getCause() != null ? getCause().fillInStackTrace() : super.fillInStackTrace();
+			return getCause() != null ? getCause().fillInStackTrace() :
+					super.fillInStackTrace();
 		}
+
+		private static final long serialVersionUID = 2491425227432776143L;
+	}
+
+	static final class ErrorCallbackNotImplemented extends UnsupportedOperationException {
+
+		ErrorCallbackNotImplemented(Throwable cause) {
+			super(cause);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this;
+		}
+
 		private static final long serialVersionUID = 2491425227432776143L;
 	}
 
 	/**
-	 * An error signal from downstream subscribers consuming data when their state is denying any additional event.
+	 * An error signal from downstream subscribers consuming data when their state is
+	 * denying any additional event.
 	 *
 	 * @author Stephane Maldini
 	 */
@@ -269,6 +327,7 @@ public abstract class Exceptions {
 		public synchronized Throwable fillInStackTrace() {
 			return CANCEL_STACKTRACE ? super.fillInStackTrace() : this;
 		}
+
 		private static final long serialVersionUID = 2491425227432776144L;
 
 	}

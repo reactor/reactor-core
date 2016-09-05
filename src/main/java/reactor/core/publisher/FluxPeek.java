@@ -21,6 +21,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Producer;
@@ -179,7 +180,17 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 				parent.onErrorCall().accept(t);
 			}
 
-			actual.onError(t);
+			try {
+				actual.onError(t);
+			}
+			catch (UnsupportedOperationException use){
+				if(parent.onErrorCall() == null ||
+						!Exceptions.isErrorCallbackNotImplemented(use) &&
+						use.getCause() != t){
+					throw use;
+				}
+				//ignore if missing callback
+			}
 
 			if(parent.onAfterTerminateCall() != null) {
 				try {
@@ -191,7 +202,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}
-					actual.onError(_e);
+					Operators.onErrorDropped(_e);
 				}
 			}
 		}
@@ -223,7 +234,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					if(parent.onErrorCall() != null) {
 						parent.onErrorCall().accept(_e);
 					}
-					actual.onError(_e);
+					Operators.onErrorDropped(_e);
 				}
 			}
 		}
