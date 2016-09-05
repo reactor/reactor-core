@@ -3,7 +3,7 @@ jdk:
   - oraclejdk8
 
 install: true
-sudo: false
+sudo: required
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
