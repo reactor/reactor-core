@@ -89,6 +89,7 @@ jacocoTestReport {
 }
 
 build.dependsOn jacocoTestReport
+check.dependsOn testNg
 
 if (project.hasProperty('platformVersion')) {
   apply plugin: 'spring-io'
