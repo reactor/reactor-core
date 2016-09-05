@@ -217,4 +217,5 @@ task testNG(type: Test) {
   }
 }
 
-check.dependsOn testNG, jacocoTestReport
+jacocoTestReport.dependsOn testNG
+check.dependsOn jacocoTestReport
