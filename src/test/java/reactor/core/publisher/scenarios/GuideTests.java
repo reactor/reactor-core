@@ -22,6 +22,7 @@ import java.util.function.Function;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.UnicastProcessor;
 
 /**
  * @author Stephane Maldini
@@ -34,7 +35,7 @@ public class GuideTests {
 		    .doOnNext(System.out::println)
 		    .filter(color -> !color.equals("orange"))
 		    .map(String::toUpperCase)
-		    .subscribe(System.out::println);
+		    .subscribe(d -> System.out.println("Subscriber to Map: "+d));
 
 		System.out.println("\n");
 
@@ -44,7 +45,7 @@ public class GuideTests {
 				    .filter(color -> !color.equals("orange"));
 
 		flux.map(String::toUpperCase);
-		flux.subscribe(System.out::println);
+		flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
 
 		System.out.println("\n");
 
@@ -54,10 +55,8 @@ public class GuideTests {
 				    .filter(color -> !color.equals("orange"))
 				    .map(String::toUpperCase);
 
-		System.out.println("\nSubscriber 1:");
-		source.subscribe(System.out::println);
-		System.out.println("\nSubscriber 2:");
-		source.subscribe(System.out::println);
+		source.subscribe(d -> System.out.println("Subscriber 1: "+d));
+		source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 
 		System.out.println("\n");
 
@@ -68,7 +67,7 @@ public class GuideTests {
 		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 		    .doOnNext(System.out::println)
 		    .transform(filterAndMap)
-		    .subscribe(System.out::println);
+		    .subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 
 		System.out.println("\n");
 
@@ -87,10 +86,27 @@ public class GuideTests {
 				    .doOnNext(System.out::println)
 				    .compose(filterAndMap);
 
-		System.out.println("\nSubscriber 1:");
-		composedFlux.subscribe(System.out::println);
-		System.out.println("\nSubscriber 2:");
-		composedFlux.subscribe(System.out::println);
+		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
+		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
+
+		System.out.println("\n");
+
+		UnicastProcessor<String> hotSource = UnicastProcessor.create();
+
+		Flux<String> hotFlux = hotSource.doOnNext(System.out::println)
+		                                .publish()
+		                                .autoConnect();
+
+		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
+
+		hotSource.onNext("blue");
+		hotSource.onNext("green");
+
+		hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
+
+		hotSource.onNext("orange");
+		hotSource.onNext("purple");
+		hotSource.onComplete();
 
 	}
 
