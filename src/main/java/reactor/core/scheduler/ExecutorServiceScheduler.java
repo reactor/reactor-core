@@ -56,6 +56,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 		return () -> f.cancel(interruptOnCancel);
 	}
 
+	@Override
+	public void shutdown() {
+		if(interruptOnCancel) {
+			executor.submit(EMPTY).cancel(true);
+		}
+		executor.shutdown();
+	}
+
 	static final class ExecutorServiceWorker implements Worker {
 
 		final ExecutorService executor;
