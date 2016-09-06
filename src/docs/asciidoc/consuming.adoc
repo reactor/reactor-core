@@ -37,7 +37,91 @@ TODO
 TODO
 
 === Composing
-TODO
+
+[source,java]
+----
+Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+	.doOnNext(System.out::println)
+	.filter(color -> !color.equals("orange"))
+	.map(String::toUpperCase)
+	.subscribe(System.out::println);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-operators.png[Operator chain]
+
+[source,java]
+----
+Flux<String> flux =
+				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		    .doOnNext(System.out::println)
+		    .filter(color -> !color.equals("orange"));
+
+		flux.map(String::toUpperCase);
+		flux.subscribe(System.out::println);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-reftail.png[Reference used for Subscriber]
+
+
+[source,java]
+----
+Flux<String> source =
+				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+				    .doOnNext(System.out::println)
+				    .filter(color -> !color.equals("orange"))
+				    .map(String::toUpperCase);
+
+
+		source.subscribe(System.out::println);
+		source.subscribe(System.out::println);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-cold.png[Replaying behavior]
+
+
+[source,java]
+----
+Function<Flux<String>, Flux<String>> filterAndMap =
+				f -> f.filter(color -> !color.equals("orange"))
+				      .map(String::toUpperCase);
+
+		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		    .doOnNext(System.out::println)
+		    .transform(filterAndMap)
+		    .subscribe(System.out::println);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-transform.png[Transform Operator : encapsulate flows]
+
+[source,java]
+----
+AtomicInteger ai = new AtomicInteger();
+Function<Flux<String>, Flux<String>> filterAndMap = f -> {
+			if (ai.incrementAndGet() == 1) {
+				return f.filter(color -> !color.equals("orange"))
+				        .map(String::toUpperCase);
+			}
+			return f.filter(color -> !color.equals("purple"))
+			        .map(String::toUpperCase);
+		};
+
+		Flux<String> composedFlux =
+				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+				    .doOnNext(System.out::println)
+				    .compose(filterAndMap);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+
+
+
+[source,java]
+----
+Function<Flux<String>, Flux<String>> filterAndMap =
+				f -> f.filter(color -> !color.equals("orange"))
+				      .map(String::toUpperCase);
+
+		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		    .doOnNext(System.out::println)
+		    .transform(filterAndMap)
+		    .subscribe(System.out::println);
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-hot.png[Broadcasting a subscription]
 
 === Observing
 TODO
