@@ -200,7 +200,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		if (System.currentTimeMillis() - t0 > 4_000) {
+		if (System.currentTimeMillis() - t0 > 5_000) {
 			throw new RuntimeException("Timeout!");
 		}
 	}

@@ -16,13 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxOnAssembly.OnAssemblyConditionalSubscriber;
-import reactor.core.publisher.FluxOnAssembly.OnAssemblySubscriber;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and
@@ -49,20 +46,17 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 		Fuseable, AssemblyOp {
 
 	final ConnectableFlux<T> source;
-	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
-	
+
 	final String stacktrace;
-	
-	public ConnectableFluxOnAssembly(ConnectableFlux<T> source, Function<? super
-			Subscriber<? super T>, ? extends Subscriber<? super T>> lift, boolean trace) {
+
+	public ConnectableFluxOnAssembly(ConnectableFlux<T> source, boolean trace) {
 		this.source = source;
-		this.lift = lift;
 		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this, lift);
+		FluxOnAssembly.subscribe(s, source, stacktrace, this);
 	}
 
 	@Override

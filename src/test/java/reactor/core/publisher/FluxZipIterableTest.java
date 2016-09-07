@@ -31,19 +31,22 @@ public class FluxZipIterableTest {
 
 	@Test(expected = NullPointerException.class)
 	public void iterableNull() {
-		new FluxZipIterable<>(Flux.never(), null, (a, b) -> a);
+		Flux.never()
+		    .zipWithIterable(null, (a, b) -> a);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void zipperNull() {
-		new FluxZipIterable<>(Flux.never(), Collections.emptyList(), null);
+		Flux.never()
+		    .zipWithIterable(Collections.emptyList(), null);
 	}
 	
 	@Test
 	public void normalSameSize() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertValues(11, 22, 33, 44, 55)
@@ -54,8 +57,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void normalSameSizeBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -84,8 +88,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void normalSourceShorter() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 4),
+
+		Flux.range(1, 4)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertValues(11, 22, 33, 44)
@@ -96,8 +101,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void normalOtherShorter() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertValues(11, 22, 33, 44)
@@ -108,8 +114,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void sourceEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 0),
+
+		Flux.range(1, 0)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -120,8 +127,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void otherEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Collections.<Integer>emptyList(), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -132,8 +140,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void zipperReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> (Integer)null).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -144,8 +153,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void iterableReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				() -> null, (a, b) -> a).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -156,8 +166,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void zipperThrowsNull() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				Arrays.asList(10, 20, 30, 40, 50), (a, b) -> { throw new RuntimeException("forced failure"); }).subscribe(ts);
 		
 		ts.assertNoValues()
@@ -169,8 +180,9 @@ public class FluxZipIterableTest {
 	@Test
 	public void iterableThrowsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
-		
-		new FluxZipIterable<>(new FluxRange(1, 5),
+
+		Flux.range(1, 5)
+		    .zipWithIterable(
 				() -> { throw new RuntimeException("forced failure"); }, (a, b) -> a).subscribe(ts);
 		
 		ts.assertNoValues()

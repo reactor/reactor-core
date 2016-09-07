@@ -54,7 +54,6 @@ import reactor.util.function.Tuples;
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 
 	final String                                                                   stacktrace;
-	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
@@ -64,11 +63,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	public FluxOnAssembly(Publisher<? extends T> source,
-			Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
-					lift, boolean trace) {
+	public FluxOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.lift = lift;
 		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
@@ -182,12 +178,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Publisher<? extends T> source,
-			String stacktrace, Publisher<T> parent, Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
-			lift){
+			String stacktrace, Publisher<T> parent){
 
-		if(lift != null){
-			s = lift.apply(s);
-		}
 		if(stacktrace != null) {
 			if (s instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
@@ -228,7 +220,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		subscribe(s, source, stacktrace, this, lift);
+		subscribe(s, source, stacktrace, this);
 	}
 
 	/**

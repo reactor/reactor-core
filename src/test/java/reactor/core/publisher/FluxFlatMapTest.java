@@ -30,8 +30,8 @@ public class FluxFlatMapTest {
 	public void constructors() {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxFlatMap.class);
 		
-		ctb.addRef("source", FluxNever.instance());
-		ctb.addRef("mapper", (Function<Object, Publisher<Object>>)v -> FluxNever.instance());
+		ctb.addRef("source", Flux.never());
+		ctb.addRef("mapper", (Function<Object, Publisher<Object>>)v -> Flux.never());
 		ctb.addInt("prefetch", 1, Integer.MAX_VALUE);
 		ctb.addInt("maxConcurrency", 1, Integer.MAX_VALUE);
 		ctb.addRef("mainQueueSupplier", (Supplier<Queue<Object>>)() -> new ConcurrentLinkedQueue<>());
@@ -79,7 +79,7 @@ public class FluxFlatMapTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure"))
-		.flatMap(v -> new FluxJust<>(v)).subscribe(ts);
+		.flatMap(v -> Flux.just(v)).subscribe(ts);
 		
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
@@ -91,7 +91,7 @@ public class FluxFlatMapTest {
 	public void innerError() {
 		TestSubscriber<Object> ts = TestSubscriber.create(0);
 
-		new FluxJust<>(1).flatMap(v -> Flux.error(new RuntimeException("forced failure"))).subscribe(ts);
+		Flux.just(1).flatMap(v -> Flux.error(new RuntimeException("forced failure"))).subscribe(ts);
 		
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
@@ -103,7 +103,7 @@ public class FluxFlatMapTest {
 	public void normalQueueOpt() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
-		Flux.range(1, 1000).flatMap(v -> new FluxArray<>(v, v + 1)).subscribe(ts);
+		Flux.range(1, 1000).flatMap(v -> Flux.just(v, v + 1)).subscribe(ts);
 		
 		ts.assertValueCount(2000)
 		.assertNoError()
@@ -114,7 +114,7 @@ public class FluxFlatMapTest {
 	public void normalQueueOptBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 		
-		Flux.range(1, 1000).flatMap(v -> new FluxArray<>(v, v + 1)).subscribe(ts);
+		Flux.range(1, 1000).flatMap(v -> Flux.just(v, v + 1)).subscribe(ts);
 		
 		ts.assertNoValues()
 		.assertNoError()
@@ -137,7 +137,7 @@ public class FluxFlatMapTest {
 	public void nullValue() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		
-		Flux.range(1, 1000).flatMap(v -> new FluxArray<>((Integer)null)).subscribe(ts);
+		Flux.range(1, 1000).flatMap(v -> Flux.just((Integer)null)).subscribe(ts);
 		
 		ts.assertNoValues()
 		.assertError(NullPointerException.class)
@@ -148,7 +148,7 @@ public class FluxFlatMapTest {
 	public void mainEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		Flux.<Integer>empty().flatMap(v -> new FluxJust<>(v)).subscribe(ts);
+		Flux.<Integer>empty().flatMap(v -> Flux.just(v)).subscribe(ts);
 		
 		ts.assertNoValues()
 		.assertNoError()

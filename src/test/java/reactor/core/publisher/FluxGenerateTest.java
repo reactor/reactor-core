@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.TestSubscriber;
 
@@ -27,26 +30,26 @@ public class FluxGenerateTest {
 
 	@Test(expected = NullPointerException.class)
 	public void stateSupplierNull() {
-		new FluxGenerate<>(null, (s, o) -> s, s -> {
+		Flux.generate(null, (s, o) -> s, s -> {
 		});
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void generatorNull() {
-		new FluxGenerate<>(() -> 1, null, s -> {
+		Flux.generate(() -> 1, null, s -> {
 		});
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void stateConsumerNull() {
-		new FluxGenerate<>(() -> 1, (s, o) -> s, null);
+		Flux.generate(() -> 1, (s, o) -> s, null);
 	}
 
 	@Test
 	public void generateEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.complete();
 		}).subscribe(ts);
 
@@ -59,7 +62,7 @@ public class FluxGenerateTest {
 	public void generateJust() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.next(1);
 			o.complete();
 		}).subscribe(ts);
@@ -73,23 +76,21 @@ public class FluxGenerateTest {
 	public void generateError() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Void>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.error(new RuntimeException("forced failure"));
 		}).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorMessage("forced failure")
-		;
+		  .assertErrorMessage("forced failure");
 	}
-
 
 	@Test
 	public void generateJustBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxGenerate<Integer, Void>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.next(1);
 			o.complete();
 		}).subscribe(ts);
@@ -109,10 +110,11 @@ public class FluxGenerateTest {
 	public void generateRange() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
+		Flux.<Integer, Integer>generate(() -> 1, (s, o) -> {
 			if (s < 11) {
 				o.next(s);
-			} else {
+			}
+			else {
 				o.complete();
 			}
 			return s + 1;
@@ -127,10 +129,11 @@ public class FluxGenerateTest {
 	public void generateRangeBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
+		Flux.<Integer, Integer>generate(() -> 1, (s, o) -> {
 			if (s < 11) {
 				o.next(s);
-			} else {
+			}
+			else {
 				o.complete();
 			}
 			return s + 1;
@@ -158,7 +161,7 @@ public class FluxGenerateTest {
 	public void stateSupplierThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(() -> {
+		Flux.<Integer, Integer>generate(() -> {
 			throw new RuntimeException("forced failure");
 		}, (s, o) -> {
 			o.next(1);
@@ -174,7 +177,7 @@ public class FluxGenerateTest {
 	public void generatorThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(o -> {
+		Flux.<Integer>generate(o -> {
 			throw new RuntimeException("forced failure");
 		}).subscribe(ts);
 
@@ -188,7 +191,7 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnErrors() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.error(new RuntimeException("forced failure"));
 			o.error(new RuntimeException("forced failure"));
 		}).subscribe(ts);
@@ -203,7 +206,7 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnCompletes() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.complete();
 			o.complete();
 		}).subscribe(ts);
@@ -217,7 +220,7 @@ public class FluxGenerateTest {
 	public void generatorMultipleOnNexts() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxGenerate<Integer, Integer>(o -> {
+		Flux.<Integer>generate(o -> {
 			o.next(1);
 			o.next(1);
 		}).subscribe(ts);
@@ -233,7 +236,7 @@ public class FluxGenerateTest {
 
 		AtomicInteger stateConsumer = new AtomicInteger();
 
-		new FluxGenerate<Integer, Integer>(() -> 1, (s, o) -> {
+		Flux.<Integer, Integer>generate(() -> 1, (s, o) -> {
 			o.complete();
 			return s;
 		}, stateConsumer::set).subscribe(ts);
@@ -251,16 +254,15 @@ public class FluxGenerateTest {
 
 		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-		new FluxGenerate<Integer, Iterator<Integer>>(
-		  () -> list.iterator(),
-		  (s, o) -> {
-			  if (s.hasNext()) {
-				  o.next(s.next());
-			  } else {
-				  o.complete();
-			  }
-			  return s;
-		  }).subscribe(ts);
+		Flux.<Integer, Iterator<Integer>>generate(list::iterator, (s, o) -> {
+			if (s.hasNext()) {
+				o.next(s.next());
+			}
+			else {
+				o.complete();
+			}
+			return s;
+		}).subscribe(ts);
 
 		ts.assertValueSequence(list)
 		  .assertComplete()
@@ -273,16 +275,15 @@ public class FluxGenerateTest {
 
 		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-		new FluxGenerate<Integer, Iterator<Integer>>(
-		  () -> list.iterator(),
-		  (s, o) -> {
-			  if (s.hasNext()) {
-				  o.next(s.next());
-			  } else {
-				  o.complete();
-			  }
-			  return s;
-		  }).subscribe(ts);
+		Flux.<Integer, Iterator<Integer>>generate(list::iterator, (s, o) -> {
+			if (s.hasNext()) {
+				o.next(s.next());
+			}
+			else {
+				o.complete();
+			}
+			return s;
+		}).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -305,52 +306,49 @@ public class FluxGenerateTest {
 		  .assertComplete()
 		  .assertNoError();
 	}
-	
+
 	@Test
 	public void fusion() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
-		
+
 		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-		Flux.<Integer, Iterator<Integer>>generate(
-		  () -> list.iterator(),
-		  (s, o) -> {
-			  if (s.hasNext()) {
-				  o.next(s.next());
-			  } else {
-				  o.complete();
-			  }
-			  return s;
-		  }).subscribe(ts);
-		
+		Flux.<Integer, Iterator<Integer>>generate(() -> list.iterator(), (s, o) -> {
+			if (s.hasNext()) {
+				o.next(s.next());
+			}
+			else {
+				o.complete();
+			}
+			return s;
+		}).subscribe(ts);
+
 		ts.assertFuseableSource()
-		.assertFusionMode(Fuseable.SYNC)
-		.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-		;
+		  .assertFusionMode(Fuseable.SYNC)
+		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 	@Test
 	public void fusionBoundary() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY | Fuseable.THREAD_BARRIER);
-		
+
 		List<Integer> list = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
-		Flux.<Integer, Iterator<Integer>>generate(list::iterator,
-		  (s, o) -> {
-			  if (s.hasNext()) {
-				  o.next(s.next());
-			  } else {
-				  o.complete();
-			  }
-			  return s;
-		  }).subscribe(ts);
-		
+		Flux.<Integer, Iterator<Integer>>generate(list::iterator, (s, o) -> {
+			if (s.hasNext()) {
+				o.next(s.next());
+			}
+			else {
+				o.complete();
+			}
+			return s;
+		}).subscribe(ts);
+
 		ts.assertFuseableSource()
-		.assertFusionMode(Fuseable.NONE)
-		.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-		;
+		  .assertFusionMode(Fuseable.NONE)
+		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
 }

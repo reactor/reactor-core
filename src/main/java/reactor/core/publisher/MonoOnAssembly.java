@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Function;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
@@ -41,18 +39,14 @@ import reactor.core.Fuseable;
 final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, AssemblyOp {
 
 	final String                                                                   stacktrace;
-	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
-	public MonoOnAssembly(Publisher<? extends T> source,
-			Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
-					lift, boolean trace) {
+	public MonoOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.lift = lift;
 		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this, lift);
+		FluxOnAssembly.subscribe(s, source, stacktrace, this);
 	}
 }

@@ -260,14 +260,14 @@ public class TestSubscriber<T>
 	}
 
 //	 ==============================================================================================================
-//	 Private constructors
+//	 constructors
 //	 ==============================================================================================================
 
-	private TestSubscriber() {
+	public TestSubscriber() {
 		 this(Long.MAX_VALUE);
 	}
 
-	private TestSubscriber(long n) {
+	public TestSubscriber(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
 		}
@@ -874,7 +874,7 @@ public class TestSubscriber<T>
 
 	@Override
 	public final boolean isTerminated() {
-		return isCancelled();
+		return cdl.getCount() == 0;
 	}
 
 	@Override
@@ -1161,4 +1161,17 @@ public class TestSubscriber<T>
 		return o + " (" + o.getClass().getSimpleName() + ")";
 	}
 
+	public List<T> values(){
+		return values;
+	}
+
+
+	public final TestSubscriber<T> assertNoEvents() {
+		return assertNoValues().assertNoError().assertNotComplete();
+	}
+
+	@SafeVarargs
+	public final TestSubscriber<T> assertIncomplete(T... values) {
+		return assertValues(values).assertNotComplete().assertNoError();
+	}
 }

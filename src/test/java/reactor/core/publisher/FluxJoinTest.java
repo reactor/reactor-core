@@ -34,8 +34,8 @@ public class FluxJoinTest {
 	public void normal1() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
 
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -61,10 +61,10 @@ public class FluxJoinTest {
 	@Test
 	public void normal1WithDuration() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
-		DirectProcessor<Integer> duration1 = new DirectProcessor<>();
+		DirectProcessor<Integer> duration1 = DirectProcessor.create();
 
 		Flux<Integer> m = source1.join(source2, just(duration1), just(Flux.never()), add);
 		m.subscribe(ts);
@@ -90,8 +90,8 @@ public class FluxJoinTest {
 	@Test
 	public void normal2() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -116,8 +116,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -135,8 +135,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> m =
 				source1.join(source2, just(Flux.never()), just(Flux.never()), add);
@@ -154,8 +154,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -172,8 +172,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -190,8 +190,8 @@ public class FluxJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -210,8 +210,8 @@ public class FluxJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -230,8 +230,8 @@ public class FluxJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		BiFunction<Integer, Integer, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");

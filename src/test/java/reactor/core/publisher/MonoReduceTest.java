@@ -22,97 +22,115 @@ import reactor.test.TestSubscriber;
 
 public class MonoReduceTest {
 
-	@Test(expected = NullPointerException.class)
-	public void sourceNull() {
-		new MonoReduce<>(null, () -> 1, (a, b) -> (Integer) b);
-	}
+	/*@Test
+	public void constructors() {
+		ConstructorTestBuilder ctb = new ConstructorTestBuilder(MonoReduce.class);
 
-	@Test(expected = NullPointerException.class)
-	public void supplierNull() {
-		new MonoReduce<>(Mono.never(), null, (a, b) -> b);
-	}
+		ctb.addRef("source", Mono.never());
+		ctb.addRef("aggregator", (BiFunction<Object, Object, Object>) (a, b) -> b);
 
-	@Test(expected = NullPointerException.class)
-	public void accumulatorNull() {
-		new MonoReduce<>(Mono.never(), () -> 1, null);
+		ctb.test();
 	}
-
+*/
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10)
+		    .reduce((a, b) -> a + b)
+		    .subscribe(ts);
 
-		ts.assertValues(10)
-		  .assertComplete()
-		  .assertNoError();
+		ts.assertValues(55)
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		TestSubscriber<Integer> ts = TestSubscriber.create(0L);
 
-		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10)
+		    .reduce((a, b) -> a + b)
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		ts.request(2);
+		ts.request(1);
 
-		ts.assertValues(10)
-		  .assertComplete()
-		  .assertNoError();
+		ts.assertValues(55)
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
-	public void supplierThrows() {
+	public void single() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).<Integer>reduceWith(() -> {
-			throw new RuntimeException("forced failure");
-		}, (a, b) -> b).subscribe(ts);
+		Flux.just(1)
+		    .reduce((a, b) -> a + b)
+		    .subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void empty() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.<Integer>empty().reduce((a, b) -> a + b)
+		                     .subscribe(ts);
 
 		ts.assertNoValues()
-		  .assertNotComplete()
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void error() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.<Integer>error(new RuntimeException("forced failure")).reduce((a, b) -> a + b)
+		                                                           .subscribe(ts);
+
+		ts.assertNoValues()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
+		                                           .contains("forced failure")))
+		  .assertNotComplete();
 	}
 
 	@Test
-	public void accumulatorThrows() {
+	public void aggregatorThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).<Integer>reduceWith(() -> 0, (a, b) -> {
-			throw new RuntimeException("forced failure");
-		}).subscribe(ts);
+		Flux.range(1, 10)
+		    .reduce((a, b) -> {
+			    throw new RuntimeException("forced failure");
+		    })
+		    .subscribe(ts);
 
 		ts.assertNoValues()
-		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
+		                                           .contains("forced failure")))
+		  .assertNotComplete();
 	}
 
 	@Test
-	public void supplierReturnsNull() {
+	public void aggregatorReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		Flux.range(1, 10).<Integer>reduceWith(() -> null, (a, b) -> b).subscribe(ts);
+		Flux.range(1, 10)
+		    .reduce((a, b) -> null)
+		    .subscribe(ts);
 
 		ts.assertNoValues()
-		  .assertNotComplete()
-		  .assertError(NullPointerException.class);
-	}
-
-	@Test
-	public void accumulatorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
-
-		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> null).subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNotComplete()
-		  .assertError(NullPointerException.class);
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
 	}
 
 }

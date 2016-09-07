@@ -16,9 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -29,92 +27,56 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 
 /**
- * Aggregates the source values with the help of an accumulator function
- * and emits the intermediate results.
+ * Accumulates the source values with an accumulator function and
+ * returns the intermediate results of this function.
  * <p>
+ * Unlike {@link FluxScan}, this operator doesn't take an initial value
+ * but treats the first source value as initial value.
+ * <br>
  * The accumulation works as follows:
  * <pre><code>
- * result[0] = initialValue;
- * result[1] = accumulator(result[0], source[0])
- * result[2] = accumulator(result[1], source[1])
- * result[3] = accumulator(result[2], source[2])
+ * result[0] = accumulator(source[0], source[1])
+ * result[1] = accumulator(result[0], source[2])
+ * result[2] = accumulator(result[1], source[3])
  * ...
  * </code></pre>
  *
- * @param <T> the source value type
- * @param <R> the aggregate type
+ * @param <T> the input and accumulated value type
  */
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxScan<T, R> extends FluxSource<T, R> {
+final class FluxScan<T> extends FluxSource<T, T> {
 
-	final BiFunction<R, ? super T, R> accumulator;
+	final BiFunction<T, ? super T, T> accumulator;
 
-	final Supplier<R> initialSupplier;
-
-	public FluxScan(Publisher<? extends T> source, Supplier<R> initialSupplier,
-			BiFunction<R, ? super T, R> accumulator) {
+	public FluxScan(Publisher<? extends T> source, BiFunction<T, ? super T, T> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
-		this.initialSupplier = Objects.requireNonNull(initialSupplier, "initialSupplier");
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
-		R initialValue;
-
-		try {
-			initialValue = initialSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (initialValue == null) {
-			Operators.error(s, new NullPointerException("The initial value supplied is null"));
-			return;
-		}
-		source.subscribe(new ScanSubscriber<>(s, accumulator, initialValue));
+	public void subscribe(Subscriber<? super T> s) {
+		source.subscribe(new AccumulateSubscriber<>(s, accumulator));
 	}
 
-	static final class ScanSubscriber<T, R>
-			implements Subscriber<T>, Subscription, Producer, Receiver, Loopback,
+	static final class AccumulateSubscriber<T>
+			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
 			           Trackable {
+		final Subscriber<? super T> actual;
 
-		final Subscriber<? super R> actual;
-
-		final BiFunction<R, ? super T, R> accumulator;
+		final BiFunction<T, ? super T, T> accumulator;
 
 		Subscription s;
 
-		R value;
+		T value;
 
 		boolean done;
 
-		/**
-		 * Indicates the source completed and the value field is ready to be emitted.
-		 * <p>
-		 * The AtomicLong (this) holds the requested amount in bits 0..62 so there is room
-		 * for one signal bit. This also means the standard request accounting helper method doesn't work.
-		 */
-		static final long COMPLETED_MASK = 0x8000_0000_0000_0000L;
-
-		static final long REQUESTED_MASK = Long.MAX_VALUE;
-
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ScanSubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(ScanSubscriber.class, "requested");
-
-		long produced;
-		
-		public ScanSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
-									   R initialValue) {
+		public AccumulateSubscriber(Subscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
 			this.actual = actual;
 			this.accumulator = accumulator;
-			this.value = initialValue;
 		}
 
 		@Override
@@ -133,27 +95,25 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			R r = value;
+			T v = value;
 
-			produced++;
-			
-			actual.onNext(r);
+			if (v != null) {
+				try {
+					t = accumulator.apply(v, t);
+				}
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, t));
+					return;
+				}
+				if (t == null) {
+					s.cancel();
 
-			try {
-				r = accumulator.apply(r, t);
-			} catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
-				return;
+					onError(new NullPointerException("The accumulator returned a null value"));
+					return;
+				}
 			}
-
-			if (r == null) {
-				s.cancel();
-
-				onError(new NullPointerException("The accumulator returned a null value"));
-				return;
-			}
-
-			value = r;
+			value = t;
+			actual.onNext(t);
 		}
 
 		@Override
@@ -172,77 +132,12 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 				return;
 			}
 			done = true;
-
-			R v = value;
-			
-			long p = produced;
-			long r = requested;
-			if (r != Long.MAX_VALUE && p != 0L) {
-				r = REQUESTED.addAndGet(this, -p);
-			}
-
-			for (; ; ) {
-				// if any request amount is still available, emit the value and complete
-				if ((r & REQUESTED_MASK) != 0L) {
-					actual.onNext(v);
-					actual.onComplete();
-					return;
-				}
-				// NO_REQUEST_NO_VALUE -> NO_REQUEST_HAS_VALUE
-				if (REQUESTED.compareAndSet(this, 0, COMPLETED_MASK)) {
-					return;
-				}
-				
-				r = requested;
-			}
-		}
-
-		@Override
-		public void request(long n) {
-			if (Operators.validate(n)) {
-				for (;;) {
-
-					long r = requested;
-
-					// NO_REQUEST_HAS_VALUE 
-					if (r == COMPLETED_MASK) {
-						// any positive request value will do here
-						// transition to HAS_REQUEST_HAS_VALUE
-						if (REQUESTED.compareAndSet(this, COMPLETED_MASK, COMPLETED_MASK | 1)) {
-							actual.onNext(value);
-							actual.onComplete();
-						}
-						return;
-					}
-
-					// HAS_REQUEST_HAS_VALUE
-					if (r < 0L) {
-						return;
-					}
-
-					// transition to HAS_REQUEST_NO_VALUE
-					long u = Operators.addCap(r, n);
-					if (REQUESTED.compareAndSet(this, r, u)) {
-						s.request(n);
-						return;
-					}
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
+			actual.onComplete();
 		}
 
 		@Override
 		public boolean isStarted() {
 			return s != null && !done;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested - produced;
 		}
 
 		@Override
@@ -261,8 +156,23 @@ final class FluxScan<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		public Object connectedOutput() {
+			return value;
+		}
+
+		@Override
 		public Object upstream() {
 			return s;
+		}
+		
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+		
+		@Override
+		public void cancel() {
+			s.cancel();
 		}
 	}
 }

@@ -17,14 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.publisher.FluxOnAssembly.OnAssemblyConditionalSubscriber;
-import reactor.core.publisher.FluxOnAssembly.OnAssemblySubscriber;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -46,13 +43,9 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
 	final String                                                                   stacktrace;
-	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
-	public MonoCallableOnAssembly(Publisher<? extends T> source,
-			Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>>
-					lift, boolean trace) {
+	public MonoCallableOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.lift = lift;
 		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
@@ -77,7 +70,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this, lift);
+		FluxOnAssembly.subscribe(s, source, stacktrace, this);
 	}
 
 	@SuppressWarnings("unchecked")

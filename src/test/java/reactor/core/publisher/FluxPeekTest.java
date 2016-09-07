@@ -45,7 +45,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new FluxJust<>(1),
+		new FluxPeek<>(Flux.just(1),
 		  onSubscribe::set,
 		  onNext::set,
 		  onError::set,
@@ -138,7 +138,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(FluxNever.instance(),
+		new FluxPeek<>(Flux.never(),
 		  onSubscribe::set,
 		  onNext::set,
 		  onError::set,
@@ -169,7 +169,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(FluxNever.instance(),
+		new FluxPeek<>(Flux.never(),
 		  onSubscribe::set,
 		  onNext::set,
 		  onError::set,
@@ -233,7 +233,7 @@ public class FluxPeekTest {
 	public void asyncFusionAvailable() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new UnicastProcessor<>(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
+		UnicastProcessor.create(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
 		})
 		                                                                  .subscribe(ts);
 

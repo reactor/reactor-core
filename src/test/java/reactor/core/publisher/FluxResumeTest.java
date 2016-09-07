@@ -25,8 +25,8 @@ public class FluxResumeTest {
 	public void constructors() {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxResume.class);
 		
-		ctb.addRef("source", FluxNever.instance());
-		ctb.addRef("nextFactory", (Function<Throwable, Publisher<Object>>)e -> FluxNever.instance());
+		ctb.addRef("source", Flux.never());
+		ctb.addRef("nextFactory", (Function<Throwable, Publisher<Object>>)e -> Flux.never());
 		
 		ctb.test();
 	}*/

@@ -26,7 +26,7 @@ public class UnicastProcessorTest {
     @Test
     public void secondSubscriberRejectedProperly() {
         
-        UnicastProcessor<Integer> up = new UnicastProcessor<>(new ConcurrentLinkedQueue<>());
+        UnicastProcessor<Integer> up = UnicastProcessor.create(new ConcurrentLinkedQueue<>());
         
         up.subscribe();
         

@@ -8,7 +8,7 @@ public class FluxNeverTest {
 
 	@Test
 	public void singleInstance() {
-		Assert.assertSame(FluxNever.instance(), FluxNever.instance());
+		Assert.assertSame(Flux.never(), Flux.never());
 	}
 
 	@Test

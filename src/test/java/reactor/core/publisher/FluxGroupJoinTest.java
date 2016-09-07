@@ -39,8 +39,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void behaveAsJoin() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> m =
 				source1.groupJoin(source2, just(Flux.never()), just(Flux.never()), add2)
@@ -131,8 +131,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Flux<Integer>> m =
 				source1.groupJoin(source2, just(Flux.never()), just(Flux.never()), add2);
@@ -150,8 +150,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Flux<Integer>> m =
 				source1.groupJoin(source2, just(Flux.never()), just(Flux.never()), add2);
@@ -169,8 +169,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftDurationThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -188,8 +188,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightDurationThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Flux<Integer> duration1 = Flux.error(new RuntimeException("Forced failure"));
 
@@ -207,8 +207,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void leftDurationSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -228,8 +228,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void rightDurationSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		Function<Integer, Flux<Integer>> fail = t1 -> {
 			throw new RuntimeException("Forced failure");
@@ -249,8 +249,8 @@ public class FluxGroupJoinTest {
 	@Test
 	public void resultSelectorThrows() {
 		TestSubscriber<Object> ts = TestSubscriber.create();
-		DirectProcessor<Integer> source1 = new DirectProcessor<>();
-		DirectProcessor<Integer> source2 = new DirectProcessor<>();
+		DirectProcessor<Integer> source1 = DirectProcessor.create();
+		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
 		BiFunction<Integer, Flux<Integer>, Integer> fail = (t1, t2) -> {
 			throw new RuntimeException("Forced failure");

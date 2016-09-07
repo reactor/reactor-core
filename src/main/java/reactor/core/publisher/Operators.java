@@ -473,6 +473,7 @@ public abstract class Operators {
 	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
 		Subscription a = field.get(instance);
 		if (a == CancelledSubscription.INSTANCE) {
+			s.cancel();
 			return false;
 		}
 		if (a != null) {
@@ -487,9 +488,11 @@ public abstract class Operators {
 		a = field.get(instance);
 
 		if (a == CancelledSubscription.INSTANCE) {
+			s.cancel();
 			return false;
 		}
 
+		s.cancel();
 		reportSubscriptionSet();
 		return false;
 	}

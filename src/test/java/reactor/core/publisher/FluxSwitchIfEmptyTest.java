@@ -22,19 +22,22 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new FluxSwitchIfEmpty<>(null, FluxNever.instance());
+		new FluxSwitchIfEmpty<>(null, Flux.never());
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void otherNull() {
-		new FluxSwitchIfEmpty<>(FluxNever.instance(), null);
+		Flux.never()
+		    .switchIfEmpty(null);
 	}
 
 	@Test
 	public void nonEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxSwitchIfEmpty<>(Flux.just(1, 2, 3, 4, 5), new FluxJust<>(10)).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5)
+		    .switchIfEmpty(Flux.just(10))
+		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5)
 		  .assertComplete()
@@ -45,7 +48,9 @@ public class FluxSwitchIfEmptyTest {
 	public void nonEmptyBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxSwitchIfEmpty<>(Flux.just(1, 2, 3, 4, 5), new FluxJust<>(10)).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5)
+		    .switchIfEmpty(Flux.just(10))
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -68,7 +73,9 @@ public class FluxSwitchIfEmptyTest {
 	public void empty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxSwitchIfEmpty<>(Flux.empty(), new FluxJust<>(10)).subscribe(ts);
+		Flux.<Integer>empty()
+		    .switchIfEmpty(Flux.just(10))
+		    .subscribe(ts);
 
 		ts.assertValues(10)
 		  .assertComplete()
@@ -79,7 +86,9 @@ public class FluxSwitchIfEmptyTest {
 	public void emptyBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxSwitchIfEmpty<>(Flux.empty(), new FluxJust<>(10)).subscribe(ts);
+		Flux.<Integer>empty()
+		    .switchIfEmpty(Flux.just(10))
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

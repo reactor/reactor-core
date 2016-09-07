@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher.scenarios;
+package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -25,29 +25,28 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.Exceptions;
-import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 public class BlockingTests {
 
-	static Scheduler exec;
+	static Scheduler scheduler;
 
 	@BeforeClass
 	public static void before() {
-		exec = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
+		scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
 	}
 
 	@AfterClass
 	public static void after() {
-		exec.shutdown();
+		scheduler.shutdown();
 	}
 
 	@Test
 	public void blockingFirst() {
 		Assert.assertEquals((Integer) 1,
 				Flux.range(1, 10)
-				    .publishOn(exec)
+				    .publishOn(scheduler)
 				    .blockFirst());
 	}
 
@@ -55,21 +54,21 @@ public class BlockingTests {
 	public void blockingLast() {
 		Assert.assertEquals((Integer) 10,
 				Flux.range(1, 10)
-				    .publishOn(exec)
+				    .publishOn(scheduler)
 				    .blockLast());
 	}
 
 	@Test(expected = RuntimeException.class)
 	public void blockingFirstError() {
 		Flux.error(new RuntimeException("test"))
-		    .publishOn(exec)
+		    .publishOn(scheduler)
 		    .blockFirst();
 	}
 
 	@Test(expected = RuntimeException.class)
 	public void blockingLastError() {
 		Flux.error(new RuntimeException("test"))
-		    .publishOn(exec)
+		    .publishOn(scheduler)
 		    .blockLast();
 	}
 

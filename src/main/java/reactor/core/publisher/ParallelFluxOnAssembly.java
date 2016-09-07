@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Function;
-
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
@@ -42,14 +40,11 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 		implements Fuseable, AssemblyOp, Receiver {
 
 	final ParallelFlux<T>                                                          source;
-	final Function<? super Subscriber<? super T>, ? extends Subscriber<? super T>> lift;
 
 	final String stacktrace;
 
-	public ParallelFluxOnAssembly(ParallelFlux<T> source, Function<? super
-			Subscriber<? super T>, ? extends Subscriber<? super T>> lift, boolean trace) {
+	public ParallelFluxOnAssembly(ParallelFlux<T> source, boolean trace) {
 		this.source = source;
-		this.lift = lift;
 		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
 	}
 
@@ -75,12 +70,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 				new Subscriber[n];
 		Subscriber<? super T> s;
 		for (int i = 0; i < n; i++) {
-			if (lift != null) {
-				s = lift.apply(subscribers[i]);
-			}
-			else {
-				s = subscribers[i];
-			}
+			s = subscribers[i];
 			if (stacktrace != null) {
 				if (s instanceof ConditionalSubscriber) {
 					ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<?

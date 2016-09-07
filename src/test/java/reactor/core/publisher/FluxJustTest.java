@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.Callable;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
@@ -24,12 +26,13 @@ public class FluxJustTest {
 
     @Test(expected = NullPointerException.class)
     public void nullValue() {
-        new FluxJust<Integer>(null);
+        Flux.just((Integer)null);
     }
 
     @Test
-    public void valueSame() {
-        Assert.assertSame(1, new FluxJust<>(1).call());
+    @SuppressWarnings("unchecked")
+    public void valueSame() throws Exception {
+        Assert.assertSame(1, ((Callable<Integer>)Flux.just(1)).call());
     }
 
     @Test

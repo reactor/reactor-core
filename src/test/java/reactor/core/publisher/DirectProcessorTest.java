@@ -46,7 +46,7 @@ public class DirectProcessorTest {
     public void normal() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 
@@ -84,7 +84,7 @@ public class DirectProcessorTest {
     public void normalBackpressured() {
         TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 
@@ -118,7 +118,7 @@ public class DirectProcessorTest {
 
         TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 
@@ -146,7 +146,7 @@ public class DirectProcessorTest {
     public void error() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 
@@ -188,7 +188,7 @@ public class DirectProcessorTest {
     public void terminatedWithError() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
         tp.onError(new RuntimeException("forced failure"));
 
         tp.subscribe(ts);
@@ -212,7 +212,7 @@ public class DirectProcessorTest {
     public void terminatedNormally() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
         tp.onComplete();
 
         tp.subscribe(ts);
@@ -232,7 +232,7 @@ public class DirectProcessorTest {
         TestSubscriber<Integer> ts = TestSubscriber.create();
         ts.cancel();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 
@@ -250,7 +250,7 @@ public class DirectProcessorTest {
     public void subscriberCancels() {
         TestSubscriber<Integer> ts = TestSubscriber.create();
 
-        DirectProcessor<Integer> tp = new DirectProcessor<>();
+        DirectProcessor<Integer> tp = DirectProcessor.create();
 
         tp.subscribe(ts);
 

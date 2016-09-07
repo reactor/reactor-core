@@ -169,6 +169,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				try {
 					q = processorQueueSupplier.get();
 				} catch (Throwable ex) {
+					WIP.decrementAndGet(this);
 					done = true;
 					cancel();
 					
@@ -177,6 +178,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				}
 				
 				if (q == null) {
+					WIP.decrementAndGet(this);
 					done = true;
 					cancel();
 					
@@ -367,6 +369,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				try {
 					q = processorQueueSupplier.get();
 				} catch (Throwable ex) {
+					WIP.decrementAndGet(this);
 					done = true;
 					cancel();
 					
@@ -375,6 +378,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				}
 				
 				if (q == null) {
+					WIP.decrementAndGet(this);
 					done = true;
 					cancel();
 					
@@ -597,6 +601,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					try {
 						q = processorQueueSupplier.get();
 					} catch (Throwable ex) {
+						WIP.decrementAndGet(this);
 						done = true;
 						cancel();
 						
@@ -605,6 +610,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					}
 					
 					if (q == null) {
+						WIP.decrementAndGet(this);
 						done = true;
 						cancel();
 						

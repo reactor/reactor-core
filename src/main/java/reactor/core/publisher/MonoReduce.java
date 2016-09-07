@@ -17,115 +17,88 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
- * Aggregates the source values with the help of an accumulator
- * function and emits the the final accumulated value.
+ * Aggregates the source items with an aggregator function and returns the last result.
  *
- * @param <T> the source value type
- * @param <R> the accumulated result type
+ * @param <T> the input and output value type
  */
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
+final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 
-	final Supplier<R> initialSupplier;
+	final BiFunction<T, T, T> aggregator;
 
-	final BiFunction<R, ? super T, R> accumulator;
-
-	public MonoReduce(Publisher<? extends T> source, Supplier<R> initialSupplier,
-						   BiFunction<R, ? super T, R> accumulator) {
+	public MonoReduce(Publisher<? extends T> source, BiFunction<T, T, T> aggregator) {
 		super(source);
-		this.initialSupplier = Objects.requireNonNull(initialSupplier, "initialSupplier");
-		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
+		this.aggregator = Objects.requireNonNull(aggregator, "aggregator");
 	}
-
+	
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
-		R initialValue;
-
-		try {
-			initialValue = initialSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (initialValue == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The initial value supplied is null")));
-			return;
-		}
-
-		source.subscribe(new ReduceSubscriber<>(s, accumulator, initialValue));
+	public void subscribe(Subscriber<? super T> s) {
+		source.subscribe(new AggregateSubscriber<>(s, aggregator));
 	}
-
-	static final class ReduceSubscriber<T, R>
-			extends Operators.MonoSubscriber<T, R>
-			implements Receiver {
-
-		final BiFunction<R, ? super T, R> accumulator;
+	
+	static final class AggregateSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+		final BiFunction<T, T, T> aggregator;
 
 		Subscription s;
-
+		
+		T result;
+		
 		boolean done;
-
-		public ReduceSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
-										 R value) {
+		
+		public AggregateSubscriber(Subscriber<? super T> actual, BiFunction<T, T, T> aggregator) {
 			super(actual);
-			this.accumulator = accumulator;
-			this.value = value;
-		}
-
-		@Override
-		public void cancel() {
-			super.cancel();
-			s.cancel();
-		}
-
-		@Override
-		public void setValue(R value) {
-			// value already saved
+			this.aggregator = aggregator;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-
 				subscriber.onSubscribe(this);
-
 				s.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			R v;
-
-			try {
-				v = accumulator.apply(value, t);
-			} catch (Throwable e) {
-				onError(Operators.onOperatorError(this, e, t));
+			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
-
-			if (v == null) {
-				onError(Operators.onOperatorError(this, new NullPointerException("The" +
-						" accumulator returned a null value"), t));
-				return;
+			T r = result;
+			if (r == null) {
+				result = t;
+			} else {
+				try {
+					r = aggregator.apply(r, t);
+				} catch (Throwable ex) {
+					result = null;
+					done = true;
+					subscriber.onError(Operators.onOperatorError(s, ex, t));
+					return;
+				}
+				
+				if (r == null) {
+					result = null;
+					done = true;
+					subscriber.onError(Operators.onOperatorError(s, new
+							NullPointerException("The aggregator returned a null " +
+							"value"), t));
+					return;
+				}
+				
+				result = r;
 			}
-
-			value = v;
 		}
 
 		@Override
@@ -134,8 +107,7 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 				Operators.onErrorDropped(t);
 				return;
 			}
-			done = true;
-
+			result = null;
 			subscriber.onError(t);
 		}
 
@@ -144,24 +116,18 @@ final class MonoReduce<T, R> extends MonoSource<T, R> implements Fuseable {
 			if (done) {
 				return;
 			}
-			done = true;
-
-			complete(value);
+			T r = result;
+			if (r != null) {
+				complete(r);
+			} else {
+				subscriber.onComplete();
+			}
 		}
-
+		
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return accumulator;
+		public void cancel() {
+			super.cancel();
+			s.cancel();
 		}
 	}
 }

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.Collections;
 
 import org.junit.Test;
-
 import reactor.core.Fuseable;
 import reactor.test.TestSubscriber;
 
@@ -52,8 +51,8 @@ public class FluxCombineLatestTest {
 
 	@Test
 	public void fused() {
-		DirectProcessor<Integer> dp1 = new DirectProcessor<>();
-		DirectProcessor<Integer> dp2 = new DirectProcessor<>();
+		DirectProcessor<Integer> dp1 = DirectProcessor.create();
+		DirectProcessor<Integer> dp2 = DirectProcessor.create();
 
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);

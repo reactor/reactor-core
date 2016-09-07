@@ -29,19 +29,23 @@ public class FluxWithLatestFromTest {
 
 	@Test(expected = NullPointerException.class)
 	public void otherNull() {
-		new FluxWithLatestFrom<>(Flux.never(), null, (a, b) -> a);
+		Flux.never()
+		    .withLatestFrom(null, (a, b) -> a);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void combinerNull() {
-		new FluxWithLatestFrom<>(Flux.never(), Flux.never(), null);
+		Flux.never()
+		    .withLatestFrom(Flux.never(), null);
 	}
 
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> a + b).subscribe
+		Flux.range(1, 10)
+		    .withLatestFrom(Flux.just(10), (a, b) -> a + b)
+		    .subscribe
 		  (ts);
 
 		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
@@ -53,7 +57,9 @@ public class FluxWithLatestFromTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> a + b).subscribe
+		Flux.range(1, 10)
+		    .withLatestFrom(Flux.just(10), (a, b) -> a + b)
+		    .subscribe
 		  (ts);
 
 		ts.assertNoValues()
@@ -83,8 +89,9 @@ public class FluxWithLatestFromTest {
 	public void otherIsNever() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxWithLatestFrom<>(new FluxRange(1, 10), Flux.<Integer>empty(), (a, b) -> a + b)
-		  .subscribe(ts);
+		Flux.range(1, 10)
+		    .withLatestFrom(Flux.<Integer>empty(), (a, b) -> a + b)
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -95,8 +102,9 @@ public class FluxWithLatestFromTest {
 	public void otherIsEmpty() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxWithLatestFrom<>(new FluxRange(1, 10), Flux.<Integer>empty(), (a, b) -> a + b)
-		  .subscribe(ts);
+		Flux.range(1, 10)
+		    .withLatestFrom(Flux.<Integer>empty(), (a, b) -> a + b)
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -107,8 +115,9 @@ public class FluxWithLatestFromTest {
 	public void combinerReturnsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxWithLatestFrom<>(new FluxRange(1, 10), new FluxJust<>(10), (a, b) -> (Integer) null)
-		  .subscribe(ts);
+		Flux.range(1, 10)
+		    .withLatestFrom(Flux.just(10), (a, b) -> (Integer) null)
+		    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
@@ -119,8 +128,7 @@ public class FluxWithLatestFromTest {
 	public void combinerThrows() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxWithLatestFrom<Integer, Integer, Integer>(
-		  new FluxRange(1, 10), new FluxJust<>(10),
+		Flux.range(1, 10).<Integer, Integer>withLatestFrom(Flux.just(10),
 		  (a, b) -> {
 			  throw new RuntimeException("forced failure");
 		  }).subscribe(ts);

@@ -177,18 +177,4 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 		}
 	}
 
-	/*public static void main(String... args) throws Exception {
-		AbstractFluxVerification s = new FluxWithSchedulerTests();
-		Processor p = s.createProcessor(256);
-		BlockingSink sess = BlockingSink.create(p);
-		p.subscribe();
-		Nexus nexus = Nexus.create.withSystemStats();
-		nexus.monitor(p);
-		nexus.startAndAwait();
-		int n = 1;
-		for(;;){
-			sess.submit(n++);
-		}
-	}*/
-
 }

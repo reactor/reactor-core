@@ -63,7 +63,7 @@ public class FluxPublishMulticastTest {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		UnicastProcessor<Integer> up =
-				new UnicastProcessor<>(QueueSupplier.<Integer>get(16).get());
+				UnicastProcessor.create(QueueSupplier.<Integer>get(16).get());
 
 		up.publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		  .subscribe(ts);

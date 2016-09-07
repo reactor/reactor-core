@@ -127,7 +127,7 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts1 = TestSubscriber.create();
 		TestSubscriber<Integer> ts2 = TestSubscriber.create();
 		
-		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
+		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -166,7 +166,7 @@ public class FluxPublishTest {
 		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
 		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
 
-		UnicastProcessor<Integer> up = new UnicastProcessor<>(QueueSupplier.<Integer>get(8).get());
+		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);

@@ -2489,7 +2489,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
 			extends V>> mapper, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(this, mapper, QueueSupplier.get(prefetch), prefetch,
-				FluxConcatMap.ErrorMode.END));
+				FluxConcatMap.ErrorMode.BOUNDARY));
 	}
 
 	/**
@@ -4103,7 +4103,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Callable<T> thiz = (Callable<T>)this;
 		    return convertToMono(thiz);
 		}
-	    return Mono.onAssembly(new MonoAggregate<>(this, aggregator));
+	    return Mono.onAssembly(new MonoReduce<>(this, aggregator));
 	}
 
 	/**
@@ -4139,7 +4139,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <A> Mono<A> reduceWith(Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
-		return Mono.onAssembly(new MonoReduce<>(this, initial, accumulator));
+		return Mono.onAssembly(new MonoReduceSeed<>(this, initial, accumulator));
 	}
 
 	/**
@@ -4584,7 +4584,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
-		return onAssembly(new FluxAccumulate<>(this, accumulator));
+		return onAssembly(new FluxScan<>(this, accumulator));
 	}
 
 	/**
@@ -4611,6 +4611,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
+		Objects.requireNonNull(initial, "seed");
 		return scanWith(() -> initial, accumulator);
 	}
 
@@ -4640,7 +4641,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <A> Flux<A> scanWith(Supplier<A> initial, BiFunction<A, ? super T, A>
 			accumulator) {
-		return onAssembly(new FluxScan<>(this, initial, accumulator));
+		return onAssembly(new FluxScanSeed<>(this, initial, accumulator));
 	}
 
 	/**

@@ -23,14 +23,14 @@ public class FluxArrayTest {
 
 	@Test(expected = NullPointerException.class)
 	public void arrayNull() {
-		new FluxArray<>((Integer[]) null);
+		Flux.fromArray((Integer[]) null);
 	}
 
 	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
 		ts.assertNoError()
 		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -41,7 +41,7 @@ public class FluxArrayTest {
 	public void normalBackpressured() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(0);
 
-		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
 		ts.assertNoError()
 		  .assertNoValues()
@@ -64,7 +64,7 @@ public class FluxArrayTest {
 	public void normalBackpressuredExact() {
 		TestSubscriber<Integer> ts = TestSubscriber.create(10);
 
-		new FluxArray<>(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
 		ts.assertNoError()
 		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -81,7 +81,7 @@ public class FluxArrayTest {
 	public void arrayContainsNull() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
-		new FluxArray<>(1, 2, 3, 4, 5, null, 7, 8, 9, 10).subscribe(ts);
+		Flux.just(1, 2, 3, 4, 5, null, 7, 8, 9, 10).subscribe(ts);
 
 		ts.assertError(NullPointerException.class)
 		  .assertValues(1, 2, 3, 4, 5)

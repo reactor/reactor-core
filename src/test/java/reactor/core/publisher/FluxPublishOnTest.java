@@ -1,0 +1,1003 @@
+/*
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package reactor.core.publisher;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.TestSubscriber;
+import reactor.util.concurrent.QueueSupplier;
+
+public class FluxPublishOnTest {
+
+	static ExecutorService exec;
+
+	@BeforeClass
+	public static void before() {
+		exec = Executors.newSingleThreadExecutor();
+	}
+
+	@AfterClass
+	public static void after() {
+		exec.shutdownNow();
+	}
+
+	@Test
+	public void normal() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 1_000_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalBackpressured1() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.range(1, 1_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		Thread.sleep(250);
+
+		ts.assertValueCount(500)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalBackpressured() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.range(1, 1_000_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		Thread.sleep(250);
+
+		ts.assertValueCount(500_000)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalSyncFused() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 1_000_000)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalSyncFusedBackpressured() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.range(1, 1_000_000)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		Thread.sleep(500);
+
+		ts.assertValueCount(500_000)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		ts.await(Duration.ofSeconds(10));
+		ts.assertTerminated();
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalAsyncFused() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
+
+		for (int i = 0; i < 1_000_000; i++) {
+			up.onNext(i);
+		}
+		up.onComplete();
+
+		up.publishOn(Schedulers.fromExecutorService(exec))
+		  .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalAsyncFusedBackpressured() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(QueueSupplier.<Integer>unbounded(1024).get());
+
+		for (int i = 0; i < 1_000_000; i++) {
+			up.onNext(0);
+		}
+		up.onComplete();
+
+		up.publishOn(Schedulers.fromExecutorService(exec))
+		  .subscribe(ts);
+
+		try {
+			ts.assertNoValues()
+			  .assertNoError()
+			  .assertNotComplete();
+
+			ts.request(500_000);
+
+			Thread.sleep(250);
+
+			ts.assertValueCount(500_000)
+			  .assertNoError()
+			  .assertNotComplete();
+
+			ts.request(500_000);
+
+			if (!ts.await(Duration.ofSeconds(5))
+			       .isTerminated()) {
+				ts.cancel();
+				Assert.fail("TestSubscriber timed out: " + ts.values()
+				                                             .size());
+			}
+
+			ts.assertValueCount(1_000_000)
+			  .assertNoError()
+			  .assertComplete();
+		}
+		finally {
+			ts.cancel();
+		}
+	}
+
+	@Test
+	public void error() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.<Integer>error(new RuntimeException("forced failure")).publishOn(Schedulers.fromExecutorService(
+				exec))
+		                                                           .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertNoValues()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure")
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void empty() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.<Integer>empty().publishOn(Schedulers.fromExecutorService(exec))
+		                     .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void errorDelayed() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux<Integer> err = Flux.error(new RuntimeException("forced " + "failure"));
+
+		Flux.range(1, 1000)
+		    .concatWith(err)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1000)
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure")
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void classicJust() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.just(1)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void classicJustBackpressured() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.just(1)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		Thread.sleep(100);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void filtered() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 2_000_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void filtered1() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 2_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalFilteredBackpressured() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.range(1, 2_000_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		Thread.sleep(500);
+
+		ts.assertValueCount(500_000)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500_000);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalFilteredBackpressured1() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+		Flux.range(1, 2_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		Thread.sleep(500);
+
+		ts.assertValueCount(500)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(500);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(1_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void callableEvaluatedTheRightTime() {
+
+		AtomicInteger count = new AtomicInteger();
+
+		Mono<Integer> p = Mono.fromCallable(count::incrementAndGet)
+		                      .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()));
+
+		Assert.assertEquals(0, count.get());
+
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		p.subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(5))
+		       .isTerminated()) {
+			ts.cancel();
+			Assert.fail("TestSubscriber timed out");
+		}
+
+		Assert.assertEquals(1, count.get());
+	}
+
+	@Test
+	public void prefetchAmountOnlyLoop() {
+		for (int i = 0; i < 100000; i++) {
+			prefetchAmountOnly();
+		}
+	}
+
+	@Test
+	public void diamondLoop() {
+		for (int i = 0; i < 100000; i++) {
+			diamond();
+		}
+	}
+
+	public void diamond() {
+
+		DirectProcessor<Integer> sp = DirectProcessor.create();
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux<Integer> fork1 = sp.map(d -> d)
+		                        .publishOn(Schedulers.fromExecutorService(exec));
+		Flux<Integer> fork2 = sp.map(d -> d)
+		                        .publishOn(Schedulers.fromExecutorService(exec));
+
+		ts.request(256);
+		Flux.merge(fork1, fork2)
+		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .subscribe(ts);
+
+		Flux.range(0, 128)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .subscribe(sp);
+
+		ts.await(Duration.ofSeconds(5))
+		  .assertTerminated()
+		  .assertValueCount(256)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void prefetchAmountOnly() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		ConcurrentLinkedQueue<Long> clq = new ConcurrentLinkedQueue<>();
+
+		Flux.range(1, 2)
+		    .hide()
+		    .doOnRequest(v -> {
+			    clq.offer(v);
+		    })
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(100));
+
+		ts.assertValues(1, 2)
+		  .assertNoError()
+		  .assertComplete();
+
+		int s = clq.size();
+		Assert.assertTrue("More requests?" + clq, s == 1 || s == 2 || s == 3);
+		Assert.assertEquals((Long) (long) QueueSupplier.SMALL_BUFFER_SIZE, clq.poll());
+	}
+
+	@Test
+	public void boundedQueueLoop() {
+		for (int i = 0; i < 1000; i++) {
+			boundedQueue();
+		}
+	}
+
+	@Test
+	public void boundedQueue() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 100_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutor(exec), 128)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(1));
+
+		ts.assertValueCount(100_000)
+		  .assertNoError()
+		  .assertComplete();
+
+	}
+
+	@Test
+	public void boundedQueueFilterLoop() {
+		for (int i = 0; i < 1000; i++) {
+			boundedQueueFilter();
+		}
+	}
+
+	@Test
+	public void boundedQueueFilter() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 100_000)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutor(exec), 128)
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(1));
+
+		ts.assertValueCount(50_000)
+		  .assertNoError()
+		  .assertComplete();
+
+	}
+
+	@Test
+	public void withFlatMapLoop() {
+		for (int i = 0; i < 200; i++) {
+			withFlatMap();
+		}
+	}
+
+	@Test
+	public void withFlatMap() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 100_000)
+		    .flatMap(Flux::just)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValueCount(100_000)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void syncSourceWithNull() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.just(1, null, 1)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void syncSourceWithNull2() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.fromIterable(Arrays.asList(1, null, 1))
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedsyncSourceWithNull() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.just(1, 2)
+		    .map(v -> v == 2 ? null : v)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedsyncSourceWithNullHidden() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.just(1, 2)
+		    .hide()
+		    .map(v -> v == 2 ? null : v)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedsyncSourceWithNullPostFilterHidden() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.just(1, 2)
+		    .hide()
+		    .map(v -> v == 2 ? null : v)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .filter(v -> true)
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedsyncSourceWithNull2() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.fromIterable(Arrays.asList(1, 2))
+		    .map(v -> v == 2 ? null : v)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedsyncSourceWithNull2Hidden() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.fromIterable(Arrays.asList(1, 2))
+		    .hide()
+		    .map(v -> v == 2 ? null : v)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedFilteredSyncSourceWithNull() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.just(1, 2)
+		    .map(v -> v == 2 ? null : v)
+		    .filter(v -> true)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedFilteredSyncSourceWithNull2() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		Flux.fromIterable(Arrays.asList(1, 2))
+		    .map(v -> v == 2 ? null : v)
+		    .filter(v -> true)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedAsyncSourceWithNull() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+		up.onNext(1);
+		up.onNext(2);
+		up.onComplete();
+
+		up.map(v -> v == 2 ? null : v)
+		  .publishOn(Schedulers.fromExecutorService(exec))
+		  .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mappedAsyncSourceWithNullPostFilter() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+		up.onNext(1);
+		up.onNext(2);
+		up.onComplete();
+
+		up.map(v -> v == 2 ? null : v)
+		  .publishOn(Schedulers.fromExecutorService(exec))
+		  .filter(v -> true)
+		  .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void crossRangeHidden() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		int count = 1000000;
+
+		Flux.range(1, count)
+		    .hide()
+		    .flatMap(v -> Flux.range(v, 2)
+		                      .hide(), false, 128, 1)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(5))
+		       .isTerminated()) {
+			ts.cancel();
+		}
+
+		ts.assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void crossRange() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		int count = 1000000;
+
+		Flux.range(1, count)
+		    .flatMap(v -> Flux.range(v, 2), false, 128, 1)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(10))
+		       .isTerminated()) {
+			ts.cancel();
+		}
+
+		ts.assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void crossRangeMaxHiddenLoop() throws Exception {
+		for (int i = 0; i < 10; i++) {
+			crossRangeMaxHidden();
+		}
+	}
+
+	@Test
+	public void crossRangeMaxHidden() throws Exception {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		int count = 1000000;
+
+		Flux.range(1, count)
+		    .hide()
+		    .flatMap(v -> Flux.range(v, 2)
+		                      .hide(), false, 4, 32)
+		    .hide()
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		ts.await(Duration.ofSeconds(10))
+		  .assertTerminated()
+		  .assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void crossRangeMaxLoop() {
+		for (int i = 0; i < 50; i++) {
+			crossRangeMax();
+		}
+	}
+
+	@Test
+	public void crossRangeMax() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		int count = 1000000;
+
+		Flux.range(1, count)
+		    .flatMap(v -> Flux.range(v, 2), false, 128, 32)
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(10))
+		       .isTerminated()) {
+			ts.cancel();
+		}
+
+		ts.assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	//	@Test
+	public void crossRangeMaxUnboundedLoop() {
+		for (int i = 0; i < 50; i++) {
+			crossRangeMaxUnbounded();
+		}
+	}
+
+	//	@Test
+	public void crossRangeMaxUnbounded() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		int count = 1000000;
+
+		Flux.range(1, count)
+		    .flatMap(v -> Flux.range(v, 2))
+		    .publishOn(Schedulers.fromExecutorService(exec))
+		    .subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(10))
+		       .isTerminated()) {
+			ts.cancel();
+		}
+
+		ts.assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void threadBoundaryPreventsInvalidFusionMap() {
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+
+		TestSubscriber<String> ts = TestSubscriber.create();
+
+		up.map(v -> Thread.currentThread()
+		                  .getName())
+		  .publishOn(Schedulers.fromExecutorService(exec))
+		  .subscribe(ts);
+
+		up.onNext(1);
+		up.onComplete();
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(Thread.currentThread()
+		                      .getName())
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void threadBoundaryPreventsInvalidFusionFilter() {
+		UnicastProcessor<Integer> up =
+				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+
+		String s = Thread.currentThread()
+		                 .getName();
+
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		up.filter(v -> s.equals(Thread.currentThread()
+		                              .getName()))
+		  .publishOn(Schedulers.fromExecutorService(exec))
+		  .subscribe(ts);
+
+		up.onNext(1);
+		up.onComplete();
+
+		ts.await(Duration.ofSeconds(5));
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void crossRangePerfDefaultLoop() {
+		for (int i = 0; i < 100000; i++) {
+			if (i % 2000 == 0) {
+				crossRangePerfDefault();
+			}
+		}
+	}
+
+	@Test
+	public void crossRangePerfDefault() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Scheduler scheduler = Schedulers.fromExecutorService(exec);
+
+		int count = 1000;
+
+		Flux<Integer> source = Flux.range(1, count)
+		                           .flatMap(v -> Flux.range(v, 2), false, 128, 32);
+
+		source.publishOn(scheduler)
+		      .subscribe(ts);
+
+		if (!ts.await(Duration.ofSeconds(10))
+		       .isTerminated()) {
+			ts.cancel();
+		}
+
+		ts.assertValueCount(count * 2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void crossRangePerfDefaultLoop2() {
+		Scheduler scheduler = Schedulers.fromExecutorService(exec);
+
+		int count = 1000;
+
+		for (int j = 1; j < 256; j *= 2) {
+
+			Flux<Integer> source = Flux.range(1, count)
+			                           .flatMap(v -> Flux.range(v, 2), false, 128, j)
+			                           .publishOn(scheduler);
+
+			for (int i = 0; i < 10000; i++) {
+				TestSubscriber<Integer> ts = TestSubscriber.create();
+
+				source.subscribe(ts);
+
+				if (!ts.await(Duration.ofSeconds(15))
+				       .isTerminated()) {
+					ts.cancel();
+					Assert.fail("Timed out @ maxConcurrency = " + j);
+				}
+
+				ts.assertValueCount(count * 2)
+				  .assertNoError()
+				  .assertComplete();
+			}
+		}
+	}
+
+}
