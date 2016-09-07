@@ -16,7 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Supplier;
+
+import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import reactor.test.TestSubscriber;
 
 public class FluxDeferTest {
@@ -24,6 +28,12 @@ public class FluxDeferTest {
 	@Test(expected = NullPointerException.class)
 	public void supplierNull() {
 		Flux.<Integer>defer(null);
+	}
+
+	@Test
+	public void deferAssigned() {
+		Supplier<Publisher<?>> defer = () -> null;
+		Assert.assertTrue(new FluxDefer<>(defer).upstream().equals(defer));
 	}
 
 	@Test

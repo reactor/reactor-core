@@ -183,9 +183,6 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 			return onDrop;
 		}
 
-		@Override
-		public Object connectedOutput() {
-			return null;
-		}
+
 	}
 }

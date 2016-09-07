@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,11 +44,32 @@ public class FluxOnBackpressureDropTest {
 	}
 
 	@Test
+	public void onDropAssigned() {
+		Consumer<Object> onDrop = c -> {};
+		PublisherMock<?> p = PublisherMock.create();
+		p.flux().onBackpressureDrop(onDrop).subscribe();
+		Assert.assertTrue(p.get(0).connectedInput().equals(onDrop));
+	}
+
+	@Test
 	public void normal() {
 		TestSubscriber<Integer> ts = TestSubscriber.create();
 
 		Flux.range(1, 10)
 		    .onBackpressureDrop()
+		    .subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void normalError() {
+		TestSubscriber<Integer> ts = TestSubscriber.create();
+
+		Flux.range(1, 10)
+		    .onBackpressureError()
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)

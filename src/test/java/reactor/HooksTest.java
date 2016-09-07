@@ -101,7 +101,11 @@ public class HooksTest {
 	@Test
 	public void parallelModeFused() {
 		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE));
-		Flux<Integer> source = Flux.range(1, 1000);
+		Flux<Integer> source = Mono.just(1)
+		                           .flux()
+		                           .repeat(1000)
+		                           .publish()
+		                           .autoConnect();
 		int ncpu = Math.max(8,
 				Runtime.getRuntime()
 				       .availableProcessors());

@@ -50,6 +50,19 @@ public class MonoCallableTest {
     }
 
     @Test
+    public void normalFlux() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Mono.fromCallable(() -> 1)
+            .flux()
+            .subscribe(ts);
+
+        ts.assertValues(1)
+          .assertComplete()
+          .assertNoError();
+    }
+
+    @Test
     public void normalBackpressured() {
         TestSubscriber<Integer> ts = TestSubscriber.create(0);
 

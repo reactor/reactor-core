@@ -110,9 +110,6 @@ final class FluxResume<T> extends FluxSource<T, T> {
 			return nextFactory;
 		}
 
-		@Override
-		public Object connectedOutput() {
-			return null;
-		}
+
 	}
 }
