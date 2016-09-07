@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +31,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -49,7 +52,7 @@ import reactor.util.concurrent.WaitStrategy;
  */
 public final class MonoProcessor<O> extends Mono<O>
 		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver,
-		           Producer, LongSupplier {
+		           Producer, LongSupplier, MultiProducer {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -439,18 +442,28 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	final boolean checkStarted(){
-		int state = this.state;
-		if(state == STATE_ERROR){
-			if (RuntimeException.class.isInstance(error)) {
-				throw (RuntimeException) error;
-			}
-			else {
-				Operators.onErrorDropped(error);
-				return false;
-			}
+	static final MultiProducer EMPTY_MP = Collections::emptyIterator;
+
+	final MultiProducer asMultiProducer(){
+		if(processor instanceof MultiProducer){
+			return (MultiProducer)processor;
 		}
-		return state > STATE_READY && subscription != null && state > STATE_POST_SUBSCRIBED;
+		return EMPTY_MP;
+	}
+
+	@Override
+	public Iterator<?> downstreams() {
+		return asMultiProducer().downstreams();
+	}
+
+	@Override
+	public long downstreamCount() {
+		return asMultiProducer().downstreamCount();
+	}
+
+	@Override
+	public boolean hasDownstreams() {
+		return asMultiProducer().hasDownstreams();
 	}
 
 	@SuppressWarnings("unchecked")

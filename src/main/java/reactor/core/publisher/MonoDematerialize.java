@@ -29,6 +29,6 @@ final class MonoDematerialize<T> extends MonoSource<Signal<T>, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
-		source.subscribe(new FluxDematerialize.DematerializeAction<>(subscriber));
+		source.subscribe(new FluxDematerialize.DematerializeSubscriber<>(subscriber));
 	}
 }

@@ -32,10 +32,10 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> subscriber) {
-		source.subscribe(new DematerializeAction<>(subscriber));
+		source.subscribe(new DematerializeSubscriber<>(subscriber));
 	}
 
-	static final class DematerializeAction<T>
+	static final class DematerializeSubscriber<T>
 	extends AbstractQueue<T>
 	implements Subscriber<Signal<T>>, Subscription, BooleanSupplier {
 
@@ -51,14 +51,14 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 	    
 	    volatile long requested;
 	    @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<DematerializeAction> REQUESTED =
-	            AtomicLongFieldUpdater.newUpdater(DematerializeAction.class, "requested");
+        static final AtomicLongFieldUpdater<DematerializeSubscriber> REQUESTED =
+	            AtomicLongFieldUpdater.newUpdater(DematerializeSubscriber.class, "requested");
 	    
 	    volatile boolean cancelled;
 	    
 	    Throwable error;
 	    
-		public DematerializeAction(Subscriber<? super T> subscriber) {
+		public DematerializeSubscriber(Subscriber<? super T> subscriber) {
 			this.actual = subscriber;
 		}
 

@@ -100,7 +100,7 @@ public class HooksTest {
 
 	@Test
 	public void parallelModeFused() {
-		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE));
+		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE).operatorStacktrace());
 		Flux<Integer> source = Mono.just(1)
 		                           .flux()
 		                           .repeat(1000)

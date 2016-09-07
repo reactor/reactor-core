@@ -373,12 +373,8 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	static boolean hasUnsafe0() {
 
-		if (isAndroid()) {
-			return false;
-		}
-
 		try {
-			return UnsafeSupport.hasUnsafe();
+			return !isAndroid() && UnsafeSupport.hasUnsafe();
 		} catch (Throwable t) {
 			// Probably failed to initialize Reactor0.
 			return false;
@@ -386,33 +382,13 @@ abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	static boolean isAndroid() {
-		boolean android;
 		try {
 			Class.forName("android.app.Application", false, UnsafeSupport.getSystemClassLoader());
-			android = true;
+			return true;
 		} catch (Exception e) {
 			// Failed to load the class uniquely available in Android.
-			android = false;
+			return false;
 		}
-
-		return android;
-	}
-
-	/**
-	 * <p>Exception thrown when the it is not possible to dispatch a signal due to insufficient capacity.
-	 *
-	 */
-	static final class InsufficientCapacityException extends RuntimeException {
-
-		static final long serialVersionUID = 2491425227432776145L;
-
-		static final InsufficientCapacityException INSTANCE = new InsufficientCapacityException();
-
-		InsufficientCapacityException() {
-			super("The RingBuffer is overrun by more signals than expected (bounded " +
-					"queue...)");
-		}
-
 	}
 
 	private static final boolean HAS_UNSAFE = hasUnsafe0();
@@ -670,51 +646,10 @@ abstract class UnsafeSupport {
 		return UNSAFE != null;
 	}
 
-	static <U, W> AtomicReferenceFieldUpdater<U, W> newAtomicReferenceFieldUpdater(
-			Class<U> tclass, String fieldName) throws Exception {
-		return new UnsafeAtomicReferenceFieldUpdater<>(tclass, fieldName);
-	}
 
 	UnsafeSupport() {
 	}
 
-	static final class UnsafeAtomicReferenceFieldUpdater<U, M> extends AtomicReferenceFieldUpdater<U, M> {
-		private final long offset;
-
-		UnsafeAtomicReferenceFieldUpdater(Class<U> tClass, String fieldName) throws NoSuchFieldException {
-			Field field = tClass.getDeclaredField(fieldName);
-			if (!Modifier.isVolatile(field.getModifiers())) {
-				throw new IllegalArgumentException("Must be volatile");
-			}
-			offset = UNSAFE.objectFieldOffset(field);
-		}
-
-		@Override
-		public boolean compareAndSet(U obj, M expect, M update) {
-			return UNSAFE.compareAndSwapObject(obj, offset, expect, update);
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public M get(U obj) {
-			return (M) UNSAFE.getObjectVolatile(obj, offset);
-		}
-
-		@Override
-		public void lazySet(U obj, M newValue) {
-			UNSAFE.putOrderedObject(obj, offset, newValue);
-		}
-
-		@Override
-		public void set(U obj, M newValue) {
-			UNSAFE.putObjectVolatile(obj, offset, newValue);
-		}
-
-		@Override
-		public boolean weakCompareAndSet(U obj, M expect, M update) {
-			return UNSAFE.compareAndSwapObject(obj, offset, expect, update);
-		}
-	}
 	private static final Unsafe UNSAFE;
 }
 /**
