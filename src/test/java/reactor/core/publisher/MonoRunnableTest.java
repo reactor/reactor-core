@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
+
+import java.io.IOException;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
@@ -21,48 +24,63 @@ import reactor.test.TestSubscriber;
 
 public class MonoRunnableTest {
 
-    @Test(expected = NullPointerException.class)
-    public void nullValue() {
-        new MonoRunnable(null);
-    }
+	@Test(expected = NullPointerException.class)
+	public void nullValue() {
+		new MonoRunnable(null);
+	}
 
-    @Test
-    public void normal() {
-        TestSubscriber<Void> ts = TestSubscriber.create();
+	@Test
+	public void normal() {
+		TestSubscriber<Void> ts = TestSubscriber.create();
 
-        Mono.fromRunnable(() -> {}).subscribe(ts);
+		Mono.fromRunnable(() -> {
+		})
+		    .subscribe(ts);
 
-        ts.assertNoValues()
-          .assertComplete()
-          .assertNoError();
-    }
+		ts.assertNoValues()
+		  .assertComplete()
+		  .assertNoError();
+	}
 
-    @Test
-    public void normalBackpressured() {
-        TestSubscriber<Void> ts = TestSubscriber.create(0);
+	@Test
+	public void normalBackpressured() {
+		TestSubscriber<Void> ts = TestSubscriber.create(0);
 
-        Mono.fromRunnable(() -> {}).subscribe(ts);
+		Mono.fromRunnable(() -> {
+		})
+		    .hide()
+		    .subscribe(ts);
 
-        ts.assertNoValues()
-          .assertNotComplete()
-          .assertNoError();
+		ts.assertNoValues()
+		  .assertComplete()
+		  .assertNoError();
 
-        ts.request(1);
+	}
 
-        ts.assertNoValues()
-          .assertComplete()
-          .assertNoError();
-    }
+	@Test
+	public void runnableThrows() {
+		TestSubscriber<Object> ts = TestSubscriber.create();
 
-    @Test
-    public void fused() {
-        TestSubscriber<Void> ts = TestSubscriber.create();
-        ts.requestedFusionMode(Fuseable.ANY);
-        
-        Mono.fromRunnable(() -> {}).subscribe(ts);
-        
-        ts.assertFuseableSource()
-        .assertFusionMode(Fuseable.SYNC)
-        .assertNoValues();
-    }
+		Mono.fromRunnable(() -> {
+			throw new RuntimeException("forced failure");
+		})
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void nonFused() {
+		TestSubscriber<Void> ts = TestSubscriber.create();
+
+		Mono.fromRunnable(() -> {
+		})
+		    .subscribe(ts);
+
+		ts.assertNonFuseableSource()
+		  .assertNoValues();
+	}
 }
