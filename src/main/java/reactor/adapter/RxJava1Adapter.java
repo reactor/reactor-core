@@ -144,7 +144,7 @@ public abstract class RxJava1Adapter {
 		}
 
 		static final class CompletableMonoSubscriber
-				implements rx.Completable.CompletableSubscriber, Subscription {
+				implements rx.CompletableSubscriber, Subscription {
 
 			final Subscriber<? super Void> actual;
 
@@ -193,7 +193,7 @@ public abstract class RxJava1Adapter {
 	 * signals of the Publisher.
 	 */
 	private static class PublisherAsCompletable
-			implements rx.Completable.CompletableOnSubscribe {
+			implements rx.Completable.OnSubscribe {
 
 		final Publisher<?> source;
 
@@ -202,20 +202,20 @@ public abstract class RxJava1Adapter {
 		}
 
 		@Override
-		public void call(rx.Completable.CompletableSubscriber t) {
+		public void call(rx.CompletableSubscriber t) {
 			source.subscribe(new PublisherCompletableSubscriber(t));
 		}
 
 		static final class PublisherCompletableSubscriber
 				implements Subscriber<Object>, rx.Subscription {
 
-			final rx.Completable.CompletableSubscriber actual;
+			final rx.CompletableSubscriber actual;
 
 			Subscription s;
 
 			volatile boolean unsubscribed;
 
-			public PublisherCompletableSubscriber(rx.Completable.CompletableSubscriber actual) {
+			public PublisherCompletableSubscriber(rx.CompletableSubscriber actual) {
 				this.actual = actual;
 			}
 
