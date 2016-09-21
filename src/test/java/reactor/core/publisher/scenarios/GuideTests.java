@@ -32,7 +32,7 @@ public class GuideTests {
 	@Test
 	public void fluxComposing() throws Exception {
 		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-		    .doOnNext(System.out::println)
+		    .log()
 		    .filter(color -> !color.equals("orange"))
 		    .map(String::toUpperCase)
 		    .subscribe(d -> System.out.println("Subscriber to Map: "+d));
