@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -95,7 +96,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
+	 * Creates and returns a {@code Signal} of variety {@code Type.ON_SUBSCRIBE}.
 	 *
 	 * @param <T> the value type
 	 * @param subscription the subscription
@@ -233,13 +234,16 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 		if (isOnComplete()) {
 			return true;
 		}
-		if (isOnSubscribe() && subscription != null ? !subscription.equals(signal.subscription) :
-				signal.subscription != null) {
-			return false;
+		if (isOnSubscribe()) {
+			return Objects.equals(this.subscription, signal.subscription);
 		}
-		return isOnError() && throwable != null ? throwable.equals(signal.throwable) :
-				signal.throwable == null && (isOnNext() && value != null ? !value.equals(signal.value) :
-						signal.value != null);
+		else if (isOnError()) {
+			return Objects.equals(this.throwable, signal.throwable);
+		}
+		else if (isOnNext()) {
+			return Objects.equals(this.value, signal.value);
+		}
+		return false;
 	}
 
 	@Override
@@ -256,11 +260,17 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 
 	@Override
 	public String toString() {
-		return "Signal{" +
-		  "type=" + type +
-		  (isOnError() ? ", throwable=" + throwable :
-			(isOnNext() ? ", value=" + value :
-			  (isOnSubscribe() ? ", subscription=" + subscription : ""))) +
-		  '}';
+		switch (this.type) {
+			case ON_SUBSCRIBE:
+				return String.format("onSubscribe(%s)", this.subscription);
+			case ON_NEXT:
+				return String.format("onNext(%s)", this.value);
+			case ON_ERROR:
+				return String.format("onError(%s)", this.throwable);
+			case ON_COMPLETE:
+				return "onComplete()";
+			default:
+				return String.format("Signal type=%s", this.type);
+		}
 	}
 }
