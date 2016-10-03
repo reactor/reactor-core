@@ -1601,7 +1601,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Mono} on complete only.
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} on complete only.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffer.png"
 	 * alt="">
