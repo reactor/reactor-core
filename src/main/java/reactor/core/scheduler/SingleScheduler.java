@@ -97,7 +97,7 @@ final class SingleScheduler implements Scheduler {
     public Cancellation schedule(Runnable task) {
         try {
             Future<?> f = executor.submit(task);
-            return () -> f.cancel(false);
+            return () -> f.cancel(executor == TERMINATED);
         } catch (RejectedExecutionException ex) {
             return REJECTED;
         }
@@ -256,7 +256,7 @@ final class SingleScheduler implements Scheduler {
                         f = FUTURE.getAndSet(this, CANCELLED);
                         if (f != CANCELLED && f != FINISHED) {
                             if (f != null) {
-                                f.cancel(false);
+                                f.cancel(parent.shutdown);
                             }
                             
                             parent.remove(this);
@@ -268,7 +268,7 @@ final class SingleScheduler implements Scheduler {
             void setFuture(Future<?> f) {
                 if (future != null || !FUTURE.compareAndSet(this, null, f)) {
                     if (future != FINISHED) {
-                        f.cancel(false);
+                        f.cancel(parent.shutdown);
                     }
                 }
             }
@@ -278,7 +278,7 @@ final class SingleScheduler implements Scheduler {
                 if (f != CANCELLED && f != FINISHED) {
                     f = FUTURE.getAndSet(this, CANCELLED);
                     if (f != null && f != CANCELLED && f != FINISHED) {
-                        f.cancel(false);
+                        f.cancel(true);
                     }
                 }
             }
