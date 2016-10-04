@@ -108,7 +108,6 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_CANCELLED)) {
-				subscription = Operators.cancelledSubscription();
 				break;
 			}
 			state = this.state;
