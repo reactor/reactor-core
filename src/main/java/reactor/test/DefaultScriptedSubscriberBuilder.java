@@ -106,12 +106,19 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> expectValueWith(Predicate<T> predicate) {
+		return expectValueWith(predicate, t -> String.format("predicate failed on value: %s", t));
+	}
+
+	@Override
+	public ScriptedSubscriber.ValueBuilder<T> expectValueWith(Predicate<T> predicate,
+			Function<T, String> assertionMessage) {
+
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
 				return Optional.of(String.format("expected: onNext(); actual: %s", signal));
 			}
 			else if (!predicate.test(signal.get())) {
-				return Optional.of(String.format("predicate failed on value: %s", signal.get()));
+				return Optional.of(assertionMessage.apply(signal.get()));
 			}
 			else {
 				return Optional.empty();
@@ -119,6 +126,7 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		});
 		this.script.add(event);
 		return this;
+
 	}
 
 	@Override
@@ -157,13 +165,20 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 	@Override
 	public ScriptedSubscriber<T> expectErrorWith(Predicate<Throwable> predicate) {
+		return expectErrorWith(predicate,
+				t -> String.format("predicate failed on exception: %s", t));
+	}
+
+	@Override
+	public ScriptedSubscriber<T> expectErrorWith(Predicate<Throwable> predicate,
+			Function<Throwable, String> assertionMessage) {
+
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
 				return Optional.of(String.format("expected: onError(); actual: %s", signal));
 			}
 			else if (!predicate.test(signal.getThrowable())) {
-				return Optional.of(String.format("predicate failed on exception: %s",
-						signal.getThrowable()));
+				return Optional.of(assertionMessage.apply(signal.getThrowable()));
 			}
 			else {
 				return Optional.empty();
