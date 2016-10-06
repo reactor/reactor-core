@@ -1606,7 +1606,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffer.png"
 	 * alt="">
 	 *
-	 * @return a buffered {@link Mono} of at most one {@link List}
+	 * @return a buffered {@link Flux} of at most one {@link List}
+	 * @see #collectList() for an alternative collecting algorithm returning {@link Mono}
 	 */
     public final Flux<List<T>> buffer() {
 	    return buffer(Integer.MAX_VALUE);
