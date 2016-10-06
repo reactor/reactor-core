@@ -16,23 +16,17 @@
 
 package reactor.core.publisher;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.FluxConcatMap.ErrorMode;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 public class FluxConcatMapTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .concatMap(v -> Flux.range(v, 2))
@@ -45,7 +39,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normal2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .hide()
@@ -59,7 +53,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .concatMapDelayError(v -> Flux.range(v, 2))
@@ -72,7 +66,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalBoundary2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .hide()
@@ -86,7 +80,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRun() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
 		    .concatMap(v -> Flux.range(v, 1000))
@@ -99,7 +93,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRunJust() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000_000)
 		    .concatMap(v -> Flux.just(v))
@@ -112,7 +106,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRun2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
 		    .hide()
@@ -126,7 +120,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRunBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
 		    .concatMapDelayError(v -> Flux.range(v, 1000))
@@ -139,7 +133,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRunJustBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000_000)
 		    .concatMapDelayError(v -> Flux.just(v))
@@ -152,7 +146,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void normalLongRunBoundary2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000)
 		    .hide()
@@ -166,7 +160,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void singleSubscriberOnly() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -202,7 +196,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void singleSubscriberOnlyBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -241,7 +235,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void mainErrorsImmediate() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -275,7 +269,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void mainErrorsBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -316,7 +310,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void innerErrorsImmediate() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -350,7 +344,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void innerErrorsBoundary() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -384,7 +378,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void innerErrorsEnd() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 
@@ -427,7 +421,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void syncFusionMapToNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .map(v -> v == 2 ? null : v)
@@ -441,7 +435,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void syncFusionMapToNullFilter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .map(v -> v == 2 ? null : v)
@@ -456,7 +450,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void asyncFusionMapToNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
 		up.onNext(1);
@@ -474,7 +468,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void asyncFusionMapToNullFilter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
@@ -494,7 +488,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void scalarAndRangeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		@SuppressWarnings("unchecked") Publisher<Integer>[] sources =
 				new Publisher[]{Flux.just(1), Flux.range(2, 3)};
@@ -515,7 +509,7 @@ public class FluxConcatMapTest {
 
 	@Test
 	public void allEmptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(0, 10)
 		    .hide()

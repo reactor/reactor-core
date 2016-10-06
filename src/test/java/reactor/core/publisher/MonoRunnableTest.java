@@ -16,11 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.io.IOException;
-
 import org.junit.Test;
-import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoRunnableTest {
 
@@ -31,7 +28,7 @@ public class MonoRunnableTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Void> ts = TestSubscriber.create();
+		AssertSubscriber<Void> ts = AssertSubscriber.create();
 
 		Mono.fromRunnable(() -> {
 		})
@@ -44,7 +41,7 @@ public class MonoRunnableTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Void> ts = TestSubscriber.create(0);
+		AssertSubscriber<Void> ts = AssertSubscriber.create(0);
 
 		Mono.fromRunnable(() -> {
 		})
@@ -59,7 +56,7 @@ public class MonoRunnableTest {
 
 	@Test
 	public void runnableThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Mono.fromRunnable(() -> {
 			throw new RuntimeException("forced failure");
@@ -74,7 +71,7 @@ public class MonoRunnableTest {
 
 	@Test
 	public void nonFused() {
-		TestSubscriber<Void> ts = TestSubscriber.create();
+		AssertSubscriber<Void> ts = AssertSubscriber.create();
 
 		Mono.fromRunnable(() -> {
 		})

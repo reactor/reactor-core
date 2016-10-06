@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDistinctUntilChangedTest {
 
@@ -33,7 +33,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void allDistinct() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .distinctUntilChanged(v -> v)
@@ -46,7 +46,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void allDistinctBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .distinctUntilChanged(v -> v)
@@ -77,7 +77,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void someRepetiton() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 1, 2, 2, 1, 1, 2, 2, 1, 2, 3, 3)
 		    .distinctUntilChanged(v -> v)
@@ -90,7 +90,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void someRepetitionBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1, 1, 2, 2, 1, 1, 2, 2, 1, 2, 3, 3)
 		    .distinctUntilChanged(v -> v)
@@ -121,7 +121,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void withKeySelector() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .distinctUntilChanged(v -> v / 3)
@@ -134,7 +134,7 @@ public class FluxDistinctUntilChangedTest {
 
 	@Test
 	public void keySelectorThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .distinctUntilChanged(v -> {

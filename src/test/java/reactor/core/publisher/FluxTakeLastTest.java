@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeLastTest {
 
@@ -33,7 +33,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeNone() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).takeLast(0).subscribe(ts);
 
@@ -44,7 +44,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeNoneBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).takeLast(0).subscribe(ts);
 
@@ -55,7 +55,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeOne() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).takeLast(1).subscribe(ts);
 
@@ -66,7 +66,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeOneBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).takeLast(1).subscribe(ts);
 
@@ -83,7 +83,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeSome() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).takeLast(5).subscribe(ts);
 
@@ -94,7 +94,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeSomeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).takeLast(5).subscribe(ts);
 
@@ -123,7 +123,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeAll() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).takeLast(20).subscribe(ts);
 
@@ -134,7 +134,7 @@ public class FluxTakeLastTest {
 
 	@Test
 	public void takeAllBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).takeLast(20).subscribe(ts);
 

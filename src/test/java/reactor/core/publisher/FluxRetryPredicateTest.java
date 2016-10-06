@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRetryPredicateTest {
 
@@ -39,7 +39,7 @@ public class FluxRetryPredicateTest {
 	public void normal() {
 		int[] times = {1};
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry(e -> times[0]-- > 0)
 		      .subscribe(ts);
@@ -54,7 +54,7 @@ public class FluxRetryPredicateTest {
 	public void normalBackpressured() {
 		int[] times = {1};
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		source.retry(e -> times[0]-- > 0)
 		      .subscribe(ts);
@@ -85,7 +85,7 @@ public class FluxRetryPredicateTest {
 
 	@Test
 	public void dontRepeat() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry(e -> false)
 		      .subscribe(ts);
@@ -98,7 +98,7 @@ public class FluxRetryPredicateTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry(e -> {
 			throw new RuntimeException("forced failure");

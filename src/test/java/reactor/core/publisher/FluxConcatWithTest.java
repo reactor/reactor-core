@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxConcatWithTest {
 
@@ -33,7 +33,7 @@ public class FluxConcatWithTest {
 			result = result.concatWith(source);
 		}
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -55,7 +55,7 @@ public class FluxConcatWithTest {
 			result = result.concatWith(add);
 		}
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -77,7 +77,7 @@ public class FluxConcatWithTest {
 			result = result.concatWith(add);
 		}
 		
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -89,7 +89,7 @@ public class FluxConcatWithTest {
 	
 	@Test
 	public void dontBreakFluxArrayConcatMap() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux.just(1, 2).concatMap(Flux::just).concatWith(Flux.just(3))
 		.subscribe(ts);

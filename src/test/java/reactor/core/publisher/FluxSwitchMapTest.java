@@ -16,20 +16,15 @@
 
 package reactor.core.publisher;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSwitchMapTest {
 
 	@Test
 	public void noswitch() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -59,7 +54,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void noswitchBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -101,7 +96,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void doswitch() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -139,7 +134,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void mainCompletesBefore() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -168,7 +163,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void mainError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -193,7 +188,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void innerError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -220,7 +215,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void mapperThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 
@@ -239,7 +234,7 @@ public class FluxSwitchMapTest {
 
 	@Test
 	public void mapperReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 

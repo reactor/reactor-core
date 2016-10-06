@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSkipWhileTest {
 
@@ -34,7 +34,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipNone() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> false)
@@ -47,7 +47,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipNoneBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> false)
@@ -72,7 +72,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipSome() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> v < 3)
@@ -85,7 +85,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipSomeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> v < 3)
@@ -110,7 +110,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipAll() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> true)
@@ -123,7 +123,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void skipAllBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> true)
@@ -142,7 +142,7 @@ public class FluxSkipWhileTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .skipWhile(v -> {

@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSampleTest {
 
@@ -38,7 +38,7 @@ public class FluxSampleTest {
 
 		DirectProcessor<String> other = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		main.sample(other).subscribe(ts);
 
@@ -124,7 +124,7 @@ public class FluxSampleTest {
 
 		DirectProcessor<String> other = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		main.sample(other).subscribe(ts);
 
@@ -153,7 +153,7 @@ public class FluxSampleTest {
 			other.onComplete();
 		}
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		main.sample(other).subscribe(ts);
 

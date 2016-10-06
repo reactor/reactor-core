@@ -18,21 +18,19 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxGroupByTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2)
@@ -42,13 +40,13 @@ public class FluxGroupByTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		ts.values()
 		  .get(0)
 		  .subscribe(ts1);
 		ts1.assertValues(1, 3, 5, 7, 9);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		ts.values()
 		  .get(1)
 		  .subscribe(ts2);
@@ -57,7 +55,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void normalValueSelector() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2, v -> -v)
@@ -67,13 +65,13 @@ public class FluxGroupByTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		ts.values()
 		  .get(0)
 		  .subscribe(ts1);
 		ts1.assertValues(-1, -3, -5, -7, -9);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		ts.values()
 		  .get(1)
 		  .subscribe(ts2);
@@ -82,7 +80,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void takeTwoGroupsOnly() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 3)
@@ -93,13 +91,13 @@ public class FluxGroupByTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		ts.values()
 		  .get(0)
 		  .subscribe(ts1);
 		ts1.assertValues(1, 4, 7, 10);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		ts.values()
 		  .get(1)
 		  .subscribe(ts2);
@@ -108,7 +106,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void keySelectorNull() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> (Integer) null)
@@ -119,7 +117,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void valueSelectorNull() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> 1, v -> (Integer) null)
@@ -130,7 +128,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).groupBy(k -> k)
 		                                                           .subscribe(ts);
@@ -140,7 +138,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void backpressure() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create(0L);
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		    .groupBy(k -> 1)
@@ -154,7 +152,7 @@ public class FluxGroupByTest {
 		  .assertNoError()
 		  .assertComplete();
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create(0L);
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0L);
 
 		ts.values()
 		  .get(0)
@@ -169,7 +167,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void flatMapBack() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2)
@@ -181,7 +179,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void flatMapBackHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2)
@@ -193,7 +191,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void concatMapBack() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2)
@@ -205,7 +203,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void concatMapBackHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .groupBy(k -> k % 2)
@@ -218,7 +216,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<GroupedFlux<Integer, Integer>> ts = TestSubscriber.create(0L);
+		AssertSubscriber<GroupedFlux<Integer, Integer>> ts = AssertSubscriber.create(0L);
 
 		Flux.<Integer>empty().groupBy(v -> v)
 		                     .subscribe(ts);
@@ -228,7 +226,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void oneGroupLongMerge() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> 1)
@@ -242,7 +240,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void oneGroupLongMergeHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> 1)
@@ -256,7 +254,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void twoGroupsLongMerge() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> (v & 1))
@@ -270,7 +268,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void twoGroupsLongMergeHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> (v & 1))
@@ -291,7 +289,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void twoGroupsLongAsyncMerge() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> (v & 1))
@@ -315,7 +313,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void twoGroupsLongAsyncMergeHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .groupBy(v -> (v & 1))
@@ -333,9 +331,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsConsumeWithSubscribe() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -390,9 +388,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsConsumeWithSubscribePrefetchSmaller() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -458,9 +456,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsConsumeWithSubscribePrefetchBigger() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -526,9 +524,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsConsumeWithSubscribeHide() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -585,9 +583,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsFullAsyncFullHide() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -646,9 +644,9 @@ public class FluxGroupByTest {
 	@Test
 	public void twoGroupsFullAsync() {
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
-		TestSubscriber<Integer> ts3 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts3 = AssertSubscriber.create();
 		ts3.onSubscribe(Operators.emptySubscription());
 
 		Flux.range(0, 1_000_000)
@@ -703,7 +701,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void groupsCompleteAsSoonAsMainCompletes() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(0, 20)
 		    .groupBy(i -> i % 5)
@@ -736,7 +734,7 @@ public class FluxGroupByTest {
 
 	@Test
 	public void groupsCompleteAsSoonAsMainCompletesNoFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(0, 20)
 		    .groupBy(i -> i % 5)

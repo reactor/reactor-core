@@ -20,13 +20,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTimeoutTest {
 
 	@Test
 	public void noTimeout() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(), v -> Flux.never())
@@ -39,7 +39,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void immediateTimeout() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.empty(), v -> Flux.never())
@@ -52,7 +52,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void firstElemenetImmediateTimeout() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(), v -> Flux.empty())
@@ -66,7 +66,7 @@ public class FluxTimeoutTest {
 	//Fail
 	//@Test
 	public void immediateTimeoutResume() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.empty(), v -> Flux.never(), Flux.range(1, 10))
@@ -79,7 +79,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void firstElemenetImmediateResume() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(), v -> Flux.empty(), Flux.range(1, 10))
@@ -96,7 +96,7 @@ public class FluxTimeoutTest {
 
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
@@ -120,7 +120,7 @@ public class FluxTimeoutTest {
 
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
@@ -144,7 +144,7 @@ public class FluxTimeoutTest {
 
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.timeout(tp, v -> Flux.never(), Flux.range(1, 10))
 		      .subscribe(ts);
@@ -164,7 +164,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void itemTimeoutThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(), v -> {
@@ -180,7 +180,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void itemTimeoutReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(), v -> null)
@@ -193,7 +193,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void firstTimeoutError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.error(new RuntimeException("forced " + "failure")),
@@ -208,7 +208,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void itemTimeoutError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .timeout(Flux.never(),
@@ -223,7 +223,7 @@ public class FluxTimeoutTest {
 
 	@Test
 	public void timeoutRequested() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> source = DirectProcessor.create();
 

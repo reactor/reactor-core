@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoAllTest {
 
@@ -34,7 +34,7 @@ public class MonoAllTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).all(v -> true).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class MonoAllTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).all(v -> true).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class MonoAllTest {
 
 	@Test
 	public void someMatch() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).all(v -> v < 6).subscribe(ts);
 
@@ -73,7 +73,7 @@ public class MonoAllTest {
 
 	@Test
 	public void someMatchBackpressured() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).all(v -> v < 6).subscribe(ts);
 
@@ -90,7 +90,7 @@ public class MonoAllTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).all(v -> {
 			throw new RuntimeException("forced failure");

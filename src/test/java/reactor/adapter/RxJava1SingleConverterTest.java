@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 import org.junit.Test;
 
 import reactor.core.publisher.*;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import rx.Single;
 
 public class RxJava1SingleConverterTest {
@@ -33,7 +33,7 @@ public class RxJava1SingleConverterTest {
 
         Mono<Integer> m = RxJava1Adapter.singleToMono(s);
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         m.subscribe(ts);
         
@@ -49,7 +49,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1Adapter.singleToMono(s);
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         m.subscribe(ts);
         
@@ -65,7 +65,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1Adapter.singleToMono(s);
         
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         m.subscribe(ts);
         
@@ -88,7 +88,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1Adapter.singleToMono(s);
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         m.subscribe(ts);
         
@@ -104,7 +104,7 @@ public class RxJava1SingleConverterTest {
         
         Mono<Integer> m = RxJava1Adapter.singleToMono(s);
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         m.subscribe(ts);
         

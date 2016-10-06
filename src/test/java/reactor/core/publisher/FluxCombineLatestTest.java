@@ -19,14 +19,14 @@ import java.util.Collections;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCombineLatestTest {
 
 	@Test
 	public void singleSourceIsMapped() {
 		
-		TestSubscriber<String> ts = TestSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 		
 		Flux.combineLatest(a -> a[0].toString(), Flux.just(1))
 		.subscribe(ts);
@@ -39,7 +39,7 @@ public class FluxCombineLatestTest {
 	@Test
 	public void iterableSingleSourceIsMapped() {
 		
-		TestSubscriber<String> ts = TestSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 		
 		Flux.combineLatest(Collections.singleton(Flux.just(1)), a -> a[0].toString())
 		.subscribe(ts);
@@ -54,7 +54,7 @@ public class FluxCombineLatestTest {
 		DirectProcessor<Integer> dp1 = DirectProcessor.create();
 		DirectProcessor<Integer> dp2 = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
 
 		Flux.combineLatest(dp1, dp2, (a, b) -> a + b)

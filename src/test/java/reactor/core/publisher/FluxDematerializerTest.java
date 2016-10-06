@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDematerializerTest {
 
@@ -26,7 +26,7 @@ public class FluxDematerializerTest {
     
     @Test
     public void singleCompletion() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Flux<Integer> dematerialize = Flux.just(Signal.<Integer>complete()).dematerialize();
         
@@ -39,7 +39,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void singleError() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Flux<Integer> dematerialize = Flux.just(error)
             .dematerialize();
@@ -53,7 +53,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void immediateCompletion() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(Signal.<Integer>complete()).dematerialize();
         
@@ -66,7 +66,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void immediateError() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(error).dematerialize();
         
@@ -79,7 +79,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void completeAfterSingleSignal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(Signal.next(1), Signal.<Integer>complete()).dematerialize();
         
@@ -98,7 +98,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void errorAfterSingleSignal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(Signal.next(1), error).dematerialize();
         
@@ -117,7 +117,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void twoSignalsAndComplete() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(Signal.next(1), Signal.next(2), Signal.<Integer>complete()).dematerialize();
         
@@ -142,7 +142,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void twoSignalsAndError() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
         
         Flux<Integer> dematerialize = Flux.just(Signal.next(1), Signal.next(2), error).dematerialize();
         
@@ -167,7 +167,7 @@ public class FluxDematerializerTest {
 
     @Test
     public void neverEnding() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Flux<Integer> dematerialize = Flux.just(Signal.next(1), Signal.next(2), 
                 Signal.next(3), Signal.<Integer>complete())

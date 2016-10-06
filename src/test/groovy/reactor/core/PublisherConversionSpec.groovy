@@ -19,7 +19,7 @@ package reactor.core
 import reactor.adapter.RxJava1Adapter
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.test.TestSubscriber
+import reactor.test.subscriber.AssertSubscriber
 import rx.Observable
 import rx.Single
 import spock.lang.Specification
@@ -38,7 +38,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Observable.range(1, 1000)
 	def pub = RxJava1Adapter.observableToFlux(obs)
-	def queue = TestSubscriber.create()
+	def queue = AssertSubscriber.create()
 
 
 	when: "read the queue"
@@ -67,7 +67,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1000 to read queue"
 	def obs = Single.just(1)
 	def pub = Mono.from(RxJava1Adapter.singleToMono(obs))
-	def queue = TestSubscriber.create()
+	def queue = AssertSubscriber.create()
 
 	when: "read the queue"
 	pub.subscribe(queue)
@@ -93,7 +93,7 @@ class PublisherConversionSpec extends Specification {
 	given: "Iterable publisher of 1 to read queue"
 	def obs = CompletableFuture.completedFuture([1])
 	def pub = Mono.fromFuture(obs)
-	def queue = TestSubscriber.create()
+	def queue = AssertSubscriber.create()
 
 	when: "read the queue"
 	pub.subscribe(queue)
@@ -105,7 +105,7 @@ class PublisherConversionSpec extends Specification {
 	when: "No Values"
 	obs = CompletableFuture.runAsync{ println "done" }
 	pub = Mono.fromFuture(obs)
-	queue = TestSubscriber.create()
+	queue = AssertSubscriber.create()
 
 	pub.subscribe(queue)
 

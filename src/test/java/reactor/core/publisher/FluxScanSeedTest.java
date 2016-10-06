@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxScanSeedTest {
 
@@ -40,7 +40,7 @@ public class FluxScanSeedTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .scan(0, (a, b) -> b)
@@ -53,7 +53,7 @@ public class FluxScanSeedTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .scan(0, (a, b) -> b)
@@ -84,7 +84,7 @@ public class FluxScanSeedTest {
 
 	@Test
 	public void accumulatorThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .scan(0, (a, b) -> {
@@ -100,7 +100,7 @@ public class FluxScanSeedTest {
 
 	@Test
 	public void accumulatorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .scan(0, (a, b) -> null)

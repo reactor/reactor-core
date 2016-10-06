@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.TestSubscriber;
 import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
 
@@ -32,7 +32,7 @@ public class FluxPublishMulticastTest {
 	@Test
 	public void subsequentSum() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		range(1, 5).publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		           .subscribe(ts);
@@ -45,7 +45,7 @@ public class FluxPublishMulticastTest {
 	@Test
 	public void subsequentSumHidden() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		range(1, 5).hide()
 		           .publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o
@@ -60,7 +60,7 @@ public class FluxPublishMulticastTest {
 	@Test
 	public void subsequentSumAsync() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>get(16).get());
@@ -82,7 +82,7 @@ public class FluxPublishMulticastTest {
 
 	@Test
 	public void cancelComposes() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
 
@@ -98,7 +98,7 @@ public class FluxPublishMulticastTest {
 
 	@Test
 	public void cancelComposes2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		EmitterProcessor<Integer> sp = EmitterProcessor.create();
 
@@ -110,7 +110,7 @@ public class FluxPublishMulticastTest {
 
 	@Test
 	public void pairWise() {
-		TestSubscriber<Tuple2<Integer, Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Tuple2<Integer, Integer>> ts = AssertSubscriber.create();
 
 		range(1, 9).transform(o -> zip(o, o.skip(1)))
 		           .subscribe(ts);
@@ -128,7 +128,7 @@ public class FluxPublishMulticastTest {
 
 	@Test
 	public void innerCanFuse() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
 
 		Flux.never()

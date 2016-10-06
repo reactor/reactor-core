@@ -39,7 +39,7 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 
 /**
@@ -359,13 +359,13 @@ public class CombinationTests {
 		}
 	}
 
-	TestSubscriber<Long>   ts;
-	ReplayProcessor<Long> emitter1;
-	ReplayProcessor<Long> emitter2;
+	AssertSubscriber<Long> ts;
+	ReplayProcessor<Long>  emitter1;
+	ReplayProcessor<Long>  emitter2;
 
 	@Before
 	public void anotherBefore() {
-		ts = TestSubscriber.create();
+		ts = AssertSubscriber.create();
 		emitter1 = ReplayProcessor.create();
 		emitter2 = ReplayProcessor.create();
 		emitter1.connect();

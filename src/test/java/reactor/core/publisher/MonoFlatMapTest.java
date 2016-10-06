@@ -17,13 +17,13 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoFlatMapTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Mono.just(1).hide().flatMap(v -> Flux.just(2).hide())
         .subscribe(ts);
@@ -35,7 +35,7 @@ public class MonoFlatMapTest {
 
     @Test
     public void normalInnerJust() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Mono.just(1).hide().flatMap(v -> Flux.just(2))
         .subscribe(ts);
@@ -47,7 +47,7 @@ public class MonoFlatMapTest {
 
     @Test
     public void normalInnerEmpty() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Mono.just(1).hide().flatMap(v -> Flux.<Integer>empty())
         .subscribe(ts);

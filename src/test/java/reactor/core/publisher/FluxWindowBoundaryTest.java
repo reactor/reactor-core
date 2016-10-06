@@ -19,18 +19,18 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxWindowBoundaryTest {
 
-	static <T> TestSubscriber<T> toList(Publisher<T> windows) {
-		TestSubscriber<T> ts = TestSubscriber.create();
+	static <T> AssertSubscriber<T> toList(Publisher<T> windows) {
+		AssertSubscriber<T> ts = AssertSubscriber.create();
 		windows.subscribe(ts);
 		return ts;
 	}
 
 	@SafeVarargs
-	static <T> void expect(TestSubscriber<Flux<T>> ts, int index, T... values) {
+	static <T> void expect(AssertSubscriber<Flux<T>> ts, int index, T... values) {
 		toList(ts.values()
 		         .get(index)).assertValues(values)
 		                     .assertComplete()
@@ -39,7 +39,7 @@ public class FluxWindowBoundaryTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Flux<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -74,7 +74,7 @@ public class FluxWindowBoundaryTest {
 
 	@Test
 	public void normalOtherCompletes() {
-		TestSubscriber<Flux<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -109,7 +109,7 @@ public class FluxWindowBoundaryTest {
 
 	@Test
 	public void mainError() {
-		TestSubscriber<Flux<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -150,7 +150,7 @@ public class FluxWindowBoundaryTest {
 
 	@Test
 	public void otherError() {
-		TestSubscriber<Flux<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Flux<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSubscribeOnTest {
 	
@@ -39,7 +39,7 @@ public class FluxSubscribeOnTest {
 	
 	@Test
 	public void classic() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1000).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -52,7 +52,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 1000).log().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -81,7 +81,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicJust() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -94,7 +94,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicJustBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1).subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -115,7 +115,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -128,7 +128,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
 	public void classicEmptyBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool())).subscribe(ts);
 
@@ -149,7 +149,7 @@ public class FluxSubscribeOnTest {
 		
 		Assert.assertEquals(0, count.get());
 		
-		p.subscribeWith(TestSubscriber.create()).await();
+		p.subscribeWith(AssertSubscriber.create()).await();
 		
 		Assert.assertEquals(1, count.get());
 	}}

@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRetryTest {
 
@@ -36,7 +36,7 @@ public class FluxRetryTest {
 
 	@Test
 	public void zeroRetryNoError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .retry(0)
@@ -52,7 +52,7 @@ public class FluxRetryTest {
 
 	@Test
 	public void zeroRetry() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry(0)
 		      .subscribe(ts);
@@ -65,7 +65,7 @@ public class FluxRetryTest {
 
 	@Test
 	public void oneRetry() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry(1)
 		      .subscribe(ts);
@@ -78,7 +78,7 @@ public class FluxRetryTest {
 
 	@Test
 	public void oneRetryBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(4);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(4);
 
 		source.retry(1)
 		      .subscribe(ts);
@@ -90,7 +90,7 @@ public class FluxRetryTest {
 
 	@Test
 	public void retryInfinite() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		source.retry()
 		      .take(10)
@@ -116,7 +116,7 @@ public class FluxRetryTest {
 			    }
 		    })
 		    .retry(2)
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertValues(1);
 	}
 }

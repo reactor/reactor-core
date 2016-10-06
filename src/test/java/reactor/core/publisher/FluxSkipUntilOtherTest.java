@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSkipUntilOtherTest {
 
@@ -34,7 +34,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipNone() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.empty())
@@ -47,7 +47,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipNoneBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.empty())
@@ -72,7 +72,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipAll() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.never())
@@ -85,7 +85,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipAllBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.never())
@@ -104,7 +104,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipNoneOtherMany() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.range(1, 10))
@@ -117,7 +117,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void skipNoneBackpressuredOtherMany() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.range(1, 10))
@@ -141,7 +141,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void otherSignalsError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.error(new RuntimeException("forced " + "failure")))
@@ -155,7 +155,7 @@ public class FluxSkipUntilOtherTest {
 
 	@Test
 	public void otherSignalsErrorBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .skipUntilOther(Flux.error(new RuntimeException("forced " + "failure")))

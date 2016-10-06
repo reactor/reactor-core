@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSwitchIfEmptyTest {
 
@@ -33,7 +33,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void nonEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 2, 3, 4, 5)
 		    .switchIfEmpty(Flux.just(10))
@@ -46,7 +46,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void nonEmptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1, 2, 3, 4, 5)
 		    .switchIfEmpty(Flux.just(10))
@@ -71,7 +71,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty()
 		    .switchIfEmpty(Flux.just(10))
@@ -84,7 +84,7 @@ public class FluxSwitchIfEmptyTest {
 
 	@Test
 	public void emptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty()
 		    .switchIfEmpty(Flux.just(10))

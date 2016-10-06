@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxOnBackpressureLatestTest {
 
@@ -28,7 +28,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).onBackpressureLatest().subscribe(ts);
 
@@ -41,7 +41,7 @@ public class FluxOnBackpressureLatestTest {
 	public void backpressured() {
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		tp.onBackpressureLatest().subscribe(ts);
 
@@ -80,7 +80,7 @@ public class FluxOnBackpressureLatestTest {
 	public void error() {
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		tp.onBackpressureLatest().subscribe(ts);
 
@@ -96,7 +96,7 @@ public class FluxOnBackpressureLatestTest {
 	public void backpressureWithDrop() {
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<Integer>(0) {
+		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>(0) {
 			@Override
 			public void onNext(Integer t) {
 				super.onNext(t);

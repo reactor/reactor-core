@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxArrayTest {
 
@@ -28,7 +28,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -39,7 +39,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void normalBackpressuredExact() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(10);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
 		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).subscribe(ts);
 
@@ -79,7 +79,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void arrayContainsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 2, 3, 4, 5, null, 7, 8, 9, 10).subscribe(ts);
 

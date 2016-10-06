@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoReduceTest {
 
@@ -34,7 +34,7 @@ public class MonoReduceTest {
 */
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .reduce((a, b) -> a + b)
@@ -47,7 +47,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		    .reduce((a, b) -> a + b)
@@ -66,7 +66,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void single() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1)
 		    .reduce((a, b) -> a + b)
@@ -79,7 +79,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().reduce((a, b) -> a + b)
 		                     .subscribe(ts);
@@ -91,7 +91,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).reduce((a, b) -> a + b)
 		                                                           .subscribe(ts);
@@ -105,7 +105,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void aggregatorThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .reduce((a, b) -> {
@@ -122,7 +122,7 @@ public class MonoReduceTest {
 
 	@Test
 	public void aggregatorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .reduce((a, b) -> null)

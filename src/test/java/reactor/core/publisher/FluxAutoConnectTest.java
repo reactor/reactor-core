@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Cancellation;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxAutoConnectTest {
 
@@ -63,12 +63,12 @@ public class FluxAutoConnectTest {
 		Assert.assertNull(cancel.get());
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 		
-		p.subscribe(TestSubscriber.create());
+		p.subscribe(AssertSubscriber.create());
 		
 		Assert.assertNull(cancel.get());
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 
-		p.subscribe(TestSubscriber.create());
+		p.subscribe(AssertSubscriber.create());
 
 		Assert.assertNotNull(cancel.get());
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);

@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class DirectProcessorTest {
 
@@ -44,7 +44,7 @@ public class DirectProcessorTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
@@ -82,7 +82,7 @@ public class DirectProcessorTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
@@ -116,7 +116,7 @@ public class DirectProcessorTest {
     @Test
     public void notEnoughRequests() {
 
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
@@ -144,7 +144,7 @@ public class DirectProcessorTest {
 
     @Test
     public void error() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
@@ -186,7 +186,7 @@ public class DirectProcessorTest {
 
     @Test
     public void terminatedWithError() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
         tp.onError(new RuntimeException("forced failure"));
@@ -210,7 +210,7 @@ public class DirectProcessorTest {
 
     @Test
     public void terminatedNormally() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
         tp.onComplete();
@@ -229,7 +229,7 @@ public class DirectProcessorTest {
 
     @Test
     public void subscriberAlreadyCancelled() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         ts.cancel();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
@@ -248,7 +248,7 @@ public class DirectProcessorTest {
 
     @Test
     public void subscriberCancels() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         DirectProcessor<Integer> tp = DirectProcessor.create();
 

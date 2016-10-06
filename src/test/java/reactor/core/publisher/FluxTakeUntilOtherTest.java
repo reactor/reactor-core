@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeUntilOtherTest {
 
@@ -34,7 +34,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeAll() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.never())
@@ -47,7 +47,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeAllBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.never())
@@ -72,7 +72,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeNone() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.empty())
@@ -85,7 +85,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeNoneBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.empty())
@@ -98,7 +98,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeNoneOtherMany() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.range(1, 10))
@@ -111,7 +111,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void takeNoneBackpressuredOtherMany() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.range(1, 10))
@@ -124,7 +124,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void otherSignalsError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.error(new RuntimeException("forced " + "failure")))
@@ -138,7 +138,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
 	public void otherSignalsErrorBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .takeUntilOther(Flux.error(new RuntimeException("forced " + "failure")))

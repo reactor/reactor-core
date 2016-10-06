@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRangeTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).subscribe(ts);
 
@@ -34,7 +34,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).subscribe(ts);
 
@@ -57,7 +57,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void normalBackpressuredExact() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(10);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
 		Flux.range(1, 10).subscribe(ts);
 
@@ -84,7 +84,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void normalNearMaxValue1() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(Integer.MAX_VALUE, 1).subscribe(ts);
 
@@ -95,7 +95,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void normalNearMaxValue2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(Integer.MAX_VALUE - 1, 2).subscribe(ts);
 
@@ -106,7 +106,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void normalNegativeStart() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(-10, 2).subscribe(ts);
 

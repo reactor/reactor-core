@@ -16,24 +16,18 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxBufferStartEndTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -90,7 +84,7 @@ public class FluxBufferStartEndTest {
 
 	@Test
 	public void startCompletes() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();

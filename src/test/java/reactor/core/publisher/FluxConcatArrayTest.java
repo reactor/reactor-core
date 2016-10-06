@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxConcatArrayTest {
 
@@ -31,7 +31,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat(source, source, source)
 		    .subscribe(ts);
@@ -43,7 +43,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.concat(source, source, source)
 		    .subscribe(ts);
@@ -73,7 +73,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void oneSourceIsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat(source, null, source)
 		    .subscribe(ts);
@@ -85,7 +85,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void singleSourceIsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat((Publisher<Integer>) null)
 		    .subscribe(ts);
@@ -97,7 +97,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void scalarAndRangeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1)
 		    .concatWith(Flux.range(2, 3))
@@ -115,7 +115,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void errorDelayed() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concatDelayError(
 				Flux.range(1, 2),
@@ -131,7 +131,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void errorManyDelayed() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concatDelayError(
 				Flux.range(1, 2),
@@ -152,7 +152,7 @@ public class FluxConcatArrayTest {
 		Flux.range(1, 1_000_000_000)
 		    .concatWith(Flux.empty())
 		    .take(10)
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertComplete()
 		    .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}

@@ -18,7 +18,7 @@ package reactor.adapter;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import rx.Completable;
 import rx.Observable;
 
@@ -42,7 +42,7 @@ public class RxJavaCompletableTests {
     public void shouldConvertACompletableIntoMonoVoid() throws Exception {
         Mono<Void> printableMono = RxJava1Adapter.completableToMono(completable);
         assertThat(printableMono, is(notNullValue()));
-        TestSubscriber
+        AssertSubscriber
                 .subscribe(printableMono)
                 .assertNoValues()
                 .assertComplete();
@@ -54,7 +54,7 @@ public class RxJavaCompletableTests {
         Mono<Void> voidMono = RxJava1Adapter.completableToMono(Completable.fromAction(() -> {
             throw new IllegalStateException("This should not happen"); //something internal happened
         }));
-        TestSubscriber
+        AssertSubscriber
                 .subscribe(voidMono)
                 .assertNoValues()
                 .assertError(IllegalStateException.class)

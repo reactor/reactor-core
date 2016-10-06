@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxJustTest {
 
@@ -37,7 +37,7 @@ public class FluxJustTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         Flux.just(1).subscribe(ts);
 
@@ -48,7 +48,7 @@ public class FluxJustTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
         Flux.just(1).subscribe(ts);
 
@@ -65,7 +65,7 @@ public class FluxJustTest {
 
     @Test
     public void fused() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         ts.requestedFusionMode(Fuseable.ANY);
         
         Flux.just(1).subscribe(ts);

@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxFirstEmittingTest {
 
@@ -35,7 +35,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void firstWinner() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting(Flux.range(1, 10), Flux.range(11, 10))
 		    .subscribe(ts);
@@ -47,7 +47,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void firstWinnerBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(5);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(5);
 
 		Flux.firstEmitting(Flux.range(1, 10), Flux.range(11, 10))
 		    .subscribe(ts);
@@ -59,7 +59,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void secondWinner() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting(Flux.never(),
 				Flux.range(11, 10)
@@ -73,7 +73,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void secondEmitsError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		RuntimeException ex = new RuntimeException("forced failure");
 
@@ -87,7 +87,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void singleArrayNullSource() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting((Publisher<Object>) null)
 		    .subscribe(ts);
@@ -99,7 +99,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void arrayOneIsNullSource() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting(Flux.never(), null, Flux.never())
 		    .subscribe
@@ -112,7 +112,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void singleIterableNullSource() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting(Arrays.asList((Publisher<Object>) null))
 		    .subscribe(ts);
@@ -124,7 +124,7 @@ public class FluxFirstEmittingTest {
 
 	@Test
 	public void iterableOneIsNullSource() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.firstEmitting(Arrays.asList(Flux.never(),
 				(Publisher<Object>) null,

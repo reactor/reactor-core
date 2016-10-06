@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class UnicastProcessorTest {
 
@@ -30,7 +30,7 @@ public class UnicastProcessorTest {
         
         up.subscribe();
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         up.subscribe(ts);
         

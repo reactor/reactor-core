@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoElementAtTest {
 
@@ -48,7 +48,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
@@ -59,7 +59,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(0).subscribe(ts);
 
@@ -76,7 +76,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
@@ -87,7 +87,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal5Backpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(4).subscribe(ts);
 
@@ -104,7 +104,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal3() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
@@ -115,7 +115,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void normal3Backpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(9).subscribe(ts);
 
@@ -132,7 +132,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().elementAt(0).subscribe(ts);
 
@@ -143,7 +143,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void emptyDefault() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().elementAt(0, 20).subscribe(ts);
 
@@ -154,7 +154,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void emptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty().elementAt(0, 20).subscribe(ts);
 
@@ -171,7 +171,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void nonEmptyDefault() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).elementAt(20, 20).subscribe(ts);
 
@@ -182,7 +182,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void nonEmptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).elementAt(20, 20).subscribe(ts);
 

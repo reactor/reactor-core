@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxZipTest {
 
@@ -39,7 +39,7 @@ public class FluxZipTest {
 	@Test
 	public void sameLength() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2));
 		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
@@ -52,7 +52,7 @@ public class FluxZipTest {
 	@Test
 	public void sameLengthOptimized() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source = Flux.just(1, 2);
 		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
@@ -65,7 +65,7 @@ public class FluxZipTest {
 	@Test
 	public void sameLengthBackpressured() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 		
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2));
 		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
@@ -90,7 +90,7 @@ public class FluxZipTest {
 	@Test
 	public void sameLengthOptimizedBackpressured() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 		
 		Flux<Integer> source = Flux.just(1, 2);
 		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
@@ -115,7 +115,7 @@ public class FluxZipTest {
 	@Test
 	public void differentLength() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.fromIterable(Arrays.asList(1, 2));
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -129,7 +129,7 @@ public class FluxZipTest {
 	@Test
 	public void differentLengthOpt() {
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.fromIterable(Arrays.asList(1, 2));
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -142,7 +142,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void emptyNonEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.fromIterable(Collections.emptyList());
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -155,7 +155,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void nonEmptyAndEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.just(1, 2, 3);
 		Flux<Integer> source2 = Flux.fromIterable(Collections.emptyList());
@@ -168,7 +168,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void scalarNonScalar() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -181,7 +181,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void scalarNonScalarBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 		
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -200,7 +200,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void scalarNonScalarOpt() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
@@ -213,7 +213,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void scalarScalar() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1);
@@ -226,7 +226,7 @@ public class FluxZipTest {
 	
 	@Test
 	public void emptyScalar() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux<Integer> source1 = Flux.empty();
 		Flux<Integer> source2 = Flux.just(1);
@@ -239,10 +239,10 @@ public class FluxZipTest {
 
 	@Test
 	public void syncFusionMapToNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-		.<Integer, Integer>zipWith(Flux.fromIterable(Arrays.asList(1, 2)).map(v -> v == 2 ? null : v), (a, b) -> a + b).subscribe(ts);
+		    .zipWith(Flux.fromIterable(Arrays.asList(1, 2)).map(v -> v == 2 ? null : v), (a, b) -> a + b).subscribe(ts);
 		
 		ts.assertValues(2)
 		.assertError(NullPointerException.class)

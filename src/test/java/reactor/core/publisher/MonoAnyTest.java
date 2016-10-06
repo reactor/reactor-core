@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoAnyTest {
 
@@ -34,7 +34,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).any(v -> true).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).any(v -> true).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void none() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).any(v -> false).subscribe(ts);
 
@@ -73,7 +73,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void noneBackpressured() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).any(v -> false).subscribe(ts);
 
@@ -90,7 +90,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void someMatch() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).any(v -> v < 6).subscribe(ts);
 
@@ -101,7 +101,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void someMatchBackpressured() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create(0);
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).any(v -> v < 6).subscribe(ts);
 
@@ -118,7 +118,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Boolean> ts = TestSubscriber.create();
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).any(v -> {
 			throw new RuntimeException("forced failure");

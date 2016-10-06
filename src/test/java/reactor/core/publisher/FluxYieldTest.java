@@ -18,14 +18,14 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxYieldTest {
 
     @Test
     public void yieldSome() {
         
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Flux<Integer> source = Flux.<Signal<Integer>>create(e -> {
             e.serialize().next(Signal.next(1));

@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDeferTest {
 
@@ -38,7 +38,7 @@ public class FluxDeferTest {
 
 	@Test
 	public void supplierReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>defer(() -> null).subscribe(ts);
 
@@ -49,7 +49,7 @@ public class FluxDeferTest {
 
 	@Test
 	public void supplierThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>defer(() -> {
 			throw new RuntimeException("forced failure");
@@ -63,7 +63,7 @@ public class FluxDeferTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.defer(() -> Flux.just(1)).subscribe(ts);
 

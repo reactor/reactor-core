@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatTest {
 
@@ -34,7 +34,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void zeroRepeat() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .repeat(0)
@@ -47,7 +47,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void oneRepeat() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .repeat(1)
@@ -60,7 +60,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void oneRepeatBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .repeat(1)
@@ -91,7 +91,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void twoRepeat() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .repeat(2)
@@ -104,7 +104,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void twoRepeatBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .repeat(2)
@@ -140,7 +140,7 @@ public class FluxRepeatTest {
 
 	@Test
 	public void repeatInfinite() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .repeat()

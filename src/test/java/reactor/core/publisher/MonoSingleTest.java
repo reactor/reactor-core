@@ -18,9 +18,8 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 
-import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoSingleTest {
 	@Test(expected = NullPointerException.class)
@@ -37,7 +36,7 @@ public class MonoSingleTest {
 	@Test
 	public void normal() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1).single().subscribe(ts);
 
@@ -48,7 +47,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1).single().subscribe(ts);
 
@@ -66,7 +65,7 @@ public class MonoSingleTest {
 	@Test
 	public void empty() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().single().subscribe(ts);
 
@@ -77,7 +76,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void emptyDefault() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().single(1).subscribe(ts);
 
@@ -88,7 +87,7 @@ public class MonoSingleTest {
 
 	@Test
 	public void emptyDefaultBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty().single(1).subscribe(ts);
 
@@ -106,7 +105,7 @@ public class MonoSingleTest {
 	@Test
 	public void multi() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).single().subscribe(ts);
 
@@ -118,7 +117,7 @@ public class MonoSingleTest {
 	@Test
 	public void multiBackpressured() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).single().subscribe(ts);
 

@@ -17,12 +17,12 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMapSignalTest {
     @Test
     public void completeOnlyBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
         
         new FluxMapSignal<>(Flux.empty(), null, null, () -> 1)
         .subscribe(ts);
@@ -40,7 +40,7 @@ public class FluxMapSignalTest {
 
     @Test
     public void errorOnlyBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
         
         new FluxMapSignal<>(Flux.error(new RuntimeException()), null, e -> 1, null)
         .subscribe(ts);

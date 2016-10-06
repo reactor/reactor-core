@@ -2,13 +2,13 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoThenApplyTest {
 
     @Test
     public void normalHidden() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
         Mono.just(1).hide().then(v -> Mono.just(2).hide()).subscribe(ts);
         

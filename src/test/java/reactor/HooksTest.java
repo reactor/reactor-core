@@ -32,7 +32,7 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.SignalType;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -119,7 +119,7 @@ public class HooksTest {
 				                                   .log("test", Level.INFO, true, SignalType.ON_SUBSCRIBE)
 				                                   .sequential();
 
-				TestSubscriber<Integer> ts = TestSubscriber.create();
+				AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 				result.subscribe(ts);
 

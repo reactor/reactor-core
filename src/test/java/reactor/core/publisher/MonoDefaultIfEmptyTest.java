@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDefaultIfEmptyTest {
 
@@ -33,7 +33,7 @@ public class MonoDefaultIfEmptyTest {
 
 	@Test
 	public void nonEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1).defaultIfEmpty(10).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class MonoDefaultIfEmptyTest {
 
 	@Test
 	public void nonEmptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1).defaultIfEmpty(10).subscribe(ts);
 
@@ -63,7 +63,7 @@ public class MonoDefaultIfEmptyTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>empty().defaultIfEmpty(10).subscribe(ts);
 
@@ -75,7 +75,7 @@ public class MonoDefaultIfEmptyTest {
 
 	@Test
 	public void emptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>empty().defaultIfEmpty(10).subscribe(ts);
 

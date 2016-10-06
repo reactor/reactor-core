@@ -15,15 +15,12 @@
  */
 package reactor.core.publisher;
 
-import java.io.IOException;
 import java.time.Duration;
-import java.util.logging.Level;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class ReplayProcessorTest {
 
@@ -31,7 +28,7 @@ public class ReplayProcessorTest {
     public void unbounded() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    rp.subscribe(ts);
         
@@ -59,7 +56,7 @@ public class ReplayProcessorTest {
     public void bounded() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    rp.subscribe(ts);
         
@@ -87,7 +84,7 @@ public class ReplayProcessorTest {
     public void cancel() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create();
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 	    rp.subscribe(ts);
         
@@ -100,7 +97,7 @@ public class ReplayProcessorTest {
     public void unboundedAfter() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    rp.onNext(1);
         rp.onNext(2);
@@ -128,7 +125,7 @@ public class ReplayProcessorTest {
     public void boundedAfter() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    rp.onNext(1);
         rp.onNext(2);
@@ -156,7 +153,7 @@ public class ReplayProcessorTest {
     public void unboundedLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    for (int i = 0; i < 256; i++) {
             rp.onNext(i);
@@ -180,7 +177,7 @@ public class ReplayProcessorTest {
     public void boundedLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create(0L);
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
 
 	    for (int i = 0; i < 256; i++) {
             rp.onNext(i);
@@ -204,7 +201,7 @@ public class ReplayProcessorTest {
     public void fusedUnboundedAfterLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create();
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
 	    ts.requestedFusionMode(Fuseable.ASYNC);
         
         for (int i = 0; i < 256; i++) {
@@ -228,7 +225,7 @@ public class ReplayProcessorTest {
     public void fusedUnboundedLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create();
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
 	    ts.requestedFusionMode(Fuseable.ASYNC);
 
         rp.subscribe(ts);
@@ -253,7 +250,7 @@ public class ReplayProcessorTest {
     public void fusedBoundedAfterLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create();
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
 	    ts.requestedFusionMode(Fuseable.ASYNC);
         
         for (int i = 0; i < 256; i++) {
@@ -277,7 +274,7 @@ public class ReplayProcessorTest {
     public void fusedBoundedLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
 
-	    TestSubscriber<Integer> ts = TestSubscriber.create();
+	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
 	    ts.requestedFusionMode(Fuseable.ASYNC);
 
 	    rp.subscribe(ts);
@@ -301,7 +298,7 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ASYNC);
 
 		for (int i = 0; i < 5; i++) {
@@ -330,7 +327,7 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		for (int i = 0; i < 5; i++) {
 			rp.onNext(i);
@@ -356,7 +353,7 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		for (int i = 0; i < 10; i++) {
 			rp.onNext(i);
@@ -385,7 +382,7 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ASYNC);
 
 		for (int i = 0; i < 10; i++) {

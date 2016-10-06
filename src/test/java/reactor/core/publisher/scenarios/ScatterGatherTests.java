@@ -21,14 +21,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class ScatterGatherTests {
 
@@ -59,7 +57,7 @@ public class ScatterGatherTests {
 		    .flatMap(w -> w.take(1)
 		                   .collectList())
 		    .log("merged")
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertComplete()
 		    .assertValueCount(3);
 

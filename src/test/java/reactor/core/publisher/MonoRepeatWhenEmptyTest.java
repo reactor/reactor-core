@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = TestSubscriber.create();
+        AssertSubscriber<String> ts = AssertSubscriber.create();
 
         source
             .repeatWhenEmpty(o -> o.doOnNext(iterations::add))
@@ -56,7 +56,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = TestSubscriber.create();
+        AssertSubscriber<String> ts = AssertSubscriber.create();
 
         source
             .repeatWhenEmpty(1000, o -> o.doOnNext(iterations::add))
@@ -78,7 +78,7 @@ public class MonoRepeatWhenEmptyTest {
         Mono<String> source = Mono.defer(() -> c.getAndIncrement() < 3 ? Mono.empty() : Mono.just("test-data"));
 
         List<Long> iterations = new ArrayList<>();
-        TestSubscriber<String> ts = TestSubscriber.create();
+        AssertSubscriber<String> ts = AssertSubscriber.create();
 
         source
             .repeatWhenEmpty(2, o -> o.doOnNext(iterations::add))

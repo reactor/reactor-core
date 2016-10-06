@@ -16,7 +16,7 @@
 
 package reactor.core
 
-import reactor.test.TestSubscriber
+import reactor.test.subscriber.AssertSubscriber
 import spock.lang.Specification
 
 import static reactor.core.publisher.Flux.fromIterable
@@ -37,7 +37,7 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = TestSubscriber.create()
+	def s = AssertSubscriber.create()
 	pub.onErrorReturn(100000).subscribe(s)
 
 	then: "queues values correct"
@@ -56,7 +56,7 @@ class PublishersSpec extends Specification {
 	}
 
 	when: "read the queue"
-	def s = TestSubscriber.create()
+	def s = AssertSubscriber.create()
 	pub.switchOnError(fromIterable(9999..10002)).subscribe(s)
 
 	then: "queues values correct"

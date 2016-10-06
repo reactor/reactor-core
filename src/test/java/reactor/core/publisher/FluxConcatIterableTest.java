@@ -20,7 +20,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxConcatIterableTest {
 
@@ -33,7 +33,7 @@ public class FluxConcatIterableTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat(Arrays.asList(source, source, source)).subscribe(ts);
 
@@ -44,7 +44,7 @@ public class FluxConcatIterableTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.concat(Arrays.asList(source, source, source)).subscribe(ts);
 
@@ -73,7 +73,7 @@ public class FluxConcatIterableTest {
 
 	@Test
 	public void oneSourceIsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat(Arrays.asList(source, null, source)).subscribe(ts);
 
@@ -84,7 +84,7 @@ public class FluxConcatIterableTest {
 
 	@Test
 	public void singleSourceIsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.concat(Arrays.asList((Publisher<Integer>) null)).subscribe(ts);
 

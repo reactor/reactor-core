@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class ParallelFluxTest {
 
@@ -40,7 +40,7 @@ public class ParallelFluxTest {
 			                                   .map(v -> v + 1)
 			                                   .sequential();
 
-			TestSubscriber<Integer> ts = TestSubscriber.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 			result.subscribe(ts);
 
@@ -60,7 +60,7 @@ public class ParallelFluxTest {
 			                                   .map(v -> v + 1)
 			                                   .sequential();
 
-			TestSubscriber<Integer> ts = TestSubscriber.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 			result.subscribe(ts);
 
@@ -89,7 +89,7 @@ public class ParallelFluxTest {
 				                                   .map(v -> v + 1)
 				                                   .sequential();
 
-				TestSubscriber<Integer> ts = TestSubscriber.create();
+				AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 				result.subscribe(ts);
 
@@ -123,7 +123,7 @@ public class ParallelFluxTest {
 				                                   .map(v -> v + 1)
 				                                   .sequential();
 
-				TestSubscriber<Integer> ts = TestSubscriber.create();
+				AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 				result.subscribe(ts);
 
@@ -147,7 +147,7 @@ public class ParallelFluxTest {
 		     i <= Runtime.getRuntime()
 		                 .availableProcessors() * 2;
 		     i++) {
-			TestSubscriber<Integer> ts = TestSubscriber.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 			Flux.range(1, 10)
 			    .parallel(i)
@@ -172,7 +172,7 @@ public class ParallelFluxTest {
 				Scheduler scheduler = Schedulers.newParallel("test", i);
 
 				try {
-					TestSubscriber<Long> ts = TestSubscriber.create();
+					AssertSubscriber<Long> ts = AssertSubscriber.create();
 
 					Flux.range(1, n)
 					    .map(v -> (long) v)
@@ -196,7 +196,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void collectSortedList() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		Flux.just(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 		    .parallel()
@@ -208,7 +208,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void sorted() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 		    .parallel()
@@ -234,7 +234,7 @@ public class ParallelFluxTest {
 	public void collect() {
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.range(1, 10)
 		    .parallel()
 		    .collect(as, (a, b) -> a.add(b))
@@ -250,7 +250,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void groupMerge() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .parallel()
@@ -265,7 +265,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void from() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		ParallelFlux.from(Flux.range(1, 5), Flux.range(6, 5))
 		            .sequential()
@@ -278,7 +278,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void concatMapUnordered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .parallel()
@@ -294,7 +294,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void flatMapUnordered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .parallel()
@@ -310,7 +310,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void collectAsyncFused() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Scheduler scheduler = Schedulers.newParallel("test", 3);
 
 		Flux.range(1, 100000)
@@ -333,7 +333,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -356,7 +356,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -381,7 +381,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .hide()
@@ -408,7 +408,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 3);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .publishOn(s)
@@ -433,7 +433,7 @@ public class ParallelFluxTest {
 		Scheduler s = Schedulers.newParallel("test", 4);
 		Supplier<List<Integer>> as = () -> new ArrayList<>();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100000)
 		    .publishOn(s)

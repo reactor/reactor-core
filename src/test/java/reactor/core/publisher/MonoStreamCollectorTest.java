@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoStreamCollectorTest {
 
@@ -31,7 +31,7 @@ public class MonoStreamCollectorTest {
         Mono<List<Integer>> source = Flux.range(1, 5).collect(Collectors.toList());
 
         for (int i = 0; i < 5; i++) {
-            TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+            AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
             source.subscribe(ts);
     
             ts.assertValues(Arrays.asList(1, 2, 3, 4, 5))
@@ -45,7 +45,7 @@ public class MonoStreamCollectorTest {
         Mono<Set<Integer>> source = Flux.just(1).repeat(5).collect(Collectors.toSet());
 
         for (int i = 0; i < 5; i++) {
-            TestSubscriber<Set<Integer>> ts = TestSubscriber.create();
+            AssertSubscriber<Set<Integer>> ts = AssertSubscriber.create();
             source.subscribe(ts);
     
             ts.assertValues(Collections.singleton(1))

@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.io.IOException;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoCallableTest {
 
@@ -29,7 +29,7 @@ public class MonoCallableTest {
 
     @Test
     public void callableReturnsNull() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         Mono.<Integer>fromCallable(() -> null).subscribe(ts);
 
@@ -40,7 +40,7 @@ public class MonoCallableTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         Mono.fromCallable(() -> 1).subscribe(ts);
 
@@ -51,7 +51,7 @@ public class MonoCallableTest {
 
     @Test
     public void normalFlux() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         Mono.fromCallable(() -> 1)
             .flux()
@@ -64,7 +64,7 @@ public class MonoCallableTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
         Mono.fromCallable(() -> 1).subscribe(ts);
 
@@ -81,7 +81,7 @@ public class MonoCallableTest {
 
     @Test
     public void callableThrows() {
-        TestSubscriber<Object> ts = TestSubscriber.create();
+        AssertSubscriber<Object> ts = AssertSubscriber.create();
 
         Mono.fromCallable(() -> {
             throw new IOException("forced failure");

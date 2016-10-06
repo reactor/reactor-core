@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRetryWhenTest {
 
@@ -40,7 +40,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void coldRepeater() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		justError.retryWhen(v -> Flux.range(1, 10))
 		         .subscribe(ts);
@@ -52,7 +52,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void coldRepeaterBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		rangeError.retryWhen(v -> Flux.range(1, 5))
 		          .subscribe(ts);
@@ -88,7 +88,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void coldEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		rangeError.retryWhen(v -> Flux.empty())
 		          .subscribe(ts);
@@ -100,7 +100,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void coldError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		rangeError.retryWhen(v -> Flux.error(new RuntimeException("forced failure")))
 		          .subscribe(ts);
@@ -113,7 +113,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void whenFactoryThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		rangeError.retryWhen(v -> {
 			throw new RuntimeException("forced failure");
@@ -129,7 +129,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void whenFactoryReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		rangeError.retryWhen(v -> null)
 		          .subscribe(ts);
@@ -142,7 +142,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void retryerErrorsInResponse() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		rangeError.retryWhen(v -> new FluxMap<>(v, a -> {
 			throw new RuntimeException("forced failure");
@@ -158,7 +158,7 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void retryAlways() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		rangeError.retryWhen(v -> v)
 		          .subscribe(ts);

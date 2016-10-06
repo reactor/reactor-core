@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDelaySubscriptionTest {
 
@@ -34,7 +34,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .delaySubscription(Mono.just(1))
@@ -47,7 +47,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .delaySubscription(Mono.just(1))
@@ -66,7 +66,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void manyTriggered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .delaySubscription(Flux.range(1, 10))
@@ -79,7 +79,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void manyTriggeredBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .delaySubscription(Flux.range(1, 10))
@@ -98,7 +98,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void emptyTrigger() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .delaySubscription(Mono.empty())
@@ -111,7 +111,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void emptyTriggerBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .delaySubscription(Mono.empty())
@@ -130,7 +130,7 @@ public class MonoDelaySubscriptionTest {
 
 	@Test
 	public void neverTriggered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .delaySubscription(Mono.never())

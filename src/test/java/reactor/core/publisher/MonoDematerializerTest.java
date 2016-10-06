@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDematerializerTest {
 
@@ -25,7 +25,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void singleCompletion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono<Integer> dematerialize = Mono.just(Signal.<Integer>complete())
 		                                  .dematerialize();
@@ -39,7 +39,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void singleError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono<Integer> dematerialize = Mono.just(error)
 		                                  .dematerialize();
@@ -53,7 +53,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void immediateCompletion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono<Integer> dematerialize = Mono.just(Signal.<Integer>complete())
 		                                  .dematerialize();
@@ -67,7 +67,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void immediateError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono<Integer> dematerialize = Mono.just(error)
 		                                  .dematerialize();
@@ -81,7 +81,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void completeAfterSingleSignal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono<Integer> dematerialize = Mono.just(Signal.next(1))
 		                                  .dematerialize();
@@ -101,7 +101,7 @@ public class MonoDematerializerTest {
 
 	@Test
 	public void errorAfterSingleSignal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono<Integer> dematerialize = Mono.just(error)
 		                                  .dematerialize();
@@ -116,7 +116,7 @@ public class MonoDematerializerTest {
 	//@Test
 	//TODO
 	public void neverEnding() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> dematerialize = Mono.just(Signal.next(1))
 		                                  .concatWith(Mono.never())

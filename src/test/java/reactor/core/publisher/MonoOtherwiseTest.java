@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoOtherwiseTest {
 /*
@@ -34,7 +34,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .otherwise(v -> Mono.just(2))
@@ -47,7 +47,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .otherwise(v -> Mono.just(2))
@@ -66,7 +66,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
 				2))
@@ -79,7 +79,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void errorFiltered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new RuntimeException("forced failure"))
 				.otherwise(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
@@ -92,7 +92,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void errorMap() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
 				" " +
@@ -107,7 +107,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void errorBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
 				2))
@@ -125,7 +125,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void nextFactoryThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> {
 			throw new RuntimeException("forced failure 2");
@@ -141,7 +141,7 @@ public class MonoOtherwiseTest {
 
 	@Test
 	public void nextFactoryReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> null)
 		                                                           .subscribe(ts);

@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxIntervalTest {
 
@@ -45,7 +45,7 @@ public class FluxIntervalTest {
 	@Test
 	public void normal() {
 		try {
-			TestSubscriber<Long> ts = TestSubscriber.create();
+			AssertSubscriber<Long> ts = AssertSubscriber.create();
 
 			ts.values()
 			  .add(System.currentTimeMillis());
@@ -78,7 +78,7 @@ public class FluxIntervalTest {
 
 	@Test
 	public void flatMap() throws Exception {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.intervalMillis(3000, exec)
 		    .flatMap(v -> Flux.fromIterable(Arrays.asList("A"))

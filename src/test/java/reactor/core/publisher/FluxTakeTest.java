@@ -20,7 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeTest {
 
@@ -37,7 +37,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .take(5)
@@ -50,7 +50,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .take(5)
@@ -75,7 +75,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeZero() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .take(0)
@@ -88,7 +88,7 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeOverflowAttempt() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Publisher<Integer> p = s -> {
 			s.onSubscribe(Operators.emptySubscription());

@@ -35,7 +35,7 @@ import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -72,9 +72,9 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		sink.onNext(2);
 		sink.onNext(3);
 
-		TestSubscriber.subscribe(sink.forceShutdown())
-		                             .assertComplete()
-		                             .assertValues(1, 2, 3);
+		AssertSubscriber.subscribe(sink.forceShutdown())
+		                .assertComplete()
+		                .assertValues(1, 2, 3);
 	}
 
 	@Override

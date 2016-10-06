@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMapTest {
 
@@ -37,7 +37,7 @@ public class FluxMapTest {
 
 	@Test
 	public void simpleMapping() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		just.map(v -> v + 1)
 		    .subscribe(ts);
@@ -49,7 +49,7 @@ public class FluxMapTest {
 
 	@Test
 	public void simpleMappingBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		just.map(v -> v + 1)
 		    .subscribe(ts);
@@ -67,7 +67,7 @@ public class FluxMapTest {
 
 	@Test
 	public void mapperThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		just.map(v -> {
 			throw new RuntimeException("forced failure");
@@ -82,7 +82,7 @@ public class FluxMapTest {
 
 	@Test
 	public void mapperReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		just.map(v -> null)
 		    .subscribe(ts);
@@ -94,7 +94,7 @@ public class FluxMapTest {
 
 	@Test
 	public void syncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .map(v -> v + 1)
@@ -107,7 +107,7 @@ public class FluxMapTest {
 
 	@Test
 	public void asyncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
@@ -127,7 +127,7 @@ public class FluxMapTest {
 
 	@Test
 	public void asyncFusionBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(1);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
@@ -152,7 +152,7 @@ public class FluxMapTest {
 
 	@Test
 	public void mapFilter() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(0, 1_000_000)
 		    .map(v -> v + 1)
@@ -166,7 +166,7 @@ public class FluxMapTest {
 
 	@Test
 	public void mapFilterBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(0);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.range(0, 1_000_000)
 		    .map(v -> v + 1)
@@ -192,7 +192,7 @@ public class FluxMapTest {
 
 	@Test
 	public void hiddenMapFilter() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(0, 1_000_000)
 		    .hide()
@@ -207,7 +207,7 @@ public class FluxMapTest {
 
 	@Test
 	public void hiddenMapFilterBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(0);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.range(0, 1_000_000)
 		    .hide()
@@ -234,7 +234,7 @@ public class FluxMapTest {
 
 	@Test
 	public void hiddenMapHiddenFilterBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(0);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.range(0, 1_000_000)
 		    .hide()

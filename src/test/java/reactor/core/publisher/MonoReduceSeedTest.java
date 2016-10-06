@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoReduceSeedTest {
 
@@ -39,7 +39,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .reduceWith(() -> 0, (a, b) -> b)
@@ -52,7 +52,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .reduceWith(() -> 0, (a, b) -> b)
@@ -71,7 +71,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void supplierThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).<Integer>reduceWith(() -> {
 			throw new RuntimeException("forced failure");
@@ -86,7 +86,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void accumulatorThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).reduceWith(() -> 0, (a, b) -> {
 			throw new RuntimeException("forced failure");
@@ -101,7 +101,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void supplierReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).<Integer>reduceWith(() -> null, (a, b) -> b).subscribe(ts);
 
@@ -112,7 +112,7 @@ public class MonoReduceSeedTest {
 
 	@Test
 	public void accumulatorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .reduceWith(() -> 0, (a, b) -> null)

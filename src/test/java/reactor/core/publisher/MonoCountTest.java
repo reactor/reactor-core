@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoCountTest {
 
@@ -27,7 +27,7 @@ public class MonoCountTest {
 	}
 
 	public void normal() {
-		TestSubscriber<Long> ts = TestSubscriber.create();
+		AssertSubscriber<Long> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).count().subscribe(ts);
 
@@ -37,7 +37,7 @@ public class MonoCountTest {
 	}
 
 	public void normalBackpressured() {
-		TestSubscriber<Long> ts = TestSubscriber.create(0);
+		AssertSubscriber<Long> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).count().subscribe(ts);
 

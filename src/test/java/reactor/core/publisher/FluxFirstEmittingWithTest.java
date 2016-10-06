@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxFirstEmittingWithTest {
 
@@ -33,7 +33,7 @@ public class FluxFirstEmittingWithTest {
 			result = result.firstEmittingWith(source);
 		}
 		
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		result.subscribe(ts);
 		
@@ -44,7 +44,7 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void dontBreakAmb() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
 		Flux.firstEmitting(Flux.just(1), Flux.just(2)).firstEmittingWith(Flux.just(3))
 		    .subscribe(ts);

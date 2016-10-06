@@ -20,7 +20,7 @@ import java.util.HashSet;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDistinctTest {
 
@@ -42,7 +42,7 @@ public class FluxDistinctTest {
 	@Test
 	public void allDistinct() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .distinct(k -> k)
@@ -56,7 +56,7 @@ public class FluxDistinctTest {
 	@Test
 	public void allDistinctBackpressured() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .distinct(k -> k)
@@ -88,7 +88,7 @@ public class FluxDistinctTest {
 	@Test
 	public void someDistinct() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 2, 2, 3, 4, 5, 6, 1, 2, 7, 7, 8, 9, 9, 10, 10, 10)
 		    .distinct(k -> k)
@@ -102,7 +102,7 @@ public class FluxDistinctTest {
 	@Test
 	public void someDistinctBackpressured() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1, 2, 2, 3, 4, 5, 6, 1, 2, 7, 7, 8, 9, 9, 10, 10, 10)
 		    .distinct(k -> k)
@@ -134,7 +134,7 @@ public class FluxDistinctTest {
 	@Test
 	public void allSame() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1, 1, 1, 1, 1, 1, 1, 1, 1)
 		    .distinct(k -> k)
@@ -148,7 +148,7 @@ public class FluxDistinctTest {
 	@Test
 	public void allSameFusable() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(Fuseable.ANY);
 
 		Flux.just(1, 1, 1, 1, 1, 1, 1, 1, 1)
@@ -169,7 +169,7 @@ public class FluxDistinctTest {
 	@Test
 	public void allSameBackpressured() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1, 1, 1, 1, 1, 1, 1, 1, 1)
 		    .distinct(k -> k)
@@ -189,7 +189,7 @@ public class FluxDistinctTest {
 	@Test
 	public void withKeyExtractorSame() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).distinct(k -> k % 3).subscribe(ts);
 
@@ -201,7 +201,7 @@ public class FluxDistinctTest {
 	@Test
 	public void withKeyExtractorBackpressured() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).distinct(k -> k % 3).subscribe(ts);
 
@@ -224,7 +224,7 @@ public class FluxDistinctTest {
 
 	@Test
 	public void keyExtractorThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).distinct(k -> {
 			throw new RuntimeException("forced failure");
@@ -238,7 +238,7 @@ public class FluxDistinctTest {
 
 	@Test
 	public void collectionSupplierThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		new FluxDistinct<>(Flux.range(1, 10), k -> k, () -> {
 			throw new RuntimeException("forced failure");
@@ -252,7 +252,7 @@ public class FluxDistinctTest {
 
 	@Test
 	public void collectionSupplierReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		new FluxDistinct<>(Flux.range(1, 10), k -> k, () -> null).subscribe(ts);
 

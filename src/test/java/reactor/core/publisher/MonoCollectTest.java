@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoCollectTest {
 
@@ -44,7 +44,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<ArrayList<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<ArrayList<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).collect(ArrayList<Integer>::new, (a, b) -> a.add(b)).subscribe(ts);
 
@@ -55,7 +55,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<ArrayList<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<ArrayList<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).collect(ArrayList<Integer>::new, ArrayList::add).subscribe(ts);
 
@@ -72,7 +72,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void supplierThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).collect(() -> {
 			throw new RuntimeException("forced failure");
@@ -88,7 +88,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void supplierReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).collect(() -> null, (a, b) -> {
 		}).subscribe(ts);
@@ -100,7 +100,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void actionThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).collect(() -> 1, (a, b) -> {
 			throw new RuntimeException("forced failure");

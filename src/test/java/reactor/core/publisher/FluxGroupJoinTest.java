@@ -21,7 +21,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxGroupJoinTest {
 
@@ -38,7 +38,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void behaveAsJoin() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -99,7 +99,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void normal1() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux<Person> source1 = Flux.fromIterable(Arrays.asList(new Person(1, "Joe"),
 				new Person(2, "Mike"),
@@ -130,7 +130,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void leftThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -149,7 +149,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void rightThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -168,7 +168,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void leftDurationThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -187,7 +187,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void rightDurationThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -206,7 +206,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void leftDurationSelectorThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -227,7 +227,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void rightDurationSelectorThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 
@@ -248,7 +248,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void resultSelectorThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 		DirectProcessor<Integer> source1 = DirectProcessor.create();
 		DirectProcessor<Integer> source2 = DirectProcessor.create();
 

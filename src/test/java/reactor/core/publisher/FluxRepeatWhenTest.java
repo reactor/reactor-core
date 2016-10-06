@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatWhenTest {
 
@@ -36,7 +36,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void coldRepeater() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1)
 		    .repeatWhen(v -> Flux.range(1, 10))
@@ -49,7 +49,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void coldRepeaterBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> Flux.range(1, 5))
@@ -86,7 +86,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void coldEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> Flux.empty())
@@ -99,7 +99,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void coldError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> Flux.error(new RuntimeException("forced " + "failure")))
@@ -113,7 +113,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void whenFactoryThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> {
@@ -130,7 +130,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void whenFactoryReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		new FluxRepeatWhen<>(Flux.range(1, 2), v -> null).subscribe(ts);
 
@@ -142,7 +142,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void repeaterErrorsInResponse() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> new FluxMap<>(v, a -> {
@@ -159,7 +159,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void retryAlways() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> v)
@@ -174,7 +174,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void retryAlwaysScalar() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		AtomicInteger count = new AtomicInteger();
 
@@ -192,7 +192,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void retryWithVolumeCondition() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2)
 		    .repeatWhen(v -> v.takeWhile(n -> n > 0))

@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxWindowTest {
 
@@ -75,7 +75,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void processorQueue1ReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 1, 1, () -> null, oqs).subscribe(ts);
 
@@ -86,7 +86,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void processorQueue2ReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 1, 2, () -> null, oqs).subscribe(ts);
 
@@ -97,7 +97,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void overflowQueueReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 2, 1, pqs, () -> null).subscribe(ts);
 
@@ -114,7 +114,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void processorQueue1Throws() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 1, throwing()).subscribe(ts);
 
@@ -126,7 +126,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void processorQueue2Throws() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 1, 2, throwing(), oqs).subscribe(ts);
 
@@ -138,7 +138,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void overflowQueueThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		new FluxWindow<>(Flux.range(1, 10), 2, 1, pqs, throwing()).subscribe(ts);
 
@@ -148,15 +148,15 @@ public class FluxWindowTest {
 		  .assertErrorMessage("forced failure");
 	}
 
-	static <T> TestSubscriber<T> toList(Publisher<T> windows) {
-		TestSubscriber<T> ts = TestSubscriber.create();
+	static <T> AssertSubscriber<T> toList(Publisher<T> windows) {
+		AssertSubscriber<T> ts = AssertSubscriber.create();
 		windows.subscribe(ts);
 		return ts;
 	}
 
 	@Test
 	public void exact() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .window(3)
@@ -189,7 +189,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void exactBackpressured() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create(0L);
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		    .window(3)
@@ -246,7 +246,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void exactWindowCount() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 9).window(3).subscribe(ts);
 
@@ -272,7 +272,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void skip() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .window(2, 3)
@@ -305,7 +305,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void skipBackpressured() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create(0L);
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		    .window(2, 3)
@@ -361,7 +361,7 @@ public class FluxWindowTest {
 	}
 
 	@SafeVarargs
-	static <T> void expect(TestSubscriber<Publisher<T>> ts, int index, T... values) {
+	static <T> void expect(AssertSubscriber<Publisher<T>> ts, int index, T... values) {
 		toList(ts.values()
 		         .get(index)).assertValues(values)
 		                     .assertComplete()
@@ -370,7 +370,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void overlap() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .window(3, 1)
@@ -394,7 +394,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void overlapBackpressured() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create(0L);
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create(0L);
 
 		Flux.range(1, 10)
 		    .window(3, 1)
@@ -454,7 +454,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void exactError() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
 
@@ -482,7 +482,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void skipError() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
 
@@ -510,7 +510,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void skipInGapError() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
 
@@ -535,7 +535,7 @@ public class FluxWindowTest {
 
 	@Test
 	public void overlapError() {
-		TestSubscriber<Publisher<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<Publisher<Integer>> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
 

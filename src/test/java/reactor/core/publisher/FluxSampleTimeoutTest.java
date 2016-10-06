@@ -18,13 +18,13 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSampleTimeoutTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -64,7 +64,7 @@ public class FluxSampleTimeoutTest {
 
 	@Test
 	public void mainError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -86,7 +86,7 @@ public class FluxSampleTimeoutTest {
 
 	@Test
 	public void throttlerError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
@@ -108,7 +108,7 @@ public class FluxSampleTimeoutTest {
 
 	@Test
 	public void throttlerReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 

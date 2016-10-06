@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Cancellation;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRefCountTest {
 	/*@Test
@@ -40,12 +40,12 @@ public class FluxRefCountTest {
 		
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 		
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
@@ -81,12 +81,12 @@ public class FluxRefCountTest {
 		
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 		
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
 		Assert.assertTrue("sp has no subscribers?", e.downstreamCount() != 0);
@@ -118,14 +118,14 @@ public class FluxRefCountTest {
 		
 		Flux<Integer> p = Flux.range(1, 5).publish().refCount();
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
 		ts1.assertValues(1, 2, 3, 4, 5)
 		.assertNoError()
 		.assertComplete();
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
 		ts2.assertValues(1, 2, 3, 4, 5)
@@ -139,12 +139,12 @@ public class FluxRefCountTest {
 		
 		Flux<Integer> p = Flux.range(1, 5).publish().refCount(2);
 
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
 		ts1.assertValueCount(0);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
 		ts1.assertValues(1, 2, 3, 4, 5);
@@ -162,12 +162,12 @@ public class FluxRefCountTest {
 		p.subscribe().dispose();
 		p.subscribe().dispose();
 		
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
 		ts1.assertValueCount(0);
 
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		p.subscribe(ts2);
 
 		ts1.assertValues(1, 2, 3, 4, 5);

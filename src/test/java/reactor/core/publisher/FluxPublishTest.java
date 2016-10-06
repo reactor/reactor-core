@@ -20,8 +20,8 @@ import java.util.concurrent.CancellationException;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Cancellation;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.TestSubscriber;
 
 public class FluxPublishTest {
 
@@ -38,8 +38,8 @@ public class FluxPublishTest {
 	
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
 		
@@ -69,8 +69,8 @@ public class FluxPublishTest {
 	
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
-		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish();
 		
@@ -124,8 +124,8 @@ public class FluxPublishTest {
 
 	@Test
 	public void normalAsyncFused() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 		
 		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
@@ -163,8 +163,8 @@ public class FluxPublishTest {
 	
 	@Test
 	public void normalBackpressuredAsyncFused() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
-		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
 		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
 		up.onNext(1);
@@ -226,8 +226,8 @@ public class FluxPublishTest {
 
 	@Test
 	public void normalHidden() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create();
-		TestSubscriber<Integer> ts2 = TestSubscriber.create();
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
 		
@@ -257,8 +257,8 @@ public class FluxPublishTest {
 	
 	@Test
 	public void normalHiddenBackpressured() {
-		TestSubscriber<Integer> ts1 = TestSubscriber.create(0);
-		TestSubscriber<Integer> ts2 = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
+		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).publish(5);
 		
@@ -312,7 +312,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void disconnect() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -337,7 +337,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void disconnectBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -359,7 +359,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
@@ -382,7 +382,7 @@ public class FluxPublishTest {
 
 	@Test
 	public void fusedMapInvalid() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		ConnectableFlux<Integer> p = Flux.range(1, 5).map(v -> (Integer)null).publish();
 		

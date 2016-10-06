@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxIterableTest {
 
@@ -33,7 +33,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void nullIterator() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>fromIterable(() -> null).subscribe(ts);
 
@@ -44,7 +44,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromIterable(source)
 		    .subscribe(ts);
@@ -56,7 +56,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.fromIterable(source)
 		    .subscribe(ts);
@@ -80,7 +80,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void normalBackpressuredExact() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(10);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
 		Flux.fromIterable(source)
 		    .subscribe(ts);
@@ -92,7 +92,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void iteratorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5, null, 7, 8, 9, 10))
 		    .subscribe(ts);
@@ -104,7 +104,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void emptyMapped() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.fromIterable(Collections.<Integer>emptyList())
 		    .map(v -> v + 1)

@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 public class FluxPublishOnTest {
@@ -49,7 +49,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .hide()
@@ -65,7 +65,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalBackpressured1() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 1_000)
 		    .hide()
@@ -95,7 +95,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 1_000_000)
 		    .hide()
@@ -125,7 +125,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalSyncFused() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -140,7 +140,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalSyncFusedBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 1_000_000)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -170,7 +170,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalAsyncFused() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
@@ -192,7 +192,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>unbounded(1024).get());
@@ -223,7 +223,7 @@ public class FluxPublishOnTest {
 			if (!ts.await(Duration.ofSeconds(5))
 			       .isTerminated()) {
 				ts.cancel();
-				Assert.fail("TestSubscriber timed out: " + ts.values()
+				Assert.fail("AssertSubscriber timed out: " + ts.values()
 				                                             .size());
 			}
 
@@ -238,7 +238,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).publishOn(Schedulers.fromExecutorService(
 				exec))
@@ -254,7 +254,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().publishOn(Schedulers.fromExecutorService(exec))
 		                     .subscribe(ts);
@@ -268,7 +268,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void errorDelayed() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> err = Flux.error(new RuntimeException("forced " + "failure"));
 
@@ -287,7 +287,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void classicJust() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -302,7 +302,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void classicJustBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.just(1)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -325,7 +325,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void filtered() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2_000_000)
 		    .hide()
@@ -342,7 +342,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void filtered1() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2_000)
 		    .hide()
@@ -359,7 +359,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalFilteredBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2_000_000)
 		    .hide()
@@ -390,7 +390,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalFilteredBackpressured1() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 2_000)
 		    .hide()
@@ -429,14 +429,14 @@ public class FluxPublishOnTest {
 
 		Assert.assertEquals(0, count.get());
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		p.subscribe(ts);
 
 		if (!ts.await(Duration.ofSeconds(5))
 		       .isTerminated()) {
 			ts.cancel();
-			Assert.fail("TestSubscriber timed out");
+			Assert.fail("AssertSubscriber timed out");
 		}
 
 		Assert.assertEquals(1, count.get());
@@ -459,7 +459,7 @@ public class FluxPublishOnTest {
 	public void diamond() {
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux<Integer> fork1 = sp.map(d -> d)
 		                        .publishOn(Schedulers.fromExecutorService(exec));
@@ -485,7 +485,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void prefetchAmountOnly() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		ConcurrentLinkedQueue<Long> clq = new ConcurrentLinkedQueue<>();
 
@@ -517,7 +517,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void boundedQueue() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100_000)
 		    .hide()
@@ -541,7 +541,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void boundedQueueFilter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100_000)
 		    .hide()
@@ -566,7 +566,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void withFlatMap() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 100_000)
 		    .flatMap(Flux::just)
@@ -582,7 +582,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void syncSourceWithNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, null, 1)
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
@@ -596,7 +596,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void syncSourceWithNull2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, null, 1))
 		    .publishOn(Schedulers.fromExecutorService(exec))
 		    .subscribe(ts);
@@ -610,7 +610,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedsyncSourceWithNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, 2)
 		    .map(v -> v == 2 ? null : v)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -625,7 +625,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedsyncSourceWithNullHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, 2)
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
@@ -641,7 +641,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedsyncSourceWithNullPostFilterHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, 2)
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
@@ -658,7 +658,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedsyncSourceWithNull2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .map(v -> v == 2 ? null : v)
 		    .publishOn(Schedulers.fromExecutorService(exec))
@@ -673,7 +673,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedsyncSourceWithNull2Hidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .hide()
 		    .map(v -> v == 2 ? null : v)
@@ -689,7 +689,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedFilteredSyncSourceWithNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.just(1, 2)
 		    .map(v -> v == 2 ? null : v)
 		    .filter(v -> true)
@@ -705,7 +705,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedFilteredSyncSourceWithNull2() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux.fromIterable(Arrays.asList(1, 2))
 		    .map(v -> v == 2 ? null : v)
 		    .filter(v -> true)
@@ -721,7 +721,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedAsyncSourceWithNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
 		up.onNext(1);
@@ -741,7 +741,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void mappedAsyncSourceWithNullPostFilter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
 		up.onNext(1);
@@ -762,7 +762,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRangeHidden() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int count = 1000000;
 
@@ -786,7 +786,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRange() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int count = 1000000;
 
@@ -814,7 +814,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRangeMaxHidden() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int count = 1000000;
 
@@ -842,7 +842,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRangeMax() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int count = 1000000;
 
@@ -870,7 +870,7 @@ public class FluxPublishOnTest {
 
 	//	@Test
 	public void crossRangeMaxUnbounded() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int count = 1000000;
 
@@ -894,7 +894,7 @@ public class FluxPublishOnTest {
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
 
-		TestSubscriber<String> ts = TestSubscriber.create();
+		AssertSubscriber<String> ts = AssertSubscriber.create();
 
 		up.map(v -> Thread.currentThread()
 		                  .getName())
@@ -920,7 +920,7 @@ public class FluxPublishOnTest {
 		String s = Thread.currentThread()
 		                 .getName();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		up.filter(v -> s.equals(Thread.currentThread()
 		                              .getName()))
@@ -948,7 +948,7 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRangePerfDefault() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Scheduler scheduler = Schedulers.fromExecutorService(exec);
 
@@ -983,7 +983,7 @@ public class FluxPublishOnTest {
 			                           .publishOn(scheduler);
 
 			for (int i = 0; i < 10000; i++) {
-				TestSubscriber<Integer> ts = TestSubscriber.create();
+				AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 				source.subscribe(ts);
 

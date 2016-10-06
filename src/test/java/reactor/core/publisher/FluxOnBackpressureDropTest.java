@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxOnBackpressureDropTest {
 
@@ -53,7 +53,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .onBackpressureDrop()
@@ -66,7 +66,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void normalError() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .onBackpressureError()
@@ -79,7 +79,7 @@ public class FluxOnBackpressureDropTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .onBackpressureDrop()
@@ -94,7 +94,7 @@ public class FluxOnBackpressureDropTest {
 	public void someDrops() {
 		DirectProcessor<Integer> tp = DirectProcessor.create();
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		List<Integer> drops = new ArrayList<>();
 
@@ -124,7 +124,7 @@ public class FluxOnBackpressureDropTest {
 	@Test
 	public void onDropThrows() {
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .onBackpressureDrop(e -> {

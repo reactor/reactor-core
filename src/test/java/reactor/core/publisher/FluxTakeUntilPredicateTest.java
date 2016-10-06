@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeUntilPredicateTest {
 
@@ -33,7 +33,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeAll() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> false)
@@ -46,7 +46,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeAllBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> false)
@@ -71,7 +71,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeSome() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> v == 3)
@@ -84,7 +84,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void takeSomeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> v == 3)
@@ -109,7 +109,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void stopImmediately() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> true)
@@ -122,7 +122,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void stopImmediatelyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> true)
@@ -141,7 +141,7 @@ public class FluxTakeUntilPredicateTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .takeUntil(v -> {

@@ -36,7 +36,7 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 /**
  * ?
@@ -78,7 +78,7 @@ public class EmitterProcessorDemandTests {
 
 		Flux.from(publisher).subscribeOn(asyncGroup).subscribe(emitter);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create();
+		AssertSubscriber<String> subscriber = AssertSubscriber.create();
 		emitter.subscribe(subscriber);
 
 		int i = 0;
@@ -134,7 +134,7 @@ public class EmitterProcessorDemandTests {
 
 		publisher.subscribe(emitter);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create();
+		AssertSubscriber<String> subscriber = AssertSubscriber.create();
 		emitter.subscribe(subscriber);
 
 		String buffer = "Hello";
@@ -153,7 +153,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	public void testRed() {
 		FluxProcessor<String, String> processor = EmitterProcessor.create();
-		TestSubscriber<String> subscriber = TestSubscriber.create(1);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
 		Flux.fromIterable(DATA)
@@ -166,7 +166,7 @@ public class EmitterProcessorDemandTests {
 	@Test
 	public void testGreen() {
 		FluxProcessor<String, String> processor = EmitterProcessor.create();
-		TestSubscriber<String> subscriber = TestSubscriber.create(1);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(1);
 		processor.subscribe(subscriber);
 
 		Flux.fromIterable(DATA)
@@ -184,10 +184,10 @@ public class EmitterProcessorDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		TestSubscriber<String> first = TestSubscriber.create(0);
+		AssertSubscriber<String> first = AssertSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
 
-		TestSubscriber<String> second = TestSubscriber.create(0);
+		AssertSubscriber<String> second = AssertSubscriber.create(0);
 		processor.log("after-2").subscribe(second);
 
 		second.request(1);
@@ -204,12 +204,12 @@ public class EmitterProcessorDemandTests {
 		    .log()
 		    .subscribe(processor);
 
-		TestSubscriber<String> first = TestSubscriber.create(1);
+		AssertSubscriber<String> first = AssertSubscriber.create(1);
 		processor.subscribe(first);
 
 		first.awaitAndAssertNextValues("1");
 
-		TestSubscriber<String> second = TestSubscriber.create(3);
+		AssertSubscriber<String> second = AssertSubscriber.create(3);
 		processor.subscribe(second);
 
 		second.awaitAndAssertNextValues("2", "3", "4");
@@ -251,7 +251,7 @@ public class EmitterProcessorDemandTests {
 		}
 
 		public void doRun() throws Exception {
-			TestSubscriber<String> subscriber = TestSubscriber.create(5);
+			AssertSubscriber<String> subscriber = AssertSubscriber.create(5);
 			processor.subscribe(subscriber);
 			barrier.await();
 

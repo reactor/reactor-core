@@ -20,7 +20,7 @@ import org.reactivestreams.Subscription
 import reactor.core.publisher.*
 import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
-import reactor.test.TestSubscriber
+import reactor.test.subscriber.AssertSubscriber
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -109,7 +109,7 @@ class FluxSpec extends Specification {
 		when:
 			'cumulated request of Long MAX'
 			long test = Long.MAX_VALUE / 2l
-			def controls = TestSubscriber.subscribe(stream, 0)
+			def controls = AssertSubscriber.subscribe(stream, 0)
 			controls.request(test)
 			controls.request(test)
 			controls.request(1)
@@ -386,7 +386,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'checking always true predicate on empty flux and collecting the result'
-			tap = Flux.empty().any ({ true } as Predicate).block();
+			tap = Flux.empty().any ({ true } as Predicate).block()
 
 		then:
 			'collected should be false'
@@ -1174,7 +1174,7 @@ class FluxSpec extends Specification {
 	def 'Collect will accumulate multiple lists of accepted values and pass it to a consumer'() {
 		given:
 			'a source and a collected flux'
-			def numbers = Flux.fromIterable([1, 2, 3, 4, 5, 6, 7, 8]);
+			def numbers = Flux.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
 
 		when:
 			'non overlapping buffers'
@@ -1857,7 +1857,7 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(5, Duration.ofMillis(600))
-			def ts = TestSubscriber.subscribe(reduced)
+			def ts = AssertSubscriber.subscribe(reduced)
 
 		when:
 			'the first values are accepted on the source'
@@ -2129,7 +2129,7 @@ class FluxSpec extends Specification {
 
 			def value = null
 			def s = source.log("drop").onBackpressureDrop().doOnNext { value = it }.log('overflow-drop-test')
-			def tail = TestSubscriber.subscribe(s, 0)
+			def tail = AssertSubscriber.subscribe(s, 0)
 
 
 			tail.request(5)
@@ -2159,7 +2159,7 @@ class FluxSpec extends Specification {
 	def source = EmitterProcessor.<Integer> create().connect()
 
 	def value = null
-	def tail = TestSubscriber.create(5)
+	def tail = AssertSubscriber.create(5)
 
 	source
 			.log("block")
@@ -2213,7 +2213,7 @@ class FluxSpec extends Specification {
 	'a source and a timeout'
 	def source = DirectProcessor.<Integer> create()
 
-	def tail = TestSubscriber.create(0)
+	def tail = AssertSubscriber.create(0)
 
 	def end = 0
 	source
@@ -2237,7 +2237,7 @@ class FluxSpec extends Specification {
 	'a source and a timeout'
 	def source = DirectProcessor.<Integer> create()
 
-	def tail = TestSubscriber.create(0)
+	def tail = AssertSubscriber.create(0)
 
 	def end = 0
 	source
@@ -2413,7 +2413,7 @@ class FluxSpec extends Specification {
 					println "delay retry by " + i + " second(s)"
 				Mono.delayMillis(i * 1000)
 				}
-			}.subscribeWith(TestSubscriber.create())
+			}.subscribeWith(AssertSubscriber.create())
 
 		then:
 			'MonoProcessor completed after 3 tries'
@@ -2666,7 +2666,7 @@ class FluxSpec extends Specification {
 
   def "error publishers don't fast fail"(){
 	when: 'preparing error publisher'
-		Publisher<Object> publisher = error(new IllegalStateException("boo"));
+		Publisher<Object> publisher = error(new IllegalStateException("boo"))
 	Flux.from(publisher).onErrorReturn{ ex -> "error"}
 	    def a = 1
 
@@ -2683,7 +2683,7 @@ class FluxSpec extends Specification {
 
 	static class Reduction implements BiFunction<Integer, Integer, Integer> {
 		@Override
-		public Integer apply(Integer left, Integer right) {
+		 Integer apply(Integer left, Integer right) {
 			def result = right == null ? 1 : left * right
 			println "${right} ${left} reduced to ${result}"
 			return result

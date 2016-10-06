@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoUsingTest {
 
@@ -44,7 +44,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 
@@ -60,7 +60,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void normalEager() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 
@@ -78,7 +78,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 		AtomicBoolean before = new AtomicBoolean();
 
-		TestSubscriber<Integer> ts = new TestSubscriber<Integer>() {
+		AssertSubscriber<Integer> ts = new AssertSubscriber<Integer>() {
 			@Override
 			public void onError(Throwable t) {
 				super.onError(t);
@@ -138,7 +138,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void resourceThrowsEager() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 
@@ -157,7 +157,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void factoryThrowsEager() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 
@@ -176,7 +176,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void factoryReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 
@@ -194,7 +194,7 @@ public class MonoUsingTest {
 
 	@Test
 	public void subscriberCancels() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicInteger cleanup = new AtomicInteger();
 

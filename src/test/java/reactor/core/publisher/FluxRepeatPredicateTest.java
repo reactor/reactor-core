@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatPredicateTest {
 
@@ -36,7 +36,7 @@ public class FluxRepeatPredicateTest {
 	public void normal() {
 		int[] times = {1};
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .repeat(() -> times[0]-- > 0)
@@ -51,7 +51,7 @@ public class FluxRepeatPredicateTest {
 	public void normalBackpressured() {
 		int[] times = {1};
 
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .repeat(() -> times[0]-- > 0)
@@ -82,7 +82,7 @@ public class FluxRepeatPredicateTest {
 
 	@Test
 	public void dontRepeat() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .repeat(() -> false)
@@ -95,7 +95,7 @@ public class FluxRepeatPredicateTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .repeat(() -> {

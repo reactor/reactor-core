@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxWithLatestFromTest {
 
@@ -41,7 +41,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .withLatestFrom(Flux.just(10), (a, b) -> a + b)
@@ -55,7 +55,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .withLatestFrom(Flux.just(10), (a, b) -> a + b)
@@ -87,7 +87,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void otherIsNever() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .withLatestFrom(Flux.<Integer>empty(), (a, b) -> a + b)
@@ -100,7 +100,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void otherIsEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
 		    .withLatestFrom(Flux.<Integer>empty(), (a, b) -> a + b)
@@ -113,7 +113,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void combinerReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .withLatestFrom(Flux.just(10), (a, b) -> (Integer) null)
@@ -126,7 +126,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
 	public void combinerThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).<Integer, Integer>withLatestFrom(Flux.just(10),
 		  (a, b) -> {

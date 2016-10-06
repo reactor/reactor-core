@@ -20,7 +20,7 @@ import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxZipIterableTest {
 
@@ -43,7 +43,7 @@ public class FluxZipIterableTest {
 	
 	@Test
 	public void normalSameSize() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -56,7 +56,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void normalSameSizeBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -87,7 +87,7 @@ public class FluxZipIterableTest {
 	
 	@Test
 	public void normalSourceShorter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 4)
 		    .zipWithIterable(
@@ -100,7 +100,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void normalOtherShorter() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -113,7 +113,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void sourceEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 0)
 		    .zipWithIterable(
@@ -126,7 +126,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void otherEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -139,7 +139,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void zipperReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -152,7 +152,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void iterableReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -165,7 +165,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void zipperThrowsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(
@@ -179,7 +179,7 @@ public class FluxZipIterableTest {
 
 	@Test
 	public void iterableThrowsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .zipWithIterable(

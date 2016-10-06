@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDeferComposeTest {
     @Test
@@ -31,7 +31,7 @@ public class FluxDeferComposeTest {
         
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             
@@ -48,7 +48,7 @@ public class FluxDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             
@@ -66,7 +66,7 @@ public class FluxDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             

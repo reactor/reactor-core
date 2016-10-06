@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxBufferTest {
 
@@ -47,7 +47,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void normalExact() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).buffer(2).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void normalExactBackpressured() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).buffer(2).subscribe(ts);
 
@@ -89,7 +89,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void largerSkip() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).buffer(2, 3).subscribe(ts);
 
@@ -103,7 +103,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void largerSkipEven() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 8).buffer(2, 3).subscribe(ts);
 
@@ -114,7 +114,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void largerSkipEvenBackpressured() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 8).buffer(2, 3).subscribe(ts);
 
@@ -137,7 +137,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void largerSkipBackpressured() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).buffer(2, 3).subscribe(ts);
 
@@ -163,7 +163,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void smallerSkip() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create();
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).buffer(2, 1).subscribe(ts);
 
@@ -183,7 +183,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void smallerSkipBackpressured() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).buffer(2, 1).subscribe(ts);
 
@@ -238,7 +238,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void smallerSkip3Backpressured() {
-		TestSubscriber<List<Integer>> ts = TestSubscriber.create(0);
+		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10).buffer(3, 1).subscribe(ts);
 
@@ -306,7 +306,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void supplierReturnsNull() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).buffer(2, 1, () -> null).subscribe(ts);
 
@@ -317,7 +317,7 @@ public class FluxBufferTest {
 
 	@Test
 	public void supplierThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10).buffer(2, 1, () -> {
 			throw new RuntimeException("forced failure");

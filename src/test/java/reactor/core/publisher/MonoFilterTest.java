@@ -16,12 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.junit.Test;
 import org.testng.Assert;
 import reactor.core.Exceptions;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoFilterTest {
 
@@ -41,14 +39,14 @@ public class MonoFilterTest {
 
 		Mono.just(1)
 		    .filter(v -> v % 2 == 0)
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertNoValues()
 		    .assertComplete()
 		    .assertNoError();
 
 		Mono.just(1)
 		    .filter(v -> v % 2 != 0)
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertValues(1)
 		    .assertComplete()
 		    .assertNoError();
@@ -56,7 +54,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void normalBackpressuredJust() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .filter(v -> v % 2 != 0)
@@ -75,7 +73,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void normalBackpressuredCallable() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.fromCallable(() -> 2)
 		    .filter(v -> v % 2 == 0)
@@ -94,7 +92,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Object> ts = TestSubscriber.create(2);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(2);
 
 		Mono.create(s -> s.success(1))
 		    .filter(v -> {
@@ -110,7 +108,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void syncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Mono.just(2)
 		    .filter(v -> (v & 1) == 0)
@@ -123,7 +121,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void asyncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		MonoProcessor<Integer> up = MonoProcessor.create();
 
@@ -139,7 +137,7 @@ public class MonoFilterTest {
 
 	@Test
 	public void asyncFusionBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(1);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		MonoProcessor<Integer> up = MonoProcessor.create();
 

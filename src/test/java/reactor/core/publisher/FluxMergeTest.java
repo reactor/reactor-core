@@ -17,13 +17,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMergeTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.merge(Flux.just(1),
 				Flux.range(2, 2),
@@ -47,7 +47,7 @@ public class FluxMergeTest {
 			result = result.mergeWith(source);
 		}
 
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		result.subscribe(ts);
 

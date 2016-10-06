@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxStreamTest {
 
@@ -34,7 +34,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromStream(source.stream())
 		    .subscribe(ts);
@@ -46,7 +46,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.fromStream(source.stream())
 		    .subscribe(ts);
@@ -70,7 +70,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void normalBackpressuredExact() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(10);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
 		Flux.fromStream(source.stream())
 		    .subscribe(ts);
@@ -82,7 +82,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void iteratorReturnsNull() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromStream(Arrays.asList(1, 2, 3, 4, 5, null, 7, 8, 9, 10)
 		                      .stream())
@@ -95,7 +95,7 @@ public class FluxStreamTest {
 
 	@Test
 	public void streamAlreadyConsumed() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Stream<Integer> s = source.stream();
 

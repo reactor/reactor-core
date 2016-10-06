@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoSubscribeOnTest {
 	
@@ -40,7 +40,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classic() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.fromSupplier(() -> 1)
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
@@ -55,7 +55,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.fromCallable(() -> 1)
 		    .log()
@@ -81,7 +81,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicJust() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
@@ -96,7 +96,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicJustBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
@@ -119,7 +119,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		                     .subscribe(ts);
@@ -133,7 +133,7 @@ public class MonoSubscribeOnTest {
 
 	@Test
 	public void classicEmptyBackpressured() throws Exception {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>empty().subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		                     .subscribe(ts);
@@ -155,7 +155,7 @@ public class MonoSubscribeOnTest {
 
 		Assert.assertEquals(0, count.get());
 
-		p.subscribeWith(TestSubscriber.create())
+		p.subscribeWith(AssertSubscriber.create())
 		 .await();
 
 		Assert.assertEquals(1, count.get());

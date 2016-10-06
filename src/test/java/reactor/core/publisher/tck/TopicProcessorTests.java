@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import org.testng.SkipException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.TopicProcessor;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -76,7 +76,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		// Waiting till publisher sends Complete into the processor
 		Thread.sleep(1000);
 
-		TestSubscriber<String> subscriber = TestSubscriber.generateTimeoutSecs(1);
+		AssertSubscriber<String> subscriber = AssertSubscriber.generateTimeoutSecs(1);
 		processor.subscribe(subscriber);
 
 		subscriber.assertComplete();
@@ -88,7 +88,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create(0);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);
@@ -110,7 +110,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create(0);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);
@@ -128,7 +128,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create(0);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		processor.forceShutdown();
@@ -182,7 +182,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create(0);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(3);
@@ -200,7 +200,7 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
-		TestSubscriber<String> subscriber = TestSubscriber.create(0);
+		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
 		processor.subscribe(subscriber);
 
 		subscriber.request(1);

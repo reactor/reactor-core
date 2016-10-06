@@ -17,20 +17,15 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxFlattenIterableTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .concatMapIterable(v -> Arrays.asList(v, v + 1))
@@ -43,7 +38,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void normalBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .concatMapIterable(v -> Arrays.asList(v, v + 1))
@@ -68,7 +63,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void normalNoFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5)
 		    .hide()
@@ -82,7 +77,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void normalBackpressuredNoFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5)
 		    .hide()
@@ -108,7 +103,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void longRunning() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int n = 1_000_000;
 
@@ -123,7 +118,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void longRunningNoFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int n = 1_000_000;
 
@@ -139,7 +134,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void fullFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		int n = 1_000_000;
 
@@ -155,7 +150,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void just() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.just(1)
 		    .concatMapIterable(v -> Arrays.asList(v, v + 1))
@@ -168,7 +163,7 @@ public class FluxFlattenIterableTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().concatMapIterable(v -> Arrays.asList(v, v + 1))
 		                     .subscribe(ts);

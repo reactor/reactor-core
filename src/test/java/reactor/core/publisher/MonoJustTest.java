@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoJustTest {
 
@@ -34,7 +34,7 @@ public class MonoJustTest {
 
     @Test
     public void normal() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
         Mono.just(1).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class MonoJustTest {
 
     @Test
     public void normalBackpressured() {
-        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
         Mono.just(1).subscribe(ts);
 
@@ -62,7 +62,7 @@ public class MonoJustTest {
 
     @Test
     public void fused() {
-        TestSubscriber<Integer> ts = TestSubscriber.create();
+        AssertSubscriber<Integer> ts = AssertSubscriber.create();
         ts.requestedFusionMode(Fuseable.ANY);
         
         Mono.just(1).subscribe(ts);

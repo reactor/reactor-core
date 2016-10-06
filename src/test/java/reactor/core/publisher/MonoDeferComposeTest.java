@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDeferComposeTest {
     @Test
@@ -32,7 +32,7 @@ public class MonoDeferComposeTest {
         
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             
@@ -49,7 +49,7 @@ public class MonoDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             
@@ -67,7 +67,7 @@ public class MonoDeferComposeTest {
         });
         
         for (int i = 0; i < 10; i++) {
-            TestSubscriber<Integer> ts = TestSubscriber.create();
+            AssertSubscriber<Integer> ts = AssertSubscriber.create();
             
             source.subscribe(ts);
             

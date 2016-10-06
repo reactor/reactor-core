@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
@@ -35,7 +35,7 @@ public class FluxHandleTest {
 
 		Flux.range(1, 5)
 		    .handle((v, s) -> s.next(v * 2))
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertContainValues(expectedValues)
 		    .assertNoError()
 		    .assertComplete();
@@ -51,7 +51,7 @@ public class FluxHandleTest {
 				    s.next(v * 2);
 			    }
 		    })
-		    .subscribeWith(TestSubscriber.create())
+		    .subscribeWith(AssertSubscriber.create())
 		    .assertContainValues(expectedValues)
 		    .assertNoError()
 		    .assertComplete();
@@ -59,7 +59,7 @@ public class FluxHandleTest {
 
 	@Test
 	public void normalSyncFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
 		ts.requestedFusionMode(SYNC);
 
@@ -74,7 +74,7 @@ public class FluxHandleTest {
 
 	@Test
 	public void normalAsyncFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
 		Flux.range(1,
@@ -92,7 +92,7 @@ public class FluxHandleTest {
 
 	@Test
 	public void filterNullMapResultSyncFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(SYNC);
 
 		Flux.range(1, 5).<Integer>handle((v, s) -> {
@@ -111,7 +111,7 @@ public class FluxHandleTest {
 
 	@Test
 	public void filterNullMapResultAsyncFusion() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		ts.requestedFusionMode(ASYNC);
 
 		Flux.range(1, 5).<Integer>handle((v, s) -> {

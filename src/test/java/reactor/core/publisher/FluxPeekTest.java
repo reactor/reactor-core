@@ -23,8 +23,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.test.TestSubscriber;
 import reactor.core.Exceptions;
 
 public class FluxPeekTest {
@@ -35,7 +35,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -66,7 +66,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void error() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -97,7 +97,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -128,7 +128,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void never() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -159,7 +159,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void neverCancel() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		AtomicReference<Subscription> onSubscribe = new AtomicReference<>();
 		AtomicReference<Integer> onNext = new AtomicReference<>();
@@ -194,7 +194,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void callbackError(){
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Throwable err = new Exception("test");
 
@@ -203,7 +203,7 @@ public class FluxPeekTest {
 		//nominal error path (DownstreamException)
 		ts.assertErrorMessage("test");
 
-		ts = TestSubscriber.create();
+		ts = AssertSubscriber.create();
 
 		try {
 			Flux.just(1).doOnNext(d -> {throw Exceptions.bubble(err);}).subscribe(ts);
@@ -217,7 +217,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void syncFusionAvailable() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doOnNext(v -> {
@@ -231,7 +231,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void asyncFusionAvailable() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor.create(QueueSupplier.<Integer>get(2).get()).doOnNext(v -> {
 		})
@@ -244,7 +244,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void conditionalFusionAvailable() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
@@ -267,7 +267,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void conditionalFusionAvailableWithFuseable() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		FluxSource.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
@@ -292,7 +292,7 @@ public class FluxPeekTest {
 	public void syncCompleteCalled() {
 		AtomicBoolean onComplete = new AtomicBoolean();
 
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doOnComplete(() -> onComplete.set(true))
@@ -309,7 +309,7 @@ public class FluxPeekTest {
 	public void syncdoAfterTerminateCalled() {
 		AtomicBoolean onTerminate = new AtomicBoolean();
 
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
 		    .doAfterTerminate(() -> onTerminate.set(true))

@@ -17,13 +17,13 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMaterializeTest {
 
     @Test
     public void completeOnlyBackpressured() {
-        TestSubscriber<Signal<Integer>> ts = TestSubscriber.create(0L);
+        AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
         
         Flux.<Integer>empty().materialize()
         .subscribe(ts);
@@ -41,7 +41,7 @@ public class FluxMaterializeTest {
 
     @Test
     public void errorOnlyBackpressured() {
-        TestSubscriber<Signal<Integer>> ts = TestSubscriber.create(0L);
+        AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
 
         RuntimeException ex = new RuntimeException();
         

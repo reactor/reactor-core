@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDefaultIfEmptyTest {
 
@@ -33,7 +33,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void nonEmpty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 5).defaultIfEmpty(10).subscribe(ts);
 
@@ -45,7 +45,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void nonEmptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 5).defaultIfEmpty(10).subscribe(ts);
 
@@ -69,7 +69,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void empty() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.<Integer>empty().defaultIfEmpty(10).subscribe(ts);
 
@@ -81,7 +81,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void emptyBackpressured() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(0);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty().defaultIfEmpty(10).subscribe(ts);
 

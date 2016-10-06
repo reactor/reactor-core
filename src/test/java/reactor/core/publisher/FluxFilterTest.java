@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
-import reactor.test.TestSubscriber;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxFilterTest {
 
@@ -37,7 +37,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void normal() {
-		TestSubscriber<Integer> ts = TestSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .filter(v -> v % 2 == 0)
@@ -50,7 +50,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void normalBackpressuredRange() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(2);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(2);
 
 		Flux.range(1, 10)
 		    .filter(v -> v % 2 == 0)
@@ -69,7 +69,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void normalBackpressuredArray() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(2);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(2);
 
 		Flux.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		    .filter(v -> v % 2 == 0)
@@ -88,7 +88,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void normalBackpressuredIterable() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(2);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(2);
 
 		Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
 		    .filter(v -> v % 2 == 0)
@@ -107,7 +107,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void predicateThrows() {
-		TestSubscriber<Integer> ts = TestSubscriber.create(2);
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(2);
 
 		Flux.range(1, 10)
 		    .filter(v -> {
@@ -123,7 +123,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void syncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
 		    .filter(v -> (v & 1) == 0)
@@ -136,7 +136,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void asyncFusion() {
-		TestSubscriber<Object> ts = TestSubscriber.create();
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
@@ -156,7 +156,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void asyncFusionBackpressured() {
-		TestSubscriber<Object> ts = TestSubscriber.create(1);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
@@ -182,7 +182,7 @@ public class FluxFilterTest {
 
 	@Test
 	public void asyncFusionBackpressured2() {
-		TestSubscriber<Object> ts = TestSubscriber.create(1);
+		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(new ConcurrentLinkedQueue<>());
