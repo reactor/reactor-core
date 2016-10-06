@@ -72,7 +72,7 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		sink.onNext(2);
 		sink.onNext(3);
 
-		AssertSubscriber.subscribe(sink.forceShutdown())
+		sink.forceShutdown().subscribeWith(AssertSubscriber.create())
 		                .assertComplete()
 		                .assertValues(1, 2, 3);
 	}

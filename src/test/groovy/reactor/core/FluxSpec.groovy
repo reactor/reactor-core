@@ -109,7 +109,7 @@ class FluxSpec extends Specification {
 		when:
 			'cumulated request of Long MAX'
 			long test = Long.MAX_VALUE / 2l
-			def controls = AssertSubscriber.subscribe(stream, 0)
+			def controls = stream.subscribeWith(AssertSubscriber.create(0))
 			controls.request(test)
 			controls.request(test)
 			controls.request(1)
@@ -388,7 +388,7 @@ class FluxSpec extends Specification {
 			'checking always true predicate on empty flux and collecting the result'
 			tap = Flux.empty().any ({ true } as Predicate).block()
 
-		then:
+	  then:
 			'collected should be false'
 			!tap
 	}
@@ -1176,7 +1176,7 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def numbers = Flux.fromIterable([1, 2, 3, 4, 5, 6, 7, 8])
 
-		when:
+	  when:
 			'non overlapping buffers'
 			def res = numbers.buffer(2, 3).log('skip1').buffer().next()
 
@@ -1857,7 +1857,7 @@ class FluxSpec extends Specification {
 			'a source and a collected flux'
 			def source = EmitterProcessor.<Integer> create().connect()
 			def reduced = source.buffer(5, Duration.ofMillis(600))
-			def ts = AssertSubscriber.subscribe(reduced)
+			def ts = reduced.subscribeWith(AssertSubscriber.create())
 
 		when:
 			'the first values are accepted on the source'
@@ -2129,7 +2129,7 @@ class FluxSpec extends Specification {
 
 			def value = null
 			def s = source.log("drop").onBackpressureDrop().doOnNext { value = it }.log('overflow-drop-test')
-			def tail = AssertSubscriber.subscribe(s, 0)
+			def tail = s.subscribeWith(AssertSubscriber.create(0))
 
 
 			tail.request(5)
