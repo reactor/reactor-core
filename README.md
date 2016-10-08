@@ -151,10 +151,10 @@ The 3 main processor implementations are message relays using 0 ([EmitterProcess
 ```java
 EmitterProcessor<Integer> emitter = EmitterProcessor.create();
 BlockingSink<Integer> sink = emitter.connectSink();
-sink.submit(1);
-sink.submit(2);
+sink.next(1);
+sink.next(2);
 emitter.subscribe(System.out::println);
-sink.submit(3); //output : 3
+sink.next(3); //output : 3
 sink.finish();
 ```
 
