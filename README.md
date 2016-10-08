@@ -175,6 +175,8 @@ sink.submit(3); //output : ...3 ...3
 sink.finish();
 ```
 
+Note : ReplayProcessor does not explicitly require a call to `connectSink()` since its demand upstream is constant and unbounded (and it will retain the specified history number of items). That means you could just call `onNext` on the processor directly without problems.
+
 ### Async Pub-Sub : TopicProcessor
 
 [An asynchronous signal broadcaster](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
