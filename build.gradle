@@ -180,12 +180,6 @@ configure(rootProject) {
     //Optional Logging Operator
     optional "org.slf4j:slf4j-api:$slf4jVersion"
 
-    //Optional RxJava 1 Converter
-    optional "io.reactivex:rxjava:$rxJavaVersion"
-
-    //Optional RxJava 2 Converter
-    optional "io.reactivex.rxjava2:rxjava:$rxJava2Version"
-    
     //Optional JDK 9 Converter
     jsr166backport "io.projectreactor:jsr166:1.0.0.BUILD-SNAPSHOT"
 
