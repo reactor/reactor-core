@@ -24,7 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 
-public class FluxCancelOn<T> extends FluxSource<T, T> {
+final class FluxCancelOn<T> extends FluxSource<T, T> {
 
 	final Scheduler scheduler;
 

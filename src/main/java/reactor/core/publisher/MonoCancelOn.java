@@ -20,7 +20,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 
-public class MonoCancelOn<T> extends MonoSource<T, T> {
+final class MonoCancelOn<T> extends MonoSource<T, T> {
 
 	final Scheduler scheduler;
 
