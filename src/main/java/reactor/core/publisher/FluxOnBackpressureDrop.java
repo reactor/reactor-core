@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -48,12 +49,11 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 		this.onDrop = NOOP;
 	}
 
-
-	public FluxOnBackpressureDrop(Publisher<? extends T> source, Consumer<? super T> onDrop) {
+	public FluxOnBackpressureDrop(Publisher<? extends T> source,
+			Consumer<? super T> onDrop) {
 		super(source);
 		this.onDrop = Objects.requireNonNull(onDrop, "onDrop");
 	}
-
 
 	@Override
 	public long getPrefetch() {
@@ -69,15 +69,14 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 			implements Subscriber<T>, Subscription, Producer, Loopback, Trackable {
 
 		final Subscriber<? super T> actual;
-
-		final Consumer<? super T> onDrop;
+		final Consumer<? super T>   onDrop;
 
 		Subscription s;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<DropSubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(DropSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(DropSubscriber.class, "requested");
 
 		boolean done;
 
@@ -115,7 +114,8 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 			if (done) {
 				try {
 					onDrop.accept(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Operators.onErrorDropped(e);
 				}
 				return;
@@ -128,10 +128,12 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 					REQUESTED.decrementAndGet(this);
 				}
 
-			} else {
+			}
+			else {
 				try {
 					onDrop.accept(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 				}
 			}
