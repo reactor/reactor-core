@@ -257,7 +257,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onNextCall().accept(v);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, v));
+					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 				}
 			}
 			if (v == null && sourceMode == SYNC) {
@@ -498,7 +498,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					parent.onNextCall().accept(v);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, v));
+					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 				}
 			}
 			if (v == null && sourceMode == SYNC) {
