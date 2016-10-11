@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.core.Exceptions;
 
 public class FluxResumeTest {
 /*
@@ -220,6 +221,20 @@ public class FluxResumeTest {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(NullPointerException.class);
+	}
+
+	@Test
+	public void errorPropagated() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Exception exception = new NullPointerException("forced failure");
+		Flux.<Integer>error(exception).onErrorResumeWith(v -> {
+		  throw Exceptions.propagate(v);
+		}).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertErrorWith(e -> Assert.assertSame(exception, e));
 	}
 
 }
