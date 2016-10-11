@@ -253,7 +253,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 		public T poll() {
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
-				parent.onNextCall().accept(v);
+				try {
+					parent.onNextCall().accept(v);
+				}
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, v));
+				}
 			}
 			if (v == null && sourceMode == SYNC) {
 				Runnable call = parent.onCompleteCall();
@@ -489,7 +494,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 		public T poll() {
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
-				parent.onNextCall().accept(v);
+				try {
+					parent.onNextCall().accept(v);
+				}
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, v));
+				}
 			}
 			if (v == null && sourceMode == SYNC) {
 				Runnable call = parent.onCompleteCall();
