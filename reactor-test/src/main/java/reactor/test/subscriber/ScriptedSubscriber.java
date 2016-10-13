@@ -18,6 +18,7 @@ package reactor.test.subscriber;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -167,6 +168,14 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 				Function<Throwable, String> assertionMessage);
 
 		/**
+		 * Expect an error and consume with the given consumer. Any {@code AssertionError}s
+		 * thrown by the consumer will be rethrown during {@linkplain #verify() verification}.
+		 * @param consumer the consumer for the exception
+		 * @return the built subscriber
+		 */
+		ScriptedSubscriber<T> consumeErrorWith(Consumer<Throwable> consumer);
+
+		/**
 		 * Expect the completion signal.
 		 * @return the built subscriber
 		 * @see Subscriber#onComplete()
@@ -234,5 +243,13 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 */
 		ValueBuilder<T> expectValueWith(Predicate<T> predicate,
 				Function<T, String> assertionMessage);
+
+		/**
+		 * Expect an element and consume with the given consumer. Any {@code AssertionError}s
+		 * thrown by the consumer will be rethrown during {@linkplain #verify() verification}.
+		 * @param consumer the consumer for the value
+		 * @return this builder
+		 */
+		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
 	}
 }

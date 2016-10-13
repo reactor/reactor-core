@@ -39,8 +39,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.Signal;
 
 /**
- * Default implementation of {@link reactor.test.ScriptedSubscriber.ValueBuilder} and
- * {@link reactor.test.ScriptedSubscriber.TerminationBuilder}.
+ * Default implementation of {@link ScriptedSubscriber.ValueBuilder} and
+ * {@link ScriptedSubscriber.TerminationBuilder}.
  *
  * @author Arjen Poutsma
  * @since 1.0
@@ -130,6 +130,26 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 	}
 
 	@Override
+	public ScriptedSubscriber.ValueBuilder<T> consumeValueWith(Consumer<T> consumer) {
+		SignalEvent<T> event = new SignalEvent<>(signal -> {
+			if (!signal.isOnNext()) {
+				return Optional.of(String.format("expected: onNext(); actual: %s", signal));
+			}
+			else {
+				try {
+					consumer.accept(signal.get());
+					return Optional.empty();
+				}
+				catch (AssertionError assertion) {
+					return Optional.of(assertion.getMessage());
+				}
+			}
+		});
+		this.script.add(event);
+		return this;
+	}
+
+	@Override
 	public ScriptedSubscriber<T> expectError() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
@@ -182,6 +202,26 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 			}
 			else {
 				return Optional.empty();
+			}
+		});
+		this.script.add(event);
+		return build();
+	}
+
+	@Override
+	public ScriptedSubscriber<T> consumeErrorWith(Consumer<Throwable> consumer) {
+		SignalEvent<T> event = new SignalEvent<>(signal -> {
+			if (!signal.isOnError()) {
+				return Optional.of(String.format("expected: onError(); actual: %s", signal));
+			}
+			else {
+				try {
+					consumer.accept(signal.getThrowable());
+					return Optional.empty();
+				}
+				catch (AssertionError assertion) {
+					return Optional.of(assertion.getMessage());
+				}
 			}
 		});
 		this.script.add(event);

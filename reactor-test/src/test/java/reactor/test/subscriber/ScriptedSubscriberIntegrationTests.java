@@ -138,6 +138,27 @@ public class ScriptedSubscriberIntegrationTests {
 		}
 	}
 
+	@Test
+	public void consumeValueWith() throws Exception {
+		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+				.consumeValueWith(s -> {
+					if (!"foo".equals(s)) {
+						throw new AssertionError(s);
+					}
+				})
+				.expectComplete();
+
+		Flux<String> flux = Flux.just("bar");
+		flux.subscribe(subscriber);
+
+		try {
+			subscriber.verify();
+		}
+		catch (AssertionError error) {
+			assertEquals("Expectation failure(s):\n - bar", error.getMessage());
+		}
+	}
+
 	@Test(expected = AssertionError.class)
 	public void missingValue() throws InterruptedException {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
@@ -227,6 +248,27 @@ public class ScriptedSubscriberIntegrationTests {
 				.expectValue("foo")
 				.expectErrorWith(t -> t instanceof IllegalStateException,
 						throwable -> throwable.getClass().getSimpleName());
+
+		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
+		flux.subscribe(subscriber);
+
+		try {
+			subscriber.verify();
+		}
+		catch (AssertionError error) {
+			assertEquals("Expectation failure(s):\n - IllegalArgumentException", error.getMessage());
+		}
+	}
+
+	@Test
+	public void consumeErrorWith() throws InterruptedException {
+		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+				.expectValue("foo")
+				.consumeErrorWith(throwable -> {
+					if (!(throwable instanceof IllegalStateException)) {
+						throw new AssertionError(throwable.getClass().getSimpleName());
+					}
+				});
 
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 		flux.subscribe(subscriber);
