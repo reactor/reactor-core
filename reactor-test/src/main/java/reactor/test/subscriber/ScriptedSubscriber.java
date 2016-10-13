@@ -19,7 +19,6 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
@@ -156,18 +155,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		ScriptedSubscriber<T> expectErrorWith(Predicate<Throwable> predicate);
 
 		/**
-		 * Expect an error and evaluate with the given predicate. The given
-		 * {@code assertionMessage} function is used to create the {@code AssertionError} message,
-		 * if the expectation failed.
-		 * @param predicate the predicate to test on the next received error
-		 * @param assertionMessage supplies the exception message
-		 * @return the built subscriber
-		 * @see Subscriber#onError(Throwable)
-		 */
-		ScriptedSubscriber<T> expectErrorWith(Predicate<Throwable> predicate,
-				Function<Throwable, String> assertionMessage);
-
-		/**
 		 * Expect an error and consume with the given consumer. Any {@code AssertionError}s
 		 * thrown by the consumer will be rethrown during {@linkplain #verify() verification}.
 		 * @param consumer the consumer for the exception
@@ -231,18 +218,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @see Subscriber#onNext(Object)
 		 */
 		ValueBuilder<T> expectValueWith(Predicate<T> predicate);
-
-		/**
-		 * Expect an element and evaluate with the given predicate. The given
-		 * {@code assertionMessage} function is used to create the {@code AssertionError} message,
-		 * if the expectation failed.
-		 * @param predicate the predicate to test on the next received value
-		 * @param assertionMessage supplies the exception message
-		 * @return this builder
-		 * @see Subscriber#onNext(Object)
-		 */
-		ValueBuilder<T> expectValueWith(Predicate<T> predicate,
-				Function<T, String> assertionMessage);
 
 		/**
 		 * Expect an element and consume with the given consumer. Any {@code AssertionError}s
