@@ -63,14 +63,17 @@ public class LambdaFirstSubscriberTest {
 	}
 
 	@Test
-	public void consumeOnSubscriptionReceivesSubscription() {
+	public void consumeOnSubscriptionReceivesSubscriptionAndRequests32() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>(null);
 		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> { },
-				subscriptionHolder::set);
+				s -> {
+					subscriptionHolder.set(s);
+					s.request(32);
+				});
 		TestSubscription testSubscription = new TestSubscription();
 
 		tested.onSubscribe(testSubscription);
@@ -81,6 +84,27 @@ public class LambdaFirstSubscriberTest {
 		assertThat("didn't consume the subscription",
 				subscriptionHolder.get(), is(equalTo(testSubscription)));
 		assertThat("didn't request the subscription",
+				testSubscription.requested, is(equalTo(32L)));
+	}
+
+	@Test
+	public void noSubscriptionConsumerTriggersRequestOfMax() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+				value -> {},
+				errorHolder::set,
+				() -> {},
+				null); //defaults to initial request of max
+		TestSubscription testSubscription = new TestSubscription();
+
+		tested.onSubscribe(testSubscription);
+
+		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
+		assertThat("subscription has been cancelled",
+				testSubscription.isCancelled, is(not(true)));
+		assertThat("didn't request the subscription",
+				testSubscription.requested, is(not(equalTo(-1L))));
+		assertThat("didn't request max",
 				testSubscription.requested, is(equalTo(Long.MAX_VALUE)));
 	}
 

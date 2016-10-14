@@ -57,7 +57,7 @@ final class LambdaFirstSubscriber<T>
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
 	 * context if any
 	 * @param subscriptionConsumer A {@link Consumer} called with the
-	 * {@link Subscription}, or null to ignore
+	 * {@link Subscription} to perform initial request, or null to request max
 	 */
 	public LambdaFirstSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
@@ -79,7 +79,9 @@ final class LambdaFirstSubscriber<T>
 				if (subscriptionConsumer != null) {
 					subscriptionConsumer.accept(s);
 				}
-				s.request(Long.MAX_VALUE);
+				else {
+					s.request(Long.MAX_VALUE);
+				}
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);

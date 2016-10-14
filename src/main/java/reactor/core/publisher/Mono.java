@@ -2407,7 +2407,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
-	 * @param subscriptionConsumer the consumer to invoke on subscribe signal
+	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
 	 */
