@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -80,6 +81,16 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	void verify() throws AssertionError;
 
 	/**
+	 * Make the specified publisher subscribe to this subscriber and then verify the signals
+	 * received by this subscriber. This method will <strong>block</strong>
+	 * indefinitely until the stream has been terminated (either through {@link #onComplete()},
+	 * {@link #onError(Throwable)} or {@link Subscription#cancel()}).
+	 * @param publisher the publisher to subscribe to
+	 * @throws AssertionError in case of expectation failures
+	 */
+	void verify(Publisher<? extends T> publisher) throws AssertionError;
+
+	/**
 	 * Verify the signals received by this subscriber. This method will <strong>block</strong>
 	 * for the given duration or until the stream has been terminated (either through
 	 * {@link #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
@@ -87,6 +98,15 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 */
 	void verify(Duration duration) throws AssertionError;
 
+	/**
+	 * Make the specified publisher subscribe to this subscriber and then verify the signals
+	 * received by this subscriber. This method will <strong>block</strong>
+	 * for the given duration or until the stream has been terminated (either through
+	 * {@link #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
+	 * @param publisher the publisher to subscribe to
+	 * @throws AssertionError in case of expectation failures, or when the verification times out
+	 */
+	void verify(Publisher<? extends T> publisher, Duration duration) throws AssertionError;
 
 	/**
 	 * Create a new {@code ScriptedSubscriber} that requests an unbounded amount of values.

@@ -28,100 +28,89 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * @author Arjen Poutsma
+ * @author Sebastien Deleuze
  */
 public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void expectValue() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
 				.expectValue("foo")
 				.expectValue("bar")
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void expectInvalidValue() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
 				.expectValue("foo")
 				.expectValue("baz")
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void expectValueAsync() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
+
+		ScriptedSubscriber.create()
 				.expectValue("foo")
 				.expectValue("bar")
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void expectValues() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValues("foo", "bar")
-				.expectComplete();
-
 		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValues("foo", "bar")
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void expectInvalidValues() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValues("foo", "baz")
-				.expectComplete();
-
 		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValues("foo", "baz")
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void expectValueWith() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
 				.expectValueWith("foo"::equals)
 				.expectValueWith("bar"::equals)
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void expectInvalidValueWith() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
 				.expectValueWith("foo"::equals)
 				.expectValueWith("baz"::equals)
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void consumeValueWith() throws Exception {
+		Flux<String> flux = Flux.just("bar");
+
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.consumeValueWith(s -> {
 					if (!"foo".equals(s)) {
@@ -130,11 +119,8 @@ public class ScriptedSubscriberIntegrationTests {
 				})
 				.expectComplete();
 
-		Flux<String> flux = Flux.just("bar");
-		flux.subscribe(subscriber);
-
 		try {
-			subscriber.verify();
+			subscriber.verify(flux);
 		}
 		catch (AssertionError error) {
 			assertEquals("Expectation failure(s):\n - bar", error.getMessage());
@@ -143,102 +129,86 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test(expected = AssertionError.class)
 	public void missingValue() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectComplete();
-
 		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void missingValueAsync() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectComplete();
-
 		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void expectValueCount() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>expectValueCount(2)
-				.expectComplete();
-
 		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.expectValueCount(2)
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void error() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectError();
-
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectError()
+				.verify(flux);
 	}
 
 	@Test
 	public void errorClass() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectError(IllegalArgumentException.class);
-
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectError(IllegalArgumentException.class)
+				.verify(flux);
 	}
 
 	@Test
 	public void errorWith() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectErrorWith(t -> t instanceof IllegalArgumentException);
-
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectErrorWith(t -> t instanceof IllegalArgumentException)
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void errorWithInvalid() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectErrorWith(t -> t instanceof IllegalStateException);
-
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectErrorWith(t -> t instanceof IllegalStateException)
+				.verify(flux);
 	}
 
 	@Test
 	public void consumeErrorWith() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.consumeErrorWith(throwable -> {
-					if (!(throwable instanceof IllegalStateException)) {
-						throw new AssertionError(throwable.getClass().getSimpleName());
-					}
-				});
-
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
-		flux.subscribe(subscriber);
 
 		try {
-			subscriber.verify();
+			ScriptedSubscriber.create()
+					.expectValue("foo")
+					.consumeErrorWith(throwable -> {
+						if (!(throwable instanceof IllegalStateException)) {
+							throw new AssertionError(throwable.getClass().getSimpleName());
+						}
+					})
+					.verify(flux);
 		}
 		catch (AssertionError error) {
 			assertEquals("Expectation failure(s):\n - IllegalArgumentException", error.getMessage());
@@ -247,76 +217,65 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void request() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create(1)
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create(1)
 				.doRequest(1)
 				.expectValue("foo")
 				.doRequest(1)
 				.expectValue("bar")
-				.expectComplete();
-
-		Flux<String> flux = Flux.just("foo", "bar");
-		flux.subscribe(subscriber);
-
-		subscriber.verify();
+				.expectComplete()
+				.verify(flux);
 	}
 
 	@Test
 	public void cancel() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.doCancel();
-
 		Flux<String> flux = Flux.just("foo", "bar", "baz");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.doCancel()
+				.verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
 	public void cancelInvalid() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.doCancel();
-
 		Flux<String> flux = Flux.just("bar", "baz");
-		flux.subscribe(subscriber);
 
-		subscriber.verify();
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.doCancel()
+				.verify(flux);
 	}
 
 	@Test(expected = IllegalStateException.class)
 	public void notSubscribed() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+		ScriptedSubscriber.create()
 				.expectValue("foo")
-				.expectComplete();
-
-		subscriber.verify();
+				.expectComplete()
+				.verify();
 	}
 
 	@Test
 	public void verifyDuration() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectValue("foo")
-				.expectComplete();
-
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200)).map(l -> "foo").take(2);
-		flux.subscribe(subscriber);
 
-		subscriber.verify(Duration.ofMillis(500));
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectValue("foo")
+				.expectComplete()
+				.verify(flux, Duration.ofMillis(500));
 	}
 
 	@Test(expected = AssertionError.class)
 	public void verifyDurationTimeout() {
-		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.expectValue("foo")
-				.expectValue("foo")
-				.expectComplete();
-
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200)).map(l -> "foo" ).take(2);
-		flux.subscribe(subscriber);
 
-		subscriber.verify(Duration.ofMillis(300));
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectValue("foo")
+				.expectComplete()
+				.verify(flux, Duration.ofMillis(300));
 	}
 
 }

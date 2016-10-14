@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.publisher.Signal;
@@ -347,7 +348,13 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		}
 
 		@Override
-		public void verify(Duration duration) throws AssertionError {
+		public void verify(Publisher<? extends T> publisher) {
+			publisher.subscribe(this);
+			verify();
+		}
+
+		@Override
+		public void verify(Duration duration) {
 			if (this.subscription.get() == null) {
 				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
 			}
@@ -361,6 +368,12 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 				Thread.currentThread().interrupt();
 			}
 			verifyInternal();
+		}
+
+		@Override
+		public void verify(Publisher<? extends T> publisher, Duration duration) {
+			publisher.subscribe(this);
+			verify(duration);
 		}
 
 		private void verifyInternal() {
