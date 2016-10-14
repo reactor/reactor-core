@@ -17,7 +17,6 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
@@ -33,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class ScriptedSubscriberIntegrationTests {
 
 	@Test
-	public void expectValue() throws InterruptedException {
+	public void expectValue() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectValue("bar")
@@ -46,7 +45,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValue() throws InterruptedException {
+	public void expectInvalidValue() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectValue("baz")
@@ -59,7 +58,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void expectValueAsync() throws InterruptedException {
+	public void expectValueAsync() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectValue("bar")
@@ -72,7 +71,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void expectValues() throws InterruptedException {
+	public void expectValues() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValues("foo", "bar")
 				.expectComplete();
@@ -84,7 +83,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValues() throws InterruptedException {
+	public void expectInvalidValues() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValues("foo", "baz")
 				.expectComplete();
@@ -96,7 +95,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void expectValueWith() throws InterruptedException {
+	public void expectValueWith() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValueWith("foo"::equals)
 				.expectValueWith("bar"::equals)
@@ -109,7 +108,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValueWith() throws InterruptedException {
+	public void expectInvalidValueWith() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValueWith("foo"::equals)
 				.expectValueWith("baz"::equals)
@@ -143,7 +142,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void missingValue() throws InterruptedException {
+	public void missingValue() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectComplete();
@@ -155,7 +154,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void missingValueAsync() throws InterruptedException {
+	public void missingValueAsync() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectComplete();
@@ -167,7 +166,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void expectValueCount() throws InterruptedException {
+	public void expectValueCount() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>expectValueCount(2)
 				.expectComplete();
 
@@ -178,7 +177,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void error() throws InterruptedException {
+	public void error() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectError();
@@ -190,7 +189,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void errorClass() throws InterruptedException {
+	public void errorClass() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectError(IllegalArgumentException.class);
@@ -202,7 +201,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void errorWith() throws InterruptedException {
+	public void errorWith() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectErrorWith(t -> t instanceof IllegalArgumentException);
@@ -214,7 +213,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void errorWithInvalid() throws InterruptedException {
+	public void errorWithInvalid() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectErrorWith(t -> t instanceof IllegalStateException);
@@ -226,7 +225,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void consumeErrorWith() throws InterruptedException {
+	public void consumeErrorWith() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.consumeErrorWith(throwable -> {
@@ -247,7 +246,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void request() throws InterruptedException {
+	public void request() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create(1)
 				.doRequest(1)
 				.expectValue("foo")
@@ -262,7 +261,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void cancel() throws InterruptedException {
+	public void cancel() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.doCancel();
@@ -274,7 +273,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void cancelInvalid() throws InterruptedException {
+	public void cancelInvalid() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.doCancel();
@@ -286,7 +285,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void notSubscribed() throws InterruptedException {
+	public void notSubscribed() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectComplete();
@@ -295,7 +294,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void verifyDuration() throws InterruptedException, TimeoutException {
+	public void verifyDuration() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectValue("foo")
@@ -307,8 +306,8 @@ public class ScriptedSubscriberIntegrationTests {
 		subscriber.verify(Duration.ofMillis(500));
 	}
 
-	@Test(expected = TimeoutException.class)
-	public void verifyDurationTimeout() throws InterruptedException, TimeoutException {
+	@Test(expected = AssertionError.class)
+	public void verifyDurationTimeout() {
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
 				.expectValue("foo")
 				.expectValue("foo")

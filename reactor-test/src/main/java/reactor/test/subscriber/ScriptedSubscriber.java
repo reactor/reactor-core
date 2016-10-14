@@ -17,7 +17,6 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -77,19 +76,16 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * indefinitely until the stream has been terminated (either through {@link #onComplete()},
 	 * {@link #onError(Throwable)} or {@link Subscription#cancel()}).
 	 * @throws AssertionError in case of expectation failures
-	 * @throws InterruptedException if the current thread is interrupted while waiting
 	 */
-	void verify() throws AssertionError, InterruptedException;
+	void verify() throws AssertionError;
 
 	/**
 	 * Verify the signals received by this subscriber. This method will <strong>block</strong>
 	 * for the given duration or until the stream has been terminated (either through
 	 * {@link #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
-	 * @throws AssertionError in case of expectation failures
-	 * @throws InterruptedException if the current thread is interrupted while waiting
-	 * @throws TimeoutException if the verification times out
+	 * @throws AssertionError in case of expectation failures, or when the verification times out
 	 */
-	void verify(Duration duration) throws AssertionError, InterruptedException, TimeoutException;
+	void verify(Duration duration) throws AssertionError;
 
 
 	/**

@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -334,21 +333,32 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		}
 
 		@Override
-		public void verify() throws InterruptedException {
+		public void verify() {
 			if (this.subscription.get() == null) {
 				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
 			}
-			this.completeLatch.await();
+			try {
+				this.completeLatch.await();
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
 			verifyInternal();
 		}
 
 		@Override
-		public void verify(Duration duration) throws AssertionError, InterruptedException, TimeoutException {
+		public void verify(Duration duration) throws AssertionError {
 			if (this.subscription.get() == null) {
 				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
 			}
-			if (!this.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS)) {
-				throw new TimeoutException("ScriptedSubscriber timed out on " + this.subscription.get());
+			try {
+				if (!this.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS)) {
+					throw new AssertionError("ScriptedSubscriber timed out on " +
+							this.subscription.get());
+				}
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
 			}
 			verifyInternal();
 		}
