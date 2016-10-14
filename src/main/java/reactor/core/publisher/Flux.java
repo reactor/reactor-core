@@ -5060,7 +5060,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
 
 		LambdaSubscriber<T> consumerAction =
-				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer, null);
 
 		subscribe(consumerAction);
 		return consumerAction;
@@ -5090,11 +5090,42 @@ public abstract class Flux<T> implements Publisher<T> {
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			int prefetch) {
+		return subscribe(consumer, errorConsumer, completeConsumer, null, prefetch);
+	}
+
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the sequence.
+	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
+	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
+	 * onNext, request N x 0.75.
+	 *
+	 * <p> For a passive version that observe and forward
+	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
+	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png"
+	 * alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+	 * for the initial {@link Subscription#request(long) request}, or null for max request
+	 * @param prefetch the demand to produce to this {@link Flux}
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer,
+			Consumer<? super Subscription> subscriptionConsumer,
+			int prefetch) {
 
 		int c = Math.min(Integer.MAX_VALUE, prefetch);
 
 		LambdaSubscriber<T> consumerAction =
-				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer);
+				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer, subscriptionConsumer);
 
 		Flux<T> tail;
 		if (c == Integer.MAX_VALUE) {

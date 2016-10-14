@@ -34,9 +34,10 @@ import reactor.core.Trackable;
 final class LambdaFirstSubscriber<T>
 		implements Subscriber<T>, Receiver, Cancellation, Trackable {
 
-	final Consumer<? super T>         consumer;
-	final Consumer<? super Throwable> errorConsumer;
-	final Runnable                    completeConsumer;
+	final Consumer<? super T>            consumer;
+	final Consumer<? super Throwable>    errorConsumer;
+	final Runnable                       completeConsumer;
+	final Consumer<? super Subscription> subscriptionConsumer;
 
 	volatile Subscription subscription;
 	static final AtomicReferenceFieldUpdater<LambdaFirstSubscriber, Subscription> S =
@@ -55,13 +56,17 @@ final class LambdaFirstSubscriber<T>
 	 * @param errorConsumer A {@link Consumer} called onError
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
 	 * context if any
+	 * @param subscriptionConsumer A {@link Consumer} called with the
+	 * {@link Subscription} to perform initial request, or null to request max
 	 */
 	public LambdaFirstSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer) {
+			Runnable completeConsumer,
+			Consumer<? super Subscription> subscriptionConsumer) {
 		this.consumer = consumer;
 		this.errorConsumer = errorConsumer;
 		this.completeConsumer = completeConsumer;
+		this.subscriptionConsumer = subscriptionConsumer;
 	}
 
 	@Override
@@ -69,7 +74,14 @@ final class LambdaFirstSubscriber<T>
 		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
 			try {
-				s.request(Long.MAX_VALUE);
+				//note that unlike in RxJava 2.0.0 an error on accept doesn't trigger
+				// cancellation of s
+				if (subscriptionConsumer != null) {
+					subscriptionConsumer.accept(s);
+				}
+				else {
+					s.request(Long.MAX_VALUE);
+				}
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);

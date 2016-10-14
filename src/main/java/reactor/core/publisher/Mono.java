@@ -2391,8 +2391,33 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Cancellation subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
+		return subscribe(consumer, errorConsumer, completeConsumer, null);
+	}
+
+	/**
+	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
+	 * sequence.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
+	 * {@link #doOnError(java.util.function.Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete1.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+	 * for the initial {@link Subscription#request(long) request}, or null for max request
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer,
+			Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaFirstSubscriber<>(consumer, errorConsumer,
-				completeConsumer));
+				completeConsumer, subscriptionConsumer));
 	}
 
 	/**
