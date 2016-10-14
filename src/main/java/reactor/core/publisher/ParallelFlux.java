@@ -874,14 +874,29 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * must be equal to the parallelism level of this ParallelFlux
 	 */
 	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
-			onError, Runnable onComplete){
+			onError, Runnable onComplete) {
+		subscribe(onNext, onError, onComplete, null);
+	}
+
+	/**
+	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
+	 * execution chain for all 'rails'.
+	 *
+	 * @param onNext
+	 * @param onError
+	 * @param onComplete
+	 * @param onSubscribe
+	 * must be equal to the parallelism level of this ParallelFlux
+	 */
+	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
+			onError, Runnable onComplete, Consumer<? super Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
 		Subscriber<T>[] subscribers = new Subscriber[parallelism()];
 
 		int i = 0;
 		while(i < subscribers.length){
-			subscribers[i++] = new LambdaSubscriber<>(onNext, onError, onComplete);
+			subscribers[i++] = new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 		}
 
 		subscribe(subscribers);
