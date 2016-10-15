@@ -148,4 +148,20 @@ public class FluxDistinctUntilChangedTest {
 		  .assertErrorMessage("forced failure");
 	}
 
+	@Test
+	public void allDistinctConditional() {
+		DirectProcessor<Integer> dp = new DirectProcessor<>();
+
+		AssertSubscriber<Integer> ts = dp.distinctUntilChanged()
+		                                 .filter(v -> true)
+		                                 .subscribeWith(AssertSubscriber.create());
+
+		dp.onNext(1);
+		dp.onNext(2);
+		dp.onNext(3);
+		dp.onComplete();
+
+		ts.assertValues(1, 2, 3).assertComplete();
+	}
+
 }

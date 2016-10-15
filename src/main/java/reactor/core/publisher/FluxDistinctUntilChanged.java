@@ -211,25 +211,8 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
-
-			K k;
-
-			try {
-				k = keyExtractor.apply(t);
-			} catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
-				return;
-			}
-
-			lastKey = k;
-			if (Objects.equals(lastKey, k)) {
+			if (!tryOnNext(t)) {
 				s.request(1);
-			} else {
-				actual.onNext(t);
 			}
 		}
 
