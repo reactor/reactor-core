@@ -253,7 +253,7 @@ public class ScriptedSubscriberIntegrationTests {
 		ScriptedSubscriber.create()
 				.expectValue("foo")
 				.expectComplete()
-				.verify();
+				.verify(Duration.ofMillis(100));
 	}
 
 	@Test

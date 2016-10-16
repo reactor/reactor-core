@@ -335,14 +335,14 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 		@Override
 		public void verify() {
-			if (this.subscription.get() == null) {
-				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
-			}
 			try {
 				this.completeLatch.await();
 			}
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
+			}
+			if (this.subscription.get() == null) {
+				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
 			}
 			verifyInternal();
 		}
@@ -355,17 +355,22 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 		@Override
 		public void verify(Duration duration) {
-			if (this.subscription.get() == null) {
-				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
-			}
 			try {
 				if (!this.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS)) {
-					throw new AssertionError("ScriptedSubscriber timed out on " +
-							this.subscription.get());
+					if (this.subscription.get() == null) {
+						throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
+					}
+					else {
+						throw new AssertionError("ScriptedSubscriber timed out on " +
+								this.subscription.get());
+					}
 				}
 			}
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
+			}
+			if (this.subscription.get() == null) {
+				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
 			}
 			verifyInternal();
 		}
