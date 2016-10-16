@@ -101,9 +101,8 @@ public class Schedulers {
 	 * Runnables for async operators.
 	 *
 	 * @param executorService an {@link ExecutorService}
-	 * @param interruptOnCancel delegate to
-	 * {@link java.util.concurrent.Future#cancel(boolean) future.cancel(true)}  on
-	 * {@link Cancellation#dispose()}
+	 * @param interruptOnCancel delegate to {@link java.util.concurrent.Future#cancel(boolean)
+	 * future.cancel(true)}  on {@link Cancellation#dispose()}
 	 *
 	 * @return a new {@link Scheduler}
 	 */
@@ -127,8 +126,7 @@ public class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler elastic() {
-		return cache(ELASTIC,
-				() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true));
+		return cache(ELASTIC, ELASTIC_SUPPLIER);
 	}
 
 	/**
@@ -371,17 +369,13 @@ public class Schedulers {
 	 * ExecutorService-based workers
 	 */
 	public static Scheduler parallel() {
-		return cache(PARALLEL,
-				() -> newParallel(PARALLEL,
-						Runtime.getRuntime()
-						       .availableProcessors(),
-						true));
+		return cache(PARALLEL, PARALLEL_SUPPLIER);
 	}
 
 	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
-	public static void resetFactory(){
+	public static void resetFactory() {
 		factory = DEFAULT;
 	}
 
@@ -391,8 +385,7 @@ public class Schedulers {
 	 * method signature in the target class. A finite signature corresponds to those
 	 * including a {@link ThreadFactory} argument and should be instance methods.
 	 * <p>
-	 *     This method should be called safely and with caution, typically on app startup.
-	 *
+	 * This method should be called safely and with caution, typically on app startup.
 	 *
 	 * @param factoryInstance an arbitrary {@link Factory} instance.
 	 */
@@ -426,7 +419,7 @@ public class Schedulers {
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
-		return cache(SINGLE, () -> newSingle(SINGLE, true));
+		return cache(SINGLE, SINGLE_SUPPLIER);
 	}
 
 	/**
@@ -452,7 +445,7 @@ public class Schedulers {
 	 * @return a cached hash-wheel based {@link TimedScheduler}
 	 */
 	public static TimedScheduler timer() {
-		return timedCache(TIMER, () -> newTimer(TIMER)).asTimedScheduler();
+		return timedCache(TIMER, TIMER_SUPPLIER).asTimedScheduler();
 	}
 
 	/**
@@ -525,6 +518,18 @@ public class Schedulers {
 	static final ConcurrentMap<String, CachedScheduler> cachedSchedulers =
 			new ConcurrentHashMap<>();
 
+	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
+			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
+
+	static final Supplier<Scheduler> PARALLEL_SUPPLIER = () -> newParallel(PARALLEL,
+			Runtime.getRuntime()
+			       .availableProcessors(),
+			true);
+
+	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
+
+	static final Supplier<TimedScheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
+
 	static final Factory DEFAULT = new Factory() {
 	};
 
@@ -561,8 +566,8 @@ public class Schedulers {
 
 	static final Logger log = Loggers.getLogger(Schedulers.class);
 
-	static final class SchedulerThreadFactory implements ThreadFactory,
-	                                                     Supplier<String>, Thread.UncaughtExceptionHandler {
+	static final class SchedulerThreadFactory
+			implements ThreadFactory, Supplier<String>, Thread.UncaughtExceptionHandler {
 
 		final String     name;
 		final boolean    daemon;
@@ -593,15 +598,15 @@ public class Schedulers {
 		}
 	}
 
-	static void handleError(Throwable ex){
+	static void handleError(Throwable ex) {
 		Throwable t = unwrap(ex);
 		Exceptions.throwIfFatal(t);
 		Thread.UncaughtExceptionHandler x = Thread.currentThread()
 		                                          .getUncaughtExceptionHandler();
-		if(x != null) {
+		if (x != null) {
 			x.uncaughtException(Thread.currentThread(), t);
 		}
-		else{
+		else {
 			log.error("Scheduler worker failed with an uncaught exception", t);
 		}
 	}
