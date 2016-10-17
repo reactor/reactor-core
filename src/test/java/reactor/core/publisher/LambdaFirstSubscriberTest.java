@@ -31,7 +31,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionNotifiesError() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -54,7 +54,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionThrowsFatal() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -82,7 +82,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionReceivesSubscriptionAndRequests32() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>(null);
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> { },
@@ -106,7 +106,7 @@ public class LambdaFirstSubscriberTest {
 	@Test
 	public void noSubscriptionConsumerTriggersRequestOfMax() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
