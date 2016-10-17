@@ -44,8 +44,8 @@ public class LambdaSubscriberTest {
 
 		assertThat("unexpected exception in onError",
 				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
 	}
@@ -72,8 +72,8 @@ public class LambdaSubscriberTest {
 		}
 
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
 	}
