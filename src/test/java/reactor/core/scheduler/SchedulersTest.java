@@ -18,6 +18,7 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
 
+import org.junit.After;
 import org.junit.Test;
 import org.testng.Assert;
 
@@ -32,11 +33,13 @@ public class SchedulersTest {
 				Schedulers.Factory.super.newParallel(1, Thread::new);
 		final TimedScheduler timer    = Schedulers.Factory.super.newTimer(Thread::new);
 
-		public TestSchedulers() {
-			elastic.shutdown();
-			single.shutdown();
-			parallel.shutdown();
-			timer.shutdown();
+		public TestSchedulers(boolean shutdownOnInit) {
+			if (shutdownOnInit) {
+				elastic.shutdown();
+				single.shutdown();
+				parallel.shutdown();
+				timer.shutdown();
+			}
 		}
 
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
@@ -56,10 +59,15 @@ public class SchedulersTest {
 		}
 	}
 
+	@After
+	public void resetSchedulers() {
+		Schedulers.resetFactory();
+	}
+
 	@Test
 	public void testOverride() throws InterruptedException {
 
-		TestSchedulers ts = new TestSchedulers();
+		TestSchedulers ts = new TestSchedulers(true);
 		Schedulers.setFactory(ts);
 
 		Assert.assertEquals(ts.single, Schedulers.newSingle("unused"));
@@ -73,6 +81,31 @@ public class SchedulersTest {
 		s.shutdown();
 
 		Assert.assertNotEquals(ts.single, s);
+	}
+
+	@Test
+	public void testShutdownOldOnSetFactory() {
+		Schedulers.Factory ts1 = new Schedulers.Factory() { };
+		Schedulers.Factory ts2 = new TestSchedulers(false);
+		Schedulers.setFactory(ts1);
+		TimedScheduler cachedTimerOld = ((Schedulers.CachedTimedScheduler) Schedulers.timer()).cachedTimed;
+		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
+
+		Assert.assertNotEquals(cachedTimerOld, standaloneTimer);
+		Assert.assertNotEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+
+		Schedulers.setFactory(ts2);
+		TimedScheduler cachedTimerNew = ((Schedulers.CachedTimedScheduler) Schedulers.timer()).cachedTimed;
+
+		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
+		Assert.assertNotEquals(cachedTimerNew, cachedTimerOld);
+		//assert that the old factory's cached scheduler was shut down
+		Assert.assertEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
+		//independently created schedulers are still the programmer's responsibility
+		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+		//new factory = new alive cached scheduler
+		Assert.assertNotEquals(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
 	}
 
 }
