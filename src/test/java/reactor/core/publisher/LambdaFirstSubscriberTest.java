@@ -31,7 +31,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionNotifiesError() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -44,8 +44,8 @@ public class LambdaFirstSubscriberTest {
 
 		assertThat("unexpected exception in onError",
 				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
 	}
@@ -54,7 +54,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionThrowsFatal() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -72,7 +72,7 @@ public class LambdaFirstSubscriberTest {
 		}
 
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled",
+		assertThat("subscription has been cancelled despite fatal exception",
 				testSubscription.isCancelled, is(not(true)));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
@@ -82,7 +82,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionReceivesSubscriptionAndRequests32() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>(null);
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> { },
@@ -106,7 +106,7 @@ public class LambdaFirstSubscriberTest {
 	@Test
 	public void noSubscriptionConsumerTriggersRequestOfMax() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -122,6 +122,64 @@ public class LambdaFirstSubscriberTest {
 				testSubscription.requested, is(not(equalTo(-1L))));
 		assertThat("didn't request max",
 				testSubscription.requested, is(equalTo(Long.MAX_VALUE)));
+	}
+
+	@Test
+	public void onNextConsumerExceptionTriggersCancellationAndBubblesUp() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+				value -> { throw new IllegalArgumentException(); },
+				errorHolder::set,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+
+		//as Mono is single-value, it cancels early on onNext. this leads to an exception
+		//during onNext to be bubbled up as a BubbledException, not propagated through onNext
+		try {
+			tested.onNext("foo");
+			fail("Expected a bubbling Exception");
+		} catch (RuntimeException e) {
+			assertThat("Expected a bubbling Exception", e.getClass().getName(),
+					containsString("BubblingException"));
+			assertThat("Expected cause to be the IllegalArgumentException", e.getCause(),
+					is(instanceOf(IllegalArgumentException.class)));
+		}
+
+		assertThat("unexpected exception in onError",
+				errorHolder.get(), is(nullValue()));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
+	}
+
+	@Test
+	public void onNextConsumerFatalTriggersCancellation() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+				value -> { throw new OutOfMemoryError(); },
+				errorHolder::set,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+
+		//the error is expected to be thrown as it is fatal
+		try {
+			tested.onNext("foo");
+			fail("Expected OutOfMemoryError to be thrown");
+		}
+		catch (OutOfMemoryError e) {
+			//expected
+		}
+
+		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
+		assertThat("subscription has not been cancelled on fatal exception",
+				testSubscription.isCancelled, is(true));
 	}
 
 	private static class TestSubscription implements Subscription {

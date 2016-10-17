@@ -74,8 +74,6 @@ final class LambdaSubscriber<T>
 		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
 			try {
-				//note that unlike in RxJava 2.0.0 an error on accept doesn't trigger
-				// cancellation of s
 				if (subscriptionConsumer != null) {
 					subscriptionConsumer.accept(s);
 				}
@@ -85,6 +83,7 @@ final class LambdaSubscriber<T>
 			}
 			catch (Throwable t) {
 				Exceptions.throwIfFatal(t);
+				s.cancel();
 				onError(t);
 			}
 		}
@@ -142,6 +141,7 @@ final class LambdaSubscriber<T>
 		}
 		catch (Throwable t) {
 			Exceptions.throwIfFatal(t);
+			this.subscription.cancel();
 			onError(t);
 		}
 	}

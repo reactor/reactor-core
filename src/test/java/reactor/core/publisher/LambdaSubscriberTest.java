@@ -44,8 +44,8 @@ public class LambdaSubscriberTest {
 
 		assertThat("unexpected exception in onError",
 				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
-		assertThat("subscription has been cancelled",
-				testSubscription.isCancelled, is(not(true)));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
 	}
@@ -72,7 +72,7 @@ public class LambdaSubscriberTest {
 		}
 
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has been cancelled",
+		assertThat("subscription has been cancelled despite fatal exception",
 				testSubscription.isCancelled, is(not(true)));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
@@ -122,6 +122,55 @@ public class LambdaSubscriberTest {
 				testSubscription.requested, is(not(equalTo(-1L))));
 		assertThat("didn't request max",
 				testSubscription.requested, is(equalTo(Long.MAX_VALUE)));
+	}
+
+	@Test
+	public void onNextConsumerExceptionTriggersCancellation() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+				value -> { throw new IllegalArgumentException(); },
+				errorHolder::set,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+
+		//the error is expected to be propagated through onError
+		tested.onNext("foo");
+
+		assertThat("unexpected exception in onError",
+				errorHolder.get(), is(instanceOf(IllegalArgumentException.class)));
+		assertThat("subscription has not been cancelled",
+				testSubscription.isCancelled, is(true));
+	}
+
+	@Test
+	public void onNextConsumerFatalDoesntTriggerCancellation() {
+		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
+
+		LambdaSubscriber<String> tested = new LambdaSubscriber<>(
+				value -> { throw new OutOfMemoryError(); },
+				errorHolder::set,
+				() -> {},
+				null);
+
+		TestSubscription testSubscription = new TestSubscription();
+		tested.onSubscribe(testSubscription);
+
+		//the error is expected to be thrown as it is fatal
+		try {
+			tested.onNext("foo");
+			fail("Expected OutOfMemoryError to be thrown");
+		}
+		catch (OutOfMemoryError e) {
+			//expected
+		}
+
+		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
+		assertThat("subscription has been cancelled despite fatal exception",
+				testSubscription.isCancelled, is(not(true)));
 	}
 
 	private static class TestSubscription implements Subscription {
