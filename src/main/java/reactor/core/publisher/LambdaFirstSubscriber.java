@@ -147,7 +147,6 @@ final class LambdaFirstSubscriber<T>
 				consumer.accept(x);
 			}
 			catch (Throwable t) {
-				S.get(this).cancel();
 				Exceptions.throwIfFatal(t);
 				onError(t);
 				return;
