@@ -72,8 +72,8 @@ public class LambdaFirstSubscriberTest {
 		}
 
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has not been cancelled",
-				testSubscription.isCancelled, is(true));
+		assertThat("subscription has been cancelled despite fatal exception",
+				testSubscription.isCancelled, is(not(true)));
 		assertThat("unexpected request",
 				testSubscription.requested, is(equalTo(-1L)));
 	}

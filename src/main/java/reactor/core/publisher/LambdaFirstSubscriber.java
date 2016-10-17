@@ -82,8 +82,8 @@ final class LambdaFirstSubscriber<T>
 				}
 			}
 			catch (Throwable t) {
-				s.cancel();
 				Exceptions.throwIfFatal(t);
+				s.cancel();
 				onError(t);
 			}
 		}

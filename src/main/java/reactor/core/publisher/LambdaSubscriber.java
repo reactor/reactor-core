@@ -82,8 +82,8 @@ final class LambdaSubscriber<T>
 				}
 			}
 			catch (Throwable t) {
-				s.cancel();
 				Exceptions.throwIfFatal(t);
+				s.cancel();
 				onError(t);
 			}
 		}
@@ -140,8 +140,8 @@ final class LambdaSubscriber<T>
 			}
 		}
 		catch (Throwable t) {
-			S.get(this).cancel();
 			Exceptions.throwIfFatal(t);
+			this.subscription.cancel();
 			onError(t);
 		}
 	}
