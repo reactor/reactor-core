@@ -375,8 +375,8 @@ public class Schedulers {
 	/**
 	 * Re-apply default factory to {@link Schedulers}
 	 */
-	public static void resetFactory() {
-		factory = DEFAULT;
+	public static void resetFactory(){
+		setFactory(DEFAULT);
 	}
 
 	/**
@@ -386,11 +386,15 @@ public class Schedulers {
 	 * including a {@link ThreadFactory} argument and should be instance methods.
 	 * <p>
 	 * This method should be called safely and with caution, typically on app startup.
+	 * <p>
+	 * Note that cached schedulers (like {@link #timer()}) are also shut down and will be
+	 * re-created from the new factory upon next use.
 	 *
 	 * @param factoryInstance an arbitrary {@link Factory} instance.
 	 */
 	public static void setFactory(Factory factoryInstance) {
 		Objects.requireNonNull(factoryInstance, "factoryInstance");
+		shutdownNow();
 		factory = factoryInstance;
 	}
 
@@ -611,7 +615,7 @@ public class Schedulers {
 		}
 	}
 
-	static class CachedScheduler implements Scheduler {
+	static class CachedScheduler implements Scheduler, Supplier<Scheduler> {
 
 		final Scheduler cached;
 		final String    key;
@@ -638,6 +642,17 @@ public class Schedulers {
 
 		@Override
 		public void shutdown() {
+		}
+
+		/**
+		 * Get the {@link Scheduler} that is cached and wrapped inside this
+		 * {@link CachedScheduler}.
+		 *
+		 * @return the cached Scheduler
+		 */
+		@Override
+		public Scheduler get() {
+			return null;
 		}
 
 		void _shutdown() {
@@ -700,6 +715,11 @@ public class Schedulers {
 		@Override
 		TimedScheduler asTimedScheduler() {
 			return this;
+		}
+
+		@Override
+		public TimedScheduler get() {
+			return cachedTimed;
 		}
 	}
 }
