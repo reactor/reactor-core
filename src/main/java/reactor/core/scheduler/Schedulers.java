@@ -615,7 +615,7 @@ public class Schedulers {
 		}
 	}
 
-	static class CachedScheduler implements Scheduler {
+	static class CachedScheduler implements Scheduler, Supplier<Scheduler> {
 
 		final Scheduler cached;
 		final String    key;
@@ -642,6 +642,17 @@ public class Schedulers {
 
 		@Override
 		public void shutdown() {
+		}
+
+		/**
+		 * Get the {@link Scheduler} that is cached and wrapped inside this
+		 * {@link CachedScheduler}.
+		 *
+		 * @return the cached Scheduler
+		 */
+		@Override
+		public Scheduler get() {
+			return null;
 		}
 
 		void _shutdown() {
@@ -704,6 +715,11 @@ public class Schedulers {
 		@Override
 		TimedScheduler asTimedScheduler() {
 			return this;
+		}
+
+		@Override
+		public TimedScheduler get() {
+			return cachedTimed;
 		}
 	}
 }

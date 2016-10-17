@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Test;
@@ -88,7 +89,7 @@ public class SchedulersTest {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
 		Schedulers.Factory ts2 = new TestSchedulers(false);
 		Schedulers.setFactory(ts1);
-		TimedScheduler cachedTimerOld = ((Schedulers.CachedTimedScheduler) Schedulers.timer()).cachedTimed;
+		TimedScheduler cachedTimerOld = ((Supplier<TimedScheduler>) Schedulers.timer()).get();
 		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
 		Assert.assertNotEquals(cachedTimerOld, standaloneTimer);
@@ -96,7 +97,7 @@ public class SchedulersTest {
 		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
-		TimedScheduler cachedTimerNew = ((Schedulers.CachedTimedScheduler) Schedulers.timer()).cachedTimed;
+		TimedScheduler cachedTimerNew = ((Supplier<TimedScheduler>) Schedulers.timer()).get();
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotEquals(cachedTimerNew, cachedTimerOld);
