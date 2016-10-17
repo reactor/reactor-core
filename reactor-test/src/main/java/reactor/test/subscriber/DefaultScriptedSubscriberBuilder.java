@@ -17,6 +17,7 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -35,8 +36,9 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
+import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
+import reactor.test.scheduler.TestScheduler;
 
 /**
  * Default implementation of {@link ScriptedSubscriber.ValueBuilder} and
@@ -45,13 +47,14 @@ import reactor.core.publisher.Signal;
  * @author Arjen Poutsma
  * @since 1.0
  */
-class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBuilder<T> {
+final class DefaultScriptedSubscriberBuilder<T>
+		implements ScriptedSubscriber.ValueBuilder<T> {
 
-	private final List<Event<T>> script = new ArrayList<>();
+	final List<Event<T>> script = new ArrayList<>();
 
-	private final long initialRequest;
+	final long initialRequest;
 
-	private final long expectedValueCount;
+	final long expectedValueCount;
 
 
 	DefaultScriptedSubscriberBuilder(long initialRequest) {
@@ -77,6 +80,30 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		if (n < 0) {
 			throw new IllegalArgumentException("'n' should be >= 0 but was " + n);
 		}
+	}
+
+	@Override
+	public ScriptedSubscriber.ValueBuilder<T> advanceTime() {
+		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
+		                                                          .advanceTime()));
+		return this;
+	}
+
+	@Override
+	public ScriptedSubscriber.ValueBuilder<T> advanceTimeBy(Duration timeshift) {
+		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
+		                                                          .advanceTimeBy(timeshift.toNanos(),
+				                                                          TimeUnit.NANOSECONDS)));
+		return this;
+	}
+
+	@Override
+	public ScriptedSubscriber.ValueBuilder<T> advanceTimeTo(Instant instant) {
+
+		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
+		                                                          .advanceTimeTo(instant.toEpochMilli(),
+				                                                          TimeUnit.MILLISECONDS)));
+		return this;
 	}
 
 	@Override
@@ -243,26 +270,26 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		return build();
 	}
 
-	private ScriptedSubscriber<T> build() {
+	final ScriptedSubscriber<T> build() {
 		Queue<Event<T>> copy = new LinkedList<>(this.script);
 		return new DefaultScriptedSubscriber<T>(copy, this.initialRequest, this.expectedValueCount);
 	}
 
-	private static class DefaultScriptedSubscriber<T> implements ScriptedSubscriber<T> {
+	final static class DefaultScriptedSubscriber<T> implements ScriptedSubscriber<T> {
 
-		private final AtomicReference<Subscription> subscription = new AtomicReference<>();
+		final AtomicReference<Subscription> subscription = new AtomicReference<>();
 
-		private final CountDownLatch completeLatch = new CountDownLatch(1);
+		final CountDownLatch completeLatch = new CountDownLatch(1);
 
-		private final Queue<Event<T>> script;
+		final Queue<Event<T>> script;
 
-		private final long initialRequest;
+		final long initialRequest;
 
-		private final List<String> failures = new LinkedList<>();
+		final List<String> failures = new LinkedList<>();
 
-		private final AtomicLong valueCount = new AtomicLong();
+		final AtomicLong valueCount = new AtomicLong();
 
-		private final long expectedValueCount;
+		final long expectedValueCount;
 
 
 		public DefaultScriptedSubscriber(Queue<Event<T>> script, long initialRequest, long expectedValueCount) {
@@ -277,7 +304,9 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 			if (this.subscription.compareAndSet(null, subscription)) {
 				checkExpectation(Signal.subscribe(subscription));
-				subscription.request(this.initialRequest);
+				if (this.initialRequest != 0L) {
+					subscription.request(this.initialRequest);
+				}
 			}
 			else {
 				subscription.cancel();
@@ -305,10 +334,15 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 			this.completeLatch.countDown();
 		}
 
-		private void checkExpectation(Signal<T> actualSignal) {
+		final void addFailure(String msg, Object... arguments) {
+			this.failures.add(String.format(msg, arguments));
+		}
+
+		@SuppressWarnings("unchecked")
+		final void checkExpectation(Signal<T> actualSignal) {
 			Event<T> event = this.script.poll();
 			if (event == null) {
-				this.failures.add(String.format("did not expect: %s", actualSignal));
+				addFailure("did not expect: %s", actualSignal);
 			}
 			else {
 				SignalEvent<T> signalEvent = (SignalEvent<T>) event;
@@ -316,14 +350,25 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 				error.ifPresent(this.failures::add);
 			}
 
-			while (true) {
+			for(;;) {
 				event = this.script.peek();
 				if (event == null || event instanceof SignalEvent) {
 					break;
 				}
+				else if (event instanceof DefaultScriptedSubscriberBuilder.VirtualTimeEvent) {
+					if (!actualSignal.isOnSubscribe()) {
+						VirtualTimeEvent<T> virtualTimeEvent =
+								(VirtualTimeEvent<T>) this.script.poll();
+						virtualTimeEvent.run();
+					}
+					else{
+						break;
+					}
+				}
 				else {
 					SubscriptionEvent<T> subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
-					subscriptionEvent.consume(this.subscription.get());
+					Subscription s = this.subscription.get();
+					subscriptionEvent.consume(s);
 					if (subscriptionEvent.isTerminal()) {
 						this.completeLatch.countDown();
 						break;
@@ -333,8 +378,24 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 		}
 
+		final void checkVirtualTimeEvent(){
+			Event<T> event;
+			for(;;){
+				event = this.script.peek();
+				if (event == null || !(event instanceof VirtualTimeEvent)) {
+					break;
+				}
+				else {
+						VirtualTimeEvent<T> virtualTimeEvent =
+								(VirtualTimeEvent<T>) this.script.poll();
+						virtualTimeEvent.run();
+					}
+			}
+		}
+
 		@Override
 		public void verify() {
+			checkVirtualTimeEvent();
 			try {
 				this.completeLatch.await();
 			}
@@ -378,10 +439,15 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		@Override
 		public void verify(Publisher<? extends T> publisher, Duration duration) {
 			publisher.subscribe(this);
+			checkTasks();
 			verify(duration);
 		}
 
-		private void verifyInternal() {
+		final void checkTasks() {
+
+		}
+
+		final void verifyInternal() {
 			boolean validValueCount = hasValidValueCount();
 			if (this.failures.isEmpty() && validValueCount) {
 				return;
@@ -398,7 +464,7 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 			throw new AssertionError(messageBuilder.toString());
 		}
 
-		private boolean hasValidValueCount() {
+		final boolean hasValidValueCount() {
 			if (this.expectedValueCount < 0) {
 				return true;
 			}
@@ -410,14 +476,14 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 	}
 
 	@SuppressWarnings("unused")
-	private abstract static class Event<T> {
+	abstract static class Event<T> {
 	}
 
-	private static final class SubscriptionEvent<T> extends Event<T> {
+	static final class SubscriptionEvent<T> extends Event<T> {
 
-		private final Consumer<Subscription> consumer;
+		final Consumer<Subscription> consumer;
 
-		private final boolean terminal;
+		final boolean terminal;
 
 		public SubscriptionEvent(Consumer<Subscription> consumer, boolean terminal) {
 			this.consumer = consumer;
@@ -433,11 +499,9 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 		}
 	}
 
+	static final class SignalEvent<T> extends Event<T> {
 
-	private static final class SignalEvent<T> extends Event<T> {
-
-		private final Function<Signal<T>, Optional<String>> function;
-
+		final Function<Signal<T>, Optional<String>> function;
 
 		public SignalEvent(Function<Signal<T>, Optional<String>> function) {
 			this.function = function;
@@ -445,6 +509,20 @@ class DefaultScriptedSubscriberBuilder<T> implements ScriptedSubscriber.ValueBui
 
 		public Optional<String> test(Signal<T> signal) {
 			return this.function.apply(signal);
+		}
+
+	}
+
+	static final class VirtualTimeEvent<T> extends Event<T> {
+
+		final Runnable task;
+
+		public VirtualTimeEvent(Runnable task) {
+			this.task = task;
+		}
+
+		public void run() {
+			task.run();
 		}
 
 	}

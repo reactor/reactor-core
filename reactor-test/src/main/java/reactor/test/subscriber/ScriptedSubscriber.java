@@ -17,12 +17,14 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.test.scheduler.TestScheduler;
 
 /**
  * Subscriber implementation that verifies pre-defined expectations as part of its subscription.
@@ -68,9 +70,32 @@ import org.reactivestreams.Subscription;
  * </pre>
  *
  * @author Arjen Poutsma
+ * @author Stephane Maldini
  * @since 1.0
  */
 public interface ScriptedSubscriber<T> extends Subscriber<T> {
+
+	/**
+	 *
+	 */
+	static void enableVirtualTime(){
+		enableVirtualTime(false);
+	}
+
+	/**
+	 *
+	 * @param allSchedulers
+	 */
+	static void enableVirtualTime(boolean allSchedulers){
+		TestScheduler.enable(allSchedulers);
+	}
+
+	/**
+	 *
+	 */
+	static void disableVirtualTime(){
+		TestScheduler.reset();
+	}
 
 	/**
 	 * Verify the signals received by this subscriber. This method will <strong>block</strong>
@@ -200,6 +225,26 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface ValueBuilder<T> extends TerminationBuilder<T> {
+
+		/**
+		 *
+		 * @return this builder
+		 */
+		ValueBuilder<T> advanceTime();
+
+		/**
+		 *
+		 * @param timeshift
+		 * @return this builder
+		 */
+		ValueBuilder<T> advanceTimeBy(Duration timeshift);
+
+		/**
+		 *
+		 * @param instant
+		 * @return this builder
+		 */
+		ValueBuilder<T> advanceTimeTo(Instant instant);
 
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This is in

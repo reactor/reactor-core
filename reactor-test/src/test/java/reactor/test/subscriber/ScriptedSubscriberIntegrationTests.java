@@ -19,7 +19,6 @@ package reactor.test.subscriber;
 import java.time.Duration;
 
 import org.junit.Test;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -265,6 +264,21 @@ public class ScriptedSubscriberIntegrationTests {
 				.expectValue("foo")
 				.expectComplete()
 				.verify(flux, Duration.ofMillis(500));
+	}
+
+	@Test
+	public void verifyVirtualTime() {
+		ScriptedSubscriber.enableVirtualTime();
+		Mono<String> mono = Mono.delay(Duration.ofDays(2))
+		                        .map(l -> "foo");
+
+		ScriptedSubscriber.create()
+		                  .advanceTimeBy(Duration.ofDays(3))
+		                  .expectValue("foo")
+		                  .expectComplete()
+		                  .verify(mono, Duration.ofMillis(500));
+
+		ScriptedSubscriber.disableVirtualTime();
 	}
 
 	@Test(expected = AssertionError.class)
