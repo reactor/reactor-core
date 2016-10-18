@@ -4562,6 +4562,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Ensure that backpressure from downstream subscribers is capped at the provided
+	 * {@code rateLimit} when propagated upstream.
+	 * <p>
+	 * Typically used for scenarios where consumer(s) request a large amount of data
+	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
+	 * with smaller requests (eg. database paging, etc...).
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), rateLimit).subscribe() }
+	 *
+	 * @param rateLimit the limit to apply to downstream's backpressure
+	 *
+	 * @return a {@link Flux} limiting downstream's backpressure
+	 */
+	public final Flux<T> throttleDemand(int rateLimit) {
+		return onAssembly(this.publishOn(Schedulers.immediate(), rateLimit));
+	}
+
+	/**
 	 * Accumulate this {@link Flux} values with an accumulator {@link BiFunction} and
 	 * returns the intermediate results of this function.
 	 * <p>

@@ -18,20 +18,32 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 
 public class FluxPublishOnTest {
 
@@ -1000,4 +1012,35 @@ public class FluxPublishOnTest {
 		}
 	}
 
+	@Test
+	public void throttleDemand() {
+		List<Long> upstreamRequests = new LinkedList<>();
+		List<Long> downstreamRequests = new LinkedList<>();
+		Flux<Integer> source = Flux
+				.range(1, 400)
+				.doOnRequest(upstreamRequests::add)
+				.doOnRequest(r -> System.out.println("upstream request of " + r))
+				.throttleDemand(40)
+				.doOnRequest(downstreamRequests::add)
+				.doOnRequest(r -> System.out.println("downstream request of " + r));
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(400);
+		source.subscribe(ts);
+		ts.await(Duration.ofMillis(100))
+		  .assertComplete();
+
+		Assert.assertThat("downstream didn't single request", downstreamRequests.size(), is(1));
+		Assert.assertThat("downstream didn't request 400", downstreamRequests.get(0), is(400L));
+		long total = 0L;
+		for (Long requested : upstreamRequests) {
+			total += requested;
+			Assert.assertThat("throttle not applied to request: " + requested,
+			//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
+					requested, anyOf(is(40L), is(30L)));
+		}
+		Assert.assertThat("bad upstream total request", total, allOf(
+				is(greaterThanOrEqualTo(400L)),
+				is(lessThan(440L)
+		)));
+	}
 }
