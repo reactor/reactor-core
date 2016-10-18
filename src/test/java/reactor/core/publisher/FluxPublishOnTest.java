@@ -1020,7 +1020,7 @@ public class FluxPublishOnTest {
 				.range(1, 400)
 				.doOnRequest(upstreamRequests::add)
 				.doOnRequest(r -> System.out.println("upstream request of " + r))
-				.throttleDemand(40)
+				.throttlePublisher(40)
 				.doOnRequest(downstreamRequests::add)
 				.doOnRequest(r -> System.out.println("downstream request of " + r));
 
