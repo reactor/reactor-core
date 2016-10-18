@@ -180,6 +180,17 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
+	public void errorMessage() {
+		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new
+				IllegalArgumentException("Error message")));
+
+		ScriptedSubscriber.create()
+				.expectValue("foo")
+				.expectErrorMessage("Error message")
+				.verify(flux);
+	}
+
+	@Test
 	public void errorWith() {
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 

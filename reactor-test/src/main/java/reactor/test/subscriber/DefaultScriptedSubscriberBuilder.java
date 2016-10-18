@@ -38,6 +38,8 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Receiver;
+import reactor.core.Trackable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.TestScheduler;
@@ -207,6 +209,27 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
+	public ScriptedSubscriber<T> expectErrorMessage(String errorMessage) {
+		SignalEvent<T> event = new SignalEvent<>(signal -> {
+			if (!signal.isOnError()) {
+				return Optional.of(String.format("expected: onError(\"%s\"); actual: %s",
+						errorMessage, signal));
+			}
+			else if (!Objects.equals(errorMessage, signal.getThrowable().getMessage())) {
+				return Optional.of(String.format("expected error message: \"%s\"; " +
+								"actual " +
+								"message: %s",
+						errorMessage, signal.getThrowable().getMessage()));
+			}
+			else {
+				return Optional.empty();
+			}
+		});
+		this.script.add(event);
+		return build();
+	}
+
+	@Override
 	public ScriptedSubscriber<T> expectErrorWith(Predicate<Throwable> predicate) {
 
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
@@ -277,7 +300,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 		return new DefaultScriptedSubscriber<T>(copy, this.initialRequest, this.expectedValueCount);
 	}
 
-	final static class DefaultScriptedSubscriber<T> implements ScriptedSubscriber<T> {
+	final static class DefaultScriptedSubscriber<T> implements ScriptedSubscriber<T>,
+	                                                           Trackable, Receiver {
 
 		final AtomicReference<Subscription> subscription = new AtomicReference<>();
 
@@ -298,6 +322,21 @@ final class DefaultScriptedSubscriberBuilder<T>
 			this.script = script;
 			this.initialRequest = initialRequest;
 			this.expectedValueCount = expectedValueCount;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return upstream() == Operators.cancelledSubscription();
+		}
+
+		@Override
+		public boolean isStarted() {
+			return upstream() != null;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return completeLatch.getCount() == 0L;
 		}
 
 		@Override
@@ -340,6 +379,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			this.failures.add(String.format(msg, arguments));
 		}
 
+		@Override
+		public Subscription upstream() {
+			return this.subscription.get();
+		}
+
 		@SuppressWarnings("unchecked")
 		final void checkExpectation(Signal<T> actualSignal) {
 			Event<T> event = this.script.peek();
@@ -359,11 +403,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 				}
 				else {
 					SubscriptionEvent<T> subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
-					Subscription s = this.subscription.get();
-					subscriptionEvent.consume(s);
 					if (subscriptionEvent.isTerminal()) {
+						Subscription s = this.subscription.getAndSet(Operators.cancelledSubscription());
+						subscriptionEvent.consume(s);
 						this.completeLatch.countDown();
 						break;
+					}
+					else{
+						subscriptionEvent.consume(upstream());
 					}
 				}
 			}
@@ -395,12 +442,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 					break;
 				}
 				if (timeout != Duration.ZERO && stop.isBefore(Instant.now())) {
-					if (this.subscription.get() == null) {
+					if (!isStarted()) {
 						throw new IllegalStateException(
 								"ScriptedSubscriber has not been subscribed");
 					}
 					else {
-						throw new AssertionError("ScriptedSubscriber timed out on " + this.subscription.get());
+						throw new AssertionError("ScriptedSubscriber timed out on " + upstream());
 					}
 				}
 			}
@@ -441,7 +488,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 
 		final void validate() {
-			if (this.subscription.get() == null) {
+			if (!isStarted()) {
 				throw new IllegalStateException(
 						"ScriptedSubscriber has not been subscribed");
 			}

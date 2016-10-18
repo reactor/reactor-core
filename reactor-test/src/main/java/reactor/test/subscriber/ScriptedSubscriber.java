@@ -188,6 +188,14 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		ScriptedSubscriber<T> expectError(Class<? extends Throwable> clazz);
 
 		/**
+		 * Expect an error with the specified message.
+		 * @param errorMessage the expected error message
+		 * @return the built subscriber
+		 * @see Subscriber#onError(Throwable)
+		 */
+		ScriptedSubscriber<T> expectErrorMessage(String errorMessage);
+
+		/**
 		 * Expect an error and evaluate with the given predicate.
 		 * @param predicate the predicate to test on the next received error
 		 * @return the built subscriber
