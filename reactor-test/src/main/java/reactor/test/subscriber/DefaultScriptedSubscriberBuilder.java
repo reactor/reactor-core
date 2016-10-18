@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.TestScheduler;
@@ -84,15 +86,15 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTime() {
-		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
-		                                                          .advanceTime()));
+		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
+		                                                   .advanceTime()));
 		return this;
 	}
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTimeBy(Duration timeshift) {
-		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
-		                                                          .advanceTimeBy(timeshift.toNanos(),
+		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
+		                                                   .advanceTimeBy(timeshift.toNanos(),
 				                                                          TimeUnit.NANOSECONDS)));
 		return this;
 	}
@@ -100,8 +102,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTimeTo(Instant instant) {
 
-		this.script.add(new VirtualTimeEvent<>(() -> TestScheduler.get()
-		                                                          .advanceTimeTo(instant.toEpochMilli(),
+		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
+		                                                   .advanceTimeTo(instant.toEpochMilli(),
 				                                                          TimeUnit.MILLISECONDS)));
 		return this;
 	}
@@ -271,7 +273,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	final ScriptedSubscriber<T> build() {
-		Queue<Event<T>> copy = new LinkedList<>(this.script);
+		Queue<Event<T>> copy = new ConcurrentLinkedQueue<>(this.script);
 		return new DefaultScriptedSubscriber<T>(copy, this.initialRequest, this.expectedValueCount);
 	}
 
@@ -340,30 +342,20 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		@SuppressWarnings("unchecked")
 		final void checkExpectation(Signal<T> actualSignal) {
-			Event<T> event = this.script.poll();
+			Event<T> event = this.script.peek();
 			if (event == null) {
 				addFailure("did not expect: %s", actualSignal);
 			}
-			else {
-				SignalEvent<T> signalEvent = (SignalEvent<T>) event;
+			else if(!(event instanceof TaskEvent)){
+				SignalEvent<T> signalEvent = (SignalEvent<T>) this.script.poll();
 				Optional<String> error = signalEvent.test(actualSignal);
 				error.ifPresent(this.failures::add);
 			}
 
 			for(;;) {
 				event = this.script.peek();
-				if (event == null || event instanceof SignalEvent) {
+				if (event == null || !(event instanceof SubscriptionEvent)) {
 					break;
-				}
-				else if (event instanceof DefaultScriptedSubscriberBuilder.VirtualTimeEvent) {
-					if (!actualSignal.isOnSubscribe()) {
-						VirtualTimeEvent<T> virtualTimeEvent =
-								(VirtualTimeEvent<T>) this.script.poll();
-						virtualTimeEvent.run();
-					}
-					else{
-						break;
-					}
 				}
 				else {
 					SubscriptionEvent<T> subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
@@ -378,34 +370,51 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		}
 
-		final void checkVirtualTimeEvent(){
+		@SuppressWarnings("unchecked")
+		final void pollTaskEventOrComplete(Duration timeout) throws InterruptedException {
+			Objects.requireNonNull(timeout, "timeout");
 			Event<T> event;
-			for(;;){
-				event = this.script.peek();
-				if (event == null || !(event instanceof VirtualTimeEvent)) {
+			Instant stop = Instant.now()
+			                      .plus(timeout);
+			for (; ; ) {
+				event = script.peek();
+				if (event != null && event instanceof TaskEvent) {
+					event = script.poll();
+					try {
+						((TaskEvent<T>) event).run();
+					}
+					catch (Throwable t){
+						Exceptions.throwIfFatal(t);
+						Subscription s = this.subscription.getAndSet(Operators.cancelledSubscription());
+						if(s!= null){
+							s.cancel();
+						}
+					}
+				}
+				if (this.completeLatch.await(10, TimeUnit.NANOSECONDS)) {
 					break;
 				}
-				else {
-						VirtualTimeEvent<T> virtualTimeEvent =
-								(VirtualTimeEvent<T>) this.script.poll();
-						virtualTimeEvent.run();
+				if (timeout != Duration.ZERO && stop.isBefore(Instant.now())) {
+					if (this.subscription.get() == null) {
+						throw new IllegalStateException(
+								"ScriptedSubscriber has not been subscribed");
 					}
+					else {
+						throw new AssertionError("ScriptedSubscriber timed out on " + this.subscription.get());
+					}
+				}
 			}
 		}
 
 		@Override
 		public void verify() {
-			checkVirtualTimeEvent();
 			try {
-				this.completeLatch.await();
+				pollTaskEventOrComplete(Duration.ZERO);
 			}
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
 			}
-			if (this.subscription.get() == null) {
-				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
-			}
-			verifyInternal();
+			validate();
 		}
 
 		@Override
@@ -417,37 +426,25 @@ final class DefaultScriptedSubscriberBuilder<T>
 		@Override
 		public void verify(Duration duration) {
 			try {
-				if (!this.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS)) {
-					if (this.subscription.get() == null) {
-						throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
-					}
-					else {
-						throw new AssertionError("ScriptedSubscriber timed out on " +
-								this.subscription.get());
-					}
-				}
+				pollTaskEventOrComplete(duration);
 			}
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
 			}
-			if (this.subscription.get() == null) {
-				throw new IllegalStateException("ScriptedSubscriber has not been subscribed");
-			}
-			verifyInternal();
+			validate();
 		}
 
 		@Override
 		public void verify(Publisher<? extends T> publisher, Duration duration) {
 			publisher.subscribe(this);
-			checkTasks();
 			verify(duration);
 		}
 
-		final void checkTasks() {
-
-		}
-
-		final void verifyInternal() {
+		final void validate() {
+			if (this.subscription.get() == null) {
+				throw new IllegalStateException(
+						"ScriptedSubscriber has not been subscribed");
+			}
 			boolean validValueCount = hasValidValueCount();
 			if (this.failures.isEmpty() && validValueCount) {
 				return;
@@ -513,11 +510,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	}
 
-	static final class VirtualTimeEvent<T> extends Event<T> {
+	static final class TaskEvent<T> extends Event<T> {
 
 		final Runnable task;
 
-		public VirtualTimeEvent(Runnable task) {
+		public TaskEvent(Runnable task) {
 			this.task = task;
 		}
 
