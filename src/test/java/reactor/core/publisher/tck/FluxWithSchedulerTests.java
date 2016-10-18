@@ -66,7 +66,8 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 				 )
 				 .publishOn(sharedGroup)
 				 .doAfterTerminate(asyncGroup::shutdown)
-				 .doOnError(Throwable::printStackTrace));
+				 .doOnError(Throwable::printStackTrace)
+				.awaitOnSubscribe());
 	}
 
 	@Override

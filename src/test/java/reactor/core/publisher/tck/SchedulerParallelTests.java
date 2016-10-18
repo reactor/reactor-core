@@ -43,7 +43,7 @@ public class SchedulerParallelTests extends AbstractProcessorVerification {
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		EmitterProcessor<Long> e = EmitterProcessor.create();
 		Scheduler s = Schedulers.newSingle("shared-async");
-		return FluxProcessor.wrap(e, e.publishOn(s).doOnComplete(s::shutdown));
+		return FluxProcessor.wrap(e, e.publishOn(s).doOnComplete(s::shutdown).awaitOnSubscribe());
 
 	}
 

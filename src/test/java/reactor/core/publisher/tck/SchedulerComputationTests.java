@@ -39,7 +39,7 @@ public class SchedulerComputationTests extends AbstractProcessorVerification {
 		EmitterProcessor<Long> e = EmitterProcessor.create();
 		return FluxProcessor.wrap(e,
 				e.publishOn(scheduler)
-				 .doAfterTerminate(scheduler::shutdown));
+				 .doAfterTerminate(scheduler::shutdown).awaitOnSubscribe());
 	}
 
 	@Override
