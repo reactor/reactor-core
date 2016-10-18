@@ -86,6 +86,8 @@ import reactor.util.function.Tuples;
  */
 public abstract class Flux<T> implements Publisher<T> {
 
+	public interface Operator<I, O> extends Function<Subscriber<? super I>, Subscriber<? super O>> {}
+
 //	 ==============================================================================================================
 //	 Static Generators
 //	 ==============================================================================================================
@@ -3457,6 +3459,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this, defaultValue));
+	}
+
+	/**
+	 * Lift implementation from 2.5.0-M3
+	 *
+	 * @param lifter
+	 * @param <R>
+	 * @return
+	 */
+	public final <R> Flux<R> liftOld(Function<Subscriber<? super R>, Subscriber<? super T>> lifter) {
+		return new FluxLiftOld<>(this, lifter);
+	}
+
+	/**
+	 * Lift a custom {@link Operator}.
+	 *
+	 * {@code flux.lift(new MyOperator()}.subscribe(Subscribers.unbounded())}
+	 *
+	 * @param operator the custom {@link Operator}
+	 * @param <V> the item type in the returned {@link Flux}
+	 * @return
+	 */
+	public final <V> Flux<V> lift(Operator<? extends V, ? super T> operator) {
+		// Simple implementation using transform for now to show usabiity.
+		return transform(flux ->  s -> flux.subscribe(operator.apply(s)));
 	}
 
 	/**
