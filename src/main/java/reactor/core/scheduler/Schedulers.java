@@ -652,7 +652,7 @@ public class Schedulers {
 		 */
 		@Override
 		public Scheduler get() {
-			return null;
+			return cached;
 		}
 
 		void _shutdown() {
