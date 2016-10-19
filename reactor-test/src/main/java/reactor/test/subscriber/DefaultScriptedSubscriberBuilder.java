@@ -303,15 +303,22 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> doRequest(long n) {
 		checkForNegative(n);
-		this.script.add(new SubscriptionEvent<T>(subscription -> subscription.request(n),
+		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n),
 				false));
 		return this;
 	}
 
 	@Override
 	public ScriptedSubscriber<T> doCancel() {
-		this.script.add(new SubscriptionEvent<T>(Subscription::cancel, true));
+		this.script.add(new SubscriptionEvent<>(Subscription::cancel, true));
 		return build();
+	}
+
+	@Override
+	public ScriptedSubscriber.ValueBuilder<T> then(Runnable task) {
+		Objects.requireNonNull(task, "task");
+		this.script.add(new TaskEvent<>(task));
+		return this;
 	}
 
 	final ScriptedSubscriber<T> build() {

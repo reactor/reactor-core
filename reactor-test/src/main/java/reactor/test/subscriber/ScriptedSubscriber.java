@@ -295,5 +295,12 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 */
 		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
+
+		/**
+		 * Run an arbitrary task scheduled after previous expectations or tasks.
+		 * @param task the task to run
+		 * @return this builder
+		 */
+		ValueBuilder<T> then(Runnable task);
 	}
 }

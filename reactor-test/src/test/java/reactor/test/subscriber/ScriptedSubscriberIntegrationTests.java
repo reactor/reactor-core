@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Test;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -356,6 +357,22 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .advanceTimeBy(Duration.ofSeconds(3))
 		                  .expectValue("t2")
 		                  .doCancel()
+		                  .verify(flux);
+
+	}
+
+	@Test
+	public void verifyThenOnCompleteInterval() {
+		DirectProcessor<Void> p = DirectProcessor.create();
+
+		Flux<String> flux = Flux.range(0, 3)
+		                        .map(d -> "t" + d)
+								.takeUntilOther(p);
+
+		ScriptedSubscriber.create(2)
+		                  .expectValues("t0", "t1")
+		                  .then(p::onComplete)
+		                  .expectComplete()
 		                  .verify(flux);
 
 	}
