@@ -155,9 +155,23 @@ public class ScriptedSubscriberIntegrationTests {
 	public void expectValueCount() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		ScriptedSubscriber.expectValueCount(2)
-				.expectComplete()
-				.verify(flux);
+		ScriptedSubscriber.create(0)
+		                  .doRequest(1)
+		                  .expectValueCount(1)
+		                  .doRequest(1)
+		                  .expectValueCount(1)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void expectValueCountError() {
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
+		                  .expectValueCount(4)
+		                  .doCancel()
+		                  .verify(flux);
 	}
 
 	@Test

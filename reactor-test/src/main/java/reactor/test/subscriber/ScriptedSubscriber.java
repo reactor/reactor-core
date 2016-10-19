@@ -53,8 +53,6 @@ import reactor.test.scheduler.TestScheduler;
  * <li>If any expectations failed, an {@code AssertionError} will be thrown indicating the
  * failures.</li>
  * </ul>
- * As an alternative to setting up individual expectation as described above, you can expect a
- * certain value count using {@link #expectValueCount(long)}.
  *
  * <p>For example:
  * <pre>
@@ -149,20 +147,8 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @return a builder for setting up value expectations
 	 */
 	static <T> ValueBuilder<T> create(long n) {
-		DefaultScriptedSubscriberBuilder.checkForNegative(n);
-		return new DefaultScriptedSubscriberBuilder<T>(n);
-	}
-
-	/**
-	 * Create a new {@code ScriptedSubscriber} that expects the given amount of elements to be
-	 * received.
-	 *  @param n the expected amount of values
-	 * @return a builder for setting up termination expectations
-	 * @see Subscriber#onNext(Object)
-	 */
-	static <T> TerminationBuilder<T> expectValueCount(long n) {
-		DefaultScriptedSubscriberBuilder.checkForNegative(n);
-		return new DefaultScriptedSubscriberBuilder<T>(Long.MAX_VALUE, n);
+		DefaultScriptedSubscriberBuilder.checkPositive(n);
+		return new DefaultScriptedSubscriberBuilder<>(n);
 	}
 
 	/**
@@ -255,6 +241,14 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		ValueBuilder<T> advanceTimeTo(Instant instant);
 
 		/**
+		 * Expect an element and consume with the given consumer. Any {@code AssertionError}s
+		 * thrown by the consumer will be rethrown during {@linkplain #verify() verification}.
+		 * @param consumer the consumer for the value
+		 * @return this builder
+		 */
+		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
+
+		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This is in
 		 * addition to the initial number of elements requested by
 		 * {@link ScriptedSubscriber#create(long)}.
@@ -289,12 +283,12 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		ValueBuilder<T> expectValueWith(Predicate<T> predicate);
 
 		/**
-		 * Expect an element and consume with the given consumer. Any {@code AssertionError}s
-		 * thrown by the consumer will be rethrown during {@linkplain #verify() verification}.
-		 * @param consumer the consumer for the value
+		 * Expect an element count starting from the last expectation or onSubscribe.
+		 * @param count the predicate to test on the next received value
 		 * @return this builder
+		 * @see Subscriber#onNext(Object)
 		 */
-		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
+		ValueBuilder<T> expectValueCount(long count);
 
 		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.
