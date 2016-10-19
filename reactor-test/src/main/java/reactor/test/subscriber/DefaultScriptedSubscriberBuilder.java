@@ -420,16 +420,15 @@ final class DefaultScriptedSubscriberBuilder<T>
 			else if (event instanceof SignalCountEvent) {
 				SignalCountEvent<T> countEvent = (SignalCountEvent) event;
 
-				if(countEvent.count != 0) {
-					this.checkCountMismatch(countEvent.count, actualSignal)
-					    .ifPresent(this.failures::add);
-				}
-
 				if (countEvent.test(produced)) {
 					this.script.poll();
 					produced = 0L;
 				}
 				else {
+					if(countEvent.count != 0) {
+						this.checkCountMismatch(countEvent.count, actualSignal)
+						    .ifPresent(this.failures::add);
+					}
 					return;
 				}
 
