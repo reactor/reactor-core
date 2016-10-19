@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -60,7 +61,6 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	final long expectedValueCount;
 
-
 	DefaultScriptedSubscriberBuilder(long initialRequest) {
 		this(initialRequest, -1);
 	}
@@ -71,7 +71,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnSubscribe()) {
-				return Optional.of(String.format("expected: onSubscribe(); actual: %s", signal));
+				return Optional.of(String.format("expected: onSubscribe(); actual: %s",
+						signal));
 			}
 			else {
 				return Optional.empty();
@@ -97,7 +98,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber.ValueBuilder<T> advanceTimeBy(Duration timeshift) {
 		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
 		                                                   .advanceTimeBy(timeshift.toNanos(),
-				                                                          TimeUnit.NANOSECONDS)));
+				                                                   TimeUnit.NANOSECONDS)));
 		return this;
 	}
 
@@ -106,7 +107,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
 		                                                   .advanceTimeTo(instant.toEpochMilli(),
-				                                                          TimeUnit.MILLISECONDS)));
+				                                                   TimeUnit.MILLISECONDS)));
 		return this;
 	}
 
@@ -114,10 +115,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber.ValueBuilder<T> expectValue(T t) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(%s); actual: %s", t, signal));
+				return Optional.of(String.format("expected: onNext(%s); actual: %s",
+						t,
+						signal));
 			}
 			else if (!Objects.equals(t, signal.get())) {
-				return Optional.of(String.format("expected value: %s; actual value: %s", t,
+				return Optional.of(String.format("expected value: %s; actual value: %s",
+						t,
 						signal.get()));
 
 			}
@@ -131,7 +135,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> expectValues(T... ts) {
-		Arrays.stream(ts).forEach(this::expectValue);
+		Arrays.stream(ts)
+		      .forEach(this::expectValue);
 		return this;
 	}
 
@@ -140,10 +145,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(); actual: %s", signal));
+				return Optional.of(String.format("expected: onNext(); actual: %s",
+						signal));
 			}
 			else if (!predicate.test(signal.get())) {
-				return Optional.of(String.format("predicate failed on value: %s", signal.get()));
+				return Optional.of(String.format("predicate failed on value: %s",
+						signal.get()));
 			}
 			else {
 				return Optional.empty();
@@ -158,7 +165,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber.ValueBuilder<T> consumeValueWith(Consumer<T> consumer) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(); actual: %s", signal));
+				return Optional.of(String.format("expected: onNext(); actual: %s",
+						signal));
 			}
 			else {
 				try {
@@ -178,7 +186,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> expectError() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s", signal));
+				return Optional.of(String.format("expected: onError(); actual: %s",
+						signal));
 			}
 			else {
 				return Optional.empty();
@@ -194,11 +203,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
 				return Optional.of(String.format("expected: onError(%s); actual: %s",
-						clazz.getSimpleName(), signal));
+						clazz.getSimpleName(),
+						signal));
 			}
 			else if (!clazz.isInstance(signal.getThrowable())) {
-				return Optional.of(String.format("expected error of type: %s; actual type: %s",
-						clazz.getSimpleName(), signal.getThrowable()));
+				return Optional.of(String.format(
+						"expected error of type: %s; actual type: %s",
+						clazz.getSimpleName(),
+						signal.getThrowable()));
 			}
 			else {
 				return Optional.empty();
@@ -213,13 +225,16 @@ final class DefaultScriptedSubscriberBuilder<T>
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
 				return Optional.of(String.format("expected: onError(\"%s\"); actual: %s",
-						errorMessage, signal));
+						errorMessage,
+						signal));
 			}
-			else if (!Objects.equals(errorMessage, signal.getThrowable().getMessage())) {
-				return Optional.of(String.format("expected error message: \"%s\"; " +
-								"actual " +
-								"message: %s",
-						errorMessage, signal.getThrowable().getMessage()));
+			else if (!Objects.equals(errorMessage,
+					signal.getThrowable()
+					      .getMessage())) {
+				return Optional.of(String.format("expected error message: \"%s\"; " + "actual " + "message: %s",
+						errorMessage,
+						signal.getThrowable()
+						      .getMessage()));
 			}
 			else {
 				return Optional.empty();
@@ -234,7 +249,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s", signal));
+				return Optional.of(String.format("expected: onError(); actual: %s",
+						signal));
 			}
 			else if (!predicate.test(signal.getThrowable())) {
 				return Optional.of(String.format("predicate failed on exception: %s",
@@ -252,7 +268,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> consumeErrorWith(Consumer<Throwable> consumer) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s", signal));
+				return Optional.of(String.format("expected: onError(); actual: %s",
+						signal));
 			}
 			else {
 				try {
@@ -272,7 +289,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> expectComplete() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnComplete()) {
-				return Optional.of(String.format("expected: onComplete(); actual: %s", signal));
+				return Optional.of(String.format("expected: onComplete(); actual: %s",
+						signal));
 			}
 			else {
 				return Optional.empty();
@@ -285,7 +303,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> doRequest(long n) {
 		checkForNegative(n);
-		this.script.add(new SubscriptionEvent<T>(subscription -> subscription.request(n), false));
+		this.script.add(new SubscriptionEvent<T>(subscription -> subscription.request(n),
+				false));
 		return this;
 	}
 
@@ -297,11 +316,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	final ScriptedSubscriber<T> build() {
 		Queue<Event<T>> copy = new ConcurrentLinkedQueue<>(this.script);
-		return new DefaultScriptedSubscriber<T>(copy, this.initialRequest, this.expectedValueCount);
+		return new DefaultScriptedSubscriber<T>(copy,
+				this.initialRequest,
+				this.expectedValueCount);
 	}
 
-	final static class DefaultScriptedSubscriber<T> implements ScriptedSubscriber<T>,
-	                                                           Trackable, Receiver {
+	final static class DefaultScriptedSubscriber<T>
+			implements ScriptedSubscriber<T>, Trackable, Receiver {
 
 		final AtomicReference<Subscription> subscription = new AtomicReference<>();
 
@@ -317,8 +338,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		final long expectedValueCount;
 
+		volatile long pendingRequest;
 
-		public DefaultScriptedSubscriber(Queue<Event<T>> script, long initialRequest, long expectedValueCount) {
+		volatile int wip;
+
+		public DefaultScriptedSubscriber(Queue<Event<T>> script,
+				long initialRequest,
+				long expectedValueCount) {
 			this.script = script;
 			this.initialRequest = initialRequest;
 			this.expectedValueCount = expectedValueCount;
@@ -358,7 +384,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 		public void onNext(T t) {
 			if (this.expectedValueCount < 0) {
 				checkExpectation(Signal.next(t));
-			} else {
+			}
+			else {
 				this.valueCount.incrementAndGet();
 			}
 		}
@@ -390,31 +417,45 @@ final class DefaultScriptedSubscriberBuilder<T>
 			if (event == null) {
 				addFailure("did not expect: %s", actualSignal);
 			}
-			else if(!(event instanceof TaskEvent)){
+			else if (!(event instanceof TaskEvent)) {
 				SignalEvent<T> signalEvent = (SignalEvent<T>) this.script.poll();
 				Optional<String> error = signalEvent.test(actualSignal);
 				error.ifPresent(this.failures::add);
 			}
 
-			for(;;) {
-				event = this.script.peek();
-				if (event == null || !(event instanceof SubscriptionEvent)) {
-					break;
-				}
-				else {
-					SubscriptionEvent<T> subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
-					if (subscriptionEvent.isTerminal()) {
-						Subscription s = this.subscription.getAndSet(Operators.cancelledSubscription());
-						subscriptionEvent.consume(s);
-						this.completeLatch.countDown();
-						break;
-					}
-					else{
-						subscriptionEvent.consume(upstream());
-					}
-				}
+			event = this.script.peek();
+			if (event == null || !(event instanceof SubscriptionEvent)) {
+				return;
 			}
 
+			drainSubscriptionOperations(event);
+		}
+
+		final void drainSubscriptionOperations(Event<T> event){
+			int missed = WIP.incrementAndGet(this);
+			if (missed == 1) {
+				for(;;) {
+					for (; ; ) {
+						if (event == null || !(event instanceof SubscriptionEvent)) {
+							break;
+						}
+						SubscriptionEvent<T> subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
+						if (subscriptionEvent.isTerminal()) {
+							subscriptionEvent.consume(this.subscription.getAndSet(
+									Operators.cancelledSubscription()));
+							this.completeLatch.countDown();
+							return;
+						}
+						subscriptionEvent.consume(upstream());
+						event = this.script.peek();
+					}
+					missed = WIP.addAndGet(this, -missed);
+					if(missed == 0){
+						break;
+					}
+				}
+
+			}
 		}
 
 		@SuppressWarnings("unchecked")
@@ -423,20 +464,28 @@ final class DefaultScriptedSubscriberBuilder<T>
 			Event<T> event;
 			Instant stop = Instant.now()
 			                      .plus(timeout);
+			boolean skipSubscriptionOp = true;
 			for (; ; ) {
 				event = script.peek();
-				if (event != null && event instanceof TaskEvent) {
-					event = script.poll();
-					try {
-						((TaskEvent<T>) event).run();
-					}
-					catch (Throwable t){
-						Exceptions.throwIfFatal(t);
-						Subscription s = this.subscription.getAndSet(Operators.cancelledSubscription());
-						if(s!= null){
-							s.cancel();
+				if (event != null) {
+					if(event instanceof TaskEvent) {
+						skipSubscriptionOp = false;
+						event = script.poll();
+						try {
+							((TaskEvent<T>) event).run();
+						}
+						catch (Throwable t) {
+							Exceptions.throwIfFatal(t);
+							Subscription s = this.subscription.getAndSet(Operators.cancelledSubscription());
+							if (s != null) {
+								s.cancel();
+							}
 						}
 					}
+					else if(!skipSubscriptionOp) {
+						drainSubscriptionOperations(event);
+					}
+
 				}
 				if (this.completeLatch.await(10, TimeUnit.NANOSECONDS)) {
 					break;
@@ -459,7 +508,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 				pollTaskEventOrComplete(Duration.ZERO);
 			}
 			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
+				Thread.currentThread()
+				      .interrupt();
 			}
 			validate();
 		}
@@ -476,7 +526,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 				pollTaskEventOrComplete(duration);
 			}
 			catch (InterruptedException ex) {
-				Thread.currentThread().interrupt();
+				Thread.currentThread()
+				      .interrupt();
 			}
 			validate();
 		}
@@ -498,11 +549,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			StringBuilder messageBuilder = new StringBuilder("Expectation failure(s):\n");
 			this.failures.stream()
-					.flatMap(error -> Stream.of(" - ", error, "\n"))
-					.forEach(messageBuilder::append);
+			             .flatMap(error -> Stream.of(" - ", error, "\n"))
+			             .forEach(messageBuilder::append);
 			if (!validValueCount) {
 				messageBuilder.append(String.format(" - expected %d values; got %d values",
-						this.expectedValueCount, this.valueCount.get()));
+						this.expectedValueCount,
+						this.valueCount.get()));
 			}
 			messageBuilder.delete(messageBuilder.length() - 1, messageBuilder.length());
 			throw new AssertionError(messageBuilder.toString());
@@ -519,8 +571,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	}
 
+	static final AtomicIntegerFieldUpdater<DefaultScriptedSubscriber> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(DefaultScriptedSubscriber.class, "wip");
+
 	@SuppressWarnings("unused")
 	abstract static class Event<T> {
+
 	}
 
 	static final class SubscriptionEvent<T> extends Event<T> {

@@ -360,6 +360,25 @@ public class ScriptedSubscriberIntegrationTests {
 
 	}
 
+	@Test
+	public void verifyVirtualTimeOnErrorInterval() {
+		ScriptedSubscriber.enableVirtualTime();
+		Flux<String> flux = Flux.interval(Duration.ofSeconds(3))
+		                        .map(d -> "t" + d);
+
+		ScriptedSubscriber.create(0)
+		                  .doRequest(1)
+		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .expectValue("t0")
+		                  .doRequest(1)
+		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .expectValue("t1")
+		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .expectError(IllegalStateException.class)
+		                  .verify(flux);
+
+	}
+
 	@Test(expected = AssertionError.class)
 	public void verifyDurationTimeout() {
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200)).map(l -> "foo" ).take(2);
