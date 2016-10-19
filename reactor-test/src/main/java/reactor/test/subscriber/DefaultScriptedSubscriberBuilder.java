@@ -300,7 +300,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> expectValueCount(long count) {
-		checkStrictlyPositive(count);
+		checkPositive(count);
 		this.script.add(new SignalCountEvent<>(count));
 		return this;
 	}
@@ -419,8 +419,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			else if (event instanceof SignalCountEvent) {
 				SignalCountEvent<T> countEvent = (SignalCountEvent) event;
-				this.checkCountMismatch(countEvent.count, actualSignal)
-				    .ifPresent(this.failures::add);
+
+				if(countEvent.count != 0) {
+					this.checkCountMismatch(countEvent.count, actualSignal)
+					    .ifPresent(this.failures::add);
+				}
 
 				if (countEvent.test(produced)) {
 					this.script.poll();

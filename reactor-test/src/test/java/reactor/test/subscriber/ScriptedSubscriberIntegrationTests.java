@@ -164,6 +164,16 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .verify(flux);
 	}
 
+	@Test
+	public void expectValueCountZero() {
+		Flux<String> flux = Flux.empty();
+
+		ScriptedSubscriber.create()
+		                  .expectValueCount(0)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
 	@Test(expected = AssertionError.class)
 	public void expectValueCountError() {
 		Flux<String> flux = Flux.just("foo", "bar");
