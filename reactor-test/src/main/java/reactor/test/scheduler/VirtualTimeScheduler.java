@@ -31,48 +31,56 @@ import reactor.core.scheduler.TimedScheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
+ * A {@link TimedScheduler} that uses a virtual clock, allowing to manipulate time
+ * (eg. in tests). Can replace the default reactor schedulers by using 
+ * the {@link #enable(boolean)} method.
  *
- *
+ * @author Stephane Maldini
  */
-public class TestScheduler implements TimedScheduler {
+public class VirtualTimeScheduler implements TimedScheduler {
 
 	/**
-	 * @return a new {@link TestScheduler}
+	 * @return a new {@link VirtualTimeScheduler}
 	 */
-	public static TestScheduler create() {
-		return new TestScheduler();
+	public static VirtualTimeScheduler create() {
+		return new VirtualTimeScheduler();
 	}
 
 	/**
-	 * Assign a singleton {@link TestScheduler} to all or timed-only {@link
-	 * Schedulers.Factory} factories. While the method is thread safe, its usually advised
-	 * to execute such wide-impact BEFORE all tested code runs (setup etc).
+	 * Assign a single newly created {@link VirtualTimeScheduler} to all or timed-only
+	 * {@link Schedulers.Factory} factories. While the method is thread safe, its usually
+	 * advised to execute such wide-impact BEFORE all tested code runs (setup etc).
+	 * The created scheduler is returned.
 	 *
 	 * @param allSchedulers true if all {@link Schedulers.Factory} factories
+	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
-	public static void enable(boolean allSchedulers) {
-		TestScheduler s = new TestScheduler();
+	public static VirtualTimeScheduler enable(boolean allSchedulers) {
+		//TODO in 3.0.3 setting a factory will shutdown the previous Schedulers
+		Schedulers.shutdownNow();
+		VirtualTimeScheduler s = new VirtualTimeScheduler();
 		if (!allSchedulers) {
 			Schedulers.setFactory(new TimedOnlyFactory(s));
 		}
 		else {
 			Schedulers.setFactory(new AllFactory(s));
 		}
+		return s;
 	}
 
 	/**
-	 * The current {@link TestScheduler} assigned in {@link Schedulers}
-	 * @return current {@link TestScheduler} assigned in {@link Schedulers}
-	 * @throws IllegalStateException if no {@link TestScheduler} has been found
+	 * The current {@link VirtualTimeScheduler} assigned in {@link Schedulers}
+	 * @return current {@link VirtualTimeScheduler} assigned in {@link Schedulers}
+	 * @throws IllegalStateException if no {@link VirtualTimeScheduler} has been found
 	 */
-	public static TestScheduler get(){
+	public static VirtualTimeScheduler get(){
 		Scheduler s = Schedulers.newTimer("");
-		if(s instanceof TestScheduler){
+		if(s instanceof VirtualTimeScheduler){
 			@SuppressWarnings("unchecked")
-			TestScheduler _s = (TestScheduler)s;
+			VirtualTimeScheduler _s = (VirtualTimeScheduler)s;
 			return _s;
 		}
-		throw new IllegalStateException("Check if TestScheduler#enable has been invoked" +
+		throw new IllegalStateException("Check if VirtualTimeScheduler#enable has been invoked" +
 				" first" +
 				": "+s);
 	}
@@ -93,21 +101,21 @@ public class TestScheduler implements TimedScheduler {
 	volatile long counter;
 	volatile long nanoTime;
 
-	protected TestScheduler() {
+	protected VirtualTimeScheduler() {
 	}
 
 	/**
 	 * Triggers any tasks that have not yet been executed and that are scheduled to be
-	 * executed at or before this {@link TestScheduler}'s present time.
+	 * executed at or before this {@link VirtualTimeScheduler}'s present time.
 	 */
 	public void advanceTime() {
 		advanceTime(nanoTime);
 	}
 
 	/**
-	 * Moves the {@link TestScheduler}'s clock forward by a specified amount of time.
+	 * Moves the {@link VirtualTimeScheduler}'s clock forward by a specified amount of time.
 	 *
-	 * @param delayTime the amount of time to move the {@link TestScheduler}'s clock forward
+	 * @param delayTime the amount of time to move the {@link VirtualTimeScheduler}'s clock forward
 	 * @param unit the units of time that {@code delayTime} is expressed in
 	 */
 	public void advanceTimeBy(long delayTime, TimeUnit unit) {
@@ -115,9 +123,9 @@ public class TestScheduler implements TimedScheduler {
 	}
 
 	/**
-	 * Moves the {@link TestScheduler}'s clock to a particular moment in time.
+	 * Moves the {@link VirtualTimeScheduler}'s clock to a particular moment in time.
 	 *
-	 * @param delayTime the point in time to move the {@link TestScheduler}'s clock to
+	 * @param delayTime the point in time to move the {@link VirtualTimeScheduler}'s clock to
 	 * @param unit the units of time that {@code delayTime} is expressed in
 	 */
 	public void advanceTimeTo(long delayTime, TimeUnit unit) {
@@ -206,9 +214,9 @@ public class TestScheduler implements TimedScheduler {
 
 	static final class TimedOnlyFactory implements Schedulers.Factory {
 
-		final TestScheduler s;
+		final VirtualTimeScheduler s;
 
-		public TimedOnlyFactory(TestScheduler s) {
+		public TimedOnlyFactory(VirtualTimeScheduler s) {
 			this.s = s;
 		}
 
@@ -220,9 +228,9 @@ public class TestScheduler implements TimedScheduler {
 
 	static final class AllFactory implements Schedulers.Factory {
 
-		final TestScheduler s;
+		final VirtualTimeScheduler s;
 
-		public AllFactory(TestScheduler s) {
+		public AllFactory(VirtualTimeScheduler s) {
 			this.s = s;
 		}
 
@@ -253,7 +261,7 @@ public class TestScheduler implements TimedScheduler {
 
 		@Override
 		public long now(TimeUnit unit) {
-			return TestScheduler.this.now(unit);
+			return VirtualTimeScheduler.this.now(unit);
 		}
 
 		@Override
@@ -264,7 +272,7 @@ public class TestScheduler implements TimedScheduler {
 			final TimedRunnable timedTask = new TimedRunnable(this,
 					0,
 					run,
-					COUNTER.getAndIncrement(TestScheduler.this));
+					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
 			return () -> queue.remove(timedTask);
 		}
@@ -277,7 +285,7 @@ public class TestScheduler implements TimedScheduler {
 			final TimedRunnable timedTask = new TimedRunnable(this,
 					nanoTime + unit.toNanos(delayTime),
 					run,
-					COUNTER.getAndIncrement(TestScheduler.this));
+					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
 
 			return () -> queue.remove(timedTask);
@@ -416,8 +424,8 @@ public class TestScheduler implements TimedScheduler {
 		}
 	}
 
-	static final AtomicLongFieldUpdater<TestScheduler> COUNTER =
-			AtomicLongFieldUpdater.newUpdater(TestScheduler.class, "counter");
+	static final AtomicLongFieldUpdater<VirtualTimeScheduler> COUNTER =
+			AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "counter");
 	static final long CLOCK_DRIFT_TOLERANCE_NANOSECONDS;
 
 	static {

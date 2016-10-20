@@ -43,7 +43,7 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.test.scheduler.TestScheduler;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
  * Default implementation of {@link ScriptedSubscriber.ValueBuilder} and
@@ -88,14 +88,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTime() {
-		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
-		                                                   .advanceTime()));
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
+		                                                          .advanceTime()));
 		return this;
 	}
 
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTimeBy(Duration timeshift) {
-		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
 		                                                   .advanceTimeBy(timeshift.toNanos(),
 				                                                   TimeUnit.NANOSECONDS)));
 		return this;
@@ -104,7 +104,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> advanceTimeTo(Instant instant) {
 
-		this.script.add(new TaskEvent<>(() -> TestScheduler.get()
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
 		                                                   .advanceTimeTo(instant.toEpochMilli(),
 				                                                   TimeUnit.MILLISECONDS)));
 		return this;

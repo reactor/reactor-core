@@ -24,7 +24,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.test.scheduler.TestScheduler;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
  * Subscriber implementation that verifies pre-defined expectations as part of its subscription.
@@ -85,14 +85,14 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @param allSchedulers
 	 */
 	static void enableVirtualTime(boolean allSchedulers){
-		TestScheduler.enable(allSchedulers);
+		VirtualTimeScheduler.enable(allSchedulers);
 	}
 
 	/**
 	 *
 	 */
 	static void disableVirtualTime(){
-		TestScheduler.reset();
+		VirtualTimeScheduler.reset();
 	}
 
 	/**
