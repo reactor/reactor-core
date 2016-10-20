@@ -61,17 +61,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	DefaultScriptedSubscriberBuilder(long initialRequest) {
 		this.initialRequest = initialRequest;
-
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
-			if (!signal.isOnSubscribe()) {
-				return Optional.of(String.format("expected: onSubscribe(); actual: %s",
-						signal));
-			}
-			else {
-				return Optional.empty();
-			}
-		});
-		this.script.add(event);
+		this.script.add(defaultOnSubscribeStep());
 	}
 
 	static void checkPositive(long n) {
@@ -561,7 +551,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 
 		@Override
-		public void verify() {
+		public Duration verify() {
+			Instant now = Instant.now();
 			try {
 				pollTaskEventOrComplete(Duration.ZERO);
 			}
@@ -570,16 +561,20 @@ final class DefaultScriptedSubscriberBuilder<T>
 				      .interrupt();
 			}
 			validate();
+			return Duration.between(now, Instant.now());
 		}
 
 		@Override
-		public void verify(Publisher<? extends T> publisher) {
+		public Duration verify(Publisher<? extends T> publisher) {
+			Instant now = Instant.now();
 			publisher.subscribe(this);
 			verify();
+			return Duration.between(now, Instant.now());
 		}
 
 		@Override
-		public void verify(Duration duration) {
+		public Duration verify(Duration duration) {
+			Instant now = Instant.now();
 			try {
 				pollTaskEventOrComplete(duration);
 			}
@@ -588,12 +583,16 @@ final class DefaultScriptedSubscriberBuilder<T>
 				      .interrupt();
 			}
 			validate();
+			return Duration.between(now, Instant.now());
+
 		}
 
 		@Override
-		public void verify(Publisher<? extends T> publisher, Duration duration) {
+		public Duration verify(Publisher<? extends T> publisher, Duration duration) {
+			Instant now = Instant.now();
 			publisher.subscribe(this);
 			verify(duration);
+			return Duration.between(now, Instant.now());
 		}
 
 		final void validate() {
@@ -688,4 +687,18 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	}
 
+	@SuppressWarnings("unchecked")
+	static <T> SignalEvent<T> defaultOnSubscribeStep(){
+		return (SignalEvent<T>)DEFAULT_ONSUBSCRIBE_STEP;
+	}
+
+	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = new SignalEvent<>(signal -> {
+		if (!signal.isOnSubscribe()) {
+			return Optional.of(String.format("expected: onSubscribe(); actual: %s",
+					signal));
+		}
+		else {
+			return Optional.empty();
+		}
+	});
 }

@@ -99,9 +99,10 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * Verify the signals received by this subscriber. This method will <strong>block</strong>
 	 * indefinitely until the stream has been terminated (either through {@link #onComplete()},
 	 * {@link #onError(Throwable)} or {@link Subscription#cancel()}).
+	 * @return the {@link Duration} of the verification
 	 * @throws AssertionError in case of expectation failures
 	 */
-	void verify() throws AssertionError;
+	Duration verify() throws AssertionError;
 
 	/**
 	 * Make the specified publisher subscribe to this subscriber and then verify the signals
@@ -109,17 +110,19 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * indefinitely until the stream has been terminated (either through {@link #onComplete()},
 	 * {@link #onError(Throwable)} or {@link Subscription#cancel()}).
 	 * @param publisher the publisher to subscribe to
+	 * @return the {@link Duration} of the verification
 	 * @throws AssertionError in case of expectation failures
 	 */
-	void verify(Publisher<? extends T> publisher) throws AssertionError;
+	Duration verify(Publisher<? extends T> publisher) throws AssertionError;
 
 	/**
 	 * Verify the signals received by this subscriber. This method will <strong>block</strong>
 	 * for the given duration or until the stream has been terminated (either through
 	 * {@link #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
+	 * @return the {@link Duration} of the verification
 	 * @throws AssertionError in case of expectation failures, or when the verification times out
 	 */
-	void verify(Duration duration) throws AssertionError;
+	Duration verify(Duration duration) throws AssertionError;
 
 	/**
 	 * Make the specified publisher subscribe to this subscriber and then verify the signals
@@ -127,9 +130,10 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * for the given duration or until the stream has been terminated (either through
 	 * {@link #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
 	 * @param publisher the publisher to subscribe to
+	 * @return the {@link Duration} of the verification
 	 * @throws AssertionError in case of expectation failures, or when the verification times out
 	 */
-	void verify(Publisher<? extends T> publisher, Duration duration) throws AssertionError;
+	Duration verify(Publisher<? extends T> publisher, Duration duration) throws AssertionError;
 
 	/**
 	 * Create a new {@code ScriptedSubscriber} that requests an unbounded amount of values.

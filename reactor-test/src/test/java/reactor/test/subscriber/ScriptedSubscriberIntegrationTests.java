@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -349,17 +350,6 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void verifyDuration() {
-		Flux<String> flux = Flux.interval(Duration.ofMillis(200)).map(l -> "foo").take(2);
-
-		ScriptedSubscriber.create()
-				.expectValue("foo")
-				.expectValue("foo")
-				.expectComplete()
-				.verify(flux, Duration.ofMillis(500));
-	}
-
-	@Test
 	public void verifyVirtualTimeOnSubscribe() {
 		ScriptedSubscriber.enableVirtualTime();
 		Mono<String> mono = Mono.delay(Duration.ofDays(2))
@@ -471,6 +461,22 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .expectError(IllegalStateException.class)
 		                  .verify(flux);
 
+	}
+
+	@Test
+	public void verifyDuration() {
+		long interval = 200;
+		Flux<String> flux = Flux.interval(Duration.ofMillis(interval))
+		                        .map(l -> "foo")
+		                        .take(2);
+
+		Duration duration = ScriptedSubscriber.create()
+		                                      .expectValue("foo")
+		                                      .expectValue("foo")
+		                                      .expectComplete()
+		                                      .verify(flux, Duration.ofMillis(500));
+
+		Assert.assertTrue(duration.toMillis() > 2*interval);
 	}
 
 	@Test(expected = AssertionError.class)
