@@ -38,12 +38,12 @@ import static org.junit.Assert.assertEquals;
 public class ScriptedSubscriberIntegrationTests {
 
 	@Test
-	public void expectValue() {
+	public void expectNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
-				.expectValue("bar")
+				.expectNext("foo")
+				.expectNext("bar")
 				.expectComplete()
 				.verify(flux);
 	}
@@ -53,29 +53,29 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
-				.expectValue("baz")
+				.expectNext("foo")
+				.expectNext("baz")
 				.expectComplete()
 				.verify(flux);
 	}
 
 	@Test
-	public void expectValueAsync() {
+	public void expectNextAsync() {
 		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
-				.expectValue("bar")
+				.expectNext("foo")
+				.expectNext("bar")
 				.expectComplete()
 				.verify(flux);
 	}
 
 	@Test
-	public void expectValues() {
+	public void expectNexts() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValues("foo", "bar")
+				.expectNext("foo", "bar")
 				.expectComplete()
 				.verify(flux);
 	}
@@ -85,18 +85,18 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValues("foo", "baz")
+				.expectNext("foo", "baz")
 				.expectComplete()
 				.verify(flux);
 	}
 
 	@Test
-	public void expectValueWith() {
+	public void expectNextWith() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValueWith("foo"::equals)
-				.expectValueWith("bar"::equals)
+				.expectNextWith("foo"::equals)
+				.expectNextWith("bar"::equals)
 				.expectComplete()
 				.verify(flux);
 	}
@@ -106,8 +106,8 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValueWith("foo"::equals)
-				.expectValueWith("baz"::equals)
+				.expectNextWith("foo"::equals)
+				.expectNextWith("baz"::equals)
 				.expectComplete()
 				.verify(flux);
 	}
@@ -117,7 +117,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("bar");
 
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
-				.consumeValueWith(s -> {
+				.consumeNextWith(s -> {
 					if (!"foo".equals(s)) {
 						throw new AssertionError(s);
 					}
@@ -137,7 +137,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectComplete()
 				.verify(flux);
 	}
@@ -147,93 +147,93 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectComplete()
 				.verify(flux);
 	}
 
 	@Test
-	public void expectValueCount() {
+	public void expectNextCount() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create(0)
 		                  .thenRequest(1)
-		                  .expectValueCount(1)
+		                  .expectNextCount(1)
 		                  .thenRequest(1)
-		                  .expectValueCount(1)
+		                  .expectNextCount(1)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 
 	@Test
-	public void expectValueCountLots() {
+	public void expectNextCountLots() {
 		Flux<Integer> flux = Flux.range(0, 1_000_000);
 
 		ScriptedSubscriber.create(0)
 		                  .thenRequest(100_000)
-		                  .expectValueCount(100_000)
+		                  .expectNextCount(100_000)
 		                  .thenRequest(500_000)
-		                  .expectValueCount(500_000)
+		                  .expectNextCount(500_000)
 		                  .thenRequest(500_000)
-		                  .expectValueCount(400_000)
+		                  .expectNextCount(400_000)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectValueCountLotsError() {
+	public void expectNextCountLotsError() {
 		Flux<Integer> flux = Flux.range(0, 1_000_000);
 
 		ScriptedSubscriber.create(0)
 		                  .thenRequest(100_000)
-		                  .expectValueCount(100_000)
+		                  .expectNextCount(100_000)
 		                  .thenRequest(500_000)
-		                  .expectValueCount(499_999)
+		                  .expectNextCount(499_999)
 		                  .thenRequest(500_000)
-		                  .expectValueCount(400_000)
+		                  .expectNextCount(400_000)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 	@Test
-	public void expectValueCount2() {
+	public void expectNextCount2() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-		                  .expectValues("foo", "bar")
-		                  .expectValueCount(2)
+		                  .expectNext("foo", "bar")
+		                  .expectNextCount(2)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 	@Test
-	public void expectValueCount3() {
+	public void expectNextCount3() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-		                  .expectValue("foo")
-		                  .expectValueCount(1)
+		                  .expectNext("foo")
+		                  .expectNextCount(1)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 	@Test
-	public void expectValueCountZero() {
+	public void expectNextCountZero() {
 		Flux<String> flux = Flux.empty();
 
 		ScriptedSubscriber.create()
-		                  .expectValueCount(0)
+		                  .expectNextCount(0)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectValueCountError() {
+	public void expectNextCountError() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
-		                  .expectValueCount(4)
+		                  .expectNextCount(4)
 		                  .thenCancel()
 		                  .verify(flux);
 	}
@@ -243,7 +243,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectError()
 				.verify(flux);
 	}
@@ -253,7 +253,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectError(IllegalArgumentException.class)
 				.verify(flux);
 	}
@@ -264,7 +264,7 @@ public class ScriptedSubscriberIntegrationTests {
 				IllegalArgumentException("Error message")));
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectErrorMessage("Error message")
 				.verify(flux);
 	}
@@ -274,7 +274,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectErrorWith(t -> t instanceof IllegalArgumentException)
 				.verify(flux);
 	}
@@ -284,7 +284,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo").concatWith(Mono.error(new IllegalArgumentException()));
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectErrorWith(t -> t instanceof IllegalStateException)
 				.verify(flux);
 	}
@@ -295,7 +295,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 		try {
 			ScriptedSubscriber.create()
-					.expectValue("foo")
+					.expectNext("foo")
 					.consumeErrorWith(throwable -> {
 						if (!(throwable instanceof IllegalStateException)) {
 							throw new AssertionError(throwable.getClass().getSimpleName());
@@ -314,9 +314,9 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create(1)
 				.thenRequest(1)
-				.expectValue("foo")
+				.expectNext("foo")
 				.thenRequest(1)
-				.expectValue("bar")
+				.expectNext("bar")
 				.expectComplete()
 				.verify(flux);
 	}
@@ -326,7 +326,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar", "baz");
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.thenCancel()
 				.verify(flux);
 	}
@@ -336,7 +336,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("bar", "baz");
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.thenCancel()
 				.verify(flux);
 	}
@@ -344,7 +344,7 @@ public class ScriptedSubscriberIntegrationTests {
 	@Test(expected = IllegalStateException.class)
 	public void notSubscribed() {
 		ScriptedSubscriber.create()
-				.expectValue("foo")
+				.expectNext("foo")
 				.expectComplete()
 				.verify(Duration.ofMillis(100));
 	}
@@ -357,7 +357,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .advanceTimeBy(Duration.ofDays(3))
-		                  .expectValue("foo")
+		                  .expectNext("foo")
 		                  .expectComplete()
 		                  .verify(mono);
 
@@ -386,11 +386,11 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .advanceTimeBy(Duration.ofHours(1))
-		                  .expectValue("foo")
+		                  .expectNext("foo")
 		                  .advanceTimeBy(Duration.ofHours(1))
-		                  .expectValue("bar")
+		                  .expectNext("bar")
 		                  .advanceTimeBy(Duration.ofHours(1))
-		                  .expectValue("foobar")
+		                  .expectNext("foobar")
 		                  .expectComplete()
 		                  .verify(flux);
 
@@ -418,11 +418,11 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .advanceTimeBy(Duration.ofSeconds(3))
-		                  .expectValue("t0")
+		                  .expectNext("t0")
 		                  .advanceTimeBy(Duration.ofSeconds(3))
-		                  .expectValue("t1")
+		                  .expectNext("t1")
 		                  .advanceTimeBy(Duration.ofSeconds(3))
-		                  .expectValue("t2")
+		                  .expectNext("t2")
 		                  .thenCancel()
 		                  .verify(flux);
 
@@ -437,7 +437,7 @@ public class ScriptedSubscriberIntegrationTests {
 								.takeUntilOther(p);
 
 		ScriptedSubscriber.create(2)
-		                  .expectValues("t0", "t1")
+		                  .expectNext("t0", "t1")
 		                  .then(p::onComplete)
 		                  .expectComplete()
 		                  .verify(flux);
@@ -453,10 +453,10 @@ public class ScriptedSubscriberIntegrationTests {
 		ScriptedSubscriber.create(0)
 		                  .thenRequest(1)
 		                  .advanceTimeBy(Duration.ofSeconds(3))
-		                  .expectValue("t0")
+		                  .expectNext("t0")
 		                  .thenRequest(1)
 		                  .advanceTimeBy(Duration.ofSeconds(3))
-		                  .expectValue("t1")
+		                  .expectNext("t1")
 		                  .advanceTimeBy(Duration.ofSeconds(3))
 		                  .expectError(IllegalStateException.class)
 		                  .verify(flux);
@@ -471,8 +471,8 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .take(2);
 
 		Duration duration = ScriptedSubscriber.create()
-		                                      .expectValue("foo")
-		                                      .expectValue("foo")
+		                                      .expectNext("foo")
+		                                      .expectNext("foo")
 		                                      .expectComplete()
 		                                      .verify(flux, Duration.ofMillis(500));
 
@@ -484,8 +484,8 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200)).map(l -> "foo" ).take(2);
 
 		ScriptedSubscriber.create()
-				.expectValue("foo")
-				.expectValue("foo")
+				.expectNext("foo")
+				.expectNext("foo")
 				.expectComplete()
 				.verify(flux, Duration.ofMillis(300));
 	}

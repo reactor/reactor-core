@@ -46,14 +46,14 @@ import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
- * Default implementation of {@link ScriptedSubscriber.ValueBuilder} and
+ * Default implementation of {@link ScriptedSubscriber.SequenceBuilder} and
  * {@link ScriptedSubscriber.TerminationBuilder}.
  *
  * @author Arjen Poutsma
  * @since 1.0
  */
 final class DefaultScriptedSubscriberBuilder<T>
-		implements ScriptedSubscriber.ValueBuilder<T> {
+		implements ScriptedSubscriber.SequenceBuilder<T> {
 
 	final List<Event<T>> script = new ArrayList<>();
 
@@ -77,14 +77,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> advanceTime() {
+	public ScriptedSubscriber.SequenceBuilder<T> advanceTime() {
 		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
 		                                                          .advanceTime()));
 		return this;
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> advanceTimeBy(Duration timeshift) {
+	public ScriptedSubscriber.SequenceBuilder<T> advanceTimeBy(Duration timeshift) {
 		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
 		                                                   .advanceTimeBy(timeshift.toNanos(),
 				                                                   TimeUnit.NANOSECONDS)));
@@ -92,7 +92,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> advanceTimeTo(Instant instant) {
+	public ScriptedSubscriber.SequenceBuilder<T> advanceTimeTo(Instant instant) {
 
 		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
 		                                                   .advanceTimeTo(instant.toEpochMilli(),
@@ -101,36 +101,33 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> expectValue(T t) {
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
-			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(%s); actual: %s",
-						t,
-						signal));
-			}
-			else if (!Objects.equals(t, signal.get())) {
-				return Optional.of(String.format("expected value: %s; actual value: %s",
-						t,
-						signal.get()));
+	public ScriptedSubscriber.SequenceBuilder<T> expectNext(T... ts) {
+		Objects.requireNonNull(ts, "ts");
+		SignalEvent<T> event;
+		for(T t : ts){
+			event = new SignalEvent<>(signal -> {
+				if (!signal.isOnNext()) {
+					return Optional.of(String.format("expected: onNext(%s); actual: %s",
+							t,
+							signal));
+				}
+				else if (!Objects.equals(t, signal.get())) {
+					return Optional.of(String.format("expected value: %s; actual value: %s",
+							t,
+							signal.get()));
 
-			}
-			else {
-				return Optional.empty();
-			}
-		});
-		this.script.add(event);
+				}
+				else {
+					return Optional.empty();
+				}
+			});
+			this.script.add(event);
+		}
 		return this;
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> expectValues(T... ts) {
-		Arrays.stream(ts)
-		      .forEach(this::expectValue);
-		return this;
-	}
-
-	@Override
-	public ScriptedSubscriber.ValueBuilder<T> expectValueWith(Predicate<T> predicate) {
+	public ScriptedSubscriber.SequenceBuilder<T> expectNextWith(Predicate<T> predicate) {
 
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
@@ -151,7 +148,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> consumeValueWith(Consumer<T> consumer) {
+	public ScriptedSubscriber.SequenceBuilder<T> consumeNextWith(Consumer<T> consumer) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
 				return Optional.of(String.format("expected: onNext(); actual: %s",
@@ -290,14 +287,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> expectValueCount(long count) {
+	public ScriptedSubscriber.SequenceBuilder<T> expectNextCount(long count) {
 		checkPositive(count);
 		this.script.add(new SignalCountEvent<>(count));
 		return this;
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> thenRequest(long n) {
+	public ScriptedSubscriber.SequenceBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
 		return this;
@@ -310,7 +307,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> then(Runnable task) {
+	public ScriptedSubscriber.SequenceBuilder<T> then(Runnable task) {
 		Objects.requireNonNull(task, "task");
 		this.script.add(new TaskEvent<>(task));
 		return this;

@@ -33,13 +33,13 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * <li>Create a {@code ScriptedSubscriber} builder using {@link #create()} or
  * {@link #create(long)},</li>
  * <li>Set individual up value expectations using
- * {@link ValueBuilder#expectValue(Object) expectValue(Object)},
- * {@link ValueBuilder#expectValues(Object[]) expectValues(Object[])},
- * {@link ValueBuilder#expectValueWith(Predicate) expectValueWith(Predicate)}.</li>
+ * {@link SequenceBuilder#expectValue(Object) expectValue(Object)},
+ * {@link SequenceBuilder#expectNext(Object[]) expectNext(Object[])},
+ * {@link SequenceBuilder#expectNextWith(Predicate) expectNextWith(Predicate)}.</li>
  * and/or
  * <li>Set up subscription actions using either
- * {@link ValueBuilder#thenRequest(long) thenRequest(long)} or
- * {@link ValueBuilder#thenCancel() thenCancel()}.
+ * {@link SequenceBuilder#thenRequest(long) thenRequest(long)} or
+ * {@link SequenceBuilder#thenCancel() thenCancel()}.
  * </li>
  * <li>Build the {@code ScriptedSubscriber} using
  * {@link TerminationBuilder#expectComplete() expectComplete()},
@@ -140,7 +140,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @param <T> the type of the subscriber
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> ValueBuilder<T> create() {
+	static <T> SequenceBuilder<T> create() {
 		return create(Long.MAX_VALUE);
 	}
 
@@ -150,7 +150,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @param <T> the type of the subscriber
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> ValueBuilder<T> create(long n) {
+	static <T> SequenceBuilder<T> create(long n) {
 		DefaultScriptedSubscriberBuilder.checkPositive(n);
 		return new DefaultScriptedSubscriberBuilder<>(n);
 	}
@@ -222,27 +222,27 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 *
 	 * @param <T> the type of values that the subscriber contains
 	 */
-	interface ValueBuilder<T> extends TerminationBuilder<T> {
+	interface SequenceBuilder<T> extends TerminationBuilder<T> {
 
 		/**
 		 *
 		 * @return this builder
 		 */
-		ValueBuilder<T> advanceTime();
+		SequenceBuilder<T> advanceTime();
 
 		/**
 		 *
 		 * @param timeshift
 		 * @return this builder
 		 */
-		ValueBuilder<T> advanceTimeBy(Duration timeshift);
+		SequenceBuilder<T> advanceTimeBy(Duration timeshift);
 
 		/**
 		 *
 		 * @param instant
 		 * @return this builder
 		 */
-		ValueBuilder<T> advanceTimeTo(Instant instant);
+		SequenceBuilder<T> advanceTimeTo(Instant instant);
 
 		/**
 		 * Expect an element and consume with the given consumer. Any {@code AssertionError}s
@@ -250,15 +250,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @param consumer the consumer for the value
 		 * @return this builder
 		 */
-		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
-
-		/**
-		 * Expect the next element received to be equal to the given value.
-		 * @param t the value to expect
-		 * @return this builder
-		 * @see Subscriber#onNext(Object)
-		 */
-		ValueBuilder<T> expectValue(T t);
+		SequenceBuilder<T> consumeNextWith(Consumer<T> consumer);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -266,15 +258,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 * @see Subscriber#onNext(Object)
 		 */
-		ValueBuilder<T> expectValues(T... ts);
-
-		/**
-		 * Expect an element and evaluate with the given predicate.
-		 * @param predicate the predicate to test on the next received value
-		 * @return this builder
-		 * @see Subscriber#onNext(Object)
-		 */
-		ValueBuilder<T> expectValueWith(Predicate<T> predicate);
+		SequenceBuilder<T> expectNext(T... ts);
 
 		/**
 		 * Expect an element count starting from the last expectation or onSubscribe.
@@ -282,14 +266,22 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 * @see Subscriber#onNext(Object)
 		 */
-		ValueBuilder<T> expectValueCount(long count);
+		SequenceBuilder<T> expectNextCount(long count);
+
+		/**
+		 * Expect an element and evaluate with the given predicate.
+		 * @param predicate the predicate to test on the next received value
+		 * @return this builder
+		 * @see Subscriber#onNext(Object)
+		 */
+		SequenceBuilder<T> expectNextWith(Predicate<T> predicate);
 
 		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.
 		 * @param task the task to run
 		 * @return this builder
 		 */
-		ValueBuilder<T> then(Runnable task);
+		SequenceBuilder<T> then(Runnable task);
 
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This is in
@@ -299,6 +291,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 * @see Subscription#request(long)
 		 */
-		ValueBuilder<T> thenRequest(long n);
+		SequenceBuilder<T> thenRequest(long n);
 	}
 }
