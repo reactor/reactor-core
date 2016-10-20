@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -364,10 +365,10 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test(expected = AssertionError.class)
 	public void subscribedTwice2() {
-		Flux<String> flux = Flux.just("foo", "bar", "baz");
+		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber<String> s =
-				ScriptedSubscriber.<String>create().expectNext("foo")
+				ScriptedSubscriber.<String>create().expectNext("foo", "bar")
 				                                   .expectComplete();
 
 		flux.subscribe(s);
@@ -515,6 +516,141 @@ public class ScriptedSubscriberIntegrationTests {
 				.expectComplete()
 				.verify(flux, Duration.ofMillis(300));
 	}
+
+	@Test
+	public void verifyNever() {
+		Flux<String> flux = Flux.never();
+
+		ScriptedSubscriber.create()
+		                  .expectSubscription()
+		                  .thenCancel()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifySubscription() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectSubscriptionWith(s -> s instanceof Fuseable.QueueSubscription)
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifySubscriptionError() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectSubscriptionWith(s -> false)
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyConsumeSubscription() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .consumeSubscriptionWith(s -> Assert.assertTrue(s instanceof Fuseable.QueueSubscription))
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyConsumeSubscriptionError() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .consumeSubscriptionWith(s -> Assert.fail())
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyFusion() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectFusion()
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyFusionError() {
+		Mono<String> flux = Mono.just("foo")
+		                        .hide();
+
+		ScriptedSubscriber.create()
+		                  .expectFusion()
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyFusionModeRequest() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectFusion(Fuseable.SYNC)
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyFusionModeExpected() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectFusion(Fuseable.SYNC, Fuseable.SYNC)
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyFusionModeExpectedError() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectFusion(Fuseable.SYNC, Fuseable.ASYNC)
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyFusionModeExpected2() {
+		Flux<String> flux = Flux.just("foo", "bar")
+		                        .publishOn(Schedulers.immediate());
+
+		ScriptedSubscriber.create()
+		                  .expectFusion(Fuseable.SYNC | Fuseable.ASYNC, Fuseable.ASYNC)
+		                  .expectNext("foo", "bar")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyFusionModeExpected2Error() {
+		Flux<String> flux = Flux.just("foo", "bar")
+		                        .publishOn(Schedulers.immediate());
+
+		ScriptedSubscriber.create()
+		                  .expectFusion(Fuseable.ASYNC, Fuseable.SYNC)
+		                  .expectNext("foo", "bar")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
 
 	@After
 	public void cleanup(){
