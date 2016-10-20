@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -416,6 +417,18 @@ final class DefaultScriptedSubscriberBuilder<T>
 			if (event == null) {
 				addFailure("did not expect: %s", actualSignal);
 			}
+			else if (event instanceof TaskEvent) {
+				for(;;){
+					if(isCancelled()){
+						return;
+					}
+					event = this.script.peek();
+					if(!(event instanceof TaskEvent)){
+						break;
+					}
+					LockSupport.parkNanos(1_000);
+				}
+			}
 			else if (event instanceof SignalCountEvent) {
 				SignalCountEvent<T> countEvent = (SignalCountEvent) event;
 
@@ -512,12 +525,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 			Event<T> event;
 			Instant stop = Instant.now()
 			                      .plus(timeout);
-			boolean skipSubscriptionOp = true;
+			boolean skip = true;
 			for (; ; ) {
 				event = script.peek();
 				if (event != null) {
 					if (event instanceof TaskEvent) {
-						skipSubscriptionOp = false;
+						skip = false;
 						event = script.poll();
 						try {
 							((TaskEvent<T>) event).run();
@@ -527,7 +540,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 							cancel();
 						}
 					}
-					else if (!skipSubscriptionOp) {
+					else if (!skip) {
 						drainSubscriptionOperations(event);
 					}
 
