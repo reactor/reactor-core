@@ -164,6 +164,37 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .verify(flux);
 	}
 
+
+	@Test
+	public void expectValueCountLots() {
+		Flux<Integer> flux = Flux.range(0, 1_000_000);
+
+		ScriptedSubscriber.create(0)
+		                  .doRequest(100_000)
+		                  .expectValueCount(100_000)
+		                  .doRequest(500_000)
+		                  .expectValueCount(500_000)
+		                  .doRequest(500_000)
+		                  .expectValueCount(400_000)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void expectValueCountLotsError() {
+		Flux<Integer> flux = Flux.range(0, 1_000_000);
+
+		ScriptedSubscriber.create(0)
+		                  .doRequest(100_000)
+		                  .expectValueCount(100_000)
+		                  .doRequest(500_000)
+		                  .expectValueCount(499_999)
+		                  .doRequest(500_000)
+		                  .expectValueCount(400_000)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
 	@Test
 	public void expectValueCount2() {
 		Flux<String> flux = Flux.just("foo", "bar");

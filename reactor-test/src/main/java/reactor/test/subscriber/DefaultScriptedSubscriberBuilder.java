@@ -308,14 +308,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public ScriptedSubscriber.ValueBuilder<T> doRequest(long n) {
 		checkStrictlyPositive(n);
-		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n),
-				false));
+		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
 		return this;
 	}
 
 	@Override
 	public ScriptedSubscriber<T> doCancel() {
-		this.script.add(new SubscriptionEvent<>(Subscription::cancel, true));
+		this.script.add(new SubscriptionEvent<>());
 		return build();
 	}
 
@@ -425,9 +424,15 @@ final class DefaultScriptedSubscriberBuilder<T>
 					produced = 0L;
 				}
 				else {
-					if(countEvent.count != 0) {
-						this.checkCountMismatch(countEvent.count, actualSignal)
-						    .ifPresent(this.failures::add);
+					if (countEvent.count != 0) {
+						Optional<String> error = this.checkCountMismatch(countEvent
+								.count, actualSignal);
+
+						if(error.isPresent()){
+							this.failures.add(error.get());
+							cancel();
+							this.completeLatch.countDown();
+						}
 					}
 					return;
 				}
@@ -436,8 +441,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 			else if (event instanceof SignalEvent) {
 
 				SignalEvent<T> signalEvent = (SignalEvent<T>) this.script.poll();
-				signalEvent.test(actualSignal)
-				           .ifPresent(this.failures::add);
+				Optional<String> error = signalEvent.test(actualSignal);
+				if (error.isPresent()) {
+					this.failures.add(error.get());
+					cancel();
+					this.completeLatch.countDown();
+					return;
+				}
 			}
 
 			event = this.script.peek();
@@ -471,8 +481,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 						SubscriptionEvent<T> subscriptionEvent =
 								(SubscriptionEvent<T>) this.script.poll();
 						if (subscriptionEvent.isTerminal()) {
-							subscriptionEvent.consume(this.subscription.getAndSet(
-									Operators.cancelledSubscription()));
+							cancel();
 							this.completeLatch.countDown();
 							return;
 						}
@@ -486,6 +495,15 @@ final class DefaultScriptedSubscriberBuilder<T>
 				}
 
 			}
+		}
+
+		final Subscription cancel() {
+			Subscription s =
+					this.subscription.getAndSet(Operators.cancelledSubscription());
+			if (s != null && s != Operators.cancelledSubscription()) {
+				s.cancel();
+			}
+			return s;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -506,11 +524,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 						}
 						catch (Throwable t) {
 							Exceptions.throwIfFatal(t);
-							Subscription s =
-									this.subscription.getAndSet(Operators.cancelledSubscription());
-							if (s != null) {
-								s.cancel();
-							}
+							cancel();
 						}
 					}
 					else if (!skipSubscriptionOp) {
@@ -600,19 +614,22 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		final Consumer<Subscription> consumer;
 
-		final boolean terminal;
+		SubscriptionEvent() {
+			this(null);
+		}
 
-		SubscriptionEvent(Consumer<Subscription> consumer, boolean terminal) {
+		SubscriptionEvent(Consumer<Subscription> consumer) {
 			this.consumer = consumer;
-			this.terminal = terminal;
 		}
 
 		void consume(Subscription subscription) {
-			this.consumer.accept(subscription);
+			if(consumer != null) {
+				this.consumer.accept(subscription);
+			}
 		}
 
 		boolean isTerminal() {
-			return this.terminal;
+			return consumer == null;
 		}
 	}
 
