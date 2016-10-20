@@ -157,9 +157,9 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create(0)
-		                  .doRequest(1)
+		                  .thenRequest(1)
 		                  .expectValueCount(1)
-		                  .doRequest(1)
+		                  .thenRequest(1)
 		                  .expectValueCount(1)
 		                  .expectComplete()
 		                  .verify(flux);
@@ -171,11 +171,11 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<Integer> flux = Flux.range(0, 1_000_000);
 
 		ScriptedSubscriber.create(0)
-		                  .doRequest(100_000)
+		                  .thenRequest(100_000)
 		                  .expectValueCount(100_000)
-		                  .doRequest(500_000)
+		                  .thenRequest(500_000)
 		                  .expectValueCount(500_000)
-		                  .doRequest(500_000)
+		                  .thenRequest(500_000)
 		                  .expectValueCount(400_000)
 		                  .expectComplete()
 		                  .verify(flux);
@@ -186,11 +186,11 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<Integer> flux = Flux.range(0, 1_000_000);
 
 		ScriptedSubscriber.create(0)
-		                  .doRequest(100_000)
+		                  .thenRequest(100_000)
 		                  .expectValueCount(100_000)
-		                  .doRequest(500_000)
+		                  .thenRequest(500_000)
 		                  .expectValueCount(499_999)
-		                  .doRequest(500_000)
+		                  .thenRequest(500_000)
 		                  .expectValueCount(400_000)
 		                  .expectComplete()
 		                  .verify(flux);
@@ -234,7 +234,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .expectValueCount(4)
-		                  .doCancel()
+		                  .thenCancel()
 		                  .verify(flux);
 	}
 
@@ -313,9 +313,9 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create(1)
-				.doRequest(1)
+				.thenRequest(1)
 				.expectValue("foo")
-				.doRequest(1)
+				.thenRequest(1)
 				.expectValue("bar")
 				.expectComplete()
 				.verify(flux);
@@ -327,7 +327,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 				.expectValue("foo")
-				.doCancel()
+				.thenCancel()
 				.verify(flux);
 	}
 
@@ -337,7 +337,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 				.expectValue("foo")
-				.doCancel()
+				.thenCancel()
 				.verify(flux);
 	}
 
@@ -423,7 +423,7 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .expectValue("t1")
 		                  .advanceTimeBy(Duration.ofSeconds(3))
 		                  .expectValue("t2")
-		                  .doCancel()
+		                  .thenCancel()
 		                  .verify(flux);
 
 	}
@@ -451,10 +451,10 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .map(d -> "t" + d);
 
 		ScriptedSubscriber.create(0)
-		                  .doRequest(1)
+		                  .thenRequest(1)
 		                  .advanceTimeBy(Duration.ofSeconds(3))
 		                  .expectValue("t0")
-		                  .doRequest(1)
+		                  .thenRequest(1)
 		                  .advanceTimeBy(Duration.ofSeconds(3))
 		                  .expectValue("t1")
 		                  .advanceTimeBy(Duration.ofSeconds(3))

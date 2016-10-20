@@ -297,14 +297,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.ValueBuilder<T> doRequest(long n) {
+	public ScriptedSubscriber.ValueBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
 		return this;
 	}
 
 	@Override
-	public ScriptedSubscriber<T> doCancel() {
+	public ScriptedSubscriber<T> thenCancel() {
 		this.script.add(new SubscriptionEvent<>());
 		return build();
 	}

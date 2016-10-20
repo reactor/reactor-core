@@ -38,15 +38,15 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * {@link ValueBuilder#expectValueWith(Predicate) expectValueWith(Predicate)}.</li>
  * and/or
  * <li>Set up subscription actions using either
- * {@link ValueBuilder#doRequest(long) doRequest(long)} or
- * {@link ValueBuilder#doCancel() doCancel()}.
+ * {@link ValueBuilder#thenRequest(long) thenRequest(long)} or
+ * {@link ValueBuilder#thenCancel() thenCancel()}.
  * </li>
  * <li>Build the {@code ScriptedSubscriber} using
  * {@link TerminationBuilder#expectComplete() expectComplete()},
  * {@link TerminationBuilder#expectError() expectError()},
  * {@link TerminationBuilder#expectError(Class) expectError(Class)},
  * {@link TerminationBuilder#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or
- * {@link TerminationBuilder#doCancel() doCancel()}.
+ * {@link TerminationBuilder#thenCancel() thenCancel()}.
  * </li>
  * <li>Subscribe the built {@code ScriptedSubscriber} to a {@code Publisher}.</li>
  * <li>Verify the expectations using either {@link #verify()} or {@link #verify(Duration)}.</li>
@@ -214,7 +214,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return the built subscriber
 		 * @see Subscription#cancel()
 		 */
-		ScriptedSubscriber<T> doCancel();
+		ScriptedSubscriber<T> thenCancel();
 	}
 
 	/**
@@ -251,16 +251,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 */
 		ValueBuilder<T> consumeValueWith(Consumer<T> consumer);
-
-		/**
-		 * Request the given amount of elements from the upstream {@code Publisher}. This is in
-		 * addition to the initial number of elements requested by
-		 * {@link ScriptedSubscriber#create(long)}.
-		 * @param n the number of elements to request
-		 * @return this builder
-		 * @see Subscription#request(long)
-		 */
-		ValueBuilder<T> doRequest(long n);
 
 		/**
 		 * Expect the next element received to be equal to the given value.
@@ -300,5 +290,15 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 */
 		ValueBuilder<T> then(Runnable task);
+
+		/**
+		 * Request the given amount of elements from the upstream {@code Publisher}. This is in
+		 * addition to the initial number of elements requested by
+		 * {@link ScriptedSubscriber#create(long)}.
+		 * @param n the number of elements to request
+		 * @return this builder
+		 * @see Subscription#request(long)
+		 */
+		ValueBuilder<T> thenRequest(long n);
 	}
 }
