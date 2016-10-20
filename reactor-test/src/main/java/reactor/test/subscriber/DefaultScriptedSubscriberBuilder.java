@@ -19,6 +19,7 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -131,16 +132,21 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
+	public ScriptedSubscriber.StepBuilder<T> expectNextAs(Iterable<? extends T> iterable) {
+		Objects.requireNonNull(iterable, "iterable");
+		this.script.add(new SignalSequenceEvent<>(iterable));
+		return this;
+	}
+
+	@Override
 	public ScriptedSubscriber.StepBuilder<T> expectNextWith(Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(); actual: %s",
-						signal));
+				return Optional.of(String.format("expected: onNext(); actual: %s", signal));
 			}
 			else if (!predicate.test(signal.get())) {
-				return Optional.of(String.format("predicate failed on value: %s",
-						signal.get()));
+				return Optional.of(String.format("predicate failed on value: %s", signal.get()));
 			}
 			else {
 				return Optional.empty();
@@ -420,6 +426,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		long produced;
 
+		Iterator<? extends T> currentNextAs;
+
 		volatile int wip;
 
 		public DefaultScriptedSubscriber(Queue<Event<T>> script,
@@ -600,14 +608,14 @@ final class DefaultScriptedSubscriberBuilder<T>
 			else if (event instanceof SignalCountEvent) {
 				SignalCountEvent<T> countEvent = (SignalCountEvent) event;
 
-				if (countEvent.test(produced)) {
+				if (produced >= countEvent.count) {
 					this.script.poll();
 					produced = 0L;
 				}
 				else {
 					if (countEvent.count != 0) {
-						Optional<String> error = this.checkCountMismatch(countEvent
-								.count, actualSignal);
+						Optional<String> error =
+								this.checkCountMismatch(countEvent.count, actualSignal);
 
 						if(error.isPresent()){
 							this.failures.add(error.get());
@@ -617,7 +625,31 @@ final class DefaultScriptedSubscriberBuilder<T>
 					}
 					return;
 				}
+			}
+			else if (event instanceof SignalSequenceEvent) {
+				SignalSequenceEvent<T> sequenceEvent = (SignalSequenceEvent) event;
 
+				Iterator<? extends T> currentNextAs = this.currentNextAs;
+				if (actualSignal.isOnNext() && currentNextAs == null) {
+					currentNextAs = sequenceEvent.iterable.iterator();
+					this.currentNextAs = currentNextAs;
+				}
+
+				Optional<String> error = sequenceEvent.test(actualSignal, currentNextAs);
+
+				if(error == EXPECT_MORE){
+					return;
+				}
+				if (!error.isPresent()) {
+					this.currentNextAs = null;
+					this.script.poll();
+				}
+				else {
+					this.failures.add(error.get());
+					cancel();
+					this.completeLatch.countDown();
+					return;
+				}
 			}
 			else if (event instanceof SignalEvent) {
 
@@ -859,11 +891,45 @@ final class DefaultScriptedSubscriberBuilder<T>
 			this.count = count;
 		}
 
-		boolean test(long current) {
-			return current >= count;
+	}
+
+	static final class SignalSequenceEvent<T> extends Event<T> {
+
+		final Iterable<? extends T> iterable;
+
+		SignalSequenceEvent(Iterable<? extends T> iterable) {
+			this.iterable = iterable;
 		}
 
+		Optional<String> test(Signal<T> signal, Iterator<? extends T> iterator) {
+			if (signal.isOnNext()) {
+				if (!iterator.hasNext()) {
+					return Optional.of(String.format("unexpected iterator request; " +
+									"onNext(%s); iterable: %s",
+							signal.get(), iterable));
+				}
+				T d2 = iterator.next();
+				if (!Objects.equals(signal.get(), d2)) {
+					return Optional.of(String.format("expected : onNext(%s); actual: " +
+									"%s; iterable: %s",
+							d2,
+							signal.get(), iterable));
+				}
+				return iterator.hasNext() ? EXPECT_MORE : Optional.empty();
+
+			}
+			if (iterator != null && iterator.hasNext() || signal.isOnError()) {
+				return Optional.of(String.format("expected next value: %s; actual " +
+								"actual signal: " + "%s; iterable: %s",
+							iterator != null && iterator.hasNext() ? iterator.next() :
+									"none",
+							signal, iterable));
+			}
+			return Optional.empty();
+		}
 	}
+
+	static final Optional<String> EXPECT_MORE = Optional.empty();
 
 	static final class TaskEvent<T> extends Event<T> {
 

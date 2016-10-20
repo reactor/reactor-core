@@ -317,6 +317,18 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		StepBuilder<T> expectNextWith(Predicate<? super T> predicate);
 
 		/**
+		 * Expect the next elements to match the given {@link Iterable} until its
+		 * iterator depletes.
+		 *
+		 * @param iterable the predicate to test on the next received value
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		StepBuilder<T> expectNextAs(Iterable<? extends T> iterable);
+
+		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.
 		 *
 		 * @param task the task to run

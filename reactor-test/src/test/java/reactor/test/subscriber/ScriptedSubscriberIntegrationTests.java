@@ -18,6 +18,8 @@ package reactor.test.subscriber;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
@@ -534,6 +536,48 @@ public class ScriptedSubscriberIntegrationTests {
 		ScriptedSubscriber.create()
 		                  .expectSubscriptionWith(s -> s instanceof Fuseable.QueueSubscription)
 		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyNextAs() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .expectNextAs(Arrays.asList("foo", "bar", "foobar"))
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyNextAsError() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .expectNextAs(Arrays.asList("foo", "bar"))
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyNextAsError2() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .expectNextAs(Arrays.asList("foo", "bar", "foobar", "bar"))
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyNextAs2() {
+		final List<Integer> source = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+		Flux<Integer> flux = Flux.fromStream(source.stream());
+
+		ScriptedSubscriber.create()
+		                  .expectNextAs(source)
 		                  .expectComplete()
 		                  .verify(flux);
 	}
