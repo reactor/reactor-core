@@ -349,6 +349,32 @@ public class ScriptedSubscriberIntegrationTests {
 				.verify(Duration.ofMillis(100));
 	}
 
+	@Test(expected = IllegalStateException.class)
+	public void subscribedTwice() {
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber<String> s =
+				ScriptedSubscriber.<String>create().expectNext("foo")
+				                                   .expectNext("bar")
+				                                   .expectComplete();
+
+		s.verify(flux);
+		s.verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void subscribedTwice2() {
+		Flux<String> flux = Flux.just("foo", "bar", "baz");
+
+		ScriptedSubscriber<String> s =
+				ScriptedSubscriber.<String>create().expectNext("foo")
+				                                   .expectComplete();
+
+		flux.subscribe(s);
+		flux.subscribe(s);
+		s.verify();
+	}
+
 	@Test
 	public void verifyVirtualTimeOnSubscribe() {
 		ScriptedSubscriber.enableVirtualTime();

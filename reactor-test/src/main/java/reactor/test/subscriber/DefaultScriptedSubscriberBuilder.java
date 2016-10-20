@@ -19,7 +19,6 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -28,6 +27,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -318,7 +318,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 		return new DefaultScriptedSubscriber<>(copy, this.initialRequest);
 	}
 
-	final static class DefaultScriptedSubscriber<T>
+	final static class DefaultScriptedSubscriber<T> extends AtomicBoolean
 			implements ScriptedSubscriber<T>, Trackable, Receiver {
 
 		final AtomicReference<Subscription> subscription = new AtomicReference<>();
@@ -368,6 +368,17 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			else {
 				subscription.cancel();
+				if(isCancelled()){
+					addFailure("An unexpected Subscription has been received: %s; " +
+									"actual: cancelled",
+							subscription);
+				}
+				else {
+					addFailure("An unexpected Subscription has been received: %s; " +
+									"actual: ",
+							subscription,
+							this.subscription);
+				}
 			}
 		}
 
@@ -562,14 +573,6 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 
 		@Override
-		public Duration verify(Publisher<? extends T> publisher) {
-			Instant now = Instant.now();
-			publisher.subscribe(this);
-			verify();
-			return Duration.between(now, Instant.now());
-		}
-
-		@Override
 		public Duration verify(Duration duration) {
 			Instant now = Instant.now();
 			try {
@@ -585,7 +588,24 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 
 		@Override
+		public Duration verify(Publisher<? extends T> publisher) {
+			checkStarted();
+			Instant now = Instant.now();
+			publisher.subscribe(this);
+			verify();
+			return Duration.between(now, Instant.now());
+		}
+
+		void checkStarted(){
+			if(!compareAndSet(false, true)){
+				throw new IllegalStateException("The ScriptedSubscriber has already " +
+						"been started");
+			}
+		}
+
+		@Override
 		public Duration verify(Publisher<? extends T> publisher, Duration duration) {
+			checkStarted();
 			Instant now = Instant.now();
 			publisher.subscribe(this);
 			verify(duration);
