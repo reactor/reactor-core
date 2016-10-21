@@ -5078,9 +5078,36 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Cancellation subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
+		return subscribe(consumer, errorConsumer, completeConsumer, null);
+	}
 
-		LambdaSubscriber<T> consumerAction =
-				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer, null);
+	/**
+	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
+	 * sequence.  It will let the provided {@link Subscription subscriptionConsumer}
+	 * request the adequate amount of data, or request unbounded demand
+	 * {@code Long.MAX_VALUE} if no such consumer is provided.
+	 * <p>
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
+	 * {@link #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)}
+	 * and {@link #doOnSubscribe(Consumer)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png" alt="">
+	 *
+	 * @param consumer the consumer to invoke on each value
+	 * @param errorConsumer the consumer to invoke on error signal
+	 * @param completeConsumer the consumer to invoke on complete signal
+	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
+	 * for the initial {@link Subscription#request(long) request}, or null for max request
+	 *
+	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 */
+	public final Cancellation subscribe(Consumer<? super T> consumer,
+			Consumer<? super Throwable> errorConsumer,
+			Runnable completeConsumer,
+			Consumer<? super Subscription> subscriptionConsumer) {
+		LambdaSubscriber<T> consumerAction = new LambdaSubscriber<>(consumer,
+				errorConsumer, completeConsumer, subscriptionConsumer);
 
 		subscribe(consumerAction);
 		return consumerAction;
@@ -5094,7 +5121,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p> For a passive version that observe and forward
 	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
-	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 * #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)} and
+	 * {@link #doOnSubscribe(Consumer)}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png"
 	 * alt="">
@@ -5105,14 +5133,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the demand to produce to this {@link Flux}
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
+	 * {@code subscribe(..., prefetch)}
+	 * @see #limitRate(int)
+	 * @see #subscribe(Consumer, Consumer, Runnable)
 	 */
+	@Deprecated
 	public final Cancellation subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			int prefetch) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null, prefetch);
 	}
-
 
 	/**
 	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the sequence.
@@ -5132,10 +5164,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
-	 * @param prefetch the demand to produce to this {@link Flux}
+	 * @param prefetch the demand to produce to this {@link Flux} (deprecated)
 	 *
 	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
+	 * {@code subscribe(..., prefetch)}
+	 * @see #limitRate(int)
+	 * @see #subscribe(Consumer, Consumer, Runnable, Consumer)
 	 */
+	@Deprecated
 	public final Cancellation subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
