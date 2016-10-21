@@ -444,6 +444,17 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		StepBuilder<T> expectSubscriptionWith(Predicate<? super Subscription> predicate);
 
 		/**
+		 * Expect the source {@link Publisher} to NOT run with Reactor Fusion flow
+		 * optimization. It will check if publisher is {@link Fuseable} or
+		 * subscription is a {@link Fuseable.QueueSubscription}.
+		 *
+		 * @return this builder
+		 *
+		 * @see Fuseable
+		 */
+		StepBuilder<T> expectNoFusionSupport();
+
+		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
 		 * optimization. It will be requesting {@link Fuseable#ANY} fusion mode.
 		 *

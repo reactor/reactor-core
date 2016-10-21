@@ -255,6 +255,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
+	public ScriptedSubscriber.StepBuilder<T> expectNoFusionSupport() {
+		requestedFusionMode = NO_FUSION_SUPPORT;
+		return this;
+	}
+
+	@Override
 	public ScriptedSubscriber.StepBuilder<T> expectFusion() {
 		return expectFusion(Fuseable.ANY, Fuseable.ANY);
 	}
@@ -522,7 +528,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 			if (this.subscription.compareAndSet(null, subscription)) {
 				onExpectation(Signal.subscribe(subscription));
-				if (requestedFusionMode >= Fuseable.NONE) {
+				if (requestedFusionMode == NO_FUSION_SUPPORT &&
+						subscription instanceof Fuseable.QueueSubscription){
+					addFailure("unexpected fusion support: %s", subscription);
+					cancel();
+					this.completeLatch.countDown();
+				}
+				else if (requestedFusionMode >= Fuseable.NONE) {
 					if (!startFusion(subscription)) {
 						cancel();
 						this.completeLatch.countDown();
@@ -877,7 +889,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			if (!compareAndSet(false, true)) {
 				throw new IllegalStateException("The ScriptedSubscriber has already " + "been started");
 			}
-			if (requestedFusionMode >= Fuseable.NONE && !(publisher instanceof Fuseable)) {
+			if (requestedFusionMode == NO_FUSION_SUPPORT && publisher instanceof Fuseable){
+				throw new AssertionError("The source publisher supports fusion");
+			}
+			else if (requestedFusionMode >= Fuseable.NONE && !(publisher instanceof
+					Fuseable)) {
 				throw new AssertionError("The source publisher does not support fusion");
 			}
 		}
@@ -1120,6 +1136,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 			return Optional.empty();
 		}
 	});
+
+	static final int NO_FUSION_SUPPORT = Integer.MIN_VALUE;
 
 	static final AtomicReferenceFieldUpdater<DefaultScriptedSubscriber, Throwable>
 			ERRORS =

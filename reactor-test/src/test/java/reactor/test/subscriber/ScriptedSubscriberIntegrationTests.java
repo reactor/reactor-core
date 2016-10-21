@@ -153,7 +153,6 @@ public class ScriptedSubscriberIntegrationTests {
 		}
 		catch (AssertionError error) {
 			assertEquals("bar", error.getMessage());
-			error.printStackTrace();
 		}
 	}
 
@@ -714,6 +713,31 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .expectFusion()
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+
+	@Test
+	public void verifyNoFusion() {
+		Mono<String> flux = Mono.just("foo")
+		                        .hide();
+
+		ScriptedSubscriber.create()
+		                  .expectNoFusionSupport()
+		                  .expectNext("foo")
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+
+	@Test(expected = AssertionError.class)
+	public void verifyNoFusionError() {
+		Mono<String> flux = Mono.just("foo");
+
+		ScriptedSubscriber.create()
+		                  .expectNoFusionSupport()
 		                  .expectNext("foo")
 		                  .expectComplete()
 		                  .verify(flux);
