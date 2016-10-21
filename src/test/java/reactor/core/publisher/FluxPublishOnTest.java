@@ -25,17 +25,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1013,14 +1007,14 @@ public class FluxPublishOnTest {
 	}
 
 	@Test
-	public void throttleDemand() {
+	public void limitRate() {
 		List<Long> upstreamRequests = new LinkedList<>();
 		List<Long> downstreamRequests = new LinkedList<>();
 		Flux<Integer> source = Flux
 				.range(1, 400)
 				.doOnRequest(upstreamRequests::add)
 				.doOnRequest(r -> System.out.println("upstream request of " + r))
-				.throttlePublisher(40)
+				.limitRate(40)
 				.doOnRequest(downstreamRequests::add)
 				.doOnRequest(r -> System.out.println("downstream request of " + r));
 
@@ -1034,7 +1028,7 @@ public class FluxPublishOnTest {
 		long total = 0L;
 		for (Long requested : upstreamRequests) {
 			total += requested;
-			Assert.assertThat("throttle not applied to request: " + requested,
+			Assert.assertThat("rate limit not applied to request: " + requested,
 			//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
 					requested, anyOf(is(40L), is(30L)));
 		}

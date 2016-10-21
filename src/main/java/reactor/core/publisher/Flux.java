@@ -4563,22 +4563,22 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Ensure that backpressure signals from downstream subscribers are capped at the
-	 * provided {@code throttlingLimit} when propagated upstream, effectively throttling
+	 * provided {@code prefetchRate} when propagated upstream, effectively rate limiting
 	 * the upstream {@link Publisher}.
 	 * <p>
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
 	 * with smaller requests (eg. database paging, etc...). All data is still processed.
 	 * <p>
-	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), throttlingLimit).subscribe() }
+	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
 	 *
-	 * @param throttlingLimit the limit to apply to downstream's backpressure
+	 * @param prefetchRate the limit to apply to downstream's backpressure
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
 	 * @see #publishOn(Scheduler, int)
 	 */
-	public final Flux<T> throttlePublisher(int throttlingLimit) {
-		return onAssembly(this.publishOn(Schedulers.immediate(), throttlingLimit));
+	public final Flux<T> limitRate(int prefetchRate) {
+		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
 	/**
