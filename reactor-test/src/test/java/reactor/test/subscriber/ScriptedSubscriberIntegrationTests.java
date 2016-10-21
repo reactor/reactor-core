@@ -53,7 +53,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValue() {
+	public void expectInvalidNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
@@ -85,7 +85,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValues() {
+	public void expectInvalidNexts() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
@@ -106,7 +106,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidValueWith() {
+	public void expectInvalidNextWith() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
@@ -117,7 +117,27 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test
-	public void consumeValueWith() throws Exception {
+	public void consumeNextWith() throws Exception {
+		Flux<String> flux = Flux.just("bar");
+
+		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
+				.consumeNextWith(s -> {
+					if (!"foo".equals(s)) {
+						throw new AssertionError("e:"+s);
+					}
+				})
+				.expectComplete();
+
+		try {
+			subscriber.verify(flux);
+		}
+		catch (AssertionError error) {
+			assertEquals("e:bar", error.getMessage());
+		}
+	}
+
+	@Test
+	public void consumeNextWith2() throws Exception {
 		Flux<String> flux = Flux.just("bar");
 
 		ScriptedSubscriber<String> subscriber = ScriptedSubscriber.<String>create()
@@ -132,12 +152,13 @@ public class ScriptedSubscriberIntegrationTests {
 			subscriber.verify(flux);
 		}
 		catch (AssertionError error) {
-			assertEquals("Expectation failure(s):\n - bar", error.getMessage());
+			assertEquals("bar", error.getMessage());
+			error.printStackTrace();
 		}
 	}
 
 	@Test(expected = AssertionError.class)
-	public void missingValue() {
+	public void missingNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		ScriptedSubscriber.create()
@@ -147,7 +168,7 @@ public class ScriptedSubscriberIntegrationTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void missingValueAsync() {
+	public void missingNextAsync() {
 		Flux<String> flux = Flux.just("foo", "bar").publishOn(Schedulers.parallel());
 
 		ScriptedSubscriber.create()
@@ -308,7 +329,7 @@ public class ScriptedSubscriberIntegrationTests {
 					.verify(flux);
 		}
 		catch (AssertionError error) {
-			assertEquals("Expectation failure(s):\n - IllegalArgumentException", error.getMessage());
+			assertEquals("IllegalArgumentException", error.getMessage());
 		}
 	}
 

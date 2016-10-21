@@ -19,9 +19,9 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -115,19 +116,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(consumer, "consumer");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s",
-						signal));
+				return fail("expected: onError(); actual: %s", signal);
 			}
 			else {
-				try {
-					consumer.accept(signal.getThrowable());
-					return Optional.empty();
-				}
-				catch (AssertionError assertion) {
-					String msg =
-							assertion.getMessage() == null ? "" : assertion.getMessage();
-					return Optional.of(msg);
-				}
+				consumer.accept(signal.getThrowable());
+				return Optional.empty();
 			}
 		});
 		this.script.add(event);
@@ -139,19 +132,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(consumer, "consumer");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(); actual: %s",
-						signal));
+				return fail("expected: onNext(); actual: %s", signal);
 			}
 			else {
-				try {
-					consumer.accept(signal.get());
-					return Optional.empty();
-				}
-				catch (AssertionError assertion) {
-					String msg =
-							assertion.getMessage() == null ? "" : assertion.getMessage();
-					return Optional.of(msg);
-				}
+				consumer.accept(signal.get());
+				return Optional.empty();
 			}
 		});
 		this.script.add(event);
@@ -169,19 +154,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(consumer, "consumer");
 		this.script.set(0, new SignalEvent<>(signal -> {
 			if (!signal.isOnSubscribe()) {
-				return Optional.of(String.format("expected: onSubscribe(); actual: %s",
-						signal));
+				return fail("expected: onSubscribe(); actual: %s", signal);
 			}
 			else {
-				try {
-					consumer.accept(signal.getSubscription());
-					return Optional.empty();
-				}
-				catch (AssertionError assertion) {
-					String msg =
-							assertion.getMessage() == null ? "" : assertion.getMessage();
-					return Optional.of(msg);
-				}
+				consumer.accept(signal.getSubscription());
+				return Optional.empty();
 			}
 		}));
 		return this;
@@ -191,8 +168,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> expectComplete() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnComplete()) {
-				return Optional.of(String.format("expected: onComplete(); actual: %s",
-						signal));
+				return fail("expected: onComplete(); actual: %s", signal);
 			}
 			else {
 				return Optional.empty();
@@ -206,8 +182,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> expectError() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s",
-						signal));
+				return fail("expected: onError(); actual: %s", signal);
 			}
 			else {
 				return Optional.empty();
@@ -223,15 +198,12 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(clazz, "clazz");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(%s); actual: %s",
-						clazz.getSimpleName(),
-						signal));
+				return fail("expected: onError(%s); actual: %s",
+						clazz.getSimpleName(), signal);
 			}
 			else if (!clazz.isInstance(signal.getThrowable())) {
-				return Optional.of(String.format(
-						"expected error of type: %s; actual type: %s",
-						clazz.getSimpleName(),
-						signal.getThrowable()));
+				return fail("expected error of type: %s; actual type: %s",
+						clazz.getSimpleName(), signal.getThrowable());
 			}
 			else {
 				return Optional.empty();
@@ -245,17 +217,16 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber<T> expectErrorMessage(String errorMessage) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(\"%s\"); actual: %s",
-						errorMessage,
-						signal));
+				return fail("expected: onError(\"%s\"); actual: %s",
+						errorMessage, signal);
 			}
 			else if (!Objects.equals(errorMessage,
 					signal.getThrowable()
 					      .getMessage())) {
-				return Optional.of(String.format("expected error message: \"%s\"; " + "actual " + "message: %s",
+				return fail("expected error message: \"%s\"; " + "actual " + "message: %s",
 						errorMessage,
 						signal.getThrowable()
-						      .getMessage()));
+						      .getMessage());
 			}
 			else {
 				return Optional.empty();
@@ -270,12 +241,10 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
-				return Optional.of(String.format("expected: onError(); actual: %s",
-						signal));
+				return fail("expected: onError(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.getThrowable())) {
-				return Optional.of(String.format("predicate failed on exception: %s",
-						signal.getThrowable()));
+				return fail("predicate failed on exception: %s", signal.getThrowable());
 			}
 			else {
 				return Optional.empty();
@@ -311,15 +280,10 @@ final class DefaultScriptedSubscriberBuilder<T>
 		for (T t : ts) {
 			event = new SignalEvent<>(signal -> {
 				if (!signal.isOnNext()) {
-					return Optional.of(String.format("expected: onNext(%s); actual: %s",
-							t,
-							signal));
+					return fail("expected: onNext(%s); actual: %s", t, signal);
 				}
 				else if (!Objects.equals(t, signal.get())) {
-					return Optional.of(String.format(
-							"expected value: %s; actual value: %s",
-							t,
-							signal.get()));
+					return fail("expected value: %s; actual value: %s", t, signal.get());
 
 				}
 				else {
@@ -350,12 +314,10 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnNext()) {
-				return Optional.of(String.format("expected: onNext(); actual: %s",
-						signal));
+				return fail("expected: onNext(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.get())) {
-				return Optional.of(String.format("predicate failed on value: %s",
-						signal.get()));
+				return fail("predicate failed on value: %s", signal.get());
 			}
 			else {
 				return Optional.empty();
@@ -383,12 +345,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.set(0, new SignalEvent<>(signal -> {
 			if (!signal.isOnSubscribe()) {
-				return Optional.of(String.format("expected: onSubscribe(); actual: %s",
-						signal));
+				return fail("expected: onSubscribe(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.getSubscription())) {
-				return Optional.of(String.format("predicate failed on subscription: %s",
-						signal.getSubscription()));
+				return fail("predicate failed on subscription: %s",
+						signal.getSubscription());
 			}
 			else {
 				return Optional.empty();
@@ -461,7 +422,6 @@ final class DefaultScriptedSubscriberBuilder<T>
 		final long                          initialRequest;
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
-		final List<String>                  failures;
 
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
@@ -471,6 +431,9 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		@SuppressWarnings("unused")
 		volatile int wip;
+
+		@SuppressWarnings("unused")
+		volatile Throwable errors;
 
 		DefaultScriptedSubscriber(Queue<Event<T>> script,
 				long initialRequest,
@@ -482,9 +445,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 					expectedFusionMode == -1 ? requestedFusionMode : expectedFusionMode;
 			this.produced = 0L;
 			this.initialRequest = initialRequest;
-			this.failures = new LinkedList<>();
 			this.completeLatch = new CountDownLatch(1);
 			this.subscription = new AtomicReference<>();
+		}
+
+		@Override
+		public Throwable getError() {
+			return errors;
 		}
 
 		@Override
@@ -532,7 +499,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 						return;
 					}
 					produced++;
-					if(currentCollector != null){
+					if (currentCollector != null) {
 						currentCollector.add(t);
 					}
 					onExpectation(Signal.next(t));
@@ -540,7 +507,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			else {
 				produced++;
-				if(currentCollector != null){
+				if (currentCollector != null) {
 					currentCollector.add(t);
 				}
 				onExpectation(Signal.next(t));
@@ -632,7 +599,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 
 		final void addFailure(String msg, Object... arguments) {
-			this.failures.add(String.format(msg, arguments));
+			Exceptions.addThrowable(ERRORS, this, fail(msg, arguments).get());
 		}
 
 		final Subscription cancel() {
@@ -644,12 +611,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			return s;
 		}
 
-		final Optional<String> checkCountMismatch(long expected, Signal<T> s) {
+		final Optional<AssertionError> checkCountMismatch(long expected, Signal<T> s) {
 			if (!s.isOnNext()) {
-				return Optional.of(String.format("expected: count = %s; actual: " + "produced = %s; " + "signal: %s",
+				return fail("expected: count = %s; actual: " + "produced = %s; " + "signal: %s",
 						expected,
-						produced,
-						s));
+						produced, s);
 			}
 			else {
 				return Optional.empty();
@@ -679,9 +645,9 @@ final class DefaultScriptedSubscriberBuilder<T>
 				return true;
 			}
 
-			Optional<String> error = collectEvent.test(c);
+			Optional<AssertionError> error = collectEvent.test(c);
 			if (error.isPresent()) {
-				addFailure(error.get());
+				Exceptions.addThrowable(ERRORS, this, error.get());
 				cancel();
 				this.completeLatch.countDown();
 				return true;
@@ -746,23 +712,29 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			catch (Throwable e) {
 				Exceptions.throwIfFatal(e);
-				String msg = e.getMessage() != null ? e.getMessage() : "";
-				addFailure("failed running expectation with [%s]:\n%s",
-						Exceptions.unwrap(e)
-						          .getClass()
-						          .getName(),
-						msg);
+				if(e instanceof AssertionError){
+					Exceptions.addThrowable(ERRORS, this, e);
+				}
+				else {
+					String msg = e.getMessage() != null ? e.getMessage() : "";
+					Exceptions.addThrowable(ERRORS,
+							this,
+							fail("failed running expectation on signal [%s] with " + "[%s]:\n%s",
+									Exceptions.unwrap(e)
+									          .getClass()
+									          .getName(),
+									msg).get());
+				}
 				cancel();
 				completeLatch.countDown();
-				return;
 			}
 		}
 
 		boolean onSignal(Signal<T> actualSignal) {
 			SignalEvent<T> signalEvent = (SignalEvent<T>) this.script.poll();
-			Optional<String> error = signalEvent.test(actualSignal);
+			Optional<AssertionError> error = signalEvent.test(actualSignal);
 			if (error.isPresent()) {
-				this.failures.add(error.get());
+				Exceptions.addThrowable(ERRORS, this, error.get());
 				cancel();
 				this.completeLatch.countDown();
 				return true;
@@ -778,7 +750,8 @@ final class DefaultScriptedSubscriberBuilder<T>
 				this.currentNextAs = currentNextAs;
 			}
 
-			Optional<String> error = sequenceEvent.test(actualSignal, currentNextAs);
+			Optional<AssertionError> error =
+					sequenceEvent.test(actualSignal, currentNextAs);
 
 			if (error == EXPECT_MORE) {
 				return false;
@@ -788,7 +761,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 				this.script.poll();
 			}
 			else {
-				this.failures.add(error.get());
+				Exceptions.addThrowable(ERRORS, this, error.get());
 				cancel();
 				this.completeLatch.countDown();
 				return true;
@@ -803,11 +776,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 			else {
 				if (event.count != 0) {
-					Optional<String> error =
+					Optional<AssertionError> error =
 							this.checkCountMismatch(event.count, actualSignal);
 
 					if (error.isPresent()) {
-						this.failures.add(error.get());
+						Exceptions.addThrowable(ERRORS, this, error.get());
 						cancel();
 						this.completeLatch.countDown();
 					}
@@ -958,21 +931,35 @@ final class DefaultScriptedSubscriberBuilder<T>
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		final void validate() {
 			if (!isStarted()) {
 				throw new IllegalStateException(
 						"ScriptedSubscriber has not been subscribed");
 			}
-			if (this.failures.isEmpty()) {
+			Throwable errors = this.errors;
+
+			if (errors == null) {
 				return;
 			}
+
+			if (errors.getSuppressed().length == 0){
+				if(errors instanceof AssertionError){
+					throw (AssertionError)errors;
+				}
+			}
+
+			List<Throwable> flat = new ArrayList<>();
+			flat.add(errors);
+			flat.addAll(Arrays.asList(errors.getSuppressed()));
+
 			StringBuilder messageBuilder = new StringBuilder("Expectation failure(s):\n");
-			this.failures.stream()
+			flat.stream()
 			             .flatMap(error -> Stream.of(" - ", error, "\n"))
 			             .forEach(messageBuilder::append);
 
 			messageBuilder.delete(messageBuilder.length() - 1, messageBuilder.length());
-			throw new AssertionError(messageBuilder.toString());
+			throw new AssertionError(messageBuilder.toString(), errors);
 		}
 
 	}
@@ -1006,13 +993,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	static final class SignalEvent<T> implements Event<T> {
 
-		final Function<Signal<T>, Optional<String>> function;
+		final Function<Signal<T>, Optional<AssertionError>> function;
 
-		SignalEvent(Function<Signal<T>, Optional<String>> function) {
+		SignalEvent(Function<Signal<T>, Optional<AssertionError>> function) {
 			this.function = function;
 		}
 
-		Optional<String> test(Signal<T> signal) {
+		Optional<AssertionError> test(Signal<T> signal) {
 			return this.function.apply(signal);
 		}
 
@@ -1056,11 +1043,11 @@ final class DefaultScriptedSubscriberBuilder<T>
 			return supplier != null ? supplier.get() : null;
 		}
 
-		Optional<String> test(Collection<T> collection) {
+		Optional<AssertionError> test(Collection<T> collection) {
 			if (predicate != null) {
 				if (!predicate.test(collection)) {
-					return Optional.of(String.format("expected collection predicate" + " match;" + " actual: %s",
-							collection));
+					return fail("expected collection predicate" + " match;" + " actual: %s",
+							collection);
 				}
 				else {
 					return Optional.empty();
@@ -1070,25 +1057,25 @@ final class DefaultScriptedSubscriberBuilder<T>
 				consumer.accept(collection);
 			}
 			return Optional.empty();
+		}
+
 	}
 
-}
+	static final class TaskEvent<T> implements Event<T> {
 
-static final class TaskEvent<T> implements Event<T> {
+		final Runnable task;
 
-	final Runnable task;
+		TaskEvent(Runnable task) {
+			this.task = task;
+		}
 
-	TaskEvent(Runnable task) {
-		this.task = task;
+		void run() {
+			task.run();
+		}
+
 	}
 
-	void run() {
-		task.run();
-	}
-
-}
-
-static final class SignalSequenceEvent<T> implements Event<T> {
+	static final class SignalSequenceEvent<T> implements Event<T> {
 
 		final Iterable<? extends T> iterable;
 
@@ -1096,44 +1083,52 @@ static final class SignalSequenceEvent<T> implements Event<T> {
 			this.iterable = iterable;
 		}
 
-		Optional<String> test(Signal<T> signal, Iterator<? extends T> iterator) {
+		Optional<AssertionError> test(Signal<T> signal, Iterator<? extends T> iterator) {
 			if (signal.isOnNext()) {
 				if (!iterator.hasNext()) {
-					return Optional.of(String.format("unexpected iterator request; " + "onNext(%s); iterable: %s",
-							signal.get(),
-							iterable));
+					return fail("unexpected iterator request; " + "onNext(%s); iterable: %s",
+							signal.get(), iterable);
 				}
 				T d2 = iterator.next();
 				if (!Objects.equals(signal.get(), d2)) {
-					return Optional.of(String.format("expected : onNext(%s); actual: " + "%s; iterable: %s",
-							d2, signal.get(), iterable));
+					return fail("expected : onNext(%s); actual: " + "%s; iterable: %s",
+							d2,
+							signal.get(),
+							iterable);
 				}
 				return iterator.hasNext() ? EXPECT_MORE : Optional.empty();
 
 			}
 			if (iterator != null && iterator.hasNext() || signal.isOnError()) {
-				return Optional.of(String.format("expected next value: %s; actual " + "actual signal: " + "%s; iterable: %s",
+				return fail("expected next " + "value: %s; actual " + "actual signal: " + "%s; iterable: %s",
 						iterator != null && iterator.hasNext() ? iterator.next() : "none",
-						signal,
-						iterable));
+						signal, iterable);
 			}
 			return Optional.empty();
 		}
 	}
 
-	static final AtomicIntegerFieldUpdater<DefaultScriptedSubscriber> WIP                      =
+	static Optional<AssertionError> fail(String msg, Object... args) {
+		return Optional.of(new AssertionError(String.format(msg, args)));
+	}
+
+	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = new SignalEvent<>(signal -> {
+		if (!signal.isOnSubscribe()) {
+			return fail("expected: onSubscribe(); actual: %s", signal);
+		}
+		else {
+			return Optional.empty();
+		}
+	});
+
+	static final AtomicReferenceFieldUpdater<DefaultScriptedSubscriber, Throwable>
+			ERRORS =
+			AtomicReferenceFieldUpdater.newUpdater(DefaultScriptedSubscriber.class,
+					Throwable.class,
+					"errors");
+
+	static final AtomicIntegerFieldUpdater<DefaultScriptedSubscriber> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(DefaultScriptedSubscriber.class, "wip");
-	static final Optional<String>                                     EXPECT_MORE              =
-			Optional.empty();
-	static final SignalEvent
-	                                                                  DEFAULT_ONSUBSCRIBE_STEP =
-			new SignalEvent<>(signal -> {
-				if (!signal.isOnSubscribe()) {
-					return Optional.of(String.format("expected: onSubscribe(); actual: %s",
-							signal));
-				}
-				else {
-					return Optional.empty();
-				}
-			});
+
+	static final Optional<AssertionError> EXPECT_MORE = Optional.empty();
 }
