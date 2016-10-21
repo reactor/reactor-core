@@ -18,8 +18,10 @@ package reactor.test.subscriber;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -284,6 +286,20 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		StepBuilder<T> consumeNextWith(Consumer<? super T> consumer);
 
 		/**
+		 * Expect a recording session started via {@link #recordWith} and
+		 * consume with
+		 * the
+		 * given consumer. Any {@code
+		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
+		 * #verify() verification}.
+		 *
+		 * @param consumer the consumer for the value
+		 *
+		 * @return this builder
+		 */
+		StepBuilder<T> consumeRecordedWith(Consumer<? super Collection<T>> consumer);
+
+		/**
 		 * Expect the next elements received to be equal to the given values.
 		 *
 		 * @param ts the values to expect
@@ -306,6 +322,18 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		StepBuilder<T> expectNextCount(long count);
 
 		/**
+		 * Expect the next elements to match the given {@link Iterable} until its
+		 * iterator depletes.
+		 *
+		 * @param iterable the predicate to test on the next received value
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		StepBuilder<T> expectNextAs(Iterable<? extends T> iterable);
+
+		/**
 		 * Expect an element and evaluate with the given predicate.
 		 *
 		 * @param predicate the predicate to test on the next received value
@@ -317,16 +345,33 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		StepBuilder<T> expectNextWith(Predicate<? super T> predicate);
 
 		/**
-		 * Expect the next elements to match the given {@link Iterable} until its
-		 * iterator depletes.
+		 * Expect and end a recording session started via {@link #recordWith} and
+		 * consume with
+		 * the
+		 * given consumer.
 		 *
-		 * @param iterable the predicate to test on the next received value
+		 * @param predicate the predicate to test on the recorded session
 		 *
 		 * @return this builder
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		StepBuilder<T> expectNextAs(Iterable<? extends T> iterable);
+		StepBuilder<T> expectRecordedWith(Predicate<? super Collection<T>> predicate);
+
+		/**
+		 * Start a recording session storing {@link #onNext(Object)} values in the
+		 * supplied {@link Collection}. Further steps
+		 * {@link #expectRecordedWith(Predicate)} and
+		 * {@link #consumeRecordedWith(Consumer)} can consume the session.
+		 * <p>If an
+		 * existing recording session hasn't not been declaratively consumed, this step
+		 * will override the current session.
+		 *
+		 * @param supplier the task to run
+		 *
+		 * @return this builder
+		 */
+		StepBuilder<T> recordWith(Supplier<? extends Collection<T>> supplier);
 
 		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.

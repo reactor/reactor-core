@@ -18,6 +18,7 @@ package reactor.test.subscriber;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -578,6 +579,65 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create()
 		                  .expectNextAs(source)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyRecordWith() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .recordWith(ArrayList::new)
+		                  .expectNextCount(3)
+		                  .expectRecordedWith(c -> c.contains("foobar"))
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyRecordWithError() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .recordWith(ArrayList::new)
+		                  .expectNextCount(3)
+		                  .expectRecordedWith(c -> c.contains("foofoo"))
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyRecordNullError() {
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		ScriptedSubscriber.create()
+		                  .recordWith(() -> null)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyRecordWithError2() {
+		Flux<String> flux = Flux.just("foo", "bar", "foobar");
+
+		ScriptedSubscriber.create()
+		                  .expectNext("foo", "bar", "foobar")
+		                  .expectRecordedWith(c -> c.size() == 3)
+		                  .expectComplete()
+		                  .verify(flux);
+	}
+
+	@Test
+	public void verifyRecordWith2() {
+		final List<Integer> source = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+		Flux<Integer> flux = Flux.fromStream(source.stream());
+
+		ScriptedSubscriber.create()
+		                  .recordWith(ArrayList::new)
+		                  .expectNextCount(10)
+		                  .consumeRecordedWith(c -> Assert.assertTrue(c.containsAll(source)))
 		                  .expectComplete()
 		                  .verify(flux);
 	}
