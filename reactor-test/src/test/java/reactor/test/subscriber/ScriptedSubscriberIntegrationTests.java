@@ -31,6 +31,7 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.junit.Assert.assertEquals;
 
@@ -401,7 +402,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnSubscribe() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Mono<String> mono = Mono.delay(Duration.ofDays(2))
 		                        .map(l -> "foo");
 
@@ -415,7 +416,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnError() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Mono<String> mono = Mono.never()
 		                        .timeout(Duration.ofDays(2))
 		                        .map(l -> "foo");
@@ -429,7 +430,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnNext() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Flux<String> flux = Flux.just("foo", "bar", "foobar")
 		                        .delay(Duration.ofHours(1))
 		                        .log();
@@ -448,7 +449,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnComplete() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Flux<?> flux = Flux.empty()
 		                   .delaySubscription(Duration.ofHours(1))
 		                   .log();
@@ -462,7 +463,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnNextInterval() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Flux<String> flux = Flux.interval(Duration.ofSeconds(3))
 		                        .map(d -> "t" + d);
 
@@ -496,7 +497,7 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnErrorInterval() {
-		ScriptedSubscriber.enableVirtualTime();
+		VirtualTimeScheduler.enable(false);
 		Flux<String> flux = Flux.interval(Duration.ofSeconds(3))
 		                        .map(d -> "t" + d);
 
@@ -803,6 +804,6 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@After
 	public void cleanup(){
-		ScriptedSubscriber.disableVirtualTime();
+		VirtualTimeScheduler.reset();
 	}
 }
