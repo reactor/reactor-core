@@ -406,7 +406,7 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .map(l -> "foo");
 
 		ScriptedSubscriber.create()
-		                  .advanceTimeBy(Duration.ofDays(3))
+		                  .thenAwait(Duration.ofDays(3))
 		                  .expectNext("foo")
 		                  .expectComplete()
 		                  .verify(mono);
@@ -421,7 +421,7 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .map(l -> "foo");
 
 		ScriptedSubscriber.create()
-		                  .advanceTimeTo(Instant.now().plus(Duration.ofDays(2)))
+		                  .thenAwaitUntil(Instant.now().plus(Duration.ofDays(2)))
 		                  .expectError(TimeoutException.class)
 		                  .verify(mono);
 
@@ -435,11 +435,11 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .log();
 
 		ScriptedSubscriber.create()
-		                  .advanceTimeBy(Duration.ofHours(1))
+		                  .thenAwait(Duration.ofHours(1))
 		                  .expectNext("foo")
-		                  .advanceTimeBy(Duration.ofHours(1))
+		                  .thenAwait(Duration.ofHours(1))
 		                  .expectNext("bar")
-		                  .advanceTimeBy(Duration.ofHours(1))
+		                  .thenAwait(Duration.ofHours(1))
 		                  .expectNext("foobar")
 		                  .expectComplete()
 		                  .verify(flux);
@@ -454,7 +454,7 @@ public class ScriptedSubscriberIntegrationTests {
 		                   .log();
 
 		ScriptedSubscriber.create()
-		                  .advanceTimeBy(Duration.ofHours(1))
+		                  .thenAwait(Duration.ofHours(1))
 		                  .expectComplete()
 		                  .verify(flux);
 
@@ -467,11 +467,11 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .map(d -> "t" + d);
 
 		ScriptedSubscriber.create()
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectNext("t0")
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectNext("t1")
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectNext("t2")
 		                  .thenCancel()
 		                  .verify(flux);
@@ -502,12 +502,12 @@ public class ScriptedSubscriberIntegrationTests {
 
 		ScriptedSubscriber.create(0)
 		                  .thenRequest(1)
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectNext("t0")
 		                  .thenRequest(1)
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectNext("t1")
-		                  .advanceTimeBy(Duration.ofSeconds(3))
+		                  .thenAwait(Duration.ofSeconds(3))
 		                  .expectError(IllegalStateException.class)
 		                  .verify(flux);
 
@@ -566,7 +566,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		ScriptedSubscriber.create()
-		                  .expectNextAs(Arrays.asList("foo", "bar", "foobar"))
+		                  .expectNextSequence(Arrays.asList("foo", "bar", "foobar"))
 		                  .expectComplete()
 		                  .verify(flux);
 	}
@@ -576,7 +576,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		ScriptedSubscriber.create()
-		                  .expectNextAs(Arrays.asList("foo", "bar"))
+		                  .expectNextSequence(Arrays.asList("foo", "bar"))
 		                  .expectComplete()
 		                  .verify(flux);
 	}
@@ -586,7 +586,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		ScriptedSubscriber.create()
-		                  .expectNextAs(Arrays.asList("foo", "bar", "foobar", "bar"))
+		                  .expectNextSequence(Arrays.asList("foo", "bar", "foobar", "bar"))
 		                  .expectComplete()
 		                  .verify(flux);
 	}
@@ -598,7 +598,7 @@ public class ScriptedSubscriberIntegrationTests {
 		Flux<Integer> flux = Flux.fromStream(source.stream());
 
 		ScriptedSubscriber.create()
-		                  .expectNextAs(source)
+		                  .expectNextSequence(source)
 		                  .expectComplete()
 		                  .verify(flux);
 	}

@@ -16,6 +16,8 @@
 
 package reactor.test.scheduler;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -116,20 +118,20 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * Moves the {@link VirtualTimeScheduler}'s clock forward by a specified amount of time.
 	 *
 	 * @param delayTime the amount of time to move the {@link VirtualTimeScheduler}'s clock forward
-	 * @param unit the units of time that {@code delayTime} is expressed in
 	 */
-	public void advanceTimeBy(long delayTime, TimeUnit unit) {
-		advanceTimeTo(nanoTime + unit.toNanos(delayTime), TimeUnit.NANOSECONDS);
+	public void advanceTimeBy(Duration delayTime) {
+		advanceTime(nanoTime + delayTime.toNanos());
 	}
 
 	/**
 	 * Moves the {@link VirtualTimeScheduler}'s clock to a particular moment in time.
 	 *
-	 * @param delayTime the point in time to move the {@link VirtualTimeScheduler}'s clock to
-	 * @param unit the units of time that {@code delayTime} is expressed in
+	 * @param instant the point in time to move the {@link VirtualTimeScheduler}'s
+	 * clock to
 	 */
-	public void advanceTimeTo(long delayTime, TimeUnit unit) {
-		long targetTime = unit.toNanos(delayTime);
+	public void advanceTimeTo(Instant instant) {
+		long targetTime = TimeUnit.NANOSECONDS.convert(instant.toEpochMilli(),
+				TimeUnit.MILLISECONDS);
 		advanceTime(targetTime);
 	}
 

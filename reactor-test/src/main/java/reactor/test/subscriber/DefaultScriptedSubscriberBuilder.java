@@ -88,30 +88,6 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.StepBuilder<T> advanceTime() {
-		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
-		                                                          .advanceTime()));
-		return this;
-	}
-
-	@Override
-	public ScriptedSubscriber.StepBuilder<T> advanceTimeBy(Duration timeshift) {
-		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
-		                                                          .advanceTimeBy(timeshift.toNanos(),
-				                                                          TimeUnit.NANOSECONDS)));
-		return this;
-	}
-
-	@Override
-	public ScriptedSubscriber.StepBuilder<T> advanceTimeTo(Instant instant) {
-
-		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
-		                                                          .advanceTimeTo(instant.toEpochMilli(),
-				                                                          TimeUnit.MILLISECONDS)));
-		return this;
-	}
-
-	@Override
 	public ScriptedSubscriber<T> consumeErrorWith(Consumer<Throwable> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
@@ -302,7 +278,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
-	public ScriptedSubscriber.StepBuilder<T> expectNextAs(Iterable<? extends T> iterable) {
+	public ScriptedSubscriber.StepBuilder<T> expectNextSequence(Iterable<? extends T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
 		this.script.add(new SignalSequenceEvent<>(iterable));
 		return this;
@@ -387,6 +363,28 @@ final class DefaultScriptedSubscriberBuilder<T>
 	public ScriptedSubscriber.StepBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
+		return this;
+	}
+
+	@Override
+	public ScriptedSubscriber.StepBuilder<T> thenAwait() {
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
+		                                                          .advanceTime()));
+		return this;
+	}
+
+	@Override
+	public ScriptedSubscriber.StepBuilder<T> thenAwait(Duration timeshift) {
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
+		                                                          .advanceTimeBy(timeshift)));
+		return this;
+	}
+
+	@Override
+	public ScriptedSubscriber.StepBuilder<T> thenAwaitUntil(Instant instant) {
+
+		this.script.add(new TaskEvent<>(() -> VirtualTimeScheduler.get()
+		                                                          .advanceTimeTo(instant)));
 		return this;
 	}
 

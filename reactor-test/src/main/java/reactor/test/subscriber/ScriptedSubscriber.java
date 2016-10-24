@@ -33,8 +33,8 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * Subscriber implementation that verifies pre-defined expectations as part of its
  * subscription. Typical usage consists of the following steps: <ul> <li>Create a {@code
  * ScriptedSubscriber} builder using {@link #create()} or {@link #create(long)},</li>
- * <li>Set individual up value expectations using {@link StepBuilder#expectValue(Object)
- * expectValue(Object)}, {@link StepBuilder#expectNext(Object[])
+ * <li>Set individual up value expectations using {@link StepBuilder#expectNext(Object[])}
+ * expectNext(Object)}, {@link StepBuilder#expectNext(Object[])
  * expectNext(Object[])}, {@link StepBuilder#expectNextWith(Predicate)
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
  * {@link StepBuilder#thenRequest(long) thenRequest(long)} or {@link
@@ -51,8 +51,8 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * <p>For example:
  * <pre>
  * ScriptedSubscriber&lt;String&gt; subscriber = ScriptedSubscriber.&lt;String&gt;create()
- *   .expectValue("foo")
- *   .expectValue("bar")
+ *   .expectNext("foo")
+ *   .expectNext("bar")
  *   .expectComplete();
  *
  * Publisher&lt;String&gt; publisher = Flux.just("foo", "bar");
@@ -65,40 +65,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * @author Stephane Maldini
  * @since 1.0
  */
-public interface ScriptedSubscriber<T> extends Subscriber<T> {
-
-	/**
-	 *
-	 */
-	static void enableVirtualTime() {
-		enableVirtualTime(false);
-	}
-
-	/**
-	 * @param allSchedulers
-	 */
-	static void enableVirtualTime(boolean allSchedulers) {
-		VirtualTimeScheduler.enable(allSchedulers);
-	}
-
-	/**
-	 *
-	 */
-	static void disableVirtualTime() {
-		VirtualTimeScheduler.reset();
-	}
-
-	/**
-	 * Verify the signals received by this subscriber. This method will
-	 * <strong>block</strong> indefinitely until the stream has been terminated (either
-	 * through {@link #onComplete()}, {@link #onError(Throwable)} or {@link
-	 * Subscription#cancel()}).
-	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures
-	 */
-	Duration verify() throws AssertionError;
+public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<T> {
 
 	/**
 	 * Make the specified publisher subscribe to this subscriber and then verify the
@@ -113,19 +80,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	 * @throws AssertionError in case of expectation failures
 	 */
 	Duration verify(Publisher<? extends T> publisher) throws AssertionError;
-
-	/**
-	 * Verify the signals received by this subscriber. This method will
-	 * <strong>block</strong> for the given duration or until the stream has been
-	 * terminated (either through {@link #onComplete()}, {@link #onError(Throwable)} or
-	 * {@link Subscription#cancel()}).
-	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures, or when the verification
-	 *                        times out
-	 */
-	Duration verify(Duration duration) throws AssertionError;
 
 	/**
 	 * Make the specified publisher subscribe to this subscriber and then verify the
@@ -256,25 +210,6 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 	interface StepBuilder<T> extends LastStepBuilder<T> {
 
 		/**
-		 * @return this builder
-		 */
-		StepBuilder<T> advanceTime();
-
-		/**
-		 * @param timeshift
-		 *
-		 * @return this builder
-		 */
-		StepBuilder<T> advanceTimeBy(Duration timeshift);
-
-		/**
-		 * @param instant
-		 *
-		 * @return this builder
-		 */
-		StepBuilder<T> advanceTimeTo(Instant instant);
-
-		/**
 		 * Expect an element and consume with the given consumer. Any {@code
 		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
 		 * #verify() verification}.
@@ -331,7 +266,7 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		StepBuilder<T> expectNextAs(Iterable<? extends T> iterable);
+		StepBuilder<T> expectNextSequence(Iterable<? extends T> iterable);
 
 		/**
 		 * Expect an element and evaluate with the given predicate.
@@ -381,6 +316,40 @@ public interface ScriptedSubscriber<T> extends Subscriber<T> {
 		 * @return this builder
 		 */
 		StepBuilder<T> then(Runnable task);
+
+		/**
+		 * Pause the expectation evaluation until any further event occurs.
+		 * If a {@link VirtualTimeScheduler} has been configured,
+		 * {@link VirtualTimeScheduler#advanceTime()} will be used and the
+		 * pause will not block testing or {@link Publisher} thread.
+		 *
+		 * @return this builder
+		 */
+		StepBuilder<T> thenAwait();
+
+		/**
+		 * Pause the expectation evaluation for a given {@link Duration}.
+		 * If a {@link VirtualTimeScheduler} has been configured,
+		 * {@link VirtualTimeScheduler#advanceTimeBy(Duration)} will be used and the
+		 * pause will not block testing or {@link Publisher} thread.
+		 *
+		 * @param timeshift a pause {@link Duration}
+		 *
+		 * @return this builder
+		 */
+		StepBuilder<T> thenAwait(Duration timeshift);
+
+		/**
+		 * Pause the expectation evaluation until the passed {@link Instant}.
+		 * If a {@link VirtualTimeScheduler} has been configured,
+		 * {@link VirtualTimeScheduler#advanceTimeTo(Instant)} will be used and the
+		 * pause will not block testing or {@link Publisher} thread.
+		 *
+		 * @param instant An {@link Instant} in the future
+		 *
+		 * @return this builder
+		 */
+		StepBuilder<T> thenAwaitUntil(Instant instant);
 
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
