@@ -25,7 +25,7 @@ import static reactor.core.publisher.Flux.*
 /**
  * @author Stephane Maldini
  */
-class FlowSerializerSpec extends Specification {
+class StageUtilsSpec extends Specification {
 
   def "Scan reactive streams"() {
 
