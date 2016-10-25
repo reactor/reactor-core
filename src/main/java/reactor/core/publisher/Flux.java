@@ -1017,6 +1017,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
+		return merge(prefetch, false, sources);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
+	 * sequence.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param prefetch the inner source request size
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	@SafeVarargs
+	public static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -1024,11 +1042,133 @@ public abstract class Flux<T> implements Publisher<T> {
 			return from(sources[0]);
 		}
 		return onAssembly(new FluxMerge<>(sources,
-				false,
+				delayError,
 				sources.length,
 				QueueSupplier.get(sources.length),
 				prefetch,
 				QueueSupplier.get(prefetch)));
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
+	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
+	 * their emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	//TODO diagram for mergeSequential? (include all variants)
+	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
+		return mergeSequential(sources, false, QueueSupplier.SMALL_BUFFER_SIZE,
+				QueueSupplier.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
+	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
+	 * their emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param prefetch the inner source request size
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
+			boolean delayError, int maxConcurrency, int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(sources, identityFunction(),
+				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
+				FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+	/**
+	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
+	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
+	 * into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param sources a number of {@link Publisher} sequences to merge
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
+		return mergeSequential(QueueSupplier.XS_BUFFER_SIZE, false, sources);
+	}
+
+	/**
+	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
+	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
+	 * into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param prefetch the inner source request size
+	 * @param sources a number of {@link Publisher} sequences to merge
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
+			Publisher<? extends I>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMergeSequential<>(new FluxArray<>(sources),
+				identityFunction(), sources.length, prefetch,
+				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+	/**
+	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
+	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
+	 * are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources) {
+		return mergeSequential(sources, false, QueueSupplier.SMALL_BUFFER_SIZE,
+				QueueSupplier.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
+	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
+	 * are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <p>
+	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}
+	 */
+	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
+			boolean delayError, int maxConcurrency, int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
+				identityFunction(), maxConcurrency, prefetch,
+				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -3226,6 +3366,86 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
+	 * emissions from those by merging them into a single {@link Flux}, in order.
+	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
+	 * are merged respecting the order of the original sequence.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper) {
+		return flatMapSequential(mapper, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency) {
+		return flatMapSequential(mapper, maxConcurrency, QueueSupplier.XS_BUFFER_SIZE);
+	}
+
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
+	 * emissions from those by merging them into a single {@link Flux}, in order.
+	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
+	 * are merged respecting the order of the original sequence. The concurrency argument
+	 * allows to control how many merged {@link Publisher} can happen in parallel.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the merged
+	 * {@link Publisher}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
+		return flatMapSequential(mapper, false, maxConcurrency, prefetch);
+	}
+
+	//TODO diagram for flatMapSequential ? (include all 3 variants)
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
+	 * emissions from those by merging them into a single {@link Flux}, in order.
+	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
+	 * are merged respecting the order of the original sequence. The concurrency argument
+	 * allows to control how many merged {@link Publisher} can happen in parallel.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the merged
+	 * {@link Publisher}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param delayError should any error be delayed after current merge backlog
+	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 *
+	 */
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
+			int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(this, mapper, maxConcurrency,
+				prefetch, delayError ? FluxConcatMap.ErrorMode.END :
+				FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+	/**
 	 * The prefetch configuration of the {@link Flux}
 	 * @return the prefetch configuration of the {@link Flux}, -1L if unspecified
 	 */
@@ -3457,6 +3677,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this, defaultValue));
+	}
+
+	/**
+	 * Ensure that backpressure signals from downstream subscribers are capped at the
+	 * provided {@code prefetchRate} when propagated upstream, effectively rate limiting
+	 * the upstream {@link Publisher}.
+	 * <p>
+	 * Typically used for scenarios where consumer(s) request a large amount of data
+	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
+	 * with smaller requests (eg. database paging, etc...). All data is still processed.
+	 * <p>
+	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
+	 *
+	 * @param prefetchRate the limit to apply to downstream's backpressure
+	 *
+	 * @return a {@link Flux} limiting downstream's backpressure
+	 * @see #publishOn(Scheduler, int)
+	 */
+	public final Flux<T> limitRate(int prefetchRate) {
+		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
 	/**
@@ -4559,26 +4799,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 		return onAssembly(new FluxSampleTimeout<>(this, throttlerFactory,
 				QueueSupplier.get(maxConcurrency)));
-	}
-
-	/**
-	 * Ensure that backpressure signals from downstream subscribers are capped at the
-	 * provided {@code prefetchRate} when propagated upstream, effectively rate limiting
-	 * the upstream {@link Publisher}.
-	 * <p>
-	 * Typically used for scenarios where consumer(s) request a large amount of data
-	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
-	 * with smaller requests (eg. database paging, etc...). All data is still processed.
-	 * <p>
-	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
-	 *
-	 * @param prefetchRate the limit to apply to downstream's backpressure
-	 *
-	 * @return a {@link Flux} limiting downstream's backpressure
-	 * @see #publishOn(Scheduler, int)
-	 */
-	public final Flux<T> limitRate(int prefetchRate) {
-		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
 	/**
