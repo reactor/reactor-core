@@ -783,30 +783,55 @@ public abstract class Operators {
 	public static class MonoSubscriber<I, O> implements Subscriber<I>, Loopback,
 	                                                    Trackable,
 	                                                    Receiver, Producer,
+	                                                    Fuseable, //for constants only
 	                                                    Fuseable.QueueSubscription<O> {
-
-		static final int SDS_NO_REQUEST_NO_VALUE   = 0;
-		static final int SDS_NO_REQUEST_HAS_VALUE  = 1;
-		static final int SDS_HAS_REQUEST_NO_VALUE  = 2;
-		static final int SDS_HAS_REQUEST_HAS_VALUE = 3;
 
 		protected final Subscriber<? super O> subscriber;
 
 		protected O value;
+
+		/**
+		 * Indicates this Subscription has no value and not requested yet.
+		 */
+		static final int NO_REQUEST_NO_VALUE   = 0;
+		/**
+		 * Indicates this Subscription has a value but not requested yet.
+		 */
+		static final int NO_REQUEST_HAS_VALUE  = 1;
+		/**
+		 * Indicates this Subscription has been requested but there is no value yet.
+		 */
+		static final int HAS_REQUEST_NO_VALUE  = 2;
+		/**
+		 * Indicates this Subscription has both request and value.
+		 */
+		static final int HAS_REQUEST_HAS_VALUE = 3;
+
+		/**
+		 * Indicates the Subscription has been cancelled.
+		 */
+		static final int CANCELLED = 4;
+
+		/**
+		 * Indicates this Subscription is in fusion mode and is currently empty.
+		 */
+		static final int FUSED_EMPTY    = 8;
+		/**
+		 * Indicates this Subscription is in fusion mode and has a value.
+		 */
+		static final int FUSED_READY    = 16;
+		/**
+		 * Indicates this Subscription is in fusion mode and its value has been consumed.
+		 */
+		static final int FUSED_CONSUMED = 32;
 
 		volatile int state;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 
-		protected byte outputFused;
-
-		static final byte OUTPUT_NO_VALUE = 1;
-		static final byte OUTPUT_HAS_VALUE = 2;
-		static final byte OUTPUT_COMPLETE = 3;
-
-		public MonoSubscriber(Subscriber<? super O> subscriber) {
-			this.subscriber = subscriber;
+		public MonoSubscriber(Subscriber<? super O> actual) {
+			this.subscriber = actual;
 		}
 
 		@Override
@@ -814,18 +839,29 @@ public abstract class Operators {
 			if (validate(n)) {
 				for (; ; ) {
 					int s = state;
-					if (s == SDS_HAS_REQUEST_NO_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
+					// if the any bits 1-31 are set, we are either in fusion mode (FUSED_*)
+					// or request has been called (HAS_REQUEST_*)
+					if ((s & ~NO_REQUEST_HAS_VALUE) != 0) {
 						return;
 					}
-					if (s == SDS_NO_REQUEST_HAS_VALUE) {
-						if (STATE.compareAndSet(this, SDS_NO_REQUEST_HAS_VALUE, SDS_HAS_REQUEST_HAS_VALUE)) {
-							Subscriber<? super O> a = downstream();
-							a.onNext(value);
-							a.onComplete();
+					if (s == NO_REQUEST_HAS_VALUE) {
+						if (STATE.compareAndSet(this,
+								NO_REQUEST_HAS_VALUE,
+								HAS_REQUEST_HAS_VALUE)) {
+							O v = value;
+							if (v != null) {
+								value = null;
+								Subscriber<? super O> a = subscriber;
+								a.onNext(v);
+								if (state != CANCELLED) {
+									a.onComplete();
+								}
+							}
 						}
 						return;
 					}
-					if (STATE.compareAndSet(this, SDS_NO_REQUEST_NO_VALUE, SDS_HAS_REQUEST_NO_VALUE)) {
+					if (STATE.compareAndSet(this,
+							NO_REQUEST_NO_VALUE, HAS_REQUEST_NO_VALUE)) {
 						return;
 					}
 				}
@@ -834,13 +870,14 @@ public abstract class Operators {
 
 		@Override
 		public void cancel() {
-			state = SDS_HAS_REQUEST_HAS_VALUE;
+			this.state = CANCELLED;
+			value = null;
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public void onNext(I t) {
-			value = (O) t;
+			setValue((O) t);
 		}
 
 		@Override
@@ -858,9 +895,12 @@ public abstract class Operators {
 			subscriber.onComplete();
 		}
 
-		@Override
+		/**
+		 * Returns true if this Subscription has been cancelled.
+		 * @return true if this Subscription has been cancelled
+		 */
 		public final boolean isCancelled() {
-			return state == SDS_HAS_REQUEST_HAS_VALUE;
+			return state == CANCELLED;
 		}
 
 		@Override
@@ -877,32 +917,44 @@ public abstract class Operators {
 		 * stores the value away until there is a request for it.
 		 * <p>
 		 * Make sure this method is called at most once
-		 * @param value the value to emit
+		 * @param v the value to emit
 		 */
-		public final void complete(O value) {
-			Objects.requireNonNull(value);
+		public final void complete(O v) {
+			int state = this.state;
 			for (; ; ) {
-				int s = state;
-				if (s == SDS_NO_REQUEST_HAS_VALUE || s == SDS_HAS_REQUEST_HAS_VALUE) {
-					return;
-				}
-				if (s == SDS_HAS_REQUEST_NO_VALUE) {
-					Subscriber<? super O> a = downstream();
-					if (outputFused == OUTPUT_NO_VALUE) {
-						setValue(value); // make sure poll sees it
-						outputFused = OUTPUT_HAS_VALUE;
-						a.onNext(null);
-					}
-					else {
-						a.onNext(value);
-						if (state != SDS_HAS_REQUEST_HAS_VALUE) {
-							a.onComplete();
-						}
+				if (state == FUSED_EMPTY) {
+					setValue(v);
+					STATE.lazySet(this, FUSED_READY);
+
+					Subscriber<? super O> a = subscriber;
+					a.onNext(v);
+					if (this.state != CANCELLED) {
+						a.onComplete();
 					}
 					return;
 				}
-				setValue(value);
-				if (STATE.compareAndSet(this, SDS_NO_REQUEST_NO_VALUE, SDS_NO_REQUEST_HAS_VALUE)) {
+
+				// if state is >= CANCELLED or bit zero is set (*_HAS_VALUE) case, return
+				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
+					return;
+				}
+
+				if (state == HAS_REQUEST_NO_VALUE) {
+					STATE.lazySet(this, HAS_REQUEST_HAS_VALUE);
+					Subscriber<? super O> a = subscriber;
+					a.onNext(v);
+					if (this.state != CANCELLED) {
+						a.onComplete();
+					}
+					return;
+				}
+				setValue(v);
+				if (STATE.compareAndSet(this, NO_REQUEST_NO_VALUE, NO_REQUEST_HAS_VALUE)) {
+					return;
+				}
+				state = this.state;
+				if (state == CANCELLED) {
+					value = null;
 					return;
 				}
 			}
@@ -910,7 +962,7 @@ public abstract class Operators {
 
 		@Override
 		public boolean isStarted() {
-			return state != SDS_NO_REQUEST_NO_VALUE;
+			return state != NO_REQUEST_NO_VALUE;
 		}
 
 		@Override
@@ -929,36 +981,33 @@ public abstract class Operators {
 		}
 
 		@Override
-		public int requestFusion(int requestedMode) {
-			if ((requestedMode & Fuseable.ASYNC) != 0) {
-				outputFused = OUTPUT_NO_VALUE;
-				return Fuseable.ASYNC;
+		public int requestFusion(int mode) {
+			if ((mode & ASYNC) != 0) {
+				STATE.lazySet(this, FUSED_EMPTY);
+				return ASYNC;
 			}
-			return Fuseable.NONE;
+			return NONE;
 		}
 
 		@Override
-		public O poll() {
-			if (outputFused == OUTPUT_HAS_VALUE) {
-				outputFused = OUTPUT_COMPLETE;
+		public final O poll() {
+			if (STATE.get(this) == FUSED_READY) {
+				STATE.lazySet(this, FUSED_CONSUMED);
 				O v = value;
 				value = null;
 				return v;
-			}
-			if (outputFused == OUTPUT_COMPLETE && !isCancelled()) {
-				downstream().onComplete();
 			}
 			return null;
 		}
 
 		@Override
-		public boolean isEmpty() {
-			return outputFused != OUTPUT_HAS_VALUE;
+		public final boolean isEmpty() {
+			return this.state != FUSED_READY;
 		}
 
 		@Override
-		public void clear() {
-			outputFused = OUTPUT_COMPLETE;
+		public final void clear() {
+			STATE.lazySet(this, FUSED_CONSUMED);
 			value = null;
 		}
 
