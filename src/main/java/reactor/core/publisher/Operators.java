@@ -845,9 +845,7 @@ public abstract class Operators {
 						return;
 					}
 					if (s == NO_REQUEST_HAS_VALUE) {
-						if (STATE.compareAndSet(this,
-								NO_REQUEST_HAS_VALUE,
-								HAS_REQUEST_HAS_VALUE)) {
+						if (STATE.compareAndSet(this, NO_REQUEST_HAS_VALUE, HAS_REQUEST_HAS_VALUE)) {
 							O v = value;
 							if (v != null) {
 								value = null;
@@ -860,8 +858,7 @@ public abstract class Operators {
 						}
 						return;
 					}
-					if (STATE.compareAndSet(this,
-							NO_REQUEST_NO_VALUE, HAS_REQUEST_NO_VALUE)) {
+					if (STATE.compareAndSet(this, NO_REQUEST_NO_VALUE, HAS_REQUEST_NO_VALUE)) {
 						return;
 					}
 				}
