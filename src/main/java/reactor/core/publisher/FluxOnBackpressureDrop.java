@@ -31,9 +31,6 @@ import reactor.core.Trackable;
  * Drops values if the subscriber doesn't request fast enough.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {

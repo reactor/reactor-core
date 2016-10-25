@@ -31,9 +31,6 @@ import reactor.core.Receiver;
  *
  * @param <T> the source value type
  * @param <R> the accumulated result type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
@@ -102,7 +99,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
@@ -136,7 +133,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 			}
 			done = true;
 
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override

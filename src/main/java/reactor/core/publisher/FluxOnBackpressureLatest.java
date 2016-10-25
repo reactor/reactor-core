@@ -31,9 +31,6 @@ import reactor.core.Trackable;
  * if the subscriber can't keep up properly.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {

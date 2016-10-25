@@ -153,7 +153,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *     });
      * }); 
      * <code></pre>
-	 * 
+	 *
 	 * @param callback the consumer who will receive a per-subscriber {@link MonoSink}.
 	 * @param <T> The type of the value emitted
 	 * @return a {@link Mono}
@@ -283,7 +283,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return MonoSource.wrap(new FluxFirstEmitting<>(monos));
+		return new MonoFirst<>(monos);
 	}
 
 	/**
@@ -298,7 +298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return MonoSource.wrap(new FluxFirstEmitting<>(monos));
+		return new MonoFirst<>(monos);
 	}
 
 	/**
@@ -1009,7 +1009,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T, V> Mono<V> zip(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
 //	 ==============================================================================================================

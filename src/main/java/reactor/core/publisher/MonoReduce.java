@@ -27,9 +27,6 @@ import reactor.core.Fuseable;
  * Aggregates the source items with an aggregator function and returns the last result.
  *
  * @param <T> the input and output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
@@ -64,7 +61,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 				s.request(Long.MAX_VALUE);
 			}
 		}
@@ -84,14 +81,14 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 				} catch (Throwable ex) {
 					result = null;
 					done = true;
-					subscriber.onError(Operators.onOperatorError(s, ex, t));
+					actual.onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
 				
 				if (r == null) {
 					result = null;
 					done = true;
-					subscriber.onError(Operators.onOperatorError(s, new
+					actual.onError(Operators.onOperatorError(s, new
 							NullPointerException("The aggregator returned a null " +
 							"value"), t));
 					return;
@@ -108,7 +105,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 				return;
 			}
 			result = null;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -120,7 +117,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 			if (r != null) {
 				complete(r);
 			} else {
-				subscriber.onComplete();
+				actual.onComplete();
 			}
 		}
 		

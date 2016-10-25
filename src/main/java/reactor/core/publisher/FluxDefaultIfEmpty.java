@@ -27,9 +27,6 @@ import reactor.core.Receiver;
  * Emits a scalar value if the source sequence turns out to be empty.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
@@ -76,7 +73,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 			}
 		}
 
@@ -86,13 +83,13 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 				hasValue = true;
 			}
 
-			subscriber.onNext(t);
+			actual.onNext(t);
 		}
 
 		@Override
 		public void onComplete() {
 			if (hasValue) {
-				subscriber.onComplete();
+				actual.onComplete();
 			} else {
 				complete(value);
 			}

@@ -53,7 +53,7 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}

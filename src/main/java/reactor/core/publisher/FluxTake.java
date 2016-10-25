@@ -34,9 +34,6 @@ import reactor.core.Trackable;
  * signals its first value (which is not not relayed though).
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTake<T> extends FluxSource<T, T> {

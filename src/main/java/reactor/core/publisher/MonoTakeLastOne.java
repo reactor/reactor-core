@@ -69,7 +69,7 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
@@ -90,12 +90,12 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 						complete(defaultValue);
 					}
 					else {
-						subscriber.onError(Operators.onOperatorError(new NoSuchElementException(
+						actual.onError(Operators.onOperatorError(new NoSuchElementException(
 								"Flux#last() didn't observe any " + "onNext signal")));
 					}
 				}
 				else {
-					subscriber.onComplete();
+					actual.onComplete();
 				}
 				return;
 			}

@@ -116,8 +116,8 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
-				subscriber.onSubscribe(this);
+
+				actual.onSubscribe(this);
 				
 				s.request(Long.MAX_VALUE);
 			}
@@ -145,7 +145,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 			}
 			done = true;
 			collection = null;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 		
 		@Override

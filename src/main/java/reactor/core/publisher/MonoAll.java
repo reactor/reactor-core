@@ -32,9 +32,6 @@ import reactor.core.Receiver;
  * the predicate doesn't match a value.
  *
  * @param <T> the source value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
@@ -74,7 +71,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
@@ -93,7 +90,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 				b = predicate.test(t);
 			} catch (Throwable e) {
 				done = true;
-				subscriber.onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (!b) {
@@ -112,7 +109,7 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 			}
 			done = true;
 
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override

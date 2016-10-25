@@ -61,7 +61,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @param <IN> the receiving type
 	 * @param <OUT> the producing type
-	 * 
+	 *
 	 * @param upstream the upstream subscriber
 	 * @param downstream the downstream publisher
 	 * @return a new blackboxed {@link FluxProcessor}

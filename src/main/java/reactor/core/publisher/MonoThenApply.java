@@ -29,9 +29,6 @@ import reactor.core.Fuseable;
  * with that Mono instance, emitting its final result.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
@@ -96,12 +93,12 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
             try {
                 m = mapper.apply(t);
             } catch (Throwable ex) {
-                subscriber.onError(Operators.onOperatorError(s, ex, t));
+                actual.onError(Operators.onOperatorError(s, ex, t));
                 return;
             }
             
             if (m == null) {
-                subscriber.onError(Operators.onOperatorError(s, new NullPointerException
+                actual.onError(Operators.onOperatorError(s, new NullPointerException
                         ("The mapper " +
                         "returned a null Mono"), t));
                 return;
@@ -115,12 +112,12 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 try {
                     v = c.call();
                 } catch (Throwable ex) {
-                    subscriber.onError(Operators.onOperatorError(s, ex, t));
+                    actual.onError(Operators.onOperatorError(s, ex, t));
                     return;
                 }
                 
                 if (v == null) {
-                    subscriber.onComplete();
+                    actual.onComplete();
                 } else {
                     complete(v);
                 }
@@ -131,7 +128,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 m.subscribe(second);
             }
             catch (Throwable e){
-                subscriber.onError(Operators.onOperatorError(this, e, t));
+                actual.onError(Operators.onOperatorError(this, e, t));
             }
         }
         
@@ -142,7 +139,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 return;
             }
             done = true;
-            subscriber.onError(t);
+            actual.onError(t);
         }
         
         @Override
@@ -151,7 +148,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                 return;
             }
             done = true;
-            subscriber.onComplete();
+            actual.onComplete();
         }
         
         @Override
@@ -162,11 +159,11 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
         }
         
         void secondError(Throwable ex) {
-            subscriber.onError(ex);
+            actual.onError(ex);
         }
         
         void secondComplete() {
-            subscriber.onComplete();
+            actual.onComplete();
         }
         
         static final class SecondSubscriber<R> implements Subscriber<R> {

@@ -101,7 +101,7 @@ public final class BlockingSink<E>
 	 * Create a
 	 * {@link BlockingSink} to safely signal a target {@link Subscriber} or {@link org.reactivestreams.Processor}.
 	 *
-	 * The subscriber will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
+	 * The actual will be immediately  {@link #start started} via {@link Subscriber#onSubscribe(Subscription)} as the result of
 	 * this call.
 	 *
 	 * @param subscriber the decorated {@link Subscriber}
@@ -173,7 +173,7 @@ public final class BlockingSink<E>
 	 * A non-blocking {@link Subscriber#onNext(Object)} that will return a status 
 	 * {@link BlockingSink.Emission}. The status will
 	 * indicate if the decorated
-	 * subscriber is backpressuring this {@link BlockingSink} and if it has previously been terminated successfully or
+	 * actual is backpressuring this {@link BlockingSink} and if it has previously been terminated successfully or
 	 * not.
 	 *
 	 * @param data the data to signal
@@ -328,7 +328,7 @@ public final class BlockingSink<E>
 	}
 
 	/**
-	 * Subscribe the decorated subscriber
+	 * Subscribe the decorated actual
 	 * {@link Subscriber#onSubscribe(Subscription)}. If called twice, the current {@link BlockingSink} might be
 	 * cancelled as per Reactive Streams Specification enforce.
 	 */

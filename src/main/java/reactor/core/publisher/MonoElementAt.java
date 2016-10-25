@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -29,9 +28,6 @@ import reactor.core.Receiver;
  * default value if specified or IndexOutOfBoundsException if the sequence is shorter.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
@@ -100,7 +96,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 			}
 		}
 
@@ -116,8 +112,8 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 				done = true;
 				s.cancel();
 
-				subscriber.onNext(t);
-				subscriber.onComplete();
+				actual.onNext(t);
+				actual.onComplete();
 				return;
 			}
 			index = i - 1;
@@ -131,7 +127,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 			}
 			done = true;
 
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -145,7 +141,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 				complete(defaultValue);
 			}
 			else{
-				subscriber.onError(Operators.onOperatorError(new
+				actual.onError(Operators.onOperatorError(new
 						IndexOutOfBoundsException()));
 			}
 		}

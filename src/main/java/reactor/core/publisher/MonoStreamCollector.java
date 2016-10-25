@@ -32,9 +32,6 @@ import reactor.core.Fuseable;
  * @param <T> the source value type
  * @param <A> an intermediate value type
  * @param <R> the output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fuseable {
@@ -91,8 +88,8 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
-				subscriber.onSubscribe(this);
+
+				actual.onSubscribe(this);
 				
 				s.request(Long.MAX_VALUE);
 			}
@@ -119,7 +116,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			}
 			done = true;
 			container = null;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 		
 		@Override
@@ -137,7 +134,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 			try {
 				r = finisher.apply(a);
 			} catch (Throwable ex) {
-				subscriber.onError(Operators.onOperatorError(ex));
+				actual.onError(Operators.onOperatorError(ex));
 				return;
 			}
 			

@@ -122,7 +122,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 		void innerError(Throwable ex) {
 			if (ERROR_ONCE.compareAndSet(this, 0, 1)) {
 				cancel();
-				subscriber.onError(ex);
+				actual.onError(ex);
 			} else {
 				Operators.onErrorDropped(ex);
 			}
@@ -159,7 +159,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 				if (sp != null) {
 					complete(sp.first);
 				} else {
-					subscriber.onComplete();
+					actual.onComplete();
 				}
 			}
 		}

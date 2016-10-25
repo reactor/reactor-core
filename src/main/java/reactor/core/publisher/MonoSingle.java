@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -32,9 +31,6 @@ import reactor.core.Receiver;
  * IndexOutOfBoundsException for a multi-item source.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
@@ -106,7 +102,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 			}
 		}
 
@@ -133,7 +129,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 			}
 			done = true;
 
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -147,7 +143,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 			if (c == 0) {
 
 				if (completeOnEmpty) {
-					subscriber.onComplete();
+					actual.onComplete();
 					return;
 				}
 
@@ -157,7 +153,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 					complete(t);
 				}
 				else {
-					subscriber.onError(Operators.onOperatorError(this,
+					actual.onError(Operators.onOperatorError(this,
 							new NoSuchElementException("Source was empty")));
 				}
 			}

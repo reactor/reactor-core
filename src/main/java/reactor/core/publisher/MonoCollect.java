@@ -32,9 +32,6 @@ import reactor.core.Receiver;
  *
  * @param <T> the source value type
  * @param <R> the container value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
@@ -98,7 +95,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
@@ -125,7 +122,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 				return;
 			}
 			done = true;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override

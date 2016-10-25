@@ -32,9 +32,6 @@ import reactor.core.Trackable;
  * subscriber which responds first with any signal.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxFirstEmitting<T>

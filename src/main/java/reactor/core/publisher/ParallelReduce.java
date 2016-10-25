@@ -114,8 +114,8 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
-				subscriber.onSubscribe(this);
+
+				actual.onSubscribe(this);
 				
 				s.request(Long.MAX_VALUE);
 			}
@@ -154,7 +154,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 			}
 			done = true;
 			accumulator = null;
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 		
 		@Override

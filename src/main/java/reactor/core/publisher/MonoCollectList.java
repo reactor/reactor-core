@@ -67,15 +67,12 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
 			extends Operators.MonoSubscriber<T, C>
 			implements Subscriber<T>, Subscription {
 
-		final Subscriber<? super C> actual;
-
 		C collection;
 
 		Subscription s;
 
 		public MonoBufferAllSubscriber(Subscriber<? super C> actual, C collection) {
 			super(actual);
-			this.actual = actual;
 			this.collection = collection;
 		}
 

@@ -30,22 +30,21 @@ import org.reactivestreams.Subscription;
  * all of them produced a value, emit a Tuples of those values; otherwise
  * terminate.
  *
- * @param <T> the source value types
+ * @param <R> the source value types
  */
-final class MonoWhen<T, R> extends Mono<R> {
+final class MonoWhen<R> extends Mono<R> {
 
     final boolean delayError;
 
-	final Publisher<? extends T>[] sources;
+	final Publisher<?>[] sources;
 
-	final Iterable<? extends Publisher<? extends T>> sourcesIterable;
+	final Iterable<? extends Publisher<?>> sourcesIterable;
 
 	final Function<? super Object[], ? extends R> zipper;
 
-    @SafeVarargs
     public MonoWhen(boolean delayError,
 		    Function<? super Object[], ? extends R> zipper,
-		    Publisher<? extends T>... sources) {
+		    Publisher<?>... sources) {
 	    this.delayError = delayError;
 	    this.zipper = Objects.requireNonNull(zipper, "zipper");
 	    this.sources = Objects.requireNonNull(sources, "sources");
@@ -54,7 +53,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 	public MonoWhen(boolean delayError,
 			Function<? super Object[], ? extends R> zipper,
-			Iterable<? extends Publisher<? extends T>> sourcesIterable) {
+			Iterable<? extends Publisher<?>> sourcesIterable) {
 		this.delayError = delayError;
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.sources = null;
@@ -64,16 +63,16 @@ final class MonoWhen<T, R> extends Mono<R> {
     @SuppressWarnings("unchecked")
     @Override
     public void subscribe(Subscriber<? super R> s) {
-	    Publisher<? extends T>[] a;
+	    Publisher<?>[] a;
 	    int n = 0;
         if (sources != null) {
             a = sources;
             n = a.length;
         } else {
             a = new Mono[8];
-	        for (Publisher<? extends T> m : sourcesIterable) {
+	        for (Publisher<?> m : sourcesIterable) {
 		        if (n == a.length) {
-	                Publisher<? extends T>[] b = new Publisher[n + (n >> 2)];
+	                Publisher<?>[] b = new Publisher[n + (n >> 2)];
 			        System.arraycopy(a, 0, b, 0, n);
                     a = b;
                 }
@@ -86,16 +85,16 @@ final class MonoWhen<T, R> extends Mono<R> {
             return;
         }
 
-	    MonoWhenCoordinator<T, R> parent =
+	    MonoWhenCoordinator<R> parent =
 			    new MonoWhenCoordinator<>(s, n, delayError, zipper);
 	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
 
-	static final class MonoWhenCoordinator<T, R>
-			extends Operators.MonoSubscriber<T, R> implements Subscription {
+	static final class MonoWhenCoordinator<R>
+			extends Operators.MonoSubscriber<Object, R> implements Subscription {
 
-		final MonoWhenSubscriber<T, R>[] subscribers;
+		final MonoWhenSubscriber<R>[] subscribers;
 
 		final boolean delayError;
 
@@ -120,8 +119,8 @@ final class MonoWhen<T, R> extends Mono<R> {
             }
         }
 
-		void subscribe(Publisher<? extends T>[] sources) {
-			MonoWhenSubscriber<T, R>[] a = subscribers;
+		void subscribe(Publisher<?>[] sources) {
+			MonoWhenSubscriber<R>[] a = subscribers;
 			for (int i = 0; i < a.length; i++) {
                 sources[i].subscribe(a[i]);
             }
@@ -134,14 +133,14 @@ final class MonoWhen<T, R> extends Mono<R> {
                 int n = subscribers.length;
                 if (DONE.getAndSet(this, n) != n) {
                     cancel();
-                    subscriber.onError(t);
+	                actual.onError(t);
                 }
             }
         }
         
         @SuppressWarnings("unchecked")
         void signal() {
-	        MonoWhenSubscriber<T, R>[] a = subscribers;
+	        MonoWhenSubscriber<R>[] a = subscribers;
 	        int n = a.length;
             if (DONE.incrementAndGet(this) != n) {
                 return;
@@ -153,8 +152,8 @@ final class MonoWhen<T, R> extends Mono<R> {
             boolean hasEmpty = false;
             
             for (int i = 0; i < a.length; i++) {
-	            MonoWhenSubscriber<T, R> m = a[i];
-	            T v = m.value;
+	            MonoWhenSubscriber<R> m = a[i];
+	            Object v = m.value;
                 if (v != null) {
                     o[i] = v;
                 } else {
@@ -177,24 +176,24 @@ final class MonoWhen<T, R> extends Mono<R> {
             }
             
             if (compositeError != null) {
-                subscriber.onError(compositeError);
+	            actual.onError(compositeError);
             } else
             if (error != null) {
-                subscriber.onError(error);
+	            actual.onError(error);
             } else
             if (hasEmpty || zipper == VOID_FUNCTION) {
-                subscriber.onComplete();
+	            actual.onComplete();
             } else {
 	            R r;
 	            try {
 		            r = zipper.apply(o);
 	            }
 	            catch (Throwable t) {
-		            subscriber.onError(Operators.onOperatorError(null, t, o));
+		            actual.onError(Operators.onOperatorError(null, t, o));
 		            return;
 	            }
 	            if (r == null) {
-		            subscriber.onError(Operators.onOperatorError(null,
+		            actual.onError(Operators.onOperatorError(null,
 				            new NullPointerException("zipper produced a null value"),
 				            o));
 		            return;
@@ -207,26 +206,26 @@ final class MonoWhen<T, R> extends Mono<R> {
         public void cancel() {
             if (!isCancelled()) {
                 super.cancel();
-	            for (MonoWhenSubscriber<T, R> ms : subscribers) {
+	            for (MonoWhenSubscriber<R> ms : subscribers) {
 		            ms.cancel();
                 }
             }
         }
     }
 
-	static final class MonoWhenSubscriber<T, R> implements Subscriber<T> {
+	static final class MonoWhenSubscriber<R> implements Subscriber<Object> {
 
-		final MonoWhenCoordinator<T, R> parent;
+		final MonoWhenCoordinator<R> parent;
 
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<MonoWhenSubscriber, Subscription> S =
                 AtomicReferenceFieldUpdater.newUpdater(MonoWhenSubscriber.class, Subscription.class, "s");
         
-        T value;
+        Object value;
         Throwable error;
 
-		public MonoWhenSubscriber(MonoWhenCoordinator<T, R> parent) {
+		public MonoWhenSubscriber(MonoWhenCoordinator<R> parent) {
 			this.parent = parent;
         }
         
@@ -240,7 +239,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         }
         
         @Override
-        public void onNext(T t) {
+        public void onNext(Object t) {
             if (value == null) {
                 value = t;
                 parent.signal();

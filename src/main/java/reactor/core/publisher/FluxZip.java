@@ -44,9 +44,6 @@ import reactor.core.Exceptions;
  *
  * @param <T> the common input type
  * @param <R> the output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
@@ -360,12 +357,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				try {
 					r = zipper.apply(a);
 				} catch (Throwable e) {
-					subscriber.onError(Operators.onOperatorError(this, e, value));
+					actual.onError(Operators.onOperatorError(this, e, value));
 					return;
 				}
 
 				if (r == null) {
-					subscriber.onError(Operators.onOperatorError(this, new
+					actual.onError(Operators.onOperatorError(this, new
 							NullPointerException("The zipper returned a null value"),
 							value));
 				} else {
@@ -377,7 +374,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		void error(Throwable e, int index) {
 			if (WIP.getAndSet(this, 0) > 0) {
 				cancelAll();
-				subscriber.onError(e);
+				actual.onError(e);
 			} else {
 				Operators.onErrorDropped(e);
 			}
@@ -387,7 +384,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			if (scalars[index] == null) {
 				if (WIP.getAndSet(this, 0) > 0) {
 					cancelAll();
-					subscriber.onComplete();
+					actual.onComplete();
 				}
 			}
 		}

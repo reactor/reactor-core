@@ -786,7 +786,7 @@ public abstract class Operators {
 	                                                    Fuseable, //for constants only
 	                                                    Fuseable.QueueSubscription<O> {
 
-		protected final Subscriber<? super O> subscriber;
+		protected final Subscriber<? super O> actual;
 
 		protected O value;
 
@@ -831,7 +831,7 @@ public abstract class Operators {
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 
 		public MonoSubscriber(Subscriber<? super O> actual) {
-			this.subscriber = actual;
+			this.actual = actual;
 		}
 
 		@Override
@@ -849,7 +849,7 @@ public abstract class Operators {
 							O v = value;
 							if (v != null) {
 								value = null;
-								Subscriber<? super O> a = subscriber;
+								Subscriber<? super O> a = actual;
 								a.onNext(v);
 								if (state != CANCELLED) {
 									a.onComplete();
@@ -879,7 +879,7 @@ public abstract class Operators {
 
 		@Override
 		public void onError(Throwable t) {
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -889,7 +889,7 @@ public abstract class Operators {
 
 		@Override
 		public void onComplete() {
-			subscriber.onComplete();
+			actual.onComplete();
 		}
 
 		/**
@@ -902,7 +902,7 @@ public abstract class Operators {
 
 		@Override
 		public final Subscriber<? super O> downstream() {
-			return subscriber;
+			return actual;
 		}
 
 		public void setValue(O value) {
@@ -923,7 +923,7 @@ public abstract class Operators {
 					setValue(v);
 					STATE.lazySet(this, FUSED_READY);
 
-					Subscriber<? super O> a = subscriber;
+					Subscriber<? super O> a = actual;
 					a.onNext(v);
 					if (this.state != CANCELLED) {
 						a.onComplete();
@@ -938,7 +938,7 @@ public abstract class Operators {
 
 				if (state == HAS_REQUEST_NO_VALUE) {
 					STATE.lazySet(this, HAS_REQUEST_HAS_VALUE);
-					Subscriber<? super O> a = subscriber;
+					Subscriber<? super O> a = actual;
 					a.onNext(v);
 					if (this.state != CANCELLED) {
 						a.onComplete();

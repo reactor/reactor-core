@@ -25,9 +25,6 @@ import reactor.core.Receiver;
  * Counts the number of values in the source sequence.
  *
  * @param <T> the source value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  *
  */
@@ -64,7 +61,7 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
-				subscriber.onSubscribe(this);
+				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
 			}
