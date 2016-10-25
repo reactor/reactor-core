@@ -34,7 +34,7 @@ class FlowSerializerSpec extends Specification {
 	def pub1 = fromIterable(1..1000).map { d -> d }
 	def pub2 = fromIterable(1..123).map { d -> d }
 
-	def t = FlowSerializerUtils.scan(pub1)
+	def t = StageUtils.scan(pub1)
 	println t
 	println t.nodes
 	println t.edges
@@ -48,7 +48,7 @@ class FlowSerializerSpec extends Specification {
 	def pub3 = merge(pub1, pub2)
 
 	println "after merge"
-	t = FlowSerializerUtils.scan(pub3)
+	t = StageUtils.scan(pub3)
 	println t
 	println t.nodes
 	println t.edges
@@ -67,7 +67,7 @@ class FlowSerializerSpec extends Specification {
 	proc1.log(" test").subscribe(_group)
 	def zip = zip(pub3, proc2)
 
-	t = FlowSerializerUtils.scan(zip)
+	t = StageUtils.scan(zip)
 	println t
 	println t.nodes
 	println t.edges
@@ -75,7 +75,7 @@ class FlowSerializerSpec extends Specification {
 	zip.subscribe(proc1)
 
 	println "after zip/subscribe"
-	t = FlowSerializerUtils.scan(sub1)
+	t = StageUtils.scan(sub1)
 	println t
 	println t.nodes
 	println t.edges

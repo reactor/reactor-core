@@ -40,7 +40,7 @@ import reactor.core.publisher.GroupedFlux;
  *
  * @author Stephane Maldini
  */
-public abstract class FlowSerializerUtils {
+public abstract class StageUtils {
 
 	;
 
@@ -702,7 +702,7 @@ public abstract class FlowSerializerUtils {
 
 	/**
 	 * A logical view representation of an introspected reference from {@link
-	 * FlowSerializerUtils#scan(Object)}
+	 * StageUtils#scan(Object)}
 	 */
 	public static class Node implements Comparable<Node> {
 
@@ -721,12 +721,12 @@ public abstract class FlowSerializerUtils {
 			this.object = o;
 			this.id = id;
 			this.name = name;
-			this.factory = FlowSerializerUtils.isFactory(o);
+			this.factory = StageUtils.isFactory(o);
 			this.inner = isContained(o);
-			this.group = FlowSerializerUtils.getGroup(o);
+			this.group = StageUtils.getGroup(o);
 			this.unique = false; //FIXME
 			this.rootId = rootId == null ? id : rootId;
-			this.logging = FlowSerializerUtils.isLogging(o);
+			this.logging = StageUtils.isLogging(o);
 		}
 
 		private void addEdgeRef(Edge edge) {
@@ -779,31 +779,31 @@ public abstract class FlowSerializerUtils {
 		}
 
 		public final long getCapacity() {
-			return FlowSerializerUtils.getCapacity(object);
+			return StageUtils.getCapacity(object);
 		}
 
 		public final long getBuffered() {
-			return FlowSerializerUtils.getBuffered(object);
+			return StageUtils.getBuffered(object);
 		}
 
 		public final long getUpstreamLimit() {
-			return FlowSerializerUtils.getUpstreamLimit(object);
+			return StageUtils.getUpstreamLimit(object);
 		}
 
 		public final long getPeriod() {
-			return FlowSerializerUtils.getTimedPeriod(object);
+			return StageUtils.getTimedPeriod(object);
 		}
 
 		public final Throwable getFailedState() {
-			return FlowSerializerUtils.getFailedState(object);
+			return StageUtils.getFailedState(object);
 		}
 
 		public final long getExpectedUpstream() {
-			return FlowSerializerUtils.getExpectedUpstream(object);
+			return StageUtils.getExpectedUpstream(object);
 		}
 
 		public final long getRequestedDownstream() {
-			return FlowSerializerUtils.getRequestedDownstream(object);
+			return StageUtils.getRequestedDownstream(object);
 		}
 
 		public final Boolean isActive() {
