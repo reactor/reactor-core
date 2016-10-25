@@ -38,6 +38,9 @@ import static java.util.Arrays.copyOf;
  * Ring based store of reusable entries containing the data representing an event being exchanged between event producer
  * and ringbuffer consumers.
  * @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
+ *
+ * This is an adaption of the original LMAX Disruptor RingBuffer code from
+ * https://lmax-exchange.github.io/disruptor/.
  */
 abstract class RingBuffer<E> implements LongSupplier {
 
