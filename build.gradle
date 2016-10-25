@@ -34,7 +34,7 @@ description = 'Non-Blocking Reactive Foundation for the JVM'
 group = 'io.projectreactor'
 
 ext {
-  gradleVersion = '2.12'
+  gradleVersion = '3.1'
   gradleScriptDir = "${rootProject.projectDir}/gradle"
 
   // Languages

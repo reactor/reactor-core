@@ -1376,8 +1376,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
-		MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
-		return doOnSignal(this, null, _onSuccess, null,  _onSuccess, null, null, null);
+		return defer(() -> {
+			MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
+			return doOnSignal(this, null, _onSuccess, null, _onSuccess, null, null, null);
+		});
 	}
 
 	/**
