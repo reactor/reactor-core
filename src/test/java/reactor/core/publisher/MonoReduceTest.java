@@ -16,11 +16,21 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertEquals;
+
 public class MonoReduceTest {
+
+	private static final Logger LOG = LoggerFactory.getLogger(MonoReduceTest.class);
 
 	/*@Test
 	public void constructors() {
@@ -131,6 +141,37 @@ public class MonoReduceTest {
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
+	}
+
+	/* see issue #230 */
+	@Test
+	public void should_reduce_to_10_events() {
+		AtomicInteger count = new AtomicInteger();
+		AtomicInteger countNulls = new AtomicInteger();
+		Flux.range(0, 10).flatMap(x ->
+				Flux.range(0, 2)
+				    .map(y -> blockingOp(x, y))
+				    .subscribeOn(Schedulers.elastic())
+				    .reduce((l, r) -> l + "_" + r)
+//				    .log("reduced."+x)
+				    .doOnSuccess(s -> {
+					    if (s == null) countNulls.incrementAndGet();
+					    else count.incrementAndGet();
+					    LOG.info("Completed with {}", s);
+				    })
+		).blockLast();
+
+		assertEquals(10, count.get());
+		assertEquals(0, countNulls.get());
+	}
+
+	private static String blockingOp(Integer x, Integer y) {
+		try {
+			sleep(1000 - x * 100);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return "x" + x + "y" + y;
 	}
 
 }
