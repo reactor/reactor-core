@@ -887,14 +887,17 @@ public abstract class Operators {
 					return;
 				}
 				if (s == SDS_HAS_REQUEST_NO_VALUE) {
+					Subscriber<? super O> a = downstream();
 					if (outputFused == OUTPUT_NO_VALUE) {
 						setValue(value); // make sure poll sees it
 						outputFused = OUTPUT_HAS_VALUE;
+						a.onNext(null);
 					}
-					Subscriber<? super O> a = downstream();
-					a.onNext(value);
-					if (state != SDS_HAS_REQUEST_HAS_VALUE) {
-						a.onComplete();
+					else {
+						a.onNext(value);
+						if (state != SDS_HAS_REQUEST_HAS_VALUE) {
+							a.onComplete();
+						}
 					}
 					return;
 				}
@@ -938,7 +941,12 @@ public abstract class Operators {
 		public O poll() {
 			if (outputFused == OUTPUT_HAS_VALUE) {
 				outputFused = OUTPUT_COMPLETE;
-				return value;
+				O v = value;
+				value = null;
+				return v;
+			}
+			if (outputFused == OUTPUT_COMPLETE && !isCancelled()) {
+				downstream().onComplete();
 			}
 			return null;
 		}
