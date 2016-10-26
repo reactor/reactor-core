@@ -2462,10 +2462,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} which only listens for complete and error signals from this {@link Mono} completes.
+	 * Return a {@code Mono<Void>} which only replays complete and error signals
+	 * from this {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen.png" alt="">
 	 * <p>
 	 * @return a {@link Mono} igoring its payload (actively dropping)
 	 */
@@ -2490,8 +2491,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
+	 * Ignore element from this {@link Mono} and transform its completion signal into the
+	 * emission and completion signal of a provided {@code Mono<V>}. Error signal is
+	 * replayed in the resulting {@code Mono<V>}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
@@ -2510,8 +2512,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the terminal signal (error or completion) into {@code Mono<V>} that will emit at most one result in the
-	 * returned {@link Mono}.
+	 * Ignore element from this {@link Mono} and transform its completion signal into the
+	 * emission and completion signal of a supplied {@code Mono<V>}. Error signal is
+	 * replayed in the resulting {@code Mono<V>}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
@@ -2526,16 +2529,17 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the terminal signal (error or completion) into {@code Publisher<V>} that will emit at most one result in the
-	 * returned {@link Flux}.
+	 * Ignore element from this mono and transform the completion signal into a
+	 * {@code Flux<V>} that will emit elements from the provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
-	 * @param <V> the element type of the supplied Mono
+	 * @param <V> the element type of the supplied Publisher
 	 *
-	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
+	 * @return a new {@link Flux} that emits from the supplied {@link Publisher} after
+	 * this Mono completes.
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		@SuppressWarnings("unchecked")
@@ -2544,20 +2548,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the terminal signal (error or completion) into {@code Publisher<V>} that will emit at most one result in the
-	 * returned {@link Flux}.
+	 * Ignore element from this mono and transform the completion signal into a
+	 * {@code Flux<V>} that will emit elements from the supplier-provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png" alt="">
 	 *
-	 * @param sourceSupplier a {@link Supplier} of {@link Publisher} to emit from after
-	 * termination
-	 * @param <V> the element type of the supplied Mono
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after
+	 * completion
+	 * @param <V> the element type of the supplied Publisher
 	 *
 	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
 	 */
-	public final <V> Flux<V> thenMany(final Supplier<? extends Mono<V>> sourceSupplier) {
-		return thenMany(defer(sourceSupplier));
+	public final <V> Flux<V> thenMany(final Supplier<? extends Publisher<V>> afterSupplier) {
+		return thenMany(Flux.defer(afterSupplier));
 	}
 
 	/**
