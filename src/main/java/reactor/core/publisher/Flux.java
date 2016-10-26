@@ -1054,14 +1054,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
 	 * their emitted values are merged into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	//TODO diagram for mergeSequential? (include all variants)
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
 		return mergeSequential(sources, false, QueueSupplier.SMALL_BUFFER_SIZE,
 				QueueSupplier.XS_BUFFER_SIZE);
@@ -1072,7 +1071,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
 	 * their emitted values are merged into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
 	 * @param delayError should any error be delayed after current merge backlog
@@ -1094,7 +1093,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
 	 * into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param sources a number of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
@@ -1110,7 +1109,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
 	 * into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param delayError should any error be delayed after current merge backlog
 	 * @param prefetch the inner source request size
@@ -1137,7 +1136,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
 	 * are merged into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
@@ -1154,7 +1153,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
 	 * are merged into the final sequence in subscription order.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergeinner.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param delayError should any error be delayed after current merge backlog
@@ -3333,13 +3332,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return flatMapIterable(mapper, QueueSupplier.SMALL_BUFFER_SIZE);
@@ -3351,14 +3349,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
 		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
@@ -3372,19 +3369,35 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * are merged respecting the order of the original sequence.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper) {
 		return flatMapSequential(mapper, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
+
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
+	 * emissions from those by merging them into a single {@link Flux}, in order.
+	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
+	 * are merged respecting the order of the original sequence. The concurrency argument
+	 * allows to control how many merged {@link Publisher} can happen in parallel.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, int maxConcurrency) {
 		return flatMapSequential(mapper, maxConcurrency, QueueSupplier.XS_BUFFER_SIZE);
@@ -3400,7 +3413,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
@@ -3408,14 +3421,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return flatMapSequential(mapper, false, maxConcurrency, prefetch);
 	}
 
-	//TODO diagram for flatMapSequential ? (include all 3 variants)
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
@@ -3426,7 +3437,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapc.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param delayError should any error be delayed after current merge backlog
@@ -3435,7 +3446,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,

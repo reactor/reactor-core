@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
  * sequence of items.
- * 
+ *
  * @param <T> the source value type
  * @param <R> the output value type
  */
@@ -56,12 +55,13 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 	public FluxMergeSequential(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
-			int maxConcurrency,
-			int prefetch,
-			ErrorMode errorMode) {
+			int maxConcurrency, int prefetch, ErrorMode errorMode) {
 		super(source);
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
+		if (maxConcurrency <= 0) {
+			throw new IllegalArgumentException("maxConcurrency > 0 required but it was " + maxConcurrency);
 		}
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 		this.maxConcurrency = maxConcurrency;
@@ -75,31 +75,19 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 			return;
 		}
 
-		Subscriber<T> parent = null;
-		switch (errorMode) {
-			case END:
-				parent = new MergeSequentialDelayed<T, R>(s, mapper, maxConcurrency,
-						prefetch,	true);
-				break;
-			case IMMEDIATE:
-				//TODO undelayed subscription
-				throw new UnsupportedOperationException("IMMEDIATE error mode for " +
-						"mergeSequential is not yet implemented");
-//				break;
-			case BOUNDARY:
-				parent = new MergeSequentialDelayed<T, R>(s, mapper, maxConcurrency,
-						prefetch, false);
-		}
+		Subscriber<T> parent = new MergeSequentialMain<T, R>(s,
+				mapper,
+				maxConcurrency,
+				prefetch,
+				errorMode);
 		source.subscribe(parent);
 	}
 
-	static final class MergeSequentialDelayed<T, R>
+	static final class MergeSequentialMain<T, R>
 			implements Subscriber<T>, FluxMergeSequentialSupport<R>, Subscription {
 
 		/** the downstream subscriber */
 		final Subscriber<? super R> actual;
-
-		final MergeSequentialInner<R> inner;
 
 		/** the mapper giving the inner publisher for each source value */
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -110,19 +98,16 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		/** request size for inner subscribers (size of the inner queues) */
 		final int prefetch;
 
-		/** the limit at which a prefetch is triggered in inners, to optimize the flow */
-		final int limit;
+		final Queue<MergeSequentialInner<R>> subscribers;
 
 		/** whether or not errors should be delayed until the very end of all inner
 		 * publishers or just until the completion of the currently merged inner publisher
 		 */
-		final boolean veryEnd;
+		final ErrorMode errorMode;
 
 		Subscription s;
 
 		int consumed;
-
-		volatile Queue<T> queue;
 
 		volatile boolean done;
 
@@ -130,9 +115,13 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 		volatile Throwable error;
 
+		MergeSequentialInner<R> current;
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSequentialDelayed, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialDelayed.class, Throwable.class, "error");
+		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class,
+						Throwable.class,
+						"error");
 
 		volatile boolean active;
 
@@ -142,91 +131,438 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		volatile int wip;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MergeSequentialDelayed> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialDelayed.class, "wip");
+		static final AtomicIntegerFieldUpdater<MergeSequentialMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "wip");
 
-		public MergeSequentialDelayed(Subscriber<? super R> actual,
+		volatile long requested;
+
+		static final AtomicLongFieldUpdater<MergeSequentialMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(MergeSequentialMain.class, "requested");
+
+		public MergeSequentialMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				int maxConcurrency,
-				int prefetch,
-				boolean veryEnd) {
+				int maxConcurrency, int prefetch, ErrorMode errorMode) {
+
 			this.actual = actual;
 			this.mapper = mapper;
 			this.maxConcurrency = maxConcurrency;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
-			this.veryEnd = veryEnd;
-			this.inner = new MergeSequentialInner<>(this);
-		}
-
-		@Override
-		public void innerNext(R value) {
-
-		}
-
-		@Override
-		public void innerComplete() {
-
-		}
-
-		@Override
-		public void innerError(Throwable e) {
-
+			this.errorMode = errorMode;
+			this.subscribers = QueueSupplier.<MergeSequentialInner<R>>get(Math.min(
+					prefetch,
+					maxConcurrency)).get();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 
+				actual.onSubscribe(this);
+
+				s.request(maxConcurrency == Integer.MAX_VALUE ? Long.MAX_VALUE :
+						maxConcurrency);
+			}
 		}
 
 		@Override
 		public void onNext(T t) {
+			Publisher<? extends R> publisher;
 
+			try {
+				publisher = Objects.requireNonNull(mapper.apply(t), "publisher");
+			}
+			catch (Throwable ex) {
+				onError(Operators.onOperatorError(s, ex, t));
+				return;
+			}
+
+			MergeSequentialInner<R> inner = new MergeSequentialInner<R>(this, prefetch);
+
+			if (cancelled) {
+				return;
+			}
+
+			subscribers.offer(inner);
+
+			if (cancelled) {
+				return;
+			}
+
+			publisher.subscribe(inner);
+
+			if (cancelled) {
+				inner.cancel();
+				drainAndCancel();
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-
+			if (Exceptions.addThrowable(ERROR, this, t)) {
+				done = true;
+				drain();
+			}
+			else {
+				Operators.onErrorDropped(t);
+			}
 		}
 
 		@Override
 		public void onComplete() {
-
-		}
-
-		@Override
-		public void request(long n) {
-
+			done = true;
+			drain();
 		}
 
 		@Override
 		public void cancel() {
+			if (cancelled) {
+				return;
+			}
+			cancelled = true;
+			s.cancel();
 
+			drainAndCancel();
 		}
-	}
 
-	static final class MergeSequentialInner<R>
-			extends Operators.MultiSubscriptionSubscriber<R, R> {
+		void drainAndCancel() {
+			if (WIP.getAndIncrement(this) == 0) {
+				do {
+					cancelAll();
+				}
+				while (WIP.decrementAndGet(this) != 0);
+			}
+		}
 
-		private final FluxMergeSequentialSupport<R> parent;
+		void cancelAll() {
+			MergeSequentialInner<R> inner;
 
-		public MergeSequentialInner(FluxMergeSequentialSupport<R> parent) {
-			super(null);
-			this.parent = parent;
+			while ((inner = subscribers.poll()) != null) {
+				inner.cancel();
+			}
 		}
 
 		@Override
-		public void onNext(R r) {
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				Operators.addAndGet(REQUESTED, this, n);
+				drain();
+			}
+		}
 
+		@Override
+		public void innerNext(MergeSequentialInner<R> inner, R value) {
+			if (inner.queue().offer(value)) {
+				drain();
+			}
+			else {
+				inner.cancel();
+				innerError(inner, Exceptions.failWithOverflow());
+			}
+		}
+
+		@Override
+		public void innerError(MergeSequentialInner<R> inner, Throwable e) {
+			if (Exceptions.addThrowable(ERROR, this, e)) {
+				inner.setDone();
+				if (errorMode != ErrorMode.END) {
+					s.cancel();
+				}
+				drain();
+			}
+			else {
+				Operators.onErrorDropped(e);
+			}
+		}
+
+		@Override
+		public void innerComplete(MergeSequentialInner<R> inner) {
+			inner.setDone();
+			drain();
+		}
+
+		@Override
+		public void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			int missed = 1;
+			MergeSequentialInner<R> inner = current;
+			Subscriber<? super R> a = actual;
+			ErrorMode em = errorMode;
+
+			for (; ; ) {
+				long r = requested;
+				long e = 0L;
+
+				if (inner == null) {
+
+					if (em != ErrorMode.END) {
+						Throwable ex = error;
+						if (ex != null) {
+							cancelAll();
+
+							a.onError(ex);
+							return;
+						}
+					}
+
+					boolean outerDone = done;
+
+					inner = subscribers.poll();
+
+					if (outerDone && inner == null) {
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+
+					if (inner != null) {
+						current = inner;
+					}
+				}
+
+				boolean continueNextSource = false;
+
+				if (inner != null) {
+					Queue<R> q = inner.queue();
+					if (q != null) {
+						while (e != r) {
+							if (cancelled) {
+								cancelAll();
+								return;
+							}
+
+							if (em == ErrorMode.IMMEDIATE) {
+								Throwable ex = error;
+								if (ex != null) {
+									current = null;
+									inner.cancel();
+									cancelAll();
+
+									a.onError(ex);
+									return;
+								}
+							}
+
+							boolean d = inner.isDone();
+
+							R v;
+
+							try {
+								v = q.poll();
+							}
+							catch (Throwable ex) {
+								current = null;
+								ex = Operators.onOperatorError(inner, ex);
+								cancelAll();
+								a.onError(ex);
+								return;
+							}
+
+							boolean empty = v == null;
+
+							if (d && empty) {
+								inner = null;
+								current = null;
+								s.request(1);
+								continueNextSource = true;
+								break;
+							}
+
+							if (empty) {
+								break;
+							}
+
+							a.onNext(v);
+
+							e++;
+
+							inner.requestOne();
+						}
+
+						if (e == r) {
+							if (cancelled) {
+								cancelAll();
+								return;
+							}
+
+							if (em == ErrorMode.IMMEDIATE) {
+								Throwable ex = error;
+								if (ex != null) {
+									current = null;
+									inner.cancel();
+									cancelAll();
+
+									a.onError(ex);
+									return;
+								}
+							}
+
+							boolean d = inner.isDone();
+
+							boolean empty = q.isEmpty();
+
+							if (d && empty) {
+								inner = null;
+								current = null;
+								s.request(1);
+								continueNextSource = true;
+							}
+						}
+					}
+				}
+
+				if (e != 0L && r != Long.MAX_VALUE) {
+					REQUESTED.addAndGet(this, -e);
+				}
+
+				if (continueNextSource) {
+					continue;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+	}
+
+	static final class MergeSequentialInner<R> implements Subscriber<R>, Subscription {
+
+		final FluxMergeSequentialSupport<R> parent;
+
+		final int prefetch;
+
+		final int limit;
+
+		volatile Queue<R> queue;
+
+		volatile Subscription subscription;
+
+		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription>
+				SUBSCRIPTION = AtomicReferenceFieldUpdater.newUpdater(
+						MergeSequentialInner.class, Subscription.class, "subscription");
+
+		volatile boolean done;
+
+		long produced;
+
+		int fusionMode;
+
+		public MergeSequentialInner(FluxMergeSequentialSupport<R> parent, int prefetch) {
+			this.parent = parent;
+			this.prefetch = prefetch;
+			this.limit = prefetch - (prefetch >> 2);
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
+				if (s instanceof QueueSubscription) {
+					@SuppressWarnings("unchecked")
+					QueueSubscription<R> qs = (QueueSubscription<R>) s;
+
+					int m = qs.requestFusion(Fuseable.ANY);
+					if (m == Fuseable.SYNC) {
+						fusionMode = m;
+						queue = qs;
+						done = true;
+						parent.innerComplete(this);
+						return;
+					}
+					if (m == Fuseable.ASYNC) {
+						fusionMode = m;
+						queue = qs;
+						//FIXME could be mutualized in DrainUtils or Operators (+ review other prefetch based operators)
+						s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+						return;
+					}
+				}
+
+				queue = QueueSupplier.<R>get(prefetch).get();
+				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+			}
+		}
+
+		@Override
+		public void onNext(R t) {
+			if (fusionMode == Fuseable.NONE) {
+				parent.innerNext(this, t);
+			} else {
+				parent.drain();
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			parent.innerError(this, t);
+		}
+
+		@Override
+		public void onComplete() {
+			parent.innerComplete(this);
+		}
+
+		@Override
+		public void request(long n) {
+			if (fusionMode != Fuseable.SYNC) {
+				long p = produced + n;
+				if (p >= limit) {
+					produced = 0L;
+					subscription.request(p);
+				} else {
+					produced = p;
+				}
+			}
+		}
+
+		public void requestOne() {
+			if (fusionMode != Fuseable.SYNC) {
+				long p = produced + 1;
+				if (p == limit) {
+					produced = 0L;
+					subscription.request(p);
+				} else {
+					produced = p;
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			Operators.set(SUBSCRIPTION, this, Operators.cancelledSubscription());
+		}
+
+		public boolean isDone() {
+			return done;
+		}
+
+		public void setDone() {
+			this.done = true;
+		}
+
+		public Queue<R> queue() {
+			return queue;
 		}
 	}
 
 	interface FluxMergeSequentialSupport<T> {
 
-		void innerNext(T value);
+		void innerNext(MergeSequentialInner<T> inner, T value);
 
-		void innerComplete();
+		void innerComplete(MergeSequentialInner<T> inner);
 
-		void innerError(Throwable e);
+		void innerError(MergeSequentialInner<T> inner, Throwable e);
+
+		void drain();
 	}
+
 }

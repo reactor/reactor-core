@@ -466,15 +466,16 @@ public class FluxMergeSequentialTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
-		Flux.just(1).flatMapSequential(t -> Flux.range(1, QueueSupplier.SMALL_BUFFER_SIZE * 2)
-		                                        .doOnNext(t1 -> count.getAndIncrement())
-		                                        .hide())
+		Flux.just(1).hide()
+		    .flatMapSequential(t -> Flux.range(1, QueueSupplier.SMALL_BUFFER_SIZE * 2)
+		                                .doOnNext(t1 -> count.getAndIncrement())
+		                                .hide())
 		    .subscribe(ts);
 
 		ts.assertNoError();
 		ts.assertNoValues();
 		ts.assertNotComplete();
-		Assert.assertEquals(QueueSupplier.SMALL_BUFFER_SIZE, count.get());
+		Assert.assertEquals(QueueSupplier.XS_BUFFER_SIZE, count.get());
 	}
 
 	@Test
