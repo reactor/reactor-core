@@ -19,9 +19,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -33,6 +35,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class MonoTests {
 
 
+	@Test
+	public void testMonoThenManySupplier() {
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+		Flux<String> test = Mono.just(1).thenMany(() -> Flux.just("A", "B"));
+
+		test.subscribe(ts);
+		ts.assertValues("A", "B");
+		ts.assertComplete();
+	}
 
 	// test issue https://github.com/reactor/reactor/issues/485
 	@Test

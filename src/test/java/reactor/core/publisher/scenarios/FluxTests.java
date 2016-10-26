@@ -62,9 +62,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
-import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.function.Tuples;
@@ -78,6 +78,36 @@ import static org.junit.Assert.*;
 public class FluxTests extends AbstractReactorTest {
 
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
+
+	@Test
+	public void testThenMono() throws InterruptedException {
+		Mono<String> testSameType = Flux.just("A", "B").then(Mono.just("C"));
+		Mono<String> testDifferentType = Flux.just(1, 2).then(Mono.just("C"));
+
+		await(1, testSameType, is("C"));
+		await(1, testDifferentType, is("C"));
+	}
+
+	@Test
+	public void testThenManySameType() throws InterruptedException {
+		Flux<String> test = Flux.just("A", "B")
+		                        .thenMany(Flux.just("C", "D"));
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+		test.subscribe(ts);
+		ts.assertValues("C", "D");
+		ts.assertComplete();
+	}
+
+	@Test
+	public void testThenManyDifferentType() throws InterruptedException {
+		Flux<String> test = Flux.just(1, 2).thenMany(Flux.just("C", "D"));
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+		test.subscribe(ts);
+		ts.assertValues("C", "D");
+		ts.assertComplete();
+	}
 
 	@Test
 	public void testComposeFromSingleValue() throws InterruptedException {

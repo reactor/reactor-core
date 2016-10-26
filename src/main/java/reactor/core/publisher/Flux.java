@@ -5729,29 +5729,49 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the completion of the supplied {@link Publisher}
-	 * when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
+	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
+	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen.png"
 	 * alt="">
 	 *
-	 * @param other a {@link Publisher} to emit from after termination
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @param other a {@link Publisher} to wait for after this Flux's termination
+	 * @return a new {@link Mono} completing when both publishers have completed in
+	 * sequence
 	 */
 	public final Mono<Void> then(Publisher<Void> other) {
 		return MonoSource.wrap(concat(then(), other));
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the completion of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * Return a {@link Mono} that waits for this {@link Flux} to complete, then appends
+	 * the value from the supplied Mono. If an error occurs, the append is terminated and
+	 * the error signal propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
-	 * alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
 	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
+	 * @param other the {@link Mono} supplying a single value to emit after this Flux terminates
+	 * @param <V> the type of the emitted value
+	 * @return a new {@link Mono} emitting eventually from the supplied {@link Mono}
+	 * @see #then(Publisher) when attempting to append a {@code Mono<Void>}, will need
+	 * a cast to {@code Publisher<Void>}...
+	 */
+	public final <V> Mono<V> then(Mono<V> other) {
+		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		Mono<V> then = ignored.then(other);
+		return Mono.onAssembly(then);
+	}
+
+	/**
+	 * Return a {@link Flux} that emits the completion signal of the supplied
+	 * {@link Publisher} when this {@link Flux} onComplete or onError. If an error occur,
+	 * the error signal is replayed after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen.png" alt="">
+	 *
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to wait for after
+	 * this Flux termination
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
@@ -5760,11 +5780,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher}
+	 * after this {@link Flux} completes, ignoring this flux elements. If an error
+	 * occurs it immediately terminates the resulting flux.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
-	 * alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the supplied produced type
@@ -5778,11 +5798,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher} when this {@link Flux} onComplete
-	 * or onError. If an error occur, append after the supplied {@link Publisher} is terminated.
+	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher}
+	 * after this {@link Flux} completes, ignoring this flux elements. If an error occurs
+	 * it immediately terminates the resulting flux.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png"
-	 * alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethens.png" alt="">
 	 *
 	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
 	 * @param <V> the supplied produced type
