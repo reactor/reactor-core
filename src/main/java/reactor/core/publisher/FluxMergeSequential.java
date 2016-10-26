@@ -38,9 +38,6 @@ import reactor.util.concurrent.QueueSupplier;
  *
  * @param <T> the source value type
  * @param <R> the output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
@@ -107,30 +104,22 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 		Subscription s;
 
-		int consumed;
-
 		volatile boolean done;
 
 		volatile boolean cancelled;
 
 		volatile Throwable error;
 
-		MergeSequentialInner<R> current;
-
-		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class,
-						Throwable.class,
-						"error");
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
-		volatile boolean active;
+		MergeSequentialInner<R> current;
 
 		/** guard against multiple threads entering the drain loop. allows thread
 		 * stealing by continuing the loop if wip has been incremented externally by
 		 * a separate thread. */
 		volatile int wip;
 
-		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MergeSequentialMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "wip");
 
@@ -435,6 +424,12 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		}
 	}
 
+	/**
+	 * Represents the inner flux in a mergeSequential, that has an internal queue to
+	 * hold items while they arrive out of order. The queue is drained as soon as correct
+	 * order can be restored.
+	 * @param <R> the type of objects emitted by the inner flux
+	 */
 	static final class MergeSequentialInner<R> implements Subscriber<R>, Subscription {
 
 		final FluxMergeSequentialSupport<R> parent;
