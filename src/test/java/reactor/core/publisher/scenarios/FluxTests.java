@@ -80,12 +80,16 @@ public class FluxTests extends AbstractReactorTest {
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
 
 	@Test
-	public void testThenMono() throws InterruptedException {
-		Mono<String> testSameType = Flux.just("A", "B").then(Mono.just("C"));
-		Mono<String> testDifferentType = Flux.just(1, 2).then(Mono.just("C"));
+	public void testThenPublisherVoid() throws InterruptedException {
+		Mono<Void> testVoidPublisher = Flux
+				.just("A", "B")
+				.thenEmpty(Mono.fromRunnable(() -> { }));
 
-		await(1, testSameType, is("C"));
-		await(1, testDifferentType, is("C"));
+		AssertSubscriber<Void> ts = AssertSubscriber.create();
+		testVoidPublisher.subscribe(ts);
+
+		ts.assertValueCount(0);
+		ts.assertComplete();
 	}
 
 	@Test

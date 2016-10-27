@@ -5739,28 +5739,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param other a {@link Publisher} to wait for after this Flux's termination
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
+	 * @deprecated use {@link #thenEmpty(Publisher)} instead, this alias will be
+	 * removed in 3.1.0
 	 */
+	@Deprecated
 	public final Mono<Void> then(Publisher<Void> other) {
-		return MonoSource.wrap(concat(then(), other));
+		return thenEmpty(other);
 	}
 
 	/**
-	 * Return a {@link Mono} that waits for this {@link Flux} to complete, then appends
-	 * the value from the supplied Mono. If an error occurs, the append is terminated and
-	 * the error signal propagated.
+	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
+	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
+	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen.png"
+	 * alt="">
 	 *
-	 * @param other the {@link Mono} supplying a single value to emit after this Flux terminates
-	 * @param <V> the type of the emitted value
-	 * @return a new {@link Mono} emitting eventually from the supplied {@link Mono}
-	 * @see #then(Publisher) when attempting to append a {@code Mono<Void>}, will need
-	 * a cast to {@code Publisher<Void>}...
+	 * @param other a {@link Publisher} to wait for after this Flux's termination
+	 * @return a new {@link Mono} completing when both publishers have completed in
+	 * sequence
 	 */
-	public final <V> Mono<V> then(Mono<V> other) {
-		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
-		Mono<V> then = ignored.then(other);
-		return Mono.onAssembly(then);
+	public final Mono<Void> thenEmpty(Publisher<Void> other) {
+		return MonoSource.wrap(concat(then(), other));
 	}
 
 	/**
