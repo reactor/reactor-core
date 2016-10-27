@@ -1,9 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inspections version="1.0">
   <option name="myName" value="Reactor Inspections" />
+  <inspection_tool class="AtomicFieldUpdaterIssues" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+  <inspection_tool class="BooleanMethodIsAlwaysInverted" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+  <inspection_tool class="CanBeFinal" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+    <option name="REPORT_CLASSES" value="false" />
+    <option name="REPORT_METHODS" value="false" />
+    <option name="REPORT_FIELDS" value="true" />
+  </inspection_tool>
+  <inspection_tool class="ForCanBeForeach" enabled="false" level="WARNING" enabled_by_default="false">
+    <option name="REPORT_INDEXED_LOOP" value="true" />
+    <option name="ignoreUntypedCollections" value="false" />
+  </inspection_tool>
+  <inspection_tool class="InfiniteLoopStatement" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
   <inspection_tool class="LoggerInitializedWithForeignClass" enabled="false" level="WARNING" enabled_by_default="false">
     <option name="loggerClassName" value="org.apache.log4j.Logger,org.slf4j.LoggerFactory,org.apache.commons.logging.LogFactory,java.util.logging.Logger" />
     <option name="loggerFactoryMethodName" value="getLogger,getLogger,getLog,getLogger" />
+  </inspection_tool>
+  <inspection_tool class="SameParameterValue" enabled="false" level="WARNING" enabled_by_default="false" />
+  <inspection_tool class="SameReturnValue" enabled="false" level="WARNING" enabled_by_default="false" />
+  <inspection_tool class="ThrowableResultOfMethodCallIgnored" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+  <inspection_tool class="UnnecessaryLocalVariable" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+    <option name="m_ignoreImmediatelyReturnedVariables" value="false" />
+    <option name="m_ignoreAnnotatedVariables" value="false" />
   </inspection_tool>
   <inspection_tool class="WeakerAccess" enabled="true" level="WEAK WARNING" enabled_by_default="true">
     <option name="SUGGEST_PACKAGE_LOCAL_FOR_MEMBERS" value="true" />
