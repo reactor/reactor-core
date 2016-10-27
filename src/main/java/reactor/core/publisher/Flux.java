@@ -1309,12 +1309,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	@SuppressWarnings("unchecked")
     public static <T1, T2, O> Flux<O> zip(Publisher<? extends T1> source1,
 			Publisher<? extends T2> source2,
 			final BiFunction<? super T1, ? super T2, ? extends O> combinator) {
 
-		return zip((Function<Object[], O>) tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
+		return onAssembly(new FluxZip<T1, O>(source1,
+				source2,
+				combinator,
+				QueueSupplier.xs(),
+				QueueSupplier.XS_BUFFER_SIZE));
 	}
 
 	/**
@@ -1331,7 +1334,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 */
 	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
-		return zip(Tuples.fn2(), source1, source2);
+		return zip(source1, source2, tuple2Function());
 	}
 
 	/**
@@ -1435,10 +1438,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<? extends T6> source6) {
 		return zip(Tuples.fn6(), source1, source2, source3, source4, source5, source6);
 	}
-
-//	 ==============================================================================================================
-//	 Instance Operators
-//	 ==============================================================================================================
 
 	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
@@ -2717,9 +2716,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
-		@SuppressWarnings({ "unchecked" })
-		Flux<T> concat = new FluxConcatArray<>(false, this, other);
-		return onAssembly(concat);
+		return concat(this, other);
 	}
 
 	/**
@@ -5760,7 +5757,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		return MonoSource.wrap(concat(then(), other));
+		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		Mono<Void> then = ignored.then(MonoSource.wrap(other));
+		return Mono.onAssembly(then);
 	}
 
 	/**
@@ -5792,6 +5791,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
+		if (this instanceof FluxConcatArray) {
+			@SuppressWarnings({ "unchecked" })
+			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+			return fluxConcatArray.concatAdditionalIgnoredLast(other);
+		}
+
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
 		return concat;
@@ -6415,6 +6420,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
+	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
+	 * <p>
+	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a zipped {@link Flux}
+	 *
+	 */
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
+		return zipWith(source2, tuple2Function());
+	}
+
+	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
 	 * produced by the passed combinator from the most recent items emitted by each source until any of them
 	 * completes. Errors will immediately be forwarded.
@@ -6460,25 +6481,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
-			int prefetch, BiFunction<? super T, ? super T2, ? extends V> combinator) {
-		return zip(objects -> combinator.apply((T)objects[0], (T2)objects[1]), prefetch, this, source2);
-	}
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
-	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param <T2> type of the value from source2
-	 *
-	 * @return a zipped {@link Flux}
-	 *
-	 */
-	@SuppressWarnings("unchecked")
-	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
-		return Flux.<T, T2, Tuple2<T, T2>>zip(this, source2, TUPLE2_BIFUNCTION);
+			int prefetch,
+			BiFunction<? super T, ? super T2, ? extends V> combinator) {
+		return zip(objects -> combinator.apply((T) objects[0], (T2) objects[1]),
+				prefetch,
+				this,
+				source2);
 	}
 
 	/**
@@ -6495,7 +6503,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
-		return zip(Tuples.fn2(), prefetch, this, source2);
+		return zipWith(source2, prefetch, tuple2Function());
 	}
 
 	/**
@@ -6513,7 +6521,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
-		return onAssembly(new FluxZipIterable<>(this, iterable, TUPLE2_BIFUNCTION));
+		return zipWithIterable(iterable, tuple2Function());
 	}
 
 	/**
@@ -6674,6 +6682,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("unchecked")
 	static <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <A, B> BiFunction<A, B, Tuple2<A, B>> tuple2Function() {
+		return TUPLE2_BIFUNCTION;
 	}
 
 	@SuppressWarnings("rawtypes")

@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
@@ -32,7 +33,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <R> the source value types
  */
-final class MonoWhen<R> extends Mono<R> {
+final class MonoWhen<T, R> extends Mono<R> {
 
     final boolean delayError;
 
@@ -41,6 +42,18 @@ final class MonoWhen<R> extends Mono<R> {
 	final Iterable<? extends Publisher<?>> sourcesIterable;
 
 	final Function<? super Object[], ? extends R> zipper;
+
+	@SuppressWarnings("unchecked")
+	public <U> MonoWhen(boolean delayError,
+			Publisher<? extends T> p1,
+			Publisher<? extends U> p2,
+			BiFunction<? super T, ? super U, ? extends R> zipper2) {
+		this(delayError,
+				new FluxZip.PairwiseZipper<>(new BiFunction[]{
+						Objects.requireNonNull(zipper2, "zipper2")}),
+				Objects.requireNonNull(p1, "p1"),
+				Objects.requireNonNull(p2, "p2"));
+	}
 
     public MonoWhen(boolean delayError,
 		    Function<? super Object[], ? extends R> zipper,
@@ -58,6 +71,23 @@ final class MonoWhen<R> extends Mono<R> {
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.sources = null;
 		this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
+	}
+
+	@SuppressWarnings("unchecked")
+	public Mono<R> whenAdditionalSource(Publisher source, BiFunction zipper) {
+		Publisher[] oldSources = sources;
+		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
+			int oldLen = oldSources.length;
+			Publisher<?>[] newSources = new Publisher[oldLen + 1];
+			System.arraycopy(oldSources, 0, newSources, 0, oldLen);
+			newSources[oldLen] = source;
+
+			Function<Object[], R> z =
+					((FluxZip.PairwiseZipper<R>) this.zipper).then(zipper);
+
+			return new MonoWhen<>(delayError, z, newSources);
+		}
+		return null;
 	}
 
     @SuppressWarnings("unchecked")

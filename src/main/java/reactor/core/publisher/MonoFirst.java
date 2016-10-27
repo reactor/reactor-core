@@ -49,6 +49,16 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
+	public Mono<T> orAdditionalSource(Mono<? extends T> other) {
+		int n = array.length;
+		@SuppressWarnings("unchecked")
+		Mono<? extends T>[] newArray = new Mono[n + 1];
+		System.arraycopy(array, 0, newArray, 0, n);
+		newArray[n] = other;
+
+		return new MonoFirst<>(newArray);
+	}
+
 	@Override
 	public Iterator<?> upstreams() {
 		return iterable != null ? iterable.iterator() : Arrays.asList(array)

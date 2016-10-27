@@ -93,27 +93,6 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testThenManySameType() throws InterruptedException {
-		Flux<String> test = Flux.just("A", "B")
-		                        .thenMany(Flux.just("C", "D"));
-
-		AssertSubscriber<String> ts = AssertSubscriber.create();
-		test.subscribe(ts);
-		ts.assertValues("C", "D");
-		ts.assertComplete();
-	}
-
-	@Test
-	public void testThenManyDifferentType() throws InterruptedException {
-		Flux<String> test = Flux.just(1, 2).thenMany(Flux.just("C", "D"));
-
-		AssertSubscriber<String> ts = AssertSubscriber.create();
-		test.subscribe(ts);
-		ts.assertValues("C", "D");
-		ts.assertComplete();
-	}
-
-	@Test
 	public void testComposeFromSingleValue() throws InterruptedException {
 		Flux<String> stream = Flux.just("Hello World!");
 		Flux<String> s = stream.map(s1 -> "Goodbye then!");

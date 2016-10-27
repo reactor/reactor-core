@@ -117,6 +117,27 @@ extends Flux<T>
 	}
 
 	/**
+	 * Returns a new instance which has the additional source to be merged together with
+	 * the current array of sources.
+	 * <p>
+	 * This operation doesn't change the current FluxMerge instance.
+	 *
+	 * @param source the new source to merge with the others
+	 * @return the new FluxConcatArray instance
+	 */
+	@SuppressWarnings("unchecked")
+	public <V> FluxConcatArray<V> concatAdditionalIgnoredLast(Publisher<? extends V>
+			source) {
+		int n = array.length;
+		Publisher<? extends V>[] newArray = new Publisher[n + 1];
+		System.arraycopy(array, 0, newArray, 0, n);
+		newArray[n - 1] = new MonoIgnoreThen<>(newArray[n - 1]);
+		newArray[n] = source;
+
+		return new FluxConcatArray<>(delayError, newArray);
+	}
+
+	/**
 	 * Returns a new instance which has the additional first source to be concatenated together with
 	 * the current array of sources.
 	 * <p>
