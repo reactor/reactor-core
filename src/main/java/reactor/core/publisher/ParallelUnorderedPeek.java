@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

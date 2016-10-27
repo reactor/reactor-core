@@ -38,11 +38,11 @@ import org.reactivestreams.Subscriber;
  */
 final class MonoRetryWhen<T> extends MonoSource<T, T> {
 
-	final Function<? super Flux<Throwable>, ? extends Publisher<? extends Object>>
+	final Function<? super Flux<Throwable>, ? extends Publisher<?>>
 			whenSourceFactory;
 
 	public MonoRetryWhen(Publisher<? extends T> source,
-			Function<? super Flux<Throwable>, ? extends Publisher<? extends Object>> whenSourceFactory) {
+			Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =
 				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");

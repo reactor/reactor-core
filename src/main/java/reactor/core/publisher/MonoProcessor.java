@@ -561,13 +561,13 @@ public final class MonoProcessor<O> extends Mono<O>
 	@SuppressWarnings("rawtypes")
     final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "state");
-    @SuppressWarnings("rawtypes")
+	@SuppressWarnings("rawtypes")
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              WIP       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "wip");
-    @SuppressWarnings("rawtypes")
+	@SuppressWarnings("rawtypes")
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              CONNECTED       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
-    @SuppressWarnings("rawtypes")
+	@SuppressWarnings("rawtypes")
 	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
 		    AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, Processor.class,
 				    "processor");

@@ -16,9 +16,7 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.

@@ -21,7 +21,6 @@ import org.reactivestreams.Subscription;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -64,7 +63,6 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
-			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
 			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
 			return;

@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 

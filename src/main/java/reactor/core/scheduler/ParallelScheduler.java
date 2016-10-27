@@ -25,10 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
-
-import static reactor.core.Exceptions.unwrap;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers

@@ -39,10 +39,10 @@ import reactor.core.Loopback;
  */
 final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
-	final Function<? super Flux<Long>, ? extends Publisher<? extends Object>> whenSourceFactory;
+	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
 	public FluxRepeatWhen(Publisher<? extends T> source,
-							   Function<? super Flux<Long>, ? extends Publisher<? extends Object>> whenSourceFactory) {
+							   Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}

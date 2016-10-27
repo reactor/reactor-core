@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
@@ -279,7 +280,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(window).iterator();
+			return Collections.singletonList(window)
+			                  .iterator();
 		}
 
 		@Override
@@ -491,7 +493,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(window).iterator();
+			return Collections.singletonList(window)
+			                  .iterator();
 		}
 
 		@Override

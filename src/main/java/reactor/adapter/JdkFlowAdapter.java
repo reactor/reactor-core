@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
  * @author Stephane Maldini
  * @author Sebastien Deleuze
  */
+@SuppressWarnings("Since15")
 public abstract class JdkFlowAdapter {
 
 	/**

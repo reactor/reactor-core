@@ -439,7 +439,6 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 						}
 					} else {
 						anyError(new IllegalStateException("Could not emit buffer due to lack of requests"));
-						continue;
 					}
 				}
 				

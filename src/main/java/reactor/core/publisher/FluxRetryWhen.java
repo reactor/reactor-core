@@ -39,17 +39,17 @@ import reactor.core.Loopback;
  */
 final class FluxRetryWhen<T> extends FluxSource<T, T> {
 
-	final Function<? super Flux<Throwable>, ? extends Publisher<? extends Object>> whenSourceFactory;
+	final Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory;
 
 	public FluxRetryWhen(Publisher<? extends T> source,
-							  Function<? super Flux<Throwable>, ? extends Publisher<? extends Object>> whenSourceFactory) {
+							  Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
 	static <T> void subscribe(Subscriber<? super T> s, Function<? super
 			Flux<Throwable>, ?
-			extends Publisher<? extends Object>> whenSourceFactory, Publisher<? extends
+			extends Publisher<?>> whenSourceFactory, Publisher<? extends
 			T> source) {
 		RetryWhenOtherSubscriber other = new RetryWhenOtherSubscriber();
 		Subscriber<Throwable> signaller = Operators.serialize(other.completionSignal);
@@ -64,7 +64,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 
 		serial.onSubscribe(main);
 
-		Publisher<? extends Object> p;
+		Publisher<?> p;
 
 		try {
 			p = whenSourceFactory.apply(other);

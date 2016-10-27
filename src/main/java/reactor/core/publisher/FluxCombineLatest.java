@@ -168,12 +168,7 @@ extends Flux<R>
 			return;
 		}
 		if (n == 1) {
-			new FluxMap<>(a[0], new Function<T, R>() {
-				@Override
-				public R apply(T t) {
-					return combiner.apply(new Object[] { t });
-				}
-			}).subscribe(s);
+			new FluxMap<>(a[0], (Function<T, R>) t -> combiner.apply(new Object[] { t })).subscribe(s);
 			return;
 		}
 		

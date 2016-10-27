@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.security.AccessController;

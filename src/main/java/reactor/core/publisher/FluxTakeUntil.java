@@ -87,8 +87,6 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 				s.cancel();
 
 				onComplete();
-
-				return;
 			}
 		}
 

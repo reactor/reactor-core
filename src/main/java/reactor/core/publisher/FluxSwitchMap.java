@@ -438,7 +438,6 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				s.cancel();
 				
 				Operators.reportSubscriptionSet();
-				return;
 			}
 		}
 		
