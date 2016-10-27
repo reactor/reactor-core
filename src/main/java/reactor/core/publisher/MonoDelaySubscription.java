@@ -26,9 +26,6 @@ import org.reactivestreams.Subscriber;
  *
  * @param <T> the main source value type
  * @param <U> the other source type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoDelaySubscription<T, U> extends MonoSource<T, T> {

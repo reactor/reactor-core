@@ -35,9 +35,6 @@ import reactor.core.Exceptions;
  * Concatenates values from Iterable sequences generated via a mapper function.
  * @param <T> the input value type
  * @param <R> the value type of the iterables and the result type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseable {

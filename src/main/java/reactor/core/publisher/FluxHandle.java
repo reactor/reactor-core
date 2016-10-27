@@ -21,7 +21,6 @@ import org.reactivestreams.Subscription;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import reactor.core.Fuseable;
 import reactor.core.Loopback;

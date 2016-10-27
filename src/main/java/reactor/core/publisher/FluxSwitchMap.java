@@ -33,9 +33,6 @@ import reactor.core.Exceptions;
  * 
  * @param <T> the source value type
  * @param <R> the output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
@@ -438,7 +435,6 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				s.cancel();
 				
 				Operators.reportSubscriptionSet();
-				return;
 			}
 		}
 		

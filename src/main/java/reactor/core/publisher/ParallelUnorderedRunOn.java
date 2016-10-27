@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.*;
 import java.util.function.Supplier;
 
 import org.reactivestreams.*;

@@ -20,7 +20,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 

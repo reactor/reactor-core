@@ -23,9 +23,6 @@ import org.reactivestreams.Subscriber;
  * Switches to another source if the first source turns out to be empty.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoOtherwiseIfEmpty<T> extends MonoSource<T, T> {

@@ -2105,7 +2105,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform
+	 * @param transform the tranformation function
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Mono}

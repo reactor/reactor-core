@@ -21,7 +21,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Exceptions;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}

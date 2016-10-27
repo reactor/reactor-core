@@ -35,9 +35,6 @@ import reactor.core.Fuseable;
  * 
  * @param <T> the source value type
  * @param <R> the output value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fuseable {

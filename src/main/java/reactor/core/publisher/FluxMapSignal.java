@@ -34,9 +34,6 @@ import reactor.core.Trackable;
  *
  * @param <T> the source value type
  * @param <R> the result value type
- */
-
-/**
  * @author Stephane Maldini
  */
 final class FluxMapSignal<T, R> extends FluxSource<T, R> {

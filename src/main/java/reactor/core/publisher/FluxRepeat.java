@@ -27,9 +27,6 @@ import org.reactivestreams.Subscriber;
  * The times == Long.MAX_VALUE is treated as infinite repeat.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRepeat<T> extends FluxSource<T, T> {

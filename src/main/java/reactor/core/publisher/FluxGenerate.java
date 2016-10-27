@@ -36,9 +36,6 @@ import reactor.core.Trackable;
  *
  * @param <T> the value type emitted
  * @param <S> the custom state per subscriber
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxGenerate<T, S> 

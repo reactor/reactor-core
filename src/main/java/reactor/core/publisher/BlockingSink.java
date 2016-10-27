@@ -148,7 +148,8 @@ public final class BlockingSink<E>
 	 * Try emitting, might throw an unchecked exception.
 	 * @see Subscriber#onNext(Object)
 	 * @param t the value to emit, not null
-	 * @throws RuntimeException
+	 * @throws RuntimeException the unchecked exception in case of error (eg.
+	 * IllegalStateException if emission has failed)
 	 */
 	public void next(E t) {
 		Emission emission = emit(t);
@@ -221,8 +222,8 @@ public final class BlockingSink<E>
 
 	/**
 	 *
-	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate {@link Subscriber}. {@link BlockingSink#error(Throwable)}
-	 * might fail itself with an
+	 * Try calling {@link Subscriber#onError(Throwable)} on the delegate
+	 * {@link Subscriber}. This method might fail itself with an
 	 * unchecked exception if an error has already been recorded or it
 	 * has previously been terminated via {@link #cancel()}, {@link #finish()} or {@link #complete()}.
 	 *

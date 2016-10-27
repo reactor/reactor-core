@@ -30,9 +30,6 @@ import reactor.core.Trackable;
  * Emits the contents of an Iterable source.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxIterable<T> 
@@ -67,8 +64,8 @@ extends Flux<T>
 	/**
 	 * Common method to take an Iterator as a source of values.
 	 *
-	 * @param s
-	 * @param it
+	 * @param s the subscriber to feed this iterator to
+	 * @param it the iterator to use as a source of values
 	 */
 	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
 		if (it == null) {

@@ -34,9 +34,6 @@ import reactor.core.Trackable;
  * @param <T> the main source value type
  * @param <U> the iterable source value type
  * @param <R> the result type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {

@@ -43,9 +43,6 @@ import reactor.core.Trackable;
  *
  * @param <T> the source value type
  * @param <R> the aggregate type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxScanSeed<T, R> extends FluxSource<T, R> {

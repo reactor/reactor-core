@@ -69,7 +69,7 @@ public interface FluxSink<T> {
      * Associate a cancellation-based resource with this FluxSink
      * that will be disposed in case the downstream cancels the sequence
      * via {@link org.reactivestreams.Subscription#cancel()}.
-     * @param c
+     * @param c the cancellation callback to use
      */
     void setCancellation(Cancellation c);
 

@@ -227,17 +227,11 @@ public final class DirectProcessor<T>
 	}
 
 	public boolean hasCompleted() {
-		if (subscribers == TERMINATED) {
-			return error == null;
-		}
-		return false;
+		return subscribers == TERMINATED && error == null;
 	}
 
 	public boolean hasError() {
-		if (subscribers == TERMINATED) {
-			return error != null;
-		}
-		return false;
+		return subscribers == TERMINATED && error != null;
 	}
 
 	@Override

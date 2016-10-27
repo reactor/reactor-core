@@ -45,7 +45,7 @@ public interface SynchronousSink<T> {
 	 *
 	 * @param t the value to emit, not null
 	 *
-	 * @throws RuntimeException
+	 * @throws RuntimeException in case of unchecked error during the emission
 	 * @see Subscriber#onNext(Object)
 	 */
 	void next(T t);

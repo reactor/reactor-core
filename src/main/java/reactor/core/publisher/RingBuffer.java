@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
@@ -675,7 +674,7 @@ abstract class RingBufferProducer {
 	 * Create with the specified buffer size and wait strategy.
 	 *
 	 * @param bufferSize The total number of entries, must be a positive power of 2.
-	 * @param waitStrategy
+	 * @param waitStrategy The {@link WaitStrategy} to use.
 	 * @param spinObserver
 	 */
 	public RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver) {
@@ -819,7 +818,7 @@ abstract class RingBufferProducer {
 	/**
 	 * Publishes a sequence. Call when the event has been filled.
 	 *
-	 * @param sequence
+	 * @param sequence the sequence number to be published
 	 */
 	public abstract void publish(long sequence);
 

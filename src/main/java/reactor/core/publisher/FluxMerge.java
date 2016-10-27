@@ -30,9 +30,6 @@ import reactor.core.Trackable;
 /**
  * Merges a fixed array of Publishers.
  * @param <T> the element type of the publishers
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxMerge<T> extends Flux<T> implements MultiReceiver, Trackable {

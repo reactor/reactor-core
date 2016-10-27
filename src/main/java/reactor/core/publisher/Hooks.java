@@ -183,21 +183,20 @@ public abstract class Hooks {
 			}
 			if (publisher instanceof Mono) {
 				if (publisher instanceof Fuseable) {
-					return new OperatorHook<>(new MonoPeekFuseable<T>(publisher,
+					return new OperatorHook<>(new MonoPeekFuseable<>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 							onAfterTerminateCall, onRequestCall, onCancelCall),
 							traced, tracedCategory, tracedLevel, tracedSignals);
 				}
 				else {
-					return new OperatorHook<>(new MonoPeek<T>(publisher,
+					return new OperatorHook<>(new MonoPeek<>(publisher,
 							onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 							onAfterTerminateCall, onRequestCall, onCancelCall), traced
 							, tracedCategory, tracedLevel, tracedSignals);
 				}
 			}
 			else if (publisher instanceof ParallelFlux){
-				Publisher<T> _p = new ParallelUnorderedPeek<T>(
-						(ParallelFlux<T>)publisher,
+				Publisher<T> _p = new ParallelUnorderedPeek<>((ParallelFlux<T>) publisher,
 						onNextCall, null, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onSubscribeCall, onRequestCall,
 						onCancelCall);
@@ -206,13 +205,13 @@ public abstract class Hooks {
 						, tracedCategory, tracedLevel, tracedSignals);
 			}
 			else if (publisher instanceof Fuseable) {
-				return new OperatorHook<>(new FluxPeekFuseable<T>(publisher,
+				return new OperatorHook<>(new FluxPeekFuseable<>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onRequestCall, onCancelCall), traced
 						, tracedCategory, tracedLevel, tracedSignals);
 			}
 			else {
-				return new OperatorHook<>(new FluxPeek<T>(publisher,
+				return new OperatorHook<>(new FluxPeek<>(publisher,
 						onSubscribeCall, onNextCall, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onRequestCall, onCancelCall), traced
 						, tracedCategory, tracedLevel, tracedSignals);

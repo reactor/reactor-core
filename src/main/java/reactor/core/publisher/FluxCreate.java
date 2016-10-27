@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -135,7 +134,7 @@ final class FluxCreate<T> extends Flux<T> {
 			}
 			else {
 				Queue<T> q = queue;
-				synchronized (q) {
+				synchronized (this) {
 					q.offer(t);
 				}
 				if (WIP.getAndIncrement(this) != 0) {
@@ -583,7 +582,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		public LatestAsyncSink(Subscriber<? super T> actual) {
 			super(actual);
-			this.queue = new AtomicReference<T>();
+			this.queue = new AtomicReference<>();
 		}
 
 		@Override

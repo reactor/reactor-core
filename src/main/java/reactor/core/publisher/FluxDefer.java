@@ -26,9 +26,6 @@ import reactor.core.Receiver;
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxDefer<T> extends Flux<T>

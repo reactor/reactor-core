@@ -12,9 +12,6 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the value type of the main Publisher
  * @param <U> the value type of the other Publisher
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {

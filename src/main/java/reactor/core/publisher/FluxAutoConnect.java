@@ -28,9 +28,6 @@ import reactor.core.*;
  * subscribed.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxAutoConnect<T> extends Flux<T>

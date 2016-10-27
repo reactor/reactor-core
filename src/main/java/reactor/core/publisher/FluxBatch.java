@@ -59,7 +59,8 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 	static abstract class BatchAction<T, V> extends Operators.SubscriberAdapter<T, V> {
 
-		static final Exception FAILED_SATE =
+		@SuppressWarnings("ThrowableInstanceNeverThrown")
+		static final Exception FAILED_SATE             =
 				new RuntimeException("Failed Subscriber") {
 					/** */
 					private static final long serialVersionUID = 7503907754069414227L;

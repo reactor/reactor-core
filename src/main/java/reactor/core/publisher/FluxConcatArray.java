@@ -30,9 +30,6 @@ import reactor.core.Exceptions;
  * Concatenates a fixed array of Publishers' values.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxConcatArray<T> 
@@ -130,6 +127,7 @@ extends Flux<T>
 			source) {
 		int n = array.length;
 		Publisher<? extends V>[] newArray = new Publisher[n + 1];
+		//noinspection SuspiciousSystemArraycopy
 		System.arraycopy(array, 0, newArray, 0, n);
 		newArray[n - 1] = new MonoIgnoreThen<>(newArray[n - 1]);
 		newArray[n] = source;

@@ -33,9 +33,6 @@ import reactor.core.Fuseable;
  * methods)</li> <li>Tomcat worker thread entries</li> <li>JUnit setup</li> </ul>
  *
  * @param <T> the value type passing through
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxCallableOnAssembly<T> extends FluxSource<T, T>

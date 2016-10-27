@@ -25,9 +25,6 @@ import reactor.core.Loopback;
  * Switches to another source if the first source turns out to be empty.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {

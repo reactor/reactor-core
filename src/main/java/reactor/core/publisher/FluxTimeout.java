@@ -18,9 +18,6 @@ import org.reactivestreams.Subscription;
  * @param <T> the main source type
  * @param <U> the value type for the timeout for the very first item
  * @param <V> the value type for the timeout for the subsequent items
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTimeout<T, U, V> extends FluxSource<T, T> {

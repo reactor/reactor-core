@@ -142,7 +142,7 @@ public abstract class Operators {
 	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
 	 *
 	 * @param n demand to check
-	 * @throws IllegalArgumentException
+	 * @throws IllegalArgumentException the nullOrNegativeRequestException instance
 	 */
 	public static void checkRequest(long n) throws IllegalArgumentException {
 		if (n <= 0L) {
@@ -175,7 +175,7 @@ public abstract class Operators {
 	/**
 	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onComplete.
 	 *
-	 * @param s
+	 * @param s the target subscriber
 	 */
 	public static void complete(Subscriber<?> s) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
@@ -671,7 +671,7 @@ public abstract class Operators {
 		/**
 		 * Atomically sets the single subscription and requests the missed amount from it.
 		 *
-		 * @param s
+		 * @param s the subscription to set
 		 * @return false if this arbiter is cancelled or there was a subscription already set
 		 */
 		public final boolean set(Subscription s) {
@@ -1062,8 +1062,8 @@ public abstract class Operators {
 		}
 
 		/**
-		 *
-		 * @param subscription
+		 * Hook for further processing of onSubscribe's Subscription.
+		 * @param subscription the subscription to optionally process
 		 */
 		protected void doOnSubscribe(Subscription subscription) {
 			subscriber.onSubscribe(this);

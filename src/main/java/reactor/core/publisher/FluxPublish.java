@@ -41,9 +41,6 @@ import reactor.core.Exceptions;
  * A connectable publisher which shares an underlying source and dispatches source values to subscribers in a backpressure-aware
  * manner. 
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublish<T> extends ConnectableFlux<T>

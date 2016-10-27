@@ -27,9 +27,6 @@ import reactor.core.scheduler.TimedScheduler.TimedWorker;
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
  * or a custom async callback function
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxInterval extends Flux<Long> {

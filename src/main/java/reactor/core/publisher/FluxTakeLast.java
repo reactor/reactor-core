@@ -22,19 +22,14 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.publisher.MonoTakeLastOne.TakeLastOneSubscriber;
 import reactor.core.Trackable;
 
 /**
  * Emits the last N values the source emitted before its completion.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeLast<T> extends FluxSource<T, T> {

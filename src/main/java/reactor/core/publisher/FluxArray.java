@@ -31,9 +31,6 @@ import reactor.core.Trackable;
  * Emits the contents of a wrapped (shared) array.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxArray<T> 

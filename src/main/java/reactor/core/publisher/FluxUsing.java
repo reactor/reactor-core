@@ -40,9 +40,6 @@ import reactor.core.Receiver;
  *
  * @param <T> the value type streamed
  * @param <S> the resource type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {

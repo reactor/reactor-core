@@ -841,23 +841,21 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public abstract void subscribe(Subscriber<? super T>[] subscribers);
 
 	/**
-	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
-	 * execution chain for all 'rails'.
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext callback and
+	 * triggers the execution chain for all 'rails'.
 	 *
-	 * @param onNext
-	 * must be equal to the parallelism level of this ParallelFlux
+	 * @param onNext consumer of onNext signals
 	 */
 	public void subscribe(Consumer<? super T> onNext){
 		subscribe(onNext, null, null);
 	}
 
 	/**
-	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
-	 * execution chain for all 'rails'.
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext and onError callback
+	 * and triggers the execution chain for all 'rails'.
 	 *
-	 * @param onNext
-	 * @param onError
-	 * must be equal to the parallelism level of this ParallelFlux
+	 * @param onNext consumer of onNext signals
+	 * @param onError consumer of error signal
 	 */
 	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError){
@@ -865,13 +863,12 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
-	 * execution chain for all 'rails'.
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError and
+	 * onComplete callback and triggers the execution chain for all 'rails'.
 	 *
-	 * @param onNext
-	 * @param onError
-	 * @param onComplete
-	 * must be equal to the parallelism level of this ParallelFlux
+	 * @param onNext consumer of onNext signals
+	 * @param onError consumer of error signal
+	 * @param onComplete callback on completion signal
 	 */
 	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError, Runnable onComplete) {
@@ -879,14 +876,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
-	 * execution chain for all 'rails'.
+	 * Subscribes to this {@link ParallelFlux} by providing an onNext, onError,
+	 * onComplete and onSubscribe callback and triggers the execution chain for all
+	 * 'rails'.
 	 *
-	 * @param onNext
-	 * @param onError
-	 * @param onComplete
-	 * @param onSubscribe
-	 * must be equal to the parallelism level of this ParallelFlux
+	 * @param onNext consumer of onNext signals
+	 * @param onError consumer of error signal
+	 * @param onComplete callback on completion signal
+	 * @param onSubscribe consumer of the subscription signal
 	 */
 	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError, Runnable onComplete, Consumer<? super Subscription> onSubscribe){

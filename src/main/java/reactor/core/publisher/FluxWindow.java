@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
@@ -38,9 +39,6 @@ import reactor.core.Trackable;
  * Splits the source sequence into possibly overlapping publishers.
  * 
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
@@ -279,7 +277,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(window).iterator();
+			return Collections.singletonList(window)
+			                  .iterator();
 		}
 
 		@Override
@@ -491,7 +490,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(window).iterator();
+			return Collections.singletonList(window)
+			                  .iterator();
 		}
 
 		@Override

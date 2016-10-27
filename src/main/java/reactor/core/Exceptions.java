@@ -37,6 +37,7 @@ public abstract class Exceptions {
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions,
 	 * don't leak this!
 	 */
+	@SuppressWarnings("ThrowableInstanceNeverThrown")
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
 
 	/**
@@ -317,6 +318,7 @@ public abstract class Exceptions {
 	 */
 	static final class CancelException extends BubblingException {
 
+		@SuppressWarnings("ThrowableInstanceNeverThrown")
 		public static final CancelException INSTANCE = new CancelException();
 
 		private CancelException() {

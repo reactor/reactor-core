@@ -32,17 +32,14 @@ import reactor.core.Loopback;
  * attempt is suppressed and any terminal signal will terminate the main source with the same signal immediately.
  *
  * @param <T> the source value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
-	final Function<? super Flux<Long>, ? extends Publisher<? extends Object>> whenSourceFactory;
+	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
 	public FluxRepeatWhen(Publisher<? extends T> source,
-							   Function<? super Flux<Long>, ? extends Publisher<? extends Object>> whenSourceFactory) {
+							   Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}

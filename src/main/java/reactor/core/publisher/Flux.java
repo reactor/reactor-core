@@ -1100,6 +1100,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
+	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
 		return mergeSequential(QueueSupplier.XS_BUFFER_SIZE, false, sources);
 	}
@@ -1118,6 +1119,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
+	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
 			Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
@@ -4246,7 +4248,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform
+	 * @param transform the transformation function
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Flux}
@@ -4261,8 +4263,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform
-	 * @param prefetch
+	 * @param transform the transformation function
+	 * @param prefetch the request size
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Flux}
@@ -4745,9 +4747,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by first item over a period of time
 	 */
 	public final Flux<T> sampleFirstMillis(long timespan) {
-		return sampleFirst(t -> {
-			return Mono.delayMillis(timespan);
-		});
+		return sampleFirst(t -> Mono.delayMillis(timespan));
 	}
 
 	/**
@@ -5775,7 +5775,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
-		return then(defer(afterSupplier));
+		return thenEmpty(defer(afterSupplier));
 	}
 
 	/**

@@ -51,9 +51,6 @@ import reactor.util.concurrent.OpenHashSet;
  * indicate the duration of the values of the {@code right} Publisher
  * @param <R> type that a function that takes an item emitted by each Publisher and
  * returns the value to be emitted by the resulting Publisher
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */

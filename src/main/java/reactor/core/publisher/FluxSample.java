@@ -37,9 +37,6 @@ import org.reactivestreams.Subscription;
  * 
  * @param <T> the input and output value type
  * @param <U> the value type of the sampler (irrelevant)
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSample<T, U> extends FluxSource<T, T> {

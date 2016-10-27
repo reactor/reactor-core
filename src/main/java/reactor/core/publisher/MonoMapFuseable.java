@@ -29,9 +29,6 @@ import reactor.core.Fuseable;
  * 
  * @param <T> the source value type
  * @param <R> the result value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoMapFuseable<T, R> extends MonoSource<T, R>

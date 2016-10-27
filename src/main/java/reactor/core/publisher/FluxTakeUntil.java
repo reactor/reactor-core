@@ -17,9 +17,6 @@ import reactor.core.Trackable;
  * (checked after each value has been delivered).
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeUntil<T> extends FluxSource<T, T> {
@@ -87,8 +84,6 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 				s.cancel();
 
 				onComplete();
-
-				return;
 			}
 		}
 

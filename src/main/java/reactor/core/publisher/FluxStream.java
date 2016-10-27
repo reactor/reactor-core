@@ -27,9 +27,6 @@ import reactor.core.Receiver;
  * Emits the contents of a Stream source.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxStream<T> extends Flux<T>

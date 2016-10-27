@@ -32,9 +32,6 @@ import reactor.core.Trackable;
  *
  * @param <T> the value type
  * @param <K> the key type used for comparing subsequent elements
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {

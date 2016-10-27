@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -46,9 +45,6 @@ import reactor.util.function.Tuples;
  * </ul>
  *
  * @param <T> the value type passing through
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {

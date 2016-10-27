@@ -166,7 +166,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			MergeSequentialInner<R> inner = new MergeSequentialInner<R>(this, prefetch);
+			MergeSequentialInner<R> inner = new MergeSequentialInner<>(this, prefetch);
 
 			if (cancelled) {
 				return;

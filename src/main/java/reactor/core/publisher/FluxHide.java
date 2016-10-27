@@ -24,9 +24,6 @@ import org.reactivestreams.Subscription;
  * as well. 
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxHide<T> extends FluxSource<T, T> {

@@ -240,12 +240,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         static final AtomicReferenceFieldUpdater<TimedScheduledRunnable, Thread> CURRENT =
                 AtomicReferenceFieldUpdater.newUpdater(TimedScheduledRunnable.class, Thread.class, "current");
 
-        static final Runnable EMPTY = new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        };
+        static final Runnable EMPTY = () -> { };
 
         static final Future<?> CANCELLED_FUTURE = new FutureTask<>(EMPTY, null);
 
@@ -359,12 +354,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         static final AtomicReferenceFieldUpdater<TimedPeriodicScheduledRunnable, Thread> CURRENT =
                 AtomicReferenceFieldUpdater.newUpdater(TimedPeriodicScheduledRunnable.class, Thread.class, "current");
 
-        static final Runnable EMPTY = new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        };
+        static final Runnable EMPTY = () -> { };
 
         static final Future<?> CANCELLED_FUTURE = new FutureTask<>(EMPTY, null);
 

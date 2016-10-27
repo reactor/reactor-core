@@ -36,9 +36,6 @@ import org.reactivestreams.Subscription;
  * @param <T> the main source type
  * @param <U> the alternate source type
  * @param <R> the output type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {

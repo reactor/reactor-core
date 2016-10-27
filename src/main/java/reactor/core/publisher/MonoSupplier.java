@@ -20,7 +20,6 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
@@ -28,9 +27,6 @@ import reactor.core.Receiver;
  * Executes a Supplier function and emits a single value to each individual Subscriber.
  *
  * @param <T> the returned value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoSupplier<T> 

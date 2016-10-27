@@ -96,10 +96,10 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using a provided backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
-	 * @param historySize
+	 * @param historySize the backlog size, ie. maximum items retained
 	 *
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -109,7 +109,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
+	 * Create a new {@link ReplayProcessor} using a provided backlog size, blockingWait
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize maximum items retained if bounded, or link size if unbounded
