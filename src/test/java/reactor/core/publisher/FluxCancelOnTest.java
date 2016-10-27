@@ -15,11 +15,36 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCancelOnTest {
 
-	@Test
-	public void normal() {
+	@Test(timeout = 3000L)
+	public void cancelOnDedicatedScheduler() throws Exception {
+
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicReference<Thread> threadHash = new AtomicReference<>(Thread.currentThread());
+
+		Schedulers.single().schedule(() -> threadHash.set(Thread.currentThread()));
+
+		Flux.create(sink -> {
+			sink.setCancellation(() -> {
+				if (threadHash.compareAndSet(Thread.currentThread(), null)) {
+					latch.countDown();
+				}
+			});
+		})
+		    .cancelOn(Schedulers.single())
+		    .subscribeWith(AssertSubscriber.create())
+		    .cancel();
+
+		latch.await();
+		Assert.assertNull(threadHash.get());
 	}
 }
