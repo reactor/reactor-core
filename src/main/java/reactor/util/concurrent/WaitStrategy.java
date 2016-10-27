@@ -255,6 +255,7 @@ public abstract class WaitStrategy
             }
         }
 
+        @SuppressWarnings("UnusedAssignment") //for availableSequence
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
                 throws InterruptedException
@@ -344,6 +345,7 @@ public abstract class WaitStrategy
             }
         }
 
+        @SuppressWarnings("UnusedAssignment") //for availableSequence
         @Override
         public long waitFor(long sequence, LongSupplier cursorSequence, Runnable barrier)
                 throws InterruptedException

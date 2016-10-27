@@ -165,6 +165,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					System.arraycopy(scalars, 0, b, 0, n);
 
 					Publisher<T>[] c = new Publisher[b.length];
+					//noinspection SuspiciousSystemArraycopy
 					System.arraycopy(srcs, 0, c, 0, n);
 
 					scalars = b;
@@ -179,6 +180,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					System.arraycopy(scalars, 0, b, 0, n);
 
 					Publisher<T>[] c = new Publisher[b.length];
+					//noinspection SuspiciousSystemArraycopy
 					System.arraycopy(srcs, 0, c, 0, n);
 
 					scalars = b;
