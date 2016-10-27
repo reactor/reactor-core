@@ -134,7 +134,7 @@ final class FluxCreate<T> extends Flux<T> {
 			}
 			else {
 				Queue<T> q = queue;
-				synchronized (q) {
+				synchronized (this) {
 					q.offer(t);
 				}
 				if (WIP.getAndIncrement(this) != 0) {
