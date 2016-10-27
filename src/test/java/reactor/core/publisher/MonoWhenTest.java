@@ -19,10 +19,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 
-import org.junit.*;
-
+import org.junit.Assert;
+import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.*;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 public class MonoWhenTest {
 
@@ -78,14 +79,22 @@ public class MonoWhenTest {
 
     @Test
     public void pairWise() {
-        Mono<Tuple2<Integer, String>> f = Mono.when(Mono.just(1), Mono.just("test"))
-                                              .and(Mono.just("test2"))
-                                              .map(t -> Tuples.of(t.getT1()
-                                                                   .getT1(),
-		                                              t.getT1()
-		                                               .getT2() + t.getT2()));
-        f.subscribeWith(AssertSubscriber.create())
-         .assertValues(Tuples.of(1, "testtest2"))
-         .assertComplete();
+	    Mono<Tuple2<Tuple2<Integer, String>, String>> f =
+			    Mono.when(Mono.just(1), Mono.just("test"))
+			        .and(Mono.just("test2"));
+
+	    Assert.assertTrue(f instanceof MonoWhen);
+	    MonoWhen<?, ?> s = (MonoWhen<?, ?>) f;
+	    Assert.assertTrue(s.sources != null);
+	    Assert.assertTrue(s.sources.length == 3);
+
+	    Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+	                                                             .getT1(),
+			    t.getT1()
+			     .getT2() + t.getT2()));
+
+	    ff.subscribeWith(AssertSubscriber.create())
+	     .assertValues(Tuples.of(1, "testtest2"))
+	     .assertComplete();
     }
 }

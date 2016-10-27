@@ -5757,7 +5757,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		return MonoSource.wrap(concat(then(), other));
+		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		Mono<Void> then = ignored.then(MonoSource.wrap(other));
+		return Mono.onAssembly(then);
 	}
 
 	/**
@@ -5789,6 +5791,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
+		if (this instanceof FluxConcatArray) {
+			@SuppressWarnings({ "unchecked" })
+			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
+			return fluxConcatArray.concatAdditionalIgnoredLast(other);
+		}
+
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
 		return concat;

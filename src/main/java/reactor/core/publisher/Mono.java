@@ -2598,8 +2598,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		@SuppressWarnings("unchecked")
-		Flux<V> then = (Flux<V>) new FluxConcatArray<>(false, ignoreElement(), other);
-		return Flux.onAssembly(then);
+		Flux<V> concat = (Flux<V>)Flux.concat(ignoreElement(), other);
+		return Flux.onAssembly(concat);
 	}
 
 	/**

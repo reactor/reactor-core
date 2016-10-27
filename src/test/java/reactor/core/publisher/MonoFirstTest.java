@@ -21,6 +21,8 @@ import java.time.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 public class MonoFirstTest {
 
@@ -50,6 +52,12 @@ public class MonoFirstTest {
 	public void pairWise() {
 		Mono<Integer> f = Mono.first(Mono.just(1), Mono.just(2))
 		                      .or(Mono.just(3));
+
+		Assert.assertTrue(f instanceof MonoFirst);
+		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 3);
+
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)
 		 .assertComplete();

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
@@ -253,13 +254,21 @@ public class FluxZipTest {
 
 	@Test
 	public void pairWise() {
-		Flux<Tuple2<Integer, String>> f = Flux.zip(Flux.just(1), Flux.just("test"))
-		                                      .zipWith(Flux.just("test2"))
-		                                      .map(t -> Tuples.of(t.getT1()
-		                                                           .getT1(),
-				                                      t.getT1()
-				                                       .getT2() + t.getT2()));
-		f.subscribeWith(AssertSubscriber.create())
+		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
+				Flux.zip(Flux.just(1), Flux.just("test"))
+				    .zipWith(Flux.just("test2"));
+
+		Assert.assertTrue(f instanceof FluxZip);
+		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 3);
+
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
 		 .assertValues(Tuples.of(1, "testtest2"))
 		 .assertComplete();
 	}
