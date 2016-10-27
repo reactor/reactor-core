@@ -4248,7 +4248,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform
+	 * @param transform the transformation function
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Flux}
@@ -4263,8 +4263,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform
-	 * @param prefetch
+	 * @param transform the transformation function
+	 * @param prefetch the request size
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Flux}

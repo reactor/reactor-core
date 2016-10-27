@@ -23,9 +23,6 @@ import reactor.core.Fuseable;
  * Emits the last N values the source emitted before its completion.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {

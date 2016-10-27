@@ -34,9 +34,6 @@ import reactor.core.Exceptions;
  *
  * @param <T> the source value type
  * @param <U> the value type of the duration publisher
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {

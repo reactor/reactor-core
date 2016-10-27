@@ -39,9 +39,6 @@ import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
  * Crashes by the lambdas are ignored.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {

@@ -73,11 +73,12 @@ abstract class DrainUtils {
 	/**
 	 * Drains the queue either in a pre- or post-complete state.
 	 *
-	 * @param n
-	 * @param actual
-	 * @param queue
-	 * @param field
-	 * @param isCancelled
+	 * @param n the requested amount
+	 * @param actual the consumer of values
+	 * @param queue the queue holding available values
+	 * @param field the field updater holding the requested amount
+	 * @param instance the parent instance of the requested field
+	 * @param isCancelled callback to detect cancellation
 	 * @return true if the queue was completely drained or the drain process was cancelled
 	 */
 	static <T, F> boolean postCompleteDrain(long n,
@@ -244,14 +245,16 @@ abstract class DrainUtils {
     }
 
     /**
-     * Drains the queue either in a pre- or post-complete state.
+     * Drains the queue either in a pre- or post-complete state, delaying an
+     * optional error to the end of the drain operation.
      *
-     * @param n
-     * @param actual
-     * @param queue
-     * @param field
-     * @param isCancelled
-     * @param error
+     * @param n the requested amount
+     * @param actual the consumer of values
+     * @param queue the queue holding available values
+     * @param field the field updater holding the requested amount
+     * @param instance the parent instance of the requested field
+     * @param isCancelled callback to detect cancellation
+     * @param error the delayed error
      * @return true if the queue was completely drained or the drain process was cancelled
      */
     static <T, F> boolean postCompleteDrainDelayError(long n,

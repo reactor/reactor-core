@@ -28,9 +28,6 @@ import reactor.core.Trackable;
  * Skips the first N elements from a reactive stream.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSkip<T> extends FluxSource<T, T> {

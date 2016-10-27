@@ -37,9 +37,6 @@ import reactor.core.Trackable;
  * Splits the source sequence into possibly overlapping publishers.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {

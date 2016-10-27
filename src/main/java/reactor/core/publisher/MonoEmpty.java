@@ -25,9 +25,7 @@ import reactor.core.Trackable;
  * <p>
  * This Publisher is effectively stateless and only a single instance any.
  * Use the {@link #instance()} method to obtain a properly type-parametrized view of it.
- */
-
-/**
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoEmpty 

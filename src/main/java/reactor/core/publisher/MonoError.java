@@ -26,9 +26,6 @@ import reactor.core.Exceptions;
  * Emits a constant or generated Throwable instance to Subscribers.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoError<T> extends Mono<T> implements Trackable {

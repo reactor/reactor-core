@@ -34,8 +34,8 @@ public abstract class JdkFlowAdapter {
 
 	/**
 	 * Return a {@link Flux} from a java {@code Flow.Publisher}
-	 * @param publisher
-	 * @param <T>
+	 * @param publisher the source Publisher to convert
+	 * @param <T> the type of the publisher
 	 * @return a java {@code Flow.Publisher} from the given {@link Publisher}
 	 */
 	public static <T> Flow.Publisher<T> publisherToFlowPublisher(final Publisher<T>
@@ -46,8 +46,8 @@ public abstract class JdkFlowAdapter {
 	/**
 	 * Return a {@link Flux} from a java {@code Flow.Publisher}
 	 *
-	 * @param publisher
-	 * @param <T>
+	 * @param publisher the source Publisher to convert
+	 * @param <T> the type of the publisher
 	 * @return a {@link Flux} from a java {@code Flow.Publisher}
 	 */
 	public static <T> Flux<T> flowPublisherToFlux(Flow.Publisher<T> publisher) {

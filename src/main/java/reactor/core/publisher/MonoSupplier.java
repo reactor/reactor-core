@@ -27,9 +27,6 @@ import reactor.core.Receiver;
  * Executes a Supplier function and emits a single value to each individual Subscriber.
  *
  * @param <T> the returned value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoSupplier<T> 

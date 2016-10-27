@@ -28,9 +28,6 @@ import reactor.core.Loopback;
  * a function for the particular failure exception.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxResume<T> extends FluxSource<T, T> {

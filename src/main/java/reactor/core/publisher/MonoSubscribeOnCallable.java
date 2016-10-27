@@ -28,9 +28,6 @@ import reactor.core.scheduler.Scheduler;
  * Executes a Callable and emits its value on the given Scheduler.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {

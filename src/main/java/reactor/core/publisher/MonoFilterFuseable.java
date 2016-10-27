@@ -26,9 +26,6 @@ import reactor.core.Fuseable;
  * Filters out values that make a filter function return false.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoFilterFuseable<T> extends MonoSource<T, T>

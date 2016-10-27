@@ -35,9 +35,6 @@ import reactor.core.Receiver;
  * to it and disconnects once all Subscribers cancelled their Subscriptions.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRefCount<T> extends Flux<T>

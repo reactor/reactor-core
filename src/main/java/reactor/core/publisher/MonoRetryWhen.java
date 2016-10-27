@@ -31,9 +31,6 @@ import org.reactivestreams.Subscriber;
  * signal immediately.
  *
  * @param <T> the source value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoRetryWhen<T> extends MonoSource<T, T> {

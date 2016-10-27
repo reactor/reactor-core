@@ -30,9 +30,6 @@ import reactor.core.Trackable;
  * Emits the last N values the source emitted before its completion.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeLast<T> extends FluxSource<T, T> {

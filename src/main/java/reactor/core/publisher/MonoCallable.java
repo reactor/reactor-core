@@ -26,12 +26,9 @@ import reactor.core.Receiver;
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
  * <p>
- *  Preferred to {@link Supplier} because the Callable may throw.
+ *  Preferred to {@link java.util.function.Supplier} because the Callable may throw.
  *
  * @param <T> the returned value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoCallable<T> 

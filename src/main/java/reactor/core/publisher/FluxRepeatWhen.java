@@ -32,9 +32,6 @@ import reactor.core.Loopback;
  * attempt is suppressed and any terminal signal will terminate the main source with the same signal immediately.
  *
  * @param <T> the source value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRepeatWhen<T> extends FluxSource<T, T> {

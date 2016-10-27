@@ -41,9 +41,6 @@ import reactor.core.Exceptions;
  * @param <U> the value type of the publisher opening the buffers
  * @param <V> the value type of the publisher closing the individual buffers
  * @param <C> the collection type that holds the buffered values
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>

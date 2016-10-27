@@ -40,9 +40,6 @@ import reactor.core.Exceptions;
  *
  * @param <T> the value type of the sources
  * @param <R> the result type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxCombineLatest<T, R> 

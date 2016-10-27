@@ -32,9 +32,6 @@ import org.reactivestreams.Subscription;
  * @param <T> the source value type
  * @param <U> the element type of the boundary publisher (irrelevant)
  * @param <C> the output collection type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferBoundary<T, U, C extends Collection<? super T>>

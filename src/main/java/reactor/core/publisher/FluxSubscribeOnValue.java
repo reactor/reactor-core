@@ -32,9 +32,6 @@ import reactor.core.scheduler.Scheduler;
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
  * 
  * @param <T>
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {

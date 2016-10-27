@@ -42,9 +42,6 @@ import reactor.core.Exceptions;
  * @param <T> the source value type
  * @param <K> the key value type
  * @param <V> the group item value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>

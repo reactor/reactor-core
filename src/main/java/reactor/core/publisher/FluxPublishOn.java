@@ -37,9 +37,6 @@ import reactor.core.Exceptions;
  * Emits events on a different thread specified by a scheduler callback.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {

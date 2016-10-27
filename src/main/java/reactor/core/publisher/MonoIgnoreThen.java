@@ -25,9 +25,6 @@ import reactor.core.Receiver;
  * Ignores normal values and passes only the terminal signals along.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoIgnoreThen<T> extends MonoSource<T, T> {

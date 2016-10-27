@@ -32,9 +32,6 @@ import reactor.core.Exceptions;
  *
  * @param <T> the source and output value type
  * @param <U> the value type of the publisher signalling the end of the throttling duration
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSampleFirst<T, U> extends FluxSource<T, T> {

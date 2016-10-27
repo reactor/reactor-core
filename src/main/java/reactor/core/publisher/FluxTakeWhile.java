@@ -31,9 +31,6 @@ import reactor.core.Trackable;
  * true for the values (checked before each value is delivered).
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeWhile<T> extends FluxSource<T, T> {

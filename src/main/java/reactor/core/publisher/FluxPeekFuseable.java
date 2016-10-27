@@ -36,9 +36,6 @@ import reactor.core.Receiver;
  * Crashes by the lambdas are ignored.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,

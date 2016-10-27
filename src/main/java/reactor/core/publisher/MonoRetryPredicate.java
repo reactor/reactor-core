@@ -27,9 +27,6 @@ import org.reactivestreams.Subscriber;
  * the previous subscription.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoRetryPredicate<T> extends MonoSource<T, T> {

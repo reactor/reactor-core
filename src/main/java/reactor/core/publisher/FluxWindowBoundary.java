@@ -34,9 +34,6 @@ import reactor.core.Exceptions;
  * 
  * @param <T> the input value type
  * @param <U> the boundary publisher's type (irrelevant)
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {

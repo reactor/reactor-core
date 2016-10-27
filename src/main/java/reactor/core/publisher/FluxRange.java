@@ -24,9 +24,7 @@ import reactor.core.Trackable;
 
 /**
  * Emits a range of integer values.
- */
-
-/**
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRange extends Flux<Integer>

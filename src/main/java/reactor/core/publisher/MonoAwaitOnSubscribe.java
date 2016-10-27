@@ -28,9 +28,6 @@ import org.reactivestreams.Subscriber;
  * runs into a half-prepared state. This can happen with non Rx mentality based Subscribers.
  *
  * @param <T> the value type
- */
-
-/**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */
