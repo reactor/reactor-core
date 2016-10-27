@@ -2097,7 +2097,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a detachable {@link Mono}
 	 */
 	public final Mono<T> onTerminateDetach() {
-		return MonoSource.wrap(new FluxDetach<>(this));
+		return new MonoDetach<>(this);
 	}
 
 	/**

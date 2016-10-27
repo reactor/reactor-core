@@ -46,6 +46,12 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
             s.onError(Operators.onOperatorError(ex));
             return;
         }
+
+        if (v == null) {
+            s.onError(Operators.onOperatorError(new NullPointerException("The " +
+                    "callable returned null")));
+            return;
+        }
         
         wrapper.complete(v);
     }

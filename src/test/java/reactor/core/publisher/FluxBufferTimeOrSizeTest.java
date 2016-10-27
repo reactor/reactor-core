@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+//FIXME when virtual time scheduler
 public class FluxBufferTimeOrSizeTest {
 
 	@Test

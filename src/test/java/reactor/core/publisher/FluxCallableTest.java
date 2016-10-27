@@ -15,11 +15,70 @@
  */
 package reactor.core.publisher;
 
+import java.io.IOException;
+
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCallableTest {
 
 	@Test
+	public void callableReturnsNull() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.<Integer>fromCallable(() -> null).flux()
+		                                      .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(NullPointerException.class);
+	}
+
+	@Test
 	public void normal() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.fromCallable(() -> 1)
+		    .flux()
+		    .subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void normalBackpressured() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono.fromCallable(() -> 1)
+		    .flux()
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertNoError();
+
+		ts.request(1);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void callableThrows() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Mono.fromCallable(() -> {
+			throw new IOException("forced failure");
+		})
+		    .flux()
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(IOException.class)
+		  .assertErrorMessage("forced failure");
 	}
 }

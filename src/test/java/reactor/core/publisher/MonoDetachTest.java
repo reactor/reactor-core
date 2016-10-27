@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.lang.ref.WeakReference;
@@ -23,7 +24,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDetachTest {
+public class MonoDetachTest {
 
 	Object o;
 
@@ -33,15 +34,14 @@ public class FluxDetachTest {
 
 		WeakReference<Object> wr = new WeakReference<>(o);
 
-		AssertSubscriber<Object> ts = new AssertSubscriber<>();
+		AssertSubscriber<Integer> ts = new AssertSubscriber<>();
 
-		Flux.just(o)
-		    .count()
-		    .flux()
+		Mono.just(o)
+		    .map(x -> 1)
 		    .onTerminateDetach()
 		    .subscribe(ts);
 
-		ts.assertValues(1L);
+		ts.assertValues(1);
 		ts.assertComplete();
 		ts.assertNoError();
 
@@ -58,7 +58,7 @@ public class FluxDetachTest {
 	public void error() {
 		AssertSubscriber<Object> ts = new AssertSubscriber<>();
 
-		Flux.error(new RuntimeException("forced failure"))
+		Mono.error(new RuntimeException("forced failure"))
 		    .onTerminateDetach()
 		    .subscribe(ts);
 
@@ -71,24 +71,11 @@ public class FluxDetachTest {
 	public void empty() {
 		AssertSubscriber<Object> ts = new AssertSubscriber<>();
 
-		Flux.empty()
+		Mono.empty()
 		    .onTerminateDetach()
 		    .subscribe(ts);
 
 		ts.assertNoValues();
-		ts.assertNoError();
-		ts.assertComplete();
-	}
-
-	@Test
-	public void range() {
-		AssertSubscriber<Object> ts = new AssertSubscriber<>();
-
-		Flux.range(1, 1000)
-		    .onTerminateDetach()
-		    .subscribe(ts);
-
-		ts.assertValueCount(1000);
 		ts.assertNoError();
 		ts.assertComplete();
 	}
@@ -99,11 +86,10 @@ public class FluxDetachTest {
 
 		WeakReference<Object> wr = new WeakReference<>(o);
 
-		AssertSubscriber<Object> ts = new AssertSubscriber<>(0L);
+		AssertSubscriber<Integer> ts = new AssertSubscriber<>(0L);
 
-		Flux.just(o)
-		    .count()
-		    .flux()
+		Mono.just(o)
+		    .map(x -> 1)
 		    .onTerminateDetach()
 		    .subscribe(ts);
 
@@ -111,7 +97,7 @@ public class FluxDetachTest {
 
 		ts.request(1);
 
-		ts.assertValues(1L);
+		ts.assertValues(1);
 		ts.assertComplete();
 		ts.assertNoError();
 
@@ -131,9 +117,7 @@ public class FluxDetachTest {
 
 		AssertSubscriber<Object> ts = new AssertSubscriber<>(0);
 
-		Flux.just(o)
-		    .count()
-		    .flux()
+		Mono.just(o)
 		    .onTerminateDetach()
 		    .subscribe(ts);
 
@@ -154,19 +138,15 @@ public class FluxDetachTest {
 
 		AssertSubscriber<Object> ts = new AssertSubscriber<>(0);
 
-		Flux.<Object>from(subscriber::set).onTerminateDetach()
+		Mono.<Object>from(subscriber::set).onTerminateDetach()
 		                                  .subscribe(ts);
 
-		ts.request(2);
-
-		Flux.range(1, 3)
+		Flux.just(1)
 		    .subscribe(subscriber.get());
-
-		ts.assertValues(1, 2);
 
 		ts.request(1);
 
-		ts.assertValues(1, 2, 3);
+		ts.assertValues(1);
 		ts.assertComplete();
 		ts.assertNoError();
 	}
