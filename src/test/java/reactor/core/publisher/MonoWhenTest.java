@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.junit.*;
 
+import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.*;
 
 public class MonoWhenTest {
@@ -73,5 +74,18 @@ public class MonoWhenTest {
             
             Assert.assertArrayEquals(result, out);
         }
+    }
+
+    @Test
+    public void pairWise() {
+        Mono<Tuple2<Integer, String>> f = Mono.when(Mono.just(1), Mono.just("test"))
+                                              .and(Mono.just("test2"))
+                                              .map(t -> Tuples.of(t.getT1()
+                                                                   .getT1(),
+		                                              t.getT1()
+		                                               .getT2() + t.getT2()));
+        f.subscribeWith(AssertSubscriber.create())
+         .assertValues(Tuples.of(1, "testtest2"))
+         .assertComplete();
     }
 }

@@ -20,6 +20,8 @@ import java.util.Collections;
 
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 public class FluxZipTest {
 
@@ -248,6 +250,17 @@ public class FluxZipTest {
 		.assertError(NullPointerException.class)
 		.assertNotComplete();
 	}
-	
 
+	@Test
+	public void pairWise() {
+		Flux<Tuple2<Integer, String>> f = Flux.zip(Flux.just(1), Flux.just("test"))
+		                                      .zipWith(Flux.just("test2"))
+		                                      .map(t -> Tuples.of(t.getT1()
+		                                                           .getT1(),
+				                                      t.getT1()
+				                                       .getT2() + t.getT2()));
+		f.subscribeWith(AssertSubscriber.create())
+		 .assertValues(Tuples.of(1, "testtest2"))
+		 .assertComplete();
+	}
 }

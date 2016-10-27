@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -597,9 +598,31 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2));
+		return when(p1, p2, Flux.tuple2Function());
+	}
+
+	/**
+	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param combinator a {@link BiFunction} combinator function when both sources
+	 * complete
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <O> output value
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <T1, T2, O> Mono<O> when(Mono<? extends T1> p1, Mono<?
+			extends T2> p2, BiFunction<? super T1, ? super T2, ? extends O> combinator) {
+		return onAssembly(new MonoWhen<T1, O>(false, p1, p2, combinator));
 	}
 
 	/**
@@ -1044,7 +1067,35 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #when
 	 */
 	public final <T2> Mono<Tuple2<T, T2>> and(Mono<? extends T2> other) {
-		return when(this, other);
+		return and(other, Flux.tuple2Function());
+	}
+
+	/**
+	 * Combine the result from this mono and another into a {@link Tuple2}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+	 * <p>
+	 * @param other the {@link Mono} to combine with
+	 * @param combinator a {@link BiFunction} combinator function when both sources
+	 * complete
+	 * @param <T2> the element type of the other Mono instance
+	 *
+	 * @return a new combined Mono
+	 * @see #when
+	 */
+	public final <T2, O> Mono<O> and(Mono<? extends T2> other, BiFunction<?
+			super T, ? super T2, ? extends O> combinator) {
+		if (this instanceof MonoWhen) {
+			@SuppressWarnings("unchecked")
+			MonoWhen<T, O> o = (MonoWhen<T, O>) this;
+			Mono<O> result = o.whenAdditionalSource(other, combinator);
+			if (result != null) {
+				return result;
+			}
+		}
+
+		return when(this, other, combinator);
 	}
 
 	/**
@@ -1889,6 +1940,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #first
 	 */
 	public final Mono<T> or(Mono<? extends T> other) {
+		if (this instanceof MonoFirst) {
+			MonoFirst<T> a = (MonoFirst<T>) this;
+			return a.orAdditionalSource(other);
+		}
 		return first(this, other);
 	}
 

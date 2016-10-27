@@ -66,7 +66,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			int prefetch) {
 		this(new Publisher[]{Objects.requireNonNull(p1, "p1"),
 						Objects.requireNonNull(p2, "p2")},
-				new PairwiseZipper<R>(new BiFunction[]{
+				new PairwiseZipper<>(new BiFunction[]{
 						Objects.requireNonNull(zipper2, "zipper2")}),
 				queueSupplier,
 				prefetch);
@@ -104,7 +104,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	public <U> FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+	public FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
 			int oldLen = oldSources.length;
