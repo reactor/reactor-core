@@ -144,7 +144,7 @@ public class PublisherMock<T> implements Publisher<T> {
 		}
 
 		public boolean isFuseable() {
-			return s instanceof Fuseable;
+			return s instanceof Fuseable.QueueSubscription;
 		}
 
 		@Override

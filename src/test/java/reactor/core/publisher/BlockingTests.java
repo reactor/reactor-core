@@ -16,6 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -93,4 +98,49 @@ public class BlockingTests {
 
 		Assert.assertTrue("Not interrupted ?", latch.await(3, TimeUnit.SECONDS));
 	}
+
+	/*@Test
+	public void fillIn() throws Exception {
+		Path sourcePath = Paths.get(
+				"/Users/smaldini/work/reactor-core/src/main/java/reactor/core/publisher");
+
+		String template =
+				"package reactor.core.publisher;\n\nimport org.junit.Test;\n\npublic " + "class {name} { @Test public" + " void normal(){} }";
+
+		Flux.fromStream(Files.list(sourcePath))
+		    .map(Path::toFile)
+		    .filter(f -> f.getName()
+		                  .startsWith("Flux") || f.getName()
+		                                          .startsWith("Mono"))
+		    .map(f -> {
+			    try {
+				    return new File(f.getAbsolutePath()
+				                     .replace("main", "test")
+				                     .replace(".java", "Test.java"));
+			    }
+			    catch (Exception t) {
+				    throw Exceptions.propagate(t);
+			    }
+		    })
+		    .filter(f -> {
+			    try {
+				    return f.createNewFile();
+			    }
+			    catch (Exception t) {
+				    throw Exceptions.propagate(t);
+			    }
+		    })
+		    .doOnNext(f -> {
+			    try (FileOutputStream fo = new FileOutputStream(f)) {
+				    fo.write(template.replace("{name}",
+						    f.getName()
+						     .replace(".java", ""))
+				                     .getBytes());
+			    }
+			    catch (Exception t) {
+				    throw Exceptions.propagate(t);
+			    }
+		    })
+		    .subscribe(System.out::println);
+	}*/
 }
