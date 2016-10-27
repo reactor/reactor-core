@@ -35,20 +35,20 @@ import reactor.core.MultiReceiver;
  *
  * @param <T> the final value type
  */
-final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver {
+final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver {
 
     final Mono<?>[] ignore;
     
     final Mono<T> last;
     
-    public MonoThenSupply(Mono<?>[] ignore, Mono<T> last) {
+    public MonoThenIgnore(Mono<?>[] ignore, Mono<T> last) {
         this.ignore = Objects.requireNonNull(ignore, "ignore");
         this.last = Objects.requireNonNull(last, "last");
     }
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        MonoConcatIgnoreManager<T> manager = new MonoConcatIgnoreManager<>(s, ignore, last);
+        MonoThenIgnoreMain<T> manager = new MonoThenIgnoreMain<>(s, ignore, last);
         s.onSubscribe(manager);
         
         manager.drain();
@@ -72,7 +72,7 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
      * @param newLast the new last Mono instance
      * @return the new operator set up
      */
-    public <U> MonoThenSupply<U> shift(Mono<U> newLast) {
+    public <U> MonoThenIgnore<U> shift(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");
         Mono<?>[] a = ignore;
         int n = a.length;
@@ -80,14 +80,14 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         System.arraycopy(a, 0, b, 0, n);
         b[n] = last;
         
-        return new MonoThenSupply<>(b, newLast);
+        return new MonoThenIgnore<>(b, newLast);
     }
     
-    static final class MonoConcatIgnoreManager<T>
+    static final class MonoThenIgnoreMain<T>
             extends Operators.MonoSubscriber<T, T> {
-        final MonoConcatIgnoreSubscriber ignore;
+        final MonoThenIgnoreSubscriber ignore;
         
-        final MonoConcatAcceptSubscriber<T> accept;
+        final MonoThenAcceptSubscriber<T> accept;
         
         final Mono<?>[] ignoreMonos;
         
@@ -99,15 +99,15 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         
         volatile int wip;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<MonoConcatIgnoreManager> WIP =
-                AtomicIntegerFieldUpdater.newUpdater(MonoConcatIgnoreManager.class, "wip");
+        static final AtomicIntegerFieldUpdater<MonoThenIgnoreMain> WIP =
+                AtomicIntegerFieldUpdater.newUpdater(MonoThenIgnoreMain.class, "wip");
         
-        public MonoConcatIgnoreManager(Subscriber<? super T> subscriber, Mono<?>[] ignoreMonos, Mono<T> lastMono) {
+        public MonoThenIgnoreMain(Subscriber<? super T> subscriber, Mono<?>[] ignoreMonos, Mono<T> lastMono) {
             super(subscriber);
             this.ignoreMonos = ignoreMonos;
             this.lastMono = lastMono;
-            this.ignore = new MonoConcatIgnoreSubscriber(this);
-            this.accept = new MonoConcatAcceptSubscriber<>(this);
+            this.ignore = new MonoThenIgnoreSubscriber(this);
+            this.accept = new MonoThenAcceptSubscriber<>(this);
         }
 
         @SuppressWarnings("unchecked")
@@ -185,14 +185,14 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
     }
     
-    static final class MonoConcatIgnoreSubscriber implements Subscriber<Object> {
-        final MonoConcatIgnoreManager<?> parent;
+    static final class MonoThenIgnoreSubscriber implements Subscriber<Object> {
+        final MonoThenIgnoreMain<?> parent;
         
         volatile Subscription s;
-        static final AtomicReferenceFieldUpdater<MonoConcatIgnoreSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoConcatIgnoreSubscriber.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<MonoThenIgnoreSubscriber, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(MonoThenIgnoreSubscriber.class, Subscription.class, "s");
         
-        public MonoConcatIgnoreSubscriber(MonoConcatIgnoreManager<?> parent) {
+        public MonoThenIgnoreSubscriber(MonoThenIgnoreMain<?> parent) {
             this.parent = parent;
         }
         
@@ -227,17 +227,17 @@ final class MonoThenSupply<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
     }
     
-    static final class MonoConcatAcceptSubscriber<T> implements Subscriber<T> {
-        final MonoConcatIgnoreManager<T> parent;
+    static final class MonoThenAcceptSubscriber<T> implements Subscriber<T> {
+        final MonoThenIgnoreMain<T> parent;
         
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoConcatAcceptSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoConcatAcceptSubscriber.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<MonoThenAcceptSubscriber, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(MonoThenAcceptSubscriber.class, Subscription.class, "s");
 
         boolean done;
         
-        public MonoConcatAcceptSubscriber(MonoConcatIgnoreManager<T> parent) {
+        public MonoThenAcceptSubscriber(MonoThenIgnoreMain<T> parent) {
             this.parent = parent;
         }
         

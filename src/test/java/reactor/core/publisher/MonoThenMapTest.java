@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
 
-public class MonoThenApplyTest {
+public class MonoThenMapTest {
 
     @Test
     public void normalHidden() {

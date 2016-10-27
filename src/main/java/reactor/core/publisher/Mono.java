@@ -2487,7 +2487,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {
-		return onAssembly(new MonoThenApply<>(this, transformer));
+		return onAssembly(new MonoThenMap<>(this, transformer));
 	}
 
 	/**
@@ -2504,11 +2504,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> then(Mono<V> other) {
-		if (this instanceof MonoThenSupply) {
-            MonoThenSupply<T> a = (MonoThenSupply<T>) this;
+		if (this instanceof MonoThenIgnore) {
+            MonoThenIgnore<T> a = (MonoThenIgnore<T>) this;
             return a.shift(other);
 		}
-		return onAssembly(new MonoThenSupply<>(new Mono[] { this }, other));
+		return onAssembly(new MonoThenIgnore<>(new Mono[] { this }, other));
 	}
 
 	/**

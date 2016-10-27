@@ -20,8 +20,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 
 /**
@@ -31,11 +32,11 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
+final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-	public MonoThenApply(Publisher<? extends T> source, Function<? super T, ? extends
+	public MonoThenMap(Publisher<? extends T> source, Function<? super T, ? extends
 			Mono<? extends R>> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
@@ -48,13 +49,13 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 			return;
 		}
 
-		MonoThenApplyManager<T, R> manager = new MonoThenApplyManager<>(s, mapper);
-		s.onSubscribe(manager);
+        MonoThenApplyMain<T, R> manager = new MonoThenApplyMain<>(s, mapper);
+        s.onSubscribe(manager);
 		
 		source.subscribe(manager);
 	}
-	
-	static final class MonoThenApplyManager<T, R> extends Operators.MonoSubscriber<T, R> {
+
+    static final class MonoThenApplyMain<T, R> extends Operators.MonoSubscriber<T, R> {
 
 	    final Function<? super T, ? extends Mono<? extends R>> mapper;
 
@@ -64,10 +65,13 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
 	    
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoThenApplyManager, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoThenApplyManager.class, Subscription.class, "s");
-	    
-        public MonoThenApplyManager(Subscriber<? super R> subscriber, Function<? super T, ? extends Mono<? extends R>> mapper) {
+        static final AtomicReferenceFieldUpdater<MonoThenApplyMain, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(MonoThenApplyMain.class,
+                        Subscription.class,
+                        "s");
+
+        public MonoThenApplyMain(Subscriber<? super R> subscriber,
+                Function<? super T, ? extends Mono<? extends R>> mapper) {
             super(subscriber);
             this.mapper = mapper;
             this.second = new SecondSubscriber<>(this);
@@ -168,7 +172,7 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
         
         static final class SecondSubscriber<R> implements Subscriber<R> {
 
-            final MonoThenApplyManager<?, R> parent;
+            final MonoThenApplyMain<?, R> parent;
             
             volatile Subscription s;
             @SuppressWarnings("rawtypes")
@@ -176,8 +180,8 @@ final class MonoThenApply<T, R> extends MonoSource<T, R> implements Fuseable {
                     AtomicReferenceFieldUpdater.newUpdater(SecondSubscriber.class, Subscription.class, "s");
             
             boolean done;
-            
-            public SecondSubscriber(MonoThenApplyManager<?, R> parent) {
+
+            public SecondSubscriber(MonoThenApplyMain<?, R> parent) {
                 this.parent = parent;
             }
             
