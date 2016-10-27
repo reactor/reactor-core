@@ -16,10 +16,164 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoMapTest {
 
+	final Mono<Integer> just = Mono.just(1);
+
+	@Test(expected = NullPointerException.class)
+	public void nullSource() {
+		new MonoMap<Integer, Integer>(null, v -> v);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void nullMapper() {
+		just.map(null);
+	}
+
 	@Test
-	public void normal() {
+	public void simpleMapping() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		just.map(v -> v + 1)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertValues(2)
+		  .assertComplete();
+	}
+
+	@Test
+	public void simpleMappingBackpressured() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		just.map(v -> v + 1)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertNoValues()
+		  .assertNotComplete();
+
+		ts.request(1);
+
+		ts.assertNoError()
+		  .assertValues(2)
+		  .assertComplete();
+	}
+
+	@Test
+	public void mapperThrows() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		just.map(v -> {
+			throw new RuntimeException("forced failure");
+		})
+		    .subscribe(ts);
+
+		ts.assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure")
+		  .assertNoValues()
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mapperReturnsNull() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		just.map(v -> null)
+		    .subscribe(ts);
+
+		ts.assertError(NullPointerException.class)
+		  .assertNoValues()
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void mapFilter() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		just
+		    .map(v -> v + 1)
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void mapFilterBackpressured() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
+
+		just
+		    .map(v -> v + 1)
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertNoValues()
+		  .assertNotComplete();
+
+		ts.request(1);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void hiddenMapFilter() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		just
+		    .hide()
+		    .map(v -> v + 1)
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void hiddenMapFilterBackpressured() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
+
+		just
+		    .hide()
+		    .map(v -> v + 1)
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertNoValues()
+		  .assertNotComplete();
+
+		ts.request(1);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void hiddenMapHiddenFilterBackpressured() {
+		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
+
+		just
+		    .hide()
+		    .map(v -> v + 1)
+		    .hide()
+		    .filter(v -> (v & 1) == 0)
+		    .subscribe(ts);
+
+		ts.request(1);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
 	}
 }

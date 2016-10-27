@@ -15,11 +15,24 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoSupplierTest {
 
 	@Test
 	public void normal() {
+		AtomicInteger n = new AtomicInteger();
+		Mono<Integer> m = Mono.fromSupplier(n::incrementAndGet);
+
+		m.subscribeWith(AssertSubscriber.create())
+				.assertValues(1)
+				.assertComplete();
+
+		m.subscribeWith(AssertSubscriber.create())
+				.assertValues(2)
+				.assertComplete();
 	}
 }

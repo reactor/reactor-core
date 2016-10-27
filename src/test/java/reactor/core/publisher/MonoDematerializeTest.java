@@ -16,10 +16,116 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDematerializeTest {
 
+	Signal<Integer> error = Signal.error(new RuntimeException("Forced failure"));
+
 	@Test
-	public void normal() {
+	public void singleCompletion() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono<Integer> dematerialize = Mono.just(Signal.<Integer>complete())
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void singleError() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono<Integer> dematerialize = Mono.just(error)
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError(RuntimeException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void immediateCompletion() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono<Integer> dematerialize = Mono.just(Signal.<Integer>complete())
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void immediateError() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono<Integer> dematerialize = Mono.just(error)
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError(RuntimeException.class)
+		  .assertNotComplete();
+	}
+
+	@Test
+	public void completeAfterSingleSignal() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono<Integer> dematerialize = Mono.just(Signal.next(1))
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(1);
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void errorAfterSingleSignal() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono<Integer> dematerialize = Mono.just(error)
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertError(RuntimeException.class)
+		  .assertNotComplete();
+	}
+
+	//@Test
+	//TODO
+	public void neverEnding() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux<Integer> dematerialize = Mono.just(Signal.next(1))
+		                                  .concatWith(Mono.never())
+		                                  .dematerialize();
+
+		dematerialize.subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+
 	}
 }

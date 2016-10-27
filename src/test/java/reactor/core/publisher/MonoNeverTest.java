@@ -16,10 +16,16 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoNeverTest {
 
 	@Test
 	public void normal() {
+		Mono.never()
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertSubscribed()
+		    .assertNoError()
+		    .assertNotComplete();
 	}
 }

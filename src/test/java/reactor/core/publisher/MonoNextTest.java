@@ -16,10 +16,30 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoNextTest {
 
 	@Test
 	public void normal() {
+		Flux.range(1, 1_000_000)
+		    .next()
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertValues(1)
+		    .assertComplete();
+	}
+
+	@Test
+	public void normalBackpressured() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		Flux.range(1, 1_000_000)
+		    .next()
+		    .subscribeWith(ts)
+		    .assertNoValues()
+		    .assertNotComplete();
+
+		ts.request(1);
+		ts.assertValues(1)
+		  .assertComplete();
 	}
 }

@@ -16,10 +16,26 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCreateTest {
 
 	@Test
 	public void normal() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		Flux<Integer> source = Flux.<Signal<Integer>>create(e -> {
+			e.serialize().next(Signal.next(1));
+			e.next(Signal.next(2));
+			e.next(Signal.next(3));
+			e.next(Signal.complete());
+			System.out.println(e.isCancelled());
+			System.out.println(e.requestedFromDownstream());
+		}).dematerialize();
+
+		source.subscribe(ts);
+
+		ts.assertValues(1, 2, 3)
+		  .assertNoError()
+		  .assertComplete();
 	}
 }

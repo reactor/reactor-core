@@ -15,11 +15,71 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.TimeoutException;
+
 import org.junit.Test;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoTimeoutTest {
 
 	@Test
-	public void normal() {
+	public void noTimeout() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1)
+		    .timeout(Mono.never())
+		    .subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void immediateTimeout() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1)
+		    .timeout(Mono.empty())
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(TimeoutException.class);
+	}
+
+	@Test
+	public void firstTimeoutError() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1)
+		    .timeout(Mono.error(new RuntimeException("forced " + "failure")))
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void timeoutRequested() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		MonoProcessor<Integer> source = MonoProcessor.create();
+
+		DirectProcessor<Integer> tp = DirectProcessor.create();
+
+		source.timeout(tp)
+		      .subscribe(ts);
+
+		tp.onNext(1);
+
+		source.onNext(2);
+		source.onComplete();
+
+		ts.assertNoValues()
+		  .assertError(TimeoutException.class)
+		  .assertNotComplete();
 	}
 }

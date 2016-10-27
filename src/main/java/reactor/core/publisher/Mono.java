@@ -2630,7 +2630,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout) {
-		return timeout(timeout, null);
+		return timeoutMillis(timeout.toMillis());
 	}
 
 	/**
@@ -2698,7 +2698,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono}
 	 */
 	public final Mono<T> timeoutMillis(long timeout) {
-		return timeoutMillis(timeout, null, Schedulers.timer());
+		return timeoutMillis(timeout, Schedulers.timer());
 	}
 
 	/**
