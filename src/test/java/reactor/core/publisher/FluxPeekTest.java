@@ -15,14 +15,18 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import static java.lang.Thread.sleep;
+import static org.junit.Assert.assertEquals;
+
+import java.util.concurrent.atomic.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import org.slf4j.*;
+
 import reactor.core.Fuseable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.core.Exceptions;
@@ -321,5 +325,43 @@ public class FluxPeekTest {
 
 		Assert.assertTrue("onComplete not called back", onTerminate.get());
 	}
+
+    @Test
+    public void should_reduce_to_10_events() {
+        for (int i = 0; i < 20; i++) {
+            AtomicInteger count = new AtomicInteger();
+            Flux.range(0, 10).flatMap(x ->
+                Flux.range(0, 2).map(y -> blockingOp(x, y)).subscribeOn(Schedulers.parallel())
+                    .reduce((l, r) -> l + "_" + r)
+                    .doOnSuccess(s -> {count.incrementAndGet();})
+            ).blockLast();
+    
+            assertEquals(10, count.get());
+        }
+    }
+
+    @Test
+    public void should_reduce_to_10_events_conditional() {
+        for (int i = 0; i < 20; i++) {
+            AtomicInteger count = new AtomicInteger();
+            Flux.range(0, 10).flatMap(x ->
+                Flux.range(0, 2).map(y -> blockingOp(x, y)).subscribeOn(Schedulers.parallel())
+                    .reduce((l, r) -> l + "_" + r)
+                    .doOnSuccess(s -> { count.incrementAndGet() ; })
+                    .filter(v -> true)
+            ).blockLast();
+    
+            assertEquals(10, count.get());
+        }
+    }
+
+    static String blockingOp(Integer x, Integer y) {
+        try {
+            sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "x" + x + "y" + y;
+    }
 
 }

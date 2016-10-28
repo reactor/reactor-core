@@ -92,7 +92,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		int sourceMode;
 
-		boolean done;
+		volatile boolean done;
 
 		public PeekFuseableSubscriber(Subscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
@@ -211,31 +211,35 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 				return;
 			}
 			done = true;
-			if(parent.onCompleteCall() != null) {
-				try {
-					parent.onCompleteCall().run();
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(e));
-					return;
-				}
-			}
-
+            if (sourceMode == NONE) {
+    			if(parent.onCompleteCall() != null) {
+    				try {
+    					parent.onCompleteCall().run();
+    				}
+    				catch (Throwable e) {
+    					onError(Operators.onOperatorError(e));
+    					return;
+    				}
+    			}
+            }
+            
 			actual.onComplete();
 
-			if(parent.onAfterTerminateCall() != null) {
-				try {
-					parent.onAfterTerminateCall().run();
-				}
-				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
-					if(parent.onErrorCall() != null) {
-						parent.onErrorCall().accept(_e);
-					}
-					Operators.onErrorDropped(_e);
-				}
-			}
-		}
+            if (sourceMode == NONE) {
+    			if(parent.onAfterTerminateCall() != null) {
+    				try {
+    					parent.onAfterTerminateCall().run();
+    				}
+    				catch (Throwable e) {
+    					Throwable _e = Operators.onOperatorError(e);
+    					if(parent.onErrorCall() != null) {
+    						parent.onErrorCall().accept(_e);
+    					}
+    					Operators.onErrorDropped(_e);
+    				}
+    			}
+            }
+        }
 
 		@Override
 		public Object downstream() {
@@ -249,6 +253,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		@Override
 		public T poll() {
+		    boolean d = done;
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
 				try {
@@ -258,7 +263,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 				}
 			}
-			if (v == null && sourceMode == SYNC) {
+			if (v == null && (d || sourceMode == SYNC)) {
 				Runnable call = parent.onCompleteCall();
 				if (call != null) {
 					call.run();
@@ -310,7 +315,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		int sourceMode;
 
-		boolean done;
+		volatile boolean done;
 
 		public PeekFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
@@ -452,31 +457,35 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 				return;
 			}
 			done = true;
-			if(parent.onCompleteCall() != null) {
-				try {
-					parent.onCompleteCall().run();
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(e));
-					return;
-				}
-			}
-
+            if (sourceMode == NONE) {
+    			if(parent.onCompleteCall() != null) {
+    				try {
+    					parent.onCompleteCall().run();
+    				}
+    				catch (Throwable e) {
+    					onError(Operators.onOperatorError(e));
+    					return;
+    				}
+    			}
+            }
+            
 			actual.onComplete();
 
-			if(parent.onAfterTerminateCall() != null) {
-				try {
-					parent.onAfterTerminateCall().run();
-				}
-				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
-					if(parent.onErrorCall() != null) {
-						parent.onErrorCall().accept(_e);
-					}
-					Operators.onErrorDropped(_e);
-				}
-			}
-		}
+            if (sourceMode == NONE) {
+    			if(parent.onAfterTerminateCall() != null) {
+    				try {
+    					parent.onAfterTerminateCall().run();
+    				}
+    				catch (Throwable e) {
+    					Throwable _e = Operators.onOperatorError(e);
+    					if(parent.onErrorCall() != null) {
+    						parent.onErrorCall().accept(_e);
+    					}
+    					Operators.onErrorDropped(_e);
+    				}
+    			}
+            }
+        }
 
 		@Override
 		public Object downstream() {
@@ -490,6 +499,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 
 		@Override
 		public T poll() {
+		    boolean d = done;
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
 				try {
@@ -499,7 +509,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 				}
 			}
-			if (v == null && sourceMode == SYNC) {
+			if (v == null && (d || sourceMode == SYNC)) {
 				Runnable call = parent.onCompleteCall();
 				if (call != null) {
 					call.run();
