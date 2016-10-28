@@ -33,7 +33,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
 	@Override
 	public void subscribe(Subscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new MaterializeAction<>(subscriber));
+		source.subscribe(new MaterializeAction<T>(subscriber));
 	}
 
 	final static class MaterializeAction<T>
