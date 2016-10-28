@@ -1537,9 +1537,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
-		MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
-		Consumer<Throwable> error = e -> onTerminate.accept(null, e);
-		return doOnSignal(this, null,  onSuccess, error, onSuccess, null, null, null);
+		return defer(() -> {
+			MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
+			Consumer<Throwable> error = e -> onTerminate.accept(null, e);
+			return doOnSignal(this, null, onSuccess, error, onSuccess, null, null, null);
+		});
 	}
 
 	/**
