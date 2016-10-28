@@ -580,7 +580,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		//implementation might run a specific request task for the given subscription
 	}
 
-	final int decrementSubscribers() {
+	final void decrementSubscribers() {
 		Subscription subscription = upstreamSubscription;
 		int subs = SUBSCRIBER_COUNT.decrementAndGet(this);
 		if (subs == 0) {
@@ -588,9 +588,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				upstreamSubscription = null;
 				cancel();
 			}
-			return subs;
 		}
-		return subs;
 	}
 
 	abstract void doError(Throwable throwable);
