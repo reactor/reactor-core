@@ -722,6 +722,9 @@ final class Wrapped<E> implements RingBuffer.Sequence, Producer {
 		if (this == o) {
 			return true;
 		}
+		if(!(o instanceof Wrapped)){
+			return false;
+		}
 		Wrapped<?> wrapped = (Wrapped<?>) o;
 
 		return sequence.equals(wrapped.sequence);

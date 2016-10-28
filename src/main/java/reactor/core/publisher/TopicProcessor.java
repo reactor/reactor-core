@@ -805,7 +805,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 					}
 				}
 
-				Slot<T> event = null;
+				Slot<T> event;
 				long nextSequence = sequence.getAsLong() + 1L;
 				final boolean unbounded = pendingRequest.getAsLong() == Long.MAX_VALUE;
 

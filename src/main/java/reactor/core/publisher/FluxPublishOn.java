@@ -337,24 +337,22 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 					e++;
 				}
 
-				if (e == r) {
-					if (cancelled) {
-						return;
-					}
+				if (cancelled) {
+					return;
+				}
 
-					boolean empty;
+				boolean empty;
 
-					try {
-						empty = q.isEmpty();
-					} catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex));
-						return;
-					}
+				try {
+					empty = q.isEmpty();
+				} catch (Throwable ex) {
+					doError(a, Operators.onOperatorError(s, ex));
+					return;
+				}
 
-					if (empty) {
-						doComplete(a);
-						return;
-					}
+				if (empty) {
+					doComplete(a);
+					return;
 				}
 
 				int w = wip;
@@ -864,25 +862,23 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						e++;
 					}
 				}
-				
-				if (e == r) {
-					if (cancelled) {
-						return;
-					}
-					
-					boolean empty;
-					
-					try {
-						empty = q.isEmpty();
-					} catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex));
-						return;
-					}
-					
-					if (empty) {
-						doComplete(a);
-						return;
-					}
+
+				if (cancelled) {
+					return;
+				}
+
+				boolean empty;
+
+				try {
+					empty = q.isEmpty();
+				} catch (Throwable ex) {
+					doError(a, Operators.onOperatorError(s, ex));
+					return;
+				}
+
+				if (empty) {
+					doComplete(a);
+					return;
 				}
 
 				int w = wip;

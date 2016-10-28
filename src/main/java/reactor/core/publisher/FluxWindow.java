@@ -399,7 +399,9 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			
 			if (i == size) {
 				window = null;
-				w.onComplete();
+				if(w != null){
+					w.onComplete();
+				}
 			}
 			
 			if (i == skip) {

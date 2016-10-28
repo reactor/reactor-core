@@ -1278,7 +1278,7 @@ public abstract class Operators {
 	                drainLoop();
 	            }
 	            
-	            if (s != null && r != 0L) {
+	            if (r != 0L) {
 	                s.request(r);
 	            }
 

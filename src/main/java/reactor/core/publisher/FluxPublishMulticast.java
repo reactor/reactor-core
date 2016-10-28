@@ -316,34 +316,32 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 							
 							e++;
 						}
-						
-						if (e == r) {
-							if (cancelled) {
-								queue.clear();
-								return;
-							}
-							boolean empty;
-							try {
-								empty = queue.isEmpty();
-							} catch (Throwable ex) {
-								queue.clear();
-								error = Operators.onOperatorError(s, ex);
-								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
-								for (int i = 0; i < n; i++) {
-									a[i].actual.onError(ex);
-								}
-								return;
-							}
-							
-							if (empty) {
-								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
-								for (int i = 0; i < n; i++) {
-									a[i].actual.onComplete();
-								}
-								return;
-							}
+
+						if (cancelled) {
+							queue.clear();
+							return;
 						}
-						
+						boolean empty;
+						try {
+							empty = queue.isEmpty();
+						} catch (Throwable ex) {
+							queue.clear();
+							error = Operators.onOperatorError(s, ex);
+							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							for (int i = 0; i < n; i++) {
+								a[i].actual.onError(ex);
+							}
+							return;
+						}
+
+						if (empty) {
+							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							for (int i = 0; i < n; i++) {
+								a[i].actual.onComplete();
+							}
+							return;
+						}
+
 						if (e != 0L) {
 							for (int i = 0; i < n; i++) {
 								a[i].produced(e);
