@@ -231,10 +231,6 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			}
 		}
 
-		void emit(T v) {
-
-		}
-
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {

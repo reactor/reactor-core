@@ -44,6 +44,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,

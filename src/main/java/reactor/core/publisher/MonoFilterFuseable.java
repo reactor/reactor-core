@@ -43,6 +43,7 @@ final class MonoFilterFuseable<T> extends MonoSource<T, T>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));

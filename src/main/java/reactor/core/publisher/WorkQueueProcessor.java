@@ -999,7 +999,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					return;
 				}
 
-				getAndAddCap(pendingRequest, n);
+				addCap(pendingRequest, n);
 			}
 		}
 

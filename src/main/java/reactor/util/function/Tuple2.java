@@ -108,13 +108,17 @@ public class Tuple2<T1, T2> implements Iterable, Serializable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		Tuple2<?, ?> tuple2 = (Tuple2<?, ?>) o;
 
-		if (t1 != null ? !t1.equals(tuple2.t1) : tuple2.t1 != null) return false;
-		return t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null;
+		return (t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null) &&
+				(t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null);
 
 	}
 

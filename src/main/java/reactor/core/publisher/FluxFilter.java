@@ -50,6 +50,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable) {
 			if (s instanceof ConditionalSubscriber) {
@@ -249,14 +250,12 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 			try {
 				b = predicate.test(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
-			if (b) {
-				return actual.tryOnNext(t);
-			}
-			return false;
+			return b && actual.tryOnNext(t);
 		}
 
 		@Override

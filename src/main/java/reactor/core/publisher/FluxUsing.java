@@ -68,6 +68,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		S resource;
 

@@ -71,6 +71,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 
 		if (FluxSubscribeOnValue.scalarScheduleOn(source, s, scheduler)) {

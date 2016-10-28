@@ -72,6 +72,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T> implements Fuseable,
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, this));

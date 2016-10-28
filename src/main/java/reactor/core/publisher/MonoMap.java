@@ -51,6 +51,7 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new MapFuseableSubscriber<>(s, mapper));

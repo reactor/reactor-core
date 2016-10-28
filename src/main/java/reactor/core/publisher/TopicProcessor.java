@@ -930,7 +930,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 					return;
 				}
 
-				getAndAddCap(pendingRequest, n);
+				addCap(pendingRequest, n);
 			}
 		}
 

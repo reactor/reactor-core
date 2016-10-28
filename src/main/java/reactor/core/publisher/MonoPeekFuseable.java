@@ -68,6 +68,7 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?

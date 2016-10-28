@@ -56,6 +56,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new MapFuseableSubscriber<>(s, mapper));

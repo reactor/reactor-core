@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -27,6 +28,8 @@ import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+
+import static reactor.core.publisher.FluxSubscribeOnValue.scalarScheduleOn;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -47,9 +50,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable.ScalarCallable) {
-			FluxSubscribeOnValue.singleScheduleOn(source, s, scheduler);
+			if (!scalarScheduleOn(source, s, scheduler)) {
+				MonoSubscribeOnCallable.subscribe((Callable<T>) source, s, scheduler);
+			}
 			return;
 		}
 		

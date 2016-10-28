@@ -82,7 +82,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			return;
 		}
 		
-		source.subscribe(new SwitchMapMain<>(s, mapper, q, bufferSize));
+		source.subscribe(new SwitchMapMain<T, R>(s, mapper, q, bufferSize));
 	}
 	
 	static final class SwitchMapMain<T, R> implements Subscriber<T>, Subscription {

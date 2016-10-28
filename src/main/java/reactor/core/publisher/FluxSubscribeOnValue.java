@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -57,30 +56,6 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}
-	}
-
-	/**
-	 * If the source is Callable or ScalarCallable, optimized paths are used instead of
-	 * the general path.
-	 *
-	 * @param <T> the value type
-	 * @param source the source Publisher
-	 * @param s the subscriber
-	 * @param scheduler the scheduler
-	 *
-	 * @return true if the optimized path was taken
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> boolean singleScheduleOn(Publisher<? extends T> source,
-			Subscriber<? super T> s,
-			Scheduler scheduler) {
-		if (source instanceof Callable) {
-			if (!scalarScheduleOn(source, s, scheduler)) {
-				MonoSubscribeOnCallable.subscribe((Callable<T>) source, s, scheduler);
-			}
-			return true;
-		}
-		return false;
 	}
 
 	public static <T> boolean scalarScheduleOn(Publisher<? extends T> source,

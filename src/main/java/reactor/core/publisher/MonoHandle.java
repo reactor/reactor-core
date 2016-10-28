@@ -43,6 +43,7 @@ final class MonoHandle<T, R> extends MonoSource<T, R> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new HandleFuseableSubscriber<>(s, handler));

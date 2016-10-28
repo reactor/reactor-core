@@ -36,7 +36,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
         if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
             return;
         }
-        source.subscribe(new FlattenSubscriber<>(s, mapper));
+        source.subscribe(new FlattenSubscriber<T, R>(s, mapper));
     }
     
     static final class FlattenSubscriber<T, R> implements Subscriber<T>, Subscription {
@@ -100,17 +100,14 @@ final class MonoFlatMap<T, R> extends Flux<R> {
             }
         }
         
-        boolean onSubscribeInner(Subscription s) {
+        void onSubscribeInner(Subscription s) {
             if (Operators.setOnce(INNER, this, s)) {
                 
                 long r = REQUESTED.getAndSet(this, 0L);
                 if (r != 0) {
                     s.request(r);
                 }
-                
-                return true;
             }
-            return false;
         }
 
         @SuppressWarnings("unchecked")

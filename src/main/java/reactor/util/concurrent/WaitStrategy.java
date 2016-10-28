@@ -48,7 +48,7 @@ public abstract class WaitStrategy
      * @return the wait strategy
      */
     public static WaitStrategy busySpin() {
-        return BUSY_SPIN;
+        return BusySpin.INSTANCE;
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class WaitStrategy
      * @return the wait strategy
      */
     public static WaitStrategy parking() {
-        return PARKING;
+        return Parking.INSTANCE;
     }
 
     /**
@@ -156,7 +156,7 @@ public abstract class WaitStrategy
      * @return the wait strategy
      */
     public static WaitStrategy sleeping() {
-        return SLEEPING;
+        return Sleeping.INSTANCE;
     }
 
     /**
@@ -176,7 +176,7 @@ public abstract class WaitStrategy
      * @return the wait strategy
      */
     public static WaitStrategy yielding() {
-        return YIELDING;
+        return Yielding.INSTANCE;
     }
 
     /**
@@ -289,6 +289,8 @@ public abstract class WaitStrategy
 
     final static class BusySpin extends WaitStrategy {
 
+	    static final BusySpin INSTANCE = new BusySpin();
+
         @Override
         public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
                 throws InterruptedException
@@ -305,6 +307,8 @@ public abstract class WaitStrategy
     }
 
     final static class Sleeping extends WaitStrategy {
+
+	    static final Sleeping INSTANCE = new Sleeping();
 
         @Override
         public long waitFor(final long sequence,
@@ -450,6 +454,8 @@ public abstract class WaitStrategy
 
     final static class Parking extends WaitStrategy {
 
+	    static final Parking INSTANCE = new Parking();
+
         private final int retries;
 
         Parking() {
@@ -501,41 +507,35 @@ public abstract class WaitStrategy
 
     final static class Yielding extends WaitStrategy {
 
-        @Override
-        public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
-                throws InterruptedException
-        {
-            long availableSequence;
-            int counter = SPIN_TRIES;
+	    static final Yielding INSTANCE = new Yielding();
 
-            while ((availableSequence = cursor.getAsLong()) < sequence)
-            {
-                counter = applyWaitMethod(barrier, counter);
-            }
+	    @Override
+	    public long waitFor(final long sequence, LongSupplier cursor, final Runnable barrier)
+			    throws InterruptedException {
+		    long availableSequence;
+		    int counter = SPIN_TRIES;
 
-            return availableSequence;
-        }
+		    while ((availableSequence = cursor.getAsLong()) < sequence) {
+			    counter = applyWaitMethod(barrier, counter);
+		    }
 
-        private int applyWaitMethod(final Runnable barrier, int counter)
-                throws WaitStrategy.AlertException
-        {
-            barrier.run();
+		    return availableSequence;
+	    }
 
-            if (0 == counter)
-            {
-                Thread.yield();
-            }
-            else
-            {
-                --counter;
-            }
+	    private int applyWaitMethod(final Runnable barrier, int counter)
+			    throws WaitStrategy.AlertException {
+		    barrier.run();
 
-            return counter;
-        }
-        private static final int SPIN_TRIES = 100;
+		    if (0 == counter) {
+			    Thread.yield();
+		    }
+		    else {
+			    --counter;
+		    }
+
+		    return counter;
+	    }
+
+	    private static final int SPIN_TRIES = 100;
     }
-    final static WaitStrategy YIELDING  = new Yielding();
-    final static WaitStrategy PARKING   = new Parking();
-    final static WaitStrategy SLEEPING  = new Sleeping();
-    final static WaitStrategy BUSY_SPIN = new BusySpin();
 }

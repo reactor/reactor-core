@@ -67,6 +67,7 @@ extends Flux<T>
 	 * @param s the subscriber to feed this iterator to
 	 * @param it the iterator to use as a source of values
 	 */
+	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
 		if (it == null) {
 			Operators.error(s, new NullPointerException("The iterator is null"));

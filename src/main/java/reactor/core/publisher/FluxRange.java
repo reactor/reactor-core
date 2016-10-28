@@ -48,6 +48,7 @@ final class FluxRange extends Flux<Integer>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super Integer> s) {
 		long st = start;
 		long en = end;

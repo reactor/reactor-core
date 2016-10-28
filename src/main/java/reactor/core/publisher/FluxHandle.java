@@ -45,6 +45,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));

@@ -54,6 +54,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		C collection;
 
@@ -305,11 +306,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return true;
 			}
 
-
-			if (b) {
-				return actual.tryOnNext(t);
-			}
-			return false;
+			return b && actual.tryOnNext(t);
 		}
 
 		@Override

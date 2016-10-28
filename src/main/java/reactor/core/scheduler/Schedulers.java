@@ -416,8 +416,7 @@ public class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. Will cache the returned schedulers for subsequent {@link
-	 * #single} calls until shutdown.
+	 * suited for parallel work. Will cache the returned schedulers for subsequent calls until shutdown.
 	 *
 	 * @return a cached {@link Scheduler} that hosts a single-threaded
 	 * ExecutorService-based worker

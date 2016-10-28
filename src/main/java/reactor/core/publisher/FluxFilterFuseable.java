@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -31,14 +32,15 @@ import reactor.core.Trackable;
  * Filters out values that make a filter function return false.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFilterFuseable<T> extends FluxSource<T, T>
-		implements Fuseable {
+final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
-	public FluxFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	public FluxFilterFuseable(Publisher<? extends T> source,
+			Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
@@ -48,9 +50,11 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
+			source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+					predicate));
 			return;
 		}
 		source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
@@ -59,6 +63,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	static final class FilterFuseableSubscriber<T>
 			implements Receiver, Producer, Loopback, SynchronousSubscription<T>,
 			           ConditionalSubscriber<T>, Trackable {
+
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -66,10 +71,11 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		QueueSubscription<T> s;
 
 		boolean done;
-		
+
 		int sourceMode;
 
-		public FilterFuseableSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		public FilterFuseableSubscriber(Subscriber<? super T> actual,
+				Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -78,7 +84,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = (QueueSubscription<T>)s;
+				this.s = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 			}
 		}
@@ -91,27 +97,29 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 			}
 
 			int m = sourceMode;
-			
+
 			if (m == 0) {
 				boolean b;
-	
+
 				try {
 					b = predicate.test(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
 				if (b) {
 					actual.onNext(t);
-				} else {
+				}
+				else {
 					s.request(1);
 				}
-			} else
-			if (m == 2) {
+			}
+			else if (m == 2) {
 				actual.onNext(null);
 			}
 		}
-		
+
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
@@ -120,13 +128,14 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 			}
 
 			int m = sourceMode;
-			
+
 			if (m == 0) {
 				boolean b;
-	
+
 				try {
 					b = predicate.test(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return false;
 				}
@@ -135,8 +144,8 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 					return true;
 				}
 				return false;
-			} else
-			if (m == 2) {
+			}
+			else if (m == 2) {
 				actual.onNext(null);
 			}
 			return true;
@@ -185,12 +194,12 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -200,9 +209,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
-				for (;;) {
+				for (; ; ) {
 					T v = s.poll();
-	
+
 					if (v == null || predicate.test(v)) {
 						if (dropped != 0) {
 							request(dropped);
@@ -211,10 +220,11 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 					}
 					dropped++;
 				}
-			} else {
-				for (;;) {
+			}
+			else {
+				for (; ; ) {
 					T v = s.poll();
-	
+
 					if (v == null || predicate.test(v)) {
 						return v;
 					}
@@ -231,7 +241,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public void clear() {
 			s.clear();
 		}
-		
+
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;
@@ -244,7 +254,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 			sourceMode = m;
 			return m;
 		}
-		
+
 		@Override
 		public int size() {
 			return s.size();
@@ -254,6 +264,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 	static final class FilterFuseableConditionalSubscriber<T>
 			implements Receiver, Producer, Loopback, ConditionalSubscriber<T>,
 			           SynchronousSubscription<T>, Trackable {
+
 		final ConditionalSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -261,10 +272,11 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		QueueSubscription<T> s;
 
 		boolean done;
-		
+
 		int sourceMode;
 
-		public FilterFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual, Predicate<? super T> predicate) {
+		public FilterFuseableConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -273,7 +285,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = (QueueSubscription<T>)s;
+				this.s = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 			}
 		}
@@ -286,27 +298,29 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 			}
 
 			int m = sourceMode;
-			
+
 			if (m == 0) {
 				boolean b;
-	
+
 				try {
 					b = predicate.test(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
 				if (b) {
 					actual.onNext(t);
-				} else {
+				}
+				else {
 					s.request(1);
 				}
-			} else
-			if (m == 2) {
+			}
+			else if (m == 2) {
 				actual.onNext(null);
 			}
 		}
-		
+
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
@@ -315,22 +329,20 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 			}
 
 			int m = sourceMode;
-			
+
 			if (m == 0) {
 				boolean b;
-	
+
 				try {
 					b = predicate.test(t);
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return false;
 				}
-				if (b) {
-					return actual.tryOnNext(t);
-				}
-				return false;
-			} else
-			if (m == 2) {
+				return b && actual.tryOnNext(t);
+			}
+			else if (m == 2) {
 				actual.onNext(null);
 			}
 			return true;
@@ -379,12 +391,12 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -394,9 +406,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
-				for (;;) {
+				for (; ; ) {
 					T v = s.poll();
-	
+
 					if (v == null || predicate.test(v)) {
 						if (dropped != 0) {
 							request(dropped);
@@ -405,10 +417,11 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 					}
 					dropped++;
 				}
-			} else {
-				for (;;) {
+			}
+			else {
+				for (; ; ) {
 					T v = s.poll();
-	
+
 					if (v == null || predicate.test(v)) {
 						return v;
 					}
@@ -425,12 +438,12 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T>
 		public void clear() {
 			s.clear();
 		}
-		
+
 		@Override
 		public int size() {
 			return s.size();
 		}
-		
+
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;

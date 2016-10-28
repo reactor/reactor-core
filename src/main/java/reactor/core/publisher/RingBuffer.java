@@ -611,13 +611,9 @@ abstract class UnsafeSupport {
 				// Ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK.
 				// https://github.com/netty/netty/issues/1061
 				// http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
-				try {
-					if (unsafe != null) {
-						unsafe.getClass().getDeclaredMethod(
-								"copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-					}
-				} catch (NoSuchMethodError | NoSuchMethodException t) {
-					throw t;
+				if (unsafe != null) {
+					unsafe.getClass().getDeclaredMethod(
+							"copyMemory", Object.class, long.class, Object.class, long.class, long.class);
 				}
 			} catch (Throwable cause) {
 				// Unsafe.copyMemory(Object, long, Object, long, long) unavailable.
@@ -675,7 +671,7 @@ abstract class RingBufferProducer {
 	 *
 	 * @param bufferSize The total number of entries, must be a positive power of 2.
 	 * @param waitStrategy The {@link WaitStrategy} to use.
-	 * @param spinObserver
+	 * @param spinObserver an iteration observer
 	 */
 	public RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver) {
 		if (bufferSize < 1) {

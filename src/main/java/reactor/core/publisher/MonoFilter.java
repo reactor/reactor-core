@@ -44,6 +44,7 @@ final class MonoFilter<T> extends MonoSource<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable) {
 			if (s instanceof ConditionalSubscriber) {

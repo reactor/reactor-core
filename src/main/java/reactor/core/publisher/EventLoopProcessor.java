@@ -187,20 +187,17 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 *
 	 * @param sequence current sequence to update
 	 * @param toAdd delta to add
-	 *
-	 * @return value before addition or Long.MAX_VALUE
 	 */
-	static long getAndAddCap(RingBuffer.Sequence sequence, long toAdd) {
+	static void addCap(RingBuffer.Sequence sequence, long toAdd) {
 		long u, r;
 		do {
 			r = sequence.getAsLong();
 			if (r == Long.MAX_VALUE) {
-				return Long.MAX_VALUE;
+				return;
 			}
 			u = Operators.addCap(r, toAdd);
 		}
 		while (!sequence.compareAndSet(r, u));
-		return r;
 	}
 
 	/**

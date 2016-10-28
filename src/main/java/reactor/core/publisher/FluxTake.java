@@ -57,6 +57,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (source instanceof Fuseable) {
 			source.subscribe(new TakeFuseableSubscriber<>(s, n));

@@ -53,6 +53,7 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
 			

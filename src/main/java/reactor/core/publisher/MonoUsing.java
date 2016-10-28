@@ -66,6 +66,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		S resource;
 

@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 /**
  * Detaches the both the child Subscriber and the Subscription on
