@@ -17,13 +17,11 @@
 package reactor.test.subscriber;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
@@ -31,7 +29,6 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +37,7 @@ import static org.junit.Assert.assertEquals;
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  */
-public class ScriptedSubscriberIntegrationTests {
+public class ScriptedSubscriberTests {
 
 	@Test
 	public void expectNext() {
@@ -374,7 +371,7 @@ public class ScriptedSubscriberIntegrationTests {
 				.verify(Duration.ofMillis(100));
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
@@ -402,85 +399,70 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnSubscribe() {
-		VirtualTimeScheduler.enable(false);
-		Mono<String> mono = Mono.delay(Duration.ofDays(2))
-		                        .map(l -> "foo");
-
-		ScriptedSubscriber.create()
-		                  .thenAwait(Duration.ofDays(3))
-		                  .expectNext("foo")
-		                  .expectComplete()
-		                  .verify(mono);
+		ScriptedVerification.with(() -> Mono.delay(Duration.ofDays(2))
+		                                    .map(l -> "foo"))
+		                    .thenAwait(Duration.ofDays(3))
+		                    .expectNext("foo")
+		                    .expectComplete()
+		                    .verify();
 
 	}
 
 	@Test
 	public void verifyVirtualTimeOnError() {
-		VirtualTimeScheduler.enable(false);
-		Mono<String> mono = Mono.never()
-		                        .timeout(Duration.ofDays(2))
-		                        .map(l -> "foo");
-
-		ScriptedSubscriber.create()
-		                  .thenAwaitUntil(Instant.now().plus(Duration.ofDays(2)))
-		                  .expectError(TimeoutException.class)
-		                  .verify(mono);
+		ScriptedVerification.with(() -> Mono.never()
+		                                    .timeout(Duration.ofDays(2))
+		                                    .map(l -> "foo"))
+		                    .thenAwait(Duration.ofDays(2))
+		                    .expectError(TimeoutException.class)
+		                    .verify();
 
 	}
 
 	@Test
 	public void verifyVirtualTimeOnNext() {
-		VirtualTimeScheduler.enable(false);
-		Flux<String> flux = Flux.just("foo", "bar", "foobar")
-		                        .delay(Duration.ofHours(1))
-		                        .log();
-
-		ScriptedSubscriber.create()
-		                  .thenAwait(Duration.ofHours(1))
-		                  .expectNext("foo")
-		                  .thenAwait(Duration.ofHours(1))
-		                  .expectNext("bar")
-		                  .thenAwait(Duration.ofHours(1))
-		                  .expectNext("foobar")
-		                  .expectComplete()
-		                  .verify(flux);
+		ScriptedVerification.with(() -> Flux.just("foo", "bar", "foobar")
+		                                    .delay(Duration.ofHours(1))
+		                                    .log())
+		                    .thenAwait(Duration.ofHours(1))
+		                    .expectNext("foo")
+		                    .thenAwait(Duration.ofHours(1))
+		                    .expectNext("bar")
+		                    .thenAwait(Duration.ofHours(1))
+		                    .expectNext("foobar")
+		                    .expectComplete()
+		                    .verify();
 
 	}
 
 	@Test
 	public void verifyVirtualTimeOnComplete() {
-		VirtualTimeScheduler.enable(false);
-		Flux<?> flux = Flux.empty()
-		                   .delaySubscription(Duration.ofHours(1))
-		                   .log();
-
-		ScriptedSubscriber.create()
-		                  .thenAwait(Duration.ofHours(1))
-		                  .expectComplete()
-		                  .verify(flux);
+		ScriptedVerification.with(() -> Flux.empty()
+		                                    .delaySubscription(Duration.ofHours(1))
+		                                    .log())
+		                    .thenAwait(Duration.ofHours(1))
+		                    .expectComplete()
+		                    .verify();
 
 	}
 
 	@Test
 	public void verifyVirtualTimeOnNextInterval() {
-		VirtualTimeScheduler.enable(false);
-		Flux<String> flux = Flux.interval(Duration.ofSeconds(3))
-		                        .map(d -> "t" + d);
-
-		ScriptedSubscriber.create()
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectNext("t0")
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectNext("t1")
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectNext("t2")
-		                  .thenCancel()
-		                  .verify(flux);
+		ScriptedVerification.with(() -> Flux.interval(Duration.ofSeconds(3))
+		                                    .map(d -> "t" + d))
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectNext("t0")
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectNext("t1")
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectNext("t2")
+		                    .thenCancel()
+		                    .verify();
 
 	}
 
 	@Test
-	public void verifyThenOnCompleteInterval() {
+	public void verifyThenOnCompleteRange() {
 		DirectProcessor<Void> p = DirectProcessor.create();
 
 		Flux<String> flux = Flux.range(0, 3)
@@ -497,20 +479,17 @@ public class ScriptedSubscriberIntegrationTests {
 
 	@Test
 	public void verifyVirtualTimeOnErrorInterval() {
-		VirtualTimeScheduler.enable(false);
-		Flux<String> flux = Flux.interval(Duration.ofSeconds(3))
-		                        .map(d -> "t" + d);
-
-		ScriptedSubscriber.create(0)
-		                  .thenRequest(1)
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectNext("t0")
-		                  .thenRequest(1)
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectNext("t1")
-		                  .thenAwait(Duration.ofSeconds(3))
-		                  .expectError(IllegalStateException.class)
-		                  .verify(flux);
+		ScriptedVerification.with(() -> Flux.interval(Duration.ofSeconds(3))
+		                                    .map(d -> "t" + d), 0L)
+		                    .thenRequest(1)
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectNext("t0")
+		                    .thenRequest(1)
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectNext("t1")
+		                    .thenAwait(Duration.ofSeconds(3))
+		                    .expectError(IllegalStateException.class)
+		                    .verify();
 
 	}
 
@@ -522,6 +501,7 @@ public class ScriptedSubscriberIntegrationTests {
 		                        .take(2);
 
 		Duration duration = ScriptedSubscriber.create()
+		                                      .thenAwait(Duration.ofSeconds(100))
 		                                      .expectNext("foo")
 		                                      .expectNext("foo")
 		                                      .expectComplete()
@@ -799,11 +779,5 @@ public class ScriptedSubscriberIntegrationTests {
 		                  .expectNext("foo", "bar")
 		                  .expectComplete()
 		                  .verify(flux);
-	}
-
-
-	@After
-	public void cleanup(){
-		VirtualTimeScheduler.reset();
 	}
 }

@@ -45,7 +45,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return a new {@link VirtualTimeScheduler}
 	 */
 	public static VirtualTimeScheduler create() {
-		return new VirtualTimeScheduler();
+		return new VirtualTimeScheduler(false);
 	}
 
 	/**
@@ -58,16 +58,25 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
 	public static VirtualTimeScheduler enable(boolean allSchedulers) {
-		//TODO in 3.0.3 setting a factory will shutdown the previous Schedulers
-		Schedulers.shutdownNow();
-		VirtualTimeScheduler s = new VirtualTimeScheduler();
-		if (!allSchedulers) {
-			Schedulers.setFactory(new TimedOnlyFactory(s));
+
+		for (; ; ) {
+			VirtualTimeScheduler s = CURRENT.get();
+			if (s != null && s.allScheduler == allSchedulers) {
+				return s;
+			}
+			VirtualTimeScheduler newS = new VirtualTimeScheduler(allSchedulers);
+			if (CURRENT.compareAndSet(s, newS)) {
+				if (!allSchedulers) {
+					Schedulers.setFactory(new TimedOnlyFactory(newS));
+				}
+				else {
+					Schedulers.setFactory(new AllFactory(newS));
+				}
+				if (CURRENT.get() == newS) {
+					return newS;
+				}
+			}
 		}
-		else {
-			Schedulers.setFactory(new AllFactory(s));
-		}
-		return s;
 	}
 
 	/**
@@ -76,15 +85,12 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @throws IllegalStateException if no {@link VirtualTimeScheduler} has been found
 	 */
 	public static VirtualTimeScheduler get(){
-		Scheduler s = Schedulers.newTimer("");
-		if(s instanceof VirtualTimeScheduler){
-			@SuppressWarnings("unchecked")
-			VirtualTimeScheduler _s = (VirtualTimeScheduler)s;
-			return _s;
+		VirtualTimeScheduler s = CURRENT.get();
+		if (s == null) {
+			throw new IllegalStateException(
+					"Check if VirtualTimeScheduler#enable has been invoked" + " first" + ": " + s);
 		}
-		throw new IllegalStateException("Check if VirtualTimeScheduler#enable has been invoked" +
-				" first" +
-				": "+s);
+		return s;
 	}
 
 	/**
@@ -93,17 +99,25 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * AFTER all tested code has been run (teardown etc).
 	 */
 	public static void reset() {
-		Schedulers.shutdownNow();
-		Schedulers.resetFactory();
+		VirtualTimeScheduler s = CURRENT.get();
+		if (s != null && CURRENT.compareAndSet(s, null)) {
+			Schedulers.resetFactory();
+		}
 	}
 
+	final boolean allScheduler;
 	final Queue<TimedRunnable> queue =
 			new PriorityBlockingQueue<>(QueueSupplier.XS_BUFFER_SIZE);
 
+	@SuppressWarnings("unused")
 	volatile long counter;
+
 	volatile long nanoTime;
 
-	protected VirtualTimeScheduler() {
+	volatile boolean shutdown;
+
+	protected VirtualTimeScheduler(boolean allScheduler) {
+		this.allScheduler = allScheduler;
 	}
 
 	/**
@@ -111,7 +125,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * executed at or before this {@link VirtualTimeScheduler}'s present time.
 	 */
 	public void advanceTime() {
-		advanceTime(nanoTime);
+		advanceTimeBy(Duration.ZERO);
 	}
 
 	/**
@@ -137,7 +151,20 @@ public class VirtualTimeScheduler implements TimedScheduler {
 
 	@Override
 	public TimedWorker createWorker() {
-		return new TestWorker();
+		if (shutdown) {
+			throw new IllegalStateException("VirtualTimeScheduler is shutdown");
+		}
+		return new VirtualTimeWorker();
+	}
+
+	/**
+	 * Return true if virtual-time is also enabled on non-timed global
+	 *
+	 * @return true if virtual-time is also enabled on non-timed global {@link
+	 * reactor.core.scheduler.Schedulers.Factory}
+	 */
+	public boolean isEnabledOnAllSchedulers() {
+		return allScheduler;
 	}
 
 	@Override
@@ -147,19 +174,41 @@ public class VirtualTimeScheduler implements TimedScheduler {
 
 	@Override
 	public Cancellation schedule(Runnable task) {
+		if (shutdown) {
+			return REJECTED;
+		}
 		return createWorker().schedule(task);
 	}
 
 	@Override
 	public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+		if (shutdown) {
+			return REJECTED;
+		}
 		return createWorker().schedule(task, delay, unit);
+	}
+
+	@Override
+	public void shutdown() {
+		if (shutdown) {
+			return;
+		}
+		queue.clear();
+		shutdown = true;
+		VirtualTimeScheduler s = CURRENT.get();
+		if (s != null && s == this && CURRENT.compareAndSet(s, null)) {
+			Schedulers.resetFactory();
+		}
 	}
 
 	@Override
 	public Cancellation schedulePeriodically(Runnable task,
 			long initialDelay,
-			long period,
-			TimeUnit unit) {
+			long period, TimeUnit unit) {
+		if (shutdown) {
+			return REJECTED;
+		}
+
 		final TimedWorker w = createWorker();
 
 		PeriodicDirectTask periodicTask = new PeriodicDirectTask(task, w);
@@ -189,12 +238,12 @@ public class VirtualTimeScheduler implements TimedScheduler {
 
 	static final class TimedRunnable implements Comparable<TimedRunnable> {
 
-		final long       time;
-		final Runnable   run;
-		final TestWorker scheduler;
-		final long       count; // for differentiating tasks at same time
+		final long              time;
+		final Runnable          run;
+		final VirtualTimeWorker scheduler;
+		final long              count; // for differentiating tasks at same time
 
-		TimedRunnable(TestWorker scheduler, long time, Runnable run, long count) {
+		TimedRunnable(VirtualTimeWorker scheduler, long time, Runnable run, long count) {
 			this.time = time;
 			this.run = run;
 			this.scheduler = scheduler;
@@ -257,7 +306,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 	}
 
-	final class TestWorker implements TimedWorker {
+	final class VirtualTimeWorker implements TimedWorker {
 
 		volatile boolean shutdown;
 
@@ -425,6 +474,8 @@ public class VirtualTimeScheduler implements TimedScheduler {
 			worker.shutdown();
 		}
 	}
+
+	static final AtomicReference<VirtualTimeScheduler> CURRENT = new AtomicReference<>();
 
 	static final AtomicLongFieldUpdater<VirtualTimeScheduler> COUNTER =
 			AtomicLongFieldUpdater.newUpdater(VirtualTimeScheduler.class, "counter");
