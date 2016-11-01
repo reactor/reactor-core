@@ -27,17 +27,17 @@ import org.reactivestreams.Subscription;
  * Subscriber implementation that verifies pre-defined expectations as part of its
  * subscription. Typical usage consists of the following steps: <ul> <li>Create a {@code
  * ScriptedSubscriber} builder using {@link #create()} or {@link #create(long)}</li>
- * <li>Set individual up value expectations using {@link StepBuilder#expectNext(Object[])}
- * expectNext(Object)}, {@link StepBuilder#expectNext(Object[])
- * expectNext(Object[])}, {@link StepBuilder#expectNextWith(Predicate)
+ * <li>Set individual up value expectations using {@link Step#expectNext(Object[])}
+ * expectNext(Object)}, {@link Step#expectNext(Object[])
+ * expectNext(Object[])}, {@link Step#expectNextWith(Predicate)
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
- * {@link StepBuilder#thenRequest(long) thenRequest(long)} or {@link
- * StepBuilder#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * ScriptedSubscriber} using {@link LastStepBuilder#expectComplete() expectComplete()},
- * {@link LastStepBuilder#expectError() expectError()}, {@link
- * LastStepBuilder#expectError(Class) expectError(Class)}, {@link
- * LastStepBuilder#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
- * LastStepBuilder#thenCancel() thenCancel()}. </li> <li>Subscribe the built {@code
+ * {@link Step#thenRequest(long) thenRequest(long)} or {@link
+ * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
+ * ScriptedSubscriber} using {@link LastStep#expectComplete() expectComplete()},
+ * {@link LastStep#expectError() expectError()}, {@link
+ * LastStep#expectError(Class) expectError(Class)}, {@link
+ * LastStep#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
+ * LastStep#thenCancel() thenCancel()}. </li> <li>Subscribe the built {@code
  * ScriptedSubscriber} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
@@ -58,10 +58,10 @@ import org.reactivestreams.Subscription;
  * @author Arjen Poutsma
  * @author Stephane Maldini
  */
-public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<T> {
+public interface ScriptedSubscriber<T> extends Verifier, Subscriber<T> {
 
 	/**
-	 * Make the specified publisher subscribe to  a new instance of this {@link ScriptedVerification} and then verify the
+	 * Make the specified publisher subscribe to  a new instance of this {@link Verifier} and then verify the
 	 * signals received by the new instance. This method will <strong>block</strong>
 	 * indefinitely until the stream has been terminated (either through {@link
 	 * #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
@@ -75,7 +75,7 @@ public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<
 	Duration verify(Publisher<? extends T> publisher) throws AssertionError;
 
 	/**
-	 * Make the specified publisher subscribe to a new instance of this {@link ScriptedVerification} and
+	 * Make the specified publisher subscribe to a new instance of this {@link Verifier} and
 	 * then verify the
 	 * signals received by the new instance. This method will <strong>block</strong> for
 	 * the given duration or until the stream has been terminated (either through {@link
@@ -92,7 +92,7 @@ public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<
 			throws AssertionError;
 
 	/**
-	 * Prepare a new {@code FirstStepBuilder} to build a {@code
+	 * Prepare a new {@code FirstStep} to build a {@code
 	 * ScriptedSubscriber} that requests an unbounded amount of
 	 * values.
 	 *
@@ -100,12 +100,12 @@ public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStepBuilder<T, ScriptedSubscriber<T>> create() {
+	static <T> FirstStep<T, ScriptedSubscriber<T>> create() {
 		return create(Long.MAX_VALUE);
 	}
 
 	/**
-	 * Prepare a new {@code FirstStepBuilder} to build a {@code
+	 * Prepare a new {@code FirstStep} to build a {@code
 	 * ScriptedSubscriber} that requests a
 	 * specified
 	 * amount of
@@ -116,7 +116,7 @@ public interface ScriptedSubscriber<T> extends ScriptedVerification, Subscriber<
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStepBuilder<T, ScriptedSubscriber<T>> create(long n) {
+	static <T> FirstStep<T, ScriptedSubscriber<T>> create(long n) {
 		DefaultScriptedSubscriberBuilder.checkPositive(n);
 		return new DefaultScriptedSubscriberBuilder<>(n, null, null);
 	}

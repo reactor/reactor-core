@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -397,69 +396,7 @@ public class ScriptedSubscriberTests {
 		s.verify();
 	}
 
-	@Test
-	public void verifyVirtualTimeOnSubscribe() {
-		ScriptedVerification.with(() -> Mono.delay(Duration.ofDays(2))
-		                                    .map(l -> "foo"))
-		                    .thenAwait(Duration.ofDays(3))
-		                    .expectNext("foo")
-		                    .expectComplete()
-		                    .verify();
 
-	}
-
-	@Test
-	public void verifyVirtualTimeOnError() {
-		ScriptedVerification.with(() -> Mono.never()
-		                                    .timeout(Duration.ofDays(2))
-		                                    .map(l -> "foo"))
-		                    .thenAwait(Duration.ofDays(2))
-		                    .expectError(TimeoutException.class)
-		                    .verify();
-
-	}
-
-	@Test
-	public void verifyVirtualTimeOnNext() {
-		ScriptedVerification.with(() -> Flux.just("foo", "bar", "foobar")
-		                                    .delay(Duration.ofHours(1))
-		                                    .log())
-		                    .thenAwait(Duration.ofHours(1))
-		                    .expectNext("foo")
-		                    .thenAwait(Duration.ofHours(1))
-		                    .expectNext("bar")
-		                    .thenAwait(Duration.ofHours(1))
-		                    .expectNext("foobar")
-		                    .expectComplete()
-		                    .verify();
-
-	}
-
-	@Test
-	public void verifyVirtualTimeOnComplete() {
-		ScriptedVerification.with(() -> Flux.empty()
-		                                    .delaySubscription(Duration.ofHours(1))
-		                                    .log())
-		                    .thenAwait(Duration.ofHours(1))
-		                    .expectComplete()
-		                    .verify();
-
-	}
-
-	@Test
-	public void verifyVirtualTimeOnNextInterval() {
-		ScriptedVerification.with(() -> Flux.interval(Duration.ofSeconds(3))
-		                                    .map(d -> "t" + d))
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectNext("t0")
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectNext("t1")
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectNext("t2")
-		                    .thenCancel()
-		                    .verify();
-
-	}
 
 	@Test
 	public void verifyThenOnCompleteRange() {
@@ -467,29 +404,13 @@ public class ScriptedSubscriberTests {
 
 		Flux<String> flux = Flux.range(0, 3)
 		                        .map(d -> "t" + d)
-								.takeUntilOther(p);
+		                        .takeUntilOther(p);
 
 		ScriptedSubscriber.create(2)
 		                  .expectNext("t0", "t1")
 		                  .then(p::onComplete)
 		                  .expectComplete()
 		                  .verify(flux);
-
-	}
-
-	@Test
-	public void verifyVirtualTimeOnErrorInterval() {
-		ScriptedVerification.with(() -> Flux.interval(Duration.ofSeconds(3))
-		                                    .map(d -> "t" + d), 0L)
-		                    .thenRequest(1)
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectNext("t0")
-		                    .thenRequest(1)
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectNext("t1")
-		                    .thenAwait(Duration.ofSeconds(3))
-		                    .expectError(IllegalStateException.class)
-		                    .verify();
 
 	}
 
