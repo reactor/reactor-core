@@ -69,7 +69,7 @@ public interface Verifier {
 	 *
 	 * @throws AssertionError in case of expectation failures
 	 */
-	static <T> FirstStep<T, ? extends Verifier> create(Publisher<? extends T> publisher) {
+	static <T> FirstStep<T, Verifier> create(Publisher<? extends T> publisher) {
 		return create(publisher, Long.MAX_VALUE);
 	}
 
@@ -90,7 +90,7 @@ public interface Verifier {
 	 * @throws AssertionError in case of expectation failures, or when the verification
 	 *                        times out
 	 */
-	static <T> FirstStep<T, ? extends Verifier> create(Publisher<? extends T> publisher,
+	static <T> FirstStep<T, Verifier> create(Publisher<? extends T> publisher,
 			long n) {
 		return with(n, () -> publisher, null);
 	}
@@ -108,7 +108,7 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, ? extends Verifier> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
+	static <T> FirstStep<T, Verifier> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		return with(Long.MAX_VALUE, scenarioSupplier);
 	}
 
@@ -126,7 +126,7 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, ? extends Verifier> with(long n,
+	static <T> FirstStep<T, Verifier> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		DefaultScriptedSubscriberBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
@@ -152,13 +152,17 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, ? extends Verifier> with(long n,
+	static <T> FirstStep<T, Verifier> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
-		DefaultScriptedSubscriberBuilder.checkPositive(n);
-		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return new DefaultScriptedSubscriberBuilder<>(n, scenarioSupplier, vtsLookup);
+		@SuppressWarnings("unchecked")
+		FirstStep<T, Verifier> verifier = (FirstStep<T, Verifier>)
+				DefaultScriptedSubscriberBuilder.newVerifier(n,
+				scenarioSupplier,
+				vtsLookup);
+
+		return verifier;
 	}
 
 	/**

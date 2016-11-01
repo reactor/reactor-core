@@ -70,6 +70,16 @@ final class DefaultScriptedSubscriberBuilder<T>
 		}
 	}
 
+	static <T> Verifier.FirstStep<T, ? extends Verifier> newVerifier(long n,
+			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+			Supplier<? extends VirtualTimeScheduler> vtsLookup){
+		DefaultScriptedSubscriberBuilder.checkPositive(n);
+		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
+
+		return new DefaultScriptedSubscriberBuilder<>
+				(n, scenarioSupplier, vtsLookup);
+	}
+
 	@SuppressWarnings("unchecked")
 	static <T> SignalEvent<T> defaultFirstStep() {
 		return (SignalEvent<T>) DEFAULT_ONSUBSCRIBE_STEP;

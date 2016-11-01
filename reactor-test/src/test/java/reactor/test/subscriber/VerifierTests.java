@@ -598,14 +598,13 @@ public class VerifierTests {
 
 	@Test(expected = AssertionError.class)
 	public void verifyFusionError() {
-		Mono<String> flux = Mono.just("foo")
-		                        .hide();
-
-		Verifier.create(flux)
-		        .expectFusion()
-		        .expectNext("foo")
-		        .expectComplete()
-		        .verify();
+		Mono.just("foo")
+		    .hide()
+		    .as(Verifier::create)
+		    .expectFusion()
+		    .expectNext("foo")
+		    .expectComplete()
+		    .verify();
 	}
 
 	@Test
