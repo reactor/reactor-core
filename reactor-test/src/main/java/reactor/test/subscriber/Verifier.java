@@ -57,7 +57,46 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 public interface Verifier {
 
 	/**
-	 * Create a new {@code Verifier} in a controlled environment using
+	 * Prepare a new {@code Verifier} in an uncontrolled environment: Expect non-virtual
+	 * blocking
+	 * wait via
+	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
+	 * scenario.
+	 *
+	 * @param publisher the publisher to subscribe to
+	 *
+	 * @return the {@link Duration} of the verification
+	 *
+	 * @throws AssertionError in case of expectation failures
+	 */
+	static <T> FirstStep<T, ? extends Verifier> create(Publisher<? extends T> publisher) {
+		return create(publisher, Long.MAX_VALUE);
+	}
+
+	/**
+	 * Prepare a new {@code Verifier} in an uncontrolled environment: Expect non-virtual
+	 * blocking
+	 * wait via
+	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
+	 * scenario. The verification will request a
+	 * specified amount of
+	 * values.
+	 *
+	 * @param publisher the publisher to subscribe to
+	 * @param n the amount of items to request
+	 *
+	 * @return the {@link Duration} of the verification
+	 *
+	 * @throws AssertionError in case of expectation failures, or when the verification
+	 *                        times out
+	 */
+	static <T> FirstStep<T, ? extends Verifier> create(Publisher<? extends T> publisher,
+			long n) {
+		return with(n, () -> publisher, null);
+	}
+
+	/**
+	 * Prepare a new {@code Verifier} in a controlled environment using
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
 	 * scenario. The
@@ -74,7 +113,7 @@ public interface Verifier {
 	}
 
 	/**
-	 * Create a new {@code Verifier} in a controlled environment using
+	 * Prepare a new {@code Verifier} in a controlled environment using
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
 	 * scenario. The verification will request a
@@ -82,7 +121,7 @@ public interface Verifier {
 	 * values.
 	 *
 	 * @param n the amount of items to request
-	 * @param scenarioSupplier scenario
+	 * @param scenarioSupplier {@link Publisher} scenario
 	 * @param <T> the type of the subscriber
 	 *
 	 * @return a builder for setting up value expectations
@@ -92,8 +131,7 @@ public interface Verifier {
 		DefaultScriptedSubscriberBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return with(n, scenarioSupplier,
-				() -> VirtualTimeScheduler.enable(false));
+		return with(n, scenarioSupplier, () -> VirtualTimeScheduler.enable(false));
 	}
 
 	/**
@@ -109,8 +147,7 @@ public interface Verifier {
 	 *
 	 * @param n the amount of items to request
 	 * @param scenarioSupplier scenarioSupplier
-	 * @param vtsLookup a {@link VirtualTimeScheduler} lookup to use in
-	 * {@code thenAwait}
+	 * @param vtsLookup a {@link VirtualTimeScheduler} lookup to use in {@code thenAwait}
 	 * @param <T> the type of the subscriber
 	 *
 	 * @return a builder for setting up value expectations

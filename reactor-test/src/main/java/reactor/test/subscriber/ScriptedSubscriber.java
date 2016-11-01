@@ -61,37 +61,6 @@ import org.reactivestreams.Subscription;
 public interface ScriptedSubscriber<T> extends Verifier, Subscriber<T> {
 
 	/**
-	 * Make the specified publisher subscribe to  a new instance of this {@link Verifier} and then verify the
-	 * signals received by the new instance. This method will <strong>block</strong>
-	 * indefinitely until the stream has been terminated (either through {@link
-	 * #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
-	 *
-	 * @param publisher the publisher to subscribe to
-	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures
-	 */
-	Duration verify(Publisher<? extends T> publisher) throws AssertionError;
-
-	/**
-	 * Make the specified publisher subscribe to a new instance of this {@link Verifier} and
-	 * then verify the
-	 * signals received by the new instance. This method will <strong>block</strong> for
-	 * the given duration or until the stream has been terminated (either through {@link
-	 * #onComplete()}, {@link #onError(Throwable)} or {@link Subscription#cancel()}).
-	 *
-	 * @param publisher the publisher to subscribe to
-	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures, or when the verification
-	 *                        times out
-	 */
-	Duration verify(Publisher<? extends T> publisher, Duration duration)
-			throws AssertionError;
-
-	/**
 	 * Prepare a new {@code FirstStep} to build a {@code
 	 * ScriptedSubscriber} that requests an unbounded amount of
 	 * values.

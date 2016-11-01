@@ -569,13 +569,24 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		@Override
 		public Duration verify(Duration duration) {
+			Objects.requireNonNull(duration, "duration");
 			if (supplyOnVerify) {
 				VirtualTimeScheduler vts = null;
 				if (parent.vtsLookup != null) {
 					vts = parent.vtsLookup.get();
 				}
 				try {
-					return verify(parent.sourceSupplier.get(), duration);
+					Publisher<? extends T> publisher = parent.sourceSupplier.get();
+					precheckVerify(publisher);
+					Instant now = Instant.now();
+
+					DefaultScriptedSubscriber<T> newVerifier =
+							new DefaultScriptedSubscriber<>(parent, false);
+
+					publisher.subscribe(newVerifier);
+					newVerifier.verify(duration);
+
+					return Duration.between(now, Instant.now());
 				}
 				finally {
 					if (vts != null) {
@@ -595,26 +606,6 @@ final class DefaultScriptedSubscriberBuilder<T>
 			validate();
 			return Duration.between(now, Instant.now());
 
-		}
-
-		@Override
-		public Duration verify(Publisher<? extends T> publisher) {
-			return verify(publisher, Duration.ZERO);
-		}
-
-		@Override
-		public Duration verify(Publisher<? extends T> publisher, Duration duration) {
-			Objects.requireNonNull(duration, "duration");
-			precheckVerify(publisher);
-			Instant now = Instant.now();
-
-			DefaultScriptedSubscriber<T> newVerifier =
-					new DefaultScriptedSubscriber<>(parent, false);
-
-			publisher.subscribe(newVerifier);
-			newVerifier.verify(duration);
-
-			return Duration.between(now, Instant.now());
 		}
 
 		final void addFailure(String msg, Object... arguments) {
