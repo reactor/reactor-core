@@ -19,32 +19,30 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 /**
  * Subscriber implementation that verifies pre-defined expectations as part of its
  * subscription. Typical usage consists of the following steps: <ul> <li>Create a {@code
- * ScriptedSubscriber} builder using {@link #create()} or {@link #create(long)}</li>
+ * VerifySubscriber} builder using {@link #create()} or {@link #create(long)}</li>
  * <li>Set individual up value expectations using {@link Step#expectNext(Object[])}
  * expectNext(Object)}, {@link Step#expectNext(Object[])
  * expectNext(Object[])}, {@link Step#expectNextWith(Predicate)
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * ScriptedSubscriber} using {@link LastStep#expectComplete() expectComplete()},
+ * VerifySubscriber} using {@link LastStep#expectComplete() expectComplete()},
  * {@link LastStep#expectError() expectError()}, {@link
  * LastStep#expectError(Class) expectError(Class)}, {@link
  * LastStep#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
  * LastStep#thenCancel() thenCancel()}. </li> <li>Subscribe the built {@code
- * ScriptedSubscriber} to a {@code Publisher}.</li> <li>Verify the expectations using
+ * VerifySubscriber} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
  * <p>
  * <p>For example:
  * <pre>
- * ScriptedSubscriber&lt;String&gt; subscriber = ScriptedSubscriber.&lt;String&gt;create()
+ * VerifySubscriber&lt;String&gt; subscriber = VerifySubscriber.&lt;String&gt;create()
  *   .expectNext("foo")
  *   .expectNext("bar")
  *   .expectComplete();
@@ -58,24 +56,24 @@ import org.reactivestreams.Subscription;
  * @author Arjen Poutsma
  * @author Stephane Maldini
  */
-public interface ScriptedSubscriber<T> extends Verifier, Subscriber<T> {
+public interface VerifySubscriber<T> extends Verifier, Subscriber<T> {
 
 	/**
 	 * Prepare a new {@code FirstStep} to build a {@code
-	 * ScriptedSubscriber} that requests an unbounded amount of
+	 * VerifySubscriber} that requests an unbounded amount of
 	 * values.
 	 *
 	 * @param <T> the type of the subscriber
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, ScriptedSubscriber<T>> create() {
+	static <T> FirstStep<T, VerifySubscriber<T>> create() {
 		return create(Long.MAX_VALUE);
 	}
 
 	/**
 	 * Prepare a new {@code FirstStep} to build a {@code
-	 * ScriptedSubscriber} that requests a
+	 * VerifySubscriber} that requests a
 	 * specified
 	 * amount of
 	 * values.
@@ -85,7 +83,7 @@ public interface ScriptedSubscriber<T> extends Verifier, Subscriber<T> {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, ScriptedSubscriber<T>> create(long n) {
+	static <T> FirstStep<T, VerifySubscriber<T>> create(long n) {
 		DefaultScriptedSubscriberBuilder.checkPositive(n);
 		return new DefaultScriptedSubscriberBuilder<>(n, null, null);
 	}

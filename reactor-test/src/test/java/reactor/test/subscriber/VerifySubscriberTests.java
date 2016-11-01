@@ -23,15 +23,15 @@ import reactor.core.publisher.Flux;
 /**
  * @author Stephane Maldini
  */
-public class ScriptedSubscriberTests {
+public class VerifySubscriberTests {
 
 
 	@Test(expected = IllegalStateException.class)
 	public void notSubscribed() {
-		ScriptedSubscriber.create()
-		                  .expectNext("foo")
-		                  .expectComplete()
-		                  .verify(Duration.ofMillis(100));
+		VerifySubscriber.create()
+		                .expectNext("foo")
+		                .expectComplete()
+		                .verify(Duration.ofMillis(100));
 	}
 
 
@@ -40,9 +40,9 @@ public class ScriptedSubscriberTests {
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		ScriptedSubscriber<String> s =
-				ScriptedSubscriber.<String>create().expectNext("foo", "bar")
-				                                   .expectComplete();
+		VerifySubscriber<String> s =
+				VerifySubscriber.<String>create().expectNext("foo", "bar")
+				                                 .expectComplete();
 
 		flux.subscribe(s);
 		flux.subscribe(s);

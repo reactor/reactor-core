@@ -41,18 +41,18 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * ScriptedSubscriber} using {@link LastStep#expectComplete() expectComplete()},
+ * Verifier} using {@link LastStep#expectComplete() expectComplete()},
  * {@link LastStep#expectError() expectError()}, {@link
  * LastStep#expectError(Class) expectError(Class)}, {@link
  * LastStep#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
  * LastStep#thenCancel() thenCancel()}. </li> <li>Subscribe the built {@code
- * ScriptedSubscriber} to a {@code Publisher}.</li> <li>Verify the expectations using
+ * Verifier} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
  *
  * @author Arjen Poutsma
  * @author Stephane Maldini
- * @see ScriptedSubscriber
+ * @see VerifySubscriber
  */
 public interface Verifier {
 
@@ -258,7 +258,7 @@ public interface Verifier {
 
 		/**
 		 * Cancel the underlying subscription.
-		 * {@link ScriptedSubscriber#create(long)}.
+		 * {@link VerifySubscriber#create(long)}.
 		 *
 		 * @return the built verification
 		 *
@@ -411,7 +411,7 @@ public interface Verifier {
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
 		 * is in addition to the initial number of elements requested by {@link
-		 * ScriptedSubscriber#create(long)}.
+		 * VerifySubscriber#create(long)}.
 		 *
 		 * @param n the number of elements to request
 		 *
@@ -427,7 +427,7 @@ public interface Verifier {
 	 * first signal.
 	 * <p>
 	 * If {@link FirstStep} expectations are not used, the produced
-	 * {@link ScriptedSubscriber} keeps a first expectation that will be checking if
+	 * {@link VerifySubscriber} keeps a first expectation that will be checking if
 	 * the first signal is a
 	 * {@link Subscription}.
 	 *
