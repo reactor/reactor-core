@@ -18,9 +18,11 @@ package reactor.test.subscriber;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
  * @author Stephane Maldini
@@ -78,7 +80,9 @@ public class VerifierTests {
 
 	@Test
 	public void verifyVirtualTimeOnNextInterval() {
-		Verifier.with(() -> Flux.interval(Duration.ofSeconds(3))
+		Duration r;
+
+		r = Verifier.with(() -> Flux.interval(Duration.ofSeconds(3))
 		                        .map(d -> "t" + d))
 		        .thenAwait(Duration.ofSeconds(3))
 		        .expectNext("t0")
@@ -89,7 +93,41 @@ public class VerifierTests {
 		        .thenCancel()
 		        .verify();
 
+		Assert.assertTrue(r.minus(Duration.ofSeconds(9))
+		                   .isNegative());
 	}
+
+	@Test
+	public void verifyVirtualTimeOnNextIntervalReal() {
+		Duration r;
+
+		r = Verifier.with(3,
+				() -> Flux.interval(Duration.ofSeconds(2))
+				          .map(d -> "t" + d),
+				null)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext("t0")
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext("t1")
+		            .thenCancel()
+		            .verify();
+
+		Assert.assertFalse(r.minus(Duration.ofSeconds(4))
+		                    .isNegative());
+	}
+
+	@Test(timeout = 3000)
+	public void verifyVirtualTimeOnNextIntervalManual() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+
+		Verifier.with(() -> Flux.intervalMillis(1000, vts)
+		                        .map(d -> "t" + d))
+		        .then(() -> vts.advanceTimeBy(Duration.ofHours(1)))
+		        .expectNextCount(3600)
+		        .thenCancel()
+		        .verify();
+	}
+
 
 	@Test
 	public void verifyVirtualTimeOnErrorInterval() {
