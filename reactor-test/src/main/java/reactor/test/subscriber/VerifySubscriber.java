@@ -25,9 +25,8 @@ import org.reactivestreams.Subscriber;
  * Subscriber implementation that verifies pre-defined expectations as part of its
  * subscription. Typical usage consists of the following steps: <ul> <li>Create a {@code
  * VerifySubscriber} builder using {@link #create()} or {@link #create(long)}</li>
- * <li>Set individual up value expectations using {@link Step#expectNext(Object[])}
- * expectNext(Object)}, {@link Step#expectNext(Object[])
- * expectNext(Object[])}, {@link Step#expectNextWith(Predicate)
+ * <li>Set individual up value expectations using {@link Step#expectNext}, {@link
+ * Step#expectNextWith(Predicate)
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
@@ -39,7 +38,6 @@ import org.reactivestreams.Subscriber;
  * VerifySubscriber} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
- * <p>
  * <p>For example:
  * <pre>
  * VerifySubscriber&lt;String&gt; subscriber = VerifySubscriber.&lt;String&gt;create()

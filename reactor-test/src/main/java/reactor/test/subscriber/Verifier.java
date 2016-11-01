@@ -33,22 +33,29 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * A {@link Verifier} is a verifiable, blocking script usually produced by
  * terminal expectations of the said script.
  * <ul> <li>Create a {@code
- * Verifier} builder using {@link #with(Supplier)} or
- * {@link #with(long, Supplier)}</li>
+ * Verifier} builder using {@link #create} or {@link #with}</li>
  * <li>Set individual up value expectations using {@link Step#expectNext(Object[])}
- * expectNext(Object)}, {@link Step#expectNext(Object[])
- * expectNext(Object[])}, {@link Step#expectNextWith(Predicate)
+ * {@link Step#expectNext}, {@link Step#expectNextWith(Predicate)
  * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * Verifier} using {@link LastStep#expectComplete() expectComplete()},
- * {@link LastStep#expectError() expectError()}, {@link
+ * Verifier} using {@link LastStep#expectComplete},
+ * {@link LastStep#expectError}, {@link
  * LastStep#expectError(Class) expectError(Class)}, {@link
  * LastStep#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
- * LastStep#thenCancel() thenCancel()}. </li> <li>Subscribe the built {@code
+ * LastStep#thenCancel}. </li> <li>Subscribe the built {@code
  * Verifier} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
+ *
+ * <p>For example:
+ * <pre>
+ * Verifier.create(Flux.just("foo", "bar"))
+ *   .expectNext("foo")
+ *   .expectNext("bar")
+ *   .expectComplete()
+ *   .verify();
+ * </pre>
  *
  * @author Arjen Poutsma
  * @author Stephane Maldini
