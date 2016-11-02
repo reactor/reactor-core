@@ -733,6 +733,29 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void verifyVirtualTimeNoEventInterval() {
+		StepVerifier.with(() -> Flux.interval(Duration.ofSeconds(3)).take(2))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(3))
+		            .expectNext(0L)
+		            .expectNoEvent(Duration.ofSeconds(3))
+		            .expectNext(1L)
+		            .expectComplete()
+		            .verify();
+	}
+	@Test(expected = AssertionError.class)
+	public void verifyVirtualTimeNoEventIntervalError() {
+		StepVerifier.with(() -> Flux.interval(Duration.ofSeconds(3)).take(2))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(3))
+		            .expectNext(0L)
+		            .expectNoEvent(Duration.ofSeconds(4))
+		            .expectNext(1L)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
 	public void verifyVirtualTimeNoEventNever() {
 		StepVerifier.with(Mono::never)
 		            .expectNoEvent(Duration.ofDays(10000))
