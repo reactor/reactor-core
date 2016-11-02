@@ -891,6 +891,9 @@ final class DefaultStepVerifierBuilder<T>
 					catch (Throwable t) {
 						Exceptions.throwIfFatal(t);
 						cancel();
+						if(t instanceof AssertionError){
+							throw (AssertionError)t;
+						}
 						throw Exceptions.propagate(t);
 					}
 				}

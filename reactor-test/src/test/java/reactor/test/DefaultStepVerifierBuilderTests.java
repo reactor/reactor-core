@@ -15,26 +15,13 @@
  */
 package reactor.test;
 
-import java.time.Duration;
-
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.test.DefaultStepVerifierBuilder;
 
 /**
  * @author Stephane Maldini
  */
 public class DefaultStepVerifierBuilderTests {
-
-
-	@Test(expected = IllegalStateException.class)
-	public void notSubscribed() {
-		new DefaultStepVerifierBuilder<>(Long.MAX_VALUE, null, null)
-		                .expectNext("foo")
-		                .expectComplete()
-		                .verify(Duration.ofMillis(100));
-	}
-
 
 
 	@Test(expected = AssertionError.class)
