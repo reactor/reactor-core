@@ -62,7 +62,6 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  *
  * @author Arjen Poutsma
  * @author Stephane Maldini
- * @see VerifySubscriber
  */
 public interface Verifier {
 
@@ -167,10 +166,9 @@ public interface Verifier {
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 
 		@SuppressWarnings("unchecked")
-		FirstStep<T, Verifier> verifier = (FirstStep<T, Verifier>)
-				DefaultVerifierStepBuilder.newVerifier(n,
-				scenarioSupplier,
-				vtsLookup);
+		FirstStep<T, Verifier> verifier = DefaultVerifierStepBuilder.newVerifier(n,
+		scenarioSupplier,
+		vtsLookup);
 
 		return verifier;
 	}
@@ -272,7 +270,6 @@ public interface Verifier {
 
 		/**
 		 * Cancel the underlying subscription.
-		 * {@link VerifySubscriber#create(long)}.
 		 *
 		 * @return the built verification
 		 *
@@ -436,8 +433,8 @@ public interface Verifier {
 
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
-		 * is in addition to the initial number of elements requested by {@link
-		 * VerifySubscriber#create(long)}.
+		 * is in addition to the initial number of elements requested by an
+		 * initial passed demand like with {@link Verifier#create(Publisher, long)}.
 		 *
 		 * @param n the number of elements to request
 		 *
@@ -453,7 +450,7 @@ public interface Verifier {
 	 * first signal.
 	 * <p>
 	 * If {@link FirstStep} expectations are not used, the produced
-	 * {@link VerifySubscriber} keeps a first expectation that will be checking if
+	 * {@link Verifier} keeps a first expectation that will be checking if
 	 * the first signal is a
 	 * {@link Subscription}.
 	 *
