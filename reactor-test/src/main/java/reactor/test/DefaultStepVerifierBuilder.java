@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.test.subscriber;
+package reactor.test;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -50,14 +50,14 @@ import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
- * Default implementation of {@link Verifier.Step} and
- * {@link Verifier.LastStep}.
+ * Default implementation of {@link StepVerifier.Step} and
+ * {@link StepVerifier.LastStep}.
  *
  * @author Arjen Poutsma
  * @since 1.0
  */
-final class DefaultVerifierStepBuilder<T>
-		implements Verifier.FirstStep<T, Verifier> {
+final class DefaultStepVerifierBuilder<T>
+		implements StepVerifier.FirstStep<T, StepVerifier> {
 
 	static void checkPositive(long n) {
 		if (n < 0) {
@@ -71,13 +71,13 @@ final class DefaultVerifierStepBuilder<T>
 		}
 	}
 
-	static <T> Verifier.FirstStep<T, Verifier> newVerifier(long n,
+	static <T> StepVerifier.FirstStep<T, StepVerifier> newVerifier(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup){
-		DefaultVerifierStepBuilder.checkPositive(n);
+		DefaultStepVerifierBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return new DefaultVerifierStepBuilder<>
+		return new DefaultStepVerifierBuilder<>
 				(n, scenarioSupplier, vtsLookup);
 	}
 
@@ -94,7 +94,7 @@ final class DefaultVerifierStepBuilder<T>
 	int requestedFusionMode = -1;
 	int expectedFusionMode  = -1;
 
-	DefaultVerifierStepBuilder(long initialRequest,
+	DefaultStepVerifierBuilder(long initialRequest,
 			Supplier<? extends Publisher<? extends T>> sourceSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 		this.initialRequest = initialRequest;
@@ -121,7 +121,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> consumeNextWith(
+	public DefaultStepVerifierBuilder<T> consumeNextWith(
 			Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
@@ -138,7 +138,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> consumeRecordedWith(
+	public DefaultStepVerifierBuilder<T> consumeRecordedWith(
 			Consumer<? super Collection<T>> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		this.script.add(new CollectEvent<>(consumer));
@@ -146,7 +146,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> consumeSubscriptionWith(
+	public DefaultStepVerifierBuilder<T> consumeSubscriptionWith(
 			Consumer<? super Subscription> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		this.script.set(0, new SignalEvent<>(signal -> {
@@ -252,23 +252,23 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectNoFusionSupport() {
+	public DefaultStepVerifierBuilder<T> expectNoFusionSupport() {
 		requestedFusionMode = NO_FUSION_SUPPORT;
 		return this;
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectFusion() {
+	public DefaultStepVerifierBuilder<T> expectFusion() {
 		return expectFusion(Fuseable.ANY, Fuseable.ANY);
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectFusion(int requested) {
+	public DefaultStepVerifierBuilder<T> expectFusion(int requested) {
 		return expectFusion(requested, requested);
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectFusion(int requested,
+	public DefaultStepVerifierBuilder<T> expectFusion(int requested,
 			int expected) {
 		checkPositive(requested);
 		checkPositive(expected);
@@ -278,7 +278,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectNext(T... ts) {
+	public DefaultStepVerifierBuilder<T> expectNext(T... ts) {
 		Objects.requireNonNull(ts, "ts");
 		SignalEvent<T> event;
 		for (T t : ts) {
@@ -300,7 +300,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectNextSequence(
+	public DefaultStepVerifierBuilder<T> expectNextSequence(
 			Iterable<? extends T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
 		this.script.add(new SignalSequenceEvent<>(iterable));
@@ -308,14 +308,14 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectNextCount(long count) {
+	public DefaultStepVerifierBuilder<T> expectNextCount(long count) {
 		checkPositive(count);
 		this.script.add(new SignalCountEvent<>(count));
 		return this;
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectNextWith(
+	public DefaultStepVerifierBuilder<T> expectNextWith(
 			Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
@@ -335,7 +335,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectRecordedWith(
+	public DefaultStepVerifierBuilder<T> expectRecordedWith(
 			Predicate<? super Collection<T>> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.add(new CollectEvent<>(predicate));
@@ -343,7 +343,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectSubscription() {
+	public DefaultStepVerifierBuilder<T> expectSubscription() {
 		if(this.script.get(0) instanceof NoEvent) {
 			this.script.add(defaultFirstStep());
 		}
@@ -354,7 +354,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> expectSubscriptionWith(
+	public DefaultStepVerifierBuilder<T> expectSubscriptionWith(
 			Predicate<? super Subscription> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.set(0, new SignalEvent<>(signal -> {
@@ -373,7 +373,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public Verifier.FirstStep<T, Verifier> expectNoEvent(Duration duration) {
+	public StepVerifier.FirstStep<T, StepVerifier> expectNoEvent(Duration duration) {
 		Objects.requireNonNull(duration, "duration");
 		if(this.script.size() == 1 && this.script.get(0) == defaultFirstStep()){
 			this.script.set(0, new NoEvent<>(duration));
@@ -385,14 +385,14 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> recordWith(Supplier<? extends Collection<T>> supplier) {
+	public DefaultStepVerifierBuilder<T> recordWith(Supplier<? extends Collection<T>> supplier) {
 		Objects.requireNonNull(supplier, "supplier");
 		this.script.add(new CollectEvent<>(supplier));
 		return this;
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> then(Runnable task) {
+	public DefaultStepVerifierBuilder<T> then(Runnable task) {
 		Objects.requireNonNull(task, "task");
 		this.script.add(new TaskEvent<>(task));
 		return this;
@@ -405,19 +405,19 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> thenRequest(long n) {
+	public DefaultStepVerifierBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
 		return this;
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> thenAwait() {
+	public DefaultStepVerifierBuilder<T> thenAwait() {
 		return thenAwait(Duration.ZERO);
 	}
 
 	@Override
-	public DefaultVerifierStepBuilder<T> thenAwait(Duration timeshift) {
+	public DefaultStepVerifierBuilder<T> thenAwait(Duration timeshift) {
 		Objects.requireNonNull(timeshift, "timeshift");
 		this.script.add(new WaitEvent<>(timeshift));
 		return this;
@@ -433,7 +433,7 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	final static class DefaultVerifySubscriber<T>
-			implements Verifier, Subscriber<T>, Trackable, Receiver {
+			implements StepVerifier, Subscriber<T>, Trackable, Receiver {
 
 		final AtomicReference<Subscription> subscription;
 		final CountDownLatch                completeLatch;
@@ -441,7 +441,7 @@ final class DefaultVerifierStepBuilder<T>
 		final Queue<TaskEvent<T>>           taskEvents;
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
-		final DefaultVerifierStepBuilder<T> parent;
+		final DefaultStepVerifierBuilder<T> parent;
 		final boolean                       supplyOnVerify;
 
 		int                           establishedFusionMode;
@@ -458,12 +458,12 @@ final class DefaultVerifierStepBuilder<T>
 
 		volatile boolean monitorSignal = false;
 
-		DefaultVerifySubscriber(DefaultVerifierStepBuilder<T> parent) {
+		DefaultVerifySubscriber(DefaultStepVerifierBuilder<T> parent) {
 			this(parent, parent.sourceSupplier != null);
 		}
 
 		@SuppressWarnings("unchecked")
-		DefaultVerifySubscriber(DefaultVerifierStepBuilder<T> parent,
+		DefaultVerifySubscriber(DefaultStepVerifierBuilder<T> parent,
 				boolean supplyOnVerify) {
 			this.parent = parent;
 			this.script = new ConcurrentLinkedQueue<>(parent.script);

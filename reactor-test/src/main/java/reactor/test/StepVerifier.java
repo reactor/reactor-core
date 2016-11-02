@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.test.subscriber;
+package reactor.test;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -30,10 +30,10 @@ import reactor.core.Fuseable;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 /**
- * A {@link Verifier} is a verifiable, blocking script usually produced by
+ * A {@link StepVerifier} is a verifiable, blocking script usually produced by
  * terminal expectations of the said script.
  * <ul> <li>Create a {@code
- * Verifier} builder using {@link #create} or {@link #with}</li>
+ * StepVerifier} builder using {@link #create} or {@link #with}</li>
  * <li>Set individual up value expectations using
  * {@link Step#expectNext}, {@link Step#expectNextWith(Predicate)},
  * {@link Step#expectNextCount(long)} or
@@ -42,18 +42,18 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * Verifier} using {@link LastStep#expectComplete},
+ * StepVerifier} using {@link LastStep#expectComplete},
  * {@link LastStep#expectError}, {@link
  * LastStep#expectError(Class) expectError(Class)}, {@link
  * LastStep#expectErrorWith(Predicate) expectErrorWith(Predicate)}, or {@link
  * LastStep#thenCancel}. </li> <li>Subscribe the built {@code
- * Verifier} to a {@code Publisher}.</li> <li>Verify the expectations using
+ * StepVerifier} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
  * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
  *
  * <p>For example:
  * <pre>
- * Verifier.create(Flux.just("foo", "bar"))
+ * StepVerifier.create(Flux.just("foo", "bar"))
  *   .expectNext("foo")
  *   .expectNext("bar")
  *   .expectComplete()
@@ -63,10 +63,10 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * @author Arjen Poutsma
  * @author Stephane Maldini
  */
-public interface Verifier {
+public interface StepVerifier {
 
 	/**
-	 * Prepare a new {@code Verifier} in an uncontrolled environment: Expect non-virtual
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
 	 * blocking
 	 * wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
@@ -78,12 +78,12 @@ public interface Verifier {
 	 *
 	 * @throws AssertionError in case of expectation failures
 	 */
-	static <T> FirstStep<T, Verifier> create(Publisher<? extends T> publisher) {
+	static <T> FirstStep<T, StepVerifier> create(Publisher<? extends T> publisher) {
 		return create(publisher, Long.MAX_VALUE);
 	}
 
 	/**
-	 * Prepare a new {@code Verifier} in an uncontrolled environment: Expect non-virtual
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
 	 * blocking
 	 * wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
@@ -99,13 +99,13 @@ public interface Verifier {
 	 * @throws AssertionError in case of expectation failures, or when the verification
 	 *                        times out
 	 */
-	static <T> FirstStep<T, Verifier> create(Publisher<? extends T> publisher,
+	static <T> FirstStep<T, StepVerifier> create(Publisher<? extends T> publisher,
 			long n) {
 		return with(n, () -> publisher, null);
 	}
 
 	/**
-	 * Prepare a new {@code Verifier} in a controlled environment using
+	 * Prepare a new {@code StepVerifier} in a controlled environment using
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
 	 * scenario. The
@@ -117,12 +117,12 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, Verifier> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
+	static <T> FirstStep<T, StepVerifier> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		return with(Long.MAX_VALUE, scenarioSupplier);
 	}
 
 	/**
-	 * Prepare a new {@code Verifier} in a controlled environment using
+	 * Prepare a new {@code StepVerifier} in a controlled environment using
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
 	 * scenario. The verification will request a
@@ -135,16 +135,16 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, Verifier> with(long n,
+	static <T> FirstStep<T, StepVerifier> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
-		DefaultVerifierStepBuilder.checkPositive(n);
+		DefaultStepVerifierBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
 		return with(n, scenarioSupplier, () -> VirtualTimeScheduler.enable(false));
 	}
 
 	/**
-	 * Create a new {@code Verifier} in a parameterized environment using
+	 * Create a new {@code StepVerifier} in a parameterized environment using
 	 * passed
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
@@ -161,12 +161,12 @@ public interface Verifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, Verifier> with(long n,
+	static <T> FirstStep<T, StepVerifier> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 
 		@SuppressWarnings("unchecked")
-		FirstStep<T, Verifier> verifier = DefaultVerifierStepBuilder.newVerifier(n,
+		FirstStep<T, StepVerifier> verifier = DefaultStepVerifierBuilder.newVerifier(n,
 		scenarioSupplier,
 		vtsLookup);
 
@@ -202,9 +202,9 @@ public interface Verifier {
 	/**
 	 * Define a builder for terminal states.
 	 *
-	 * @param <TARGET> the target {@link Verifier} type
+	 * @param <TARGET> the target {@link StepVerifier} type
 	 */
-	interface LastStep<TARGET extends Verifier> {
+	interface LastStep<TARGET extends StepVerifier> {
 
 		/**
 		 * Expect an error and consume with the given consumer. Any {@code
@@ -282,9 +282,9 @@ public interface Verifier {
 	 * Define a builder for expecting main sequence individual signals.
 	 *
 	 * @param <T> the type of values that the subscriber contains
-	 * @param <TARGET> the target {@link Verifier} type
+	 * @param <TARGET> the target {@link StepVerifier} type
 	 */
-	interface Step<T, TARGET extends Verifier> extends LastStep<TARGET> {
+	interface Step<T, TARGET extends StepVerifier> extends LastStep<TARGET> {
 
 		/**
 		 * Expect an element and consume with the given consumer. Any {@code
@@ -434,7 +434,7 @@ public interface Verifier {
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
 		 * is in addition to the initial number of elements requested by an
-		 * initial passed demand like with {@link Verifier#create(Publisher, long)}.
+		 * initial passed demand like with {@link StepVerifier#create(Publisher, long)}.
 		 *
 		 * @param n the number of elements to request
 		 *
@@ -450,13 +450,13 @@ public interface Verifier {
 	 * first signal.
 	 * <p>
 	 * If {@link FirstStep} expectations are not used, the produced
-	 * {@link Verifier} keeps a first expectation that will be checking if
+	 * {@link StepVerifier} keeps a first expectation that will be checking if
 	 * the first signal is a
 	 * {@link Subscription}.
 	 *
 	 * @param <T> the type of values that the subscriber contains
 	 */
-	interface FirstStep<T, TARGET extends Verifier> extends Step<T, TARGET> {
+	interface FirstStep<T, TARGET extends StepVerifier> extends Step<T, TARGET> {
 
 		/**
 		 * Expect a {@link Subscription} and consume with the given consumer. Any {@code

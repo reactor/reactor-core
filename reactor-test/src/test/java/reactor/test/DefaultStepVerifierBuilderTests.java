@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.test.subscriber;
+package reactor.test;
 
 import java.time.Duration;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.test.DefaultStepVerifierBuilder;
 
 /**
  * @author Stephane Maldini
  */
-public class DefaultStepVerifierTests {
+public class DefaultStepVerifierBuilderTests {
 
 
 	@Test(expected = IllegalStateException.class)
 	public void notSubscribed() {
-		new DefaultVerifierStepBuilder<>(Long.MAX_VALUE, null, null)
+		new DefaultStepVerifierBuilder<>(Long.MAX_VALUE, null, null)
 		                .expectNext("foo")
 		                .expectComplete()
 		                .verify(Duration.ofMillis(100));
@@ -40,8 +41,8 @@ public class DefaultStepVerifierTests {
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		DefaultVerifierStepBuilder.DefaultVerifySubscriber<String> s =
-				new DefaultVerifierStepBuilder<String>(Long.MAX_VALUE,
+		DefaultStepVerifierBuilder.DefaultVerifySubscriber<String> s =
+				new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
 						null,
 						null).expectNext("foo", "bar")
 				             .expectComplete();
