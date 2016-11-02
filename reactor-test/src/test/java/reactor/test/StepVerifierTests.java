@@ -757,7 +757,16 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyVirtualTimeNoEventNever() {
-		StepVerifier.with(Mono::never)
+		StepVerifier.with(() -> Mono.never().log())
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofDays(10000))
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyVirtualTimeNoEventNeverError() {
+		StepVerifier.with(() -> Mono.never().log())
 		            .expectNoEvent(Duration.ofDays(10000))
 		            .thenCancel()
 		            .verify();

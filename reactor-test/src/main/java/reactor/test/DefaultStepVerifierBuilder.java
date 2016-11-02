@@ -456,7 +456,7 @@ final class DefaultStepVerifierBuilder<T>
 		@SuppressWarnings("unused")
 		volatile Throwable errors;
 
-		volatile boolean monitorSignal = false;
+		volatile boolean monitorSignal;
 
 		DefaultVerifySubscriber(DefaultStepVerifierBuilder<T> parent) {
 			this(parent, parent.sourceSupplier != null);
@@ -478,6 +478,7 @@ final class DefaultStepVerifierBuilder<T>
 					break;
 				}
 			}
+			this.monitorSignal = taskEvents.peek() instanceof NoEvent;
 			this.supplyOnVerify = supplyOnVerify;
 			this.requestedFusionMode = parent.requestedFusionMode;
 			this.expectedFusionMode =
