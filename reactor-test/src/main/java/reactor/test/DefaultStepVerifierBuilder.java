@@ -695,7 +695,7 @@ final class DefaultStepVerifierBuilder<T>
 		@SuppressWarnings("unchecked")
 		final void onExpectation(Signal<T> actualSignal) {
 			if (monitorSignal) {
-				setFailure("did not expect: %s", actualSignal);
+				setFailure("expected no event: %s", actualSignal);
 				return;
 			}
 			try {
