@@ -82,8 +82,8 @@ public interface VerifySubscriber<T> extends Verifier, Subscriber<T> {
 	 * @return a builder for setting up value expectations
 	 */
 	static <T> FirstStep<T, VerifySubscriber<T>> create(long n) {
-		DefaultScriptedSubscriberBuilder.checkPositive(n);
-		return new DefaultScriptedSubscriberBuilder<>(n, null, null);
+		DefaultVerifierStepBuilder.checkPositive(n);
+		return new DefaultVerifierStepBuilder<>(n, null, null);
 	}
 
 }

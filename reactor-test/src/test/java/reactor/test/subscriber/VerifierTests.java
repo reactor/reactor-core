@@ -706,7 +706,6 @@ public class VerifierTests {
 		        .thenAwait(Duration.ofDays(2))
 		        .expectError(TimeoutException.class)
 		        .verify();
-
 	}
 
 	@Test
@@ -799,6 +798,21 @@ public class VerifierTests {
 		        .expectNext("t1")
 		        .thenAwait(Duration.ofSeconds(3))
 		        .expectError(IllegalStateException.class)
+		        .verify();
+
+	}
+
+	@Test
+	public void verifyVirtualTimeOnErrorAsync() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		Verifier.with(0,
+				() -> Flux.just(123)
+				          .subscribeOn(vts),
+				() -> vts)
+		        .thenAwait()
+		        .thenRequest(1)
+		        .expectNext(123)
+		        .expectComplete()
 		        .verify();
 
 	}

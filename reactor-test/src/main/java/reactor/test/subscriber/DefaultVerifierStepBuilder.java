@@ -29,6 +29,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -55,7 +56,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * @author Arjen Poutsma
  * @since 1.0
  */
-final class DefaultScriptedSubscriberBuilder<T>
+final class DefaultVerifierStepBuilder<T>
 		implements Verifier.FirstStep<T, VerifySubscriber<T>> {
 
 	static void checkPositive(long n) {
@@ -73,10 +74,10 @@ final class DefaultScriptedSubscriberBuilder<T>
 	static <T> Verifier.FirstStep<T, ? extends Verifier> newVerifier(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup){
-		DefaultScriptedSubscriberBuilder.checkPositive(n);
+		DefaultVerifierStepBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return new DefaultScriptedSubscriberBuilder<>
+		return new DefaultVerifierStepBuilder<>
 				(n, scenarioSupplier, vtsLookup);
 	}
 
@@ -93,7 +94,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	int requestedFusionMode = -1;
 	int expectedFusionMode  = -1;
 
-	DefaultScriptedSubscriberBuilder(long initialRequest,
+	DefaultVerifierStepBuilder(long initialRequest,
 			Supplier<? extends Publisher<? extends T>> sourceSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 		this.initialRequest = initialRequest;
@@ -139,6 +140,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public Verifier.Step<T, VerifySubscriber<T>> consumeRecordedWith(
 			Consumer<? super Collection<T>> consumer) {
+		Objects.requireNonNull(consumer, "consumer");
 		this.script.add(new CollectEvent<>(consumer));
 		return this;
 	}
@@ -335,6 +337,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 	@Override
 	public Verifier.Step<T, VerifySubscriber<T>> expectRecordedWith(
 			Predicate<? super Collection<T>> predicate) {
+		Objects.requireNonNull(predicate, "predicate");
 		this.script.add(new CollectEvent<>(predicate));
 		return this;
 	}
@@ -365,7 +368,15 @@ final class DefaultScriptedSubscriberBuilder<T>
 	}
 
 	@Override
+	public Verifier.Step<T, VerifySubscriber<T>> expectNoEvent(Duration duration) {
+		Objects.requireNonNull(duration, "duration");
+		this.script.add(new NoEvent<>(duration));
+		return this;
+	}
+
+	@Override
 	public Verifier.Step<T, VerifySubscriber<T>> recordWith(Supplier<? extends Collection<T>> supplier) {
+		Objects.requireNonNull(supplier, "supplier");
 		this.script.add(new CollectEvent<>(supplier));
 		return this;
 	}
@@ -414,14 +425,16 @@ final class DefaultScriptedSubscriberBuilder<T>
 	final static class DefaultVerifySubscriber<T>
 			implements VerifySubscriber<T>, Trackable, Receiver {
 
-		final AtomicReference<Subscription>       subscription;
-		final CountDownLatch                      completeLatch;
-		final Queue<Event<T>>                     script;
-		final Queue<TaskEvent<T>>                 taskEvents;
-		final int                                 requestedFusionMode;
-		final int                                 expectedFusionMode;
-		final DefaultScriptedSubscriberBuilder<T> parent;
-		final boolean                             supplyOnVerify;
+		final AtomicReference<Subscription> subscription;
+		final CountDownLatch                completeLatch;
+		final Queue<Event<T>>               script;
+		final Queue<TaskEvent<T>>           taskEvents;
+		final int                           requestedFusionMode;
+		final int                           expectedFusionMode;
+		final DefaultVerifierStepBuilder<T> parent;
+		final boolean                       supplyOnVerify;
+		final AtomicBoolean                 hasEvent;
+
 
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
@@ -434,16 +447,17 @@ final class DefaultScriptedSubscriberBuilder<T>
 		@SuppressWarnings("unused")
 		volatile Throwable errors;
 
-		DefaultVerifySubscriber(DefaultScriptedSubscriberBuilder<T> parent) {
+		DefaultVerifySubscriber(DefaultVerifierStepBuilder<T> parent) {
 			this(parent, parent.sourceSupplier != null);
 		}
 
 		@SuppressWarnings("unchecked")
-		DefaultVerifySubscriber(DefaultScriptedSubscriberBuilder<T> parent,
+		DefaultVerifySubscriber(DefaultVerifierStepBuilder<T> parent,
 				boolean supplyOnVerify) {
 			this.parent = parent;
 			this.script = new ConcurrentLinkedQueue<>(parent.script);
 			this.taskEvents = new ConcurrentLinkedQueue<>();
+			this.hasEvent = new AtomicBoolean();
 			Event<T> event;
 			for (; ; ) {
 				event = this.script.peek();
@@ -677,6 +691,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		@SuppressWarnings("unchecked")
 		final void onExpectation(Signal<T> actualSignal) {
+			hasEvent.set(true);
 			try {
 				Event<T> event = this.script.peek();
 				if (event == null) {
@@ -1043,13 +1058,13 @@ final class DefaultScriptedSubscriberBuilder<T>
 		final Supplier<? extends Collection<T>> supplier;
 
 		final Predicate<? super Collection<T>>  predicate;
+
 		final Consumer<? super Collection<T>>   consumer;
 		CollectEvent(Supplier<? extends Collection<T>> supplier) {
 			this.supplier = supplier;
 			this.predicate = null;
 			this.consumer = null;
 		}
-
 		CollectEvent(Consumer<? super Collection<T>> consumer) {
 			this.supplier = null;
 			this.predicate = null;
@@ -1098,6 +1113,36 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 	}
 
+	static boolean virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
+			throws Exception {
+		if (s.parent.vtsLookup == null) {
+			return s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
+		}
+		else {
+			s.parent.vtsLookup.get()
+			                  .advanceTimeBy(duration);
+			return s.isTerminated();
+		}
+	}
+
+	static final class NoEvent<T> extends TaskEvent<T> {
+
+		final Duration duration;
+
+		NoEvent(Duration duration) {
+			super(null);
+			this.duration = duration;
+		}
+
+		@Override
+		void run(DefaultVerifySubscriber<T> parent) throws Exception {
+			if (virtualOrRealWait(duration, parent) ||
+					parent.hasEvent.compareAndSet(true, false)) {
+
+			}
+		}
+	}
+
 	static final class WaitEvent<T> extends TaskEvent<T> {
 
 		final Duration duration;
@@ -1109,13 +1154,7 @@ final class DefaultScriptedSubscriberBuilder<T>
 
 		@Override
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			if (parent.parent.vtsLookup == null) {
-				parent.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
-			}
-			else {
-				parent.parent.vtsLookup.get()
-				                       .advanceTimeBy(duration);
-			}
+			virtualOrRealWait(duration, parent);
 		}
 
 	}

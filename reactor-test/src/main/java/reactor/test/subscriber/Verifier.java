@@ -34,9 +34,12 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * terminal expectations of the said script.
  * <ul> <li>Create a {@code
  * Verifier} builder using {@link #create} or {@link #with}</li>
- * <li>Set individual up value expectations using {@link Step#expectNext(Object[])}
- * {@link Step#expectNext}, {@link Step#expectNextWith(Predicate)
- * expectNextWith(Predicate)}.</li> and/or <li>Set up subscription actions using either
+ * <li>Set individual up value expectations using
+ * {@link Step#expectNext}, {@link Step#expectNextWith(Predicate)},
+ * {@link Step#expectNextCount(long)} or
+ * {@link Step#expectNextSequence(Iterable)}
+ * .</li>  <li>Set up
+ * subscription actions using either
  * {@link Step#thenRequest(long) thenRequest(long)} or {@link
  * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
  * Verifier} using {@link LastStep#expectComplete},
@@ -135,7 +138,7 @@ public interface Verifier {
 	 */
 	static <T> FirstStep<T, Verifier> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
-		DefaultScriptedSubscriberBuilder.checkPositive(n);
+		DefaultVerifierStepBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
 		return with(n, scenarioSupplier, () -> VirtualTimeScheduler.enable(false));
@@ -165,7 +168,7 @@ public interface Verifier {
 
 		@SuppressWarnings("unchecked")
 		FirstStep<T, Verifier> verifier = (FirstStep<T, Verifier>)
-				DefaultScriptedSubscriberBuilder.newVerifier(n,
+				DefaultVerifierStepBuilder.newVerifier(n,
 				scenarioSupplier,
 				vtsLookup);
 
@@ -204,6 +207,17 @@ public interface Verifier {
 	 * @param <TARGET> the target {@link Verifier} type
 	 */
 	interface LastStep<TARGET extends Verifier> {
+
+		/**
+		 * Expect an error and consume with the given consumer. Any {@code
+		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
+		 * #verify() verification}.
+		 *
+		 * @param consumer the consumer for the exception
+		 *
+		 * @return the built verification
+		 */
+		TARGET consumeErrorWith(Consumer<Throwable> consumer);
 
 		/**
 		 * Expect an unspecified error.
@@ -246,17 +260,6 @@ public interface Verifier {
 		 * @see Subscriber#onError(Throwable)
 		 */
 		TARGET expectErrorWith(Predicate<Throwable> predicate);
-
-		/**
-		 * Expect an error and consume with the given consumer. Any {@code
-		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
-		 * #verify() verification}.
-		 *
-		 * @param consumer the consumer for the exception
-		 *
-		 * @return the built verification
-		 */
-		TARGET consumeErrorWith(Consumer<Throwable> consumer);
 
 		/**
 		 * Expect the completion signal.
@@ -355,6 +358,18 @@ public interface Verifier {
 		 * @see Subscriber#onNext(Object)
 		 */
 		Step<T, TARGET> expectNextWith(Predicate<? super T> predicate);
+
+		/**
+		 * Expect that no event has been observed by the verifier. A duration is
+		 * necessary to limit in time that "nothing" has effectively happened.
+		 *
+		 * @param duration the period to observe no event has been received
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber
+		 */
+		Step<T, TARGET> expectNoEvent(Duration duration);
 
 		/**
 		 * Expect and end a recording session started via {@link #recordWith} and
@@ -460,38 +475,6 @@ public interface Verifier {
 		Step<T, TARGET> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
 
 		/**
-		 * Expect a {@link Subscription}.
-		 * Effectively behave as the default implicit {@link Subscription} expectation.
-		 *
-		 * @return this builder
-		 *
-		 * @see Subscriber#onSubscribe(Subscription)
-		 */
-		Step<T, TARGET> expectSubscription();
-
-		/**
-		 * Expect a {@link Subscription} and evaluate with the given predicate.
-		 *
-		 * @param predicate the predicate to test on the received {@link Subscription}
-		 *
-		 * @return this builder
-		 *
-		 * @see Subscriber#onSubscribe(Subscription)
-		 */
-		Step<T, TARGET> expectSubscriptionWith(Predicate<? super Subscription> predicate);
-
-		/**
-		 * Expect the source {@link Publisher} to NOT run with Reactor Fusion flow
-		 * optimization. It will check if publisher is {@link Fuseable} or
-		 * subscription is a {@link Fuseable.QueueSubscription}.
-		 *
-		 * @return this builder
-		 *
-		 * @see Fuseable
-		 */
-		Step<T, TARGET> expectNoFusionSupport();
-
-		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
 		 * optimization. It will be requesting {@link Fuseable#ANY} fusion mode.
 		 *
@@ -531,6 +514,38 @@ public interface Verifier {
 		 * @see Fuseable
 		 */
 		Step<T, TARGET> expectFusion(int requested, int expected);
+
+		/**
+		 * Expect the source {@link Publisher} to NOT run with Reactor Fusion flow
+		 * optimization. It will check if publisher is {@link Fuseable} or
+		 * subscription is a {@link Fuseable.QueueSubscription}.
+		 *
+		 * @return this builder
+		 *
+		 * @see Fuseable
+		 */
+		Step<T, TARGET> expectNoFusionSupport();
+
+		/**
+		 * Expect a {@link Subscription}.
+		 * Effectively behave as the default implicit {@link Subscription} expectation.
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onSubscribe(Subscription)
+		 */
+		Step<T, TARGET> expectSubscription();
+
+		/**
+		 * Expect a {@link Subscription} and evaluate with the given predicate.
+		 *
+		 * @param predicate the predicate to test on the received {@link Subscription}
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onSubscribe(Subscription)
+		 */
+		Step<T, TARGET> expectSubscriptionWith(Predicate<? super Subscription> predicate);
 	}
 
 }
