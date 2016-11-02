@@ -527,6 +527,16 @@ public interface Verifier {
 		Step<T, TARGET> expectNoFusionSupport();
 
 		/**
+		 * Expect no Subscription or any other event for the given duration.
+		 *
+		 * @param duration the period to observe no event has been received
+		 *
+		 * @return this builder
+		 */
+		@Override
+		FirstStep<T, TARGET> expectNoEvent(Duration duration);
+
+		/**
 		 * Expect a {@link Subscription}.
 		 * Effectively behave as the default implicit {@link Subscription} expectation.
 		 *

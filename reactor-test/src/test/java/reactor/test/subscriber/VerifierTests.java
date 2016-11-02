@@ -709,6 +709,37 @@ public class VerifierTests {
 	}
 
 	@Test
+	public void verifyVirtualTimeNoEvent() {
+		Verifier.with(() -> Mono.just("foo")
+		                        .delaySubscription(Duration.ofDays(2)))
+		        .expectSubscription()
+		        .expectNoEvent(Duration.ofDays(2))
+		        .expectNext("foo")
+		        .expectComplete()
+		        .verify();
+	}
+
+	@Test(expected = AssertionError.class)
+	public void verifyVirtualTimeNoEventError() {
+		Verifier.with(() -> Mono.just("foo")
+		                        .delaySubscription(Duration.ofDays(2)))
+		        .expectSubscription()
+		        .expectNoEvent(Duration.ofDays(2))
+		        .expectNext("foo")
+		        .expectNoEvent(Duration.ofDays(2))
+		        .expectComplete()
+		        .verify();
+	}
+
+	@Test
+	public void verifyVirtualTimeNoEventNever() {
+		Verifier.with(Mono::never)
+		        .expectNoEvent(Duration.ofDays(10000))
+		        .thenCancel()
+		        .verify();
+	}
+
+	@Test
 	public void verifyVirtualTimeOnNext() {
 		Verifier.with(() -> Flux.just("foo", "bar", "foobar")
 		                        .delay(Duration.ofHours(1))

@@ -29,7 +29,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -344,7 +343,12 @@ final class DefaultVerifierStepBuilder<T>
 
 	@Override
 	public Verifier.Step<T, VerifySubscriber<T>> expectSubscription() {
-		this.script.set(0, defaultFirstStep());
+		if(this.script.get(0) instanceof NoEvent) {
+			this.script.add(defaultFirstStep());
+		}
+		else{
+			this.script.set(0, newOnSubscribeStep());
+		}
 		return this;
 	}
 
@@ -368,9 +372,14 @@ final class DefaultVerifierStepBuilder<T>
 	}
 
 	@Override
-	public Verifier.Step<T, VerifySubscriber<T>> expectNoEvent(Duration duration) {
+	public Verifier.FirstStep<T, VerifySubscriber<T>> expectNoEvent(Duration duration) {
 		Objects.requireNonNull(duration, "duration");
-		this.script.add(new NoEvent<>(duration));
+		if(this.script.size() == 1 && this.script.get(0) == defaultFirstStep()){
+			this.script.set(0, new NoEvent<>(duration));
+		}
+		else {
+			this.script.add(new NoEvent<>(duration));
+		}
 		return this;
 	}
 
@@ -433,8 +442,6 @@ final class DefaultVerifierStepBuilder<T>
 		final int                           expectedFusionMode;
 		final DefaultVerifierStepBuilder<T> parent;
 		final boolean                       supplyOnVerify;
-		final AtomicBoolean                 hasEvent;
-
 
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
@@ -444,8 +451,11 @@ final class DefaultVerifierStepBuilder<T>
 
 		@SuppressWarnings("unused")
 		volatile int wip;
+
 		@SuppressWarnings("unused")
 		volatile Throwable errors;
+
+		volatile boolean monitorSignal = false;
 
 		DefaultVerifySubscriber(DefaultVerifierStepBuilder<T> parent) {
 			this(parent, parent.sourceSupplier != null);
@@ -457,7 +467,6 @@ final class DefaultVerifierStepBuilder<T>
 			this.parent = parent;
 			this.script = new ConcurrentLinkedQueue<>(parent.script);
 			this.taskEvents = new ConcurrentLinkedQueue<>();
-			this.hasEvent = new AtomicBoolean();
 			Event<T> event;
 			for (; ; ) {
 				event = this.script.peek();
@@ -553,15 +562,10 @@ final class DefaultVerifierStepBuilder<T>
 				onExpectation(Signal.subscribe(subscription));
 				if (requestedFusionMode == NO_FUSION_SUPPORT &&
 						subscription instanceof Fuseable.QueueSubscription){
-					addFailure("unexpected fusion support: %s", subscription);
-					cancel();
-					this.completeLatch.countDown();
+					setFailure("unexpected fusion support: %s", subscription);
 				}
 				else if (requestedFusionMode >= Fuseable.NONE) {
-					if (!startFusion(subscription)) {
-						cancel();
-						this.completeLatch.countDown();
-					}
+					startFusion(subscription);
 				}
 				else if (parent.initialRequest != 0L) {
 					subscription.request(parent.initialRequest);
@@ -570,11 +574,11 @@ final class DefaultVerifierStepBuilder<T>
 			else {
 				subscription.cancel();
 				if (isCancelled()) {
-					addFailure("an unexpected Subscription has been received: %s; " + "actual: cancelled",
+					setFailure("an unexpected Subscription has been received: %s; " + "actual: cancelled",
 							subscription);
 				}
 				else {
-					addFailure("an unexpected Subscription has been received: %s; " + "actual: ",
+					setFailure("an unexpected Subscription has been received: %s; " + "actual: ",
 							subscription,
 							this.subscription);
 				}
@@ -632,8 +636,10 @@ final class DefaultVerifierStepBuilder<T>
 
 		}
 
-		final void addFailure(String msg, Object... arguments) {
+		final void setFailure(String msg, Object... arguments) {
 			Exceptions.addThrowable(ERRORS, this, fail(msg, arguments).get());
+			cancel();
+			this.completeLatch.countDown();
 		}
 
 		final Subscription cancel() {
@@ -664,18 +670,14 @@ final class DefaultVerifierStepBuilder<T>
 				this.currentCollector = c;
 
 				if (c == null) {
-					addFailure("expected collection; actual supplied is [null]");
-					cancel();
-					this.completeLatch.countDown();
+					setFailure("expected collection; actual supplied is [null]");
 				}
 				return true;
 			}
 			c = this.currentCollector;
 
 			if (c == null) {
-				addFailure("expected record collector; actual record is [null]");
-				cancel();
-				this.completeLatch.countDown();
+				setFailure("expected record collector; actual record is [null]");
 				return true;
 			}
 
@@ -691,11 +693,14 @@ final class DefaultVerifierStepBuilder<T>
 
 		@SuppressWarnings("unchecked")
 		final void onExpectation(Signal<T> actualSignal) {
-			hasEvent.set(true);
+			if (monitorSignal) {
+				setFailure("did not expect: %s", actualSignal);
+				return;
+			}
 			try {
 				Event<T> event = this.script.peek();
 				if (event == null) {
-					addFailure("did not expect: %s", actualSignal);
+					setFailure("did not expect: %s", actualSignal);
 					return;
 				}
 
@@ -920,7 +925,7 @@ final class DefaultVerifierStepBuilder<T>
 			}
 		}
 
-		final boolean startFusion(Subscription s) {
+		final void startFusion(Subscription s) {
 			if (s instanceof Fuseable.QueueSubscription) {
 				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> qs =
 						(Fuseable.QueueSubscription<T>) s;
@@ -929,10 +934,10 @@ final class DefaultVerifierStepBuilder<T>
 
 				int m = qs.requestFusion(requestedFusionMode);
 				if ((m & expectedFusionMode) != m) {
-					addFailure("expected fusion mode: %s; actual: %s",
+					setFailure("expected fusion mode: %s; actual: %s",
 							formatFusionMode(expectedFusionMode),
 							formatFusionMode(m));
-					return false;
+					return;
 				}
 
 				this.establishedFusionMode = m;
@@ -946,7 +951,7 @@ final class DefaultVerifierStepBuilder<T>
 						catch (Throwable e) {
 							Exceptions.throwIfFatal(e);
 							onExpectation(Signal.error(e));
-							return false;
+							return;
 						}
 						if (v == null) {
 							onComplete();
@@ -959,13 +964,11 @@ final class DefaultVerifierStepBuilder<T>
 				else if (parent.initialRequest != 0) {
 					s.request(parent.initialRequest);
 				}
-				return true;
 			}
 			else {
-				addFailure("expected fusion-ready source but actual Subscription is " + "not: %s",
+				setFailure("expected fusion-ready source but actual Subscription is " + "not: %s",
 						expectedFusionMode,
 						s);
-				return false;
 			}
 		}
 
@@ -1113,15 +1116,14 @@ final class DefaultVerifierStepBuilder<T>
 
 	}
 
-	static boolean virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
+	static void virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
 			throws Exception {
 		if (s.parent.vtsLookup == null) {
-			return s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
+			s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		else {
 			s.parent.vtsLookup.get()
 			                  .advanceTimeBy(duration);
-			return s.isTerminated();
 		}
 	}
 
@@ -1136,9 +1138,22 @@ final class DefaultVerifierStepBuilder<T>
 
 		@Override
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			if (virtualOrRealWait(duration, parent) ||
-					parent.hasEvent.compareAndSet(true, false)) {
-
+			if(parent.parent.vtsLookup != null) {
+				parent.monitorSignal = true;
+				virtualOrRealWait(duration.minus(Duration.ofNanos(1)), parent);
+				parent.monitorSignal = false;
+				if(parent.isTerminated() && !parent.isCancelled()){
+					throw new AssertionError("unexpected end during a no-event expectation");
+				}
+				virtualOrRealWait(Duration.ofNanos(1), parent);
+			}
+			else{
+				parent.monitorSignal = true;
+				virtualOrRealWait(duration, parent);
+				parent.monitorSignal = false;
+				if(parent.isTerminated() && !parent.isCancelled()){
+					throw new AssertionError("unexpected end during a no-event expectation");
+				}
 			}
 		}
 	}
@@ -1153,8 +1168,8 @@ final class DefaultVerifierStepBuilder<T>
 		}
 
 		@Override
-		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			virtualOrRealWait(duration, parent);
+		void run(DefaultVerifySubscriber<T> s) throws Exception {
+			virtualOrRealWait(duration, s);
 		}
 
 	}
@@ -1212,14 +1227,18 @@ final class DefaultVerifierStepBuilder<T>
 		return "" + m;
 	}
 
-	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = new SignalEvent<>(signal -> {
-		if (!signal.isOnSubscribe()) {
-			return fail("expected: onSubscribe(); actual: %s", signal);
-		}
-		else {
-			return Optional.empty();
-		}
-	});
+	static <T> SignalEvent<T> newOnSubscribeStep(){
+		return new SignalEvent<>(signal -> {
+			if (!signal.isOnSubscribe()) {
+				return fail("expected: onSubscribe(); actual: %s", signal);
+			}
+			else {
+				return Optional.empty();
+			}
+		});
+	}
+
+	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = newOnSubscribeStep();
 
 	static final int NO_FUSION_SUPPORT = Integer.MIN_VALUE;
 
