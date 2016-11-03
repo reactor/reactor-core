@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
@@ -42,10 +43,26 @@ import reactor.util.concurrent.QueueSupplier;
 public class VirtualTimeScheduler implements TimedScheduler {
 
 	/**
-	 * @return a new {@link VirtualTimeScheduler}
+	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
+	 * {@link #enable(VirtualTimeScheduler)} to enable it on timed-only
+	 * {@link Schedulers.Factory} factories.
+	 *
+	 * @return a new {@link VirtualTimeScheduler} intended for timed-only
+	 * {@link Schedulers} factories.
 	 */
 	public static VirtualTimeScheduler create() {
 		return new VirtualTimeScheduler(false);
+	}
+
+	/**
+	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
+	 * {@link #enable(VirtualTimeScheduler)} to enable it on all {@link Schedulers.Factory}
+	 * factories.
+	 *
+	 * @return a new {@link VirtualTimeScheduler} intended for all {@link Schedulers} factories.
+	 */
+	public static VirtualTimeScheduler createForAll() {
+		return new VirtualTimeScheduler(true);
 	}
 
 	/**
@@ -58,13 +75,49 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
 	public static VirtualTimeScheduler enable(boolean allSchedulers) {
+		return enable(() -> new VirtualTimeScheduler(allSchedulers), allSchedulers);
+	}
 
+
+	/**
+	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
+	 * {@link Schedulers.Factory} factories, depending on how it was created (see
+	 * {@link #createForAll()} and {@link #create()}). Note that the returned scheduler
+	 * should always be captured and used going forward, as the provided scheduler can be
+	 * superseded by a matching scheduler that has already been enabled.
+	 * <p>
+	 * While the method is thread safe, it's usually advised to execute such wide-impact
+	 * BEFORE all tested code runs (setup etc). The actual enabled Scheduler is returned.
+	 *
+	 * @param scheduler the {@link VirtualTimeScheduler} to use in factories.
+	 * @return the enabled VirtualTimeScheduler (can be different from the provided one)
+	 */
+	public static VirtualTimeScheduler enable(VirtualTimeScheduler scheduler) {
+		return enable(() -> scheduler, scheduler.isEnabledOnAllSchedulers());
+	}
+
+	/**
+	 * Common method to enable a {@link VirtualTimeScheduler} in {@link Schedulers}
+	 * factories. The supplier is lazily called if there's no current scheduler that
+	 * matches the {@code allSchedulers} parameter. Enabling the same scheduler twice is
+	 * also idempotent.
+	 *
+	 * @param schedulerSupplier the supplier executed to obtain a fresh {@link VirtualTimeScheduler}
+	 * @param allSchedulers whether or not the scheduler should be activated for all factories
+	 * @return the scheduler that is actually used after the operation.
+	 */
+	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler>
+			schedulerSupplier, boolean allSchedulers) {
 		for (; ; ) {
 			VirtualTimeScheduler s = CURRENT.get();
 			if (s != null && s.allScheduler == allSchedulers) {
 				return s;
 			}
-			VirtualTimeScheduler newS = new VirtualTimeScheduler(allSchedulers);
+			VirtualTimeScheduler newS = schedulerSupplier.get();
+			if (newS == CURRENT.get()) {
+				return newS; //nothing to do, it has already been set in the past
+			}
+
 			if (CURRENT.compareAndSet(s, newS)) {
 				if (!allSchedulers) {
 					Schedulers.setFactory(new TimedOnlyFactory(newS));
@@ -158,8 +211,6 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	/**
-	 * Return true if virtual-time is also enabled on non-timed global
-	 *
 	 * @return true if virtual-time is also enabled on non-timed global {@link
 	 * reactor.core.scheduler.Schedulers.Factory}
 	 */

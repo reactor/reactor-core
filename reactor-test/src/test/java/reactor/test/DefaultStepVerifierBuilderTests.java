@@ -15,8 +15,15 @@
  */
 package reactor.test;
 
+import java.time.Duration;
+
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.test.scheduler.VirtualTimeScheduler;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -32,10 +39,61 @@ public class DefaultStepVerifierBuilderTests {
 				new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
 						null,
 						null).expectNext("foo", "bar")
-				             .expectComplete();
+				             .expectComplete()
+				.toSubscriber();
 
 		flux.subscribe(s);
 		flux.subscribe(s);
 		s.verify();
+	}
+
+	@Test(timeout = 4000)
+	public void manuallyManagedVirtualTime() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		try {
+			VirtualTimeScheduler.enable(vts);
+
+			Flux<String> flux = Flux.just("foo").delay(Duration.ofSeconds(4));
+
+			DefaultStepVerifierBuilder.DefaultVerifySubscriber<String> s =
+					new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
+					null, //important to avoid triggering of vts capture-and-enable
+					() -> vts)
+					.thenAwait(Duration.ofSeconds(1))
+					.expectNext("foo")
+					.expectComplete()
+					.toSubscriber();
+
+			flux.subscribe(s);
+			vts.advanceTimeBy(Duration.ofSeconds(3));
+			s.verify();
+
+			Assert.assertSame(vts, s.virtualTimeScheduler());
+			Assert.assertSame(vts, VirtualTimeScheduler.get());
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
+
+	@Test
+	public void suppliedVirtualTimeButNoSourceDoesntEnableScheduler() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+
+		new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
+							null, //important to avoid triggering of vts capture-and-enable
+							() -> vts)
+							.expectNoEvent(Duration.ofSeconds(4))
+							.expectComplete()
+							.toSubscriber();
+
+		try {
+			//also test the side effect case where VTS has been enabled and not reset
+			VirtualTimeScheduler current = VirtualTimeScheduler.get();
+			Assert.assertNotSame(vts, current);
+		}
+		catch (IllegalStateException e) {
+			assertThat(e.getMessage(), containsString("VirtualTimeScheduler"));
+		}
 	}
 }

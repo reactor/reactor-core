@@ -880,4 +880,30 @@ public class StepVerifierTests {
 		            .verify();
 
 	}
+
+	@Test(timeout = 1000)
+	public void verifyCreatedSchedulerUsesVirtualTime() {
+		//a timeout will occur if virtual time isn't used
+		StepVerifier.with(0, () -> Flux.interval(Duration.ofSeconds(3)).map(d -> "t" + d),
+				VirtualTimeScheduler::create)
+		        .thenRequest(1)
+		        .thenAwait(Duration.ofSeconds(1))
+		        .thenAwait(Duration.ofSeconds(2))
+		        .expectNext("t0")
+		        .thenCancel()
+		        .verify();
+	}
+
+	@Test(timeout = 1000)
+	public void verifyCreatedForAllSchedulerUsesVirtualTime() {
+		//a timeout will occur if virtual time isn't used
+		StepVerifier.with(0, () -> Flux.interval(Duration.ofSeconds(3)).map(d -> "t" + d),
+				VirtualTimeScheduler::createForAll)
+		        .thenRequest(1)
+		        .thenAwait(Duration.ofSeconds(1))
+		        .thenAwait(Duration.ofSeconds(2))
+		        .expectNext("t0")
+		        .thenCancel()
+		        .verify();
+	}
 }

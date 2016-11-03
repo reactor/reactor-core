@@ -105,7 +105,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> consumeErrorWith(Consumer<Throwable> consumer) {
+	public DefaultStepVerifier<T> consumeErrorWith(Consumer<Throwable> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
@@ -162,7 +162,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> expectComplete() {
+	public DefaultStepVerifier<T> expectComplete() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnComplete()) {
 				return fail("expected: onComplete(); actual: %s", signal);
@@ -176,7 +176,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> expectError() {
+	public DefaultStepVerifier<T> expectError() {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
 				return fail("expected: onError(); actual: %s", signal);
@@ -191,7 +191,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> expectError(Class<? extends Throwable> clazz) {
+	public DefaultStepVerifier<T> expectError(Class<? extends Throwable> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
@@ -211,7 +211,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> expectErrorMessage(String errorMessage) {
+	public DefaultStepVerifier<T> expectErrorMessage(String errorMessage) {
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
 				return fail("expected: onError(\"%s\"); actual: %s",
@@ -234,7 +234,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> expectErrorWith(Predicate<Throwable> predicate) {
+	public DefaultStepVerifier<T> expectErrorWith(Predicate<Throwable> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
@@ -373,7 +373,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public StepVerifier.FirstStep<T, StepVerifier> expectNoEvent(Duration duration) {
+	public DefaultStepVerifierBuilder<T> expectNoEvent(Duration duration) {
 		Objects.requireNonNull(duration, "duration");
 		if(this.script.size() == 1 && this.script.get(0) == defaultFirstStep()){
 			this.script.set(0, new NoEvent<>(duration));
@@ -399,7 +399,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultVerifySubscriber<T> thenCancel() {
+	public DefaultStepVerifier<T> thenCancel() {
 		this.script.add(new SubscriptionEvent<>());
 		return build();
 	}
@@ -423,13 +423,105 @@ final class DefaultStepVerifierBuilder<T>
 		return this;
 	}
 
-	final DefaultVerifySubscriber<T> build() {
-		return new DefaultVerifySubscriber<>(this);
+	final DefaultStepVerifier<T> build() {
+		return new DefaultStepVerifier<>(this);
 	}
 
 	@SuppressWarnings("unused")
 	interface Event<T> {
 
+	}
+
+	final static class DefaultStepVerifier<T> implements StepVerifier {
+
+		private final DefaultStepVerifierBuilder<T> parent;
+		private final int requestedFusionMode;
+		private final int expectedFusionMode;
+
+		DefaultStepVerifier(DefaultStepVerifierBuilder<T> parent) {
+			this.parent = parent;
+			this.requestedFusionMode = parent.requestedFusionMode;
+			this.expectedFusionMode = parent.expectedFusionMode == -1 ? parent.requestedFusionMode : parent.expectedFusionMode;
+		}
+
+		@Override
+		public Duration verify() {
+			return verify(Duration.ZERO);
+		}
+
+		@Override
+		public Duration verify(Duration duration) {
+			Objects.requireNonNull(duration, "duration");
+			if (parent.sourceSupplier != null) {
+				VirtualTimeScheduler vts = null;
+				if (parent.vtsLookup != null) {
+					vts = parent.vtsLookup.get();
+					VirtualTimeScheduler.enable(vts);
+				}
+				try {
+					Publisher<? extends T> publisher = parent.sourceSupplier.get();
+					precheckVerify(publisher);
+					Instant now = Instant.now();
+
+					DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
+							this.parent.script,
+							this.parent.initialRequest,
+							this.requestedFusionMode,
+							this.expectedFusionMode,
+							vts);
+
+					publisher.subscribe(newVerifier);
+					newVerifier.verify(duration);
+
+					return Duration.between(now, Instant.now());
+				}
+				finally {
+					if (vts != null) {
+						vts.shutdown();
+					}
+				}
+			} else {
+				return toSubscriber().verify(duration);
+			}
+		}
+
+		/**
+		 * Converts the {@link StepVerifier} to a {@link Subscriber}, leaving all the
+		 * lifecycle management to the user. Most notably:
+		 * <ul>
+		 *     <li>no subscription is performed
+		 *     <li>no {@link VirtualTimeScheduler} is registered in the Schedulers factories
+		 * </ul>
+		 * <p>
+		 * However if a {@link VirtualTimeScheduler} supplier was passed in originally
+		 * it will be invoked and the resulting scheduler will be affected by time
+		 * manipulation methods. That scheduler can be retrieved from the subscriber's
+		 * {@link DefaultVerifySubscriber#virtualTimeScheduler() virtualTimeScheduler()}
+		 * method.
+		 */
+		DefaultVerifySubscriber<T> toSubscriber() {
+			VirtualTimeScheduler vts = null;
+			if (parent.vtsLookup != null) {
+				vts = parent.vtsLookup.get();
+			}
+			return new DefaultVerifySubscriber<>(
+					this.parent.script,
+					this.parent.initialRequest,
+					this.requestedFusionMode,
+					this.expectedFusionMode,
+					vts);
+		}
+
+		void precheckVerify(Publisher<? extends T> publisher) {
+			Objects.requireNonNull(publisher, "publisher");
+			if (requestedFusionMode == NO_FUSION_SUPPORT && publisher instanceof Fuseable){
+				throw new AssertionError("The source publisher supports fusion");
+			}
+			else if (requestedFusionMode >= Fuseable.NONE && !(publisher instanceof
+					Fuseable)) {
+				throw new AssertionError("The source publisher does not support fusion");
+			}
+		}
 	}
 
 	final static class DefaultVerifySubscriber<T>
@@ -441,8 +533,8 @@ final class DefaultStepVerifierBuilder<T>
 		final Queue<TaskEvent<T>>           taskEvents;
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
-		final DefaultStepVerifierBuilder<T> parent;
-		final boolean                       supplyOnVerify;
+		final long                          initialRequest;
+		final VirtualTimeScheduler          virtualTimeScheduler;
 
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
@@ -458,15 +550,19 @@ final class DefaultStepVerifierBuilder<T>
 
 		volatile boolean monitorSignal;
 
-		DefaultVerifySubscriber(DefaultStepVerifierBuilder<T> parent) {
-			this(parent, parent.sourceSupplier != null);
-		}
-
+		/** The constructor used for verification, where a VirtualTimeScheduler can be
+		 * passed */
 		@SuppressWarnings("unchecked")
-		DefaultVerifySubscriber(DefaultStepVerifierBuilder<T> parent,
-				boolean supplyOnVerify) {
-			this.parent = parent;
-			this.script = new ConcurrentLinkedQueue<>(parent.script);
+		DefaultVerifySubscriber(List<Event<T>> script,
+				long initialRequest,
+				int requestedFusionMode,
+				int expectedFusionMode,
+				VirtualTimeScheduler vts) {
+			this.virtualTimeScheduler = vts;
+			this.requestedFusionMode = requestedFusionMode;
+			this.expectedFusionMode = expectedFusionMode;
+			this.initialRequest = initialRequest;
+			this.script = new ConcurrentLinkedQueue<>(script);
 			this.taskEvents = new ConcurrentLinkedQueue<>();
 			Event<T> event;
 			for (; ; ) {
@@ -479,14 +575,17 @@ final class DefaultStepVerifierBuilder<T>
 				}
 			}
 			this.monitorSignal = taskEvents.peek() instanceof NoEvent;
-			this.supplyOnVerify = supplyOnVerify;
-			this.requestedFusionMode = parent.requestedFusionMode;
-			this.expectedFusionMode =
-					parent.expectedFusionMode == -1 ? parent.requestedFusionMode :
-							parent.expectedFusionMode;
 			this.produced = 0L;
 			this.completeLatch = new CountDownLatch(1);
 			this.subscription = new AtomicReference<>();
+		}
+
+		/**
+		 * @return the {@link VirtualTimeScheduler} this verifier will manipulate when
+		 * using {@link #thenAwait(Duration)} methods, or null if real time is used
+		 */
+		public VirtualTimeScheduler virtualTimeScheduler() {
+			return this.virtualTimeScheduler;
 		}
 
 		@Override
@@ -569,8 +668,8 @@ final class DefaultStepVerifierBuilder<T>
 				else if (requestedFusionMode >= Fuseable.NONE) {
 					startFusion(subscription);
 				}
-				else if (parent.initialRequest != 0L) {
-					subscription.request(parent.initialRequest);
+				else if (initialRequest != 0L) {
+					subscription.request(initialRequest);
 				}
 			}
 			else {
@@ -600,31 +699,6 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Duration verify(Duration duration) {
 			Objects.requireNonNull(duration, "duration");
-			if (supplyOnVerify) {
-				VirtualTimeScheduler vts = null;
-				if (parent.vtsLookup != null) {
-					vts = parent.vtsLookup.get();
-				}
-				try {
-					Publisher<? extends T> publisher = parent.sourceSupplier.get();
-					precheckVerify(publisher);
-					Instant now = Instant.now();
-
-					DefaultVerifySubscriber<T> newVerifier =
-							new DefaultVerifySubscriber<>(parent, false);
-
-					publisher.subscribe(newVerifier);
-					newVerifier.verify(duration);
-
-					return Duration.between(now, Instant.now());
-				}
-				finally {
-					if (vts != null) {
-						vts.shutdown();
-					}
-				}
-			}
-
 			Instant now = Instant.now();
 			try {
 				pollTaskEventOrComplete(duration);
@@ -919,17 +993,6 @@ final class DefaultStepVerifierBuilder<T>
 			}
 		}
 
-		void precheckVerify(Publisher<? extends T> publisher) {
-			Objects.requireNonNull(publisher, "publisher");
-			if (requestedFusionMode == NO_FUSION_SUPPORT && publisher instanceof Fuseable){
-				throw new AssertionError("The source publisher supports fusion");
-			}
-			else if (requestedFusionMode >= Fuseable.NONE && !(publisher instanceof
-					Fuseable)) {
-				throw new AssertionError("The source publisher does not support fusion");
-			}
-		}
-
 		final void startFusion(Subscription s) {
 			if (s instanceof Fuseable.QueueSubscription) {
 				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> qs =
@@ -966,8 +1029,8 @@ final class DefaultStepVerifierBuilder<T>
 						onNext(v);
 					}
 				}
-				else if (parent.initialRequest != 0) {
-					s.request(parent.initialRequest);
+				else if (initialRequest != 0) {
+					s.request(initialRequest);
 				}
 			}
 			else {
@@ -1123,12 +1186,11 @@ final class DefaultStepVerifierBuilder<T>
 
 	static void virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
 			throws Exception {
-		if (s.parent.vtsLookup == null) {
+		if (s.virtualTimeScheduler == null) {
 			s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		else {
-			s.parent.vtsLookup.get()
-			                  .advanceTimeBy(duration);
+			s.virtualTimeScheduler.advanceTimeBy(duration);
 		}
 	}
 
@@ -1143,7 +1205,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			if(parent.parent.vtsLookup != null) {
+			if(parent.virtualTimeScheduler != null) {
 				parent.monitorSignal = true;
 				virtualOrRealWait(duration.minus(Duration.ofNanos(1)), parent);
 				parent.monitorSignal = false;
