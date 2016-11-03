@@ -57,7 +57,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * @since 1.0
  */
 final class DefaultStepVerifierBuilder<T>
-		implements StepVerifier.FirstStep<T, StepVerifier> {
+		implements StepVerifier.FirstStep<T> {
 
 	static void checkPositive(long n) {
 		if (n < 0) {
@@ -71,7 +71,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static <T> StepVerifier.FirstStep<T, StepVerifier> newVerifier(long n,
+	static <T> StepVerifier.FirstStep<T> newVerifier(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup){
 		DefaultStepVerifierBuilder.checkPositive(n);

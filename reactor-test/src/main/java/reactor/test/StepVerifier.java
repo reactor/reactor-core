@@ -78,7 +78,7 @@ public interface StepVerifier {
 	 *
 	 * @throws AssertionError in case of expectation failures
 	 */
-	static <T> FirstStep<T, StepVerifier> create(Publisher<? extends T> publisher) {
+	static <T> FirstStep<T> create(Publisher<? extends T> publisher) {
 		return create(publisher, Long.MAX_VALUE);
 	}
 
@@ -99,7 +99,7 @@ public interface StepVerifier {
 	 * @throws AssertionError in case of expectation failures, or when the verification
 	 *                        times out
 	 */
-	static <T> FirstStep<T, StepVerifier> create(Publisher<? extends T> publisher,
+	static <T> FirstStep<T> create(Publisher<? extends T> publisher,
 			long n) {
 		return with(n, () -> publisher, null);
 	}
@@ -117,7 +117,7 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, StepVerifier> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
+	static <T> FirstStep<T> with(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		return with(Long.MAX_VALUE, scenarioSupplier);
 	}
 
@@ -135,7 +135,7 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, StepVerifier> with(long n,
+	static <T> FirstStep<T> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		DefaultStepVerifierBuilder.checkPositive(n);
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
@@ -161,12 +161,12 @@ public interface StepVerifier {
 	 *
 	 * @return a builder for setting up value expectations
 	 */
-	static <T> FirstStep<T, StepVerifier> with(long n,
+	static <T> FirstStep<T> with(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 
 		@SuppressWarnings("unchecked")
-		FirstStep<T, StepVerifier> verifier = DefaultStepVerifierBuilder.newVerifier(n,
+		FirstStep<T> verifier = DefaultStepVerifierBuilder.newVerifier(n,
 		scenarioSupplier,
 		vtsLookup);
 
@@ -201,10 +201,8 @@ public interface StepVerifier {
 
 	/**
 	 * Define a builder for terminal states.
-	 *
-	 * @param <TARGET> the target {@link StepVerifier} type
 	 */
-	interface LastStep<TARGET extends StepVerifier> {
+	interface LastStep {
 
 		/**
 		 * Expect an error and consume with the given consumer. Any {@code
@@ -215,7 +213,7 @@ public interface StepVerifier {
 		 *
 		 * @return the built verification
 		 */
-		TARGET consumeErrorWith(Consumer<Throwable> consumer);
+		StepVerifier consumeErrorWith(Consumer<Throwable> consumer);
 
 		/**
 		 * Expect an unspecified error.
@@ -224,7 +222,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
-		TARGET expectError();
+		StepVerifier expectError();
 
 		/**
 		 * Expect an error of the specified type.
@@ -235,7 +233,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
-		TARGET expectError(Class<? extends Throwable> clazz);
+		StepVerifier expectError(Class<? extends Throwable> clazz);
 
 		/**
 		 * Expect an error with the specified message.
@@ -246,7 +244,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
-		TARGET expectErrorMessage(String errorMessage);
+		StepVerifier expectErrorMessage(String errorMessage);
 
 		/**
 		 * Expect an error and evaluate with the given predicate.
@@ -257,7 +255,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
-		TARGET expectErrorWith(Predicate<Throwable> predicate);
+		StepVerifier expectErrorWith(Predicate<Throwable> predicate);
 
 		/**
 		 * Expect the completion signal.
@@ -266,7 +264,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onComplete()
 		 */
-		TARGET expectComplete();
+		StepVerifier expectComplete();
 
 		/**
 		 * Cancel the underlying subscription.
@@ -275,16 +273,15 @@ public interface StepVerifier {
 		 *
 		 * @see Subscription#cancel()
 		 */
-		TARGET thenCancel();
+		StepVerifier thenCancel();
 	}
 
 	/**
 	 * Define a builder for expecting main sequence individual signals.
 	 *
 	 * @param <T> the type of values that the subscriber contains
-	 * @param <TARGET> the target {@link StepVerifier} type
 	 */
-	interface Step<T, TARGET extends StepVerifier> extends LastStep<TARGET> {
+	interface Step<T> extends LastStep {
 
 		/**
 		 * Expect an element and consume with the given consumer. Any {@code
@@ -295,7 +292,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T, TARGET> consumeNextWith(Consumer<? super T> consumer);
+		Step<T> consumeNextWith(Consumer<? super T> consumer);
 
 		/**
 		 * Expect a recording session started via {@link #recordWith} and
@@ -309,7 +306,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T, TARGET> consumeRecordedWith(Consumer<? super Collection<T>> consumer);
+		Step<T> consumeRecordedWith(Consumer<? super Collection<T>> consumer);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
@@ -320,7 +317,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T, TARGET> expectNext(T... ts);
+		Step<T> expectNext(T... ts);
 
 		/**
 		 * Expect an element count starting from the last expectation or onSubscribe.
@@ -331,7 +328,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T, TARGET> expectNextCount(long count);
+		Step<T> expectNextCount(long count);
 
 		/**
 		 * Expect the next elements to match the given {@link Iterable} until its
@@ -343,7 +340,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T, TARGET> expectNextSequence(Iterable<? extends T> iterable);
+		Step<T> expectNextSequence(Iterable<? extends T> iterable);
 
 		/**
 		 * Expect an element and evaluate with the given predicate.
@@ -354,7 +351,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T, TARGET> expectNextWith(Predicate<? super T> predicate);
+		Step<T> expectNextWith(Predicate<? super T> predicate);
 
 		/**
 		 * Expect that no event has been observed by the verifier. A duration is
@@ -366,7 +363,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber
 		 */
-		Step<T, TARGET> expectNoEvent(Duration duration);
+		Step<T> expectNoEvent(Duration duration);
 
 		/**
 		 * Expect and end a recording session started via {@link #recordWith} and
@@ -380,7 +377,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T, TARGET> expectRecordedWith(Predicate<? super Collection<T>> predicate);
+		Step<T> expectRecordedWith(Predicate<? super Collection<T>> predicate);
 
 		/**
 		 * Start a recording session storing {@link Subscriber#onNext(Object)} values in
@@ -396,7 +393,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T, TARGET> recordWith(Supplier<? extends Collection<T>> supplier);
+		Step<T> recordWith(Supplier<? extends Collection<T>> supplier);
 
 		/**
 		 * Run an arbitrary task scheduled after previous expectations or tasks.
@@ -405,7 +402,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T, TARGET> then(Runnable task);
+		Step<T> then(Runnable task);
 
 		/**
 		 * Mark a Pause in the expectation evaluation.
@@ -415,7 +412,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		default Step<T, TARGET> thenAwait() {
+		default Step<T> thenAwait() {
 			return thenAwait(Duration.ZERO);
 		}
 
@@ -429,7 +426,7 @@ public interface StepVerifier {
 		 *
 		 * @return this builder
 		 */
-		Step<T, TARGET> thenAwait(Duration timeshift);
+		Step<T> thenAwait(Duration timeshift);
 
 		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
@@ -442,7 +439,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscription#request(long)
 		 */
-		Step<T, TARGET> thenRequest(long n);
+		Step<T> thenRequest(long n);
 	}
 
 	/**
@@ -456,7 +453,7 @@ public interface StepVerifier {
 	 *
 	 * @param <T> the type of values that the subscriber contains
 	 */
-	interface FirstStep<T, TARGET extends StepVerifier> extends Step<T, TARGET> {
+	interface FirstStep<T> extends Step<T> {
 
 		/**
 		 * Expect a {@link Subscription} and consume with the given consumer. Any {@code
@@ -469,7 +466,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onSubscribe(Subscription)
 		 */
-		Step<T, TARGET> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
+		Step<T> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
 
 		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
@@ -479,7 +476,7 @@ public interface StepVerifier {
 		 *
 		 * @see Fuseable
 		 */
-		Step<T, TARGET> expectFusion();
+		Step<T> expectFusion();
 
 		/**
 		 * Expect the source {@link Publisher} to run the requested Reactor Fusion mode
@@ -493,7 +490,7 @@ public interface StepVerifier {
 		 *
 		 * @see Fuseable
 		 */
-		Step<T, TARGET> expectFusion(int requested);
+		Step<T> expectFusion(int requested);
 
 		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
@@ -510,7 +507,7 @@ public interface StepVerifier {
 		 *
 		 * @see Fuseable
 		 */
-		Step<T, TARGET> expectFusion(int requested, int expected);
+		Step<T> expectFusion(int requested, int expected);
 
 		/**
 		 * Expect the source {@link Publisher} to NOT run with Reactor Fusion flow
@@ -521,7 +518,7 @@ public interface StepVerifier {
 		 *
 		 * @see Fuseable
 		 */
-		Step<T, TARGET> expectNoFusionSupport();
+		Step<T> expectNoFusionSupport();
 
 		/**
 		 * Expect no Subscription or any other event for the given duration.
@@ -531,7 +528,7 @@ public interface StepVerifier {
 		 * @return this builder
 		 */
 		@Override
-		FirstStep<T, TARGET> expectNoEvent(Duration duration);
+		FirstStep<T> expectNoEvent(Duration duration);
 
 		/**
 		 * Expect a {@link Subscription}.
@@ -541,7 +538,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onSubscribe(Subscription)
 		 */
-		Step<T, TARGET> expectSubscription();
+		Step<T> expectSubscription();
 
 		/**
 		 * Expect a {@link Subscription} and evaluate with the given predicate.
@@ -552,7 +549,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onSubscribe(Subscription)
 		 */
-		Step<T, TARGET> expectSubscriptionWith(Predicate<? super Subscription> predicate);
+		Step<T> expectSubscriptionWith(Predicate<? super Subscription> predicate);
 	}
 
 }
