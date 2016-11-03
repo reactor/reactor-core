@@ -16,11 +16,13 @@
 package reactor.test;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
@@ -28,10 +30,12 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Arjen Poutsma
@@ -823,17 +827,17 @@ public class StepVerifierTests {
 		Duration r;
 
 		r = StepVerifier.with(3,
-				() -> Flux.interval(Duration.ofSeconds(2))
+				() -> Flux.interval(Duration.ofMillis(200))
 				          .map(d -> "t" + d),
 				null)
-		                .thenAwait(Duration.ofSeconds(2))
+		                .thenAwait(Duration.ofMillis(200))
 		                .expectNext("t0")
-		                .thenAwait(Duration.ofSeconds(2))
+		                .thenAwait(Duration.ofMillis(200))
 		                .expectNext("t1")
 		                .thenCancel()
 		                .verify();
 
-		Assert.assertFalse(r.minus(Duration.ofSeconds(4))
+		Assert.assertFalse(r.minus(Duration.ofMillis(400))
 		                    .isNegative());
 	}
 
@@ -873,8 +877,8 @@ public class StepVerifierTests {
 				() -> Flux.just(123)
 				          .subscribeOn(vts),
 				() -> vts)
-		            .thenAwait()
 		            .thenRequest(1)
+		            .thenAwait()
 		            .expectNext(123)
 		            .expectComplete()
 		            .verify();
@@ -905,5 +909,60 @@ public class StepVerifierTests {
 		        .expectNext("t0")
 		        .thenCancel()
 		        .verify();
+	}
+
+	@Test
+	public void noSignalRealTime() {
+		Duration verifyDuration = StepVerifier
+				.create(Mono.never())
+				.expectSubscription()
+				.expectNoEvent(Duration.ofSeconds(1))
+				.thenCancel()
+				.verify(Duration.ofMillis(1100));
+
+		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(1000L)));
+	}
+
+	@Test(timeout = 500)
+	public void noSignalVirtualTime() {
+		StepVerifier
+				.with(1, Mono::never)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofSeconds(100))
+				.thenCancel()
+				.verify();
+	}
+
+	@Test
+	public void longDelayAndNoTermination() {
+		StepVerifier
+				.with(Long.MAX_VALUE,
+						() -> Flux.just("foo", "bar")
+						          .delay(Duration.ofSeconds(5))
+						          .concatWith(Mono.never())
+				)
+				.expectSubscription()
+				.expectNoEvent(Duration.ofSeconds(5))
+				.expectNext("foo")
+				.expectNoEvent(Duration.ofSeconds(5))
+				.expectNextCount(1)
+				.expectNoEvent(Duration.ofMillis(10))
+				.thenCancel()
+				.verify();
+	}
+
+	@Test
+	public void thenAwaitThenCancelWaitsForDuration() {
+		Duration verifyDuration =
+				StepVerifier.create(Flux.just("foo", "bar")
+				            .delay(Duration.ofMillis(500)))
+				            .expectSubscription()
+				            .thenAwait(Duration.ofMillis(500))
+				            .expectNext("foo")
+				            .thenAwait(Duration.ofMillis(200))
+				            .thenCancel()
+				            .verify(Duration.ofMillis(1000));
+
+		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(700L)));
 	}
 }

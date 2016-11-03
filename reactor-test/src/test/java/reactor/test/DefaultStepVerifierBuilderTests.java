@@ -16,6 +16,9 @@
 package reactor.test;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Queue;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,6 +26,8 @@ import reactor.core.publisher.Flux;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -95,5 +100,47 @@ public class DefaultStepVerifierBuilderTests {
 		catch (IllegalStateException e) {
 			assertThat(e.getMessage(), containsString("VirtualTimeScheduler"));
 		}
+	}
+
+	@Test
+	public void testConflateOnTaskThenSubscriptionEvents() {
+		List<DefaultStepVerifierBuilder.Event<String>> script = Arrays.asList(
+				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
+				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
+				new DefaultStepVerifierBuilder.WaitEvent<String>(Duration.ofSeconds(5)),
+				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(),
+				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(sub -> { })
+		);
+
+		Queue<DefaultStepVerifierBuilder.Event<String>> queue =
+				DefaultStepVerifierBuilder.DefaultVerifySubscriber.conflateScript(script);
+
+		assertThat(queue.size(), is(5));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.WaitEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
+	}
+
+	@Test
+	public void testNoConflateOnSignalThenSubscriptionEvents() {
+		List<DefaultStepVerifierBuilder.Event<String>> script = Arrays.asList(
+				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
+				new DefaultStepVerifierBuilder.WaitEvent<String>(Duration.ofSeconds(5)),
+				new DefaultStepVerifierBuilder.SignalCountEvent<>(3),
+				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(),
+				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(sub -> { })
+		);
+
+		Queue<DefaultStepVerifierBuilder.Event<String>> queue =
+				DefaultStepVerifierBuilder.DefaultVerifySubscriber.conflateScript(script);
+
+		assertThat(queue.size(), is(5));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.WaitEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SignalCountEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionEvent.class)));
 	}
 }

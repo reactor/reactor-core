@@ -562,7 +562,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.requestedFusionMode = requestedFusionMode;
 			this.expectedFusionMode = expectedFusionMode;
 			this.initialRequest = initialRequest;
-			this.script = new ConcurrentLinkedQueue<>(script);
+			this.script = conflateScript(script);
 			this.taskEvents = new ConcurrentLinkedQueue<>();
 			Event<T> event;
 			for (; ; ) {
@@ -578,6 +578,24 @@ final class DefaultStepVerifierBuilder<T>
 			this.produced = 0L;
 			this.completeLatch = new CountDownLatch(1);
 			this.subscription = new AtomicReference<>();
+		}
+
+		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script) {
+			ConcurrentLinkedQueue<Event<R>> queue = new ConcurrentLinkedQueue<>(script);
+			ConcurrentLinkedQueue<Event<R>> conflated = new ConcurrentLinkedQueue<>();
+
+			Event event;
+			while ((event = queue.peek()) != null) {
+				if (event instanceof TaskEvent) {
+					conflated.add(queue.poll());
+					while (queue.peek() instanceof SubscriptionEvent) {
+						conflated.add(new SubscriptionTaskEvent<>((SubscriptionEvent<R>) queue.poll()));
+					}
+				} else {
+					conflated.add(queue.poll());
+				}
+			}
+			return conflated;
 		}
 
 		/**
@@ -935,8 +953,7 @@ final class DefaultStepVerifierBuilder<T>
 				if (this.script.peek() instanceof SubscriptionEvent) {
 					subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
 					if (subscriptionEvent.isTerminal()) {
-						cancel();
-						this.completeLatch.countDown();
+						doCancel();
 						return true;
 					}
 					subscriptionEvent.consume(upstream());
@@ -947,6 +964,11 @@ final class DefaultStepVerifierBuilder<T>
 				}
 			}
 			return false;
+		}
+
+		void doCancel() {
+			cancel();
+			this.completeLatch.countDown();
 		}
 
 		@SuppressWarnings("unchecked")
@@ -1239,6 +1261,29 @@ final class DefaultStepVerifierBuilder<T>
 			virtualOrRealWait(duration, s);
 		}
 
+	}
+
+	/**
+	 * A lazy cancellation task that will only trigger cancellation after all previous
+	 * tasks have been processed (avoiding short-circuiting of time manipulating tasks).
+	 */
+	static final class SubscriptionTaskEvent<T> extends TaskEvent<T> {
+
+		final SubscriptionEvent<T> delegate;
+
+		SubscriptionTaskEvent(SubscriptionEvent<T> subscriptionEvent) {
+			super(null);
+			this.delegate = subscriptionEvent;
+		}
+
+		@Override
+		void run(DefaultVerifySubscriber<T> parent) throws Exception {
+			if (delegate.isTerminal()) {
+				parent.doCancel();
+			} else {
+				delegate.consume(parent.upstream());
+			}
+		}
 	}
 
 	static final class SignalSequenceEvent<T> implements Event<T> {
