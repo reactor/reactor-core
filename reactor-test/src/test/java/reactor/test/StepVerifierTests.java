@@ -16,13 +16,11 @@
 package reactor.test;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
@@ -99,23 +97,23 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void expectNextWith() {
+	public void expectNextMatch() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		StepVerifier.create(flux)
-		            .expectNextWith("foo"::equals)
-		            .expectNextWith("bar"::equals)
+		            .expectNextMatch("foo"::equals)
+		            .expectNextMatch("bar"::equals)
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidNextWith() {
+	public void expectInvalidNextMatch() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		StepVerifier.create(flux)
-		            .expectNextWith("foo"::equals)
-		            .expectNextWith("baz"::equals)
+		            .expectNextMatch("foo"::equals)
+		            .expectNextMatch("baz"::equals)
 		            .expectComplete()
 		            .verify();
 	}
@@ -301,24 +299,24 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void errorWith() {
+	public void errorMatch() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
 		StepVerifier.create(flux)
 		            .expectNext("foo")
-		            .expectErrorWith(t -> t instanceof IllegalArgumentException)
+		            .expectErrorMatch(t -> t instanceof IllegalArgumentException)
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void errorWithInvalid() {
+	public void errorMatchInvalid() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
 		StepVerifier.create(flux)
 		            .expectNext("foo")
-		            .expectErrorWith(t -> t instanceof IllegalStateException)
+		            .expectErrorMatch(t -> t instanceof IllegalStateException)
 		            .verify();
 	}
 
@@ -450,7 +448,7 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .expectSubscriptionWith(s -> s instanceof Fuseable.QueueSubscription)
+		            .expectSubscriptionMatch(s -> s instanceof Fuseable.QueueSubscription)
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
@@ -499,25 +497,25 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyRecordWith() {
+	public void verifyRecordMatch() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
-		            .expectRecordedWith(c -> c.contains("foobar"))
+		            .expectRecordedMatch(c -> c.contains("foobar"))
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void verifyRecordWithError() {
+	public void verifyRecordMatchError() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
-		            .expectRecordedWith(c -> c.contains("foofoo"))
+		            .expectRecordedMatch(c -> c.contains("foofoo"))
 		            .expectComplete()
 		            .verify();
 	}
@@ -533,12 +531,12 @@ public class StepVerifierTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void verifyRecordWithError2() {
+	public void verifyRecordMatchError2() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .expectNext("foo", "bar", "foobar")
-		            .expectRecordedWith(c -> c.size() == 3)
+		            .expectRecordedMatch(c -> c.size() == 3)
 		            .expectComplete()
 		            .verify();
 	}
@@ -562,7 +560,7 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .expectSubscriptionWith(s -> false)
+		            .expectSubscriptionMatch(s -> false)
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
