@@ -30,10 +30,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Arjen Poutsma
@@ -953,5 +953,23 @@ public class StepVerifierTests {
 				            .verify(Duration.ofMillis(1000));
 
 		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(700L)));
+	}
+
+	@Test
+	public void testWithDescription() {
+		try {
+			StepVerifier.create(Flux.just("foo", "bar", "baz"), 3)
+			            .expectNext("foo").as("first")
+			            .expectNext("bar").as("second")
+			            .expectNext("bar").as("third").as("this is ignored")
+			            .expectComplete()
+			            .log()
+			            .verify();
+			throw new IllegalStateException();
+		} catch (AssertionError e) {
+			assertThat(e.getMessage(), startsWith("expectation \"third\" failed"));
+		} catch (IllegalStateException e) {
+			fail("expected assertion error of third");
+		}
 	}
 }

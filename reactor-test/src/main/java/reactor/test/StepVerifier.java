@@ -164,6 +164,14 @@ public interface StepVerifier {
 	}
 
 	/**
+	 * Activate debug logging of a description of the test scenario, as well as
+	 * some details about certain verification steps.
+	 *
+	 * @return the verifier for final {@link #verify()} call
+	 */
+	StepVerifier log();
+
+	/**
 	 * Verify the signals received by this subscriber. This method will
 	 * <strong>block</strong> indefinitely until the stream has been terminated (either
 	 * through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
@@ -272,6 +280,19 @@ public interface StepVerifier {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface Step<T> extends LastStep {
+
+		/**
+		 * Set a description for the previous verification step. Choosing
+		 * a unique and descriptive name can make assertion errors easier to
+		 * resolve.
+		 * <p>
+		 * Note that calling this several times in a row will only take the
+		 * first description into account.
+		 *
+		 * @param description the description for the previous verification step
+		 * @return this builder
+		 */
+		Step<T> as(String description);
 
 		/**
 		 * Expect an element and consume with the given consumer. Any {@code

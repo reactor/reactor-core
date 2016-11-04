@@ -18,16 +18,23 @@ package reactor.test;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
+import reactor.test.DefaultStepVerifierBuilder.DescriptionEvent;
+import reactor.test.DefaultStepVerifierBuilder.Event;
+import reactor.test.DefaultStepVerifierBuilder.SignalCountEvent;
+import reactor.test.DefaultStepVerifierBuilder.SignalEvent;
+import reactor.test.DefaultStepVerifierBuilder.SubscriptionEvent;
+import reactor.test.DefaultStepVerifierBuilder.TaskEvent;
+import reactor.test.DefaultStepVerifierBuilder.WaitEvent;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -40,7 +47,7 @@ public class DefaultStepVerifierBuilderTests {
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		DefaultStepVerifierBuilder.DefaultVerifySubscriber<String> s =
+		DefaultVerifySubscriber<String> s =
 				new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
 						null,
 						null).expectNext("foo", "bar")
@@ -60,7 +67,7 @@ public class DefaultStepVerifierBuilderTests {
 
 			Flux<String> flux = Flux.just("foo").delay(Duration.ofSeconds(4));
 
-			DefaultStepVerifierBuilder.DefaultVerifySubscriber<String> s =
+			DefaultVerifySubscriber<String> s =
 					new DefaultStepVerifierBuilder<String>(Long.MAX_VALUE,
 					null, //important to avoid triggering of vts capture-and-enable
 					() -> vts)
@@ -104,43 +111,68 @@ public class DefaultStepVerifierBuilderTests {
 
 	@Test
 	public void testConflateOnTaskThenSubscriptionEvents() {
-		List<DefaultStepVerifierBuilder.Event<String>> script = Arrays.asList(
-				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
-				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
-				new DefaultStepVerifierBuilder.WaitEvent<String>(Duration.ofSeconds(5)),
-				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(),
-				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(sub -> { })
+		List<Event<String>> script = Arrays.asList(
+				new TaskEvent<String>(() -> {}, "A"),
+				new TaskEvent<String>(() -> {}, "B"),
+				new WaitEvent<String>(Duration.ofSeconds(5), "C"),
+				new SubscriptionEvent<String>("D"),
+				new SubscriptionEvent<String>(sub -> { }, "E")
 		);
 
-		Queue<DefaultStepVerifierBuilder.Event<String>> queue =
-				DefaultStepVerifierBuilder.DefaultVerifySubscriber.conflateScript(script);
+		Queue<Event<String>> queue =
+				DefaultVerifySubscriber.conflateScript(script, null);
 
 		assertThat(queue.size(), is(5));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.WaitEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(WaitEvent.class)));
 		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
 		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
 	}
 
 	@Test
 	public void testNoConflateOnSignalThenSubscriptionEvents() {
-		List<DefaultStepVerifierBuilder.Event<String>> script = Arrays.asList(
-				new DefaultStepVerifierBuilder.TaskEvent<String>(() -> {}),
-				new DefaultStepVerifierBuilder.WaitEvent<String>(Duration.ofSeconds(5)),
-				new DefaultStepVerifierBuilder.SignalCountEvent<>(3),
-				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(),
-				new DefaultStepVerifierBuilder.SubscriptionEvent<String>(sub -> { })
+		List<Event<String>> script = Arrays.asList(
+				new TaskEvent<String>(() -> {}, "A"),
+				new WaitEvent<String>(Duration.ofSeconds(5), "B"),
+				new SignalCountEvent<>(3, "C"),
+				new SubscriptionEvent<String>("D"),
+				new SubscriptionEvent<String>(sub -> { }, "E")
 		);
 
-		Queue<DefaultStepVerifierBuilder.Event<String>> queue =
-				DefaultStepVerifierBuilder.DefaultVerifySubscriber.conflateScript(script);
+		Queue<Event<String>> queue =
+				DefaultVerifySubscriber.conflateScript(script, null);
 
 		assertThat(queue.size(), is(5));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.WaitEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SignalCountEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(WaitEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(SignalCountEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(SubscriptionEvent.class)));
+		assertThat(queue.poll(), is(instanceOf(SubscriptionEvent.class)));
+	}
+
+	@Test
+	public void testConflateChangesDescriptionAndRemoveAs() {
+		List<Event<String>> script = Arrays.asList(
+				new SignalEvent<String>((s,v) -> Optional.empty(), "A"),
+				new SignalEvent<String>((s,v) -> Optional.empty(), "B"),
+				new DescriptionEvent<String>("foo"),
+				new DescriptionEvent<String>("bar"),
+				new SignalCountEvent<String>(1, "C"),
+				new DescriptionEvent<String>("baz")
+		);
+
+		Queue<Event<String>> queue = DefaultVerifySubscriber.conflateScript(script, null);
+
+		assertThat(queue.size(), is(3));
+
+		SignalEvent<String> firstSignal = (SignalEvent<String>) queue.poll();
+		assertThat(firstSignal.getDescription(), is("A"));
+
+		SignalEvent<String> secondSignal = (SignalEvent<String>) queue.poll();
+		assertThat(secondSignal.getDescription(), is("foo"));
+
+		SignalCountEvent<String> thirdSignal = (SignalCountEvent<String>) queue.poll();
+		assertThat(thirdSignal.getDescription(), is("baz"));
 	}
 }

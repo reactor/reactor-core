@@ -32,10 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -48,6 +49,8 @@ import reactor.core.Trackable;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 
 /**
  * Default implementation of {@link StepVerifier.Step} and
@@ -105,17 +108,23 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public DefaultStepVerifierBuilder<T> as(String description) {
+		this.script.add(new DescriptionEvent<>(description));
+		return this;
+	}
+
+	@Override
 	public DefaultStepVerifier<T> consumeErrorWith(Consumer<Throwable> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
-				return fail("expected: onError(); actual: %s", signal);
+				return fail(se, "expected: onError(); actual: %s", signal);
 			}
 			else {
 				consumer.accept(signal.getThrowable());
 				return Optional.empty();
 			}
-		});
+		}, "consumeErrorWith");
 		this.script.add(event);
 		return build();
 	}
@@ -124,15 +133,15 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> consumeNextWith(
 			Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnNext()) {
-				return fail("expected: onNext(); actual: %s", signal);
+				return fail(se, "expected: onNext(); actual: %s", signal);
 			}
 			else {
 				consumer.accept(signal.get());
 				return Optional.empty();
 			}
-		});
+		}, "consumeNextWith");
 		this.script.add(event);
 		return this;
 	}
@@ -141,7 +150,7 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> consumeRecordedWith(
 			Consumer<? super Collection<T>> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		this.script.add(new CollectEvent<>(consumer));
+		this.script.add(new CollectEvent<>(consumer, "consumeRecordedWith"));
 		return this;
 	}
 
@@ -149,42 +158,42 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> consumeSubscriptionWith(
 			Consumer<? super Subscription> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		this.script.set(0, new SignalEvent<>(signal -> {
+		this.script.set(0, new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnSubscribe()) {
-				return fail("expected: onSubscribe(); actual: %s", signal);
+				return fail(se, "expected: onSubscribe(); actual: %s", signal);
 			}
 			else {
 				consumer.accept(signal.getSubscription());
 				return Optional.empty();
 			}
-		}));
+		}, "consumeSubscriptionWith"));
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifier<T> expectComplete() {
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnComplete()) {
-				return fail("expected: onComplete(); actual: %s", signal);
+				return fail(se, "expected: onComplete(); actual: %s", signal);
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectComplete");
 		this.script.add(event);
 		return build();
 	}
 
 	@Override
 	public DefaultStepVerifier<T> expectError() {
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
-				return fail("expected: onError(); actual: %s", signal);
+				return fail(se, "expected: onError(); actual: %s", signal);
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectError()");
 		this.script.add(event);
 		return build();
 
@@ -193,34 +202,34 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifier<T> expectError(Class<? extends Throwable> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
-				return fail("expected: onError(%s); actual: %s",
+				return fail(se, "expected: onError(%s); actual: %s",
 						clazz.getSimpleName(), signal);
 			}
 			else if (!clazz.isInstance(signal.getThrowable())) {
-				return fail("expected error of type: %s; actual type: %s",
+				return fail(se, "expected error of type: %s; actual type: %s",
 						clazz.getSimpleName(), signal.getThrowable());
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectError(Class)");
 		this.script.add(event);
 		return build();
 	}
 
 	@Override
 	public DefaultStepVerifier<T> expectErrorMessage(String errorMessage) {
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
-				return fail("expected: onError(\"%s\"); actual: %s",
+				return fail(se, "expected: onError(\"%s\"); actual: %s",
 						errorMessage, signal);
 			}
 			else if (!Objects.equals(errorMessage,
 					signal.getThrowable()
 					      .getMessage())) {
-				return fail("expected error message: \"%s\"; " + "actual " + "message: %s",
+				return fail(se, "expected error message: \"%s\"; " + "actual " + "message: %s",
 						errorMessage,
 						signal.getThrowable()
 						      .getMessage());
@@ -228,7 +237,7 @@ final class DefaultStepVerifierBuilder<T>
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectErrorMessage");
 		this.script.add(event);
 		return build();
 	}
@@ -236,17 +245,17 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifier<T> expectErrorMatches(Predicate<Throwable> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
-				return fail("expected: onError(); actual: %s", signal);
+				return fail(se, "expected: onError(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.getThrowable())) {
-				return fail("predicate failed on exception: %s", signal.getThrowable());
+				return fail(se, "predicate failed on exception: %s", signal.getThrowable());
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectErrorMatches");
 		this.script.add(event);
 		return build();
 	}
@@ -283,18 +292,18 @@ final class DefaultStepVerifierBuilder<T>
 		Objects.requireNonNull(ts, "ts");
 		SignalEvent<T> event;
 		for (T t : ts) {
-			event = new SignalEvent<>(signal -> {
+			event = new SignalEvent<>((signal, se) -> {
 				if (!signal.isOnNext()) {
-					return fail("expected: onNext(%s); actual: %s", t, signal);
+					return fail(se, "expected: onNext(%s); actual: %s", t, signal);
 				}
 				else if (!Objects.equals(t, signal.get())) {
-					return fail("expected value: %s; actual value: %s", t, signal.get());
+					return fail(se, "expected value: %s; actual value: %s", t, signal.get());
 
 				}
 				else {
 					return Optional.empty();
 				}
-			});
+			}, String.format("expectNext(%s)", t));
 			this.script.add(event);
 		}
 		return this;
@@ -304,14 +313,14 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNextSequence(
 			Iterable<? extends T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
-		this.script.add(new SignalSequenceEvent<>(iterable));
+		this.script.add(new SignalSequenceEvent<>(iterable, "expectNextSequence"));
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNextCount(long count) {
 		checkPositive(count);
-		this.script.add(new SignalCountEvent<>(count));
+		this.script.add(new SignalCountEvent<>(count, "expectNextCount"));
 		return this;
 	}
 
@@ -319,17 +328,17 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNextMatches(
 			Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		SignalEvent<T> event = new SignalEvent<>(signal -> {
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnNext()) {
-				return fail("expected: onNext(); actual: %s", signal);
+				return fail(se, "expected: onNext(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.get())) {
-				return fail("predicate failed on value: %s", signal.get());
+				return fail(se, "predicate failed on value: %s", signal.get());
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, "expectNextMatches");
 		this.script.add(event);
 		return this;
 
@@ -339,7 +348,7 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectRecordedMatches(
 			Predicate<? super Collection<T>> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		this.script.add(new CollectEvent<>(predicate));
+		this.script.add(new CollectEvent<>(predicate, "expectRecordedMatches"));
 		return this;
 	}
 
@@ -349,7 +358,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.script.add(defaultFirstStep());
 		}
 		else{
-			this.script.set(0, newOnSubscribeStep());
+			this.script.set(0, newOnSubscribeStep("expectSubscription"));
 		}
 		return this;
 	}
@@ -358,18 +367,18 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectSubscriptionMatches(
 			Predicate<? super Subscription> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		this.script.set(0, new SignalEvent<>(signal -> {
+		this.script.set(0, new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnSubscribe()) {
-				return fail("expected: onSubscribe(); actual: %s", signal);
+				return fail(se, "expected: onSubscribe(); actual: %s", signal);
 			}
 			else if (!predicate.test(signal.getSubscription())) {
-				return fail("predicate failed on subscription: %s",
+				return fail(se, "predicate failed on subscription: %s",
 						signal.getSubscription());
 			}
 			else {
 				return Optional.empty();
 			}
-		}));
+		}, "expectSubscriptionMatches"));
 		return this;
 	}
 
@@ -377,10 +386,10 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNoEvent(Duration duration) {
 		Objects.requireNonNull(duration, "duration");
 		if(this.script.size() == 1 && this.script.get(0) == defaultFirstStep()){
-			this.script.set(0, new NoEvent<>(duration));
+			this.script.set(0, new NoEvent<>(duration, "expectNoEvent"));
 		}
 		else {
-			this.script.add(new NoEvent<>(duration));
+			this.script.add(new NoEvent<>(duration, "expectNoEvent"));
 		}
 		return this;
 	}
@@ -388,27 +397,28 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifierBuilder<T> recordWith(Supplier<? extends Collection<T>> supplier) {
 		Objects.requireNonNull(supplier, "supplier");
-		this.script.add(new CollectEvent<>(supplier));
+		this.script.add(new CollectEvent<>(supplier, "recordWith"));
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifierBuilder<T> then(Runnable task) {
 		Objects.requireNonNull(task, "task");
-		this.script.add(new TaskEvent<>(task));
+		this.script.add(new TaskEvent<>(task, "then"));
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifier<T> thenCancel() {
-		this.script.add(new SubscriptionEvent<>());
+		this.script.add(new SubscriptionEvent<>("thenCancel"));
 		return build();
 	}
 
 	@Override
 	public DefaultStepVerifierBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
-		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n)));
+		this.script.add(new SubscriptionEvent<>(subscription -> subscription.request(n),
+				"thenRequest"));
 		return this;
 	}
 
@@ -420,7 +430,7 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifierBuilder<T> thenAwait(Duration timeshift) {
 		Objects.requireNonNull(timeshift, "timeshift");
-		this.script.add(new WaitEvent<>(timeshift));
+		this.script.add(new WaitEvent<>(timeshift, "thenAwait"));
 		return this;
 	}
 
@@ -428,8 +438,11 @@ final class DefaultStepVerifierBuilder<T>
 		return new DefaultStepVerifier<>(this);
 	}
 
-	@SuppressWarnings("unused")
 	interface Event<T> {
+
+		boolean setDescription(String description);
+
+		String getDescription();
 
 	}
 
@@ -439,10 +452,18 @@ final class DefaultStepVerifierBuilder<T>
 		private final int requestedFusionMode;
 		private final int expectedFusionMode;
 
+		private boolean debugEnabled;
+
 		DefaultStepVerifier(DefaultStepVerifierBuilder<T> parent) {
 			this.parent = parent;
 			this.requestedFusionMode = parent.requestedFusionMode;
 			this.expectedFusionMode = parent.expectedFusionMode == -1 ? parent.requestedFusionMode : parent.expectedFusionMode;
+		}
+
+		@Override
+		public DefaultStepVerifier<T> log() {
+			this.debugEnabled = true;
+			return this;
 		}
 
 		@Override
@@ -469,6 +490,7 @@ final class DefaultStepVerifierBuilder<T>
 							this.parent.initialRequest,
 							this.requestedFusionMode,
 							this.expectedFusionMode,
+							this.debugEnabled,
 							vts);
 
 					publisher.subscribe(newVerifier);
@@ -510,6 +532,7 @@ final class DefaultStepVerifierBuilder<T>
 					this.parent.initialRequest,
 					this.requestedFusionMode,
 					this.expectedFusionMode,
+					this.debugEnabled,
 					vts);
 		}
 
@@ -537,6 +560,7 @@ final class DefaultStepVerifierBuilder<T>
 		final long                          initialRequest;
 		final VirtualTimeScheduler          virtualTimeScheduler;
 
+		Logger                        logger;
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
 		long                          produced;
@@ -558,12 +582,14 @@ final class DefaultStepVerifierBuilder<T>
 				long initialRequest,
 				int requestedFusionMode,
 				int expectedFusionMode,
+				boolean debugEnabled,
 				VirtualTimeScheduler vts) {
 			this.virtualTimeScheduler = vts;
 			this.requestedFusionMode = requestedFusionMode;
 			this.expectedFusionMode = expectedFusionMode;
 			this.initialRequest = initialRequest;
-			this.script = conflateScript(script);
+			this.logger = debugEnabled ? Loggers.getLogger(StepVerifier.class) : null;
+			this.script = conflateScript(script, this.logger);
 			this.taskEvents = new ConcurrentLinkedQueue<>();
 			Event<T> event;
 			for (; ; ) {
@@ -581,7 +607,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.subscription = new AtomicReference<>();
 		}
 
-		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script) {
+		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script, Logger logger) {
 			ConcurrentLinkedQueue<Event<R>> queue = new ConcurrentLinkedQueue<>(script);
 			ConcurrentLinkedQueue<Event<R>> conflated = new ConcurrentLinkedQueue<>();
 
@@ -596,6 +622,37 @@ final class DefaultStepVerifierBuilder<T>
 					conflated.add(queue.poll());
 				}
 			}
+
+			Iterator<Event<R>> iterator = conflated.iterator();
+			Event<R> previous = null;
+			while(iterator.hasNext()) {
+				Event<R> current = iterator.next();
+				if (previous != null && current instanceof DescriptionEvent) {
+					String newDescription = current.getDescription();
+					String oldDescription = previous.getDescription();
+					boolean applied = previous.setDescription(newDescription);
+					if (logger != null && applied) {
+						logger.debug("expectation <{}> now described as <{}>",
+								oldDescription, newDescription);
+					}
+				}
+				previous = current;
+			}
+
+			queue.clear();
+			queue.addAll(conflated.stream()
+			                      .filter(ev -> !(ev instanceof DescriptionEvent))
+			                      .collect(Collectors.toList()));
+			conflated = queue;
+
+			if (logger != null) {
+				logger.debug("Scenario:");
+				for (Event<R> current : conflated) {
+					logger.debug("\t<{}>", current.getDescription());
+				}
+			}
+			//TODO simplified whole algo, remove DescriptionTasks
+
 			return conflated;
 		}
 
@@ -682,7 +739,7 @@ final class DefaultStepVerifierBuilder<T>
 				onExpectation(Signal.subscribe(subscription));
 				if (requestedFusionMode == NO_FUSION_SUPPORT &&
 						subscription instanceof Fuseable.QueueSubscription){
-					setFailure("unexpected fusion support: %s", subscription);
+					setFailure(null, "unexpected fusion support: %s", subscription);
 				}
 				else if (requestedFusionMode >= Fuseable.NONE) {
 					startFusion(subscription);
@@ -694,11 +751,11 @@ final class DefaultStepVerifierBuilder<T>
 			else {
 				subscription.cancel();
 				if (isCancelled()) {
-					setFailure("an unexpected Subscription has been received: %s; " + "actual: cancelled",
+					setFailure(null, "an unexpected Subscription has been received: %s; actual: cancelled",
 							subscription);
 				}
 				else {
-					setFailure("an unexpected Subscription has been received: %s; " + "actual: ",
+					setFailure(null, "an unexpected Subscription has been received: %s; actual: ",
 							subscription,
 							this.subscription);
 				}
@@ -708,6 +765,14 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public Subscription upstream() {
 			return this.subscription.get();
+		}
+
+		@Override
+		public DefaultVerifySubscriber<T> log() {
+			if (this.logger == null) {
+				this.logger = Loggers.getLogger(StepVerifier.class);
+			}
+			return this;
 		}
 
 		@Override
@@ -731,8 +796,8 @@ final class DefaultStepVerifierBuilder<T>
 
 		}
 
-		final void setFailure(String msg, Object... arguments) {
-			Exceptions.addThrowable(ERRORS, this, fail(msg, arguments).get());
+		final void setFailure(Event<T> event, String msg, Object... arguments) {
+			Exceptions.addThrowable(ERRORS, this, fail(event, msg, arguments).get());
 			cancel();
 			this.completeLatch.countDown();
 		}
@@ -746,9 +811,11 @@ final class DefaultStepVerifierBuilder<T>
 			return s;
 		}
 
-		final Optional<AssertionError> checkCountMismatch(long expected, Signal<T> s) {
+		final Optional<AssertionError> checkCountMismatch(SignalCountEvent<T> event, Signal<T> s) {
+			long expected = event.count;
 			if (!s.isOnNext()) {
-				return fail("expected: count = %s; actual: " + "produced = %s; " + "signal: %s",
+				return fail(event, "expected: count = %s; actual: " + "produced = %s; " +
+								"signal: %s",
 						expected,
 						produced, s);
 			}
@@ -765,14 +832,14 @@ final class DefaultStepVerifierBuilder<T>
 				this.currentCollector = c;
 
 				if (c == null) {
-					setFailure("expected collection; actual supplied is [null]");
+					setFailure(collectEvent, "expected collection; actual supplied is [null]");
 				}
 				return true;
 			}
 			c = this.currentCollector;
 
 			if (c == null) {
-				setFailure("expected record collector; actual record is [null]");
+				setFailure(collectEvent, "expected record collector; actual record is [null]");
 				return true;
 			}
 
@@ -789,13 +856,13 @@ final class DefaultStepVerifierBuilder<T>
 		@SuppressWarnings("unchecked")
 		final void onExpectation(Signal<T> actualSignal) {
 			if (monitorSignal) {
-				setFailure("expected no event: %s", actualSignal);
+				setFailure(null, "expected no event: %s", actualSignal);
 				return;
 			}
 			try {
 				Event<T> event = this.script.peek();
 				if (event == null) {
-					setFailure("did not expect: %s", actualSignal);
+					setFailure(null, "did not expect: %s", actualSignal);
 					return;
 				}
 
@@ -855,7 +922,8 @@ final class DefaultStepVerifierBuilder<T>
 					String msg = e.getMessage() != null ? e.getMessage() : "";
 					Exceptions.addThrowable(ERRORS,
 							this,
-							fail("failed running expectation on signal [%s] with " + "[%s]:\n%s",
+							fail(null, "failed running expectation on signal [%s] " +
+									"with " + "[%s]:\n%s",
 									Exceptions.unwrap(e)
 									          .getClass()
 									          .getName(),
@@ -913,7 +981,7 @@ final class DefaultStepVerifierBuilder<T>
 			else {
 				if (event.count != 0) {
 					Optional<AssertionError> error =
-							this.checkCountMismatch(event.count, actualSignal);
+							this.checkCountMismatch(event, actualSignal);
 
 					if (error.isPresent()) {
 						Exceptions.addThrowable(ERRORS, this, error.get());
@@ -1025,7 +1093,7 @@ final class DefaultStepVerifierBuilder<T>
 
 				int m = qs.requestFusion(requestedFusionMode);
 				if ((m & expectedFusionMode) != m) {
-					setFailure("expected fusion mode: %s; actual: %s",
+					setFailure(null, "expected fusion mode: %s; actual: %s",
 							formatFusionMode(expectedFusionMode),
 							formatFusionMode(m));
 					return;
@@ -1057,7 +1125,8 @@ final class DefaultStepVerifierBuilder<T>
 				}
 			}
 			else {
-				setFailure("expected fusion-ready source but actual Subscription is " + "not: %s",
+				setFailure(null, "expected fusion-ready source but actual Subscription " +
+								"is " + "not: %s",
 						expectedFusionMode,
 						s);
 			}
@@ -1100,15 +1169,34 @@ final class DefaultStepVerifierBuilder<T>
 
 	}
 
-	static final class SubscriptionEvent<T> implements EagerEvent<T> {
+	static abstract class AbstractEagerEvent<T> implements EagerEvent<T> {
 
-		final Consumer<Subscription> consumer;
+		String description = "";
 
-		SubscriptionEvent() {
-			this(null);
+		public AbstractEagerEvent(String description) {
+			this.description = description;
 		}
 
-		SubscriptionEvent(Consumer<Subscription> consumer) {
+		public boolean setDescription(String description) {
+			this.description = description;
+			return true;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+	}
+
+	static final class SubscriptionEvent<T> extends AbstractEagerEvent<T> {
+
+		final Consumer<Subscription> consumer;
+		
+		SubscriptionEvent(String desc) {
+			this(null, desc);
+		}
+
+		SubscriptionEvent(Consumer<Subscription> consumer, String desc) {
+			super(desc);
 			this.consumer = consumer;
 		}
 
@@ -1121,51 +1209,77 @@ final class DefaultStepVerifierBuilder<T>
 		boolean isTerminal() {
 			return consumer == null;
 		}
-
 	}
-	static final class SignalEvent<T> implements Event<T> {
 
-		final Function<Signal<T>, Optional<AssertionError>> function;
+	static abstract class AbstractSignalEvent<T> implements Event<T> {
 
-		SignalEvent(Function<Signal<T>, Optional<AssertionError>> function) {
+		String description;
+
+		public AbstractSignalEvent(String description) {
+			this.description = description;
+		}
+
+		public boolean setDescription(String description) {
+			this.description = description;
+			return true;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+	}
+
+	static final class SignalEvent<T> extends AbstractSignalEvent<T> {
+
+		final BiFunction<Signal<T>, SignalEvent<T>, Optional<AssertionError>> function;
+
+		SignalEvent(BiFunction<Signal<T>, SignalEvent<T>, Optional<AssertionError>> function,
+				String desc) {
+			super(desc);
 			this.function = function;
 		}
 
 		Optional<AssertionError> test(Signal<T> signal) {
-			return this.function.apply(signal);
+			return this.function.apply(signal, this);
 		}
 
 	}
 
-	static final class SignalCountEvent<T> implements Event<T> {
+	static final class SignalCountEvent<T> extends AbstractSignalEvent<T> {
 
 		final long count;
 
-		SignalCountEvent(long count) {
+		SignalCountEvent(long count, String desc) {
+			super(desc);
 			this.count = count;
 		}
 
 	}
 
-	static final class CollectEvent<T> implements EagerEvent<T> {
+	static final class CollectEvent<T> extends AbstractEagerEvent<T> {
 
 		final Supplier<? extends Collection<T>> supplier;
 
 		final Predicate<? super Collection<T>>  predicate;
 
 		final Consumer<? super Collection<T>>   consumer;
-		CollectEvent(Supplier<? extends Collection<T>> supplier) {
+
+		CollectEvent(Supplier<? extends Collection<T>> supplier, String desc) {
+			super(desc);
 			this.supplier = supplier;
 			this.predicate = null;
 			this.consumer = null;
 		}
-		CollectEvent(Consumer<? super Collection<T>> consumer) {
+
+		CollectEvent(Consumer<? super Collection<T>> consumer, String desc) {
+			super(desc);
 			this.supplier = null;
 			this.predicate = null;
 			this.consumer = consumer;
 		}
 
-		CollectEvent(Predicate<? super Collection<T>> predicate) {
+		CollectEvent(Predicate<? super Collection<T>> predicate, String desc) {
+			super(desc);
 			this.supplier = null;
 			this.predicate = predicate;
 			this.consumer = null;
@@ -1178,7 +1292,7 @@ final class DefaultStepVerifierBuilder<T>
 		Optional<AssertionError> test(Collection<T> collection) {
 			if (predicate != null) {
 				if (!predicate.test(collection)) {
-					return fail("expected collection predicate" + " match;" + " actual: %s",
+					return fail(this, "expected collection predicate match; actual: %s",
 							collection);
 				}
 				else {
@@ -1193,18 +1307,18 @@ final class DefaultStepVerifierBuilder<T>
 
 	}
 
-	static class TaskEvent<T> implements EagerEvent<T> {
+	static class TaskEvent<T> extends AbstractEagerEvent<T> {
 
 		final Runnable task;
-
-		TaskEvent(Runnable task) {
+		
+		TaskEvent(Runnable task, String desc) {
+			super(desc);
 			this.task = task;
 		}
 
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
 			task.run();
 		}
-
 	}
 
 	static void virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
@@ -1221,8 +1335,8 @@ final class DefaultStepVerifierBuilder<T>
 
 		final Duration duration;
 
-		NoEvent(Duration duration) {
-			super(null);
+		NoEvent(Duration duration, String desc) {
+			super(null, desc);
 			this.duration = duration;
 		}
 
@@ -1252,8 +1366,8 @@ final class DefaultStepVerifierBuilder<T>
 
 		final Duration duration;
 
-		WaitEvent(Duration duration) {
-			super(null);
+		WaitEvent(Duration duration, String desc) {
+			super(null, desc);
 			this.duration = duration;
 		}
 
@@ -1273,7 +1387,7 @@ final class DefaultStepVerifierBuilder<T>
 		final SubscriptionEvent<T> delegate;
 
 		SubscriptionTaskEvent(SubscriptionEvent<T> subscriptionEvent) {
-			super(null);
+			super(null, subscriptionEvent.getDescription());
 			this.delegate = subscriptionEvent;
 		}
 
@@ -1287,23 +1401,24 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static final class SignalSequenceEvent<T> implements Event<T> {
+	static final class SignalSequenceEvent<T> extends AbstractSignalEvent<T> {
 
 		final Iterable<? extends T> iterable;
 
-		SignalSequenceEvent(Iterable<? extends T> iterable) {
+		SignalSequenceEvent(Iterable<? extends T> iterable, String desc) {
+			super(desc);
 			this.iterable = iterable;
 		}
 
 		Optional<AssertionError> test(Signal<T> signal, Iterator<? extends T> iterator) {
 			if (signal.isOnNext()) {
 				if (!iterator.hasNext()) {
-					return fail("unexpected iterator request; " + "onNext(%s); iterable: %s",
+					return fail(this, "unexpected iterator request; onNext(%s); iterable: %s",
 							signal.get(), iterable);
 				}
 				T d2 = iterator.next();
 				if (!Objects.equals(signal.get(), d2)) {
-					return fail("expected : onNext(%s); actual: " + "%s; iterable: %s",
+					return fail(this, "expected : onNext(%s); actual: %s; iterable: %s",
 							d2,
 							signal.get(),
 							iterable);
@@ -1312,7 +1427,7 @@ final class DefaultStepVerifierBuilder<T>
 
 			}
 			if (iterator != null && iterator.hasNext() || signal.isOnError()) {
-				return fail("expected next " + "value: %s; actual " + "actual signal: " + "%s; iterable: %s",
+				return fail(this, "expected next value: %s; actual actual signal: %s; iterable: %s",
 						iterator != null && iterator.hasNext() ? iterator.next() : "none",
 						signal, iterable);
 			}
@@ -1320,8 +1435,32 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static Optional<AssertionError> fail(String msg, Object... args) {
-		return Optional.of(new AssertionError(String.format(msg, args)));
+	static final class DescriptionEvent<T> implements Event<T> {
+
+		final String description;
+
+		public DescriptionEvent(String description) {
+			this.description = description;
+		}
+
+		@Override
+		public boolean setDescription(String description) {
+			//NO OP
+			return false;
+		}
+
+		@Override
+		public String getDescription() {
+			return description;
+		}
+	}
+
+	static Optional<AssertionError> fail(Event<?> event, String msg, Object... args) {
+		String prefix = "expectation failed (";
+		if (event != null && event.getDescription() != null) {
+			prefix = String.format("expectation \"%s\" failed (", event.getDescription());
+		}
+		return Optional.of(new AssertionError(prefix + String.format(msg, args) + ")"));
 	}
 
 	static String formatFusionMode(int m) {
@@ -1340,18 +1479,18 @@ final class DefaultStepVerifierBuilder<T>
 		return "" + m;
 	}
 
-	static <T> SignalEvent<T> newOnSubscribeStep(){
-		return new SignalEvent<>(signal -> {
+	static <T> SignalEvent<T> newOnSubscribeStep(String desc){
+		return new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnSubscribe()) {
-				return fail("expected: onSubscribe(); actual: %s", signal);
+				return fail(se, "expected: onSubscribe(); actual: %s", signal);
 			}
 			else {
 				return Optional.empty();
 			}
-		});
+		}, desc);
 	}
 
-	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = newOnSubscribeStep();
+	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = newOnSubscribeStep("defaultOnSubscribe");
 
 	static final int NO_FUSION_SUPPORT = Integer.MIN_VALUE;
 
