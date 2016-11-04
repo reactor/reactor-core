@@ -434,6 +434,19 @@ final class DefaultStepVerifierBuilder<T>
 		return this;
 	}
 
+	@Override
+	public DefaultStepVerifierBuilder<T> thenConsumeWhile(Predicate<T> predicate) {
+		return thenConsumeWhile(predicate, t -> {});
+	}
+
+	@Override
+	public DefaultStepVerifierBuilder<T> thenConsumeWhile(Predicate<T> predicate,
+				Consumer<T> consumer) {
+		Objects.requireNonNull(predicate, "predicate");
+		this.script.add(new SignalConsumeWhileEvent<>(predicate, consumer, "thenConsumeWhile"));
+		return this;
+	}
+
 	final DefaultStepVerifier<T> build() {
 		return new DefaultStepVerifier<>(this);
 	}
@@ -867,6 +880,13 @@ final class DefaultStepVerifierBuilder<T>
 				}
 
 				onTaskEvent();
+				if (event instanceof DefaultStepVerifierBuilder.SignalConsumeWhileEvent) {
+					if (consumeWhile(actualSignal, (SignalConsumeWhileEvent<T>) event)) {
+						return;
+					}
+					//possibly re-evaluate the current onNext
+					event = this.script.peek();
+				}
 				if (event instanceof SignalCountEvent) {
 					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
 						return;
@@ -970,6 +990,24 @@ final class DefaultStepVerifierBuilder<T>
 				this.completeLatch.countDown();
 				return true;
 			}
+			return false;
+		}
+
+		boolean consumeWhile(Signal<T> actualSignal, SignalConsumeWhileEvent<T> whileEvent) {
+			if (actualSignal.isOnNext()) {
+				if (whileEvent.test(actualSignal.get())) {
+					//the value matches, gobble it up
+					if (this.logger != null) {
+						logger.debug("{} consumed {}", whileEvent.getDescription(), actualSignal);
+					}
+					return true;
+				}
+			}
+			if (this.logger != null) {
+				logger.debug("{} stopped at {}", whileEvent.getDescription(), actualSignal);
+			}
+			//stop evaluating the predicate
+			this.script.poll();
 			return false;
 		}
 
@@ -1432,6 +1470,26 @@ final class DefaultStepVerifierBuilder<T>
 						signal, iterable);
 			}
 			return Optional.empty();
+		}
+	}
+
+	static final class SignalConsumeWhileEvent<T> extends AbstractSignalEvent<T> {
+
+		private final Predicate<T> predicate;
+		private final Consumer<T>  consumer;
+
+		SignalConsumeWhileEvent(Predicate<T> predicate, Consumer<T> consumer, String desc) {
+			super(desc);
+			this.predicate = predicate;
+			this.consumer = consumer;
+		}
+
+		boolean test(T actual) {
+			if (predicate.test(actual)) {
+				consumer.accept(actual);
+				return true;
+			}
+			return false;
 		}
 	}
 

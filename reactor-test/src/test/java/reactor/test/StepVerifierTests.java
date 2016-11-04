@@ -18,8 +18,10 @@ package reactor.test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -953,6 +955,55 @@ public class StepVerifierTests {
 				            .verify(Duration.ofMillis(1000));
 
 		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(700L)));
+	}
+
+	@Test
+	public void testThenConsumeWhile() {
+		StepVerifier.create(Flux.range(3, 8))
+		            .expectNextMatches(first -> first == 3)
+		            .thenConsumeWhile(v -> v < 9)
+		            .expectNext(9)
+		            .expectNext(10)
+		            .expectComplete()
+		            .log()
+		            .verify();
+	}
+
+	@Test
+	public void testThenConsumeWhileWithConsumer() {
+		LongAdder count = new LongAdder();
+
+		StepVerifier.create(Flux.range(3, 8))
+		            .expectNextMatches(first -> first == 3)
+		            .thenConsumeWhile(v -> v < 9, v -> count.increment())
+		            .expectNext(9)
+		            .expectNext(10)
+		            .expectComplete()
+		            .log()
+		            .verify();
+
+		assertThat(count.intValue(), is(5));
+	}
+
+	@Test
+	public void testThenConsumeWhileFails() {
+		try {
+			StepVerifier.create(Flux.range(3, 8))
+			            .expectNextMatches(first -> first == 3)
+			            .thenConsumeWhile(v -> v <= 9)
+			            .expectNext(9)
+			            .expectNext(10)
+			            .expectComplete()
+			            .log()
+			            .verify();
+			throw new IllegalStateException();
+		}
+		catch (AssertionError e) {
+			assertThat(e.getMessage(), containsString("expectNext(9)"));
+		}
+		catch (IllegalStateException e) {
+			fail("expected assertion error on next 9");
+		}
 	}
 
 	@Test

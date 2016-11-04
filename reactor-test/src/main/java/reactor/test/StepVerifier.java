@@ -440,6 +440,27 @@ public interface StepVerifier {
 		Step<T> thenAwait(Duration timeshift);
 
 		/**
+		 * Consume further onNext signals as long as they match a predicate.
+		 *
+		 * @param predicate the condition to continue consuming onNext
+		 *
+		 * @return this builder
+		 */
+		Step<T> thenConsumeWhile(Predicate<T> predicate);
+
+		/**
+		 * Consume further onNext signals using a provided {@link Consumer} as long as
+		 * they match a {@link Predicate}.
+		 *
+		 * @param predicate the condition to continue consuming onNext
+		 * @param consumer  the consumer to use to consume the data, when the predicate
+		 * matches
+		 *
+		 * @return this builder
+		 */
+		Step<T> thenConsumeWhile(Predicate<T> predicate, Consumer<T> consumer);
+
+		/**
 		 * Request the given amount of elements from the upstream {@code Publisher}. This
 		 * is in addition to the initial number of elements requested by an
 		 * initial passed demand like with {@link StepVerifier#create(Publisher, long)}.
