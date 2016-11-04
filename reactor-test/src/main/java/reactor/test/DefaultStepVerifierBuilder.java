@@ -278,7 +278,8 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifierBuilder<T> expectNext(T... ts) {
+	@SafeVarargs
+	public final DefaultStepVerifierBuilder<T> expectNext(T... ts) {
 		Objects.requireNonNull(ts, "ts");
 		SignalEvent<T> event;
 		for (T t : ts) {
