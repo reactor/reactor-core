@@ -35,7 +35,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * <ul> <li>Create a {@code
  * StepVerifier} builder using {@link #create} or {@link #with}</li>
  * <li>Set individual up value expectations using
- * {@link Step#expectNext}, {@link Step#expectNextMatch(Predicate)},
+ * {@link Step#expectNext}, {@link Step#expectNextMatches(Predicate)},
  * {@link Step#expectNextCount(long)} or
  * {@link Step#expectNextSequence(Iterable)}
  * .</li>  <li>Set up
@@ -45,7 +45,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
  * StepVerifier} using {@link LastStep#expectComplete},
  * {@link LastStep#expectError}, {@link
  * LastStep#expectError(Class) expectError(Class)}, {@link
- * LastStep#expectErrorMatch(Predicate) expectErrorMatch(Predicate)}, or {@link
+ * LastStep#expectErrorMatches(Predicate) expectErrorMatches(Predicate)}, or {@link
  * LastStep#thenCancel}. </li> <li>Subscribe the built {@code
  * StepVerifier} to a {@code Publisher}.</li> <li>Verify the expectations using
  * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
@@ -255,7 +255,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
-		StepVerifier expectErrorMatch(Predicate<Throwable> predicate);
+		StepVerifier expectErrorMatches(Predicate<Throwable> predicate);
 
 		/**
 		 * Expect the completion signal.
@@ -351,7 +351,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNextMatch(Predicate<? super T> predicate);
+		Step<T> expectNextMatches(Predicate<? super T> predicate);
 
 		/**
 		 * Expect that no event has been observed by the verifier. A duration is
@@ -377,13 +377,13 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectRecordedMatch(Predicate<? super Collection<T>> predicate);
+		Step<T> expectRecordedMatches(Predicate<? super Collection<T>> predicate);
 
 		/**
 		 * Start a recording session storing {@link Subscriber#onNext(Object)} values in
 		 * the
 		 * supplied {@link Collection}. Further steps
-		 * {@link #expectRecordedMatch(Predicate)} and
+		 * {@link #expectRecordedMatches(Predicate)} and
 		 * {@link #consumeRecordedWith(Consumer)} can consume the session.
 		 * <p>If an
 		 * existing recording session hasn't not been declaratively consumed, this step
@@ -549,7 +549,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onSubscribe(Subscription)
 		 */
-		Step<T> expectSubscriptionMatch(Predicate<? super Subscription> predicate);
+		Step<T> expectSubscriptionMatches(Predicate<? super Subscription> predicate);
 	}
 
 }

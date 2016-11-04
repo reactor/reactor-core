@@ -234,7 +234,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifier<T> expectErrorMatch(Predicate<Throwable> predicate) {
+	public DefaultStepVerifier<T> expectErrorMatches(Predicate<Throwable> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
 			if (!signal.isOnError()) {
@@ -315,7 +315,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifierBuilder<T> expectNextMatch(
+	public DefaultStepVerifierBuilder<T> expectNextMatches(
 			Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		SignalEvent<T> event = new SignalEvent<>(signal -> {
@@ -335,7 +335,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifierBuilder<T> expectRecordedMatch(
+	public DefaultStepVerifierBuilder<T> expectRecordedMatches(
 			Predicate<? super Collection<T>> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.add(new CollectEvent<>(predicate));
@@ -354,7 +354,7 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
-	public DefaultStepVerifierBuilder<T> expectSubscriptionMatch(
+	public DefaultStepVerifierBuilder<T> expectSubscriptionMatches(
 			Predicate<? super Subscription> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		this.script.set(0, new SignalEvent<>(signal -> {

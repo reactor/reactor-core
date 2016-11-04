@@ -97,23 +97,23 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void expectNextMatch() {
+	public void expectNextMatches() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		StepVerifier.create(flux)
-		            .expectNextMatch("foo"::equals)
-		            .expectNextMatch("bar"::equals)
+		            .expectNextMatches("foo"::equals)
+		            .expectNextMatches("bar"::equals)
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void expectInvalidNextMatch() {
+	public void expectInvalidNextMatches() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
 		StepVerifier.create(flux)
-		            .expectNextMatch("foo"::equals)
-		            .expectNextMatch("baz"::equals)
+		            .expectNextMatches("foo"::equals)
+		            .expectNextMatches("baz"::equals)
 		            .expectComplete()
 		            .verify();
 	}
@@ -299,24 +299,24 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void errorMatch() {
+	public void errorMatches() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
 		StepVerifier.create(flux)
 		            .expectNext("foo")
-		            .expectErrorMatch(t -> t instanceof IllegalArgumentException)
+		            .expectErrorMatches(t -> t instanceof IllegalArgumentException)
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void errorMatchInvalid() {
+	public void errorMatchesInvalid() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
 		StepVerifier.create(flux)
 		            .expectNext("foo")
-		            .expectErrorMatch(t -> t instanceof IllegalStateException)
+		            .expectErrorMatches(t -> t instanceof IllegalStateException)
 		            .verify();
 	}
 
@@ -448,7 +448,7 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .expectSubscriptionMatch(s -> s instanceof Fuseable.QueueSubscription)
+		            .expectSubscriptionMatches(s -> s instanceof Fuseable.QueueSubscription)
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
@@ -497,25 +497,25 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyRecordMatch() {
+	public void verifyRecordMatches() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
-		            .expectRecordedMatch(c -> c.contains("foobar"))
+		            .expectRecordedMatches(c -> c.contains("foobar"))
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test(expected = AssertionError.class)
-	public void verifyRecordMatchError() {
+	public void verifyRecordMatchesError() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
-		            .expectRecordedMatch(c -> c.contains("foofoo"))
+		            .expectRecordedMatches(c -> c.contains("foofoo"))
 		            .expectComplete()
 		            .verify();
 	}
@@ -531,12 +531,12 @@ public class StepVerifierTests {
 	}
 
 	@Test(expected = AssertionError.class)
-	public void verifyRecordMatchError2() {
+	public void verifyRecordMatchesError2() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		StepVerifier.create(flux)
 		            .expectNext("foo", "bar", "foobar")
-		            .expectRecordedMatch(c -> c.size() == 3)
+		            .expectRecordedMatches(c -> c.size() == 3)
 		            .expectComplete()
 		            .verify();
 	}
@@ -560,7 +560,7 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .expectSubscriptionMatch(s -> false)
+		            .expectSubscriptionMatches(s -> false)
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
