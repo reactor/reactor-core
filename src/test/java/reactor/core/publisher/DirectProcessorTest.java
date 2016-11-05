@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class DirectProcessorTest {
@@ -44,40 +45,33 @@ public class DirectProcessorTest {
 
     @Test
     public void normal() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
-        tp.subscribe(ts);
-
-        Assert.assertTrue("No subscribers?", tp.hasDownstreams());
-        Assert.assertFalse("Completed?", tp.hasCompleted());
-        Assert.assertNull("Has error?", tp.getError());
-        Assert.assertFalse("Has error?", tp.hasError());
-
-        ts.assertNoValues()
-          .assertNoError()
-          .assertNotComplete();
-
-        tp.onNext(1);
-        tp.onNext(2);
-
-        ts.assertValues(1, 2)
-          .assertNotComplete()
-          .assertNoError();
-
-        tp.onNext(3);
-        tp.onComplete();
-
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-        Assert.assertTrue("Not completed?", tp.hasCompleted());
-        Assert.assertNull("Has error?", tp.getError());
-        Assert.assertFalse("Has error?", tp.hasError());
-
-
-        ts.assertValues(1, 2, 3)
-          .assertComplete()
-          .assertNoError();
+	    StepVerifier.create(tp)
+	                .then(() -> {
+		                Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+		                Assert.assertFalse("Completed?", tp.hasCompleted());
+		                Assert.assertNull("Has error?", tp.getError());
+		                Assert.assertFalse("Has error?", tp.hasError());
+	                })
+	                .then(() -> {
+		                tp.onNext(1);
+		                tp.onNext(2);
+	                })
+	                .expectNext(1, 2)
+	                .then(() -> {
+		                tp.onNext(3);
+		                tp.onComplete();
+	                })
+	                .then(() -> {
+		                Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		                Assert.assertTrue("Not completed?", tp.hasCompleted());
+		                Assert.assertNull("Has error?", tp.getError());
+		                Assert.assertFalse("Has error?", tp.hasError());
+	                })
+	                .expectNext(3)
+	                .expectComplete()
+	                .verify();
     }
 
     @Test

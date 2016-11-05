@@ -46,7 +46,7 @@ ext {
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
-
+  testAddonVersion = '3.0.3.RELEASE'
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
@@ -180,6 +180,7 @@ configure(rootProject) {
     testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
     // Testing
     testCompile "org.codehaus.groovy:groovy:$groovyVersion",
+            "io.projectreactor.addons:reactor-test:$testAddonVersion",
             "org.spockframework:spock-core:$spockVersion",
             "org.hamcrest:hamcrest-library:1.3",
             "org.testng:testng:6.8.5"

@@ -65,8 +65,7 @@ final class MonoCreate<T> extends Mono<T> {
         T value;
         
         static final Cancellation CANCELLED = () -> { };
-        
-        static final int NO_REQUEST_NO_VALUE = 0;
+
         static final int NO_REQUEST_HAS_VALUE = 1;
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
