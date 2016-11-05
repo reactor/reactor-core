@@ -101,7 +101,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		@Override
 		public void request(long n) {
 			if (WIP.compareAndSet(this, 0, 1)) {
-				s.request(Long.MAX_VALUE);
+				s.request(1);
 			}
 		}
 
