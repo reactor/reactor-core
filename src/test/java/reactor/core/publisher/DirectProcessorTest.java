@@ -63,77 +63,56 @@ public class DirectProcessorTest {
 		                tp.onNext(3);
 		                tp.onComplete();
 	                })
-	                .then(() -> {
-		                Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-		                Assert.assertTrue("Not completed?", tp.hasCompleted());
-		                Assert.assertNull("Has error?", tp.getError());
-		                Assert.assertFalse("Has error?", tp.hasError());
-	                })
 	                .expectNext(3)
 	                .expectComplete()
 	                .verify();
+
+	    Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+	    Assert.assertTrue("Not completed?", tp.hasCompleted());
+	    Assert.assertNull("Has error?", tp.getError());
+	    Assert.assertFalse("Has error?", tp.hasError());
     }
 
     @Test
     public void normalBackpressured() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
-        tp.subscribe(ts);
+	    StepVerifier.create(tp, 0L)
+	                .then(() -> {
+		                Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+		                Assert.assertFalse("Completed?", tp.hasCompleted());
+		                Assert.assertNull("Has error?", tp.getError());
+		                Assert.assertFalse("Has error?", tp.hasError());
+	                })
+	                .thenRequest(10L)
+	                .then(() -> {
+		                tp.onNext(1);
+		                tp.onNext(2);
+		                tp.onComplete();
+	                })
+	                .expectNext(1, 2)
+	                .expectComplete()
+	                .verify();
 
-        Assert.assertTrue("No subscribers?", tp.hasDownstreams());
-        Assert.assertFalse("Completed?", tp.hasCompleted());
-        Assert.assertNull("Has error?", tp.getError());
-        Assert.assertFalse("Has error?", tp.hasError());
-
-        ts.assertNoValues()
-          .assertNoError()
-          .assertNotComplete();
-
-        ts.request(10);
-
-        tp.onNext(1);
-        tp.onNext(2);
-        tp.onComplete();
-
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-        Assert.assertTrue("Not completed?", tp.hasCompleted());
-        Assert.assertNull("Has error?", tp.getError());
-        Assert.assertFalse("Has error?", tp.hasError());
-
-        ts.assertValues(1, 2)
-          .assertNoError()
-          .assertComplete();
+	    Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+	    Assert.assertTrue("Not completed?", tp.hasCompleted());
+	    Assert.assertNull("Has error?", tp.getError());
+	    Assert.assertFalse("Has error?", tp.hasError());
     }
 
     @Test
     public void notEnoughRequests() {
-
-        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
         DirectProcessor<Integer> tp = DirectProcessor.create();
 
-        tp.subscribe(ts);
-
-        ts.assertNoValues()
-          .assertNoError()
-          .assertNotComplete();
-
-        ts.request(1);
-
-        tp.onNext(1);
-        tp.onNext(2);
-        tp.onComplete();
-
-        Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
-        Assert.assertTrue("Not completed?", tp.hasCompleted());
-        Assert.assertNull("Has error?", tp.getError());
-        Assert.assertFalse("Has error?", tp.hasError());
-
-        ts.assertValues(1)
-          .assertError(IllegalStateException.class)
-          .assertNotComplete();
+	    StepVerifier.create(tp, 1L)
+	                .then(() -> {
+		                tp.onNext(1);
+		                tp.onNext(2);
+		                tp.onComplete();
+	                })
+	                .expectNext(1)
+	                .expectError(IllegalStateException.class)
+	                .verify();
     }
 
     @Test
