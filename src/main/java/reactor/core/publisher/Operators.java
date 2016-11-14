@@ -512,6 +512,16 @@ public abstract class Operators {
 		return res;
 	}
 
+	/**
+	 * Atomically terminates the subscription if it is not already a
+	 * {@link #cancelledSubscription()}, cancelling the subscription and setting the field
+	 * to the singleton {@link #cancelledSubscription()}.
+	 *
+	 * @param <F> the instance type containing the field
+	 * @param field the field accessor
+	 * @param instance the parent instance
+	 * @return true if terminated, false if the subscription was already terminated
+	 */
 	public static <F> boolean terminate(AtomicReferenceFieldUpdater<F, Subscription> field,
 			F instance) {
 		Subscription a = field.get(instance);
