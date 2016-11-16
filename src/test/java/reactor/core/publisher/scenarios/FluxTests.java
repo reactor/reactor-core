@@ -43,7 +43,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -64,6 +66,7 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -72,6 +75,7 @@ import reactor.util.function.Tuples;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
 
@@ -1476,6 +1480,58 @@ public class FluxTests extends AbstractReactorTest {
 			println("Succeeded " + successCount + " time" + (successCount <= 1 ? "." : "s."));
 		}
 
+	}
+
+	@Test
+	public void testBufferPredicateUntilIncludesBoundaryLast() {
+		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
+
+		Flux<List<String>> colors = Flux
+				.fromArray(colorSeparated)
+				.bufferUntil(val -> val.equals("#"))
+				.log();
+
+		StepVerifier.create(colors)
+		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue", "#")))
+		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("green", "green", "#")))
+		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("blue", "cyan")))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void testBufferPredicateUntilOtherIncludesBoundaryFirst() {
+		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
+
+		Flux<List<String>> colors = Flux
+				.fromArray(colorSeparated)
+				.bufferUntilOther(val -> val.equals("#"))
+				.log();
+
+		StepVerifier.create(colors)
+		            .thenRequest(1)
+		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue")))
+		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("#", "green", "green")))
+		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("#", "blue", "cyan")))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void testBufferPredicateWhileDoesntIncludeBoundary() {
+		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
+
+		Flux<List<String>> colors = Flux
+				.fromArray(colorSeparated)
+				.bufferWhile(val -> !val.equals("#"))
+				.log();
+
+		StepVerifier.create(colors)
+		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue")))
+		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("green", "green")))
+		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("blue", "cyan")))
+		            .expectComplete()
+		            .verify();
 	}
 
 	private static final long TIMEOUT = 10_000;

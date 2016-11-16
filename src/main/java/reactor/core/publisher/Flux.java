@@ -2181,6 +2181,70 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into
+	 * the returned {@link Flux} each time the given predicate returns false. Note that
+	 * the element that triggers the predicate to return false (and thus closes a buffer)
+	 * is included as last element in the emitted buffer.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
+	 * alt="">
+	 * <p>
+	 * On completion, if the latest buffer is non-empty and has not been closed it is
+	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
+	 * termination.
+	 *
+	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
+		return onAssembly(new FluxBufferPredicate<>(this, predicate,
+				listSupplier(), FluxBufferPredicate.Mode.UNTIL));
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into
+	 * the returned {@link Flux} each time the given predicate returns false. Note that
+	 * the element that triggers the predicate to return false (and thus closes a buffer)
+	 * is included as first element in the newly opened buffer.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
+	 * alt="">
+	 * <p>
+	 * On completion, if the latest buffer is non-empty and has not been closed it is
+	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
+	 * termination.
+	 *
+	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final Flux<List<T>> bufferUntilOther(Predicate<? super T> predicate) {
+		return onAssembly(new FluxBufferPredicate<>(this, predicate,
+				listSupplier(), FluxBufferPredicate.Mode.UNTIL_OTHER));
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into
+	 * the returned {@link Flux}. Each buffer continues aggregating values while the
+	 * given predicate returns true, and a new buffer is created as soon as the
+	 * predicate returns false.. Note that the element that triggers the predicate
+	 * to return false (and thus closes a buffer) is NOT included in any emitted buffer.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
+	 * alt="">
+	 * <p>
+	 * On completion, if the latest buffer is non-empty and has not been closed it is
+	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
+	 * termination.
+	 *
+	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @return a microbatched {@link Flux} of {@link List}
+	 */
+	public final Flux<List<T>> bufferWhile(Predicate<? super T> predicate) {
+		return onAssembly(new FluxBufferPredicate<>(this, predicate,
+				listSupplier(), FluxBufferPredicate.Mode.WHILE));
+	}
+
+	/**
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}. Will
 	 * retain up an unbounded volume of onNext signals. Completion and Error will also be
 	 * replayed.
@@ -5696,8 +5760,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Relay values while a predicate returns
-	 * {@literal FALSE} for the values (checked before each value is delivered).
+	 * Relay values while a predicate returns {@literal TRUE} for the values
+	 * (checked before each value is delivered).
 	 * Unlike {@link #takeUntilOther}, this will exclude the matched data.
 	 *
 	 * <p>
