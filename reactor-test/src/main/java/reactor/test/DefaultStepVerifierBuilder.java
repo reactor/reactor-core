@@ -944,10 +944,10 @@ final class DefaultStepVerifierBuilder<T>
 							this,
 							fail(null, "failed running expectation on signal [%s] " +
 									"with " + "[%s]:\n%s",
-									Exceptions.unwrap(e)
-									          .getClass()
-									          .getName(),
-									msg).get());
+									actualSignal,
+									Exceptions.unwrap(e).getClass().getName(),
+									msg
+							).get());
 				}
 				cancel();
 				completeLatch.countDown();
