@@ -586,7 +586,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -605,7 +605,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -628,7 +628,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -650,7 +650,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -677,7 +677,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -707,7 +707,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
@@ -777,7 +777,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Aggregate given void publisher into a new a {@literal Mono} that will be fulfilled
 	 * when all of the given {@literal
 	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
@@ -800,7 +800,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Flux}.
+	 * returned {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/whent.png" alt="">
 	 * <p>
@@ -1853,13 +1853,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * Transform the error emitted by this {@link Mono} by applying a function.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
 	 * <p>
 	 * @param mapper the error transforming {@link Function}
 	 *
-	 * @return a transformed {@link Flux}
+	 * @return a transformed {@link Mono}
 	 */
 	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
 		return otherwise(e -> Mono.error(mapper.apply(e)));
@@ -2059,14 +2059,14 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Fallback to the given value if an error of a given type is observed on this
-	 * {@link Flux}
+	 * {@link Mono}
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisereturn.png" alt="">
 	 * @param type the error type to match
 	 * @param fallbackValue alternate value on fallback
 	 * @param <E> the error type
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new {@link Mono}
 	 */
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
 			T fallbackValue) {
@@ -2076,7 +2076,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Fallback to the given value if an error matching the given predicate is
 	 * observed on this
-	 * {@link Flux}
+	 * {@link Mono}
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/otherwisereturn.png" alt="">
 	 * @param predicate the error predicate to match
@@ -2203,10 +2203,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to this {@link Flux} when a companion sequence signals a number of emitted elements in
+	 * Repeatedly subscribe to this {@link Mono} when a companion sequence signals a number of emitted elements in
 	 * response to the flux completion signal.
-	 * <p>If the companion sequence signals when this {@link Flux} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
+	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with
+	 * the same signal immediately.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhen.png" alt="">
@@ -2226,7 +2227,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
 	 * number of emitted elements.
 	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 * attempt is suppressed and any terminal signal will terminate this {@link Mono} with the same signal immediately.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeatwhenempty.png" alt="">
@@ -2247,7 +2248,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
 	 * number of emitted elements.
 	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
+	 * attempt is suppressed and any terminal signal will terminate this {@link Mono} with the same signal immediately.
 	 * <p>Emits an {@link IllegalStateException} if the max repeat is exceeded and different from {@code Integer.MAX_VALUE}.
 	 *
 	 * <p>
@@ -2659,7 +2660,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/timeoutp1.png" alt="">
 	 *
-	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Mono}
 	 * @param <U> the element type of the timeout Publisher
 	 *
 	 * @return an expirable {@link Mono} if the first item does not come before a {@link Publisher} signal
