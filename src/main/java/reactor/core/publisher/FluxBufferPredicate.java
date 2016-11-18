@@ -18,13 +18,13 @@ package reactor.core.publisher;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Trackable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -36,7 +36,7 @@ import org.reactivestreams.Subscription;
  *     <li>{@code UntilOther}: A new buffer starts when the predicate returns true. The
  *     element that just matched the predicate is the first in the new buffer.</li>
  *     <li>{@code While}: A new buffer starts when the predicate stops matching. The
- *     non-matching element is simply discarded.</li>
+ *     non-matching elements are simply discarded.</li>
  * </ul>
  *
  * @param <T> the source value type
@@ -47,7 +47,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		extends FluxSource<T, C> {
 
 	public enum Mode {
-		UNTIL, UNTIL_OTHER, WHILE;
+		UNTIL, UNTIL_CUT_BEFORE, WHILE;
 	}
 
 	final Predicate<? super T> predicate;
@@ -66,7 +66,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return 1; //this operator changes the downstream request to 1 in the source
 	}
 	
 	@Override
@@ -88,28 +88,28 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(s,
 				initialBuffer, bufferSupplier, predicate, mode);
 
-		s.onSubscribe(parent);//?
 		source.subscribe(parent);
 	}
 	
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
-	implements Subscriber<T>, Subscription {
+	implements Subscriber<T>, Subscription, Trackable {
 
 		final Subscriber<? super C> actual;
-		
-		final Supplier<C> bufferSupplier;
 
-		final Predicate<? super T> predicate;
+		final Supplier<C> bufferSupplier;
 
 		final Mode mode;
 
+		final Predicate<? super T> predicate;
+
 		C buffer;
-		
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(BufferPredicateSubscriber.class, Subscription.class, "s");
-		
+
+		boolean done;
+
+		volatile boolean fastpath;
+
+		Subscription s;
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED =
@@ -123,74 +123,84 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			this.predicate = predicate;
 			this.mode = mode;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				long previousRequest = Operators.getAndAddCap(REQUESTED, this, n);
+				if (requested == Long.MAX_VALUE) {
+					// here we request everything from the source. switching to
+					// fastpath will avoid unnecessary request(1) during filling
+					fastpath = true;
+					s.request(Long.MAX_VALUE);
+				}
+				else if (previousRequest == 0L) {
+					// requesting from source may have been interrupted if
+					// downstream received enough buffer (requested == 0), so this
+					// new request for buffer should resume progressive filling from
+					// upstream
+					s.request(1);
+				}
 			}
 		}
 
 		@Override
 		public void cancel() {
-			Operators.terminate(S, this);
+			s.cancel();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			C b;
-			synchronized (this) {
-				b = buffer;
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
 			}
 
-			if (b == null) {
-				Operators.onNextDropped(t);
+			C b = buffer;
+			boolean match;
+			try {
+				match = predicate.test(t);
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return;
+			}
+
+			if (mode == Mode.UNTIL && match) {
+				b.add(t);
+				triggerNewBuffer();
+			}
+			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
+					triggerNewBuffer();
+				b = buffer;
+				b.add(t);
+			}
+			else if (mode == Mode.WHILE && !match) {
+				triggerNewBuffer();
 			}
 			else {
-				boolean match;
-				try {
-					match = predicate.test(t);
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
-					return;
-				}
-
-				if (mode == Mode.UNTIL && match) {
-					b.add(t);
-					triggerNewBuffer();
-				}
-				else if (mode == Mode.UNTIL_OTHER && match) {
-					triggerNewBuffer();
-					synchronized (this) {
-						b = buffer;
-					}
-					b.add(t);
-				}
-				else if (mode == Mode.WHILE && !match) {
-					triggerNewBuffer();
-				}
-				else {
-					b.add(t);
+				b.add(t);
+				//continue requesting from the source in order to fill the buffer
+				if (!fastpath) {
+					s.request(1);
 				}
 			}
 		}
 
 		private void triggerNewBuffer() {
-			C b;
-			synchronized (this) {
-				b = buffer;
-			}
+			C b = buffer;
 
 			if (b.isEmpty()) {
-				return; //will reuse the same buffer
+				//emit nothing and we'll reuse the same buffer
+				return;
 			}
 
 			//we'll create a new buffer
@@ -198,7 +208,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 			try {
 				c = bufferSupplier.get();
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e));
 				return;
 			}
@@ -209,59 +220,34 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return;
 			}
 
-			synchronized (this) {
-				buffer = c;
+			buffer = c;
+			if (emit(b) && requested > 0 && !fastpath) {
+				//when a buffer has been emitted, if more buffers request are pending then
+				//request more data from source
+				s.request(1);
 			}
-
-			emit(b);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			Subscription s = this.s;
-			if (s != null) {
-				this.s = null;
-			}
-			else {
+			if (done) {
 				Operators.onErrorDropped(t);
+				return;
 			}
-			boolean report;
-
-			synchronized (this) {
-				C b = buffer;
-
-				if (b != null) {
-					buffer = null;
-					report = true;
-				}
-				else {
-					report = false;
-				}
-			}
-
-			if (report) {
-				actual.onError(t);
-			}
-			else {
-				Operators.onErrorDropped(t);
-			}
+			done = true;
+			buffer = null;
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			Subscription s = this.s;
-			if (s != null) {
-				this.s = null;
-			}
-			else {
+			if (done) {
 				return;
 			}
+			done = true;
 
-			C b;
-			synchronized (this) {
-				b = buffer;
-				buffer = null;
-			}
+			C b = buffer;
+			buffer = null;
 
 			if (b != null && !b.isEmpty()) {
 				if (emit(b)) {
@@ -290,6 +276,22 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 				return false;
 			}
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !done;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public long getPending() {
+			C b = buffer;
+			return b != null ? b.size() : 0L;
 		}
 	}
 }

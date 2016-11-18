@@ -1500,12 +1500,12 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testBufferPredicateUntilOtherIncludesBoundaryFirst() {
+	public void testBufferPredicateUntilCutBeforeIncludesBoundaryFirst() {
 		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
 
 		Flux<List<String>> colors = Flux
 				.fromArray(colorSeparated)
-				.bufferUntilOther(val -> val.equals("#"))
+				.bufferUntil(val -> val.equals("#"), true)
 				.log();
 
 		StepVerifier.create(colors)
