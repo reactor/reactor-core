@@ -225,7 +225,7 @@ public class FluxBufferPredicateTest {
 				sp1, i -> i % 3 != 0, Flux.listSupplier(),
 				FluxBufferPredicate.Mode.WHILE);
 
-		StepVerifier.create(bufferWhile.log())
+		StepVerifier.create(bufferWhile)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
 				.then(() -> sp1.onNext(1))
@@ -256,7 +256,7 @@ public class FluxBufferPredicateTest {
 		FluxBufferPredicate<Integer, List<Integer>> bufferWhile = new FluxBufferPredicate<>(
 				sp1, i -> i % 3 == 0, Flux.listSupplier(), FluxBufferPredicate.Mode.WHILE);
 
-		StepVerifier.create(bufferWhile.log())
+		StepVerifier.create(bufferWhile)
 				.expectSubscription()
 				.expectNoEvent(Duration.ofMillis(10))
 				.then(() -> sp1.onNext(1))
@@ -448,7 +448,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestBounded() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10).log()
+		Flux<Integer> source = Flux.range(1, 10)
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(1, //start with a request for 1 buffer
@@ -465,7 +465,56 @@ public class FluxBufferPredicateTest {
 		            .expectComplete()
 		            .verify();
 
-		assertThat(requestCallCount.intValue(), is(11)); //10 elements then the completion
+		//request(1) x 3, request(2) + request(1) x 4, request(3) that completes == 9
+		assertThat(requestCallCount.intValue(), is(9));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void requestBoundedSeveralInitial() {
+		LongAdder requestCallCount = new LongAdder();
+		Flux<Integer> source = Flux.range(1, 10)
+		                           .doOnRequest(r -> requestCallCount.increment());
+
+		StepVerifier.withVirtualTime(2, //start with a request for 2 buffers
+				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
+				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6))
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(2)
+					.expectNext(Arrays.asList(7, 8, 9))
+		            .expectNext(Collections.singletonList(10))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		//request(2) + request(1) x 4, request(2) + request(1) x 3 that completes == 9
+		assertThat(requestCallCount.intValue(), is(9));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void requestRemainingBuffersAfterBufferEmission() {
+		LongAdder requestCallCount = new LongAdder();
+		Flux<Integer> source = Flux.range(1, 10)
+		                           .doOnRequest(r -> requestCallCount.increment());
+
+		StepVerifier.withVirtualTime(3, //start with a request for 3 buffers
+				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6), Arrays.asList(7, 8, 9))
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .expectNext(Collections.singletonList(10))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		//first buffer: request(3)
+		//second buffer: request(2) + request(1)
+		//third buffer: request(1) x 3
+		//after third buffer, thenRequest(1) triggers request(1) x 2 and completes
+		assertThat(requestCallCount.intValue(), is(8));
 	}
 
 	@Test
@@ -473,12 +522,11 @@ public class FluxBufferPredicateTest {
 	public void requestUnboundedFromStartRequestsSourceOnce() {
 		LongAdder requestCallCount = new LongAdder();
 		Flux<Integer> source = Flux.range(1, 10)
-		                           .log()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(//start with an unbounded request
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL).log())
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .expectNext(Arrays.asList(4, 5, 6), Arrays.asList(7, 8, 9))
@@ -493,12 +541,12 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestSwitchingToMaxRequestsSourceOnlyOnceMore() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10).log()
+		Flux<Integer> source = Flux.range(1, 10)
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(1, //start with a single request
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL).log())
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .expectNoEvent(Duration.ofSeconds(1))
