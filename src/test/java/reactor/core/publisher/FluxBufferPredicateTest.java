@@ -448,7 +448,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestBounded() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10)
+		Flux<Integer> source = Flux.range(1, 10).hide()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(1, //start with a request for 1 buffer
@@ -473,7 +473,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestBoundedSeveralInitial() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10)
+		Flux<Integer> source = Flux.range(1, 10).hide()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(2, //start with a request for 2 buffers
@@ -496,7 +496,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestRemainingBuffersAfterBufferEmission() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10)
+		Flux<Integer> source = Flux.range(1, 10).hide()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(3, //start with a request for 3 buffers
@@ -521,7 +521,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestUnboundedFromStartRequestsSourceOnce() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10)
+		Flux<Integer> source = Flux.range(1, 10).hide()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(//start with an unbounded request
@@ -541,7 +541,7 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestSwitchingToMaxRequestsSourceOnlyOnceMore() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10)
+		Flux<Integer> source = Flux.range(1, 10).hide()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(1, //start with a single request
@@ -557,6 +557,32 @@ public class FluxBufferPredicateTest {
 		            .expectComplete()
 		            .verify();
 
+		assertThat(requestCallCount.intValue(), is(4));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void requestBoundedConditionalFusesDemands() {
+		LongAdder requestCallCount = new LongAdder();
+		Flux<Integer> source = Flux.range(1, 10)
+		                           .doOnRequest(r -> requestCallCount.increment());
+
+		StepVerifier.withVirtualTime(1,
+				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 2, 3))
+		            .thenRequest(1)
+					.expectNext(Arrays.asList(4, 5, 6))
+		            .thenRequest(1)
+					.expectNext(Arrays.asList(7, 8, 9))
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .expectNext(Collections.singletonList(10))
+		            .expectComplete()
+		            .verify();
+
+		//despite the 1 by 1 demand, only 1 fused request per buffer, 4 buffers
 		assertThat(requestCallCount.intValue(), is(4));
 	}
 

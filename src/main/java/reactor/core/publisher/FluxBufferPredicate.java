@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Trackable;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -95,7 +96,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 	
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
-	implements Subscriber<T>, Subscription, Trackable {
+			implements ConditionalSubscriber<T>, Subscription, Trackable {
 
 		final Subscriber<? super C> actual;
 
@@ -170,9 +171,16 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@Override
 		public void onNext(T t) {
+			if (!tryOnNext(t)) {
+				s.request(1);
+			}
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
-				return;
+				return true;
 			}
 
 			C b = buffer;
@@ -182,7 +190,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
-				return;
+				return true;
 			}
 
 			if (mode == Mode.UNTIL && match) {
@@ -190,7 +198,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				triggerNewBuffer();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
-					triggerNewBuffer();
+				triggerNewBuffer();
 				b = buffer;
 				b.add(t);
 			}
@@ -203,9 +211,10 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				if (upstreamRequested <= 0 && !fastpath) {
 					//already added what was block-requested at the beginning but still
 					// not enough to fill the buffer, continue requesting from the source
-					s.request(1);
+					return false;
 				}
 			}
+			return true;
 		}
 
 		private void triggerNewBuffer() {
