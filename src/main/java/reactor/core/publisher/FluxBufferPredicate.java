@@ -15,11 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.util.AbstractQueue;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -28,7 +31,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Trackable;
-import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -96,7 +98,9 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 	
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
-			implements ConditionalSubscriber<T>, Subscription, Trackable {
+			extends AbstractQueue<C>
+			implements ConditionalSubscriber<T>, Subscription, Trackable,
+			           BooleanSupplier {
 
 		final Subscriber<? super C> actual;
 
@@ -113,16 +117,18 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		volatile boolean fastpath;
 
 		volatile long requested;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class, "requested");
 
 		volatile Subscription s;
+
 		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber,
 				Subscription> S = AtomicReferenceFieldUpdater.newUpdater
 				(BufferPredicateSubscriber.class, Subscription.class, "s");
 
-		volatile long upstreamRequested;
+		volatile long produced;
 
 
 		BufferPredicateSubscriber(Subscriber<? super C> actual, C initialBuffer,
@@ -137,22 +143,24 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n) && !done) {
-				long previousRequest = Operators.getAndAddCap(REQUESTED, this, n);
-				if (requested == Long.MAX_VALUE) {
+				long expectedRequested = Operators.addCap(n, requested);
+				if (expectedRequested == Long.MAX_VALUE) {
 					// here we request everything from the source. switching to
 					// fastpath will avoid unnecessary request(1) during filling
 					fastpath = true;
+					requested = Long.MAX_VALUE;
 					s.request(Long.MAX_VALUE);
 				}
-				else if (previousRequest == 0L) {
+				else {
 					// Requesting from source may have been interrupted if downstream
 				    // received enough buffer (requested == 0), so this new request for
 				    // buffer should resume progressive filling from upstream. We can
 					// directly request the same as the number of needed buffers (if
 					// buffers turn out 1-sized then we'll have everything, otherwise
 					// we'll continue requesting one by one)
-					upstreamRequested = n;
-					s.request(n);
+					if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
+						s.request(n);
+					}
 				}
 			}
 		}
@@ -195,20 +203,20 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 			if (mode == Mode.UNTIL && match) {
 				b.add(t);
-				triggerNewBuffer();
+				emitAndTriggerNewBuffer();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
-				triggerNewBuffer();
+				emitAndTriggerNewBuffer();
 				b = buffer;
 				b.add(t);
 			}
 			else if (mode == Mode.WHILE && !match) {
-				triggerNewBuffer();
+				emitAndTriggerNewBuffer();
 			}
 			else {
 				b.add(t);
-				upstreamRequested--;
-				if (upstreamRequested <= 0 && !fastpath) {
+				produced++;
+				if (produced >= requested && !fastpath) {
 					//already added what was block-requested at the beginning but still
 					// not enough to fill the buffer, continue requesting from the source
 					return false;
@@ -217,12 +225,16 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			return true;
 		}
 
-		private void triggerNewBuffer() {
+		private C triggerNewBuffer() {
 			C b = buffer;
+			if (done) {
+				buffer = null;
+				return b;
+			}
 
 			if (b.isEmpty()) {
 				//emit nothing and we'll reuse the same buffer
-				return;
+				return null;
 			}
 
 			//we'll create a new buffer
@@ -233,21 +245,29 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e));
-				return;
+				return null;
 			}
 
 			if (c == null) {
 				cancel();
 				onError(new NullPointerException("The bufferSupplier returned a null buffer"));
-				return;
+				return null;
 			}
 
 			buffer = c;
-			if (emit(b) && requested > 0 && !fastpath) {
-				//when a buffer has been emitted, if more buffers request are pending then
-				//request more data from source (with a potentially larger initial batch)
-				upstreamRequested = requested;
-				s.request(requested);
+			return b;
+		}
+
+		private void emitAndTriggerNewBuffer() {
+			C b = triggerNewBuffer();
+			if (b != null && emit(b)) {
+				produced = 0; //reset the produced counter each time a new buffer is emitted
+				long r = requested;
+				if (r > 0 && !fastpath) {
+					//when a buffer has been emitted, if more buffers request are pending then
+					//request more data from source (with a potentially larger initial batch)
+					s.request(r);
+				}
 			}
 		}
 
@@ -268,16 +288,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return;
 			}
 			done = true;
-
-			C b = buffer;
-			buffer = null;
-
-			//delay the actual onComplete if there is a remaining buffer
-			Queue<C> q = QueueSupplier.<C>one().get();
-			if (b != null && !b.isEmpty()) {
-				q.add(b);
+			long p = produced;
+			if (p != 0L) {
+				REQUESTED.decrementAndGet(this);
 			}
-			DrainUtils.postComplete(actual, q, REQUESTED, this, this::isCancelled);
+			DrainUtils.postCompleteDrain(1, actual, this, REQUESTED, this, this);
 		}
 
 		boolean emit(C b) {
@@ -315,6 +330,49 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		public long getPending() {
 			C b = buffer;
 			return b != null ? b.size() : 0L;
+		}
+
+		@Override
+		public boolean getAsBoolean() {
+			return isCancelled();
+		}
+
+		@Override
+		public Iterator<C> iterator() {
+			if (isEmpty()) {
+				return Collections.emptyIterator();
+			}
+			return Collections.singleton(buffer).iterator();
+		}
+
+		@Override
+		public boolean offer(C objects) {
+			throw new IllegalArgumentException();
+		}
+
+		@Override
+		public C poll() {
+			C b = buffer;
+			if (b != null && !b.isEmpty()) {
+				b = triggerNewBuffer();
+				return b;
+			}
+			return null;
+		}
+
+		@Override
+		public C peek() {
+			return buffer;
+		}
+
+		@Override
+		public int size() {
+			return buffer == null || buffer.isEmpty() ? 0 : 1;
+		}
+
+		@Override
+		public String toString() {
+			return "FluxBufferPredicate";
 		}
 	}
 }
