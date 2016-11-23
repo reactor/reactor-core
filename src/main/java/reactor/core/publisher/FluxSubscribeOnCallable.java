@@ -208,6 +208,12 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				return;
 			}
 
+			if (v == null) {
+				actual.onError(Operators.onOperatorError(this,
+						new NullPointerException("The callable returned null")));
+				return;
+			}
+
 			for (; ; ) {
 				int s = state;
 				if (s == CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {

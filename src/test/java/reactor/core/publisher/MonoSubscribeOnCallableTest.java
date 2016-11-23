@@ -15,11 +15,49 @@
  */
 package reactor.core.publisher;
 
+import java.io.IOException;
+import java.time.Duration;
+
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 
 public class MonoSubscribeOnCallableTest {
 
 	@Test
+	public void callableReturnsNull() {
+		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> null, Schedulers.single()))
+		            .expectError(NullPointerException.class)
+		            .verify();
+	}
+
+	@Test
 	public void normal() {
+		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> 1, Schedulers.single()))
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void normalBackpressured() {
+		StepVerifier.withVirtualTime(0, () -> new MonoSubscribeOnCallable<>(() -> 1,
+				Schedulers.single()))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void callableThrows() {
+		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> {
+			throw new IOException("forced failure");
+		}, Schedulers.single()))
+		            .expectErrorMatches(e -> e instanceof IOException
+				            && e.getMessage().equals("forced failure"))
+		            .verify();
 	}
 }
