@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
 
@@ -66,6 +67,15 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			Level level,
 			boolean correlateStack,
 			SignalType... options) {
+		this(source, category, level, correlateStack, Loggers::getLogger, options);
+	}
+
+	public SignalLogger(Publisher<IN> source,
+			String category,
+			Level level,
+			boolean correlateStack,
+			Function<String, Logger> loggerSupplier,
+			SignalType... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
@@ -101,7 +111,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			category += "." + id;
 		}
 
-		this.log = Loggers.getLogger(category);
+		this.log = loggerSupplier.apply(category);
 
 		this.level = level;
 		if(options == null || options.length == 0){
@@ -164,7 +174,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	public Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-			return s -> log(SignalType.ON_SUBSCRIBE, s, source);
+			return s -> log(SignalType.ON_SUBSCRIBE, s == null ? null : s.toString(), source);
 		}
 		return null;
 	}
