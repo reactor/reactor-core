@@ -219,8 +219,8 @@ public abstract class Exceptions {
 	/**
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
 	 * varieties. These varieties are as follows: <ul> <li>{@code BubblingException}</li>
-	 * <li>{@code VirtualMachineError}</li> <li>{@code ThreadDeath}</li> <li>{@code
-	 * LinkageError}</li> </ul>
+	 * <li>{@code ErrorCallbackNotImplemented}</li> <li>{@code VirtualMachineError}</li>
+	 * <li>{@code ThreadDeath}</li> <li>{@code LinkageError}</li> </ul>
 	 *
 	 * @param t the exception to evaluate
 	 */
@@ -228,6 +228,21 @@ public abstract class Exceptions {
 		if (t instanceof BubblingException) {
 			throw (BubblingException) t;
 		}
+		if (t instanceof ErrorCallbackNotImplemented) {
+			throw (ErrorCallbackNotImplemented) t;
+		}
+		throwIfJvmFatal(t);
+	}
+
+	/**
+	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
+	 * varieties native to the JVM. These varieties are as follows:
+	 * <ul> <li>{@code VirtualMachineError}</li> <li>{@code ThreadDeath}</li>
+	 * <li>{@code LinkageError}</li> </ul>
+	 *
+	 * @param t the exception to evaluate
+	 */
+	public static void throwIfJvmFatal(Throwable t) {
 		if (t instanceof VirtualMachineError) {
 			throw (VirtualMachineError) t;
 		}
@@ -236,9 +251,6 @@ public abstract class Exceptions {
 		}
 		if (t instanceof LinkageError) {
 			throw (LinkageError) t;
-		}
-		if (t instanceof ErrorCallbackNotImplemented) {
-			throw (ErrorCallbackNotImplemented) t;
 		}
 	}
 

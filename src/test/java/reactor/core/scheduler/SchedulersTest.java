@@ -17,11 +17,13 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Test;
-import org.testng.Assert;
+import org.junit.Assert;
+import reactor.core.Exceptions;
 
 public class SchedulersTest {
 
@@ -107,6 +109,45 @@ public class SchedulersTest {
 		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
 		Assert.assertNotEquals(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
+	}
+
+	@Test
+	public void testUncaughtHookCalledWhenOnErrorNotImplemented() {
+		AtomicBoolean handled = new AtomicBoolean(false);
+		Schedulers.onHandleError((t, e) -> handled.set(true));
+
+		try {
+			Schedulers.handleError(Exceptions.errorCallbackNotImplemented(new IllegalArgumentException()));
+		} finally {
+			Schedulers.resetOnHandleError();
+		}
+		Assert.assertTrue("errorCallbackNotImplemented not handled", handled.get());
+	}
+
+	@Test
+	public void testUncaughtHookCalledWhenCommonException() {
+		AtomicBoolean handled = new AtomicBoolean(false);
+		Schedulers.onHandleError((t, e) -> handled.set(true));
+
+		try {
+			Schedulers.handleError(new IllegalArgumentException());
+		} finally {
+			Schedulers.resetOnHandleError();
+		}
+		Assert.assertTrue("IllegalArgumentException not handled", handled.get());
+	}
+
+	@Test(expected = ThreadDeath.class)
+	public void testUncaughtHookNotCalledWhenThreadDeath() {
+		AtomicBoolean handled = new AtomicBoolean(false);
+		Schedulers.onHandleError((t, e) -> handled.set(true));
+
+		try {
+			Schedulers.handleError(new ThreadDeath());
+		} finally {
+			Schedulers.resetOnHandleError();
+		}
+		Assert.assertFalse("threadDeath not silenced", handled.get());
 	}
 
 }
