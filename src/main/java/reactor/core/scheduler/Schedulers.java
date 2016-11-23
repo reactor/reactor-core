@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
@@ -57,6 +58,8 @@ public class Schedulers {
 	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
 	                                                            .availableProcessors(),
 			4);
+
+	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
 	/**
 	 * Create a {@link Scheduler} which uses a backing {@link Executor} to schedule
@@ -362,6 +365,19 @@ public class Schedulers {
 	}
 
 	/**
+	 * Define a hook that is executed when a {@link Scheduler} has
+	 * {@link #handleError(Throwable) handled an error}. Note that it is executed after
+	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
+	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
+	 *
+	 * @param c the new hook to set, or null to ignore (default).
+	 */
+	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
+		log.info("Hooking new default: onHandleError");
+		onHandleErrorHook = Objects.requireNonNull(c, "onHandleError");
+	}
+
+	/**
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
 	 * workers and is suited for parallel work.
 	 *
@@ -377,6 +393,14 @@ public class Schedulers {
 	 */
 	public static void resetFactory(){
 		setFactory(DEFAULT);
+	}
+
+	/**
+	 * Reset the {@link #onHandleError(BiConsumer)} hook to the default no-op behavior.
+	 */
+	public static void resetOnHandleError() {
+		log.info("Reset to factory defaults: onHandleError");
+		onHandleErrorHook = null;
 	}
 
 	/**
@@ -592,7 +616,8 @@ public class Schedulers {
 
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
-			log.error("Scheduler worker failed with an uncaught exception", e);
+			log.error("Scheduler worker in group " + t.getThreadGroup().getName() +
+					" failed with an uncaught exception", e);
 		}
 
 		@Override
@@ -602,15 +627,18 @@ public class Schedulers {
 	}
 
 	static void handleError(Throwable ex) {
+		Thread thread = Thread.currentThread();
 		Throwable t = unwrap(ex);
-		Exceptions.throwIfFatal(t);
-		Thread.UncaughtExceptionHandler x = Thread.currentThread()
-		                                          .getUncaughtExceptionHandler();
+		Exceptions.throwIfJvmFatal(t);
+		Thread.UncaughtExceptionHandler x = thread.getUncaughtExceptionHandler();
 		if (x != null) {
-			x.uncaughtException(Thread.currentThread(), t);
+			x.uncaughtException(thread, t);
 		}
 		else {
 			log.error("Scheduler worker failed with an uncaught exception", t);
+		}
+		if (onHandleErrorHook != null) {
+			onHandleErrorHook.accept(thread, t);
 		}
 	}
 
