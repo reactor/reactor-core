@@ -184,18 +184,27 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				return;
 			}
 			done = true;
+			boolean errorCallbackFailed = false;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					e.addSuppressed(t);
+					t = e;
+					errorCallbackFailed = true;
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| errorCallbackFailed
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
@@ -209,9 +218,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Operators.onOperatorError(null, e, t);
 					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
+					if (parent.onErrorCall() != null && !errorCallbackFailed) {
+						parent.onErrorCall().accept(_e);
 					}
 					Operators.onErrorDropped(_e);
 				}
@@ -223,7 +231,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (sourceMode == NONE) {
 				if (parent.onCompleteCall() != null) {
 					try {
@@ -236,6 +243,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					}
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -445,33 +453,40 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				return;
 			}
 			done = true;
+			boolean errorCallbackFailed = false;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					e.addSuppressed(t);
+					t = e;
+					errorCallbackFailed = true;
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| errorCallbackFailed
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall()
-					      .run();
+					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(null, e, t);
 					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
+					if (parent.onErrorCall() != null && !errorCallbackFailed) {
+						parent.onErrorCall().accept(_e);
 					}
 					Operators.onErrorDropped(_e);
 				}
@@ -483,7 +498,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (sourceMode == NONE) {
 				if (parent.onCompleteCall() != null) {
 					try {
@@ -496,6 +510,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					}
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -725,17 +740,27 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				return;
 			}
 			done = true;
+			boolean errorCallbackFailed = false;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					e.addSuppressed(t);
+					t = e;
+					errorCallbackFailed = true;
+				}
 			}
+
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| errorCallbackFailed
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
@@ -749,7 +774,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					Exceptions.throwIfFatal(e);
 					Throwable _e = Operators.onOperatorError(null, e, t);
 					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
+					if (parent.onErrorCall() != null && !errorCallbackFailed) {
 						parent.onErrorCall()
 						      .accept(_e);
 					}
@@ -763,7 +788,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (parent.onCompleteCall() != null) {
 				try {
 					parent.onCompleteCall()
@@ -774,6 +798,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					return;
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 

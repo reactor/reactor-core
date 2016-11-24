@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,11 +33,11 @@ import reactor.util.concurrent.QueueSupplier;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 
-public class FluxPeekTest {
+public class FluxPeekFuseableTest {
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		new FluxPeek<>(null, null, null, null, null, null, null, null);
+		new FluxPeekFuseable<>(null, null, null, null, null, null, null, null);
 	}
 
 	@Test
@@ -52,7 +52,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.just(1).hide(),
+		new FluxPeekFuseable<>(Flux.just(1),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -82,7 +82,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new MonoError<>(new RuntimeException("forced failure")),
+		new FluxPeekFuseable<>(new MonoError<>(new RuntimeException("forced failure")),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -112,7 +112,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(MonoEmpty.instance(),
+		new FluxPeekFuseable<>(MonoEmpty.instance(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -142,7 +142,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.never(),
+		new FluxPeekFuseable<>(Flux.never(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -172,7 +172,7 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.never(),
+		new FluxPeekFuseable<>(Flux.never(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -200,7 +200,7 @@ public class FluxPeekTest {
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1).hide()
+		Flux.just(1)
 		    .doOnNext(d -> {
 			    throw Exceptions.propagate(err);
 		    })
@@ -212,7 +212,7 @@ public class FluxPeekTest {
 		ts = AssertSubscriber.create();
 
 		try {
-			Flux.just(1).hide()
+			Flux.just(1)
 			    .doOnNext(d -> {
 				    throw Exceptions.bubble(err);
 			    })
@@ -231,7 +231,7 @@ public class FluxPeekTest {
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1).hide()
+		Flux.just(1)
 		    .doOnComplete(() -> {
 			    throw Exceptions.propagate(err);
 		    })
@@ -243,7 +243,7 @@ public class FluxPeekTest {
 		ts = AssertSubscriber.create();
 
 		try {
-			Flux.just(1).hide()
+			Flux.just(1)
 			    .doOnComplete(() -> {
 				    throw Exceptions.bubble(err);
 			    })
@@ -260,7 +260,7 @@ public class FluxPeekTest {
 	public void errorCallbackError() {
 		IllegalStateException err = new IllegalStateException("test");
 
-		FluxPeek<String> flux = new FluxPeek<>(
+		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(
 				Flux.error(new IllegalArgumentException("bar")), null, null,
 				e -> { throw err; },
 				null, null, null, null);
@@ -353,7 +353,7 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2).hide()
+		Flux.range(1, 2)
 		    .doOnComplete(() -> onComplete.set(true))
 		    .subscribe(ts);
 
@@ -370,7 +370,7 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2).hide()
+		Flux.range(1, 2)
 		    .doAfterTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
@@ -390,7 +390,6 @@ public class FluxPeekTest {
 			                      .map(y -> blockingOp(x, y))
 			                      .subscribeOn(Schedulers.parallel())
 			                      .reduce((l, r) -> l + "_" + r)
-			                      .hide()
 			                      .doOnSuccess(s -> {
 				                      count.incrementAndGet();
 			                      }))
@@ -409,7 +408,6 @@ public class FluxPeekTest {
 			                      .map(y -> blockingOp(x, y))
 			                      .subscribeOn(Schedulers.parallel())
 			                      .reduce((l, r) -> l + "_" + r)
-			                      .hide()
 			                      .doOnSuccess(s -> {
 				                      count.incrementAndGet();
 			                      })

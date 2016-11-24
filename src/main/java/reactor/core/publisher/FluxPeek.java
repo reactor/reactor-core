@@ -173,17 +173,26 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 				return;
 			}
 			done = true;
+			boolean errorCallbackFailed = false;
 			if(parent.onErrorCall() != null) {
-				parent.onErrorCall().accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					e.addSuppressed(t);
+					t = e;
+					errorCallbackFailed = true;
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use){
-				if(parent.onErrorCall() == null ||
-						!Exceptions.isErrorCallbackNotImplemented(use) &&
-						use.getCause() != t){
+				if(parent.onErrorCall() == null
+						|| errorCallbackFailed
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t){
 					throw use;
 				}
 				//ignore if missing callback
@@ -196,7 +205,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(null, e, t);
 					e.addSuppressed(t);
-					if(parent.onErrorCall() != null) {
+					if(parent.onErrorCall() != null && !errorCallbackFailed) {
 						parent.onErrorCall().accept(_e);
 					}
 					Operators.onErrorDropped(_e);
@@ -209,7 +218,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			if (done) {
 				return;
 			}
-			done = true;
 			if(parent.onCompleteCall() != null) {
 				try {
 					parent.onCompleteCall().run();
@@ -219,6 +227,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					return;
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
