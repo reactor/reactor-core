@@ -31,7 +31,10 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.*;
 
 public class FluxPeekTest {
 
@@ -218,7 +221,7 @@ public class FluxPeekTest {
 			    })
 			    .subscribe(ts);
 
-			Assert.fail();
+			fail();
 		}
 		catch (Exception e) {
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
@@ -249,7 +252,7 @@ public class FluxPeekTest {
 			    })
 			    .subscribe(ts);
 
-			Assert.fail();
+			fail();
 		}
 		catch (Exception e) {
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
@@ -271,6 +274,127 @@ public class FluxPeekTest {
 		ts.assertNoValues();
 		ts.assertError(IllegalStateException.class);
 		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
+	}
+
+	@Test
+	public void afterTerminateCallbackErrorDoesCallErrorCallback() {
+		IllegalStateException err = new IllegalStateException("test");
+		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
+
+		FluxPeek<String> flux = new FluxPeek<>(
+				Flux.empty(), null, null, errorCallbackCapture::set, null,
+				() -> { throw err; }, null, null);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+
+		try {
+			flux.subscribe(ts);
+			fail("expected thrown exception");
+		}
+		catch (Exception e) {
+			e.getCause().getMessage().equals(err);
+		}
+		ts.assertNoValues();
+		ts.assertComplete();
+
+		assertThat(errorCallbackCapture.get(), is(err));
+	}
+
+	@Test
+	public void afterTerminateCallbackFatalIsThrownDirectly() {
+		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
+		Error fatal = new LinkageError();
+		FluxPeek<String> flux = new FluxPeek<>(
+				Flux.empty(), null, null, errorCallbackCapture::set, null,
+				() -> { throw fatal; }, null, null);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+
+		try {
+			flux.subscribe(ts);
+			fail("expected thrown exception");
+		}
+		catch (Throwable e) {
+			assertSame(fatal, e);
+		}
+		ts.assertNoValues();
+		ts.assertComplete();
+
+		assertThat(errorCallbackCapture.get(), is(nullValue()));
+
+
+		//same with after error
+		errorCallbackCapture.set(null);
+		flux = new FluxPeek<>(
+				Flux.error(new NullPointerException()), null, null, errorCallbackCapture::set, null,
+				() -> { throw fatal; }, null, null);
+
+		ts = AssertSubscriber.create();
+
+		try {
+			flux.subscribe(ts);
+			fail("expected thrown exception");
+		}
+		catch (Throwable e) {
+			assertSame(fatal, e);
+		}
+		ts.assertNoValues();
+		ts.assertError(NullPointerException.class);
+
+		assertThat(errorCallbackCapture.get(), is(instanceOf(NullPointerException.class)));
+	}
+
+	@Test
+	public void afterTerminateCallbackErrorAndErrorCallbackError() {
+		IllegalStateException err = new IllegalStateException("afterTerminate");
+		IllegalArgumentException err2 = new IllegalArgumentException("error");
+
+		FluxPeek<String> flux = new FluxPeek<>(
+				Flux.empty(), null, null, e -> { throw err2; },
+				null,
+				() -> { throw err; }, null, null);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+
+		try {
+			flux.subscribe(ts);
+			fail("expected thrown exception");
+		}
+		catch (Exception e) {
+			assertSame(err2, e.getCause());
+			assertEquals(1, err2.getSuppressed().length);
+			assertEquals(err, err2.getSuppressed()[0]);
+		}
+		ts.assertNoValues();
+		ts.assertComplete();
+	}
+
+	@Test
+	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
+		IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
+		IllegalArgumentException error = new IllegalArgumentException("error");
+		NullPointerException err = new NullPointerException();
+
+		FluxPeek<String> flux = new FluxPeek<>(
+				Flux.error(err),
+				null, null,
+				e -> { throw error; }, null, () -> { throw afterTerminate; },
+				null, null);
+
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+
+		try {
+			flux.subscribe(ts);
+			fail("expected thrown exception");
+		}
+		catch (Exception e) {
+			assertSame(error, e.getCause());
+			assertEquals(2, error.getSuppressed().length);
+			assertEquals(err, error.getSuppressed()[0]);
+			assertEquals(afterTerminate, error.getSuppressed()[1]);
+		}
+		ts.assertNoValues();
+		ts.assertErrorMessage("error");
 	}
 
 	@Test
