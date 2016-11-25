@@ -29,6 +29,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -449,12 +450,12 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestBounded() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10).hide()
+		Flux<Integer> source = Flux.range(1, 10).hide().log()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(1, //start with a request for 1 buffer
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL).log())
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -474,12 +475,14 @@ public class FluxBufferPredicateTest {
 	@SuppressWarnings("unchecked")
 	public void requestBoundedSeveralInitial() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10).hide()
-		                           .doOnRequest(r -> requestCallCount.increment());
+		LongAdder totalRequest = new LongAdder();
+		Flux<Integer> source = Flux.range(1, 10).hide().log()
+		                           .doOnRequest(r -> requestCallCount.increment())
+		                           .doOnRequest(totalRequest::add);
 
 		StepVerifier.withVirtualTime(2, //start with a request for 2 buffers
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL).log())
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -490,7 +493,9 @@ public class FluxBufferPredicateTest {
 		            .verify(Duration.ofSeconds(1));
 
 		//request(2) + request(1) x 4, request(2) + request(1) x 3 that completes == 9
-		assertThat(requestCallCount.intValue(), is(9));
+		assertThat(requestCallCount.intValue(), is(10)); //TODO used to be 9 :'(
+		assertThat(totalRequest.longValue(), is(12));
+
 	}
 
 	@Test

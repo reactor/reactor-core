@@ -74,18 +74,19 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	public long getPrefetch() {
 		return 1; //this operator changes the downstream request to 1 in the source
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super C> s) {
 		C initialBuffer;
-		
+
 		try {
 			initialBuffer = bufferSupplier.get();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
-		
+
 		if (initialBuffer == null) {
 			Operators.error(s, new NullPointerException("The bufferSupplier returned a null initial buffer"));
 			return;
@@ -96,7 +97,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		source.subscribe(parent);
 	}
-	
+
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
 			extends AbstractQueue<C>
 			implements ConditionalSubscriber<T>, Subscription, Trackable,
@@ -120,16 +121,14 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferPredicateSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(BufferPredicateSubscriber.class,
+						"requested");
 
 		volatile Subscription s;
 
 		static final AtomicReferenceFieldUpdater<BufferPredicateSubscriber,
 				Subscription> S = AtomicReferenceFieldUpdater.newUpdater
 				(BufferPredicateSubscriber.class, Subscription.class, "s");
-
-		volatile long produced;
-
 
 		BufferPredicateSubscriber(Subscriber<? super C> actual, C initialBuffer,
 				Supplier<C> bufferSupplier, Predicate<? super T> predicate, Mode mode) {
@@ -142,9 +141,8 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n) && !done) {
-				long expectedRequested = Operators.addCap(n, requested);
-				if (expectedRequested == Long.MAX_VALUE) {
+			if (Operators.validate(n)) {
+				if (n == Long.MAX_VALUE) {
 					// here we request everything from the source. switching to
 					// fastpath will avoid unnecessary request(1) during filling
 					fastpath = true;
@@ -153,12 +151,17 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				}
 				else {
 					// Requesting from source may have been interrupted if downstream
-				    // received enough buffer (requested == 0), so this new request for
-				    // buffer should resume progressive filling from upstream. We can
+					// received enough buffer (requested == 0), so this new request for
+					// buffer should resume progressive filling from upstream. We can
 					// directly request the same as the number of needed buffers (if
 					// buffers turn out 1-sized then we'll have everything, otherwise
 					// we'll continue requesting one by one)
-					if (!DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this)) {
+					if (!DrainUtils.postCompleteRequest(n,
+							actual,
+							this,
+							REQUESTED,
+							this,
+							this)) {
 						s.request(n);
 					}
 				}
@@ -201,36 +204,32 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return true;
 			}
 
+			boolean requestMore;
 			if (mode == Mode.UNTIL && match) {
 				b.add(t);
-				emitAndTriggerNewBuffer();
+				requestMore = onNextNewBuffer();
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
-				emitAndTriggerNewBuffer();
+				requestMore = onNextNewBuffer();
 				b = buffer;
 				b.add(t);
 			}
 			else if (mode == Mode.WHILE && !match) {
-				emitAndTriggerNewBuffer();
+				requestMore = onNextNewBuffer();
 			}
 			else {
 				b.add(t);
-				produced++;
-				if (produced >= requested && !fastpath) {
-					//already added what was block-requested at the beginning but still
-					// not enough to fill the buffer, continue requesting from the source
+				if (!fastpath && requested != 0) {
 					return false;
 				}
+				return true;
 			}
-			return true;
+
+			return !requestMore;
 		}
 
 		private C triggerNewBuffer() {
 			C b = buffer;
-			if (done) {
-				buffer = null;
-				return b;
-			}
 
 			if (b.isEmpty()) {
 				//emit nothing and we'll reuse the same buffer
@@ -258,17 +257,12 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			return b;
 		}
 
-		private void emitAndTriggerNewBuffer() {
+		private boolean onNextNewBuffer() {
 			C b = triggerNewBuffer();
-			if (b != null && emit(b)) {
-				produced = 0; //reset the produced counter each time a new buffer is emitted
-				long r = requested;
-				if (r > 0 && !fastpath) {
-					//when a buffer has been emitted, if more buffers request are pending then
-					//request more data from source (with a potentially larger initial batch)
-					s.request(r);
-				}
+			if (b != null) {
+				return emit(b);
 			}
+			return true;
 		}
 
 		@Override
@@ -288,27 +282,23 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return;
 			}
 			done = true;
-			long p = produced;
-			if (p != 0L) {
-				REQUESTED.decrementAndGet(this);
-			}
-			DrainUtils.postCompleteDrain(1, actual, this, REQUESTED, this, this);
+			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 
 		boolean emit(C b) {
-			long r = requested;
-			if (r != 0L) {
+			if (fastpath) {
 				actual.onNext(b);
-				if (r != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
-				return true;
-			}
-			else {
-				cancel();
-				actual.onError(new IllegalStateException("Could not emit buffer due to lack of requests"));
 				return false;
 			}
+			long r = REQUESTED.getAndDecrement(this);
+			if(r > 0){
+				actual.onNext(b);
+				return requested > 0;
+			}
+			cancel();
+			actual.onError(new IllegalStateException(
+					"Could not emit buffer due to lack of requests"));
+			return false;
 		}
 
 		@Override
@@ -354,7 +344,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		public C poll() {
 			C b = buffer;
 			if (b != null && !b.isEmpty()) {
-				b = triggerNewBuffer();
+				buffer = null;
 				return b;
 			}
 			return null;
