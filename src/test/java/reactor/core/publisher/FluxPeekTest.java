@@ -195,7 +195,7 @@ public class FluxPeekTest {
 	}
 
 	@Test
-	public void callbackError() {
+	public void onNextCallbackError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Throwable err = new Exception("test");
@@ -217,6 +217,43 @@ public class FluxPeekTest {
 				    throw Exceptions.bubble(err);
 			    })
 			    .subscribe(ts);
+
+			Assert.fail();
+		}
+		catch (Exception e) {
+			Assert.assertTrue(Exceptions.unwrap(e) == err);
+		}
+	}
+
+	@Test
+	public void onErrorCallbackError() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Throwable err = new Exception("test");
+
+		Flux.just(1)
+				.doOnNext(d -> {
+					throw new RuntimeException();
+				})
+				.doOnError(e -> {
+					throw Exceptions.propagate(err);
+				})
+				.subscribe(ts);
+
+		//nominal error path (DownstreamException)
+		ts.assertErrorMessage("test");
+
+		ts = AssertSubscriber.create();
+
+		try {
+			Flux.just(1)
+					.doOnNext(d -> {
+						throw new RuntimeException();
+					})
+					.doOnError(d -> {
+						throw Exceptions.bubble(err);
+					})
+					.subscribe(ts);
 
 			Assert.fail();
 		}
