@@ -186,8 +186,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			done = true;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch(Throwable e) {
+					Exceptions.throwIfFatal(e);
+					// Do we want to use a new exception type here to wrap t and e?
+					t = Operators.onOperatorError(null, e, null);
+				}
 			}
 
 			try {
@@ -447,8 +453,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			done = true;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch(Throwable e) {
+					Exceptions.throwIfFatal(e);
+					// Do we want to use a new exception type here to wrap t and e?
+					t = Operators.onOperatorError(null, e, null);
+				}
 			}
 
 			try {
