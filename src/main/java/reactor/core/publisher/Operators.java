@@ -286,7 +286,7 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
+	 * Take an unsignalled exception that is masking another one due to callback failure.
 	 *
 	 * @param e the exception to handle
 	 */

@@ -174,16 +174,21 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			}
 			done = true;
 			if(parent.onErrorCall() != null) {
-				parent.onErrorCall().accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use){
-				if(parent.onErrorCall() == null ||
-						!Exceptions.isErrorCallbackNotImplemented(use) &&
-						use.getCause() != t){
+				if(parent.onErrorCall() == null
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t){
 					throw use;
 				}
 				//ignore if missing callback
@@ -194,12 +199,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(null, e, t);
-					e.addSuppressed(t);
-					if(parent.onErrorCall() != null) {
-						parent.onErrorCall().accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					afterErrorWithFailure(parent, e, t);
 				}
 			}
 		}
@@ -209,16 +209,16 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			if (done) {
 				return;
 			}
-			done = true;
 			if(parent.onCompleteCall() != null) {
 				try {
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(e));
+					onError(Operators.onOperatorError(s, e));
 					return;
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -227,11 +227,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
-					if(parent.onErrorCall() != null) {
-						parent.onErrorCall().accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					afterCompleteWithFailure(parent, e);
 				}
 			}
 		}
@@ -280,6 +276,76 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 	@Override
 	public Runnable onCancelCall() {
 		return onCancelCall;
+	}
+
+	/**
+	 * Common method for FluxPeek and FluxPeekFuseable to deal with a doAfterTerminate
+	 * callback that fails during onComplete. It invokes the error callback but
+	 * protects against the error callback also failing.
+	 * <ul>
+	 *     <li>The callback failure is thrown immediately if fatal.</li>
+	 *     <li>{@link Operators#onOperatorError(Throwable)} is called</li>
+	 *     <li>An attempt to execute the error callback is made</li>
+	 *     <li>{@link Operators#onErrorDropped(Throwable)} is called</li>
+	 * </ul>
+	 * <p>
+	 * Note that if the error callback fails too, its exception is made to
+	 * suppress the afterTerminate callback exception, and then onErrorDropped.
+	 *
+	 * @param parent the {@link SignalPeek} from which to get the callbacks
+	 * @param callbackFailure the afterTerminate callback failure
+	 */
+	static <T> void afterCompleteWithFailure(SignalPeek<T> parent,
+			Throwable callbackFailure) {
+		Exceptions.throwIfFatal(callbackFailure);
+		Throwable e = Operators.onOperatorError(callbackFailure);
+		try {
+			if(parent.onErrorCall() != null) {
+				parent.onErrorCall().accept(e);
+			}
+			Operators.onErrorDropped(e);
+		}
+		catch (Throwable t) {
+			t.addSuppressed(e);
+			Operators.onErrorDropped(t);
+		}
+	}
+
+	/**
+	 * Common method for FluxPeek and FluxPeekFuseable to deal with a doAfterTerminate
+	 * callback that fails during onError. It invokes the error callback but protects
+	 * against the error callback also failing.
+	 * <ul>
+	 *     <li>The callback failure is thrown immediately if fatal.</li>
+	 *     <li>{@link Operators#onOperatorError(Subscription, Throwable, Object)} is
+	 *     called, adding the original error as suppressed</li>
+	 *     <li>An attempt to execute the error callback is made</li>
+	 *     <li>{@link Operators#onErrorDropped(Throwable)} is called</li>
+	 * </ul>
+	 * <p>
+	 * Note that if the error callback fails too, its exception is made to
+	 * suppress both the decorated afterTerminate callback exception and the original
+	 * error, and then onErrorDropped.
+	 *
+	 * @param parent the {@link SignalPeek} from which to get the callbacks
+	 * @param callbackFailure the afterTerminate callback failure
+	 * @param originalError the onError throwable
+	 */
+	static <T> void afterErrorWithFailure(SignalPeek<T> parent,
+			Throwable callbackFailure, Throwable originalError) {
+		Exceptions.throwIfFatal(callbackFailure);
+		Throwable _e = Operators.onOperatorError(null, callbackFailure, originalError);
+		try {
+			if (parent.onErrorCall() != null) {
+				parent.onErrorCall().accept(_e);
+			}
+			Operators.onErrorDropped(_e);
+		}
+		catch (Throwable t) {
+			t.addSuppressed(_e);
+			t.addSuppressed(originalError);
+			Operators.onErrorDropped(t);
+		}
 	}
 
 }

@@ -186,16 +186,21 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			done = true;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
@@ -206,14 +211,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					      .run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Operators.onOperatorError(null, e, t);
-					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					FluxPeek.afterErrorWithFailure(parent, e, t);
 				}
 			}
 		}
@@ -223,7 +221,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (sourceMode == NONE) {
 				if (parent.onCompleteCall() != null) {
 					try {
@@ -231,11 +228,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						      .run();
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(e));
+						onError(Operators.onOperatorError(s, e));
 						return;
 					}
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -246,12 +244,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						      .run();
 					}
 					catch (Throwable e) {
-						Throwable _e = Operators.onOperatorError(e);
-						if (parent.onErrorCall() != null) {
-							parent.onErrorCall()
-							      .accept(_e);
-						}
-						Operators.onErrorDropped(_e);
+						FluxPeek.afterCompleteWithFailure(parent, e);
 					}
 				}
 			}
@@ -447,33 +440,31 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			done = true;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
+				}
 			}
 
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
-					parent.onAfterTerminateCall()
-					      .run();
+					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(null, e, t);
-					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					FluxPeek.afterErrorWithFailure(parent, e, t);
 				}
 			}
 		}
@@ -483,7 +474,6 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (sourceMode == NONE) {
 				if (parent.onCompleteCall() != null) {
 					try {
@@ -491,11 +481,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						      .run();
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(e));
+						onError(Operators.onOperatorError(s, e));
 						return;
 					}
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -506,12 +497,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						      .run();
 					}
 					catch (Throwable e) {
-						Throwable _e = Operators.onOperatorError(e);
-						if (parent.onErrorCall() != null) {
-							parent.onErrorCall()
-							      .accept(_e);
-						}
-						Operators.onErrorDropped(_e);
+						FluxPeek.afterCompleteWithFailure(parent, e);
 					}
 				}
 			}
@@ -727,15 +713,21 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			done = true;
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
-				parent.onErrorCall()
-				      .accept(t);
+				try {
+					parent.onErrorCall().accept(t);
+				}
+				catch (Throwable e) {
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
+				}
 			}
+
 			try {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null || !Exceptions.isErrorCallbackNotImplemented(
-						use) && use.getCause() != t) {
+				if (parent.onErrorCall() == null
+						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
@@ -746,14 +738,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					      .run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Operators.onOperatorError(null, e, t);
-					e.addSuppressed(t);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					FluxPeek.afterErrorWithFailure(parent, e, t);
 				}
 			}
 		}
@@ -763,17 +748,17 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
 			if (parent.onCompleteCall() != null) {
 				try {
 					parent.onCompleteCall()
 					      .run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(e));
+					onError(Operators.onOperatorError(s, e));
 					return;
 				}
 			}
+			done = true;
 
 			actual.onComplete();
 
@@ -783,13 +768,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					      .run();
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Operators.onOperatorError(e);
-					if (parent.onErrorCall() != null) {
-						parent.onErrorCall()
-						      .accept(_e);
-					}
-					Operators.onErrorDropped(_e);
+					FluxPeek.afterCompleteWithFailure(parent, e);
 				}
 			}
 		}
