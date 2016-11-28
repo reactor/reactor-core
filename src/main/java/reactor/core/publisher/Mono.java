@@ -69,7 +69,10 @@ import reactor.util.function.Tuples;
  *
  * <p>It is intended to be used in implementations and return types, input parameters should keep using raw {@link
  * Publisher} as much as possible.
- * 
+ *
+ * <p>Note that using state in the {@code java.util.function} / lambdas used within Mono operators
+ * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
+ *
  * @param <T> the type of the single value of this class
  * 
  * @author Sebastien Deleuze

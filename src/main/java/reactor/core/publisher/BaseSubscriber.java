@@ -35,7 +35,9 @@ import reactor.core.Trackable;
  * {@link #hookFinally(SignalType)}.
  * <p>
  * Most of the time, exceptions triggered inside hooks are propagated to
- * {@link #onError(Throwable)} (unless there is a fatal exception).
+ * {@link #onError(Throwable)} (unless there is a fatal exception). The class is in the
+ * {@code reactor.core.publisher} package, as this subscriber is tied to a single
+ * {@link org.reactivestreams.Publisher}.
  *
  * @author Simon Baslé
  */
