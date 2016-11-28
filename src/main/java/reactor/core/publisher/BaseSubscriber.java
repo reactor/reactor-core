@@ -27,10 +27,12 @@ import reactor.core.Trackable;
 
 /**
  * A simple base class for a {@link Subscriber} implementation that lets the user
- * perform a {@link #request(long)} and {@link #cancel()} on it directly.
+ * perform a {@link #request(long)} and {@link #cancel()} on it directly. As the targeted
+ * use case is to manually handle requests, the {@link #hookOnSubscribe(Subscription)} and
+ * {@link #hookOnNext(Object)} hooks are expected to be implemented.
  * <p>
- * Override the {@link #hookOnSubscribe(Subscription)}, {@link #hookOnNext(Object)},
- * {@link #hookOnComplete()}, {@link #hookOnError(Throwable)} and {@link #hookOnCancel()} hooks
+ * Override the other optional hooks {@link #hookOnComplete()},
+ * {@link #hookOnError(Throwable)} and {@link #hookOnCancel()}
  * to customize the base behavior. You also have a termination hook,
  * {@link #hookFinally(SignalType)}.
  * <p>
@@ -41,8 +43,8 @@ import reactor.core.Trackable;
  *
  * @author Simon Baslé
  */
-public class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable,
-                                          Receiver, Cancellation {
+public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable,
+                                                   Receiver, Cancellation {
 
 	volatile Subscription subscription;
 
@@ -65,33 +67,33 @@ public class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable
 	}
 
 	/**
-	 * Hook for further processing of onSubscribe's Subscription.
-	 * Defaults to requesting {@code Long.MAX_VALUE}.
+	 * Hook for further processing of onSubscribe's Subscription. Implement this method
+	 * to call {@link #request(long)} as an initial request. Values other than the
+	 * unbounded {@code Long.MAX_VALUE} imply that you'll also call request in
+	 * {@link #hookOnNext(Object)}.
 	 *
 	 * @param subscription the subscription to optionally process
 	 */
-	protected void hookOnSubscribe(Subscription subscription) {
-		request(Long.MAX_VALUE);
-	}
+	protected abstract void hookOnSubscribe(Subscription subscription);
 
 	/**
-	 * Hook for processing of onNext values.
+	 * Hook for processing of onNext values. You can call {@link #request(long)} here
+	 * to further request data from the source {@link org.reactivestreams.Publisher} if
+	 * the {@link #hookOnSubscribe(Subscription) initial request} wasn't unbounded.
 	 *
 	 * @param value the emitted value to process
 	 */
-	protected void hookOnNext(T value) {
-		// NO-OP
-	}
+	protected abstract void hookOnNext(T value);
 
 	/**
-	 * Hook for completion processing.
+	 * Optional hook for completion processing. Defaults to doing nothing.
 	 */
 	protected void hookOnComplete() {
 		// NO-OP
 	}
 
 	/**
-	 * Hook for error processing. Default is to call
+	 * Optional hook for error processing. Default is to call
 	 * {@link Exceptions#errorCallbackNotImplemented(Throwable)}.
 	 *
 	 * @param throwable the error to process
@@ -101,17 +103,18 @@ public class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable
 	}
 
 	/**
-	 * Hook executed when the subscription is cancelled by calling this Subscriber's
-	 * {@link #cancel()} method.
+	 * Optional hook executed when the subscription is cancelled by calling this
+	 * Subscriber's {@link #cancel()} method. Defaults to doing nothing.
 	 */
 	protected void hookOnCancel() {
 		//NO-OP
 	}
 
 	/**
-	 * Hook executed after any of the termination events (onError, onComplete,
+	 * Optional hook executed after any of the termination events (onError, onComplete,
 	 * cancel). The hook is executed in addition to and after {@link #hookOnError(Throwable)},
-	 * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks.
+	 * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks. Defaults to doing
+	 * nothing.
 	 *
 	 * @param type the type of termination event that triggered the hook
 	 * ({@link SignalType#ON_ERROR}, {@link SignalType#ON_COMPLETE} or

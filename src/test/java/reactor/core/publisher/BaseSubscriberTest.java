@@ -78,7 +78,17 @@ public class BaseSubscriberTest {
 		Flux<String> flux = Flux.error(new IllegalStateException());
 
 		try {
-			flux.subscribe(new BaseSubscriber<>());
+			flux.subscribe(new BaseSubscriber<String>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+					request(1);
+				}
+
+				@Override
+				protected void hookOnNext(String value) {
+					//NO-OP
+				}
+			});
 			fail("expected UnsupportedOperationException");
 		} catch (UnsupportedOperationException e) {
 			assertThat(e.getClass().getSimpleName(), is("ErrorCallbackNotImplemented"));
@@ -95,6 +105,11 @@ public class BaseSubscriberTest {
 			@Override
 			protected void hookOnSubscribe(Subscription subscription) {
 				throw new IllegalStateException("boom");
+			}
+
+			@Override
+			protected void hookOnNext(String value) {
+				//NO-OP
 			}
 
 			@Override
@@ -116,6 +131,12 @@ public class BaseSubscriberTest {
 				throw new OutOfMemoryError("boom");
 			}
 
+
+			@Override
+			protected void hookOnNext(String value) {
+				//NO-OP
+			}
+
 			@Override
 			protected void hookOnError(Throwable throwable) {
 				error.set(throwable);
@@ -130,6 +151,11 @@ public class BaseSubscriberTest {
 		Flux<String> flux = Flux.just("foo");
 
 		flux.subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(Long.MAX_VALUE);
+			}
+
 			@Override
 			protected void hookOnNext(String value) {
 				throw new IllegalArgumentException("boom");
@@ -150,6 +176,16 @@ public class BaseSubscriberTest {
 		Flux<String> flux = Flux.just("foo");
 
 		flux.subscribe(new BaseSubscriber<String>() {
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(Long.MAX_VALUE);
+			}
+
+			@Override
+			protected void hookOnNext(String value) {
+				//NO-OP
+			}
+
 			@Override
 			protected void hookOnComplete() {
 				throw new IllegalArgumentException("boom");
