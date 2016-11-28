@@ -20,9 +20,14 @@ import java.util.Collection;
 import java.util.logging.Level;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
+import reactor.core.Fuseable.SynchronousSubscription;
 import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class SignalLoggerTests {
 
@@ -48,6 +53,28 @@ public class SignalLoggerTests {
 		            .expectErrorMatches(t -> t instanceof UnsupportedOperationException &&
 				            t.getMessage().equals("Operators should not use this method!"))
 		            .verify();
+	}
+
+	@Test
+	public void nullSubscriptionAsString() {
+		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
+
+		assertThat(sl.subscriptionAsString(null), is("null subscription"));
+	}
+
+	@Test
+	public void SynchronousSubscriptionAsString() {
+		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
+		SynchronousSubscription<Object> s = new FluxPeekFuseable.PeekFuseableSubscriber<>(null, null);
+
+		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber, synchronous fuseable"));
+	}
+	@Test
+	public void QueueSubscriptionAsString() {
+		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
+		Fuseable.QueueSubscription<Object> s = Operators.EmptySubscription.INSTANCE;
+
+		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.Operators.EmptySubscription, fuseable"));
 	}
 
 	//=========================================================

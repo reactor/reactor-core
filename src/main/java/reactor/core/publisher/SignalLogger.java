@@ -174,9 +174,23 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	public Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
-			return s -> log(SignalType.ON_SUBSCRIBE, s == null ? null : s.toString(), source);
+			return s -> log(SignalType.ON_SUBSCRIBE, subscriptionAsString(s), source);
 		}
 		return null;
+	}
+
+	String subscriptionAsString(Subscription s) {
+		if (s == null) {
+			return "null subscription";
+		}
+		StringBuilder asString = new StringBuilder(s.getClass().getCanonicalName());
+		if (s instanceof Fuseable.SynchronousSubscription) {
+			asString.append(", synchronous fuseable");
+		}
+		else if (s instanceof Fuseable.QueueSubscription) {
+			asString.append(", fuseable");
+		}
+		return asString.toString();
 	}
 
 	@Override
