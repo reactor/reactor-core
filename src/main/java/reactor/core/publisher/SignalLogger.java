@@ -183,7 +183,13 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		if (s == null) {
 			return "null subscription";
 		}
-		StringBuilder asString = new StringBuilder(s.getClass().getCanonicalName());
+		Class<? extends Subscription> clazz = s.getClass();
+		String name = clazz.getCanonicalName();
+		if (name == null) {
+			//getName works with anonymous classes as well
+			name = clazz.getName();
+		}
+		StringBuilder asString = new StringBuilder(name);
 		if (s instanceof Fuseable.SynchronousSubscription) {
 			asString.append(", synchronous fuseable");
 		}

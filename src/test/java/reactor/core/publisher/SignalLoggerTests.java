@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.logging.Level;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
 import reactor.test.StepVerifier;
@@ -63,18 +64,32 @@ public class SignalLoggerTests {
 	}
 
 	@Test
-	public void SynchronousSubscriptionAsString() {
+	public void synchronousSubscriptionAsString() {
 		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		SynchronousSubscription<Object> s = new FluxPeekFuseable.PeekFuseableSubscriber<>(null, null);
 
 		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber, synchronous fuseable"));
 	}
 	@Test
-	public void QueueSubscriptionAsString() {
+	public void queueSubscriptionAsString() {
 		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		Fuseable.QueueSubscription<Object> s = Operators.EmptySubscription.INSTANCE;
 
 		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.Operators.EmptySubscription, fuseable"));
+	}
+
+	@Test
+	public void anonymousSubscriptionAsString() {
+		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
+		Subscription s = new Subscription() {
+			@Override
+			public void request(long n) {}
+
+			@Override
+			public void cancel() {}
+		};
+
+		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.SignalLoggerTests$1"));
 	}
 
 	//=========================================================
