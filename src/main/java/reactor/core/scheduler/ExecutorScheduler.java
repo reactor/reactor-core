@@ -47,12 +47,9 @@ final class ExecutorScheduler implements Scheduler {
 	public Cancellation schedule(Runnable task) {
 		Objects.requireNonNull(task, "task");
 		ExecutorPlainRunnable r = new ExecutorPlainRunnable(task);
-		try {
-			executor.execute(r);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+
+		executor.execute(r);
+
 		return r;
 	}
 
