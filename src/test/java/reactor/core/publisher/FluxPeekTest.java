@@ -26,15 +26,13 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static java.lang.Thread.sleep;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FluxPeekTest {
 
@@ -276,6 +274,65 @@ public class FluxPeekTest {
 		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
 	}
 
+	//See https://github.com/reactor/reactor-core/issues/272
+	@Test
+	public void errorCallbackError2() {
+		//test with alternate / wrapped error types
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		Throwable err = new Exception("test");
+
+		Flux.just(1).hide()
+		    .doOnNext(d -> {
+			    throw new RuntimeException();
+		    })
+		    .doOnError(e -> {
+			    throw Exceptions.propagate(err);
+		    })
+		    .subscribe(ts);
+
+		//nominal error path (DownstreamException)
+		ts.assertErrorMessage("test");
+
+		ts = AssertSubscriber.create();
+		try {
+			Flux.just(1).hide()
+			    .doOnNext(d -> {
+				    throw new RuntimeException();
+			    })
+			    .doOnError(d -> {
+				    throw Exceptions.bubble(err);
+			    })
+			    .subscribe(ts);
+
+			Assert.fail();
+		}
+		catch (Exception e) {
+			Assert.assertTrue(Exceptions.unwrap(e) == err);
+		}
+	}
+
+	//See https://github.com/reactor/reactor-core/issues/253
+	@Test
+	public void errorCallbackErrorWithParallel() {
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+
+		Mono.just(1).hide()
+		    .publishOn(parallel())
+		    .doOnNext(i -> {
+			    throw new IllegalArgumentException();
+		    })
+		    .doOnError(e -> {
+			    throw new IllegalStateException(e);
+		    })
+		    .subscribe(assertSubscriber);
+
+		assertSubscriber
+				.await()
+				.assertError(IllegalStateException.class)
+				.assertNotComplete();
+	}
+
 	@Test
 	public void afterTerminateCallbackErrorDoesCallErrorCallback() {
 		IllegalStateException err = new IllegalStateException("test");
@@ -512,7 +569,7 @@ public class FluxPeekTest {
 			Flux.range(0, 10)
 			    .flatMap(x -> Flux.range(0, 2)
 			                      .map(y -> blockingOp(x, y))
-			                      .subscribeOn(Schedulers.parallel())
+			                      .subscribeOn(parallel())
 			                      .reduce((l, r) -> l + "_" + r)
 			                      .hide()
 			                      .doOnSuccess(s -> {
@@ -531,7 +588,7 @@ public class FluxPeekTest {
 			Flux.range(0, 10)
 			    .flatMap(x -> Flux.range(0, 2)
 			                      .map(y -> blockingOp(x, y))
-			                      .subscribeOn(Schedulers.parallel())
+			                      .subscribeOn(parallel())
 			                      .reduce((l, r) -> l + "_" + r)
 			                      .hide()
 			                      .doOnSuccess(s -> {

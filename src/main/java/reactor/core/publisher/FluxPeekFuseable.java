@@ -190,9 +190,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					e.addSuppressed(t);
-					t = e;
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
 				}
 			}
 
@@ -445,9 +444,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					e.addSuppressed(t);
-					t = e;
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
 				}
 			}
 
@@ -719,9 +717,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					e.addSuppressed(t);
-					t = e;
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
 				}
 			}
 

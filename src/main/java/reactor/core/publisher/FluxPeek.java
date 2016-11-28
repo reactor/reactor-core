@@ -178,9 +178,8 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					e.addSuppressed(t);
-					t = e;
+					//this performs a throwIfFatal or suppresses t in e
+					t = Operators.onOperatorError(null, e, t);
 				}
 			}
 

@@ -37,6 +37,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FluxPeekFuseableTest {
 
@@ -276,6 +277,65 @@ public class FluxPeekFuseableTest {
 		ts.assertNoValues();
 		ts.assertError(IllegalStateException.class);
 		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
+	}
+
+	//See https://github.com/reactor/reactor-core/issues/272
+	@Test
+	public void errorCallbackError2() {
+		//test with alternate / wrapped error types
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		Throwable err = new Exception("test");
+
+		Flux.just(1)
+		    .doOnNext(d -> {
+			    throw new RuntimeException();
+		    })
+		    .doOnError(e -> {
+			    throw Exceptions.propagate(err);
+		    })
+		    .subscribe(ts);
+
+		//nominal error path (DownstreamException)
+		ts.assertErrorMessage("test");
+
+		ts = AssertSubscriber.create();
+		try {
+			Flux.just(1)
+			    .doOnNext(d -> {
+				    throw new RuntimeException();
+			    })
+			    .doOnError(d -> {
+				    throw Exceptions.bubble(err);
+			    })
+			    .subscribe(ts);
+
+			Assert.fail();
+		}
+		catch (Exception e) {
+			Assert.assertTrue(Exceptions.unwrap(e) == err);
+		}
+	}
+
+	//See https://github.com/reactor/reactor-core/issues/253
+	@Test
+	public void errorCallbackErrorWithParallel() {
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+
+		Mono.just(1)
+		    .publishOn(parallel())
+		    .doOnNext(i -> {
+			    throw new IllegalArgumentException();
+		    })
+		    .doOnError(e -> {
+			    throw new IllegalStateException(e);
+		    })
+		    .subscribe(assertSubscriber);
+
+		assertSubscriber
+				.await()
+				.assertError(IllegalStateException.class)
+				.assertNotComplete();
 	}
 
 	@Test
