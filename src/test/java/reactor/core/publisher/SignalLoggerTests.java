@@ -64,18 +64,26 @@ public class SignalLoggerTests {
 	}
 
 	@Test
+	public void normalSubscriptionAsString() {
+		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
+		Subscription s = new FluxPeek.PeekSubscriber<>(null, null);
+
+		assertThat(sl.subscriptionAsString(s), is("FluxPeek.PeekSubscriber"));
+	}
+
+	@Test
 	public void synchronousSubscriptionAsString() {
 		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		SynchronousSubscription<Object> s = new FluxPeekFuseable.PeekFuseableSubscriber<>(null, null);
 
-		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber, synchronous fuseable"));
+		assertThat(sl.subscriptionAsString(s), is("[Synchronous Fuseable] FluxPeekFuseable.PeekFuseableSubscriber"));
 	}
 	@Test
 	public void queueSubscriptionAsString() {
 		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		Fuseable.QueueSubscription<Object> s = Operators.EmptySubscription.INSTANCE;
 
-		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.Operators.EmptySubscription, fuseable"));
+		assertThat(sl.subscriptionAsString(s), is("[Fuseable] Operators.EmptySubscription"));
 	}
 
 	@Test
@@ -89,7 +97,7 @@ public class SignalLoggerTests {
 			public void cancel() {}
 		};
 
-		assertThat(sl.subscriptionAsString(s), is("reactor.core.publisher.SignalLoggerTests$1"));
+		assertThat(sl.subscriptionAsString(s), is("SignalLoggerTests$1"));
 	}
 
 	//=========================================================
