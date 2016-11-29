@@ -467,8 +467,8 @@ public class FluxBufferPredicateTest {
 		            .expectComplete()
 		            .verify();
 
-		//request(1) x 3, request(2) + request(1) x 4, request(3) that completes == 9
-		assertThat(requestCallCount.intValue(), is(9));
+		assertThat(requestCallCount.intValue(), is(11)); //10 elements then the completion
+
 	}
 
 	@Test
@@ -492,22 +492,20 @@ public class FluxBufferPredicateTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
 
-		//request(2) + request(1) x 4, request(2) + request(1) x 3 that completes == 9
-		assertThat(requestCallCount.intValue(), is(10)); //TODO used to be 9 :'(
-		assertThat(totalRequest.longValue(), is(12));
-
+		assertThat(requestCallCount.intValue(), is(11)); //10 elements then the completion
+		assertThat(totalRequest.longValue(), is(11L)); //ignores the main requests
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void requestRemainingBuffersAfterBufferEmission() {
 		LongAdder requestCallCount = new LongAdder();
-		Flux<Integer> source = Flux.range(1, 10).hide()
+		Flux<Integer> source = Flux.range(1, 10).hide().log()
 		                           .doOnRequest(r -> requestCallCount.increment());
 
 		StepVerifier.withVirtualTime(3, //start with a request for 3 buffers
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL).log())
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6), Arrays.asList(7, 8, 9))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -516,11 +514,7 @@ public class FluxBufferPredicateTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
 
-		//first buffer: request(3)
-		//second buffer: request(2) + request(1)
-		//third buffer: request(1) x 3
-		//after third buffer, thenRequest(1) triggers request(1) x 2 and completes
-		assertThat(requestCallCount.intValue(), is(8));
+		assertThat(requestCallCount.intValue(), is(11)); //10 elements then the completion
 	}
 
 	@Test

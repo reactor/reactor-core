@@ -162,7 +162,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 							REQUESTED,
 							this,
 							this)) {
-						s.request(n);
+						s.request(1);
 					}
 				}
 			}
