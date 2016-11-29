@@ -76,6 +76,10 @@ import reactor.util.function.Tuples;
  *
  * <p>If it is known that the underlying {@link Publisher} will emit 0 or 1 element, {@link Mono} should be used
  * instead.
+ *
+ * <p>Note that using state in the {@code java.util.function} / lambdas used within Flux operators
+ * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
+ *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  * 
  * @author Sebastien Deleuze
@@ -5221,6 +5225,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
 	 * <p>
 	 *
+	 * For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 *
 	 * @param prefetch an arbitrary value
 	 *
 	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
@@ -5233,7 +5240,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
 	 * sequence. It will request an unbounded demand.
 	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe.png" alt="">
@@ -5255,6 +5264,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * onNext, request N x 0.75.
 	 * <p>For a passive version that observe and forward incoming data see {@link
 	 * #doOnNext(java.util.function.Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribe.png"
 	 * alt="">
@@ -5274,6 +5286,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
 	 * For a passive version that observe and forward incoming data see
 	 * {@link #doOnNext(java.util.function.Consumer)} and {@link #doOnError(java.util.function.Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribeerror.png" alt="">
@@ -5292,7 +5306,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
 	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
-	 * {@link #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 * {@link #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png" alt="">
@@ -5317,6 +5333,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
 	 * {@link #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)}
 	 * and {@link #doOnSubscribe(Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png" alt="">
@@ -5350,6 +5368,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
 	 * #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)} and
 	 * {@link #doOnSubscribe(Consumer)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png"
 	 * alt="">
@@ -5381,7 +5401,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p> For a passive version that observe and forward
 	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
-	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)},
+	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)}.
+	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/subscribecomplete.png"
 	 * alt="">
@@ -5456,6 +5479,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitter (e.g. {@link FluxProcessor} or {@link MonoProcessor}).
 	 *
 	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
+	 *
+	 * <p>If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe and return
 	 * @param <E> the reified type from the input/output subscriber
