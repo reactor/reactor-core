@@ -113,8 +113,9 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 	/**
 	 * Optional hook executed after any of the termination events (onError, onComplete,
 	 * cancel). The hook is executed in addition to and after {@link #hookOnError(Throwable)},
-	 * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks. Defaults to doing
-	 * nothing.
+	 * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks, even if these callbacks
+	 * fail. Defaults to doing nothing. A failure of the callback will be caught by
+	 * {@link Operators#onErrorDropped(Throwable)}.
 	 *
 	 * @param type the type of termination event that triggered the hook
 	 * ({@link SignalType#ON_ERROR}, {@link SignalType#ON_COMPLETE} or
@@ -164,11 +165,13 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 
 		try {
 			hookOnError(t);
-			hookFinally(SignalType.ON_ERROR);
 		}
 		catch (Throwable e) {
 			e.addSuppressed(t);
 			Operators.onErrorDropped(e);
+		}
+		finally {
+			safeHookFinally(SignalType.ON_ERROR);
 		}
 	}
 
@@ -179,11 +182,13 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 			//we're sure it has not been concurrently cancelled
 			try {
 				hookOnComplete();
-				hookFinally(SignalType.ON_COMPLETE);
 			}
 			catch (Throwable throwable) {
 				//onError itself will short-circuit due to the CancelledSubscription being set above
 				hookOnError(Operators.onOperatorError(throwable));
+			}
+			finally {
+				safeHookFinally(SignalType.ON_COMPLETE);
 			}
 		}
 	}
@@ -207,11 +212,22 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		if (Operators.terminate(S, this)) {
 			try {
 				hookOnCancel();
-				hookFinally(SignalType.CANCEL);
 			}
 			catch (Throwable throwable) {
 				hookOnError(Operators.onOperatorError(subscription, throwable));
 			}
+			finally {
+				safeHookFinally(SignalType.CANCEL);
+			}
+		}
+	}
+
+	void safeHookFinally(SignalType type) {
+		try {
+			hookFinally(type);
+		}
+		catch (Throwable finallyFailure) {
+			Operators.onErrorDropped(finallyFailure);
 		}
 	}
 

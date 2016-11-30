@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -100,6 +101,7 @@ public class BaseSubscriberTest {
 	public void onSubscribeErrorPropagatedToOnError() {
 		Flux<String> flux = Flux.just("foo");
 		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 
 		flux.subscribe(new BaseSubscriber<String>() {
 			@Override
@@ -116,7 +118,13 @@ public class BaseSubscriberTest {
 			protected void hookOnError(Throwable throwable) {
 				error.set(throwable);
 			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				checkFinally.set(type);
+			}
 		});
+		assertThat(checkFinally.get(), is(SignalType.ON_ERROR));
 		assertThat(error.get(), is(instanceOf(IllegalStateException.class)));
 	}
 
@@ -124,6 +132,7 @@ public class BaseSubscriberTest {
 	public void onSubscribeFatalThrown() {
 		Flux<String> flux = Flux.just("foo");
 		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 
 		flux.subscribe(new BaseSubscriber<String>() {
 			@Override
@@ -141,13 +150,20 @@ public class BaseSubscriberTest {
 			protected void hookOnError(Throwable throwable) {
 				error.set(throwable);
 			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				checkFinally.set(type);
+			}
 		});
+		assertThat(checkFinally.get(), is(SignalType.ON_ERROR));
 		assertThat(error.get(), is(nullValue()));
 	}
 
 	@Test
 	public void onNextErrorPropagatedToOnError() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 		Flux<String> flux = Flux.just("foo");
 
 		flux.subscribe(new BaseSubscriber<String>() {
@@ -165,14 +181,20 @@ public class BaseSubscriberTest {
 			protected void hookOnError(Throwable throwable) {
 				error.set(throwable);
 			}
-		});
 
+			@Override
+			protected void hookFinally(SignalType type) {
+				checkFinally.set(type);
+			}
+		});
+		assertThat(checkFinally.get(), is(SignalType.ON_ERROR));
 		assertThat(error.get(), is(instanceOf(IllegalArgumentException.class)));
 	}
 
 	@Test
 	public void onCompleteErrorPropagatedToOnError() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
 		Flux<String> flux = Flux.just("foo");
 
 		flux.subscribe(new BaseSubscriber<String>() {
@@ -195,8 +217,119 @@ public class BaseSubscriberTest {
 			protected void hookOnError(Throwable throwable) {
 				error.set(throwable);
 			}
-		});
 
+			@Override
+			protected void hookFinally(SignalType type) {
+				checkFinally.set(type);
+			}
+		});
+		assertThat(checkFinally.get(), is(SignalType.ON_COMPLETE));
 		assertThat(error.get(), is(instanceOf(IllegalArgumentException.class)));
+	}
+
+	@Test
+	public void finallyExecutesWhenHookOnCompleteFails() {
+		RuntimeException err = new IllegalArgumentException("hookOnComplete");
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+
+		Flux.just("foo")
+		    .subscribe(new BaseSubscriber<String>() {
+			    @Override
+			    protected void hookOnSubscribe(Subscription subscription) {
+			    	request(Long.MAX_VALUE);
+			    }
+
+			    @Override
+			    protected void hookOnNext(String value) { }
+
+			    @Override
+			    protected void hookOnError(Throwable throwable) {
+				    error.set(throwable);
+			    }
+
+			    @Override
+			    protected void hookOnComplete() {
+				    throw err;
+			    }
+
+			    @Override
+			    protected void hookFinally(SignalType type) {
+				    checkFinally.set(type);
+			    }
+		    });
+
+		assertThat(checkFinally.get(), is(SignalType.ON_COMPLETE));
+		assertThat(error.get(), is(err));
+	}
+
+	@Test
+	public void finallyExecutesWhenHookOnErrorFails() {
+		RuntimeException err = new IllegalArgumentException("hookOnError");
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
+
+		try {
+			Flux.<String>error(new IllegalStateException("someError"))
+					.subscribe(new BaseSubscriber<String>() {
+						@Override
+						protected void hookOnSubscribe(Subscription subscription) {
+							request(Long.MAX_VALUE);
+						}
+
+						@Override
+						protected void hookOnNext(String value) { }
+
+						@Override
+						protected void hookOnError(Throwable throwable) {
+							throw err;
+						}
+
+						@Override
+						protected void hookFinally(SignalType type) {
+							checkFinally.set(type);
+						}
+					});
+			fail("expected " + err);
+		}
+		catch (Throwable e) {
+			assertThat(Exceptions.unwrap(e), is(err));
+		}
+		assertThat(checkFinally.get(), is(SignalType.ON_ERROR));
+	}
+
+	@Test
+	public void finallyExecutesWhenHookOnCancelFails() {
+		RuntimeException err = new IllegalArgumentException("hookOnCancel");
+		AtomicReference<SignalType> checkFinally = new AtomicReference<>();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+
+		Flux.just("foo")
+		    .subscribe(new BaseSubscriber<String>() {
+			    @Override
+			    protected void hookOnSubscribe(Subscription subscription) {
+			    	this.cancel();
+			    }
+
+			    @Override
+			    protected void hookOnNext(String value) { }
+
+			    @Override
+			    protected void hookOnError(Throwable throwable) {
+				    error.set(throwable);
+			    }
+
+			    @Override
+			    protected void hookOnCancel() {
+				    throw err;
+			    }
+
+			    @Override
+			    protected void hookFinally(SignalType type) {
+				    checkFinally.set(type);
+			    }
+		    });
+
+		assertThat(checkFinally.get(), is(SignalType.CANCEL));
+		assertThat(error.get(), is(err));
 	}
 }
