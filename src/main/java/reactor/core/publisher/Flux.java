@@ -3108,6 +3108,18 @@ public abstract class Flux<T> implements Publisher<T> {
 				null);
 	}
 
+	public final Flux<T> doFinally(Consumer<SignalType> onFinally) {
+		Objects.requireNonNull(onFinally, "onFinally");
+		Flux<T> fluxDoFinally;
+		if (this instanceof Fuseable) {
+			fluxDoFinally = new FluxDoFinallyFuseable<>(this, onFinally);
+		}
+		else {
+			fluxDoFinally = new FluxDoFinally<>(this, onFinally);
+		}
+		return onAssembly(fluxDoFinally);
+	}
+
 	/**
 	 * Map this {@link Flux} sequence into {@link reactor.util.function.Tuple2} of T1 {@link Long} timemillis and T2
 	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first

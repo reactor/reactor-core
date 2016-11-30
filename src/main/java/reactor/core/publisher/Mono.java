@@ -1380,6 +1380,18 @@ public abstract class Mono<T> implements Publisher<T> {
 					null);
 	}
 
+	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
+		Objects.requireNonNull(onFinally, "onFinally");
+		Mono<T> monoDoFinally;
+		if (this instanceof Fuseable) {
+			monoDoFinally = new MonoDoFinallyFuseable<>(this, onFinally);
+		}
+		else {
+			monoDoFinally = new MonoDoFinally<>(this, onFinally);
+		}
+		return onAssembly(monoDoFinally);
+	}
+
 	/**
 	 * Triggered when the {@link Mono} is cancelled.
 	 *
