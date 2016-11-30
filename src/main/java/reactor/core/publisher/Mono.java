@@ -1374,7 +1374,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
 		return doOnSignal(this, null,  afterSuccess, afterSuccess.errorConsumer,
 					null, afterSuccess, null,
-					afterSuccess);
+					null);
 	}
 
 	/**
