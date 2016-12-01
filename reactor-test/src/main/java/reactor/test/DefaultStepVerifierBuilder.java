@@ -809,9 +809,32 @@ final class DefaultStepVerifierBuilder<T>
 
 		}
 
+		/**
+		 * Signal a failure, always cancelling this subscriber. If the actual signal
+		 * causing the failure might be either onComplete or onError (for which cancel
+		 * is prohibited), prefer using {@link #setFailure(Event, Signal, String, Object...)}.
+		 *
+		 * @param event the event that triggered the failure
+		 * @param msg the message for the error
+		 * @param arguments the optional formatter arguments to the message
+		 */
 		final void setFailure(Event<T> event, String msg, Object... arguments) {
+			setFailure(event, null, msg, arguments);
+		}
+
+		/**
+		 * Signal a failure, potentially cancelling this subscriber if the actual signal
+		 * is neither onComplete nor onError (for which cancel is prohibited).
+		 *
+		 * @param event the event that triggered the failure
+		 * @param actualSignal the actual signal that triggered the failure (used to
+		 * decide whether or not to cancel, passing null will cause cancellation)
+		 * @param msg the message for the error
+		 * @param arguments the optional formatter arguments to the message
+		 */
+		final void setFailure(Event<T> event, Signal<T> actualSignal, String msg, Object... arguments) {
 			Exceptions.addThrowable(ERRORS, this, fail(event, msg, arguments).get());
-			cancel();
+			maybeCancel(actualSignal);
 			this.completeLatch.countDown();
 		}
 
@@ -822,6 +845,13 @@ final class DefaultStepVerifierBuilder<T>
 				s.cancel();
 			}
 			return s;
+		}
+
+		/** Cancels this subscriber if the actual signal is null or not a complete/error */
+		final void maybeCancel(Signal<T> actualSignal) {
+			if (actualSignal == null || (!actualSignal.isOnComplete() && !actualSignal.isOnError())) {
+				cancel();
+			}
 		}
 
 		final Optional<AssertionError> checkCountMismatch(SignalCountEvent<T> event, Signal<T> s) {
@@ -837,7 +867,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 		}
 
-		boolean onCollect() {
+		boolean onCollect(Signal<T> actualSignal) {
 			Collection<T> c;
 			CollectEvent<T> collectEvent = (CollectEvent<T>) this.script.poll();
 			if (collectEvent.supplier != null) {
@@ -845,21 +875,21 @@ final class DefaultStepVerifierBuilder<T>
 				this.currentCollector = c;
 
 				if (c == null) {
-					setFailure(collectEvent, "expected collection; actual supplied is [null]");
+					setFailure(collectEvent, actualSignal, "expected collection; actual supplied is [null]");
 				}
 				return true;
 			}
 			c = this.currentCollector;
 
 			if (c == null) {
-				setFailure(collectEvent, "expected record collector; actual record is [null]");
+				setFailure(collectEvent, actualSignal, "expected record collector; actual record is [null]");
 				return true;
 			}
 
 			Optional<AssertionError> error = collectEvent.test(c);
 			if (error.isPresent()) {
 				Exceptions.addThrowable(ERRORS, this, error.get());
-				cancel();
+				maybeCancel(actualSignal);
 				this.completeLatch.countDown();
 				return true;
 			}
@@ -869,13 +899,13 @@ final class DefaultStepVerifierBuilder<T>
 		@SuppressWarnings("unchecked")
 		final void onExpectation(Signal<T> actualSignal) {
 			if (monitorSignal) {
-				setFailure(null, "expected no event: %s", actualSignal);
+				setFailure(null, actualSignal, "expected no event: %s", actualSignal);
 				return;
 			}
 			try {
 				Event<T> event = this.script.peek();
 				if (event == null) {
-					setFailure(null, "did not expect: %s", actualSignal);
+					setFailure(null, actualSignal, "did not expect: %s", actualSignal);
 					return;
 				}
 
@@ -893,7 +923,7 @@ final class DefaultStepVerifierBuilder<T>
 					}
 				}
 				else if (event instanceof CollectEvent) {
-					if (onCollect()) {
+					if (onCollect(actualSignal)) {
 						return;
 					}
 				}
@@ -923,7 +953,7 @@ final class DefaultStepVerifierBuilder<T>
 						}
 					}
 					else if (event instanceof CollectEvent) {
-						if (onCollect()) {
+						if (onCollect(actualSignal)) {
 							return;
 						}
 					}
@@ -949,7 +979,7 @@ final class DefaultStepVerifierBuilder<T>
 									msg
 							).get());
 				}
-				cancel();
+				maybeCancel(actualSignal);
 				completeLatch.countDown();
 			}
 		}
@@ -959,7 +989,7 @@ final class DefaultStepVerifierBuilder<T>
 			Optional<AssertionError> error = signalEvent.test(actualSignal);
 			if (error.isPresent()) {
 				Exceptions.addThrowable(ERRORS, this, error.get());
-				cancel();
+				maybeCancel(actualSignal);
 				this.completeLatch.countDown();
 				return true;
 			}
@@ -986,7 +1016,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			else {
 				Exceptions.addThrowable(ERRORS, this, error.get());
-				cancel();
+				maybeCancel(actualSignal);
 				this.completeLatch.countDown();
 				return true;
 			}
@@ -1023,7 +1053,7 @@ final class DefaultStepVerifierBuilder<T>
 
 					if (error.isPresent()) {
 						Exceptions.addThrowable(ERRORS, this, error.get());
-						cancel();
+						maybeCancel(actualSignal);
 						this.completeLatch.countDown();
 					}
 				}

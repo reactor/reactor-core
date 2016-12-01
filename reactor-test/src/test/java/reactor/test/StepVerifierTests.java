@@ -18,7 +18,6 @@ package reactor.test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -126,10 +125,10 @@ public class StepVerifierTests {
 
 		StepVerifier subscriber = StepVerifier.create(flux)
 		                                      .consumeNextWith(s -> {
-			                              if (!"foo".equals(s)) {
-				                              throw new AssertionError("e:" + s);
-			                              }
-		                              })
+			                                      if (!"foo".equals(s)) {
+				                                      throw new AssertionError("e:" + s);
+			                                      }
+		                                      })
 		                                      .expectComplete();
 
 		try {
@@ -146,10 +145,10 @@ public class StepVerifierTests {
 
 		StepVerifier subscriber = StepVerifier.create(flux)
 		                                      .consumeNextWith(s -> {
-			                              if (!"foo".equals(s)) {
-				                              throw new AssertionError(s);
-			                              }
-		                              })
+			                                      if (!"foo".equals(s)) {
+				                                      throw new AssertionError(s);
+			                                      }
+		                                      })
 		                                      .expectComplete();
 
 		try {
@@ -331,11 +330,11 @@ public class StepVerifierTests {
 			StepVerifier.create(flux)
 			            .expectNext("foo")
 			            .consumeErrorWith(throwable -> {
-				        if (!(throwable instanceof IllegalStateException)) {
-					        throw new AssertionError(throwable.getClass()
-					                                          .getSimpleName());
-				        }
-			        })
+				            if (!(throwable instanceof IllegalStateException)) {
+					            throw new AssertionError(throwable.getClass()
+					                                              .getSimpleName());
+				            }
+			            })
 			            .verify();
 		}
 		catch (AssertionError error) {
@@ -692,7 +691,6 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-
 	@Test
 	public void verifyVirtualTimeOnSubscribe() {
 		StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(2))
@@ -738,7 +736,8 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyVirtualTimeNoEventInterval() {
-		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3)).take(2))
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		                                       .take(2))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3))
 		            .expectNext(0L)
@@ -747,9 +746,11 @@ public class StepVerifierTests {
 		            .expectComplete()
 		            .verify();
 	}
+
 	@Test(expected = AssertionError.class)
 	public void verifyVirtualTimeNoEventIntervalError() {
-		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3)).take(2))
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		                                       .take(2))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(3))
 		            .expectNext(0L)
@@ -761,7 +762,8 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyVirtualTimeNoEventNever() {
-		StepVerifier.withVirtualTime(() -> Mono.never().log())
+		StepVerifier.withVirtualTime(() -> Mono.never()
+		                                       .log())
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofDays(10000))
 		            .thenCancel()
@@ -770,7 +772,8 @@ public class StepVerifierTests {
 
 	@Test(expected = AssertionError.class)
 	public void verifyVirtualTimeNoEventNeverError() {
-		StepVerifier.withVirtualTime(() -> Mono.never().log())
+		StepVerifier.withVirtualTime(() -> Mono.never()
+		                                       .log())
 		            .expectNoEvent(Duration.ofDays(10000))
 		            .thenCancel()
 		            .verify();
@@ -844,11 +847,11 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-
 	@Test
 	public void verifyVirtualTimeOnErrorInterval() {
-		StepVerifier.withVirtualTime(0, () -> Flux.interval(Duration.ofSeconds(3))
-		                                          .map(d -> "t" + d))
+		StepVerifier.withVirtualTime(0,
+				() -> Flux.interval(Duration.ofSeconds(3))
+				          .map(d -> "t" + d))
 		            .thenRequest(1)
 		            .thenAwait(Duration.ofSeconds(3))
 		            .expectNext("t0")
@@ -879,80 +882,79 @@ public class StepVerifierTests {
 	@Test(timeout = 1000)
 	public void verifyCreatedSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(0, () -> Flux.interval(Duration.ofSeconds(3)).map(d -> "t" + d),
+		StepVerifier.withVirtualTime(0,
+				() -> Flux.interval(Duration.ofSeconds(3))
+				          .map(d -> "t" + d),
 				VirtualTimeScheduler::create)
-		        .thenRequest(1)
-		        .thenAwait(Duration.ofSeconds(1))
-		        .thenAwait(Duration.ofSeconds(2))
-		        .expectNext("t0")
-		        .thenCancel()
-		        .verify();
+		            .thenRequest(1)
+		            .thenAwait(Duration.ofSeconds(1))
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext("t0")
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test(timeout = 1000)
 	public void verifyCreatedForAllSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(0, () -> Flux.interval(Duration.ofSeconds(3)).map(d -> "t" + d),
+		StepVerifier.withVirtualTime(0,
+				() -> Flux.interval(Duration.ofSeconds(3))
+				          .map(d -> "t" + d),
 				VirtualTimeScheduler::createForAll)
-		        .thenRequest(1)
-		        .thenAwait(Duration.ofSeconds(1))
-		        .thenAwait(Duration.ofSeconds(2))
-		        .expectNext("t0")
-		        .thenCancel()
-		        .verify();
+		            .thenRequest(1)
+		            .thenAwait(Duration.ofSeconds(1))
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext("t0")
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
 	public void noSignalRealTime() {
-		Duration verifyDuration = StepVerifier
-				.create(Mono.never())
-				.expectSubscription()
-				.expectNoEvent(Duration.ofSeconds(1))
-				.thenCancel()
-				.verify(Duration.ofMillis(1100));
+		Duration verifyDuration = StepVerifier.create(Mono.never())
+		                                      .expectSubscription()
+		                                      .expectNoEvent(Duration.ofSeconds(1))
+		                                      .thenCancel()
+		                                      .verify(Duration.ofMillis(1100));
 
 		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(1000L)));
 	}
 
 	@Test(timeout = 500)
 	public void noSignalVirtualTime() {
-		StepVerifier
-				.withVirtualTime(1, Mono::never)
-				.expectSubscription()
-				.expectNoEvent(Duration.ofSeconds(100))
-				.thenCancel()
-				.verify();
+		StepVerifier.withVirtualTime(1, Mono::never)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(100))
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
 	public void longDelayAndNoTermination() {
-		StepVerifier
-				.withVirtualTime(Long.MAX_VALUE,
-						() -> Flux.just("foo", "bar")
-						          .delay(Duration.ofSeconds(5))
-						          .concatWith(Mono.never())
-				)
-				.expectSubscription()
-				.expectNoEvent(Duration.ofSeconds(5))
-				.expectNext("foo")
-				.expectNoEvent(Duration.ofSeconds(5))
-				.expectNextCount(1)
-				.expectNoEvent(Duration.ofMillis(10))
-				.thenCancel()
-				.verify();
+		StepVerifier.withVirtualTime(Long.MAX_VALUE,
+				() -> Flux.just("foo", "bar")
+				          .delay(Duration.ofSeconds(5))
+				          .concatWith(Mono.never()))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(5))
+		            .expectNext("foo")
+		            .expectNoEvent(Duration.ofSeconds(5))
+		            .expectNextCount(1)
+		            .expectNoEvent(Duration.ofMillis(10))
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
 	public void thenAwaitThenCancelWaitsForDuration() {
-		Duration verifyDuration =
-				StepVerifier.create(Flux.just("foo", "bar")
-				            .delay(Duration.ofMillis(500)))
-				            .expectSubscription()
-				            .thenAwait(Duration.ofMillis(500))
-				            .expectNext("foo")
-				            .thenAwait(Duration.ofMillis(200))
-				            .thenCancel()
-				            .verify(Duration.ofMillis(1000));
+		Duration verifyDuration = StepVerifier.create(Flux.just("foo", "bar")
+		                                                  .delay(Duration.ofMillis(500)))
+		                                      .expectSubscription()
+		                                      .thenAwait(Duration.ofMillis(500))
+		                                      .expectNext("foo")
+		                                      .thenAwait(Duration.ofMillis(200))
+		                                      .thenCancel()
+		                                      .verify(Duration.ofMillis(1000));
 
 		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(700L)));
 	}
@@ -1010,17 +1012,156 @@ public class StepVerifierTests {
 	public void testWithDescription() {
 		try {
 			StepVerifier.create(Flux.just("foo", "bar", "baz"), 3)
-			            .expectNext("foo").as("first")
-			            .expectNext("bar").as("second")
-			            .expectNext("bar").as("third").as("this is ignored")
+			            .expectNext("foo")
+			            .as("first")
+			            .expectNext("bar")
+			            .as("second")
+			            .expectNext("bar")
+			            .as("third")
+			            .as("this is ignored")
 			            .expectComplete()
 			            .log()
 			            .verify();
 			throw new IllegalStateException();
-		} catch (AssertionError e) {
+		}
+		catch (AssertionError e) {
 			assertThat(e.getMessage(), startsWith("expectation \"third\" failed"));
-		} catch (IllegalStateException e) {
+		}
+		catch (IllegalStateException e) {
 			fail("expected assertion error of third");
 		}
 	}
+
+	@Test
+	public void noCancelOnUnexpectedErrorSignal() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.error(new IllegalArgumentException())
+			                        .doOnCancel(cancelled::increment))
+			            .expectComplete()
+			            .verify();
+			fail("expectComplete should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expected: onComplete(); actual: onError"));
+		}
+		assertThat("the expectComplete assertion caused a cancellation",
+				cancelled.intValue(),
+				is(0));
+	}
+
+	@Test
+	public void noCancelOnUnexpectedCompleteSignal() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.empty()
+			                        .doOnCancel(cancelled::increment))
+			            .expectError()
+			            .verify();
+			fail("expectError should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expected: onError(); actual: onComplete()"));
+		}
+		assertThat("the expectError assertion caused a cancellation",
+				cancelled.intValue(),
+				is(0));
+	}
+
+	@Test
+	public void noCancelOnUnexpectedCompleteSignal2() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.just("foo")
+			                        .doOnCancel(cancelled::increment))
+			            .expectNext("foo", "bar")
+			            .expectComplete()
+			            .verify();
+			fail("expectNext(bar) should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expected: onNext(bar); actual: onComplete()"));
+		}
+		assertThat("the expectNext assertion caused a cancellation", cancelled.intValue(), is(0));
+	}
+
+	@Test
+	public void noCancelOnCompleteWhenSequenceUnexpected() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.just("foo")
+			                        .doOnCancel(cancelled::increment))
+			            .expectNextSequence(Arrays.asList("foo", "bar"))
+			            .expectComplete()
+			            .verify();
+			fail("expectNextSequence should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expectNextSequence"));
+		}
+		assertThat("the expectNextSequence assertion caused a cancellation", cancelled.intValue(), is(0));
+	}
+
+	@Test
+	public void noCancelOnCompleteWhenCountUnexpected() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.just("foo")
+			                        .doOnCancel(cancelled::increment))
+			            .expectNextCount(2)
+			            .expectComplete()
+			            .verify();
+			fail("expectNextCount should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expectNextCount"));
+		}
+		assertThat("the expectNextCount assertion caused a cancellation", cancelled.intValue(), is(0));
+	}
+
+	@Test
+	public void noCancelOnErrorWhenCollectUnexpected() {
+		LongAdder cancelled = new LongAdder();
+		LongAdder records = new LongAdder();
+		try {
+			StepVerifier.create(Flux.error(new IllegalArgumentException())
+			                        .doOnCancel(cancelled::increment))
+			            .recordWith(() -> {
+								records.increment();
+								return new ArrayList<>();
+			            })
+			            .expectRecordedMatches(l -> l.size() == 2)
+			            .expectComplete()
+			            .verify();
+			fail("expectRecordedMatches should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expected collection predicate match"));
+		}
+		assertThat("the expectRecordedMatches assertion caused a cancellation", cancelled.intValue(), is(0));
+		assertThat("unexpected number of records", records.intValue(), is(1));
+	}
+
+	//TODO records: find a way to test the case where supplied collection is null, and signal is complete/error
+	//TODO records: find a way to test the case where there hasn't been a recorder set, and signal is complete/error
+
+	@Test
+	public void cancelOnUnexpectedNextWithMoreData() {
+		LongAdder cancelled = new LongAdder();
+		try {
+			StepVerifier.create(Flux.just("foo", "bar")
+			                        .doOnCancel(cancelled::increment))
+			            .expectNext("baz")
+			            .expectComplete()
+			            .verify();
+			fail("expectNext should have failed");
+		}
+		catch (AssertionError expected) {
+			assertThat(expected.getMessage(), containsString("expected value: baz;"));
+		}
+		assertThat("the expectNext assertion didn't cause a cancellation",
+				cancelled.intValue(),
+				is(1));
+	}
+
 }
