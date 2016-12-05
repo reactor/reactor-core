@@ -827,12 +827,12 @@ public class StepVerifierTests {
 
 	@Test(expected = NullPointerException.class)
 	public void verifyVirtualTimeNoLookupFails() {
-		StepVerifier.withVirtualTime(1, Flux::empty, null);
+		StepVerifier.withVirtualTime(Flux::empty, null, 1);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void verifyVirtualTimeNoScenarioFails() {
-		StepVerifier.withVirtualTime(1, null);
+		StepVerifier.withVirtualTime(null, 1);
 	}
 
 	@Test(timeout = 3000)
@@ -849,9 +849,9 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyVirtualTimeOnErrorInterval() {
-		StepVerifier.withVirtualTime(0,
-				() -> Flux.interval(Duration.ofSeconds(3))
-				          .map(d -> "t" + d))
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		                                       .map(d -> "t" + d),
+				0)
 		            .thenRequest(1)
 		            .thenAwait(Duration.ofSeconds(3))
 		            .expectNext("t0")
@@ -867,10 +867,9 @@ public class StepVerifierTests {
 	@Test
 	public void verifyVirtualTimeOnErrorAsync() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-		StepVerifier.withVirtualTime(0,
-				() -> Flux.just(123)
-				          .subscribeOn(vts),
-				() -> vts)
+		StepVerifier.withVirtualTime(() -> Flux.just(123)
+		                                       .subscribeOn(vts),
+				() -> vts, 0)
 		            .thenRequest(1)
 		            .thenAwait()
 		            .expectNext(123)
@@ -882,10 +881,10 @@ public class StepVerifierTests {
 	@Test(timeout = 1000)
 	public void verifyCreatedSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(0,
-				() -> Flux.interval(Duration.ofSeconds(3))
-				          .map(d -> "t" + d),
-				VirtualTimeScheduler::create)
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		                                       .map(d -> "t" + d),
+				VirtualTimeScheduler::create,
+				0)
 		            .thenRequest(1)
 		            .thenAwait(Duration.ofSeconds(1))
 		            .thenAwait(Duration.ofSeconds(2))
@@ -897,10 +896,10 @@ public class StepVerifierTests {
 	@Test(timeout = 1000)
 	public void verifyCreatedForAllSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(0,
-				() -> Flux.interval(Duration.ofSeconds(3))
-				          .map(d -> "t" + d),
-				VirtualTimeScheduler::createForAll)
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		                                       .map(d -> "t" + d),
+				VirtualTimeScheduler::createForAll,
+				0)
 		            .thenRequest(1)
 		            .thenAwait(Duration.ofSeconds(1))
 		            .thenAwait(Duration.ofSeconds(2))
@@ -922,7 +921,7 @@ public class StepVerifierTests {
 
 	@Test(timeout = 500)
 	public void noSignalVirtualTime() {
-		StepVerifier.withVirtualTime(1, Mono::never)
+		StepVerifier.withVirtualTime(Mono::never, 1)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(100))
 		            .thenCancel()
@@ -931,10 +930,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void longDelayAndNoTermination() {
-		StepVerifier.withVirtualTime(Long.MAX_VALUE,
-				() -> Flux.just("foo", "bar")
-				          .delay(Duration.ofSeconds(5))
-				          .concatWith(Mono.never()))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo", "bar")
+		                                       .delay(Duration.ofSeconds(5))
+		                                       .concatWith(Mono.never()),
+				Long.MAX_VALUE)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(5))
 		            .expectNext("foo")
