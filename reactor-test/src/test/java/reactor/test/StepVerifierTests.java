@@ -30,16 +30,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.test.utils.RequestIgnoringProcessor;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * @author Arjen Poutsma
  * @author Sebastien Deleuze
  * @author Stephane Maldini
+ * @author Simon Baslé
  */
 public class StepVerifierTests {
 
@@ -1162,6 +1162,69 @@ public class StepVerifierTests {
 		assertThat("the expectNext assertion didn't cause a cancellation",
 				cancelled.intValue(),
 				is(1));
+	}
+
+	@Test
+	public void boundedInitialOverflowIsDetected() {
+		RequestIgnoringProcessor<String> processor = RequestIgnoringProcessor.create();
+
+		try {
+			StepVerifier.create(processor, 1)
+			            .then(() -> {
+				            processor.onNext("foo");
+				            processor.onNext("bar");
+				            processor.onComplete();
+			            })
+			            .expectNext("foo")
+			            .expectComplete()
+			            .verify();
+			fail();
+		}
+		catch (AssertionError e) {
+			assertThat(e.getMessage(), containsString("expected production of at most 1;" +
+					" produced: 2; request overflown by signal: onNext(bar)"));
+		}
+	}
+
+	@Test
+	public void boundedRequestOverflowIsDetected() {
+		RequestIgnoringProcessor<String> processor = RequestIgnoringProcessor.create();
+
+		try {
+			StepVerifier.create(processor, 0)
+			            .thenRequest(2)
+			            .then(() -> {
+				            processor.onNext("foo");
+				            processor.onNext("bar");
+				            processor.onNext("baz");
+				            processor.onComplete();
+			            })
+			            .expectNext("foo", "bar")
+			            .expectComplete()
+			            .verify();
+			fail();
+		}
+		catch (AssertionError e) {
+			assertThat(e.getMessage(), containsString("expected production of at most 2;"
+					+ " produced: 3; request overflown by signal: onNext(baz)"));
+		}
+	}
+
+	@Test
+	public void initialBoundedThenUnboundedRequestDoesntOverflow() {
+		RequestIgnoringProcessor<String> processor = RequestIgnoringProcessor.create();
+
+		StepVerifier.create(processor, 2)
+		            .thenRequest(Long.MAX_VALUE - 2)
+		            .then(() -> {
+			            processor.onNext("foo");
+			            processor.onNext("bar");
+			            processor.onNext("baz");
+			            processor.onComplete();
+		            })
+	                .expectNext("foo", "bar", "baz")
+	                .expectComplete()
+	                .verify();
 	}
 
 }
