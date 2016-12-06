@@ -112,7 +112,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				if(done){
 					s.cancel();
 					if(error != null){
-						actual.onError(error);
+						actual.onError(Operators.onOperatorError(s, error, t));
 					}
 					else {
 						actual.onComplete();
@@ -161,7 +161,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				if(done){
 					s.cancel();
 					if(error != null){
-						actual.onError(error);
+						actual.onError(Operators.onOperatorError(s, error, t));
 						return;
 					}
 					actual.onComplete();
@@ -253,7 +253,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						if(done){
 							s.cancel();
 							if(error != null){
-								actual.onError(error);
+								actual.onError(Operators.onOperatorError(s, error, v));
 							}
 							return u;
 						}
@@ -333,7 +333,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void error(Throwable e) {
-			error = Operators.onOperatorError(Objects.requireNonNull(e, "error"));
+			error = Objects.requireNonNull(e, "error");
 			done = true;
 		}
 
@@ -399,7 +399,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				if(done){
 					s.cancel();
 					if(error != null){
-						actual.onError(error);
+						actual.onError(Operators.onOperatorError(s, error, t));
 						return;
 					}
 					actual.onComplete();
@@ -438,7 +438,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 				if(done){
 					s.cancel();
 					if(error != null){
-						actual.onError(error);
+						actual.onError(Operators.onOperatorError(s, error, t));
 					}
 					else {
 						actual.onComplete();
@@ -490,7 +490,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void error(Throwable e) {
-			error = Operators.onOperatorError(Objects.requireNonNull(e, "error"));
+			error = Objects.requireNonNull(e, "error");
 			done = true;
 		}
 
@@ -557,7 +557,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R>
 						if(done){
 							s.cancel();
 							if(error != null){
-								actual.onError(error);
+								actual.onError(Operators.onOperatorError(s, error, v));
 							}
 							else {
 								actual.onComplete();

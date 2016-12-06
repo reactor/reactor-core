@@ -19,7 +19,9 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -128,6 +130,76 @@ public class FluxHandleTest {
 		  .assertComplete()
 		  .assertFuseableSource()
 		  .assertFusionMode(ASYNC);
+	}
+
+	@Test
+	public void errorSignal() {
+
+		int data = 1;
+		Exception exception = new IllegalStateException();
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				return t;
+			});
+
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+			Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
+
+			ts.await()
+			  .assertNoValues()
+			  .assertError(IllegalStateException.class)
+			  .assertNotComplete();
+
+			Assert.assertSame(throwableInOnOperatorError.get(), exception);
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
+
+	@Test
+	public void errorPropagated() {
+
+		int data = 1;
+		IllegalStateException exception = new IllegalStateException();
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				return t;
+			});
+
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+			Flux.just(data).<Integer>handle((v, s) -> {
+				throw exception;
+			}).subscribe(ts);
+
+			ts.await()
+			  .assertNoValues()
+			  .assertError(IllegalStateException.class)
+			  .assertNotComplete();
+
+			Assert.assertSame(throwableInOnOperatorError.get(), exception);
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
 	}
 
 }
