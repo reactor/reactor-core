@@ -4071,6 +4071,13 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
 
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onOverflow,
+			OverflowStrategy overflowStrategy) {
+		Objects.requireNonNull(onOverflow, "onOverflow");
+		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow)
+		.onBackpressureError());
+	}
+
 	/**
 	 * Request an unbounded demand and push the returned {@link Flux}, or drop the observed elements if not enough
 	 * demand is requested downstream.
