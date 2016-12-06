@@ -27,7 +27,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -36,7 +35,7 @@ import reactor.core.Trackable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> implements Fuseable {
+final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 	public enum OverflowStrategy {
 		/**
@@ -72,17 +71,11 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> impleme
 
 	@Override
 	public void subscribe(Subscriber<? super O> s) {
-//		if (overflowStrategy == OverflowStrategy.DROP_OLDEST) {
-			source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
-					bufferSize,
-					delayError,
-					onOverflow,
-					overflowStrategy));
-//		}
-//		else {
-//			source.subscribe(new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(
-//					s, bufferSize, false, delayError, onOverflow));
-//		}
+		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
+				bufferSize,
+				delayError,
+				onOverflow,
+				overflowStrategy));
 	}
 
 	@Override
@@ -223,7 +216,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> impleme
 			for (; ; ) {
 				Subscriber<? super T> a = actual;
 				if (a != null) {
-					drainRegular(a);
+					innerDrain(a);
 					return;
 				}
 
@@ -234,7 +227,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> impleme
 			}
 		}
 
-		void drainRegular(Subscriber<? super T> a) {
+		void innerDrain(Subscriber<? super T> a) {
 			int missed = 1;
 
 			final Queue<T> q = queue;
