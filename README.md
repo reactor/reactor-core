@@ -6,7 +6,7 @@
    [![Travis CI](https://travis-ci.org/reactor/reactor-core.svg?branch=master)](https://travis-ci.org/reactor/reactor-core)
 
 Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions]
-(http://reactivex.io) inspired API and efficient message-passing support.
+(http://reactivex.io) inspired API and efficient event streaming support.
 
 ## Getting it
    
@@ -28,6 +28,9 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ## Getting Started
 
 New to Reactive Programming or bored of reading already ? Try the [Introduction to Reactor Core hands-on](https://github.com/reactor/lite-rx-api-hands-on) !
+
+If you are familiar with RxJava or if you want to check more detailled introduction, be sure to check 
+https://www.infoq.com/articles/reactor-by-example !
 
 ## Flux
 
@@ -214,14 +217,15 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 "Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 -------------------------------------
-## Reference
-http://projectreactor.io/core/docs/reference/ [WIP]
 
 ## Javadoc
 http://projectreactor.io/core/docs/api/
 
 ## Getting started with Flux and Mono
 https://github.com/reactor/lite-rx-api-hands-on
+
+## Reactor By Example
+https://www.infoq.com/articles/reactor-by-example
 
 ## Beyond Reactor Core
 - Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](http://github.com/reactor/reactor-ipc).
