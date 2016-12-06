@@ -317,4 +317,30 @@ public class FluxOnBackpressureBufferStrategyTest implements Consumer<String>,
 		assertNull("unexpected hookCapturedError",hookCapturedError);
 	}
 
+	@Test
+	public void fluxOnBackpressureBufferStrategyRequiresCallback() {
+		try {
+			Flux.just("foo").onBackpressureBuffer(1,
+					null,
+					FluxOnBackpressureBufferStrategy.OverflowStrategy.ERROR);
+			fail("expected NullPointerException");
+		}
+		catch (NullPointerException e) {
+			assertEquals("onOverflow", e.getMessage());
+		}
+	}
+
+	@Test
+	public void fluxOnBackpressureBufferStrategyRequiresStrategy() {
+		try {
+			Flux.just("foo").onBackpressureBuffer(1,
+					v -> { },
+					null);
+			fail("expected NullPointerException");
+		}
+		catch (NullPointerException e) {
+			assertEquals("overflowStrategy", e.getMessage());
+		}
+	}
+
 }

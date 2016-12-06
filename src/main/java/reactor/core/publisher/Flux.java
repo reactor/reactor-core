@@ -4071,11 +4071,34 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
 
+	/**
+	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed
+	 * elements if not enough demand is requested downstream, within a {@code maxSize}
+	 * limit. Over that limit, the overflow strategy is applied (see
+	 * {@link FluxOnBackpressureBufferStrategy.OverflowStrategy}).
+	 * <p>
+	 * A {@link Consumer} is immediately invoked when there is an overflow, receiving the
+	 * value that was discarded because of the overflow (which can be different from the
+	 * latest element emitted by the source in case of a {@code DROP_OLDEST} strategy).
+	 * <p>
+	 * Note that for the {@code ERROR} strategy, the overflow error will be delayed
+	 * after the current backlog is consumed. The consumer is still invoked immediately.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param onOverflow callback to invoke on overflow
+	 * @param overflowStrategy strategy to apply to overflowing elements
+	 *
+	 * @return a buffering {@link Flux}
+	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onOverflow,
-			OverflowStrategy overflowStrategy) {
+			FluxOnBackpressureBufferStrategy.OverflowStrategy overflowStrategy) {
 		Objects.requireNonNull(onOverflow, "onOverflow");
-		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow)
-		.onBackpressureError());
+		Objects.requireNonNull(overflowStrategy, "overflowStrategy");
+		return onAssembly(new FluxOnBackpressureBufferStrategy<>(this, maxSize,
+				onOverflow, overflowStrategy));
 	}
 
 	/**
