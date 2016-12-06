@@ -132,70 +132,74 @@ public class FluxHandleTest {
 		  .assertFusionMode(ASYNC);
 	}
 
-  @Test
-  public void errorSignal() {
+	@Test
+	public void errorSignal() {
 
-    int data = 1;
-    Exception exception = new IllegalStateException();
+		int data = 1;
+		Exception exception = new IllegalStateException();
 
-    final AtomicReference<Throwable> throwableInOnOperatorError = new AtomicReference<>();
-    final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-    try {
-      Hooks.onOperatorError((t, d) -> {
-        throwableInOnOperatorError.set(t);
-        dataInOnOperatorError.set(d);
-        return t;
-      });
+		try {
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				return t;
+			});
 
-      AssertSubscriber<Integer> ts = AssertSubscriber.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-      Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
+			Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
 
-      ts.await()
-          .assertNoValues()
-          .assertError(IllegalStateException.class)
-          .assertNotComplete();
+			ts.await()
+			  .assertNoValues()
+			  .assertError(IllegalStateException.class)
+			  .assertNotComplete();
 
-      Assert.assertSame(throwableInOnOperatorError.get(), exception);
-      Assert.assertSame(dataInOnOperatorError.get(), data);
-    } finally {
-      Hooks.resetOnOperatorError();
-    }
-  }
+			Assert.assertSame(throwableInOnOperatorError.get(), exception);
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
 
-  @Test
-  public void errorPropagated() {
+	@Test
+	public void errorPropagated() {
 
-    int data = 1;
-    IllegalStateException exception = new IllegalStateException();
+		int data = 1;
+		IllegalStateException exception = new IllegalStateException();
 
-    final AtomicReference<Throwable> throwableInOnOperatorError = new AtomicReference<>();
-    final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-    try {
-      Hooks.onOperatorError((t, d) -> {
-        throwableInOnOperatorError.set(t);
-        dataInOnOperatorError.set(d);
-        return t;
-      });
+		try {
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				return t;
+			});
 
-      AssertSubscriber<Integer> ts = AssertSubscriber.create();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-      Flux.just(data).<Integer>handle((v, s) -> {
-        throw exception;
-      }).subscribe(ts);
+			Flux.just(data).<Integer>handle((v, s) -> {
+				throw exception;
+			}).subscribe(ts);
 
-      ts.await()
-          .assertNoValues()
-          .assertError(IllegalStateException.class)
-          .assertNotComplete();
+			ts.await()
+			  .assertNoValues()
+			  .assertError(IllegalStateException.class)
+			  .assertNotComplete();
 
-      Assert.assertSame(throwableInOnOperatorError.get(), exception);
-      Assert.assertSame(dataInOnOperatorError.get(), data);
-    } finally {
-      Hooks.resetOnOperatorError();
-    }
-  }
+			Assert.assertSame(throwableInOnOperatorError.get(), exception);
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
 
 }
