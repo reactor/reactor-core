@@ -93,11 +93,10 @@ public class FluxTests extends AbstractReactorTest {
 		            .expectComplete()
 		            .verify();
 
-		assertThat(signals.size(), is(4));
-		assertTrue("onSubscribe expected", signals.get(0).isOnSubscribe());
-		assertThat("onNext", signals.get(1).get(), is(1));
-		assertThat("onNext", signals.get(2).get(), is(2));
-		assertTrue("onComplete expected", signals.get(3).isOnComplete());
+		assertThat(signals.size(), is(3));
+		assertThat("onNext", signals.get(0).get(), is(1));
+		assertThat("onNext", signals.get(1).get(), is(2));
+		assertTrue("onComplete expected", signals.get(2).isOnComplete());
 	}
 
 	@Test
@@ -110,10 +109,9 @@ public class FluxTests extends AbstractReactorTest {
 		            .expectErrorMessage("foo")
 		            .verify();
 
-		assertThat(signals.size(), is(2));
-		assertTrue("onSubscribe expected", signals.get(0).isOnSubscribe());
-		assertTrue("onError expected", signals.get(1).isOnError());
-		assertThat("plain exception expected", signals.get(1).getThrowable().getMessage(),
+		assertThat(signals.size(), is(1));
+		assertTrue("onError expected", signals.get(0).isOnError());
+		assertThat("plain exception expected", signals.get(0).getThrowable().getMessage(),
 				is("foo"));
 	}
 
@@ -123,58 +121,19 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testDoOnEach() {
-		LongAdder errorSignal = new LongAdder();
-		LongAdder nextSignals = new LongAdder();
-		AtomicBoolean completeSignal = new AtomicBoolean(false);
-
+	public void testDoOnEachSignalToSubscriber() {
+		AssertSubscriber<Integer> peekSubscriber = AssertSubscriber.create();
 		Flux<Integer> flux = Flux.just(1, 2)
-		                         .doOnEach(t -> nextSignals.increment(),
-				                         e -> errorSignal.increment(),
-				                         () -> completeSignal.set(true));
-
+		                         .doOnEach(s -> s.accept(peekSubscriber));
 		StepVerifier.create(flux)
 		            .expectSubscription()
 		            .expectNext(1, 2)
 		            .expectComplete()
 		            .verify();
 
-		assertThat("onNext x2 expected", nextSignals.intValue(), is(2));
-		assertThat("unexpected onError", errorSignal.intValue(), is(0));
-		assertTrue("onComplete expected", completeSignal.get());
-	}
-
-	@Test
-	public void testDoOnEachWithError() {
-		LongAdder errorSignal = new LongAdder();
-		LongAdder nextSignals = new LongAdder();
-		AtomicBoolean completeSignal = new AtomicBoolean(false);
-
-		Flux<Integer> flux = Flux.<Integer>error(new IllegalArgumentException("foo"))
-				.doOnEach(t -> nextSignals.increment(),
-						e -> errorSignal.increment(),
-						() -> completeSignal.set(true));
-
-		StepVerifier.create(flux)
-		            .expectSubscription()
-		            .expectErrorMessage("foo")
-		            .verify();
-
-		assertThat("no onNext expected", nextSignals.intValue(), is(0));
-		assertThat("expected onError", errorSignal.intValue(), is(1));
-		assertFalse("no onComplete expected", completeSignal.get());
-	}
-
-	@Test
-	public void testDoOnEachWithOnlyOneConsumer() {
-		Flux.just(1).doOnEach(t -> {}, null, null);
-		Flux.just(1).doOnEach(null, e -> {}, null);
-		Flux.just(1).doOnEach(null, null, () -> {});
-	}
-
-	@Test(expected = NullPointerException.class)
-	public void testDoOnEachNullConsumers() {
-		Flux.just(1).doOnEach(null, null, null);
+		peekSubscriber.assertNotSubscribed();
+		peekSubscriber.assertValues(1, 2);
+		peekSubscriber.assertComplete();
 	}
 
 	@Test

@@ -2986,39 +2986,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Triggers side-effects when the {@link Flux} emits an item, fails with an error or
-	 * completes successfully. This is provided as convenience to avoid using the
-	 * three corresponding {@code doOn} methods individually. Note that at least one
-	 * callback is required.
-	 *
-	 * @param nextConsumer the callback to call on {@link Subscriber#onNext(Object)}
-	 * @param errorConsumer the callback to call on {@link Subscriber#onError(Throwable)}
-	 * @param completeRunnable the callback to call on {@link Subscriber#onComplete()}
-	 * @return an observed {@link Flux}
-	 * @see #doOnNext(Consumer)
-	 * @see #doOnError(Consumer)
-	 * @see #doOnComplete(Runnable)
-	 */
-	public final Flux<T> doOnEach(Consumer<? super T> nextConsumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeRunnable) {
-		if (nextConsumer == errorConsumer && errorConsumer == completeRunnable
-				&& completeRunnable == null) {
-			throw new NullPointerException("At least one side-effect callback must be non-null");
-		}
-		return doOnSignal(this, null,
-				nextConsumer, errorConsumer, completeRunnable,
-				null, null, null);
-	}
-
-	/**
-	 * Triggers side-effects when the {@link Flux} is subscribed, emits an item, fails
-	 * with an error or completes successfully. All these events are represented as a
-	 * {@link Signal} that is passed to the side-effect callback.
+	 * Triggers side-effects when the {@link Flux} emits an item, fails with an error
+	 * or completes successfully. All these events are represented as a {@link Signal}
+	 * that is passed to the side-effect callback. Note that this is an advanced operator,
+	 * typically used for monitoring of a Flux.
 	 *
 	 * @param signalConsumer the mandatory callback to call on
-	 *   {@link Subscriber#onSubscribe(Subscription)}, {@link Subscriber#onNext(Object)},
-	 *   {@link Subscriber#onError(Throwable)} and {@link Subscriber#onComplete()}
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}
 	 * @return an observed {@link Flux}
 	 * @see #doOnNext(Consumer)
 	 * @see #doOnError(Consumer)
@@ -3027,9 +3002,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Signal
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+		//TODO use a flyweight pattern for the onNext signals (re-use the same instance)?
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
 		return doOnSignal(this,
-				s -> signalConsumer.accept(Signal.<T>subscribe(s)),
+				null,
 				t -> signalConsumer.accept(Signal.next(t)),
 				e -> signalConsumer.accept(Signal.<T>error(e)),
 				() -> signalConsumer.accept(Signal.<T>complete()),
