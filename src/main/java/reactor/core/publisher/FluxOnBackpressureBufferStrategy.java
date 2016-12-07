@@ -30,6 +30,7 @@ import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
+import reactor.core.publisher.FluxSink.OverflowStrategy;
 
 /**
  * @author Stephane Maldini
@@ -37,45 +38,46 @@ import reactor.core.Trackable;
  */
 final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
-	public enum OverflowStrategy {
-		/**
-		 * Propagate an {@link IllegalStateException} when the buffer is full.
-		 */
-		ERROR,
-		/**
-		 * Drop the new element without propagating an error when the buffer is full.
-		 */
-		DROP_ELEMENT,
-		/**
-		 * When the buffer is full, remove the oldest element from it and offer the
-		 * new element at the end instead. Do not propagate an error.
-		 */
-		DROP_OLDEST
-	}
+//	public enum OverflowStrategy {
+//		/**
+//		 * Propagate an {@link IllegalStateException} when the buffer is full.
+//		 */
+//		ERROR,
+//		/**
+//		 * Drop the new element without propagating an error when the buffer is full.
+//		 */
+//		DROP_ELEMENT,
+//		/**
+//		 * When the buffer is full, remove the oldest element from it and offer the
+//		 * new element at the end instead. Do not propagate an error.
+//		 */
+//		DROP_OLDEST
+//	}
 
-	final Consumer<? super O>       onOverflow;
-	final int                       bufferSize;
-	final boolean                   delayError;
-	final OverflowStrategy          overflowStrategy;
+	final Consumer<? super O> onBufferOverflow;
+	final int                 bufferSize;
+	final boolean             delayError;
+	final OverflowStrategy    bufferOverflowStrategy;
 
 	public FluxOnBackpressureBufferStrategy(Publisher<? extends O> source,
 			int bufferSize,
-			Consumer<? super O> onOverflow,
-			OverflowStrategy overflowStrategy) {
+			Consumer<? super O> onBufferOverflow,
+			OverflowStrategy bufferOverflowStrategy) {
 		super(source);
+		if (bufferOverflowStrategy == OverflowStrategy.BUFFER) {
+			throw new IllegalArgumentException("Unexpected BUFFER strategy, this should be delegated to FluxOnBackpressureBuffer");
+		}
 		this.bufferSize = bufferSize;
-		this.onOverflow = onOverflow;
-		this.overflowStrategy = overflowStrategy;
-		this.delayError = onOverflow != null;
+		this.onBufferOverflow = onBufferOverflow;
+		this.bufferOverflowStrategy = bufferOverflowStrategy;
+		this.delayError = onBufferOverflow != null;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super O> s) {
 		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
 				bufferSize,
-				delayError,
-				onOverflow,
-				overflowStrategy));
+				delayError, onBufferOverflow, bufferOverflowStrategy));
 	}
 
 	@Override
@@ -148,15 +150,17 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				if (dq.size() == bufferSize) {
 					callOnOverflow = true;
 					switch (overflowStrategy) {
-						case ERROR:
-							callOnError = true;
-							break;
-						case DROP_OLDEST:
+						case LATEST:
 							overflowElement = dq.pollFirst();
 							dq.offer(t);
 							break;
-						case DROP_ELEMENT:
+						case DROP:
 							//do nothing
+							break;
+						case IGNORE:
+						case ERROR:
+						default:
+							callOnError = true;
 							break;
 					}
 				}

@@ -4075,11 +4075,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed
 	 * elements if not enough demand is requested downstream, within a {@code maxSize}
 	 * limit. Over that limit, the overflow strategy is applied (see
-	 * {@link FluxOnBackpressureBufferStrategy.OverflowStrategy}).
+	 * {@link FluxSink.OverflowStrategy}).
 	 * <p>
 	 * A {@link Consumer} is immediately invoked when there is an overflow, receiving the
 	 * value that was discarded because of the overflow (which can be different from the
-	 * latest element emitted by the source in case of a {@code DROP_OLDEST} strategy).
+	 * latest element emitted by the source in case of a {@code LATEST} strategy).
+	 *
+	 * The strategies are as follow:
+	 * <ul>
+	 *     <li>{@link OverflowStrategy#ERROR ERROR}: Propagate an {@link IllegalStateException} when the buffer is full.</li>
+	 *     <li>{@link OverflowStrategy#DROP  DROP}: Drop the new element without propagating an error when the buffer is full.</li>
+	 *     <li>{@link OverflowStrategy#LATEST  LATEST}: When the buffer is full, remove the oldest element from it and offer the
+	 *         new element at the end instead. Do not propagate an error.</li>
+	 *     <li>{@link OverflowStrategy#IGNORE  IGNORE}: is considered as using {@code ERROR}</li>
+	 *     <li>{@link OverflowStrategy#BUFFER  BUFFER}: switch to an unbounded buffer, short-circuiting to
+	 *         {@link #onBackpressureBuffer()} (ignoring maxSize and onBufferOverflow parameters).</li>
+	 * </ul>
 	 * <p>
 	 * Note that for the {@code ERROR} strategy, the overflow error will be delayed
 	 * after the current backlog is consumed. The consumer is still invoked immediately.
@@ -4088,17 +4099,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/onbackpressurebuffer.png" alt="">
 	 *
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
-	 * @param onOverflow callback to invoke on overflow
-	 * @param overflowStrategy strategy to apply to overflowing elements
+	 * @param onBufferOverflow callback to invoke on overflow
+	 * @param bufferOverflowStrategy strategy to apply to overflowing elements
 	 *
 	 * @return a buffering {@link Flux}
 	 */
-	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onOverflow,
-			FluxOnBackpressureBufferStrategy.OverflowStrategy overflowStrategy) {
-		Objects.requireNonNull(onOverflow, "onOverflow");
-		Objects.requireNonNull(overflowStrategy, "overflowStrategy");
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onBufferOverflow,
+			OverflowStrategy bufferOverflowStrategy) {
+		Objects.requireNonNull(onBufferOverflow, "onBufferOverflow");
+		Objects.requireNonNull(bufferOverflowStrategy, "bufferOverflowStrategy");
+		if (bufferOverflowStrategy == OverflowStrategy.BUFFER) {
+			return onBackpressureBuffer();
+		}
 		return onAssembly(new FluxOnBackpressureBufferStrategy<>(this, maxSize,
-				onOverflow, overflowStrategy));
+				onBufferOverflow, bufferOverflowStrategy));
 	}
 
 	/**
