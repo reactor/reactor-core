@@ -19,9 +19,6 @@ package reactor.core.publisher.tck;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -32,10 +29,8 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.BlockingSink;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.SignalType;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Schedulers;
@@ -43,10 +38,7 @@ import reactor.core.scheduler.TimedScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.concurrent.WaitStrategy;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
 import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
@@ -211,195 +203,6 @@ public class WorkQueueProcessorTests extends AbstractProcessorVerification {
 		if (System.currentTimeMillis() - t0 > 5_000) {
 			throw new RuntimeException("Timeout!");
 		}
-	}
-
-	private static class TestWorkQueueSubscriber extends BaseSubscriber<String> {
-
-		private final CountDownLatch latch;
-		private final String         id;
-
-		Throwable error;
-
-		private TestWorkQueueSubscriber(CountDownLatch latch, String id) {
-			this.latch = latch;
-			this.id = id;
-		}
-
-		@Override
-		protected void hookOnSubscribe(Subscription subscription) {
-				request(Long.MAX_VALUE);
-		}
-
-		@Override
-		protected void hookOnNext(String value) {
-			System.out.println(id + " received: " + value);
-		}
-
-		@Override
-		protected void hookOnError(Throwable throwable) {
-			error = throwable;
-		}
-
-		@Override
-		protected void hookFinally(SignalType type) {
-			System.out.println(id + " finished with: " + type);
-			latch.countDown();
-		}
-	}
-
-	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test
-	public void fixedThreadPoolWorkQueueRejectsSubscribers() {
-		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 16);
-		CountDownLatch latch = new CountDownLatch(3);
-		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
-		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
-		TestWorkQueueSubscriber spec3 = new TestWorkQueueSubscriber(latch, "spec3");
-
-		bc.subscribe(spec1);
-		bc.subscribe(spec2);
-		bc.subscribe(spec3);
-
-		bc.onNext("foo");
-		bc.onComplete();
-
-		assertThat(spec1.error, is(nullValue()));
-		assertThat(spec2.error, is(nullValue()));
-		assertThat(spec3.error, is(notNullValue()));
-		assertThat(spec3.error.getMessage(), startsWith("The executor service could not accommodate another subscriber, detected limit 2"));
-
-		try {
-			latch.await(1, TimeUnit.SECONDS);
-		}
-		catch (InterruptedException e1) {
-			fail(e1.toString());
-		}
-	}
-
-	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test
-	public void forkJoinPoolWorkQueueRejectsSubscribers() {
-		ExecutorService executorService = Executors.newWorkStealingPool(2);
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 16);
-		CountDownLatch latch = new CountDownLatch(2);
-		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
-		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
-		TestWorkQueueSubscriber spec3 = new TestWorkQueueSubscriber(latch, "spec3");
-
-		bc.subscribe(spec1);
-		bc.subscribe(spec2);
-		bc.subscribe(spec3);
-
-		bc.onNext("foo");
-		bc.onComplete();
-
-		assertThat(spec1.error, is(nullValue()));
-		assertThat(spec2.error, is(nullValue()));
-		assertThat(spec3.error, is(notNullValue()));
-		assertThat(spec3.error.getMessage(), is("The executor service could not accommodate another subscriber, detected limit 2"));
-
-		try {
-			latch.await(1, TimeUnit.SECONDS);
-		}
-		catch (InterruptedException e1) {
-			fail(e1.toString());
-		}
-	}
-
-	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test
-	public void singleThreadWorkQueueDoesntRejectsSubscribers() {
-		ExecutorService executorService = Executors.newSingleThreadExecutor();
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 2);
-		CountDownLatch latch = new CountDownLatch(1);
-		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
-		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
-
-		bc.subscribe(spec1);
-		bc.subscribe(spec2);
-
-		bc.onNext("foo");
-		bc.onNext("bar");
-
-		Executors.newSingleThreadScheduledExecutor().schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
-		try {
-			bc.onNext("baz");
-			fail("expected 3rd next to time out as newSingleThreadExecutor cannot be introspected");
-		}
-		catch (Throwable e) {
-			assertTrue("expected AlertException", WaitStrategy.isAlert(e));
-		}
-	}
-
-	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test(timeout = 400)
-	public void singleThreadWorkQueueSucceedsWithOneSubscriber() {
-		ExecutorService executorService = Executors.newSingleThreadExecutor();
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 2);
-		CountDownLatch latch = new CountDownLatch(1);
-		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
-
-		bc.subscribe(spec1);
-
-		bc.onNext("foo");
-		bc.onNext("bar");
-
-		Executors.newSingleThreadScheduledExecutor().schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
-		bc.onNext("baz");
-
-		try {
-			latch.await(800, TimeUnit.MILLISECONDS);
-		}
-		catch (InterruptedException e1) {
-			fail(e1.toString());
-		}
-
-		assertNull(spec1.error);
-	}
-
-	@Test
-	public void testBestEffortMaxSubscribers() {
-		int expectedUnbounded = Integer.MAX_VALUE;
-		int expectedUnknown = Integer.MIN_VALUE;
-
-		ExecutorService executorService1 = Executors.newSingleThreadExecutor();
-		ScheduledExecutorService executorService2 = Executors.newSingleThreadScheduledExecutor();
-		ExecutorService executorService3 = Executors.newCachedThreadPool();
-		ExecutorService executorService4 = Executors.newFixedThreadPool(2);
-		ScheduledExecutorService executorService5 = Executors.newScheduledThreadPool(3);
-		ExecutorService executorService6 = Executors.newWorkStealingPool(4);
-		ExecutorService executorService7 = Executors.unconfigurableExecutorService(
-				executorService4);
-		ExecutorService executorService8 = Executors.unconfigurableScheduledExecutorService(
-				executorService5);
-
-		int maxSub1 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService1);
-		int maxSub2 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService2);
-		int maxSub3 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService3);
-		int maxSub4 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService4);
-		int maxSub5 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService5);
-		int maxSub6 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService6);
-		int maxSub7 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService7);
-		int maxSub8 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService8);
-
-		executorService1.shutdown();
-		executorService2.shutdown();
-		executorService3.shutdown();
-		executorService4.shutdown();
-		executorService5.shutdown();
-		executorService6.shutdown();
-		executorService7.shutdown();
-		executorService8.shutdown();
-
-		assertEquals("newSingleThreadExecutor", expectedUnknown, maxSub1);
-		assertEquals("newSingleThreadScheduledExecutor", expectedUnknown, maxSub2);
-		assertEquals("newCachedThreadPool", expectedUnbounded, maxSub3);
-		assertEquals("newFixedThreadPool(2)", 2, maxSub4);
-		assertEquals("newScheduledThreadPool(3)", expectedUnbounded, maxSub5);
-		assertEquals("newWorkStealingPool(4)", 4, maxSub6);
-		assertEquals("unconfigurableExecutorService", expectedUnknown, maxSub7);
-		assertEquals("unconfigurableScheduledExecutorService", expectedUnknown, maxSub8);
 	}
 
 }

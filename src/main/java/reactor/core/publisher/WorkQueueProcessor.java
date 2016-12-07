@@ -591,7 +591,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return the maximum number of subscribers the executor can accommodate if it can
 	 * be computed, or {@link Integer#MIN_VALUE} if it cannot be determined.
 	 */
-	public static int bestEffortMaxSubscribers(ExecutorService executor) {
+	static int bestEffortMaxSubscribers(ExecutorService executor) {
 		int maxSubscribers = Integer.MIN_VALUE;
 		if (executor instanceof ThreadPoolExecutor) {
 			maxSubscribers = ((ThreadPoolExecutor) executor).getMaximumPoolSize();
