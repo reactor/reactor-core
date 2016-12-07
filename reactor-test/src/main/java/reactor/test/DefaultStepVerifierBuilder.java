@@ -416,6 +416,31 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public Duration verifyError() {
+		return expectError().verify();
+	}
+
+	@Override
+	public Duration verifyError(Class<? extends Throwable> clazz) {
+		return expectError(clazz).verify();
+	}
+
+	@Override
+	public Duration verifyErrorMessage(String errorMessage) {
+		return expectErrorMessage(errorMessage).verify();
+	}
+
+	@Override
+	public Duration verifyErrorMatches(Predicate<Throwable> predicate) {
+		return expectErrorMatches(predicate).verify();
+	}
+
+	@Override
+	public Duration verifyComplete() {
+		return expectComplete().verify();
+	}
+
+	@Override
 	public DefaultStepVerifierBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new RequestEvent<T>(n, "thenRequest"));

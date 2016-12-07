@@ -272,6 +272,96 @@ public interface StepVerifier {
 		 * @see Subscription#cancel()
 		 */
 		StepVerifier thenCancel();
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting an unspecified error
+		 * as terminal event.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * putting a timeout).
+		 *
+		 * @return the {@link Duration} of the verification
+		 *
+		 * @see #expectError()
+		 * @see #verify()
+		 * @see Subscriber#onError(Throwable)
+		 */
+		Duration verifyError();
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting an error of the specified
+		 * type as terminal event.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * putting a timeout).
+		 *
+		 * @param clazz the expected error type
+		 * @return the {@link Duration} of the verification
+		 *
+		 * @see #expectError(Class)
+		 * @see #verify()
+		 * @see Subscriber#onError(Throwable)
+		 */
+		Duration verifyError(Class<? extends Throwable> clazz);
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting an error with the
+		 * specified messagee as terminal event.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * putting a timeout).
+		 *
+		 * @param errorMessage the expected error message
+		 * @return the {@link Duration} of the verification
+		 *
+		 * @see #expectErrorMessage(String)
+		 * @see #verify()
+		 * @see Subscriber#onError(Throwable)
+		 */
+		Duration verifyErrorMessage(String errorMessage);
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting an error that matches
+		 * the given predicate as terminal event.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * putting a timeout).
+		 *
+		 * @param predicate the predicate to test on the next received error
+		 * @return the {@link Duration} of the verification
+		 *
+		 * @see #expectErrorMatches(Predicate)
+		 * @see #verify()
+		 * @see Subscriber#onError(Throwable)
+		 */
+		Duration verifyErrorMatches(Predicate<Throwable> predicate);
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting a completion signal
+		 * as terminal event.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * putting a timeout).
+		 *
+		 * @return the {@link Duration} of the verification
+		 *
+		 * @see #expectComplete()
+		 * @see #verify()
+		 * @see Subscriber#onComplete()
+		 *
+		 */
+		Duration verifyComplete();
+
 	}
 
 	/**
