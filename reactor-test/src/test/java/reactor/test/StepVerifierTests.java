@@ -158,6 +158,18 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void assertNext() throws Exception {
+		Flux<String> flux = Flux.just("foo");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+				                              .assertNext(s -> assertThat(s).endsWith("ooz"))
+				                              .expectComplete()
+				                              .verify())
+				.withMessage("\nExpecting:\n <\"foo\">\nto end with:\n <\"ooz\">\n");
+	}
+
+	@Test
 	public void missingNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 

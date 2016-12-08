@@ -423,6 +423,22 @@ public interface StepVerifier {
 		Step<T> consumeNextWith(Consumer<? super T> consumer);
 
 		/**
+		 * Expect an element and consume it with the given consumer, usually performing
+		 * assertions on it (eg. using Hamcrest, AssertJ or JUnit assertion methods).
+		 * Alias for {@link #consumeNextWith(Consumer)} for better discoverability of
+		 * that use case.
+		 * <p>
+		 * Any {@code AssertionError}s thrown by the consumer will be rethrown during
+		 * {@linkplain #verify() verification}.
+		 *
+		 * @param assertionConsumer the consumer for the value, performing assertions
+		 * @return this builder
+		 */
+		default Step<T> assertNext(Consumer<? super T> assertionConsumer) {
+			return consumeNextWith(assertionConsumer);
+		}
+
+		/**
 		 * Expect a recording session started via {@link #recordWith} and
 		 * consume with
 		 * the
