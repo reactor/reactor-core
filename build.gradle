@@ -157,9 +157,8 @@ configure(rootProject) {
   }
 
   configurations {
-    jsr166backport
+    compileOnly.extendsFrom jsr166backport
     testCompile.extendsFrom jsr166backport
-    compile.extendsFrom jsr166backport
   }
 
 // dependencies that are common across all java projects
