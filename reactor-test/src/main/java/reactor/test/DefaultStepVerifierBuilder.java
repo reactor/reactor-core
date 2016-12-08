@@ -871,6 +871,12 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
+		final void setFailurePrefix(String prefix, Signal<T> actualSignal, String msg, Object... arguments) {
+			Exceptions.addThrowable(ERRORS, this, failPrefix(prefix, msg, arguments).get());
+			maybeCancel(actualSignal);
+			this.completeLatch.countDown();
+		}
+
 		final Subscription cancel() {
 			Subscription s =
 					this.subscription.getAndSet(Operators.cancelledSubscription());
@@ -909,8 +915,9 @@ final class DefaultStepVerifierBuilder<T>
 				return false;
 			}
 			else {
-				setFailure(null, s, "expected production of at most %s; produced: %s; request overflown by signal: %s",
-						r, produced, s);
+				//not really an expectation failure so customize the message
+				setFailurePrefix("request overflow (", s,
+						"expected production of at most %s; produced: %s; request overflown by signal: %s", r, produced, s);
 				return true;
 			}
 		}
@@ -1570,7 +1577,7 @@ final class DefaultStepVerifierBuilder<T>
 
 			}
 			if (iterator != null && iterator.hasNext() || signal.isOnError()) {
-				return fail(this, "expected next value: %s; actual actual signal: %s; iterable: %s",
+				return fail(this, "expected next value: %s; actual signal: %s; iterable: %s",
 						iterator != null && iterator.hasNext() ? iterator.next() : "none",
 						signal, iterable);
 			}
@@ -1623,6 +1630,11 @@ final class DefaultStepVerifierBuilder<T>
 		if (event != null && event.getDescription() != null) {
 			prefix = String.format("expectation \"%s\" failed (", event.getDescription());
 		}
+
+		return failPrefix(prefix, msg, args);
+	}
+
+	static Optional<AssertionError> failPrefix(String prefix, String msg, Object... args) {
 		return Optional.of(new AssertionError(prefix + String.format(msg, args) + ")"));
 	}
 

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.junit.Assert;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -32,8 +32,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.*;
 import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 
 /**
@@ -55,15 +54,17 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void expectInvalidNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
-		            .expectNext("foo")
-		            .expectNext("baz")
-		            .expectComplete()
-		            .verify();
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+				                              .expectNext("foo")
+				                              .expectNext("baz")
+				                              .expectComplete()
+				                              .verify())
+				.withMessageEndingWith("(expected value: baz; actual value: bar)");
 	}
 
 	@Test
@@ -88,14 +89,16 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void expectInvalidNexts() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
-		            .expectNext("foo", "baz")
-		            .expectComplete()
-		            .verify();
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+				                              .expectNext("foo", "baz")
+				                              .expectComplete()
+				                              .verify())
+	            .withMessage("expectation \"expectNext(baz)\" failed (expected value: baz; actual value: bar)");
 	}
 
 	@Test
@@ -109,76 +112,74 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void expectInvalidNextMatches() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNextMatches("foo"::equals)
 		            .expectNextMatches("baz"::equals)
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectNextMatches\" failed (predicate failed on value: bar)");
 	}
 
 	@Test
 	public void consumeNextWith() throws Exception {
 		Flux<String> flux = Flux.just("bar");
 
-		StepVerifier subscriber = StepVerifier.create(flux)
-		                                      .consumeNextWith(s -> {
-			                                      if (!"foo".equals(s)) {
-				                                      throw new AssertionError("e:" + s);
-			                                      }
-		                                      })
-		                                      .expectComplete();
-
-		try {
-			subscriber.verify();
-		}
-		catch (AssertionError error) {
-			assertEquals("e:bar", error.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+				                              .consumeNextWith(s -> {
+					                              if (!"foo".equals(s)) {
+						                              throw new AssertionError("e:" + s);
+					                              }
+				                              })
+				                              .expectComplete()
+				                              .verify())
+				.withMessage("e:bar");
 	}
 
 	@Test
 	public void consumeNextWith2() throws Exception {
 		Flux<String> flux = Flux.just("bar");
 
-		StepVerifier subscriber = StepVerifier.create(flux)
-		                                      .consumeNextWith(s -> {
-			                                      if (!"foo".equals(s)) {
-				                                      throw new AssertionError(s);
-			                                      }
-		                                      })
-		                                      .expectComplete();
-
-		try {
-			subscriber.verify();
-		}
-		catch (AssertionError error) {
-			assertEquals("bar", error.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+				                              .consumeNextWith(s -> {
+					                              if (!"foo".equals(s)) {
+						                              throw new AssertionError(s);
+					                              }
+				                              })
+				                              .expectComplete()
+				                              .verify())
+				.withMessage("bar");
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void missingNext() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(bar))");
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void missingNextAsync() {
 		Flux<String> flux = Flux.just("foo", "bar")
 		                        .publishOn(Schedulers.parallel());
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(bar))");
 	}
 
 	@Test
@@ -209,11 +210,28 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void expectNextCountLotsError() {
 		Flux<Integer> flux = Flux.range(0, 1_000_000);
 
-		StepVerifier.create(flux, 0)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux, 0)
+		            .thenRequest(100_000)
+		            .expectNextCount(100_000)
+		            .thenRequest(900_000)
+		            .expectNextCount(900_001)
+		            .expectComplete()
+		            .verify())
+	            .withMessageStartingWith("expectation \"expectNextCount\" failed")
+				.withMessageContaining("expected: count = 900001; actual: produced = 900000; signal: onComplete()");
+	}
+
+	@Test
+	public void expectNextCountLotsUnderRequestErrorReportedAtEnd() {
+		Flux<Integer> flux = Flux.range(0, 1_000_000);
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux, 0)
 		            .thenRequest(100_000)
 		            .expectNextCount(100_000)
 		            .thenRequest(500_000)
@@ -221,7 +239,8 @@ public class StepVerifierTests {
 		            .thenRequest(500_000)
 		            .expectNextCount(400_000)
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(999999))");
 	}
 
 	@Test
@@ -256,14 +275,16 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void expectNextCountError() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNextCount(4)
 		            .thenCancel()
-		            .verify();
+		            .verify())
+				.withMessage("expectation \"expectNextCount\" failed (expected: count = 4; actual: produced = 2; signal: onComplete())");
 	}
 
 	@Test
@@ -311,15 +332,17 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void errorMatchesInvalid() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo")
 		            .expectErrorMatches(t -> t instanceof IllegalStateException)
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectErrorMatches\" failed (predicate failed on exception: java.lang.IllegalArgumentException)");
 	}
 
 	@Test
@@ -327,8 +350,8 @@ public class StepVerifierTests {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
 
-		try {
-			StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 			            .expectNext("foo")
 			            .consumeErrorWith(throwable -> {
 				            if (!(throwable instanceof IllegalStateException)) {
@@ -336,11 +359,8 @@ public class StepVerifierTests {
 					                                              .getSimpleName());
 				            }
 			            })
-			            .verify();
-		}
-		catch (AssertionError error) {
-			assertEquals("IllegalArgumentException", error.getMessage());
-		}
+			            .verify())
+	            .withMessage("IllegalArgumentException");
 	}
 
 	@Test
@@ -366,14 +386,16 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void cancelInvalid() {
 		Flux<String> flux = Flux.just("bar", "baz");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo")
 		            .thenCancel()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectNext(foo)\" failed (expected value: foo; actual value: bar)");
 	}
 
 	@Test
@@ -419,20 +441,22 @@ public class StepVerifierTests {
 		                                .expectComplete()
 		                                .verify(Duration.ofMillis(500));
 
-		Assert.assertTrue(duration.toMillis() > 2 * interval);
+		assertThat(duration.toMillis()).isGreaterThan(2 * interval);
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyDurationTimeout() {
 		Flux<String> flux = Flux.interval(Duration.ofMillis(200))
 		                        .map(l -> "foo")
 		                        .take(2);
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo")
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify(Duration.ofMillis(300));
+		            .verify(Duration.ofMillis(300)))
+	            .withMessageStartingWith("VerifySubscriber timed out on");
 	}
 
 	@Test
@@ -466,24 +490,29 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyNextAsError() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNextSequence(Arrays.asList("foo", "bar"))
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectNextSequence\" failed (unexpected iterator request; onNext(foobar); iterable: [foo, bar])");
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyNextAsError2() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNextSequence(Arrays.asList("foo", "bar", "foobar", "bar"))
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessageStartingWith("expectation \"expectNextSequence\" failed (")
+				.withMessageEndingWith("expected next value: bar; actual signal: onComplete(); iterable: [foo, bar, foobar, bar])");
 	}
 
 	@Test
@@ -510,37 +539,43 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyRecordMatchesError() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
 		            .expectRecordedMatches(c -> c.contains("foofoo"))
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("expectation \"expectRecordedMatches\" failed (expected collection predicate match; actual: [foo, bar, foobar])");
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyRecordNullError() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .recordWith(() -> null)
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("expectation \"recordWith\" failed (expected collection; actual supplied is [null])");
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyRecordMatchesError2() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo", "bar", "foobar")
 		            .expectRecordedMatches(c -> c.size() == 3)
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("expectation \"expectRecordedMatches\" failed (expected record collector; actual record is [null])");
 	}
 
 	@Test
@@ -552,20 +587,22 @@ public class StepVerifierTests {
 		StepVerifier.create(flux)
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(10)
-		            .consumeRecordedWith(c -> Assert.assertTrue(c.containsAll(source)))
+		            .consumeRecordedWith(c -> assertThat(c).containsExactlyElementsOf(source))
 		            .expectComplete()
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifySubscriptionError() {
 		Mono<String> flux = Mono.just("foo");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectSubscriptionMatches(s -> false)
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessageStartingWith("expectation \"expectSubscriptionMatches\" failed (predicate failed on subscription: ");
 	}
 
 	@Test
@@ -573,21 +610,23 @@ public class StepVerifierTests {
 		Mono<String> flux = Mono.just("foo");
 
 		StepVerifier.create(flux)
-		            .consumeSubscriptionWith(s -> Assert.assertTrue(s instanceof Fuseable.QueueSubscription))
+		            .consumeSubscriptionWith(s -> assertThat(s).isInstanceOf(Fuseable.QueueSubscription.class))
 		            .expectNext("foo")
 		            .expectComplete()
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyConsumeSubscriptionError() {
 		Mono<String> flux = Mono.just("foo");
 
-		StepVerifier.create(flux)
-		            .consumeSubscriptionWith(s -> Assert.fail())
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+		            .consumeSubscriptionWith(s -> Assertions.fail("boom"))
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("boom");
 	}
 
 	@Test
@@ -601,15 +640,17 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyFusionError() {
-		Mono.just("foo")
-		    .hide()
-		    .as(StepVerifier::create)
-		    .expectFusion()
-		    .expectNext("foo")
-		    .expectComplete()
-		    .verify();
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> Mono.just("foo")
+				                      .hide()
+				                      .as(StepVerifier::create)
+				                      .expectFusion()
+				                      .expectNext("foo")
+				                      .expectComplete()
+				                      .verify())
+				.withMessage("The source publisher does not support fusion");
 	}
 
 	@Test
@@ -624,15 +665,17 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyNoFusionError() {
 		Mono<String> flux = Mono.just("foo");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNoFusionSupport()
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("The source publisher supports fusion");
 	}
 
 	@Test
@@ -657,15 +700,17 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyFusionModeExpectedError() {
 		Mono<String> flux = Mono.just("foo");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectFusion(Fuseable.SYNC, Fuseable.ASYNC)
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("expectation failed (expected fusion mode: (async); actual: (sync))");
 	}
 
 	@Test
@@ -680,16 +725,18 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyFusionModeExpected2Error() {
 		Flux<String> flux = Flux.just("foo", "bar")
 		                        .publishOn(Schedulers.immediate());
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectFusion(Fuseable.ASYNC, Fuseable.SYNC)
 		            .expectNext("foo", "bar")
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("expectation failed (expected fusion mode: (sync); actual: (async))");
 	}
 
 	@Test
@@ -723,16 +770,18 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyVirtualTimeNoEventError() {
-		StepVerifier.withVirtualTime(() -> Mono.just("foo")
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.withVirtualTime(() -> Mono.just("foo")
 		                                       .delaySubscription(Duration.ofDays(2)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofDays(2))
 		            .expectNext("foo")
 		            .expectNoEvent(Duration.ofDays(2))
 		            .expectComplete()
-		            .verify();
+		            .verify())
+				.withMessage("unexpected end during a no-event expectation");
 	}
 
 	@Test
@@ -748,17 +797,25 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
+	//TODO shouldn't there be only one error rather than Multiple exceptions?
 	public void verifyVirtualTimeNoEventIntervalError() {
-		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
-		                                       .take(2))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(3))
-		            .expectNext(0L)
-		            .expectNoEvent(Duration.ofSeconds(4))
-		            .expectNext(1L)
-		            .expectComplete()
-		            .verify();
+		Throwable thrown = catchThrowable(() ->
+				StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+				                                       .take(2))
+				            .expectSubscription()
+				            .expectNoEvent(Duration.ofSeconds(3))
+				            .expectNext(0L)
+				            .expectNoEvent(Duration.ofSeconds(4))
+				            .expectNext(1L)
+				            .thenAwait()
+				            .expectComplete()
+				            .verify());
+
+		assertThat(thrown).isInstanceOf(AssertionError.class)
+		                  .hasMessageContaining("Multiple exceptions")
+		                  .hasMessageContaining("expectation failed (expected no event: onNext(1)")
+		                  .hasMessageContaining("expectation failed (expected no event: onComplete()");
 	}
 
 	@Test
@@ -771,13 +828,15 @@ public class StepVerifierTests {
 		            .verify();
 	}
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void verifyVirtualTimeNoEventNeverError() {
-		StepVerifier.withVirtualTime(() -> Mono.never()
-		                                       .log())
-		            .expectNoEvent(Duration.ofDays(10000))
-		            .thenCancel()
-		            .verify();
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.withVirtualTime(() -> Mono.never()
+				                                                         .log())
+				                              .expectNoEvent(Duration.ofDays(10000))
+				                              .thenCancel()
+				                              .verify())
+				.withMessageStartingWith("expectation failed (expected no event: onSubscribe(");
 	}
 
 	@Test
@@ -793,7 +852,6 @@ public class StepVerifierTests {
 		            .expectNext("foobar")
 		            .expectComplete()
 		            .verify();
-
 	}
 
 	@Test
@@ -804,7 +862,6 @@ public class StepVerifierTests {
 		            .thenAwait(Duration.ofHours(1))
 		            .expectComplete()
 		            .verify();
-
 	}
 
 	@Test
@@ -822,18 +879,21 @@ public class StepVerifierTests {
 		                .thenCancel()
 		                .verify();
 
-		Assert.assertTrue(r.minus(Duration.ofSeconds(9))
-		                   .isNegative());
+		assertThat(r.minus(Duration.ofSeconds(9)).toMillis()).isNegative();
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void verifyVirtualTimeNoLookupFails() {
-		StepVerifier.withVirtualTime(Flux::empty, null, 1);
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> StepVerifier.withVirtualTime(Flux::empty, null, 1))
+	            .withMessage("vtsLookup");
 	}
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void verifyVirtualTimeNoScenarioFails() {
-		StepVerifier.withVirtualTime(null, 1);
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> StepVerifier.withVirtualTime(null, 1))
+	            .withMessage("scenarioSupplier");
 	}
 
 	@Test(timeout = 3000)
@@ -917,7 +977,7 @@ public class StepVerifierTests {
 		                                      .thenCancel()
 		                                      .verify(Duration.ofMillis(1100));
 
-		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(1000L)));
+		assertThat(verifyDuration.toMillis()).isGreaterThanOrEqualTo(1000L);
 	}
 
 	@Test(timeout = 500)
@@ -956,7 +1016,7 @@ public class StepVerifierTests {
 		                                      .thenCancel()
 		                                      .verify(Duration.ofMillis(1000));
 
-		assertThat(verifyDuration.toMillis(), is(greaterThanOrEqualTo(700L)));
+		assertThat(verifyDuration.toMillis()).isGreaterThanOrEqualTo(700L);
 	}
 
 	@Test
@@ -984,34 +1044,27 @@ public class StepVerifierTests {
 		            .log()
 		            .verify();
 
-		assertThat(count.intValue(), is(5));
+		assertThat(count.intValue()).isEqualTo(5);
 	}
 
 	@Test
 	public void testThenConsumeWhileFails() {
-		try {
-			StepVerifier.create(Flux.range(3, 8))
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.range(3, 8))
 			            .expectNextMatches(first -> first == 3)
 			            .thenConsumeWhile(v -> v <= 9)
 			            .expectNext(9)
 			            .expectNext(10)
 			            .expectComplete()
 			            .log()
-			            .verify();
-			throw new IllegalStateException();
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), containsString("expectNext(9)"));
-		}
-		catch (IllegalStateException e) {
-			fail("expected assertion error on next 9");
-		}
+			            .verify())
+		        .withMessageContaining("expectNext(9)");
 	}
 
 	@Test
 	public void testWithDescription() {
-		try {
-			StepVerifier.create(Flux.just("foo", "bar", "baz"), 3)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo", "bar", "baz"), 3)
 			            .expectNext("foo")
 			            .as("first")
 			            .expectNext("bar")
@@ -1021,110 +1074,91 @@ public class StepVerifierTests {
 			            .as("this is ignored")
 			            .expectComplete()
 			            .log()
-			            .verify();
-			throw new IllegalStateException();
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), startsWith("expectation \"third\" failed"));
-		}
-		catch (IllegalStateException e) {
-			fail("expected assertion error of third");
-		}
+			            .verify())
+				.withMessageStartingWith("expectation \"third\" failed");
 	}
 
 	@Test
 	public void noCancelOnUnexpectedErrorSignal() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.error(new IllegalArgumentException())
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException())
 			                        .doOnCancel(cancelled::increment))
 			            .expectComplete()
-			            .verify();
-			fail("expectComplete should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expected: onComplete(); actual: onError"));
-		}
-		assertThat("the expectComplete assertion caused a cancellation",
-				cancelled.intValue(),
-				is(0));
+			            .verify())
+				.withMessageContaining("expected: onComplete(); actual: onError");
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectComplete assertion caused a cancellation")
+				.isZero();
 	}
 
 	@Test
 	public void noCancelOnUnexpectedCompleteSignal() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.empty()
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty()
 			                        .doOnCancel(cancelled::increment))
 			            .expectError()
-			            .verify();
-			fail("expectError should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expected: onError(); actual: onComplete()"));
-		}
-		assertThat("the expectError assertion caused a cancellation",
-				cancelled.intValue(),
-				is(0));
+			            .verify())
+				.withMessageContaining("expected: onError(); actual: onComplete()");
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectError assertion caused a cancellation")
+				.isZero();
 	}
 
 	@Test
 	public void noCancelOnUnexpectedCompleteSignal2() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.just("foo")
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
 			                        .doOnCancel(cancelled::increment))
 			            .expectNext("foo", "bar")
 			            .expectComplete()
-			            .verify();
-			fail("expectNext(bar) should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expected: onNext(bar); actual: onComplete()"));
-		}
-		assertThat("the expectNext assertion caused a cancellation", cancelled.intValue(), is(0));
+			            .verify())
+		        .withMessageContaining("expected: onNext(bar); actual: onComplete()");
+
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectNext assertion caused a cancellation")
+	            .isZero();
 	}
 
 	@Test
 	public void noCancelOnCompleteWhenSequenceUnexpected() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.just("foo")
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
 			                        .doOnCancel(cancelled::increment))
 			            .expectNextSequence(Arrays.asList("foo", "bar"))
 			            .expectComplete()
-			            .verify();
-			fail("expectNextSequence should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expectNextSequence"));
-		}
-		assertThat("the expectNextSequence assertion caused a cancellation", cancelled.intValue(), is(0));
+			            .verify())
+		        .withMessageContaining("expectNextSequence");
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectNextSequence assertion caused a cancellation")
+		        .isZero();
 	}
 
 	@Test
 	public void noCancelOnCompleteWhenCountUnexpected() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.just("foo")
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
 			                        .doOnCancel(cancelled::increment))
 			            .expectNextCount(2)
 			            .expectComplete()
-			            .verify();
-			fail("expectNextCount should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expectNextCount"));
-		}
-		assertThat("the expectNextCount assertion caused a cancellation", cancelled.intValue(), is(0));
+			            .verify())
+				.withMessageContaining("expectNextCount");
+
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectNextCount assertion caused a cancellation")
+				.isZero();
 	}
 
 	@Test
 	public void noCancelOnErrorWhenCollectUnexpected() {
 		LongAdder cancelled = new LongAdder();
 		LongAdder records = new LongAdder();
-		try {
-			StepVerifier.create(Flux.error(new IllegalArgumentException())
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException())
 			                        .doOnCancel(cancelled::increment))
 			            .recordWith(() -> {
 								records.increment();
@@ -1132,14 +1166,15 @@ public class StepVerifierTests {
 			            })
 			            .expectRecordedMatches(l -> l.size() == 2)
 			            .expectComplete()
-			            .verify();
-			fail("expectRecordedMatches should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expected collection predicate match"));
-		}
-		assertThat("the expectRecordedMatches assertion caused a cancellation", cancelled.intValue(), is(0));
-		assertThat("unexpected number of records", records.intValue(), is(1));
+			            .verify())
+		        .withMessageContaining("expected collection predicate match");
+
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectRecordedMatches assertion caused a cancellation")
+				.isZero();
+		assertThat(records.intValue())
+				.as("unexpected number of records")
+				.isEqualTo(1);
 	}
 
 	//TODO records: find a way to test the case where supplied collection is null, and signal is complete/error
@@ -1148,20 +1183,17 @@ public class StepVerifierTests {
 	@Test
 	public void cancelOnUnexpectedNextWithMoreData() {
 		LongAdder cancelled = new LongAdder();
-		try {
-			StepVerifier.create(Flux.just("foo", "bar")
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo", "bar")
 			                        .doOnCancel(cancelled::increment))
 			            .expectNext("baz")
 			            .expectComplete()
-			            .verify();
-			fail("expectNext should have failed");
-		}
-		catch (AssertionError expected) {
-			assertThat(expected.getMessage(), containsString("expected value: baz;"));
-		}
-		assertThat("the expectNext assertion didn't cause a cancellation",
-				cancelled.intValue(),
-				is(1));
+			            .verify())
+		        .withMessageContaining("expected value: baz;");
+
+		assertThat(cancelled.intValue())
+				.overridingErrorMessage("the expectNext assertion didn't cause a cancellation")
+		        .isEqualTo(1);
 	}
 
 	@Test
@@ -1169,18 +1201,15 @@ public class StepVerifierTests {
 		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
 				REQUEST_OVERFLOW);
 
-		try {
-			StepVerifier.create(publisher, 1)
-			            .then(() -> publisher.emit("foo", "bar"))
-			            .expectNext("foo")
-			            .expectComplete()
-			            .verify();
-			fail();
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), containsString("expected production of at most 1;" +
-					" produced: 2; request overflown by signal: onNext(bar)"));
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 1)
+				                              .then(() -> publisher.emit("foo", "bar"))
+				                              .expectNext("foo")
+				                              .expectComplete()
+				                              .verify())
+				.withMessageStartingWith("request overflow (")
+				.withMessageEndingWith("expected production of at most 1;" +
+						" produced: 2; request overflown by signal: onNext(bar))");
 	}
 
 	@Test
@@ -1188,19 +1217,16 @@ public class StepVerifierTests {
 		TestPublisher<String> publisher = TestPublisher.createNoncompliant(
 				REQUEST_OVERFLOW);
 
-		try {
-			StepVerifier.create(publisher, 0)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 0)
 			            .thenRequest(2)
 			            .then(() -> publisher.emit("foo", "bar", "baz"))
 			            .expectNext("foo", "bar")
 			            .expectComplete()
-			            .verify();
-			fail();
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), containsString("expected production of at most 2;"
-					+ " produced: 3; request overflown by signal: onNext(baz)"));
-		}
+			            .verify())
+				.withMessageStartingWith("request overflow (")
+		        .withMessageEndingWith("expected production of at most 2;"
+					+ " produced: 3; request overflown by signal: onNext(baz))");
 	}
 
 	@Test
@@ -1218,16 +1244,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyErrorTriggersVerificationFail() {
-		try {
-			StepVerifier.create(Flux.empty())
-			            .verifyError();
-			fail("expected verifyError to fail");
-		}
-		catch (AssertionError e) {
-			assertEquals(
-					"expectation \"expectError()\" failed (expected: onError(); actual: onComplete())",
-					e.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty())
+				                              .verifyError())
+		        .withMessage("expectation \"expectError()\" failed (expected: onError(); actual: onComplete())");
 	}
 
 	@Test
@@ -1238,16 +1258,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyErrorClassTriggersVerificationFail() {
-		try {
-			StepVerifier.create(Flux.empty())
-			            .verifyError(IllegalArgumentException.class);
-			fail("expected verifyError to fail");
-		}
-		catch (AssertionError e) {
-			assertEquals(
-					"expectation \"expectError(Class)\" failed (expected: onError(IllegalArgumentException); actual: onComplete())",
-					e.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty())
+				                              .verifyError(IllegalArgumentException.class))
+		        .withMessage("expectation \"expectError(Class)\" failed (expected: onError(IllegalArgumentException); actual: onComplete())");
 	}
 
 	@Test
@@ -1258,15 +1272,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyErrorMessageTriggersVerificationFail() {
-		try {
-			StepVerifier.create(Flux.empty())
-			            .verifyErrorMessage("boom");
-			fail("expected verifyError to fail");
-		}
-		catch (AssertionError e) {
-			assertEquals("expectation \"expectErrorMessage\" failed (expected: onError(\"boom\"); actual: onComplete())",
-					e.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty())
+				                              .verifyErrorMessage("boom"))
+		        .withMessage("expectation \"expectErrorMessage\" failed (expected: onError(\"boom\"); actual: onComplete())");
 	}
 
 	@Test
@@ -1277,15 +1286,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyErrorPredicateTriggersVerificationFail() {
-		try {
-			StepVerifier.create(Flux.empty())
-			            .verifyErrorMatches(e -> e instanceof IllegalArgumentException);
-			fail("expected verifyError to fail");
-		}
-		catch (AssertionError e) {
-			assertEquals("expectation \"expectErrorMatches\" failed (expected: onError(); actual: onComplete())",
-					e.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty())
+				                              .verifyErrorMatches(e -> e instanceof IllegalArgumentException))
+		        .withMessage("expectation \"expectErrorMatches\" failed (expected: onError(); actual: onComplete())");
 	}
 
 	@Test
@@ -1296,14 +1300,10 @@ public class StepVerifierTests {
 
 	@Test
 	public void verifyCompleteTriggersVerificationFail() {
-		try {
-			StepVerifier.create(Flux.error(new IllegalArgumentException()))
-		                .verifyComplete();
-			fail("expected verifyComplete to fail");
-		}
-		catch (AssertionError e) {
-			assertEquals("expectation \"expectComplete\" failed (expected: onComplete(); actual: onError(java.lang.IllegalArgumentException))", e.getMessage());
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException()))
+				                              .verifyComplete())
+		        .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onError(java.lang.IllegalArgumentException))");
 	}
 
 	@Test

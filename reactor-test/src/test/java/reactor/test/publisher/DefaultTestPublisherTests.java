@@ -5,18 +5,17 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class DefaultTestPublisherTest {
+public class DefaultTestPublisherTests {
 
-	@Test(expected = NullPointerException.class)
+	@Test
 	public void normalDisallowsNull() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		publisher.next(null);
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> publisher.next(null))
+				.withMessage("emitted values must be non-null");
 	}
 
 	@Test
@@ -49,17 +48,13 @@ public class DefaultTestPublisherTest {
 	public void misbehavingAllowsOverflow() {
 		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.REQUEST_OVERFLOW);
 
-		try {
-			StepVerifier.create(publisher, 1)
-			            .then(() -> publisher.emit("foo", "bar"))
-			            .expectNext("foo")
-			            .expectComplete() //n/a
-			            .verify();
-			fail();
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), containsString("expected production of at most 1;"));
-		}
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(publisher, 1)
+				                              .then(() -> publisher.emit("foo", "bar"))
+				                              .expectNext("foo")
+				                              .expectComplete() //n/a
+				                              .verify())
+				.withMessageContaining("expected production of at most 1;");
 
 		publisher.assertRequestOverflow();
 	}
@@ -68,10 +63,9 @@ public class DefaultTestPublisherTest {
 	public void expectSubscribers() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		try {
-			publisher.assertSubscribers();
-			fail("expected expectSubscribers to fail");
-		} catch (AssertionError e) { }
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(publisher::assertSubscribers)
+				.withMessage("Expected subscribers");
 
 		StepVerifier.create(publisher)
 		            .then(() -> publisher.assertSubscribers()
@@ -84,10 +78,9 @@ public class DefaultTestPublisherTest {
 	public void expectSubscribersN() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		try {
-			publisher.assertSubscribers(1);
-			fail("expected expectSubscribers(1) to fail");
-		} catch (AssertionError e) { }
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> publisher.assertSubscribers(1))
+		        .withMessage("Expected 1 subscribers, got 0");
 
 		publisher.assertNoSubscribers();
 		Flux.from(publisher).subscribe();
@@ -133,18 +126,13 @@ public class DefaultTestPublisherTest {
 	public void expectMinRequestedFailure() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		try {
-
-		StepVerifier.create(Flux.from(publisher).limitRate(5))
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.from(publisher).limitRate(5))
 		            .then(() -> publisher.assertMinRequested(6)
 		                                 .emit("foo"))
 		            .expectNext("foo").expectComplete() // N/A
-		            .verify();
-			fail("expected expectMinRequested(6) to fail");
-		}
-		catch (AssertionError e) {
-			assertThat(e.getMessage(), containsString("Expected minimum request of 6; got 5"));
-		}
+		            .verify())
+		        .withMessageContaining("Expected minimum request of 6; got 5");
 
 		publisher.assertCancelled();
 		publisher.assertNoSubscribers();
@@ -165,26 +153,18 @@ public class DefaultTestPublisherTest {
 	public void nextVarargNull() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		try {
-			publisher.next(null, null); //this causes a compiler warning, on purpose
-			fail("expected NPE");
-		}
-		catch (NullPointerException e) {
-			assertThat(e.getMessage(), is("rest array is null, please cast to T if null T required"));
-		}
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> publisher.next(null, null)) //this causes a compiler warning, on purpose
+				.withMessage("rest array is null, please cast to T if null T required");
 	}
 
 	@Test
 	public void emitVarargNull() {
 		TestPublisher<String> publisher = TestPublisher.create();
 
-		try {
-			publisher.emit(null); //this causes a compiler warning, on purpose
-			fail("expected NPE");
-		}
-		catch (NullPointerException e) {
-			assertThat(e.getMessage(), is("values array is null, please cast to T if null T required"));
-		}
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> publisher.emit(null)) //this causes a compiler warning, on purpose
+				.withMessage("values array is null, please cast to T if null T required");
 	}
 
 	@Test

@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.DefaultStepVerifierBuilder.DefaultVerifySubscriber;
@@ -34,8 +33,8 @@ import reactor.test.DefaultStepVerifierBuilder.TaskEvent;
 import reactor.test.DefaultStepVerifierBuilder.WaitEvent;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Stephane Maldini
@@ -43,7 +42,7 @@ import static org.junit.Assert.assertThat;
 public class DefaultStepVerifierBuilderTests {
 
 
-	@Test(expected = AssertionError.class)
+	@Test
 	public void subscribedTwice() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
@@ -56,7 +55,9 @@ public class DefaultStepVerifierBuilderTests {
 
 		flux.subscribe(s);
 		flux.subscribe(s);
-		s.verify();
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(s::verify)
+				.withMessageStartingWith("expectation failed (an unexpected Subscription has been received");
 	}
 
 	@Test(timeout = 4000)
@@ -80,8 +81,8 @@ public class DefaultStepVerifierBuilderTests {
 			vts.advanceTimeBy(Duration.ofSeconds(3));
 			s.verify();
 
-			Assert.assertSame(vts, s.virtualTimeScheduler());
-			Assert.assertSame(vts, VirtualTimeScheduler.get());
+			assertThat(s.virtualTimeScheduler()).isSameAs(vts);
+			assertThat(VirtualTimeScheduler.get()).isSameAs(vts);
 		}
 		finally {
 			VirtualTimeScheduler.reset();
@@ -102,10 +103,10 @@ public class DefaultStepVerifierBuilderTests {
 		try {
 			//also test the side effect case where VTS has been enabled and not reset
 			VirtualTimeScheduler current = VirtualTimeScheduler.get();
-			Assert.assertNotSame(vts, current);
+			assertThat(current).isNotSameAs(vts);
 		}
 		catch (IllegalStateException e) {
-			assertThat(e.getMessage(), containsString("VirtualTimeScheduler"));
+			assertThat(e).hasMessageContaining("VirtualTimeScheduler");
 		}
 	}
 
@@ -122,12 +123,15 @@ public class DefaultStepVerifierBuilderTests {
 		Queue<Event<String>> queue =
 				DefaultVerifySubscriber.conflateScript(script, null);
 
-		assertThat(queue.size(), is(5));
-		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(WaitEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(DefaultStepVerifierBuilder.SubscriptionTaskEvent.class)));
+		assertThat(queue)
+				.hasSize(5)
+				.extracting(e -> e.getClass().getName())
+				.containsExactly(
+				        TaskEvent.class.getName(),
+				        TaskEvent.class.getName(),
+				        WaitEvent.class.getName(),
+				        DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName(),
+				        DefaultStepVerifierBuilder.SubscriptionTaskEvent.class.getName());
 	}
 
 	@Test
@@ -143,12 +147,15 @@ public class DefaultStepVerifierBuilderTests {
 		Queue<Event<String>> queue =
 				DefaultVerifySubscriber.conflateScript(script, null);
 
-		assertThat(queue.size(), is(5));
-		assertThat(queue.poll(), is(instanceOf(TaskEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(WaitEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(SignalCountEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(SubscriptionEvent.class)));
-		assertThat(queue.poll(), is(instanceOf(SubscriptionEvent.class)));
+		assertThat(queue)
+				.hasSize(5)
+				.extracting(e -> e.getClass().getName())
+				.containsExactly(
+						TaskEvent.class.getName(),
+						WaitEvent.class.getName(),
+						SignalCountEvent.class.getName(),
+						SubscriptionEvent.class.getName(),
+						SubscriptionEvent.class.getName());
 	}
 
 	@Test
@@ -164,15 +171,8 @@ public class DefaultStepVerifierBuilderTests {
 
 		Queue<Event<String>> queue = DefaultVerifySubscriber.conflateScript(script, null);
 
-		assertThat(queue.size(), is(3));
-
-		SignalEvent<String> firstSignal = (SignalEvent<String>) queue.poll();
-		assertThat(firstSignal.getDescription(), is("A"));
-
-		SignalEvent<String> secondSignal = (SignalEvent<String>) queue.poll();
-		assertThat(secondSignal.getDescription(), is("foo"));
-
-		SignalCountEvent<String> thirdSignal = (SignalCountEvent<String>) queue.poll();
-		assertThat(thirdSignal.getDescription(), is("baz"));
+		assertThat(queue).hasSize(3)
+		                 .extracting(Event::getDescription)
+		                 .containsExactly("A", "foo", "baz");
 	}
 }
