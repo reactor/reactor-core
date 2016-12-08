@@ -17,8 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -27,10 +29,10 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -556,9 +558,14 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			signalProcessor.sequence.set(workSequence.getAsLong());
 			ringBuffer.addGatingSequence(signalProcessor.sequence);
 
-			//start the subscriber thread
-			executor.execute(signalProcessor);
+			//best effort to prevent starting the subscriber thread if we can detect the pool is too small
+			int maxSubscribers = bestEffortMaxSubscribers(executor);
+			if (maxSubscribers > Integer.MIN_VALUE && subscriberCount > maxSubscribers) {
+				throw new IllegalStateException("The executor service could not accommodate" +
+						" another subscriber, detected limit " + maxSubscribers);
+			}
 
+			executor.execute(signalProcessor);
 		}
 		catch (Throwable t) {
 			decrementSubscribers();
@@ -570,6 +577,29 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				Operators.error(subscriber, t);
 			}
 		}
+	}
+
+	/**
+	 * This method will attempt to compute the maximum amount of subscribers a
+	 * {@link WorkQueueProcessor} can accomodate based on a given {@link ExecutorService}.
+	 * <p>
+	 * It can only accurately detect this for {@link ThreadPoolExecutor} and
+	 * {@link ForkJoinPool} instances, and will return {@link Integer#MIN_VALUE} for other
+	 * executor implementations.
+	 *
+	 * @param executor the executor to attempt to introspect.
+	 * @return the maximum number of subscribers the executor can accommodate if it can
+	 * be computed, or {@link Integer#MIN_VALUE} if it cannot be determined.
+	 */
+	static int bestEffortMaxSubscribers(ExecutorService executor) {
+		int maxSubscribers = Integer.MIN_VALUE;
+		if (executor instanceof ThreadPoolExecutor) {
+			maxSubscribers = ((ThreadPoolExecutor) executor).getMaximumPoolSize();
+		}
+		else if (executor instanceof ForkJoinPool) {
+			maxSubscribers = ((ForkJoinPool) executor).getParallelism();
+		}
+		return maxSubscribers;
 	}
 
 	@Override
@@ -642,7 +672,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	/**
 	 * Disruptor WorkProcessor port that deals with pending demand. <p> Convenience class
 	 * for handling the batching semantics of consuming entries from a {@link
-	 * reactor.core.publisher .rb.disruptor .RingBuffer} <p>
+	 * RingBuffer} <p>
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
