@@ -17,9 +17,133 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+
+import reactor.core.Exceptions;
+import reactor.test.subscriber.AssertSubscriber;
+
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static reactor.core.scheduler.Schedulers.fromExecutor;
+import static reactor.core.scheduler.Schedulers.fromExecutorService;
+
 public class MonoPublishOnTest {
 
 	@Test
 	public void normal() {
 	}
+
+
+	@Test
+	public void rejectedExecutionExceptionOnDataSignalExecutor()
+	{
+
+		ExecutorService executor = newCachedThreadPool();
+
+		CountDownLatch latch = new CountDownLatch(1);
+
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+    Mono.just(1)
+		    .publishOn(fromExecutor(executor))
+		    .doOnNext(s -> {
+		      try {
+		        latch.await();
+		      } catch (InterruptedException e) {
+	      }})
+		    .publishOn(fromExecutor(executor))
+		    .subscribe(assertSubscriber);
+
+		executor.shutdownNow();
+		latch.countDown();
+
+		assertSubscriber
+				.await()
+				.assertError(RejectedExecutionException.class)
+				.assertNotComplete();
+	}
+
+	@Test
+	public void rejectedExecutionExceptionOnErrorSignalExecutor()
+	{
+
+		ExecutorService executor = newCachedThreadPool();
+
+		CountDownLatch latch = new CountDownLatch(1);
+
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+		Mono.just(1)
+				.publishOn(fromExecutor(executor))
+				.doOnNext(s -> {
+  				try {
+		  				latch.await();
+			  	} catch (InterruptedException e) {
+				  		throw Exceptions.propagate(e);
+				  }})
+				.publishOn(fromExecutor(executor)).subscribe(assertSubscriber);
+
+		executor.shutdownNow();
+
+		assertSubscriber
+				.await()
+				.assertError(RejectedExecutionException.class)
+				.assertNotComplete();
+	}
+
+	@Test
+	public void rejectedExecutionExceptionOnDataSignalExecutorService()
+	{
+
+		ExecutorService executor = newCachedThreadPool();
+
+		CountDownLatch latch = new CountDownLatch(1);
+
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+		Mono.just(1)
+				.publishOn(fromExecutorService(executor))
+				.doOnNext(s -> {
+					try {
+						latch.await();
+					}
+					catch (InterruptedException e) {
+					}})
+				.publishOn(fromExecutorService(executor))
+				.subscribe(assertSubscriber);
+
+		executor.shutdownNow();
+
+		assertSubscriber
+				.await()
+				.assertError(RejectedExecutionException.class)
+				.assertNotComplete();
+		}
+
+		@Test
+		public void rejectedExecutionExceptionOnErrorSignalExecutorService()
+		{
+
+		ExecutorService executor = newCachedThreadPool();
+
+		CountDownLatch latch = new CountDownLatch(1);
+
+		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+		Mono.just(1)
+				.publishOn(fromExecutorService(executor))
+				.doOnNext(s -> {
+					try {
+						latch.await();
+					} catch (InterruptedException e) {
+						throw Exceptions.propagate(e);
+					}})
+				.publishOn(fromExecutorService(executor)).subscribe(assertSubscriber);
+
+		executor.shutdownNow();
+		latch.countDown();
+
+		assertSubscriber
+				.await()
+				.assertError(RejectedExecutionException.class)
+				.assertNotComplete();
+		}
+
 }
