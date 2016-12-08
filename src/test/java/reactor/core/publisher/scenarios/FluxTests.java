@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -63,6 +64,7 @@ import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.Signal;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -82,6 +84,60 @@ import static org.junit.Assert.*;
 public class FluxTests extends AbstractReactorTest {
 
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
+
+	@Test
+	public void testDoOnEachSignal() {
+		List<Signal<Integer>> signals = new ArrayList<>(4);
+		Flux<Integer> flux = Flux.just(1, 2)
+		                         .doOnEach(signals::add);
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verify();
+
+		assertThat(signals.size(), is(3));
+		assertThat("onNext", signals.get(0).get(), is(1));
+		assertThat("onNext", signals.get(1).get(), is(2));
+		assertTrue("onComplete expected", signals.get(2).isOnComplete());
+	}
+
+	@Test
+	public void testDoOnEachSignalWithError() {
+		List<Signal<Integer>> signals = new ArrayList<>(4);
+		Flux<Integer> flux = Flux.<Integer>error(new IllegalArgumentException("foo"))
+		                         .doOnEach(signals::add);
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .expectErrorMessage("foo")
+		            .verify();
+
+		assertThat(signals.size(), is(1));
+		assertTrue("onError expected", signals.get(0).isOnError());
+		assertThat("plain exception expected", signals.get(0).getThrowable().getMessage(),
+				is("foo"));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testDoOnEachSignalNullConsumer() {
+		Flux.just(1).doOnEach(null);
+	}
+
+	@Test
+	public void testDoOnEachSignalToSubscriber() {
+		AssertSubscriber<Integer> peekSubscriber = AssertSubscriber.create();
+		Flux<Integer> flux = Flux.just(1, 2)
+		                         .doOnEach(s -> s.accept(peekSubscriber));
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verify();
+
+		peekSubscriber.assertNotSubscribed();
+		peekSubscriber.assertValues(1, 2);
+		peekSubscriber.assertComplete();
+	}
 
 	@Test
 	public void testThenPublisherVoid() throws InterruptedException {

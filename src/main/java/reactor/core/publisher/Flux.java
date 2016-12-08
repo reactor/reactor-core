@@ -3057,6 +3057,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Triggers side-effects when the {@link Flux} emits an item, fails with an error
+	 * or completes successfully. All these events are represented as a {@link Signal}
+	 * that is passed to the side-effect callback. Note that this is an advanced operator,
+	 * typically used for monitoring of a Flux.
+	 *
+	 * @param signalConsumer the mandatory callback to call on
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}
+	 * @return an observed {@link Flux}
+	 * @see #doOnNext(Consumer)
+	 * @see #doOnError(Consumer)
+	 * @see #doOnComplete(Runnable)
+	 * @see #materialize()
+	 * @see Signal
+	 */
+	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+		//TODO use a flyweight pattern for the onNext signals (re-use the same instance)?
+		Objects.requireNonNull(signalConsumer, "signalConsumer");
+		return doOnSignal(this,
+				null,
+				t -> signalConsumer.accept(Signal.next(t)),
+				e -> signalConsumer.accept(Signal.<T>error(e)),
+				() -> signalConsumer.accept(Signal.<T>complete()),
+				null, null, null);
+	}
+
+	/**
 	 * Triggered when the {@link Flux} completes with an error.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/doonerror.png" alt="">
