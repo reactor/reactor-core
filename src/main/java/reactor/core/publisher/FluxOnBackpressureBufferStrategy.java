@@ -33,26 +33,14 @@ import reactor.core.Trackable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 
 /**
+ * Buffers values if the subscriber doesn't request fast enough, bounding the
+ * buffer to a choosen size. If the buffer overflows, apply a pre-determined
+ * overflow strategy.
+
  * @author Stephane Maldini
  * @author Simon Baslé
  */
 final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
-
-//	public enum OverflowStrategy {
-//		/**
-//		 * Propagate an {@link IllegalStateException} when the buffer is full.
-//		 */
-//		ERROR,
-//		/**
-//		 * Drop the new element without propagating an error when the buffer is full.
-//		 */
-//		DROP_ELEMENT,
-//		/**
-//		 * When the buffer is full, remove the oldest element from it and offer the
-//		 * new element at the end instead. Do not propagate an error.
-//		 */
-//		DROP_OLDEST
-//	}
 
 	final Consumer<? super O> onBufferOverflow;
 	final int                 bufferSize;
