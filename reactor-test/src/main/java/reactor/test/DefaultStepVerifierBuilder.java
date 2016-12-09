@@ -601,7 +601,8 @@ final class DefaultStepVerifierBuilder<T>
 		Logger                        logger;
 		int                           establishedFusionMode;
 		Fuseable.QueueSubscription<T> qs;
-		long                          produced;
+		long                          produced;   //used for request tracking
+		long                          unasserted; //used for expectNextXXX tracking
 		volatile long                 requested;
 		Iterator<? extends T>         currentNextAs;
 		Collection<T>                 currentCollector;
@@ -645,6 +646,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			this.monitorSignal = taskEvents.peek() instanceof NoEvent;
 			this.produced = 0L;
+			this.unasserted = 0L;
 			this.completeLatch = new CountDownLatch(1);
 			this.subscription = new AtomicReference<>();
 			this.requested = initialRequest;
@@ -743,6 +745,8 @@ final class DefaultStepVerifierBuilder<T>
 		public void onNext(T t) {
 			if (establishedFusionMode == Fuseable.ASYNC) {
 				for (; ; ) {
+					produced++;
+					unasserted++;
 					try {
 						t = qs.poll();
 						if (t == null) {
@@ -756,7 +760,6 @@ final class DefaultStepVerifierBuilder<T>
 						completeLatch.countDown();
 						return;
 					}
-					produced++;
 					if (currentCollector != null) {
 						currentCollector.add(t);
 					}
@@ -765,6 +768,7 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			else {
 				produced++;
+				unasserted++;
 				if (currentCollector != null) {
 					currentCollector.add(t);
 				}
@@ -896,10 +900,10 @@ final class DefaultStepVerifierBuilder<T>
 		final Optional<AssertionError> checkCountMismatch(SignalCountEvent<T> event, Signal<T> s) {
 			long expected = event.count;
 			if (!s.isOnNext()) {
-				return fail(event, "expected: count = %s; actual: " + "produced = %s; " +
+				return fail(event, "expected: count = %s; actual: " + "counted = %s; " +
 								"signal: %s",
 						expected,
-						produced, s);
+						unasserted, s);
 			}
 			else {
 				return Optional.empty();
@@ -971,6 +975,7 @@ final class DefaultStepVerifierBuilder<T>
 					}
 					//possibly re-evaluate the current onNext
 					event = this.script.peek();
+//					System.out.println("passe while" + actualSignal + ", produced: " + produced + ", unasserted: " + unasserted);
 				}
 				if (event instanceof SignalCountEvent) {
 					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
@@ -992,6 +997,7 @@ final class DefaultStepVerifierBuilder<T>
 						return;
 					}
 				}
+//				System.out.println("passe " + actualSignal + ", produced: " + produced + ", unasserted: " + unasserted);
 
 				event = this.script.peek();
 				if (event == null || !(event instanceof EagerEvent)) {
@@ -1048,6 +1054,9 @@ final class DefaultStepVerifierBuilder<T>
 				this.completeLatch.countDown();
 				return true;
 			}
+			if (actualSignal.isOnNext()) {
+				unasserted--;
+			}
 			return false;
 		}
 
@@ -1063,11 +1072,17 @@ final class DefaultStepVerifierBuilder<T>
 					sequenceEvent.test(actualSignal, currentNextAs);
 
 			if (error == EXPECT_MORE) {
+				if (actualSignal.isOnNext()) {
+					unasserted--;
+				}
 				return false;
 			}
 			if (!error.isPresent()) {
 				this.currentNextAs = null;
 				this.script.poll();
+				if (actualSignal.isOnNext()) {
+					unasserted--;
+				}
 			}
 			else {
 				Exceptions.addThrowable(ERRORS, this, error.get());
@@ -1082,6 +1097,7 @@ final class DefaultStepVerifierBuilder<T>
 			if (actualSignal.isOnNext()) {
 				if (whileEvent.test(actualSignal.get())) {
 					//the value matches, gobble it up
+					unasserted--;
 					if (this.logger != null) {
 						logger.debug("{} consumed {}", whileEvent.getDescription(), actualSignal);
 					}
@@ -1097,9 +1113,9 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		final boolean onSignalCount(Signal<T> actualSignal, SignalCountEvent<T> event) {
-			if (produced >= event.count) {
+			if (unasserted >= event.count) {
 				this.script.poll();
-				produced = 0L;
+				unasserted -= event.count;
 			}
 			else {
 				if (event.count != 0) {
@@ -1563,8 +1579,7 @@ final class DefaultStepVerifierBuilder<T>
 		Optional<AssertionError> test(Signal<T> signal, Iterator<? extends T> iterator) {
 			if (signal.isOnNext()) {
 				if (!iterator.hasNext()) {
-					return fail(this, "unexpected iterator request; onNext(%s); iterable: %s",
-							signal.get(), iterable);
+					return Optional.empty();
 				}
 				T d2 = iterator.next();
 				if (!Objects.equals(signal.get(), d2)) {
@@ -1678,6 +1693,6 @@ final class DefaultStepVerifierBuilder<T>
 	static final AtomicIntegerFieldUpdater<DefaultVerifySubscriber> WIP =
 			AtomicIntegerFieldUpdater.newUpdater(DefaultVerifySubscriber.class, "wip");
 
-	static final Optional<AssertionError> EXPECT_MORE = Optional.ofNullable(null);
+	static final Optional<AssertionError> EXPECT_MORE = Optional.of(new AssertionError("EXPECT MORE"));
 
 }

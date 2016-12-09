@@ -235,7 +235,7 @@ public class StepVerifierTests {
 		            .expectComplete()
 		            .verify())
 	            .withMessageStartingWith("expectation \"expectNextCount\" failed")
-				.withMessageContaining("expected: count = 900001; actual: produced = 900000; signal: onComplete()");
+				.withMessageContaining("expected: count = 900001; actual: counted = 900000; signal: onComplete()");
 	}
 
 	@Test
@@ -259,11 +259,13 @@ public class StepVerifierTests {
 	public void expectNextCount2() {
 		Flux<String> flux = Flux.just("foo", "bar");
 
-		StepVerifier.create(flux)
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
 		            .expectNext("foo", "bar")
 		            .expectNextCount(2)
 		            .expectComplete()
-		            .verify();
+		            .verify())
+	            .withMessage("expectation \"expectNextCount\" failed (expected: count = 2; actual: counted = 0; signal: onComplete())");
 	}
 
 	@Test
@@ -296,7 +298,7 @@ public class StepVerifierTests {
 		            .expectNextCount(4)
 		            .thenCancel()
 		            .verify())
-				.withMessage("expectation \"expectNextCount\" failed (expected: count = 4; actual: produced = 2; signal: onComplete())");
+				.withMessage("expectation \"expectNextCount\" failed (expected: count = 4; actual: counted = 2; signal: onComplete())");
 	}
 
 	@Test
@@ -503,7 +505,7 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyNextAsError() {
+	public void verifyNextAsErrorTooFewInIterable() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		assertThatExceptionOfType(AssertionError.class)
@@ -511,11 +513,11 @@ public class StepVerifierTests {
 		            .expectNextSequence(Arrays.asList("foo", "bar"))
 		            .expectComplete()
 		            .verify())
-	            .withMessage("expectation \"expectNextSequence\" failed (unexpected iterator request; onNext(foobar); iterable: [foo, bar])");
+	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(foobar))");
 	}
 
 	@Test
-	public void verifyNextAsError2() {
+	public void verifyNextAsErrorTooManyInIterable() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 
 		assertThatExceptionOfType(AssertionError.class)
@@ -1323,6 +1325,73 @@ public class StepVerifierTests {
 			StepVerifier.create(Flux.just(1, 2))
 			            .expectNext(1, 2)
 		                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterExpectNext() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .expectNext(1, 2)
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterThenConsumeWhile() {
+		StepVerifier.create(Flux.range(1, 5).log())
+	                .thenConsumeWhile(i -> i <= 2)
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterExpectNextCount() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .expectNextCount(2)
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterExpectNextMatches() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .expectNextMatches(i -> true)
+	                .expectNextMatches(i -> true)
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterExpectNextSequence() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .expectNextSequence(Arrays.asList(1, 2))
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextCountAfterConsumeNextWith() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .consumeNextWith(i -> {})
+	                .consumeNextWith(i -> {})
+	                .expectNextCount(3)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextSequenceWithPartialMatchingSequence() {
+		StepVerifier.create(Flux.range(1, 5))
+	                .expectNextSequence(Arrays.asList(1, 2, 3))
+	                .expectNext(4, 5)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void expectNextSequenceWithPartialMatchingSequenceNoMoreExpectation() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.range(1, 5))
+	                .expectNextSequence(Arrays.asList(1, 2, 3))
+	                .verifyComplete())
+	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(4))");
 	}
 
 }
