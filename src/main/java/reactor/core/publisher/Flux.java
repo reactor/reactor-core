@@ -3073,11 +3073,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Signal
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
-		//TODO use a flyweight pattern for the onNext signals (re-use the same instance)?
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
+		final MutableNextSignal<T> nextSignal = MutableNextSignal.undefined();
 		return doOnSignal(this,
 				null,
-				t -> signalConsumer.accept(Signal.next(t)),
+				t -> signalConsumer.accept(nextSignal.mutate(t)),
 				e -> signalConsumer.accept(Signal.<T>error(e)),
 				() -> signalConsumer.accept(Signal.<T>complete()),
 				null, null, null);

@@ -23,9 +23,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -37,16 +39,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -88,8 +87,13 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void testDoOnEachSignal() {
 		List<Signal<Integer>> signals = new ArrayList<>(4);
+		List<Integer> values = new ArrayList<>(2);
 		Flux<Integer> flux = Flux.just(1, 2)
-		                         .doOnEach(signals::add);
+		                         .doOnEach(signals::add)
+		                         .doOnEach(s -> {
+		                         	if (s.isOnNext())
+		                         		values.add(s.get());
+		                         });
 		StepVerifier.create(flux)
 		            .expectSubscription()
 		            .expectNext(1, 2)
@@ -97,9 +101,40 @@ public class FluxTests extends AbstractReactorTest {
 		            .verify();
 
 		assertThat(signals.size(), is(3));
-		assertThat("onNext", signals.get(0).get(), is(1));
-		assertThat("onNext", signals.get(1).get(), is(2));
+		assertThat("onNext signal are not reused", signals.get(0).get(), is(2));
+		assertThat("onNext signal isn't last value", signals.get(1).get(), is(2));
 		assertTrue("onComplete expected", signals.get(2).isOnComplete());
+		assertThat("1st onNext value unexpected", values.get(0), is(1));
+		assertThat("2nd onNext value unexpected", values.get(1), is(2));
+	}
+
+	@Test
+	public void testDoOnEachSignalSingleNextInstance() {
+		Set<Signal<Integer>> signals = Collections.newSetFromMap(
+				new IdentityHashMap<>(2));
+		Flux<Integer> flux = Flux.range(1, 1_000)
+		                         .doOnEach(signals::add);
+		StepVerifier.create(flux)
+		            .expectSubscription()
+		            .expectNextCount(997)
+		            .expectNext(998, 999, 1_000)
+		            .expectComplete()
+		            .verify();
+
+		assertThat(signals.size(), is(2));
+
+		int nextValue = 0;
+		boolean foundComplete = false;
+		boolean foundOther = false;
+		for (Signal<Integer> signal : signals) {
+			if (signal.isOnComplete()) foundComplete = true;
+			else if (signal.isOnNext()) nextValue = signal.get();
+			else foundOther = true;
+		}
+
+		assertEquals(1000, nextValue);
+		assertTrue("onComplete expected", foundComplete);
+		assertFalse("either onNext or onComplete expected", foundOther);
 	}
 
 	@Test

@@ -32,19 +32,10 @@ import org.reactivestreams.Subscription;
  * 
  * @param <T> the value type
  */
-public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>>, Serializable {
-
-	private static final long serialVersionUID = 8430680363917273272L;
+public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>> {
 
 	private static final Signal<Void> ON_COMPLETE =
-			new Signal<>(SignalType.ON_COMPLETE, null, null, null);
-
-	private final SignalType type;
-	private final Throwable  throwable;
-
-	private final T value;
-
-	private transient final Subscription subscription;
+			new ImmutableSignal<>(SignalType.ON_COMPLETE, null, null, null);
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
@@ -65,7 +56,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
-		return new Signal<>(SignalType.ON_ERROR, null, e, null);
+		return new ImmutableSignal<>(SignalType.ON_ERROR, null, e, null);
 	}
 
 	/**
@@ -76,7 +67,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
-		return new Signal<>(SignalType.ON_NEXT, t, null, null);
+		return new ImmutableSignal<>(SignalType.ON_NEXT, t, null, null);
 	}
 
 	/**
@@ -92,7 +83,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return true if completition signal
 	 */
 	public static boolean isError(Object o){
-		return o instanceof Signal && ((Signal)o).type == SignalType.ON_ERROR;
+		return o instanceof Signal && ((Signal)o).getType() == SignalType.ON_ERROR;
 	}
 
 	/**
@@ -103,14 +94,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> subscribe(Subscription subscription) {
-		return new Signal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
-	}
-
-	private Signal(SignalType type, T value, Throwable e, Subscription subscription) {
-		this.value = value;
-		this.subscription = subscription;
-		this.throwable = e;
-		this.type = type;
+		return new ImmutableSignal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
 	/**
@@ -118,18 +102,14 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 *
 	 * @return the Throwable associated with this (onError) signal
 	 */
-	public Throwable getThrowable() {
-		return throwable;
-	}
+	public abstract Throwable getThrowable();
 
 	/**
 	 * Read the subscription associated with this (onSubscribe) signal.
 	 *
 	 * @return the Subscription associated with this (onSubscribe) signal
 	 */
-	public Subscription getSubscription() {
-		return subscription;
-	}
+	public abstract Subscription getSubscription();
 
 	/**
 	 * Retrieves the item associated with this (onNext) signal.
@@ -137,9 +117,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return the item associated with this (onNext) signal
 	 */
 	@Override
-	public T get() {
-		return value;
-	}
+	public abstract T get();
 
 	/**
 	 * Has this signal an item associated with it ?
@@ -147,7 +125,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether or not this signal has an item associated with it
 	 */
 	public boolean hasValue() {
-		return isOnNext() && value != null;
+		return isOnNext() && get() != null;
 	}
 
 	/**
@@ -156,7 +134,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 * @return a boolean indicating whether this signal has an error
 	 */
 	public boolean hasError() {
-		return isOnError() && throwable != null;
+		return isOnError() && getThrowable() != null;
 	}
 
 	/**
@@ -164,9 +142,7 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 	 *
 	 * @return the type of the signal
 	 */
-	public SignalType getType() {
-		return type;
-	}
+	public abstract SignalType getType();
 
 	/**
 	 * Indicates whether this signal represents an {@code onError} event.
@@ -213,64 +189,67 @@ public final class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super
 		} else if (isOnError()) {
 			observer.onError(getThrowable());
 		} else if (isOnSubscribe()) {
-			observer.onSubscribe(subscription);
+			observer.onSubscribe(getSubscription());
 		}
 	}
 
+	//the base class defines equals and hashcode as final in order to allow
+	//concrete implementations to be compared together, and discourage them
+	//to implement additional state.
 	@Override
-	public boolean equals(Object o) {
+	public final boolean equals(Object o) {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (o == null || !(o instanceof Signal)) {
 			return false;
 		}
 
 		Signal<?> signal = (Signal<?>) o;
 
-		if (type != signal.type) {
+		if (getType() != signal.getType()) {
 			return false;
 		}
 		if (isOnComplete()) {
 			return true;
 		}
 		if (isOnSubscribe()) {
-			return Objects.equals(this.subscription, signal.subscription);
+			return Objects.equals(this.getSubscription(), signal.getSubscription());
 		}
 		else if (isOnError()) {
-			return Objects.equals(this.throwable, signal.throwable);
+			return Objects.equals(this.getThrowable(), signal.getThrowable());
 		}
 		else if (isOnNext()) {
-			return Objects.equals(this.value, signal.value);
+			return Objects.equals(this.get(), signal.get());
 		}
 		return false;
 	}
 
 	@Override
-	public int hashCode() {
-		int result = type != null ? type.hashCode() : 0;
+	public final int hashCode() {
+		int result = getType() != null ? getType().hashCode() : 0;
 		if (isOnError())
-			result = 31 * result + (throwable != null ? throwable.hashCode() : 0);
+			result = 31 * result + (getThrowable() != null ? getThrowable().hashCode() : 0);
 		if (isOnNext())
-			result = 31 * result + (value != null ? value.hashCode() : 0);
+			result = 31 * result + (get() != null ? get().hashCode() : 0);
 		if (isOnComplete())
-			result = 31 * result + (subscription != null ? subscription.hashCode() : 0);
+			result = 31 * result + (getSubscription() != null ? getSubscription().hashCode() : 0);
 		return result;
 	}
 
 	@Override
 	public String toString() {
-		switch (this.type) {
+		switch (this.getType()) {
 			case ON_SUBSCRIBE:
-				return String.format("onSubscribe(%s)", this.subscription);
+				return String.format("onSubscribe(%s)", this.getSubscription());
 			case ON_NEXT:
-				return String.format("onNext(%s)", this.value);
+				return String.format("onNext(%s)", this.get());
 			case ON_ERROR:
-				return String.format("onError(%s)", this.throwable);
+				return String.format("onError(%s)", this.getThrowable());
 			case ON_COMPLETE:
 				return "onComplete()";
 			default:
-				return String.format("Signal type=%s", this.type);
+				return String.format("Signal type=%s", this.getType());
 		}
 	}
 }
