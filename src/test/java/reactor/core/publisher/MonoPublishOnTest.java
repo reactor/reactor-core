@@ -13,13 +13,251 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+
+import reactor.core.Exceptions;
+import reactor.test.subscriber.AssertSubscriber;
+
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static reactor.core.scheduler.Schedulers.fromExecutor;
+import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
 public class MonoPublishOnTest {
 
 	@Test
 	public void normal() {
 	}
+
+	@Test
+	public void rejectedExecutionExceptionOnDataSignalExecutor()
+			throws InterruptedException {
+
+		int data = 1;
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+
+			CountDownLatch hookLatch = new CountDownLatch(1);
+
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				hookLatch.countDown();
+				return t;
+			});
+
+			ExecutorService executor = newCachedThreadPool();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+			Mono.just(data)
+			    .publishOn(fromExecutorService(executor))
+			    .doOnNext(s -> {
+				    try {
+					    latch.await();
+				    }
+				    catch (InterruptedException e) {
+				    }
+			    })
+			    .publishOn(fromExecutor(executor))
+			    .subscribe(assertSubscriber);
+
+			executor.shutdownNow();
+
+			assertSubscriber.assertNoValues()
+			                .assertNoError()
+			                .assertNotComplete();
+
+			hookLatch.await();
+
+			Assert.assertThat(throwableInOnOperatorError.get(),
+					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
+
+	@Test
+	public void rejectedExecutionExceptionOnErrorSignalExecutor()
+			throws InterruptedException {
+
+		int data = 1;
+		Exception exception = new IllegalStateException();
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+
+			CountDownLatch hookLatch = new CountDownLatch(2);
+
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				hookLatch.countDown();
+				return t;
+			});
+
+			ExecutorService executor = newCachedThreadPool();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+			Mono.just(data)
+			    .publishOn(fromExecutorService(executor))
+			    .doOnNext(s -> {
+				    try {
+					    latch.await();
+				    }
+				    catch (InterruptedException e) {
+					    throw Exceptions.propagate(exception);
+				    }
+			    })
+			    .publishOn(fromExecutor(executor))
+			    .subscribe(assertSubscriber);
+
+			executor.shutdownNow();
+
+			assertSubscriber.assertNoValues()
+			                .assertNoError()
+			                .assertNotComplete();
+
+			hookLatch.await();
+
+			Assert.assertThat(throwableInOnOperatorError.get(),
+					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			Assert.assertSame(throwableInOnOperatorError.get()
+			                                            .getSuppressed()[0], exception);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
+
+	@Test
+	public void rejectedExecutionExceptionOnDataSignalExecutorService()
+			throws InterruptedException {
+
+		int data = 1;
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+
+			CountDownLatch hookLatch = new CountDownLatch(1);
+
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				hookLatch.countDown();
+				return t;
+			});
+
+			ExecutorService executor = newCachedThreadPool();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+			Mono.just(data)
+			    .publishOn(fromExecutorService(executor))
+			    .doOnNext(s -> {
+				    try {
+					    latch.await();
+				    }
+				    catch (InterruptedException e) {
+				    }
+			    })
+			    .publishOn(fromExecutorService(executor))
+			    .subscribe(assertSubscriber);
+
+			executor.shutdownNow();
+
+			assertSubscriber.assertNoValues()
+			                .assertNoError()
+			                .assertNotComplete();
+
+			hookLatch.await();
+
+			Assert.assertThat(throwableInOnOperatorError.get(),
+					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			Assert.assertSame(dataInOnOperatorError.get(), data);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
+
+	@Test
+	public void rejectedExecutionExceptionOnErrorSignalExecutorService()
+			throws InterruptedException {
+
+		int data = 1;
+		Exception exception = new IllegalStateException();
+
+		final AtomicReference<Throwable> throwableInOnOperatorError =
+				new AtomicReference<>();
+		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+
+		try {
+
+			CountDownLatch hookLatch = new CountDownLatch(2);
+
+			Hooks.onOperatorError((t, d) -> {
+				throwableInOnOperatorError.set(t);
+				dataInOnOperatorError.set(d);
+				hookLatch.countDown();
+				return t;
+			});
+
+			ExecutorService executor = newCachedThreadPool();
+			CountDownLatch latch = new CountDownLatch(1);
+
+			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
+			Mono.just(data)
+			    .publishOn(fromExecutorService(executor))
+			    .doOnNext(s -> {
+				    try {
+					    latch.await();
+				    }
+				    catch (InterruptedException e) {
+					    throw Exceptions.propagate(exception);
+				    }
+			    })
+			    .publishOn(fromExecutorService(executor))
+			    .subscribe(assertSubscriber);
+
+			executor.shutdownNow();
+
+			assertSubscriber.assertNoValues()
+			                .assertNoError()
+			                .assertNotComplete();
+
+			hookLatch.await();
+
+			Assert.assertThat(throwableInOnOperatorError.get(),
+					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			Assert.assertSame(throwableInOnOperatorError.get()
+			                                            .getSuppressed()[0], exception);
+		}
+		finally {
+			Hooks.resetOnOperatorError();
+		}
+	}
+
 }
