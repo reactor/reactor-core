@@ -129,7 +129,7 @@ public class VirtualTimeSchedulerTests {
 	}
 
 
-
+	@SuppressWarnings("unchecked")
 	private static Scheduler uncache(Scheduler potentialCached) {
 		if (potentialCached instanceof Supplier) {
 			return ((Supplier<Scheduler>) potentialCached).get();
