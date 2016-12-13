@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
@@ -41,6 +42,8 @@ import reactor.core.scheduler.Scheduler.Worker;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
+
+	private static final Cancellation NULL_CANCELLATION = () -> {};
 
 	final Scheduler scheduler;
 	
@@ -242,7 +245,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			if (sourceMode == Fuseable.ASYNC) {
-				if (!trySchedule()) {
+				if (trySchedule() == Scheduler.REJECTED) {
 					throw Exceptions.bubble(Operators.onOperatorError(this,
 							new RejectedExecutionException("Scheduler unavailable"), t));
 				}
@@ -253,7 +256,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						("Queue is full?!"), t);
 				done = true;
 			}
-			if (!trySchedule()) {
+			if (trySchedule() == Scheduler.REJECTED) {
 				throw Exceptions.bubble(Operators.onOperatorError(this,
 						new RejectedExecutionException("Scheduler unavailable"), t));
 			}
@@ -267,7 +270,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 			error = t;
 			done = true;
-			if (!trySchedule()) {
+			if (trySchedule() == Scheduler.REJECTED) {
 				RejectedExecutionException ree =
 						new RejectedExecutionException("Scheduler unavailable");
 				ree.addSuppressed(t);
@@ -307,12 +310,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 		}
 
-		boolean trySchedule() {
+		Cancellation trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return true;
+				return NULL_CANCELLATION;
 			}
 
-			return !(worker.schedule(this) == Scheduler.REJECTED);
+			return worker.schedule(this);
 		}
 
 		void runSync() {
@@ -786,7 +789,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
-				if (!trySchedule()) {
+				if (trySchedule() == Scheduler.REJECTED) {
 					throw Exceptions.bubble(Operators.onOperatorError(this,
 							new RejectedExecutionException("Scheduler unavailable"), t));
 				}
@@ -798,7 +801,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				error = new IllegalStateException("Queue is full?!");
 				done = true;
 			}
-			if (!trySchedule()) {
+			if (trySchedule() == Scheduler.REJECTED) {
 				throw Exceptions.bubble(Operators.onOperatorError(this,
 						new RejectedExecutionException("Scheduler unavailable"), t));
 			}
@@ -808,7 +811,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void onError(Throwable t) {
 			error = t;
 			done = true;
-			if (!trySchedule()) {
+			if (trySchedule() == Scheduler.REJECTED) {
 				RejectedExecutionException ree =
 						new RejectedExecutionException("Scheduler unavailable");
 				ree.addSuppressed(t);
@@ -819,7 +822,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		@Override
 		public void onComplete() {
 			done = true;
-			if (!trySchedule()) {
+			if (trySchedule() == Scheduler.REJECTED) {
 				throw Exceptions.bubble(Operators.onOperatorError(this,
 						new RejectedExecutionException("Scheduler unavailable")));
 			}
@@ -829,7 +832,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if (!trySchedule()) {
+				if (trySchedule() == Scheduler.REJECTED) {
 					throw Exceptions.bubble(Operators.onOperatorError(this,
 							new RejectedExecutionException("Scheduler unavailable")));
 				}
@@ -851,12 +854,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 		}
 		
-		boolean trySchedule() {
+		Cancellation trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return true;
+				return NULL_CANCELLATION;
 			}
 
-			return !(worker.schedule(this) == Scheduler.REJECTED);
+			return worker.schedule(this);
 		}
 		
 		void runSync() {
