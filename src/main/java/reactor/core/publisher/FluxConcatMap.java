@@ -157,9 +157,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		int sourceMode;
 		
-		static final int SYNC = 1;
-		static final int ASYNC = 2;
-		
 		public ConcatMapImmediate(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
@@ -180,7 +177,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>)s;
 					int m = f.requestFusion(Fuseable.ANY);
 					if (m == Fuseable.SYNC){
-						sourceMode = SYNC;
+						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
 						
@@ -190,7 +187,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						return;
 					} else 
 					if (m == Fuseable.ASYNC) {
-						sourceMode = ASYNC;
+						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					} else {
 						try {
@@ -219,7 +216,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == ASYNC) {
+			if (sourceMode == Fuseable.ASYNC) {
 				drain();
 			} else
 			if (!queue.offer(t)) {
@@ -346,7 +343,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								return;
 							}
 							
-							if (sourceMode != SYNC) {
+							if (sourceMode != Fuseable.SYNC) {
 								int c = consumed + 1;
 								if (c == limit) {
 									consumed = 0;
@@ -473,9 +470,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		int sourceMode;
 		
-		static final int SYNC = 1;
-		static final int ASYNC = 2;
-		
 		public ConcatMapDelayed(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Supplier<? extends Queue<T>> queueSupplier, int prefetch, boolean veryEnd) {
@@ -499,7 +493,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					int m = f.requestFusion(Fuseable.ANY);
 					
 					if (m == Fuseable.SYNC){
-						sourceMode = SYNC;
+						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
 						
@@ -509,7 +503,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 						return;
 					} else 
 					if (m == Fuseable.ASYNC) {
-						sourceMode = ASYNC;
+						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					} else {
 						try {
@@ -536,7 +530,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == ASYNC) {
+			if (sourceMode == Fuseable.ASYNC) {
 				drain();
 			} else
 			if (!queue.offer(t)) {
@@ -664,7 +658,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								return;
 							}
 							
-							if (sourceMode != SYNC) {
+							if (sourceMode != Fuseable.SYNC) {
 								int c = consumed + 1;
 								if (c == limit) {
 									consumed = 0;

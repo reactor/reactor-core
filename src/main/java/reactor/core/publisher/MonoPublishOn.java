@@ -19,8 +19,9 @@ package reactor.core.publisher;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
@@ -28,133 +29,140 @@ import reactor.core.scheduler.Scheduler;
 /**
  * Schedules the emission of the value or completion of the wrapped Mono via
  * the given Scheduler.
- * 
+ *
  * @param <T> the value type
  */
 final class MonoPublishOn<T> extends MonoSource<T, T> {
-    
-    final Scheduler scheduler;
 
-    public MonoPublishOn(Publisher<? extends T> source, Scheduler scheduler) {
-        super(source);
-        this.scheduler = scheduler;
-    }
-    
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new MonoPublishOnSubscriber<T>(s, scheduler));
-    }
-    
-    static final class MonoPublishOnSubscriber<T> 
-    implements Subscriber<T>, Subscription, Runnable {
-        final Subscriber<? super T> actual;
-        
-        final Scheduler scheduler;
+	final Scheduler scheduler;
 
-        Subscription s;
-        
-        volatile Cancellation future;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoPublishOnSubscriber, Cancellation> FUTURE =
-                AtomicReferenceFieldUpdater.newUpdater(MonoPublishOnSubscriber.class, Cancellation.class, "future");
-        
-        static final Cancellation CANCELLED = () -> { };
-        
-        T value;
-        Throwable error;
-        
-        public MonoPublishOnSubscriber(Subscriber<? super T> actual, Scheduler scheduler) {
-            this.actual = actual;
-            this.scheduler = scheduler;
-        }
-        
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (Operators.validate(this.s, s)) {
-                this.s = s;
-                
-                actual.onSubscribe(this);
-            }
-        }
-        
-        @Override
-        public void onNext(T t) {
-            value = t;
-            try {
-              schedule();
-            }
-            catch (RejectedExecutionException ree) {
-              Operators.onOperatorError(s, ree, t);
-              throw Exceptions.bubble(ree);
-            }
-        }
-        
-        @Override
-        public void onError(Throwable t) {
-            error = t;
-            try {
-              schedule();
-            }
-            catch (RejectedExecutionException ree){
-                ree.addSuppressed(t);
-                Operators.onOperatorError(s, ree, null);
-                throw Exceptions.bubble(ree);
-            }
-        }
-        
-        @Override
-        public void onComplete() {
-            if (value == null) {
-                schedule();
-            }
-        }
-        
-        void schedule() {
-            if (future == null) {
-                Cancellation c = scheduler.schedule(this);
-                if (!FUTURE.compareAndSet(this, null, c)) {
-                    c.dispose();
-                }
-            }
-        }
-        
-        @Override
-        public void request(long n) {
-            s.request(n);
-        }
-        
-        @Override
-        public void cancel() {
-            Cancellation c = future;
-            if (c != CANCELLED) {
-                c = FUTURE.getAndSet(this, CANCELLED);
-                if (c != null && c != CANCELLED) {
-                    c.dispose();
-                }
-            }
-            s.cancel();
-        }
-        
-        @Override
-        public void run() {
-            if (future == CANCELLED) {
-                return;
-            }
-            T v = value;
-            value = null;
-            if (v != null) {
-                actual.onNext(v);
-            }
-            
-            if (future == CANCELLED) {
-                return;
-            }
-            Throwable e = error;
-            if (e != null) {
-                actual.onError(e);
-            } else {
-                actual.onComplete();
-            }
-        }
-    }
+	public MonoPublishOn(Publisher<? extends T> source, Scheduler scheduler) {
+		super(source);
+		this.scheduler = scheduler;
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		source.subscribe(new MonoPublishOnSubscriber<T>(s, scheduler));
+	}
+
+	static final class MonoPublishOnSubscriber<T>
+			implements Subscriber<T>, Subscription, Runnable {
+
+		final Subscriber<? super T> actual;
+
+		final Scheduler scheduler;
+
+		Subscription s;
+
+		volatile Cancellation future;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<MonoPublishOnSubscriber, Cancellation>
+				FUTURE =
+				AtomicReferenceFieldUpdater.newUpdater(MonoPublishOnSubscriber.class,
+						Cancellation.class,
+						"future");
+
+		static final Cancellation CANCELLED = () -> {
+		};
+
+		T         value;
+		Throwable error;
+
+		public MonoPublishOnSubscriber(Subscriber<? super T> actual,
+				Scheduler scheduler) {
+			this.actual = actual;
+			this.scheduler = scheduler;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			value = t;
+			if(schedule() == Scheduler.REJECTED){
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable")));
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			error = t;
+			if (schedule() == Scheduler.REJECTED) {
+				RejectedExecutionException ree =
+						new RejectedExecutionException("Scheduler unavailable");
+				ree.addSuppressed(t);
+				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			if (value == null) {
+				if (schedule() == Scheduler.REJECTED) {
+					throw Exceptions.bubble(Operators.onOperatorError(this,
+							new RejectedExecutionException("Scheduler unavailable")));
+				}
+			}
+		}
+
+		Cancellation schedule() {
+			if (future == null) {
+				Cancellation c = scheduler.schedule(this);
+				if (!FUTURE.compareAndSet(this, null, c)) {
+					c.dispose();
+				}
+				return c;
+			}
+			return null;
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			Cancellation c = future;
+			if (c != CANCELLED) {
+				c = FUTURE.getAndSet(this, CANCELLED);
+				if (c != null && c != CANCELLED) {
+					c.dispose();
+				}
+			}
+			s.cancel();
+		}
+
+		@Override
+		public void run() {
+			if (future == CANCELLED) {
+				return;
+			}
+			T v = value;
+			value = null;
+			if (v != null) {
+				actual.onNext(v);
+			}
+
+			if (future == CANCELLED) {
+				return;
+			}
+			Throwable e = error;
+			if (e != null) {
+				actual.onError(e);
+			}
+			else {
+				actual.onComplete();
+			}
+		}
+	}
 }

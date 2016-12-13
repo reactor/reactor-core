@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
@@ -24,14 +25,14 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.core.Trackable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -299,7 +300,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			worker.schedule(this);
+			if (worker.schedule(this) == Scheduler.REJECTED) {
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable")));
+			}
 		}
 
 		void runSync() {
@@ -825,8 +829,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			
-			worker.schedule(this);
+
+			if (worker.schedule(this) == Scheduler.REJECTED) {
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable")));
+			}
 		}
 		
 		void runSync() {
