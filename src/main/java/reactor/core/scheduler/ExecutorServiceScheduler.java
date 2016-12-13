@@ -18,6 +18,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -44,16 +45,21 @@ final class ExecutorServiceScheduler implements Scheduler {
 		this.executor = executor;
 		this.interruptOnCancel = interruptOnCancel;
 	}
-	
+
 	@Override
 	public Worker createWorker() {
 		return new ExecutorServiceWorker(executor, interruptOnCancel);
 	}
-	
+
 	@Override
 	public Cancellation schedule(Runnable task) {
-		Future<?> f = executor.submit(task);
-		return () -> f.cancel(interruptOnCancel);
+		try {
+			Future<?> f = executor.submit(task);
+			return () -> f.cancel(interruptOnCancel);
+		}
+		catch (RejectedExecutionException ree) {
+			return REJECTED;
+		}
 	}
 
 	@Override
@@ -82,11 +88,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public Cancellation schedule(Runnable t) {
 			ScheduledRunnable sr = new ScheduledRunnable(t, this);
-			if (add(sr)) {
-				Future<?> f = executor.submit(sr);
-				sr.setFuture(f);
+			try {
+				if (add(sr)) {
+					Future<?> f = executor.submit(sr);
+					sr.setFuture(f);
+				}
+				return sr;
 			}
-			return sr;
+			catch (RejectedExecutionException ree) {
+				delete(sr);
+				return REJECTED;
+			}
 		}
 
 		boolean add(ScheduledRunnable sr) {

@@ -242,7 +242,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			if (sourceMode == Fuseable.ASYNC) {
-				trySchedule();
+				if (!trySchedule()) {
+					throw Exceptions.bubble(Operators.onOperatorError(this,
+							new RejectedExecutionException("Scheduler unavailable"), t));
+				}
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -250,7 +253,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						("Queue is full?!"), t);
 				done = true;
 			}
-			trySchedule();
+			if (!trySchedule()) {
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable"), t));
+			}
 		}
 		
 		@Override
@@ -261,7 +267,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 			error = t;
 			done = true;
-			trySchedule();
+			if (!trySchedule()) {
+				RejectedExecutionException ree =
+						new RejectedExecutionException("Scheduler unavailable");
+				ree.addSuppressed(t);
+				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+			}
 		}
 		
 		@Override
@@ -296,14 +307,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 		}
 
-		void trySchedule() {
+		boolean trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return;
+				return true;
 			}
-			if (worker.schedule(this) == Scheduler.REJECTED) {
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable")));
-			}
+
+			return !(worker.schedule(this) == Scheduler.REJECTED);
 		}
 
 		void runSync() {
@@ -777,7 +786,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
-				trySchedule();
+				if (!trySchedule()) {
+					throw Exceptions.bubble(Operators.onOperatorError(this,
+							new RejectedExecutionException("Scheduler unavailable"), t));
+				}
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -786,27 +798,41 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				error = new IllegalStateException("Queue is full?!");
 				done = true;
 			}
-			trySchedule();
+			if (!trySchedule()) {
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable"), t));
+			}
 		}
 		
 		@Override
 		public void onError(Throwable t) {
 			error = t;
 			done = true;
-			trySchedule();
+			if (!trySchedule()) {
+				RejectedExecutionException ree =
+						new RejectedExecutionException("Scheduler unavailable");
+				ree.addSuppressed(t);
+				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+			}
 		}
 		
 		@Override
 		public void onComplete() {
 			done = true;
-			trySchedule();
+			if (!trySchedule()) {
+				throw Exceptions.bubble(Operators.onOperatorError(this,
+						new RejectedExecutionException("Scheduler unavailable")));
+			}
 		}
 		
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				trySchedule();
+				if (!trySchedule()) {
+					throw Exceptions.bubble(Operators.onOperatorError(this,
+							new RejectedExecutionException("Scheduler unavailable")));
+				}
 			}
 		}
 		
@@ -825,15 +851,12 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 		}
 		
-		void trySchedule() {
+		boolean trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return;
+				return true;
 			}
 
-			if (worker.schedule(this) == Scheduler.REJECTED) {
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable")));
-			}
+			return !(worker.schedule(this) == Scheduler.REJECTED);
 		}
 		
 		void runSync() {
