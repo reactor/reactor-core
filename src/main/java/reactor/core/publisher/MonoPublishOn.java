@@ -16,11 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.*;
 
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -78,13 +80,26 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
         @Override
         public void onNext(T t) {
             value = t;
-            schedule();
+            try {
+              schedule();
+            }
+            catch (RejectedExecutionException ree) {
+              Operators.onOperatorError(s, ree, t);
+              throw Exceptions.bubble(ree);
+            }
         }
         
         @Override
         public void onError(Throwable t) {
             error = t;
-            schedule();
+            try {
+              schedule();
+            }
+            catch (RejectedExecutionException ree){
+                ree.addSuppressed(t);
+                Operators.onOperatorError(s, ree, null);
+                throw Exceptions.bubble(ree);
+            }
         }
         
         @Override
