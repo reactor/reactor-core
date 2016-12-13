@@ -30,11 +30,10 @@ import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.publisher.FluxSink.OverflowStrategy;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
- * buffer to a choosen size. If the buffer overflows, apply a pre-determined
+ * buffer to a chosen size. If the buffer overflows, apply a pre-determined
  * overflow strategy.
 
  * @author Stephane Maldini
@@ -42,19 +41,16 @@ import reactor.core.publisher.FluxSink.OverflowStrategy;
  */
 final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
-	final Consumer<? super O> onBufferOverflow;
-	final int                 bufferSize;
-	final boolean             delayError;
-	final OverflowStrategy    bufferOverflowStrategy;
+	final Consumer<? super O>    onBufferOverflow;
+	final int                    bufferSize;
+	final boolean                delayError;
+	final BufferOverflowStrategy bufferOverflowStrategy;
 
 	public FluxOnBackpressureBufferStrategy(Publisher<? extends O> source,
 			int bufferSize,
 			Consumer<? super O> onBufferOverflow,
-			OverflowStrategy bufferOverflowStrategy) {
+			BufferOverflowStrategy bufferOverflowStrategy) {
 		super(source);
-		if (bufferOverflowStrategy == OverflowStrategy.BUFFER) {
-			throw new IllegalArgumentException("Unexpected BUFFER strategy, this should be delegated to FluxOnBackpressureBuffer");
-		}
 		this.bufferSize = bufferSize;
 		this.onBufferOverflow = onBufferOverflow;
 		this.bufferOverflowStrategy = bufferOverflowStrategy;
@@ -77,12 +73,12 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 			implements Subscriber<T>, Subscription, Trackable, Producer,
 			           Receiver {
 
-		final Subscriber<? super T> actual;
-		final int                   bufferSize;
-		final Deque<T>              queue;
-		final Consumer<? super T>   onOverflow;
-		final boolean               delayError;
-		final OverflowStrategy      overflowStrategy;
+		final Subscriber<? super T>  actual;
+		final int                    bufferSize;
+		final Deque<T>               queue;
+		final Consumer<? super T>    onOverflow;
+		final boolean                delayError;
+		final BufferOverflowStrategy overflowStrategy;
 
 		Subscription s;
 
@@ -105,7 +101,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				int bufferSize,
 				boolean delayError,
 				Consumer<? super T> onOverflow,
-				OverflowStrategy overflowStrategy) {
+				BufferOverflowStrategy overflowStrategy) {
 			this.actual = actual;
 			this.delayError = delayError;
 			this.onOverflow = onOverflow;
@@ -138,14 +134,13 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				if (dq.size() == bufferSize) {
 					callOnOverflow = true;
 					switch (overflowStrategy) {
-						case LATEST:
+						case DROP_OLDEST:
 							overflowElement = dq.pollFirst();
 							dq.offer(t);
 							break;
-						case DROP:
+						case DROP_LATEST:
 							//do nothing
 							break;
-						case IGNORE:
 						case ERROR:
 						default:
 							callOnError = true;
