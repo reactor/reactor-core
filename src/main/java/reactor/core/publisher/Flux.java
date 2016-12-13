@@ -3073,13 +3073,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Signal
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
-		//TODO use a flyweight pattern for the onNext signals (re-use the same instance)?
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
-		return doOnSignal(this,
+		return doOnSignalStateful(this,
+				MutableNextSignal::<T>undefined,
 				null,
-				t -> signalConsumer.accept(Signal.next(t)),
-				e -> signalConsumer.accept(Signal.<T>error(e)),
-				() -> signalConsumer.accept(Signal.<T>complete()),
+				(v, s) -> signalConsumer.accept(s.mutate(v)),
+				(e, s) -> signalConsumer.accept(Signal.<T>error(e)),
+				s -> signalConsumer.accept(Signal.<T>complete()),
 				null, null, null);
 	}
 
@@ -6781,6 +6781,31 @@ public abstract class Flux<T> implements Publisher<T> {
 					onCancel));
 		}
 		return onAssembly(new FluxPeek<>(source,
+				onSubscribe,
+				onNext,
+				onError,
+				onComplete,
+				onAfterTerminate,
+				onRequest,
+				onCancel));
+	}
+
+	/**
+	 * Peek into a sequence signals while passing around a per-subscriber
+	 * state object initialized by {@code stateSeeder} to the various callbacks
+	 */
+	static <T,S> Flux<T> doOnSignalStateful(Publisher<T> source,
+			Supplier<S> stateSeeder,
+			BiConsumer<? super Subscription, S> onSubscribe,
+			BiConsumer<? super T, S> onNext,
+			BiConsumer<? super Throwable, S> onError,
+			Consumer<S> onComplete,
+			Consumer<S> onAfterTerminate,
+			BiConsumer<Long, S> onRequest,
+			Consumer<S> onCancel) {
+		//TODO Fuseable version?
+		return onAssembly(new FluxPeekStateful<>(source,
+				stateSeeder,
 				onSubscribe,
 				onNext,
 				onError,
