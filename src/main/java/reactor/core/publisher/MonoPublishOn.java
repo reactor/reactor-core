@@ -89,7 +89,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 			value = t;
 			if(schedule() == Scheduler.REJECTED){
 				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable")));
+						new RejectedExecutionException("Scheduler unavailable"), t));
 			}
 		}
 
