@@ -16,12 +16,14 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -128,7 +130,11 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Cancellation f = scheduler.schedule(this);
-					if (!FUTURE.compareAndSet(this, null, f)) {
+					if (f == Scheduler.REJECTED) {
+						throw Exceptions.bubble(new RejectedExecutionException(
+								"Scheduler unavailable"));
+					}
+					else if (!FUTURE.compareAndSet(this, null, f)) {
 						if (future != FINISHED && future != CANCELLED) {
 							f.dispose();
 						}

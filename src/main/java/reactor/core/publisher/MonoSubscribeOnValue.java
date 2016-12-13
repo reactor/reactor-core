@@ -16,10 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.reactivestreams.Subscriber;
 
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.publisher.FluxSubscribeOnValue.*;
 import reactor.core.scheduler.Scheduler;
 
@@ -47,7 +49,13 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
-			parent.setFuture(f);
+			if (f == Scheduler.REJECTED) {
+				throw Exceptions.bubble(new RejectedExecutionException(
+						"Scheduler unavailable"));
+			}
+			else {
+				parent.setFuture(f);
+			}
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}

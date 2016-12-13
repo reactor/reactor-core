@@ -16,19 +16,24 @@
 
 package reactor.core.publisher;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.Exceptions;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertThat;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
@@ -83,8 +88,8 @@ public class MonoPublishOnTest {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			assertThat(throwableInOnOperatorError.get(),
+					instanceOf(RejectedExecutionException.class));
 			Assert.assertSame(dataInOnOperatorError.get(), data);
 		}
 		finally {
@@ -139,8 +144,8 @@ public class MonoPublishOnTest {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			assertThat(throwableInOnOperatorError.get(),
+					instanceOf(RejectedExecutionException.class));
 			Assert.assertSame(throwableInOnOperatorError.get()
 			                                            .getSuppressed()[0], exception);
 		}
@@ -194,8 +199,8 @@ public class MonoPublishOnTest {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			assertThat(throwableInOnOperatorError.get(),
+					instanceOf(RejectedExecutionException.class));
 			Assert.assertSame(dataInOnOperatorError.get(), data);
 		}
 		finally {
@@ -250,13 +255,87 @@ public class MonoPublishOnTest {
 
 			hookLatch.await();
 
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
+			assertThat(throwableInOnOperatorError.get(),
+					instanceOf(RejectedExecutionException.class));
 			Assert.assertSame(throwableInOnOperatorError.get()
 			                                            .getSuppressed()[0], exception);
 		}
 		finally {
 			Hooks.resetOnOperatorError();
+		}
+	}
+
+	@Test
+	public void rejectedExecutionSubsribeExecutorScheduler() {
+		CountDownLatch latch = new CountDownLatch(1);
+		ExecutorService executor = new ThreadPoolExecutor(1,
+				1,
+				0L,
+				MILLISECONDS,
+				new SynchronousQueue(),
+				new AbortPolicy());
+
+		try {
+			executor.submit(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			});
+
+			try {
+				Mono.just(1)
+				    .publishOn(fromExecutor(executor))
+				    .block();
+				Assert.fail("Bubbling RejectedExecutionException expected");
+			}
+			catch (Exception e) {
+				assertThat(Exceptions.unwrap(e), instanceOf(RejectedExecutionException.class));
+			}
+		}
+		finally {
+			latch.countDown();
+			executor.shutdownNow();
+		}
+
+		executor.shutdownNow();
+	}
+
+	@Test
+	public void rejectedExecutionSubsribeExecutorServiceScheduler() {
+		CountDownLatch latch = new CountDownLatch(1);
+		ExecutorService executor = new ThreadPoolExecutor(1,
+				1,
+				0L,
+				MILLISECONDS,
+				new SynchronousQueue(),
+				new AbortPolicy());
+
+		try {
+			executor.submit(() -> {
+				try {
+					latch.await();
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			});
+
+			try {
+				Mono.just(1)
+				    .publishOn(fromExecutor(executor))
+				    .block();
+				Assert.fail("Bubbling RejectedExecutionException expected");
+			}
+			catch (Exception e) {
+				assertThat(Exceptions.unwrap(e), instanceOf(RejectedExecutionException.class));
+			}
+		}
+		finally {
+			latch.countDown();
+			executor.shutdownNow();
 		}
 	}
 
