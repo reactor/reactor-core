@@ -26,9 +26,6 @@ import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 
-import static reactor.core.publisher.SignalPeekStateful.afterCompleteWithFailure;
-import static reactor.core.publisher.SignalPeekStateful.afterErrorWithFailure;
-
 /**
  * Peek into the lifecycle events and signals of a sequence, passing around
  * a per-subscription state object initialized by a {@link Supplier} {@code stateSeeder}.
@@ -202,7 +199,10 @@ final class FluxPeekStateful<T, S> extends FluxSource<T, T> implements SignalPee
 					parent.onAfterTerminateCall().accept(state);
 				}
 				catch (Throwable e) {
-					afterErrorWithFailure(parent, e, t, state);
+					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
+					Exceptions.throwIfFatal(e);
+					Throwable _e = Operators.onOperatorError(null, e, t);
+					Operators.onErrorDropped(_e);
 				}
 			}
 		}
@@ -230,7 +230,10 @@ final class FluxPeekStateful<T, S> extends FluxSource<T, T> implements SignalPee
 					parent.onAfterTerminateCall().accept(state);
 				}
 				catch (Throwable e) {
-					afterCompleteWithFailure(parent, e, state);
+					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
+					Exceptions.throwIfFatal(e);
+					Throwable _e = Operators.onOperatorError(e);
+					Operators.onErrorDropped(_e);
 				}
 			}
 		}
