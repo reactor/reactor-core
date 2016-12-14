@@ -27,14 +27,14 @@ public class FluxPublishOnLoop {
 
 	@Test
 	public void prefetchAmountOnlyLoop() {
-		for (int i = 0; i < 100000; i++) {
+		for (int i = 0; i < 1000; i++) {
 			publishOnTest.prefetchAmountOnly();
 		}
 	}
 
 	@Test
 	public void diamondLoop() {
-		for (int i = 0; i < 100000; i++) {
+		for (int i = 0; i < 1000; i++) {
 			publishOnTest.diamond();
 		}
 	}

@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxIntervalTest {
@@ -76,22 +77,21 @@ public class FluxIntervalTest {
 		}
 	}
 
-	@Test
-	public void flatMap() throws Exception {
-		AssertSubscriber<Object> ts = AssertSubscriber.create();
-
-		Flux.intervalMillis(3000, exec)
+	Flux<Integer> flatMapScenario() {
+		return Flux.interval(Duration.ofSeconds(3))
 		    .flatMap(v -> Flux.fromIterable(Arrays.asList("A"))
 		                      .flatMap(w -> Mono.fromCallable(() -> Arrays.asList(1, 2))
-		                                        .subscribeOn(exec)
-		                                        .flatMap(Flux::fromIterable)))
-		    .subscribe(ts);
+		                                        .subscribeOn(Schedulers.timer())
+		                                        .flatMap(Flux::fromIterable))).log();
+	}
 
-		Thread.sleep(5000);
-
-		ts.cancel();
-
-		ts.assertNoError();
-		ts.assertNotComplete();
+	@Test
+	public void flatMap() throws Exception {
+		StepVerifier.withVirtualTime(this::flatMapScenario)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNext(1)
+		            .expectNext(2)
+		            .thenCancel()
+		            .verify();
 	}
 }
