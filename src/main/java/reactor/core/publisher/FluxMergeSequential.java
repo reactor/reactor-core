@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -42,17 +43,28 @@ import reactor.util.concurrent.QueueSupplier;
  */
 final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
+	final ErrorMode errorMode;
+
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
 	final int maxConcurrency;
 
 	final int prefetch;
 
-	final ErrorMode errorMode;
+	final Supplier<Queue<MergeSequentialInner<R>>> queueSupplier;
 
 	public FluxMergeSequential(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode) {
+		this(source, mapper, maxConcurrency, prefetch, errorMode,
+				QueueSupplier.get(Math.max(prefetch, maxConcurrency)));
+	}
+
+	//for testing purpose
+	FluxMergeSequential(Publisher<? extends T> source,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			int maxConcurrency, int prefetch, ErrorMode errorMode,
+			Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
 		super(source);
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
@@ -64,6 +76,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		this.maxConcurrency = maxConcurrency;
 		this.prefetch = prefetch;
 		this.errorMode = errorMode;
+		this.queueSupplier = queueSupplier;
 	}
 
 	@Override
@@ -76,7 +89,8 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 				mapper,
 				maxConcurrency,
 				prefetch,
-				errorMode);
+				errorMode,
+				queueSupplier);
 		source.subscribe(parent);
 	}
 
@@ -128,18 +142,16 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		static final AtomicLongFieldUpdater<MergeSequentialMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(MergeSequentialMain.class, "requested");
 
-		public MergeSequentialMain(Subscriber<? super R> actual,
+		MergeSequentialMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				int maxConcurrency, int prefetch, ErrorMode errorMode) {
-
+				int maxConcurrency, int prefetch, ErrorMode errorMode,
+				Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.maxConcurrency = maxConcurrency;
 			this.prefetch = prefetch;
 			this.errorMode = errorMode;
-			this.subscribers = QueueSupplier.<MergeSequentialInner<R>>get(Math.min(
-					prefetch,
-					maxConcurrency)).get();
+			this.subscribers = queueSupplier.get();
 		}
 
 		@Override
@@ -172,7 +184,17 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			subscribers.offer(inner);
+			if (!subscribers.offer(inner)) {
+				int badSize = subscribers.size();
+				inner.cancel();
+				drainAndCancel();
+				onError(Operators.onOperatorError(s,
+						new IllegalStateException("Too many subscribers for " +
+								"fluxMergeSequential on item: " + t +
+								"; subscribers: " + badSize),
+						t));
+				return;
+			}
 
 			if (cancelled) {
 				return;

@@ -1055,8 +1055,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
-	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
-	 * their emitted values are merged into the final sequence in subscription order.
+	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
+	 * subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -1072,8 +1073,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
-	 * an ordered merged sequence. The inner publishers are subscribed to eagerly, but
-	 * their emitted values are merged into the final sequence in subscription order.
+	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
+	 * subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -1094,8 +1096,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
-	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
-	 * into the final sequence in subscription order.
+	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+	 * emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -1111,8 +1113,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
-	 * The inner publishers are subscribed to eagerly, but their emitted values are merged
-	 * into the final sequence in subscription order.
+	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+	 * emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -1139,8 +1141,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
-	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
-	 * are merged into the final sequence in subscription order.
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -1156,8 +1158,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
-	 * sequence. The inner publishers are subscribed to eagerly, but their emitted values
-	 * are merged into the final sequence in subscription order.
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mergesequential.png" alt="">
 	 * <p>
@@ -3474,8 +3476,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
-	 * are merged respecting the order of the original sequence.
+	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+	 * flatMap, their emitted elements are merged respecting the order of the original sequence.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
@@ -3494,9 +3496,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
-	 * are merged respecting the order of the original sequence. The concurrency argument
-	 * allows to control how many merged {@link Publisher} can happen in parallel.
+	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+	 * flatMap, their emitted elements are merged respecting the order of the original
+	 * sequence. The concurrency argument allows to control how many merged
+	 * {@link Publisher} can happen in parallel.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
@@ -3515,11 +3518,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
-	 * are merged respecting the order of the original sequence. The concurrency argument
-	 * allows to control how many merged {@link Publisher} can happen in parallel.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the merged
-	 * {@link Publisher}.
+	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+	 * flatMap, their emitted elements are merged respecting the order of the original
+	 * sequence. The concurrency argument allows to control how many merged {@link Publisher}
+	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
+	 * size to the merged {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">
@@ -3539,11 +3542,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Transformed inner Publishers are subscribed to eagerly but their emitted elements
-	 * are merged respecting the order of the original sequence. The concurrency argument
-	 * allows to control how many merged {@link Publisher} can happen in parallel.
-	 * The prefetch argument allows to give an arbitrary prefetch size to the merged
-	 * {@link Publisher}.
+	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+	 * flatMap, their emitted elements are merged respecting the order of the original
+	 * sequence. The concurrency argument allows to control how many merged {@link Publisher}
+	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
+	 * size to the merged {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmapsequential.png" alt="">

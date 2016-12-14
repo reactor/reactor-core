@@ -21,15 +21,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -170,12 +176,7 @@ public class FluxMergeSequentialTest {
 	public void longEager() {
 
 		Flux.range(1, 2 * QueueSupplier.SMALL_BUFFER_SIZE)
-		        .flatMapSequential(new Function<Integer, Publisher<Integer>>() {
-			        @Override
-			        public Publisher<Integer> apply(Integer v) {
-				        return Flux.just(1);
-			        }
-		        })
+		        .flatMapSequential(v -> Flux.just(1))
 		        .subscribeWith(AssertSubscriber.create())
 		        .assertValueCount(2 * QueueSupplier.SMALL_BUFFER_SIZE)
 		        .assertNoError()
@@ -499,7 +500,7 @@ public class FluxMergeSequentialTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void MaxConcurrencyAndPrefetch() {
+	public void maxConcurrencyAndPrefetch() {
 		Flux<Integer> source = Flux.just(1);
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -589,6 +590,51 @@ public class FluxMergeSequentialTest {
 		Flux.mergeSequential(Arrays.asList(Flux.just(1), Flux.just(2)))
 		        .subscribeWith(AssertSubscriber.create())
 		        .assertComplete().assertValues(1, 2);
+	}
+
+	@Test
+	public void mergeSequentialLargeUnorderedEach100() {
+		Scheduler scheduler = Schedulers.elastic();
+		AtomicBoolean comparisonFailure = new AtomicBoolean();
+		long count = Flux.range(0, 500)
+		                 .flatMapSequential(i -> {
+			                 //ensure each pack of 100 is delayed in inverse order
+			                 long sleep = 600 - i % 100;
+			                 return Mono.delayMillis(sleep)
+			                            .then(Mono.just(i))
+			                            .subscribeOn(scheduler);
+		                 })
+		                 .zipWith(Flux.range(0, Integer.MAX_VALUE))
+		                 .doOnNext(i -> {
+			                 if (!Objects.equals(i.getT1(), i.getT2())) {
+//				                 System.out.println(i);
+				                 comparisonFailure.set(true);
+			                 }
+		                 })
+		                 .count().block();
+
+		assertEquals(500L, count);
+		assertFalse(comparisonFailure.get());
+	}
+
+	@Test
+	public void mergeSequentialLargeBadQueueSize() {
+		int prefetch = 32;
+		int maxConcurrency = 256;
+		Supplier<Queue<FluxMergeSequential.MergeSequentialInner<Integer>>> badQueueSupplier =
+				QueueSupplier.get(Math.min(prefetch, maxConcurrency));
+
+		FluxMergeSequential<Integer, Integer> fluxMergeSequential =
+				new FluxMergeSequential<>(Flux.range(0, 500),
+						Mono::just,
+						maxConcurrency, prefetch, FluxConcatMap.ErrorMode.IMMEDIATE,
+						badQueueSupplier);
+
+		StepVerifier.create(fluxMergeSequential.zipWith(Flux.range(0, Integer.MAX_VALUE)))
+		            .expectErrorMatches(e -> e instanceof IllegalStateException &&
+		                e.getMessage().startsWith("Too many subscribers for fluxMergeSequential on item: ") &&
+		                e.getMessage().endsWith("; subscribers: 32"))
+		            .verify();
 	}
 
 }
