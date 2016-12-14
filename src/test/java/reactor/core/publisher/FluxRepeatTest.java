@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatTest {
@@ -100,6 +101,16 @@ public class FluxRepeatTest {
 		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void twoRepeatNormal() {
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .repeat(2)
+		                        .count())
+		            .expectNext(6L)
+		            .expectComplete()
+		            .verify();
 	}
 
 	@Test

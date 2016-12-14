@@ -16,9 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatWhenTest {
@@ -203,6 +205,50 @@ public class FluxRepeatWhenTest {
 		ts.assertValues(1, 2, 1, 2, 1, 2, 1, 2)
 		  .assertNoError()
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void exponentialRepeat() {
+		StepVerifier.withVirtualTime(this::exponentialRepeatScenario1)
+		            .expectNext(1)
+		            .thenAwait(Duration.ofSeconds(1))
+		            .expectNext(2)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNext(3)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNext(4)
+		            .expectComplete()
+		            .verify();
+	}
+
+	Flux<Integer> exponentialRepeatScenario1() {
+		AtomicInteger i = new AtomicInteger();
+		return Mono.fromCallable(i::incrementAndGet)
+		           .repeatWhen(repeat -> repeat.zipWith(Flux.range(1, 3), (t1, t2) -> t2)
+		                                       .flatMap(time -> Mono.delay(Duration.ofSeconds(
+				                                       time))));
+	}
+
+	@Test
+	public void exponentialRepeat2() {
+		StepVerifier.withVirtualTime(this::exponentialRepeatScenario2)
+		            .thenAwait(Duration.ofSeconds(6))
+		            .expectNext("hey")
+		            .expectComplete()
+		            .verify();
+	}
+
+	Flux<String> exponentialRepeatScenario2() {
+		AtomicInteger i = new AtomicInteger();
+		return Mono.<String>create(s -> {
+			if (i.incrementAndGet() == 4) {
+				s.success("hey");
+			}
+			else {
+				s.success();
+			}
+		}).repeatWhen(repeat -> repeat.zipWith(Flux.range(1, 3), (t1, t2) -> t2)
+		                              .flatMap(time -> Mono.delay(Duration.ofSeconds(time))));
 	}
 
 }

@@ -16,9 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRetryTest {
@@ -100,6 +102,22 @@ public class FluxRetryTest {
 		  .assertComplete()
 		  .assertNoError();
 
+	}
+
+	@Test
+	public void twoRetryNormal() {
+		AtomicInteger i = new AtomicInteger();
+
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .doOnNext(d -> {
+			                        if(i.getAndIncrement() < 2)
+				                        throw new RuntimeException("test");
+		                        })
+		                        .retry(2)
+		                        .count())
+		            .expectNext(3L)
+		            .expectComplete()
+		            .verify();
 	}
 
 	@Test
