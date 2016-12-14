@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.TestEnvironment;
@@ -38,11 +37,6 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 	final ExecutorService executorService = Executors.newCachedThreadPool();
 
 	final Queue<Processor<Long, Long>> processorReferences = new ConcurrentLinkedQueue<>();
-
-	@Test
-	public void simpleTest() throws Exception{
-
-	}
 
 	@Override
 	public void required_spec208_mustBePreparedToReceiveOnNextSignalsAfterHavingCalledSubscriptionCancel()

@@ -26,15 +26,10 @@ import reactor.core.publisher.Flux;
  * @author Stephane Maldini
  */
 @Test
-public class FluxVerification extends PublisherVerification<Long> {
+public class FluxGenerateVerification extends PublisherVerification<Long> {
 
-	public FluxVerification() {
+	public FluxGenerateVerification() {
 		super(new TestEnvironment(500, true), 1000);
-	}
-
-	@org.junit.Test
-	public void simpleTest() {
-
 	}
 
 	@Override

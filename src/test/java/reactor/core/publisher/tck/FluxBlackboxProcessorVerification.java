@@ -19,7 +19,6 @@ package reactor.core.publisher.tck;
 import java.time.Duration;
 import java.util.function.BiFunction;
 
-import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -34,10 +33,9 @@ import reactor.core.scheduler.Schedulers;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class FluxWithSchedulerTests extends AbstractFluxVerification {
+public class FluxBlackboxProcessorVerification extends AbstractFluxVerification {
 
 	static Scheduler sharedGroup;
-
 
 	@Override
 	public Processor<Integer, Integer> createProcessor(int bufferSize) {
@@ -129,31 +127,15 @@ public class FluxWithSchedulerTests extends AbstractFluxVerification {
 	}
 
 
-	@org.junit.BeforeClass
 	@BeforeClass
 	public static void setupGlobal(){
 		System.out.println("test ");
 		sharedGroup = Schedulers.newParallel("fluxion-tck", 2);
 	}
 
-	@org.junit.AfterClass
 	@AfterClass
 	public static void tearDownGlobal(){
 		sharedGroup.shutdown();
-	}
-
-	@Override
-	@Test
-	public void testHotIdentityProcessor() throws InterruptedException {
-		//for(int i =0; i < 1000; i++)
-		super.testHotIdentityProcessor();
-	}
-
-	@Override
-	@Test
-	public void testColdIdentityProcessor() throws InterruptedException {
-		//for (int i = 0; i < 1000; i++)
-		super.testColdIdentityProcessor();
 	}
 
 	@Override

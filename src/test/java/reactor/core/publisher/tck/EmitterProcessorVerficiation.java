@@ -26,13 +26,11 @@ import reactor.core.publisher.FluxProcessor;
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class EmitterProcessorTests extends AbstractProcessorVerification {
+public class EmitterProcessorVerficiation extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		FluxProcessor<Long, Long> p = EmitterProcessor.create(bufferSize);
-
-		return FluxProcessor.wrap(p, p.log("emitter"));
+		return EmitterProcessor.create(bufferSize);
 	}
 
 	@Override
@@ -51,12 +49,5 @@ public class EmitterProcessorTests extends AbstractProcessorVerification {
 		executorService.shutdown();
 		executorService.awaitTermination(1, TimeUnit.SECONDS);
 	}
-	@Override
-	public void optional_spec111_multicast_mustProduceTheSameElementsInTheSameSequenceToAllOfItsSubscribersWhenRequestingOneByOne()
-			throws Throwable {
-		for(int i = 0 ; i < 1000; i++) {
-			System.out.println("NEW "+i);
-			super.optional_spec111_multicast_mustProduceTheSameElementsInTheSameSequenceToAllOfItsSubscribersWhenRequestingOneByOne();
-		}
-	}
+
 }

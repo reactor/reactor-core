@@ -141,8 +141,9 @@ project.tasks.withType(Test).all {
   include '**/*Tests.*'
   include '**/*Test.*'
   include '**/*Spec.*'
-  if(version.contains("RELEASE")){
+  if(!version.contains("SNAPSHOT")){
 	include '**/*Loop.*'
+	include '**/*Verification.*'
   }
   exclude '**/*Abstract*.*'
 }
@@ -193,6 +194,7 @@ configure(rootProject) {
 
   task loops(type: Test) {
 	include '**/*Loop.*'
+	include '**/*Verification.*'
   }
 
   task testNG(type: Test) {

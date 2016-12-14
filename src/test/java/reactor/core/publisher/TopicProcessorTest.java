@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.core.publisher.tck;
+package reactor.core.publisher;
 
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.SkipException;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.TopicProcessor;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.junit.Assert.assertFalse;
@@ -33,59 +29,14 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Stephane Maldini
  */
-@org.testng.annotations.Test
-public class TopicProcessorTests extends AbstractProcessorVerification {
+public class TopicProcessorTest {
 
-	@Override
-	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return TopicProcessor.create("rb-async", bufferSize);
-	}
-
-	@Override
-	public void required_exerciseWhiteboxHappyPath() throws Throwable {
-		super.required_exerciseWhiteboxHappyPath();
-	}
-
-	@Override
-	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
-			throws Throwable {
-		new SkipException("ci");
-	}
-
-	@Test
-	public void testShutdown() {
-		for (int i = 0; i < 1000; i++) {
-			TopicProcessor<?> dispatcher = TopicProcessor.create("rb-test-shutdown", 16);
-			dispatcher.awaitAndShutdown();
-		}
-	}
-
-	@Override
-	public void required_spec317_mustSupportAPendingElementCountUpToLongMaxValue() throws Throwable {
-		super.required_spec317_mustSupportAPendingElementCountUpToLongMaxValue();
-	}
-
-	/*@Test
-	@Ignore
-	public void extra_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
-			throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create();
-		Publisher<String> publisher = Subscriber::onComplete;
-		publisher.subscribe(processor);
-
-		// Waiting till publisher sends Complete into the processor
-		Thread.sleep(1000);
-
-		AssertSubscriber<String> subscriber = AssertSubscriber.generateTimeoutSecs(1);
-		processor.subscribe(subscriber);
-
-		subscriber.assertComplete();
-	}*/
 
 	@Test
 	public void testShutdownSuccessfullAfterAllDataIsRequested() throws InterruptedException {
 		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
-		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
+		Publisher<String>
+				publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
 		AssertSubscriber<String> subscriber = AssertSubscriber.create(0);
@@ -216,4 +167,11 @@ public class TopicProcessorTests extends AbstractProcessorVerification {
 		assertTrue(processor.awaitAndShutdown(400, TimeUnit.MILLISECONDS));
 	}
 
+	@Test
+	public void testShutdown() {
+		for (int i = 0; i < 1000; i++) {
+			TopicProcessor<?> dispatcher = TopicProcessor.create("rb-test-shutdown", 16);
+			dispatcher.awaitAndShutdown();
+		}
+	}
 }

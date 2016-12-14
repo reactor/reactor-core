@@ -16,13 +16,17 @@
 
 package reactor.core.scheduler;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.junit.After;
-import org.junit.Test;
 import org.junit.Assert;
+import org.junit.Test;
 import reactor.core.Exceptions;
 
 public class SchedulersTest {
@@ -150,4 +154,67 @@ public class SchedulersTest {
 		Assert.assertFalse("threadDeath not silenced", handled.get());
 	}
 
+	//private final int             BUFFER_SIZE     = 8;
+	private final AtomicReference<Throwable> exceptionThrown = new AtomicReference<>();
+	private final int                        N               = 17;
+
+	@Test
+	public void testDispatch() throws Exception {
+		Scheduler service = Schedulers.newSingle(r -> {
+			Thread t = new Thread(r, "dispatcher");
+			t.setUncaughtExceptionHandler((t1, e) -> exceptionThrown.set(e));
+			return t;
+		});
+
+		service.shutdown();
+	}
+
+	Scheduler.Worker runTest(final Scheduler.Worker dispatcher)
+			throws InterruptedException {
+		CountDownLatch tasksCountDown = new CountDownLatch(N);
+
+		dispatcher.schedule(() -> {
+			for (int i = 0; i < N; i++) {
+				dispatcher.schedule(tasksCountDown::countDown);
+			}
+		});
+
+		boolean check = tasksCountDown.await(10, TimeUnit.SECONDS);
+		if (exceptionThrown.get() != null) {
+			exceptionThrown.get()
+			               .printStackTrace();
+		}
+		Assert.assertTrue(exceptionThrown.get() == null);
+		Assert.assertTrue(check);
+
+		return dispatcher;
+	}
+
+	@Test
+	public void simpleTest() throws Exception {
+		Scheduler serviceRB = Schedulers.newSingle("rbWork");
+		Scheduler.Worker r = serviceRB.createWorker();
+
+		long start = System.currentTimeMillis();
+		CountDownLatch latch = new CountDownLatch(1);
+		Consumer<String> c =  ev -> {
+			latch.countDown();
+			try {
+				System.out.println("ev: "+ev);
+				Thread.sleep(1000);
+			}
+			catch(InterruptedException ie){
+				throw Exceptions.propagate(ie);
+			}
+		};
+		r.schedule(() -> c.accept("Hello World!"));
+
+		serviceRB.shutdown();
+		Thread.sleep(1200);
+		long end = System.currentTimeMillis();
+
+		Assert.assertTrue("Event missed", latch.getCount() == 0);
+		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
+
+	}
 }

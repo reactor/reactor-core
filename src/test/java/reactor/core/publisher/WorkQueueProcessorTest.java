@@ -16,56 +16,80 @@
 
 package reactor.core.publisher;
 
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
+import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
+import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.TimedScheduler;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static reactor.util.concurrent.WaitStrategy.liteBlocking;
 
 /**
  */
 public class WorkQueueProcessorTest {
 
-	private static class TestWorkQueueSubscriber extends BaseSubscriber<String> {
+	static final Logger logger = Loggers.getLogger(WorkQueueProcessorTest.class);
 
-		private final CountDownLatch latch;
-		private final String         id;
+	static final String e = "Element";
 
-		Throwable error;
+	static final String s = "Synchronizer";
 
-		private TestWorkQueueSubscriber(CountDownLatch latch, String id) {
-			this.latch = latch;
-			this.id = id;
+	public static void submitInCurrentThread(BlockingSink<String> emitter) {
+		Random rand = new Random();
+		for (int i = 0; i < 1000; i++) {
+			long re = emitter.submit(e);
+			logger.debug("Submit element result " + re);
+			LockSupport.parkNanos(2_000_000 + rand.nextInt(200_000) - 100_000);
+			synchronized (s) {
+				long rd = emitter.submit(s);
+				logger.debug("Submit drain result " + rd);
+				timeoutWait(s);
+			}
 		}
+	}
 
-		@Override
-		protected void hookOnSubscribe(Subscription subscription) {
-			request(Long.MAX_VALUE);
+	private static void timeoutWait(Object o) {
+		long t0 = System.currentTimeMillis();
+		try {
+			o.wait(5_000);
 		}
+		catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+		if (System.currentTimeMillis() - t0 > 5_000) {
+			throw new RuntimeException("Timeout!");
+		}
+	}
 
-		@Override
-		protected void hookOnNext(String value) {
-			System.out.println(id + " received: " + value);
-		}
+	@Test
+	public void drainTest() throws Exception {
+		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		sink.onNext(1);
+		sink.onNext(2);
+		sink.onNext(3);
 
-		@Override
-		protected void hookOnError(Throwable throwable) {
-			error = throwable;
-		}
-
-		@Override
-		protected void hookFinally(SignalType type) {
-			System.out.println(id + " finished with: " + type);
-			latch.countDown();
-		}
+		sink.forceShutdown()
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertComplete()
+		    .assertValues(1, 2, 3);
 	}
 
 	/* see https://github.com/reactor/reactor-core/issues/199 */
@@ -126,6 +150,98 @@ public class WorkQueueProcessorTest {
 		catch (InterruptedException e1) {
 			fail(e1.toString());
 		}
+	}
+
+	@Test
+	public void highRate() throws Exception {
+		WorkQueueProcessor<String> queueProcessor =
+				WorkQueueProcessor.share("Processor", 256, liteBlocking());
+		TimedScheduler timer = Schedulers.newTimer("Timer");
+		queueProcessor.bufferMillis(32, 2, timer)
+		              .subscribe(new Subscriber<List<String>>() {
+			              int counter;
+
+			              @Override
+			              public void onComplete() {
+				              System.out.println("Consumed in total: " + counter);
+			              }
+
+			              @Override
+			              public void onError(Throwable t) {
+				              t.printStackTrace();
+			              }
+
+			              @Override
+			              public void onNext(List<String> strings) {
+				              int size = strings.size();
+				              counter += size;
+				              if (strings.contains(s)) {
+					              synchronized (s) {
+						              //logger.debug("Synchronizer!");
+						              s.notifyAll();
+					              }
+				              }
+			              }
+
+			              @Override
+			              public void onSubscribe(Subscription s) {
+				              s.request(Long.MAX_VALUE);
+			              }
+		              });
+		BlockingSink<String> emitter = queueProcessor.connectSink();
+
+		try {
+			submitInCurrentThread(emitter);
+		}
+		finally {
+			logger.debug("Finishing");
+			emitter.finish();
+			timer.shutdown();
+		}
+		TimeUnit.SECONDS.sleep(1);
+	}
+
+	@Test
+	public void simpleTest() throws Exception {
+		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		final WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create("queue");
+
+		int elems = 1_000_000;
+		CountDownLatch latch = new CountDownLatch(elems);
+
+		//List<Integer> list = new CopyOnWriteArrayList<>();
+		AtomicLong count = new AtomicLong();
+		AtomicLong errorCount = new AtomicLong();
+
+		processor.subscribe(d -> {
+			errorCount.incrementAndGet();
+			throw Exceptions.failWithCancel();
+		});
+
+		Flux.from(processor)
+		    .doOnNext(d -> count.incrementAndGet())
+		    .subscribe(d -> {
+			    latch.countDown();
+			    //list.add(d);
+		    });
+
+		sink.subscribe(processor);
+		sink.connect();
+		for (int i = 0; i < elems; i++) {
+
+			sink.onNext(i);
+			if (i % 100 == 0) {
+				processor.subscribe(d -> {
+					errorCount.incrementAndGet();
+					throw Exceptions.failWithCancel();
+				});
+			}
+		}
+
+		latch.await(5, TimeUnit.SECONDS);
+		System.out.println("count " + count + " errors: " + errorCount);
+		sink.onComplete();
+		Assert.assertTrue("Latch is " + latch.getCount(), latch.getCount() <= 1);
 	}
 
 	/* see https://github.com/reactor/reactor-core/issues/199 */
@@ -221,6 +337,40 @@ public class WorkQueueProcessorTest {
 		assertEquals("newWorkStealingPool(4)", 4, maxSub6);
 		assertEquals("unconfigurableExecutorService", expectedUnknown, maxSub7);
 		assertEquals("unconfigurableScheduledExecutorService", expectedUnknown, maxSub8);
+	}
+
+	private static class TestWorkQueueSubscriber extends BaseSubscriber<String> {
+
+		private final CountDownLatch latch;
+		private final String         id;
+
+		Throwable error;
+
+		private TestWorkQueueSubscriber(CountDownLatch latch, String id) {
+			this.latch = latch;
+			this.id = id;
+		}
+
+		@Override
+		protected void hookOnSubscribe(Subscription subscription) {
+			request(Long.MAX_VALUE);
+		}
+
+		@Override
+		protected void hookOnNext(String value) {
+			System.out.println(id + " received: " + value);
+		}
+
+		@Override
+		protected void hookOnError(Throwable throwable) {
+			error = throwable;
+		}
+
+		@Override
+		protected void hookFinally(SignalType type) {
+			System.out.println(id + " finished with: " + type);
+			latch.countDown();
+		}
 	}
 
 }
