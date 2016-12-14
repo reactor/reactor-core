@@ -456,20 +456,6 @@ public class FluxPublishOnTest {
 		Assert.assertEquals(1, count.get());
 	}
 
-	@Test
-	public void prefetchAmountOnlyLoop() {
-		for (int i = 0; i < 100000; i++) {
-			prefetchAmountOnly();
-		}
-	}
-
-	@Test
-	public void diamondLoop() {
-		for (int i = 0; i < 100000; i++) {
-			diamond();
-		}
-	}
-
 	public void diamond() {
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
@@ -523,13 +509,6 @@ public class FluxPublishOnTest {
 	}
 
 	@Test
-	public void boundedQueueLoop() {
-		for (int i = 0; i < 1000; i++) {
-			boundedQueue();
-		}
-	}
-
-	@Test
 	public void boundedQueue() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -544,13 +523,6 @@ public class FluxPublishOnTest {
 		  .assertNoError()
 		  .assertComplete();
 
-	}
-
-	@Test
-	public void boundedQueueFilterLoop() {
-		for (int i = 0; i < 1000; i++) {
-			boundedQueueFilter();
-		}
 	}
 
 	@Test
@@ -571,12 +543,6 @@ public class FluxPublishOnTest {
 
 	}
 
-	@Test
-	public void withFlatMapLoop() {
-		for (int i = 0; i < 200; i++) {
-			withFlatMap();
-		}
-	}
 
 	@Test
 	public void withFlatMap() {
@@ -820,13 +786,6 @@ public class FluxPublishOnTest {
 	}
 
 	@Test
-	public void crossRangeMaxHiddenLoop() throws Exception {
-		for (int i = 0; i < 10; i++) {
-			crossRangeMaxHidden();
-		}
-	}
-
-	@Test
 	public void crossRangeMaxHidden() throws Exception {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -845,13 +804,6 @@ public class FluxPublishOnTest {
 		  .assertValueCount(count * 2)
 		  .assertNoError()
 		  .assertComplete();
-	}
-
-	@Test
-	public void crossRangeMaxLoop() {
-		for (int i = 0; i < 50; i++) {
-			crossRangeMax();
-		}
 	}
 
 	@Test
@@ -875,14 +827,7 @@ public class FluxPublishOnTest {
 		  .assertComplete();
 	}
 
-	//	@Test
-	public void crossRangeMaxUnboundedLoop() {
-		for (int i = 0; i < 50; i++) {
-			crossRangeMaxUnbounded();
-		}
-	}
-
-	//	@Test
+	@Test
 	public void crossRangeMaxUnbounded() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 

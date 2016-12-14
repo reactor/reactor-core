@@ -281,13 +281,6 @@ public class FluxGroupByTest {
 	}
 
 	@Test
-	public void twoGroupsLongAsyncMergeLoop() {
-		for (int i = 0; i < 100; i++) {
-			twoGroupsLongAsyncMerge();
-		}
-	}
-
-	@Test
 	public void twoGroupsLongAsyncMerge() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -302,13 +295,6 @@ public class FluxGroupByTest {
 		ts.assertValueCount(1_000_000)
 		  .assertNoError()
 		  .assertComplete();
-	}
-
-	@Test
-	public void twoGroupsLongAsyncMergeHiddenLoop() {
-		for (int i = 0; i < 100; i++) {
-			twoGroupsLongAsyncMergeHidden();
-		}
 	}
 
 	@Test
