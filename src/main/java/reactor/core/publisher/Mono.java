@@ -1074,7 +1074,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Combine the result from this mono and another into a {@link Tuple2}.
+	 * Combine the result from this mono and another into an arbitrary {@code O} object,
+	 * as defined by the provided {@code combinator} function.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
@@ -1083,6 +1084,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param combinator a {@link BiFunction} combinator function when both sources
 	 * complete
 	 * @param <T2> the element type of the other Mono instance
+	 * @param <O> the element type of the combination
 	 *
 	 * @return a new combined Mono
 	 * @see #when
@@ -1099,6 +1101,44 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 
 		return when(this, other, combinator);
+	}
+
+	/**
+	 * Wait for the result from this mono, use it to create a second mono via the
+	 * provided {@param rightGenerator} function and combine both results into a {@link Tuple2}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+	 * <p>
+	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
+	 * @param <T2> the element type of the other Mono instance
+	 *
+	 * @return a new combined Mono
+	 */
+	public final <T2> Mono<Tuple2<T, T2>> and(Function<T, Mono<? extends T2>> rightGenerator) {
+		return and(rightGenerator, Tuples::of);
+	}
+
+	/**
+	 * Wait for the result from this mono, use it to create a second mono via the
+	 * provided {@param rightGenerator} function and combine both results into an arbitrary
+	 * {@code O} object, as defined by the provided {@param combinator} function.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
+	 * <p>
+	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
+	 * @param combinator a {@link BiFunction} combinator function when both sources complete
+	 * @param <T2> the element type of the other Mono instance
+	 * @param <O> the element type of the combination
+	 *
+	 * @return a new combined Mono
+	 */
+	public final <T2, O> Mono<O> and(Function<T, Mono<? extends T2>> rightGenerator,
+			BiFunction<T, T2, O> combinator) {
+		Objects.requireNonNull(rightGenerator, "rightGenerator function is mandatory to get the right-hand side Mono");
+		Objects.requireNonNull(combinator, "combinator function is mandatory to combine results from both Monos");
+		return then(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
 	}
 
 	/**

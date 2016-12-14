@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 
@@ -99,7 +100,34 @@ public class MonoTests {
 		final CountDownLatch successCountDownLatch = new CountDownLatch(1);
 		promise.subscribe(v -> successCountDownLatch.countDown());
 		assertThat("Failed", successCountDownLatch.await(10, TimeUnit.SECONDS));
+	}
 
+	private static Mono<Integer> handle(String t) {
+		return Mono.just(t.length());
+	}
 
+	@Test
+	public void testMonoAndFunction() {
+		StepVerifier.create(Mono.just("source")
+		                        .and(t -> handle(t)))
+		            .expectNextMatches(pair -> pair.getT1().equals("source") && pair.getT2() == 6)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void testMonoAndFunctionEmpty() {
+		StepVerifier.create(
+				Mono.<String>empty().and(t -> handle(t)))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void testMonoAndFunctionRightSideEmpty() {
+		StepVerifier.create(
+				Mono.just("foo").and(t -> Mono.empty()))
+		            .expectComplete()
+		            .verify();
 	}
 }
