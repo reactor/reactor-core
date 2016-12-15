@@ -72,7 +72,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
-	 * implicitely created.
+	 * implicitly created.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
@@ -84,7 +84,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * Create a new {@link TopicProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitly created.
 	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -97,7 +97,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
-	 * ThreadExecutorPool will be implicitely created.
+	 * ThreadExecutorPool will be implicitly created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
 	 * subscribers ?
 	 * @param <E> Type of processed signals
@@ -141,7 +141,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
-	 * ThreadExecutorPool will be implicitely created and will use the passed name to
+	 * ThreadExecutorPool will be implicitly created and will use the passed name to
 	 * qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -202,7 +202,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
-	 * auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitely created and
+	 * auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitly created and
 	 * will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -220,7 +220,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	/**
 	 * Create a new TopicProcessor using passed backlog size, wait strategy, signal
 	 * supplier. The created processor is not shared and will auto-cancel. <p> A new
-	 * Cached ThreadExecutorPool will be implicitely created and will use the passed name
+	 * Cached ThreadExecutorPool will be implicitly created and will use the passed name
 	 * to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -247,7 +247,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * Create a new TopicProcessor using passed backlog size, wait strategy and
-	 * auto-cancel settings. <p> A new Cached ThreadExecutorPool will be implicitely
+	 * auto-cancel settings. <p> A new Cached ThreadExecutorPool will be implicitly
 	 * created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -318,7 +318,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
-	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created.
+	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitly created.
 	 * @param autoCancel Should this propagate cancellation when unregistered by all
 	 * subscribers ?
 	 * @param <E> Type of processed signals
@@ -366,7 +366,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
-	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitely created
+	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitly created
 	 * and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -435,7 +435,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached
-	 * ThreadExecutorPool will be implicitely created and will use the passed name to
+	 * ThreadExecutorPool will be implicitly created and will use the passed name to
 	 * qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
@@ -455,7 +455,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
-	 * implicitely created and will use the passed name to qualify the created threads.
+	 * implicitly created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -474,7 +474,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
-	 * implicitely created and will use the passed name to qualify the created threads.
+	 * implicitly created and will use the passed name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
@@ -501,7 +501,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * Create a new TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
-	 * ThreadExecutorPool will be implicitely created and will use the passed name to
+	 * ThreadExecutorPool will be implicitly created and will use the passed name to
 	 * qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads

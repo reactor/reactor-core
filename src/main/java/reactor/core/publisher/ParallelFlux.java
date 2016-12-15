@@ -43,7 +43,7 @@ import reactor.util.concurrent.QueueSupplier;
  * Abstract base class for Parallel publishers that take an array of Subscribers.
  * <p>
  * Use {@code from()} to start processing a regular Publisher in 'rails'. Use {@code
- * runOn()} to introduce where each 'rail' shoud run on thread-vise.
+ * runOn()} to introduce where each 'rail' should run on thread-vise.
  * Use {@code sequential()} to merge the sources back into a single {@link Flux} or if
  * you simply want to subscribe to the merged sequence use {@link #subscribe(Subscriber)}.
  *
@@ -68,7 +68,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Take a Publisher and prepare to consume it on parallallism number of 'rails' ,
+	 * Take a Publisher and prepare to consume it on parallelism number of 'rails' ,
 	 * possibly ordered and round-robin fashion.
 	 *
 	 * @param <T> the value type
@@ -85,7 +85,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Take a Publisher and prepare to consume it on parallallism number of 'rails'
+	 * Take a Publisher and prepare to consume it on parallelism number of 'rails'
 	 * and round-robin fashion and use custom prefetch amount and queue
 	 * for dealing with the source Publisher's values.
 	 *
@@ -154,7 +154,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @param <C> the collection type
 	 * @param collectionSupplier the supplier of the collection in each rail
-	 * @param collector the collector, taking the per-rali collection and the current
+	 * @param collector the collector, taking the per-rail collection and the current
 	 * item
 	 *
 	 * @return the new {@link ParallelFlux} instance
@@ -172,7 +172,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @param comparator the comparator to compare elements
 	 *
-	 * @return the new Flux instannce
+	 * @return the new Flux instance
 	 */
 	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
 		return collectSortedList(comparator, 16);
@@ -187,7 +187,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param comparator the comparator to compare elements
 	 * @param capacityHint the expected number of total elements
 	 *
-	 * @return the new Mono instannce
+	 * @return the new Mono instance
 	 */
 	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator,
 			int capacityHint) {
@@ -710,7 +710,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * ParallelFlux's parallelism level is.
 	 * <p>
 	 * No assumptions are made about the Scheduler's parallelism level, if the Scheduler's
-	 * parallelism level is lwer than the ParallelFlux's, some rails may end up on
+	 * parallelism level is lower than the ParallelFlux's, some rails may end up on
 	 * the same thread/worker.
 	 * <p>
 	 * This operator doesn't require the Scheduler to be trampolining as it does its own
@@ -735,7 +735,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * ParallelFlux's parallelism level is.
 	 * <p>
 	 * No assumptions are made about the Scheduler's parallelism level, if the Scheduler's
-	 * parallelism level is lwer than the ParallelFlux's, some rails may end up on
+	 * parallelism level is lower than the ParallelFlux's, some rails may end up on
 	 * the same thread/worker.
 	 * <p>
 	 * This operator doesn't require the Scheduler to be trampolining as it does its own
