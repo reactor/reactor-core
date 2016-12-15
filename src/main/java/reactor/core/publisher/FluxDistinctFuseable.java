@@ -30,7 +30,7 @@ import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
  * filters out duplicates.
  *
  * @param <T> the source value type
- * @param <K> the key extacted from the source value to be used for duplicate testing
+ * @param <K> the key extracted from the source value to be used for duplicate testing
  * @param <C> the collection type whose add() method is used for testing for duplicates
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */

@@ -20,13 +20,12 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Processor;
 import org.testng.annotations.AfterClass;
 import reactor.core.publisher.EmitterProcessor;
-import reactor.core.publisher.FluxProcessor;
 
 /**
  * @author Stephane Maldini
  */
 @org.testng.annotations.Test
-public class EmitterProcessorVerficiation extends AbstractProcessorVerification {
+public class EmitterProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {

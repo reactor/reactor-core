@@ -18,7 +18,7 @@ package reactor.core.scheduler;
 import reactor.core.Cancellation;
 
 /**
- * Provides an abstract asychronous boundary to operators.
+ * Provides an abstract asynchronous boundary to operators.
  */
 public interface Scheduler {
 	/**
