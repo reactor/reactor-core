@@ -46,7 +46,9 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         MonoSubscribeOnSubscriber<T> parent = new MonoSubscribeOnSubscriber<>(s, worker);
         s.onSubscribe(parent);
         
-        worker.schedule(() -> source.subscribe(parent));
+        if (worker.schedule(() -> source.subscribe(parent)) == Scheduler.REJECTED) {
+            throw Operators.onRejectedExecution(parent, null, null);
+        }
     }
     
     static final class MonoSubscribeOnSubscriber<T> implements Subscriber<T>, Subscription {
@@ -76,7 +78,9 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
             } else {
                 long r = REQUESTED.getAndSet(this, 0L);
                 if (r != 0L) {
-                    worker.schedule(() -> requestMore(r));
+                    if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED) {
+                        throw Operators.onRejectedExecution();
+                    }
                 }
             }
         }
@@ -107,6 +111,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         @Override
         public void request(long n) {
             if (Operators.validate(n)) {
+                //Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
                 worker.schedule(() -> requestMore(n));
             }
         }

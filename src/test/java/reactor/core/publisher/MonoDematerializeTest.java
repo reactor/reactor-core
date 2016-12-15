@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -112,8 +113,8 @@ public class MonoDematerializeTest {
 		  .assertNotComplete();
 	}
 
-	//@Test
-	//TODO
+	@Test
+	@Ignore("use virtual time?")
 	public void neverEnding() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 

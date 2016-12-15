@@ -54,6 +54,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
+			if (f == Scheduler.REJECTED) {
+				throw Operators.onRejectedExecution();
+			}
 			parent.setFuture(f);
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
@@ -73,6 +76,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 				ScheduledEmpty parent = new ScheduledEmpty(s);
 				s.onSubscribe(parent);
 				Cancellation f = scheduler.schedule(parent);
+				if (f == Scheduler.REJECTED) {
+					throw Operators.onRejectedExecution();
+				}
 				parent.setFuture(f);
 			}
 			else {
@@ -130,11 +136,8 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Cancellation f = scheduler.schedule(this);
-					if (f == Scheduler.REJECTED) {
-						throw Exceptions.bubble(new RejectedExecutionException(
-								"Scheduler unavailable"));
-					}
-					else if (!FUTURE.compareAndSet(this, null, f)) {
+					//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
+					if (!FUTURE.compareAndSet(this, null, f)) {
 						if (future != FINISHED && future != CANCELLED) {
 							f.dispose();
 						}
@@ -276,7 +279,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public Object connectedInput() {
-			return null; // FIXME value?
+			return null;
 		}
 
 		@Override

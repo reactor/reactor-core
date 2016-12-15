@@ -54,6 +54,9 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 		s.onSubscribe(parent);
 
 		Cancellation f = scheduler.schedule(parent);
+		if (f == Scheduler.REJECTED) {
+			throw Operators.onRejectedExecution();
+		}
 
 		parent.setMainFuture(f);
 	}

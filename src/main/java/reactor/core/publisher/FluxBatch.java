@@ -25,6 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
 
 /**
@@ -165,6 +166,9 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			if (index == 1) {
 				timespanRegistration =
 						timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+				if (timespanRegistration == Scheduler.REJECTED) {
+					throw Operators.onRejectedExecution(this, null, value);
+				}
 				if (first) {
 					firstCallback(value);
 				}

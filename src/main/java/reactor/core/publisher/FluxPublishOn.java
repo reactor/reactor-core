@@ -246,8 +246,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 			if (sourceMode == Fuseable.ASYNC) {
 				if (trySchedule() == Scheduler.REJECTED) {
-					throw Exceptions.bubble(Operators.onOperatorError(this,
-							new RejectedExecutionException("Scheduler unavailable"), t));
+					throw Operators.onRejectedExecution(this, null, t);
 				}
 				return;
 			}
@@ -256,8 +255,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				done = true;
 			}
 			if (trySchedule() == Scheduler.REJECTED) {
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable"), t));
+				throw Operators.onRejectedExecution(this, null, t);
 			}
 		}
 		
@@ -270,10 +268,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			error = t;
 			done = true;
 			if (trySchedule() == Scheduler.REJECTED) {
-				RejectedExecutionException ree =
-						new RejectedExecutionException("Scheduler unavailable");
-				ree.addSuppressed(t);
-				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+				throw Operators.onRejectedExecution(null, t, null);
 			}
 		}
 		
@@ -284,9 +279,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			}
 			done = true;
 			if (trySchedule() == Scheduler.REJECTED) {
-				RejectedExecutionException ree =
-						new RejectedExecutionException("Scheduler unavailable");
-				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+				throw Operators.onRejectedExecution();
 			}
 		}
 		
@@ -294,11 +287,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if (trySchedule() == Scheduler.REJECTED) {
-					RejectedExecutionException ree =
-							new RejectedExecutionException("Scheduler unavailable");
-					throw Exceptions.bubble(Operators.onOperatorError(this, ree));
-				}
+				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
+				trySchedule();
 			}
 		}
 		
@@ -797,8 +787,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
 				if (trySchedule() == Scheduler.REJECTED) {
-					throw Exceptions.bubble(Operators.onOperatorError(this,
-							new RejectedExecutionException("Scheduler unavailable"), t));
+					throw Operators.onRejectedExecution(this, null, t);
 				}
 				return;
 			}
@@ -809,8 +798,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				done = true;
 			}
 			if (trySchedule() == Scheduler.REJECTED) {
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable"), t));
+				throw Operators.onRejectedExecution(this, null, t);
 			}
 		}
 		
@@ -819,10 +807,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			error = t;
 			done = true;
 			if (trySchedule() == Scheduler.REJECTED) {
-				RejectedExecutionException ree =
-						new RejectedExecutionException("Scheduler unavailable");
-				ree.addSuppressed(t);
-				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+				throw Operators.onRejectedExecution(null, t, null);
 			}
 		}
 		
@@ -830,8 +815,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void onComplete() {
 			done = true;
 			if (trySchedule() == Scheduler.REJECTED) {
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable")));
+				throw Operators.onRejectedExecution();
 			}
 		}
 		
@@ -839,10 +823,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if (trySchedule() == Scheduler.REJECTED) {
-					throw Exceptions.bubble(Operators.onOperatorError(this,
-							new RejectedExecutionException("Scheduler unavailable")));
-				}
+				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
+				trySchedule();
 			}
 		}
 		

@@ -165,6 +165,4 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 		coordinator.subscribe(a, n, s);
 	}
 
-	//TODO the ambAdditionalSource optimization from FluxFirstEmitting could also be applied
-
 }

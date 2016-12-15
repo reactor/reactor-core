@@ -56,6 +56,10 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		s.onSubscribe(parent);
 
 		Cancellation f = scheduler.schedule(parent);
+		if (f == Scheduler.REJECTED) {
+			//TODO double check onError with PublishOn
+			throw Operators.onRejectedExecution();
+		}
 
 		parent.setMainFuture(f);
 	}
@@ -247,6 +251,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 					}
 					if (s == NO_REQUEST_HAS_VALUE) {
 						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
+							//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
 							Cancellation f = scheduler.schedule(this::emitValue);
 							setRequestFuture(f);
 						}

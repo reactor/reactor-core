@@ -24,6 +24,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 
+import static reactor.core.scheduler.Scheduler.REJECTED;
+
 final class FluxCancelOn<T> extends FluxSource<T, T> {
 
 	final Scheduler scheduler;
@@ -91,7 +93,10 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				scheduler.schedule(this);
+				if (scheduler.schedule(this) == REJECTED) {
+					//TODO should this really throw onRejectedExecution?
+					throw Operators.onRejectedExecution();
+				}
 			}
 		}
 	}

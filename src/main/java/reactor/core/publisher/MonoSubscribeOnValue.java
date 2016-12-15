@@ -50,8 +50,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
-				throw Exceptions.bubble(new RejectedExecutionException(
-						"Scheduler unavailable"));
+				throw Operators.onRejectedExecution();
 			}
 			else {
 				parent.setFuture(f);
