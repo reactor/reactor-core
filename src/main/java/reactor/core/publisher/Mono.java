@@ -1105,7 +1105,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Wait for the result from this mono, use it to create a second mono via the
-	 * provided {@param rightGenerator} function and combine both results into a {@link Tuple2}.
+	 * provided {@code rightGenerator} function and combine both results into a {@link Tuple2}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">
@@ -1121,8 +1121,8 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Wait for the result from this mono, use it to create a second mono via the
-	 * provided {@param rightGenerator} function and combine both results into an arbitrary
-	 * {@code O} object, as defined by the provided {@param combinator} function.
+	 * provided {@code rightGenerator} function and combine both results into an arbitrary
+	 * {@code O} object, as defined by the provided {@code combinator} function.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/and.png" alt="">

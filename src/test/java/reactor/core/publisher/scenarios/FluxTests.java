@@ -1589,35 +1589,6 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	@Test
-	public void testJvmFatalDoesntShowUpInSchedulerHandler() {
-		AtomicReference<String> failure = new AtomicReference<>(null);
-
-		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
-				" UncaughtExceptionHandler with " + e));
-		Schedulers.onHandleError((t, e) -> failure.set("Fatal JVM error was unexpectedly handled"));
-
-		CountDownLatch latch = new CountDownLatch(1);
-		try {
-			Flux.intervalMillis(100)
-			    .take(1)
-			    .publishOn(Schedulers.parallel())
-			    .doOnTerminate(() -> latch.countDown())
-			    .subscribe(i -> {
-				    throw new ThreadDeath();
-			    });
-			latch.await(1, TimeUnit.SECONDS);
-		} catch (Throwable e) {
-			fail(e.toString());
-		} finally {
-			Thread.setDefaultUncaughtExceptionHandler(null);
-			Schedulers.resetOnHandleError();
-		}
-		if (failure.get() != null) {
-			fail(failure.get());
-		}
-	}
-
-	@Test
 	@Ignore
 	public void splitBugEventuallyHappens() throws Exception {
 		int successCount = 0;

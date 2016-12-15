@@ -29,6 +29,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Exceptions;
 
+import static org.junit.Assert.fail;
+
 public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
@@ -95,7 +97,7 @@ public class SchedulersTest {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
 		Schedulers.Factory ts2 = new TestSchedulers(false);
 		Schedulers.setFactory(ts1);
-		TimedScheduler cachedTimerOld = ((Supplier<TimedScheduler>) Schedulers.timer()).get();
+		TimedScheduler cachedTimerOld = uncache(Schedulers.timer());
 		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
 		Assert.assertNotEquals(cachedTimerOld, standaloneTimer);
@@ -103,7 +105,7 @@ public class SchedulersTest {
 		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
-		TimedScheduler cachedTimerNew = ((Supplier<TimedScheduler>) Schedulers.timer()).get();
+		TimedScheduler cachedTimerNew = uncache(Schedulers.timer());
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotEquals(cachedTimerNew, cachedTimerOld);
@@ -113,6 +115,14 @@ public class SchedulersTest {
 		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
 		Assert.assertNotEquals(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T extends Scheduler> T uncache(T scheduler) {
+		if (scheduler instanceof Supplier) {
+			return ((Supplier<T>) scheduler).get();
+		}
+		throw new IllegalArgumentException("not a cache scheduler, expected Supplier<? extends Scheduler>");
 	}
 
 	@Test
@@ -141,17 +151,32 @@ public class SchedulersTest {
 		Assert.assertTrue("IllegalArgumentException not handled", handled.get());
 	}
 
-	@Test(expected = ThreadDeath.class)
+	@Test
 	public void testUncaughtHookNotCalledWhenThreadDeath() {
 		AtomicBoolean handled = new AtomicBoolean(false);
-		Schedulers.onHandleError((t, e) -> handled.set(true));
+		AtomicReference<String> failure = new AtomicReference<>(null);
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
+				" UncaughtExceptionHandler from " + t.getName() + ": " + e));
+		Schedulers.onHandleError((t, e) -> {
+			handled.set(true);
+			failure.set("Fatal JVM error was unexpectedly handled in " + t.getName() + ": " + e);
+		});
+		ThreadDeath fatal = new ThreadDeath();
 
 		try {
-			Schedulers.handleError(new ThreadDeath());
-		} finally {
+			Schedulers.handleError(fatal);
+			fail("expected fatal ThreadDeath exception");
+		}
+		catch (ThreadDeath e) {
+			Assert.assertSame(e, fatal);
+		}
+		finally {
 			Schedulers.resetOnHandleError();
 		}
 		Assert.assertFalse("threadDeath not silenced", handled.get());
+		if (failure.get() != null) {
+			fail(failure.get());
+		}
 	}
 
 	//private final int             BUFFER_SIZE     = 8;
