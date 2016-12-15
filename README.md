@@ -219,7 +219,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 -------------------------------------
 
 ## Javadoc
-http://projectreactor.io/core/docs/api/
+https://projectreactor.io/docs/core/release/api/
 
 ## Getting started with Flux and Mono
 https://github.com/reactor/lite-rx-api-hands-on

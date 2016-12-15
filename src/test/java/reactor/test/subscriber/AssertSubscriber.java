@@ -319,7 +319,7 @@ public class AssertSubscriber<T>
 				T t2 = expected.next();
 				if (!values.contains(t2)) {
 					throw new AssertionError("The element is not contained in the " +
-							"received resuls" +
+							"received results" +
 							" = " + valueAndClass(t2), null);
 				}
 			}
@@ -955,7 +955,7 @@ public class AssertSubscriber<T>
 	}
 
 	/**
-	 * Setup what fusion mode should be requested from the incomining
+	 * Setup what fusion mode should be requested from the incoming
 	 * Subscription if it happens to be QueueSubscription
 	 * @param requestMode the mode to request, see Fuseable constants
 	 * @return this
