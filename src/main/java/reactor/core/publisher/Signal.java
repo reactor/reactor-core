@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.io.Serializable;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -72,7 +71,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 
 	/**
 	 * @param o is the given object a complete {@link Signal}
-	 * @return true if completition signal
+	 * @return true if completion signal
 	 */
 	public static boolean isComplete(Object o){
 		return o == ON_COMPLETE;
@@ -80,7 +79,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 
 	/**
 	 * @param o is the given object a complete {@link Signal}
-	 * @return true if completition signal
+	 * @return true if completion signal
 	 */
 	public static boolean isError(Object o){
 		return o instanceof Signal && ((Signal)o).getType() == SignalType.ON_ERROR;

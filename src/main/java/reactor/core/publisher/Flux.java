@@ -558,7 +558,8 @@ public abstract class Flux<T> implements Publisher<T> {
      * <code></pre>
      *
 	 * @param <T> the value type
-	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the avilable backpressure modes
+	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
+	 * available backpressure modes
 	 * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
 	 * @return a {@link Flux}
 	 */
@@ -569,7 +570,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Supply a {@link Publisher} everytime subscribe is called on the returned flux. The passed {@link Supplier}
 	 * will be invoked and it's up to the developer to choose to return a new instance of a {@link Publisher} or reuse
-	 * one effecitvely behaving like {@link #from(Publisher)}.
+	 * one effectively behaving like {@link #from(Publisher)}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer.png" alt="">
@@ -1877,7 +1878,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/bufferboundary.png"
 	 * alt="">
 	 *
-	 * @param other the other {@link Publisher}  to subscribe to for emiting and recycling receiving bucket
+	 * @param other the other {@link Publisher}  to subscribe to for emitting and recycling receiving bucket
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 *
@@ -4342,7 +4343,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * Prepare to consume this {@link Flux} on parallelism number of 'rails'
 	 * in round-robin fashion.
 	 *
 	 * <p>
@@ -4357,7 +4358,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare to consume this {@link Flux} on parallallism number of 'rails'
+	 * Prepare to consume this {@link Flux} on parallelism number of 'rails'
 	 * in round-robin fashion and use custom prefetch amount and queue
 	 * for dealing with the source {@link Flux}'s values.
 	 *
@@ -4565,7 +4566,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/repeat.png" alt="">
 	 *
-	 * @return an indefinitively repeated {@link Flux} on onComplete
+	 * @return an indefinitely repeated {@link Flux} on onComplete
 	 */
 	public final Flux<T> repeat() {
 		return repeat(ALWAYS_BOOLEAN_SUPPLIER);

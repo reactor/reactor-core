@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.Cancellation;
 
 /**
- * Provides an abstract, timed asychronous boundary to operators.
+ * Provides an abstract, timed asynchronous boundary to operators.
  */
 public interface TimedScheduler extends Scheduler {
 	
