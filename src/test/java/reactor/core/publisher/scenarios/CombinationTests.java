@@ -125,7 +125,8 @@ public class CombinationTests {
 		Scheduler c = Schedulers.single();
 		for (int i = 0; i < subs; i++) {
 			processor.publishOn(c)
-			         .subscribe(d -> latch.countDown(), null, latch::countDown, 1);
+			         .limitRate(1)
+			         .subscribe(d -> latch.countDown(), null, latch::countDown);
 		}
 
 		BlockingSink<Integer> session = processor.connectSink();

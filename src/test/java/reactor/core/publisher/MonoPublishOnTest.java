@@ -266,13 +266,13 @@ public class MonoPublishOnTest {
 	}
 
 	@Test
-	public void rejectedExecutionSubsribeExecutorScheduler() {
+	public void rejectedExecutionSubscribeExecutorScheduler() {
 		CountDownLatch latch = new CountDownLatch(1);
 		ExecutorService executor = new ThreadPoolExecutor(1,
 				1,
 				0L,
 				MILLISECONDS,
-				new SynchronousQueue(),
+				new SynchronousQueue<>(),
 				new AbortPolicy());
 
 		try {
@@ -310,7 +310,7 @@ public class MonoPublishOnTest {
 				1,
 				0L,
 				MILLISECONDS,
-				new SynchronousQueue(),
+				new SynchronousQueue<>(),
 				new AbortPolicy());
 
 		try {

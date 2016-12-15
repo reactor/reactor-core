@@ -203,6 +203,15 @@ configure(rootProject) {
 
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
+  test {
+	  testLogging {
+		events  "passed", "failed"
+		showExceptions true
+		exceptionFormat "full"
+		maxGranularity 3
+	}
+  }
+
   if (!JavaVersion.current().isJava9Compatible()) {
 	test {
 	  jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
