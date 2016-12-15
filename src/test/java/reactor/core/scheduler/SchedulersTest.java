@@ -17,6 +17,9 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,8 +29,11 @@ import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
 
 import static org.junit.Assert.fail;
 
@@ -176,6 +182,52 @@ public class SchedulersTest {
 		Assert.assertFalse("threadDeath not silenced", handled.get());
 		if (failure.get() != null) {
 			fail(failure.get());
+		}
+	}
+
+	@Test
+	public void testRejectingSingleScheduler() {
+		assertRejectingScheduler(Schedulers.newSingle("test"));
+	}
+
+	@Test
+	@Ignore
+	public void testRejectingSingleTimedScheduler() {
+		assertRejectingScheduler(Schedulers.newTimer("test"));
+	}
+
+	@Test
+	public void testRejectingParallelScheduler() {
+		assertRejectingScheduler(Schedulers.newParallel("test"));
+	}
+
+	@Test
+	public void testRejectingExecutorServiceScheduler() {
+		assertRejectingScheduler(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor()));
+	}
+
+	public void assertRejectingScheduler(Scheduler scheduler) {
+		try {
+			DirectProcessor<String> p = DirectProcessor.create();
+
+			p.publishOn(scheduler)
+			 .subscribe();
+
+			scheduler.shutdown();
+
+			p.onNext("reject me");
+			Assert.fail("Should have rejected the execution");
+		}
+		catch (RuntimeException ree) {
+			ree.printStackTrace();
+			Throwable throwable = Exceptions.unwrap(ree);
+			if (throwable instanceof RejectedExecutionException) {
+				return;
+			}
+			fail(throwable + " is not a RejectedExecutionException");
+		}
+		finally {
+			scheduler.shutdown();
 		}
 	}
 
