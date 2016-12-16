@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -1393,5 +1394,92 @@ public class StepVerifierTests {
 	                .verifyComplete())
 	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(4))");
 	}
+
+	@Test
+	public void expectNextErrorIsSuppressed() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
+				                                          .flatMap(r -> { throw new ArrayIndexOutOfBoundsException();}))
+	                .expectNext("foo")
+	                .verifyError())
+				.satisfies(error -> {
+					assertThat(error)
+							.hasMessageStartingWith("expectation \"expectNext(foo)\" failed")
+							.hasMessageContaining("actual: onError(java.lang.ArrayIndexOutOfBoundsException)");
+					assertThat(error.getSuppressed())
+							.hasSize(1)
+							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
+				});
+	}
+
+	@Test
+	public void consumeNextErrorIsSuppressed() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
+				.flatMap(r -> { throw new ArrayIndexOutOfBoundsException();}))
+	                .consumeNextWith(v -> assertThat(v).isNotNull())
+	                .verifyError())
+				.satisfies(error -> {
+					assertThat(error)
+							.hasMessageStartingWith("expectation \"consumeNextWith\" failed")
+							.hasMessageContaining("actual: onError(java.lang.ArrayIndexOutOfBoundsException)");
+					assertThat(error.getSuppressed())
+							.hasSize(1)
+							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
+				});
+	}
+
+	@Test
+	public void expectNextCountErrorIsSuppressed() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
+				.flatMap(r -> { throw new ArrayIndexOutOfBoundsException();}))
+	                .expectNextCount(1)
+	                .verifyError())
+				.satisfies(error -> {
+					assertThat(error)
+							.hasMessageStartingWith("expectation \"expectNextCount\" failed")
+							.hasMessageContaining("signal: onError(java.lang.ArrayIndexOutOfBoundsException)");
+					assertThat(error.getSuppressed())
+							.hasSize(1)
+							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
+				});
+	}
+
+	@Test
+	public void expectNextSequenceErrorIsSuppressed() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo")
+				.flatMap(r -> { throw new ArrayIndexOutOfBoundsException();}))
+	                .expectNextSequence(Arrays.asList("foo"))
+	                .verifyError())
+				.satisfies(error -> {
+					assertThat(error)
+							.hasMessageStartingWith("expectation \"expectNextSequence\" failed")
+							.hasMessageContaining("actual signal: onError(java.lang.ArrayIndexOutOfBoundsException)");
+					assertThat(error.getSuppressed())
+							.hasSize(1)
+							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
+				});
+	}
+
+	@Test
+	public void consumeWhileErrorIsSuppressed() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo", "bar", "foobar")
+		                        .map(r -> { if (r.length() > 3) throw new ArrayIndexOutOfBoundsException(); return r;}))
+	                .thenConsumeWhile(s -> s.length() <= 3) //doesn't fail by itself...
+	                .verifyComplete()) //...so this will fail
+				.satisfies(error -> {
+					assertThat(error)
+							.hasMessageStartingWith("expectation \"expectComplete\" failed")
+							.hasMessageContaining("actual: onError(java.lang.ArrayIndexOutOfBoundsException)");
+					assertThat(error.getSuppressed())
+							.hasSize(1)
+							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
+				});
+	}
+
+
 
 }

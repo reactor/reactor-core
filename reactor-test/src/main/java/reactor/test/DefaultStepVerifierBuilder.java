@@ -997,7 +997,6 @@ final class DefaultStepVerifierBuilder<T>
 						return;
 					}
 				}
-//				System.out.println("passe " + actualSignal + ", produced: " + produced + ", unasserted: " + unasserted);
 
 				event = this.script.peek();
 				if (event == null || !(event instanceof EagerEvent)) {
@@ -1050,6 +1049,10 @@ final class DefaultStepVerifierBuilder<T>
 			Optional<AssertionError> error = signalEvent.test(actualSignal);
 			if (error.isPresent()) {
 				Exceptions.addThrowable(ERRORS, this, error.get());
+				// #55 ensure the onError is added as a suppressed to the AssertionError
+				if(actualSignal.isOnError()) {
+					error.get().addSuppressed(actualSignal.getThrowable());
+				}
 				maybeCancel(actualSignal);
 				this.completeLatch.countDown();
 				return true;
@@ -1086,6 +1089,10 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			else {
 				Exceptions.addThrowable(ERRORS, this, error.get());
+				if(actualSignal.isOnError()) {
+					// #55 ensure the onError is added as a suppressed to the AssertionError
+					error.get().addSuppressed(actualSignal.getThrowable());
+				}
 				maybeCancel(actualSignal);
 				this.completeLatch.countDown();
 				return true;
@@ -1124,6 +1131,10 @@ final class DefaultStepVerifierBuilder<T>
 
 					if (error.isPresent()) {
 						Exceptions.addThrowable(ERRORS, this, error.get());
+						if(actualSignal.isOnError()) {
+							// #55 ensure the onError is added as a suppressed to the AssertionError
+							error.get().addSuppressed(actualSignal.getThrowable());
+						}
 						maybeCancel(actualSignal);
 						this.completeLatch.countDown();
 					}
@@ -1292,10 +1303,8 @@ final class DefaultStepVerifierBuilder<T>
 				return;
 			}
 
-			if (errors.getSuppressed().length == 0){
-				if(errors instanceof AssertionError){
-					throw (AssertionError)errors;
-				}
+			if(errors instanceof AssertionError){
+				throw (AssertionError)errors;
 			}
 
 			List<Throwable> flat = new ArrayList<>();
