@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.core.scheduler.TimedScheduler.TimedWorker;
 
@@ -94,7 +95,7 @@ final class FluxInterval extends Flux<Long> {
 				} else {
 					cancel();
 					
-					s.onError(new IllegalStateException("Could not emit value " + count + " due to lack of requests"));
+					s.onError(Exceptions.failWithRequestOverflow("Could not emit value " + count + " due to lack of requests"));
 				}
 			}
 		}

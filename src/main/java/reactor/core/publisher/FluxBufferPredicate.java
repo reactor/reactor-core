@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Trackable;
 
@@ -296,8 +297,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return requested > 0;
 			}
 			cancel();
-			actual.onError(new IllegalStateException(
-					"Could not emit buffer due to lack of requests"));
+			actual.onError(Exceptions.failWithRequestOverflow("Could not emit buffer due to lack of requests"));
 			return false;
 		}
 

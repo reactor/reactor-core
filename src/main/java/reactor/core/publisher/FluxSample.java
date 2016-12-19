@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
@@ -212,7 +213,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 				m.cancel();
 
-				m.actual.onError(new IllegalStateException("Can't signal value due to lack of requests"));
+				m.actual.onError(Exceptions.failWithRequestOverflow("Can't signal value due to lack of requests"));
 			}
 		}
 

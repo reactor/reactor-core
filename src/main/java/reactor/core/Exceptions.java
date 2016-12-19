@@ -157,6 +157,36 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return an {@link IllegalStateException} indicating that data couldn't be emitted
+	 * due to a lack of request (more data was produced than the requested amount, aka.
+	 * request overflow).
+	 *
+	 * @return an {@link IllegalStateException}
+	 */
+	public static IllegalStateException failWithRequestOverflow() {
+		return new RequestOverflowException("Could not emit value due to lack of requests");
+	}
+
+	/**
+	 * Return an {@link IllegalStateException} indicating that data couldn't be emitted
+	 * due to a lack of request (more data was produced than the requested amount, aka.
+	 * request overflow).
+	 *
+	 * @param message the exception's message
+	 * @return an {@link IllegalStateException}
+	 */
+	public static IllegalStateException failWithRequestOverflow(String message) {
+		return new RequestOverflowException(message);
+	}
+
+	/**
+	 * @return true if the given {@link Throwable} represents an {@link #failWithOverflow() request overflow}.
+	 */
+	public static boolean isRequestOverflow(Throwable t) {
+		return t instanceof RequestOverflowException;
+	}
+
+	/**
 	 * Check if the given error is a bubbled wrapped exception.
 	 *
 	 * @param t the {@link Throwable} error to check
@@ -368,6 +398,13 @@ public abstract class Exceptions {
 	static final class OverflowException extends IllegalStateException {
 
 		OverflowException(String s) {
+			super(s);
+		}
+	}
+
+	static final class RequestOverflowException extends IllegalStateException {
+
+		RequestOverflowException(String s) {
 			super(s);
 		}
 	}
