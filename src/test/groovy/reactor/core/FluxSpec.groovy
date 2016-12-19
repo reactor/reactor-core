@@ -36,18 +36,6 @@ import static reactor.core.publisher.Flux.error
 
 class FluxSpec extends Specification {
 
-	@Shared
-	Scheduler asyncGroup
-
-	void setupSpec() {
-		asyncGroup = Schedulers.newParallel("flux-spec", 4, false)
-	}
-
-	def cleanupSpec() {
-		asyncGroup.shutdown()
-		asyncGroup = null
-	}
-
 	def 'A deferred Flux with an initial value makes that value available immediately'() {
 		given:
 			'a composable with an initial value'
@@ -88,7 +76,7 @@ class FluxSpec extends Specification {
 
 		when:
 			'the error is retrieved after 2 sec'
-		stream.publishOn(asyncGroup).timeout(2, TimeUnit.SECONDS).next().block()
+		stream.publishOn(Schedulers.parallel()).timeout(2, TimeUnit.SECONDS).next().block()
 
 		then:
 			'an error has been thrown'
@@ -197,7 +185,7 @@ class FluxSpec extends Specification {
 	def 'A deferred Flux can be translated into a completable queue'() {
 		given:
 			'a composable with an initial value'
-			def stream = Flux.just('test', 'test2', 'test3').log().publishOn(asyncGroup)
+			def stream = Flux.just('test', 'test2', 'test3').log().publishOn(Schedulers.parallel())
 
 		when:
 			'the flux is retrieved'
@@ -271,7 +259,7 @@ class FluxSpec extends Specification {
 			def last = s
 					.sampleMillis(2000l)
 					.subscribeOn(scheduler)
-					.publishOn(asyncGroup)
+					.publishOn(Schedulers.parallel())
 					.log()
 					.take(1)
 					.next()
@@ -548,7 +536,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			Flux<Integer> mapped = source.
 			log().
-					publishOn(asyncGroup).
+					publishOn(Schedulers.parallel()).
 					flatMap { v -> Flux.just(v * 2) }.
 					doOnError(Throwable) { it.printStackTrace() }
 
@@ -1391,7 +1379,7 @@ class FluxSpec extends Specification {
 			def source = EmitterProcessor.<Integer> create().connect()
 			def promise = MonoProcessor.create()
 
-			source.publishOn(asyncGroup).log("prewindow").window(Duration.ofSeconds(10)).subscribe {
+			source.publishOn(Schedulers.parallel()).log("prewindow").window(Duration.ofSeconds(10)).subscribe {
 				it.log().buffer(2).subscribe { promise.onNext(it) }
 			}
 
@@ -1471,7 +1459,7 @@ class FluxSpec extends Specification {
 			def result = [:]
 			def latch = new CountDownLatch(6)
 
-			def partitionFlux = source.publishOn(asyncGroup).parallel().groups()
+			def partitionFlux = source.publishOn(Schedulers.parallel()).parallel().groups()
 			partitionFlux.subscribe { stream ->
 				stream.cast(SimplePojo).subscribe { pojo ->
 					if (result[pojo.id]) {
@@ -1834,7 +1822,7 @@ class FluxSpec extends Specification {
 			def random = new Random()
 			def source = Flux.create {
 				it.next random.nextInt()
-			}.publishOn(asyncGroup)
+			}.publishOn(Schedulers.parallel())
 
 			def values = []
 
@@ -2165,7 +2153,7 @@ class FluxSpec extends Specification {
 
 	source
 			.log("block")
-			.publishOn(asyncGroup)
+			.publishOn(Schedulers.parallel())
 			.onBackpressureBuffer()
 			.doOnNext { value = it }
 			.log('overflow-block-test')
@@ -2338,17 +2326,17 @@ class FluxSpec extends Specification {
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
 			head
-					.publishOn(asyncGroup)
+					.publishOn(Schedulers.parallel())
 					.take(1000)
 					.parallel(3)
-					.runOn(asyncGroup)
+					.runOn(Schedulers.parallel())
 					.map { it }
 					.collect({[]}, {c, v -> c << v})
-					.subscribe { List<Integer> ints ->
+					.subscribe({ List<Integer> ints ->
 								println ints.size()
 								sum.addAndGet(ints.size())
 								latch.countDown()
-					}
+					}, { e -> println e }, { _it -> println "passe"} )
 		when:
 			'values are accepted into the head'
 			(1..length).each { head.onNext(it) }
@@ -2460,7 +2448,7 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with an initial values'
 			def stream = Flux.range(0, Integer.MAX_VALUE)
-					.publishOn(asyncGroup)
+					.publishOn(Schedulers.parallel())
 
 		when:
 			'take to the first 2 elements'
@@ -2509,7 +2497,7 @@ class FluxSpec extends Specification {
 		given:
 			'a composable with an initial values'
 			def stream = Flux.range(0, 1000)
-					.publishOn(asyncGroup)
+					.publishOn(Schedulers.parallel())
 
 		when:
 			def promise = stream.log("skipTime").skip(Duration.ofSeconds(2)).collectList()
