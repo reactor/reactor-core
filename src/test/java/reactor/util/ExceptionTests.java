@@ -47,28 +47,9 @@ public class ExceptionTests {
 
 	@Test
 	public void allIllegalStateIsntOverflow() {
-		IllegalStateException ise1 = new IllegalStateException("foo");
-		IllegalStateException ise2 = Exceptions.failWithRequestOverflow();
+		IllegalStateException ise = new IllegalStateException("foo");
 
-		assertFalse(Exceptions.isOverflow(ise1));
-		assertFalse(Exceptions.isOverflow(ise2));
+		assertFalse(Exceptions.isOverflow(ise));
 	}
 
-	@Test
-	public void allRequestOverflowIsIllegalState() {
-		IllegalStateException overflow1 = Exceptions.failWithRequestOverflow();
-		IllegalStateException overflow2 = Exceptions.failWithRequestOverflow("foo");
-
-		assertTrue(Exceptions.isRequestOverflow(overflow1));
-		assertTrue(Exceptions.isRequestOverflow(overflow2));
-	}
-
-	@Test
-	public void allIllegalStateIsntRequestOverflow() {
-		IllegalStateException ise1 = new IllegalStateException("foo");
-		IllegalStateException ise2 = Exceptions.failWithOverflow();
-
-		assertFalse(Exceptions.isRequestOverflow(ise1));
-		assertFalse(Exceptions.isRequestOverflow(ise2));
-	}
 }

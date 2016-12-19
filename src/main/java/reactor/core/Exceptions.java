@@ -130,7 +130,8 @@ public abstract class Exceptions {
 
 	/**
 	 * Return an {@link IllegalStateException} indicating the receiver is overrun by
-	 * more signals than expected in case of a bounded queue.
+	 * more signals than expected in case of a bounded queue, or more generally that data
+	 * couldn't be emitted due to a lack of request
 	 *
 	 * @return an {@link IllegalStateException}
 	 */
@@ -140,7 +141,8 @@ public abstract class Exceptions {
 
 	/**
 	 * Return an {@link IllegalStateException} indicating the receiver is overrun by
-	 * more signals than expected in case of a bounded queue.
+	 * more signals than expected in case of a bounded queue or more generally that data
+	 * couldn't be emitted due to a lack of request
 	 *
 	 * @param message the exception's message
 	 * @return an {@link IllegalStateException}
@@ -154,36 +156,6 @@ public abstract class Exceptions {
 	 */
 	public static boolean isOverflow(Throwable t) {
 		return t instanceof OverflowException;
-	}
-
-	/**
-	 * Return an {@link IllegalStateException} indicating that data couldn't be emitted
-	 * due to a lack of request (more data was produced than the requested amount, aka.
-	 * request overflow).
-	 *
-	 * @return an {@link IllegalStateException}
-	 */
-	public static IllegalStateException failWithRequestOverflow() {
-		return new RequestOverflowException("Could not emit value due to lack of requests");
-	}
-
-	/**
-	 * Return an {@link IllegalStateException} indicating that data couldn't be emitted
-	 * due to a lack of request (more data was produced than the requested amount, aka.
-	 * request overflow).
-	 *
-	 * @param message the exception's message
-	 * @return an {@link IllegalStateException}
-	 */
-	public static IllegalStateException failWithRequestOverflow(String message) {
-		return new RequestOverflowException(message);
-	}
-
-	/**
-	 * @return true if the given {@link Throwable} represents an {@link #failWithOverflow() request overflow}.
-	 */
-	public static boolean isRequestOverflow(Throwable t) {
-		return t instanceof RequestOverflowException;
 	}
 
 	/**
@@ -402,10 +374,4 @@ public abstract class Exceptions {
 		}
 	}
 
-	static final class RequestOverflowException extends IllegalStateException {
-
-		RequestOverflowException(String s) {
-			super(s);
-		}
-	}
 }

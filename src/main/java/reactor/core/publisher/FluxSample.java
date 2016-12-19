@@ -213,7 +213,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 				m.cancel();
 
-				m.actual.onError(Exceptions.failWithRequestOverflow("Can't signal value due to lack of requests"));
+				m.actual.onError(Exceptions.failWithOverflow("Can't signal value due to lack of requests"));
 			}
 		}
 

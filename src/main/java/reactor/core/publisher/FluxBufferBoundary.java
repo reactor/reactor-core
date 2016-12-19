@@ -256,7 +256,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			} else {
 				cancel();
 				
-				actual.onError(Exceptions.failWithRequestOverflow("Could not emit buffer due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 
 				return false;
 			}

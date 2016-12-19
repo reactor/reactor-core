@@ -297,7 +297,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				return requested > 0;
 			}
 			cancel();
-			actual.onError(Exceptions.failWithRequestOverflow("Could not emit buffer due to lack of requests"));
+			actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 			return false;
 		}
 

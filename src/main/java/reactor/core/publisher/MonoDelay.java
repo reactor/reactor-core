@@ -93,7 +93,7 @@ final class MonoDelay extends Mono<Long> {
 					s.onError(Operators.onOperatorError(t));
 				}
 			} else {
-				s.onError(Exceptions.failWithRequestOverflow());
+				s.onError(Exceptions.failWithOverflow("Could not emit value due to lack of requests"));
 			}
 		}
 

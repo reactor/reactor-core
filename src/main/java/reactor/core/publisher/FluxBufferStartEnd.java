@@ -285,7 +285,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			}
 			else {
 
-				actual.onError(Exceptions.failWithRequestOverflow("Could not emit buffer due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 
 				return false;
 			}
@@ -434,7 +434,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 							REQUESTED.decrementAndGet(this);
 						}
 					} else {
-						anyError(Exceptions.failWithRequestOverflow("Could not emit buffer due to lack of requests"));
+						anyError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 					}
 				}
 				

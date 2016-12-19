@@ -307,7 +307,7 @@ public final class DirectProcessor<T>
 				return;
 			}
 			parent.remove(this);
-			actual.onError(Exceptions.failWithRequestOverflow("Can't deliver value due to lack of requests"));
+			actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
 		}
 
 		void onError(Throwable e) {

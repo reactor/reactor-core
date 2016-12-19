@@ -95,7 +95,7 @@ final class FluxInterval extends Flux<Long> {
 				} else {
 					cancel();
 					
-					s.onError(Exceptions.failWithRequestOverflow("Could not emit value " + count + " due to lack of requests"));
+					s.onError(Exceptions.failWithOverflow("Could not emit value " + count + " due to lack of requests"));
 				}
 			}
 		}
