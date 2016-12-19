@@ -139,6 +139,17 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return an {@link IllegalStateException} indicating the receiver is overrun by
+	 * more signals than expected in case of a bounded queue.
+	 *
+	 * @param message the exception's message
+	 * @return an {@link IllegalStateException}
+	 */
+	public static IllegalStateException failWithOverflow(String message) {
+		return new OverflowException(message);
+	}
+
+	/**
 	 * @return true if the given {@link Throwable} represents an {@link #failWithOverflow() overflow}.
 	 */
 	public static boolean isOverflow(Throwable t) {

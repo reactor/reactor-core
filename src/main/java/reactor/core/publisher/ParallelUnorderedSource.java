@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -208,7 +209,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 			if (sourceMode == Fuseable.NONE) {
 				if (!queue.offer(t)) {
 					cancel();
-					onError(new IllegalStateException("Queue is full?"));
+					onError(Exceptions.failWithOverflow("Queue is full?"));
 					return;
 				}
 			}

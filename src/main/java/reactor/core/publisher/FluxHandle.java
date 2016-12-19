@@ -188,6 +188,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		@Override
 		public void next(R o) {
 			if(data != null){
+				//TODO is it an Exceptions.failWithOverflow?
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
 			data = Objects.requireNonNull(o, "data");
@@ -379,6 +380,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		@Override
 		public void next(R o) {
 			if(data != null){
+				//TODO is it an Exceptions.failWithOverflow?
 				throw new IllegalStateException("Cannot emit more than one data");
 			}
 			data = Objects.requireNonNull(o, "data");

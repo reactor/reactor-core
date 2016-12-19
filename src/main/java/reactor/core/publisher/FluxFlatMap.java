@@ -443,7 +443,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (!q.offer(v)) {
 						s.cancel();
 
-						Throwable e = new IllegalStateException("Scalar queue full?!");
+						Throwable e = Exceptions.failWithOverflow("Scalar queue full?!");
 
 						if (Exceptions.addThrowable(ERROR, this, e)) {
 							done = true;
@@ -484,7 +484,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (!q.offer(v)) {
 					s.cancel();
 
-					Throwable e = new IllegalStateException("Scalar queue full?!");
+					Throwable e = Exceptions.failWithOverflow("Scalar queue full?!");
 
 					if (Exceptions.addThrowable(ERROR, this, e)) {
 						done = true;
@@ -852,7 +852,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						inner.cancel();
 
 						Throwable e = Operators.onOperatorError(inner,
-								new IllegalStateException("Scalar " + "queue full?!"),
+								Exceptions.failWithOverflow("Scalar queue full?!"),
 								v);
 
 						if (Exceptions.addThrowable(ERROR, this, e)) {
@@ -891,7 +891,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 				if (!q.offer(v)) {
 					Throwable e = Operators.onOperatorError(inner,
-							new IllegalStateException("Scalar queue full?!"),
+							Exceptions.failWithOverflow("Scalar queue full?!"),
 							v);
 
 					if (Exceptions.addThrowable(ERROR, this, e)) {

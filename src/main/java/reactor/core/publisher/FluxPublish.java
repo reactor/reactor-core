@@ -233,7 +233,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 			}
 			
 			if (!queue.offer(t)) {
-				Throwable ex = new IllegalStateException("Queue full?!");
+				Throwable ex = Exceptions.failWithOverflow("Queue full?!");
 				if (!Exceptions.addThrowable(ERROR, this, ex)) {
 					Operators.onErrorDropped(ex);
 					return;

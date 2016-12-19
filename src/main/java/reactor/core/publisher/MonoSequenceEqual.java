@@ -289,7 +289,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		@Override
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
-				onError(new IllegalStateException("Queue full?!"));
+				onError(Exceptions.failWithOverflow("Queue full?!"));
 				return;
 			}
 			parent.drain();
