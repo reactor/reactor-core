@@ -401,7 +401,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 										REQUESTED.decrementAndGet(this);
 									}
 								} else {
-									Exceptions.addThrowable(ERROR, this, new IllegalStateException("Could not emit window due to lack of requests"));
+									Exceptions.addThrowable(ERROR, this, Exceptions.failWithOverflow("Could not emit window due to lack of requests"));
 									continue;
 								}
 								

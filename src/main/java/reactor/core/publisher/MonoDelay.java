@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.TimedScheduler;
 
 /**
@@ -92,7 +93,7 @@ final class MonoDelay extends Mono<Long> {
 					s.onError(Operators.onOperatorError(t));
 				}
 			} else {
-				s.onError(new IllegalStateException("Could not emit value due to lack of requests"));
+				s.onError(Exceptions.failWithOverflow("Could not emit value due to lack of requests"));
 			}
 		}
 

@@ -15,9 +15,11 @@
  */
 package reactor.util;
 
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Exceptions;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Stephane Maldini
@@ -31,6 +33,23 @@ public class ExceptionTests {
 
 		Throwable w = Exceptions.bubble(Exceptions.propagate(t));
 
-		Assert.assertTrue(Exceptions.unwrap(w) == t);
+		assertTrue(Exceptions.unwrap(w) == t);
 	}
+
+	@Test
+	public void allOverflowIsIllegalState() {
+		IllegalStateException overflow1 = Exceptions.failWithOverflow();
+		IllegalStateException overflow2 = Exceptions.failWithOverflow("foo");
+
+		assertTrue(Exceptions.isOverflow(overflow1));
+		assertTrue(Exceptions.isOverflow(overflow2));
+	}
+
+	@Test
+	public void allIllegalStateIsntOverflow() {
+		IllegalStateException ise = new IllegalStateException("foo");
+
+		assertFalse(Exceptions.isOverflow(ise));
+	}
+
 }

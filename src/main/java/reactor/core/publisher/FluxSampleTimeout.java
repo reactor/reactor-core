@@ -267,7 +267,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 							
 							q.clear();
 							
-							Throwable e = new IllegalStateException("Could not emit value due to lack of requests");
+							Throwable e = Exceptions.failWithOverflow("Could not emit value due to lack of requests");
 							Exceptions.addThrowable(ERROR, this, e);
 							e = Exceptions.terminate(ERROR, this);
 							

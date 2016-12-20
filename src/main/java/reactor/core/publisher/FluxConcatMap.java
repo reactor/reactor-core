@@ -221,7 +221,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			} else
 			if (!queue.offer(t)) {
 				s.cancel();
-				onError(new IllegalStateException("Queue full?!"));
+				onError(Exceptions.failWithOverflow("Queue full?!"));
 			} else {
 				drain();
 			}
@@ -535,7 +535,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			} else
 			if (!queue.offer(t)) {
 				s.cancel();
-				onError(new IllegalStateException("Queue full?!"));
+				onError(Exceptions.failWithOverflow("Queue full?!"));
 			} else {
 				drain();
 			}

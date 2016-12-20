@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
@@ -255,7 +256,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			} else {
 				cancel();
 				
-				actual.onError(new IllegalStateException("Could not emit buffer due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 
 				return false;
 			}

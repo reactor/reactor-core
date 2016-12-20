@@ -336,7 +336,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 								cancelMain();
 								boundary.cancel();
 								
-								a.onError(new IllegalStateException("Could not create new window due to lack of requests"));
+								a.onError(Exceptions.failWithOverflow("Could not create new window due to lack of requests"));
 								return;
 							}
 						}
@@ -361,7 +361,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			} else {
 				cancel();
 
-				actual.onError(new IllegalStateException("Could not emit buffer due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
 
 				return false;
 			}

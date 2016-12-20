@@ -349,7 +349,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 							else {
 								Exceptions.addThrowable(ERROR,
 										this,
-										new IllegalStateException("Could not " + "emit value due to lack of requests"));
+										Exceptions.failWithOverflow("Could not " + "emit value due to lack of requests"));
 								q.clear();
 								cancelAll();
 								errorAll(a);
@@ -442,7 +442,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 							else {
 								Exceptions.addThrowable(ERROR,
 										this,
-										new IllegalStateException(("Could not emit " + "value due to lack of requests")));
+										Exceptions.failWithOverflow("Could not emit " + "value due to lack of requests"));
 								q.clear();
 								cancelAll();
 								errorAll(a);

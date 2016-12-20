@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -216,7 +217,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 			if (sourceMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
-							new IllegalStateException("Queue full?!"),
+							Exceptions.failWithOverflow("Queue full?!"),
 							t));
 					return;
 				}

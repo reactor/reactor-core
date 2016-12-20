@@ -129,12 +129,33 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return an {@link IllegalStateException}
+	 * Return an {@link IllegalStateException} indicating the receiver is overrun by
+	 * more signals than expected in case of a bounded queue, or more generally that data
+	 * couldn't be emitted due to a lack of request
 	 *
 	 * @return an {@link IllegalStateException}
 	 */
 	public static IllegalStateException failWithOverflow() {
-		return new IllegalStateException("The receiver is overrun by more signals than " + "expected (bounded queue...)");
+		return new OverflowException("The receiver is overrun by more signals than expected (bounded queue...)");
+	}
+
+	/**
+	 * Return an {@link IllegalStateException} indicating the receiver is overrun by
+	 * more signals than expected in case of a bounded queue or more generally that data
+	 * couldn't be emitted due to a lack of request
+	 *
+	 * @param message the exception's message
+	 * @return an {@link IllegalStateException}
+	 */
+	public static IllegalStateException failWithOverflow(String message) {
+		return new OverflowException(message);
+	}
+
+	/**
+	 * @return true if the given {@link Throwable} represents an {@link #failWithOverflow() overflow}.
+	 */
+	public static boolean isOverflow(Throwable t) {
+		return t instanceof OverflowException;
 	}
 
 	/**
@@ -345,4 +366,12 @@ public abstract class Exceptions {
 		private static final long serialVersionUID = 2491425227432776144L;
 
 	}
+
+	static final class OverflowException extends IllegalStateException {
+
+		OverflowException(String s) {
+			super(s);
+		}
+	}
+
 }

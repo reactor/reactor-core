@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -306,7 +307,7 @@ public final class DirectProcessor<T>
 				return;
 			}
 			parent.remove(this);
-			actual.onError(new IllegalStateException("Can't deliver value due to lack of requests"));
+			actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
 		}
 
 		void onError(Throwable e) {
