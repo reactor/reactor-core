@@ -213,7 +213,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/docs/core/release/api/reactor/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The `reactor-addons` repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
 
