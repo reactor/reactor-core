@@ -38,7 +38,6 @@ A Reactive Streams Publisher with basic flow operators.
 - Static factories on Flux allow for source generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Flux#subscribe()_, _Flux#subscribe()_ or multicasting operations such as _Flux#publish_ and _Flux#publishNext_.
 
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Flux.html)
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Flux.html)
 
 Flux in action :
@@ -58,7 +57,6 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 - Static factories on Mono allow for deterministic *zero or one* sequence generation from arbitrary callbacks types.
 - Instance methods allows operational building, materialized on each _Mono#subscribe()_ or _Mono#get()_ eventually called.
 
-[<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/core/docs/api/reactor/core/publisher/Mono.html)
 [<img src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png" width="500">](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html)
 
 Mono in action :
@@ -81,12 +79,10 @@ Tuple2<Long, Long> nowAndLater =
 
 ## Schedulers
 
-Reactor uses a [Scheduler](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Scheduler.html) as a
 Reactor uses a [Scheduler](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html) as a
 contract for arbitrary task execution. It provides some guarantees required by Reactive
 Streams flows like FIFO execution.
 
-You can use or create efficient [schedulers](http://projectreactor.io/core/docs/api/?reactor/core/scheduler/Schedulers.html)
 You can use or create efficient [schedulers](http://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html)
 to jump thread on the producing flows (subscribeOn) or receiving flows (publishOn):
 
@@ -105,8 +101,6 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 
 ## ParallelFlux
 
-[ParallelFlux](http://projectreactor.io/core/docs/api/?reactor/core/publisher/ParallelFlux
-.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
 [ParallelFlux](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ParallelFlux.html) can starve your CPU's from any sequence whose work can be subdivided in concurrent
  tasks. Turn back into a `Flux` with `ParallelFlux#sequential()`, an unordered join or
  use abitrary merge strategies via 'groups()'.
@@ -150,12 +144,10 @@ Flux.create(emitter -> {
 
 ## Hot Publishing : Processors
 
-The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
 The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
 
 ### Pub-Sub : EmitterProcessor
 
-[A signal broadcaster](http://projectreactor.io/core/docs/api/?reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 [A signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
 ```java
@@ -170,7 +162,6 @@ sink.finish();
 
 ### Pub-Sub Replay : ReplayProcessor
 
-[A caching broadcaster](http://projectreactor.io/core/docs/api/?reactor/core/publisher/ReplayProcessor.html) that will safely handle
 [A caching broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ReplayProcessor.html) that will safely handle
 asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
 
@@ -190,7 +181,6 @@ Note : ReplayProcessor does not explicitly require a call to `connectSink()` sin
 
 ### Async Pub-Sub : TopicProcessor
 
-[An asynchronous signal broadcaster](http://projectreactor.io/core/docs/api/?reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 [An asynchronous signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
 
 ```java
@@ -205,7 +195,6 @@ topic.onComplete();
 
 ### Async Distributed : WorkQueueProcessor
 
-Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](http://projectreactor.io/core/docs/api/?reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
 Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
 
 ```java
@@ -224,13 +213,11 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/core/docs/api/?reactor/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 "Operator Fusion" (flow optimizers), health state observers, [TestSubscriber](http://projectreactor.io/docs/core/release/api/reactor/test/TestSubscriber.html), helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to RxJava1, Java 9 Flow.Publisher and Java 8 CompletableFuture.
 
 -------------------------------------
 
 ## Javadoc
-http://projectreactor.io/core/docs/api/
 https://projectreactor.io/docs/core/release/api/
 
 ## Getting started with Flux and Mono
