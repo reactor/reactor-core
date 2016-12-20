@@ -46,6 +46,7 @@ ext {
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
+  assertJVersion = '3.6.1'
   testAddonVersion = '3.0.4.RELEASE'
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
@@ -188,7 +189,8 @@ configure(rootProject) {
     testCompile "org.codehaus.groovy:groovy:$groovyVersion",
             "org.spockframework:spock-core:$spockVersion",
             "org.hamcrest:hamcrest-library:1.3",
-            "org.testng:testng:6.8.5"
+            "org.testng:testng:6.8.5",
+			"org.assertj:assertj-core:$assertJVersion"
   }
 
   task loops(type: Test) {
