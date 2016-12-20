@@ -38,12 +38,11 @@ import reactor.core.Receiver;
 final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		implements Fuseable {
 
-	final boolean                          isFuseableSource;
 	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
 	final BiConsumer<? super T, Throwable> onTerminateCall;
 	final Consumer<? super T>              onSuccessCall;
 
-	public MonoPeekTerminal(Publisher<? extends T> source,
+	public MonoPeekTerminal(Mono<? extends T> source,
 			Consumer<? super T> onSuccessCall,
 			BiConsumer<? super T, Throwable> onTerminateCall,
 			BiConsumer<? super T, Throwable> onAfterTerminateCall) {
@@ -51,7 +50,6 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		this.onAfterTerminateCall = onAfterTerminateCall;
 		this.onTerminateCall = onTerminateCall;
 		this.onSuccessCall = onSuccessCall;
-		this.isFuseableSource = source instanceof Fuseable;
 	}
 
 	@Override
@@ -74,6 +72,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		final MonoPeekTerminal<T> parent;
 
+		//TODO could go into a common base
 		Subscription s;
 		Fuseable.QueueSubscription<T> queueSubscription;
 
@@ -109,12 +108,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			this.s = s;
-			if (parent.isFuseableSource) {
-				this.queueSubscription = (Fuseable.QueueSubscription<T>) s;
-			}
-			else {
-				this.queueSubscription = null;
-			}
+			this.queueSubscription = Operators.as(s);
 
 			if (actualConditional != null) {
 				actualConditional.onSubscribe(this);
@@ -130,8 +124,19 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				Operators.onNextDropped(t);
 				return;
 			}
+			//implementation note: this operator doesn't expect the source to be anything but a Mono
+			//so it doesn't check that valued has been set before
+
 			valued = true;
-			if (sourceMode == NONE) {
+			if (sourceMode == ASYNC) {
+				if (actualConditional != null) {
+					actualConditional.onNext(null);
+				}
+				else {
+					actual.onNext(null);
+				}
+			}
+			else if (sourceMode == NONE) {
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(t, null);
@@ -168,14 +173,6 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 					}
 				}
 			}
-			else if (sourceMode == ASYNC) {
-				if (actualConditional != null) {
-					actualConditional.onNext(null);
-				}
-				else {
-					actual.onNext(null);
-				}
-			}
 		}
 
 		@Override
@@ -185,7 +182,8 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				return false;
 			}
 			if (actualConditional == null) {
-				onError(Operators.onOperatorError(new IllegalStateException("tryOnNext called without an actualConditional")));
+//				onError(Operators.onOperatorError(new IllegalStateException("tryOnNext called without an actualConditional")));
+				onNext(t);
 				return false;
 			}
 
@@ -246,7 +244,6 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				return;
 			}
 			done = true;
-//			if (sourceMode == NONE && !valued) {
 			if (!valued) {
 				if (parent.onTerminateCall != null) {
 					try {
@@ -275,7 +272,6 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				actual.onComplete();
 			}
 
-//			if (sourceMode == NONE && !valued) {
 			if (!valued && parent.onAfterTerminateCall != null) {
 				try {
 					parent.onAfterTerminateCall.accept(null, null);
@@ -300,10 +296,10 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public T poll() {
 			if (queueSubscription == null) {
-				return null; //TODO would it be best to throw or onError here?
+				throw new IllegalStateException("poll called without a queueSubscription"); //should never happen but this one is defensive
 			}
 			T v = queueSubscription.poll();
-			if (sourceMode == ASYNC && v != null) {
+			if (v != null) {
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(v, null);

@@ -39,15 +39,15 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.hide()
 				.reduce((a, b) -> a + b)
+				.hide()
 				.doOnSuccess(v -> {
 					if (v == null) hasNull.set(true);
 					invoked.increment();
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 	                .expectNext(55)
 	                .expectComplete()
 	                .verify();
@@ -63,16 +63,16 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
+				.reduce((a, b) -> a + b)
 				.hide()
 				.filter(v -> true)
-				.reduce((a, b) -> a + b)
 				.doOnSuccess(v -> {
 					if (v == null) hasNull.set(true);
 					invoked.increment();
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -112,8 +112,8 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.filter(v -> true)
 				.reduce((a, b) -> a + b)
+				.filter(v -> true)
 				.doOnSuccess(v -> {
 					if (v == null) hasNull.set(true);
 					invoked.increment();
@@ -137,8 +137,8 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.hide()
 				.reduce((a, b) -> a + b)
+				.hide()
 				.doOnTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -146,7 +146,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 	                .expectNext(55)
 	                .expectComplete()
 	                .verify();
@@ -164,9 +164,9 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
+				.reduce((a, b) -> a + b)
 				.hide()
 				.filter(v -> true)
-				.reduce((a, b) -> a + b)
 				.doOnTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -174,7 +174,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -218,8 +218,8 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.filter(v -> true)
 				.reduce((a, b) -> a + b)
+				.filter(v -> true)
 				.doOnTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -245,8 +245,8 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.hide()
 				.reduce((a, b) -> a + b)
+				.hide()
 				.doAfterTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -254,7 +254,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 	                .expectNext(55)
 	                .expectComplete()
 	                .verify();
@@ -272,9 +272,9 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
+				.reduce((a, b) -> a + b)
 				.hide()
 				.filter(v -> true)
-				.reduce((a, b) -> a + b)
 				.doAfterTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -282,7 +282,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-//		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
@@ -307,7 +307,7 @@ public class MonoPeekAfterTest {
 					invoked.increment();
 				});
 
-		StepVerifier.create(mono)
+		StepVerifier.create(mono.log())
 		            .expectFusion()
 		            .expectNext(55)
 		            .expectComplete()
@@ -326,8 +326,8 @@ public class MonoPeekAfterTest {
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
-				.filter(v -> true)
 				.reduce((a, b) -> a + b)
+				.filter(v -> true)
 				.doAfterTerminate((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
@@ -551,9 +551,7 @@ public class MonoPeekAfterTest {
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		Mono<Integer> source = Flux
-				.range(1, 10)
-				.reduce((a, b) -> a + b);
+		Mono<Integer> source = MonoSource.wrap(Flux.range(55, 1));
 
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,
@@ -567,7 +565,7 @@ public class MonoPeekAfterTest {
 				});
 
 		StepVerifier.create(mono)
-		            .expectFusion(Fuseable.SYNC)
+		            .expectFusion(Fuseable.SYNC, Fuseable.SYNC) //TODO in 3.0.3 this doesn't work
 		            .expectNext(55)
 		            .expectComplete()
 		            .verify();
