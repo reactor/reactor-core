@@ -263,8 +263,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNoFusionSupport() {
-		requestedFusionMode = NO_FUSION_SUPPORT;
-		return this;
+		return expectFusion(Fuseable.ANY, Fuseable.NONE);
 	}
 
 	@Override
@@ -520,7 +519,6 @@ final class DefaultStepVerifierBuilder<T>
 				}
 				try {
 					Publisher<? extends T> publisher = parent.sourceSupplier.get();
-					precheckVerify(publisher);
 					Instant now = Instant.now();
 
 					DefaultVerifySubscriber<T> newVerifier = new DefaultVerifySubscriber<>(
@@ -572,17 +570,6 @@ final class DefaultStepVerifierBuilder<T>
 					this.expectedFusionMode,
 					this.debugEnabled,
 					vts);
-		}
-
-		void precheckVerify(Publisher<? extends T> publisher) {
-			Objects.requireNonNull(publisher, "publisher");
-			if (requestedFusionMode == NO_FUSION_SUPPORT && publisher instanceof Fuseable){
-				throw new AssertionError("The source publisher supports fusion");
-			}
-			else if (requestedFusionMode >= Fuseable.NONE && !(publisher instanceof
-					Fuseable)) {
-				throw new AssertionError("The source publisher does not support fusion");
-			}
 		}
 	}
 
@@ -787,11 +774,7 @@ final class DefaultStepVerifierBuilder<T>
 
 			if (this.subscription.compareAndSet(null, subscription)) {
 				onExpectation(Signal.subscribe(subscription));
-				if (requestedFusionMode == NO_FUSION_SUPPORT &&
-						subscription instanceof Fuseable.QueueSubscription){
-					setFailure(null, "unexpected fusion support: %s", subscription);
-				}
-				else if (requestedFusionMode >= Fuseable.NONE) {
+				if (requestedFusionMode >= Fuseable.NONE) {
 					startFusion(subscription);
 				}
 				else if (initialRequest != 0L) {
@@ -1251,6 +1234,18 @@ final class DefaultStepVerifierBuilder<T>
 				this.qs = qs;
 
 				int m = qs.requestFusion(requestedFusionMode);
+				if (expectedFusionMode == Fuseable.NONE && m != Fuseable.NONE) {
+					setFailure(null,
+							"expected no fusion; actual: %s",
+							formatFusionMode(m));
+					return;
+				}
+				if (expectedFusionMode != Fuseable.NONE && m == Fuseable.NONE) {
+					setFailure(null,
+							"expected fusion: %s; actual does not support " + "fusion",
+							formatFusionMode(expectedFusionMode));
+					return;
+				}
 				if ((m & expectedFusionMode) != m) {
 					setFailure(null, "expected fusion mode: %s; actual: %s",
 							formatFusionMode(expectedFusionMode),
@@ -1283,11 +1278,15 @@ final class DefaultStepVerifierBuilder<T>
 					s.request(initialRequest);
 				}
 			}
-			else {
-				setFailure(null, "expected fusion-ready source but actual Subscription " +
-								"is " + "not: %s",
+			else if (expectedFusionMode != Fuseable.NONE) {
+				setFailure(null,
+						"expected fuseable source but actual Subscription " + "is " +
+								"not: %s",
 						expectedFusionMode,
 						s);
+			}
+			else if (initialRequest != 0L) {
+				s.request(initialRequest);
 			}
 		}
 
@@ -1690,8 +1689,6 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = newOnSubscribeStep("defaultOnSubscribe");
-
-	static final int NO_FUSION_SUPPORT = Integer.MIN_VALUE;
 
 	static final AtomicReferenceFieldUpdater<DefaultVerifySubscriber, Throwable>
 			ERRORS =

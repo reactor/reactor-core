@@ -665,7 +665,8 @@ public class StepVerifierTests {
 				                      .expectNext("foo")
 				                      .expectComplete()
 				                      .verify())
-				.withMessage("The source publisher does not support fusion");
+				.withMessage("expectation failed (expected fuseable source but actual " +
+						"Subscription is not: 3)");
 	}
 
 	@Test
@@ -684,13 +685,11 @@ public class StepVerifierTests {
 	public void verifyNoFusionError() {
 		Mono<String> flux = Mono.just("foo");
 
-		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> StepVerifier.create(flux)
+		StepVerifier.create(flux.hide())
 		            .expectNoFusionSupport()
 		            .expectNext("foo")
 		            .expectComplete()
-		            .verify())
-				.withMessage("The source publisher supports fusion");
+		            .verify();
 	}
 
 	@Test
