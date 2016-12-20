@@ -1414,10 +1414,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doAfterTerminate(BiConsumer<? super T, Throwable> afterTerminate) {
-		MonoPeek.AfterSuccess<T> afterSuccess = new MonoPeek.AfterSuccess<>(afterTerminate);
-		return doOnSignal(this, null,  afterSuccess, afterSuccess.errorConsumer,
-					null, afterSuccess, null,
-					null);
+		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterTerminate));
 	}
 
 	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
@@ -1482,10 +1479,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
-		return defer(() -> {
-			MonoPeek.OnSuccess<T> _onSuccess = new MonoPeek.OnSuccess<>(onSuccess);
-			return doOnSignal(this, null, _onSuccess, null, _onSuccess, null, null, null);
-		});
+		return onAssembly(new MonoPeekTerminal<>(this, onSuccess, null, null));
 	}
 
 	/**
@@ -1592,11 +1586,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnTerminate(BiConsumer<? super T, Throwable> onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
-		return defer(() -> {
-			MonoPeek.OnTerminate<T> onSuccess = new MonoPeek.OnTerminate<>(onTerminate);
-			Consumer<Throwable> error = e -> onTerminate.accept(null, e);
-			return doOnSignal(this, null, onSuccess, error, onSuccess, null, null, null);
-		});
+		return onAssembly(new MonoPeekTerminal<>(this, null, onTerminate, null));
 	}
 
 	/**
