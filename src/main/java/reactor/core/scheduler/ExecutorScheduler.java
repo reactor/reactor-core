@@ -236,6 +236,11 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
+		public boolean isShutdown() {
+			return terminated;
+		}
+
+		@Override
 		public void delete(ExecutorTrackedRunnable r) {
 			synchronized (this) {
 				if (!terminated) {
@@ -309,6 +314,11 @@ final class ExecutorScheduler implements Scheduler {
 			while ((r = q.poll()) != null && !q.isEmpty()) {
 				r.dispose();
 			}
+		}
+
+		@Override
+		public boolean isShutdown() {
+			return terminated;
 		}
 
 		@Override

@@ -64,6 +64,11 @@ final class ImmediateScheduler implements Scheduler {
         public void shutdown() {
             shutdown = true;
         }
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
     }
 
 }

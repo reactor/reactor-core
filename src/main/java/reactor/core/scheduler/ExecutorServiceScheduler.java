@@ -146,6 +146,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 		}
+
+		@Override
+		public boolean isShutdown() {
+			return terminated;
+		}
 	}
 
 	static final class ScheduledRunnable

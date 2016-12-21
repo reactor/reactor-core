@@ -43,8 +43,6 @@ import reactor.core.scheduler.Scheduler.Worker;
  */
 final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
 
-	private static final Cancellation NULL_CANCELLATION = () -> {};
-
 	final Scheduler scheduler;
 	
 	final boolean delayError;
@@ -278,7 +276,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED) {
+			if (trySchedule() == Scheduler.REJECTED && !worker.isShutdown()) {
 				throw Operators.onRejectedExecution();
 			}
 		}
@@ -309,7 +307,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		Cancellation trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return NULL_CANCELLATION;
+				return null;
 			}
 
 			return worker.schedule(this);
@@ -814,7 +812,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		@Override
 		public void onComplete() {
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED) {
+			if (trySchedule() == Scheduler.REJECTED && !worker.isShutdown()) {
 				throw Operators.onRejectedExecution();
 			}
 		}
@@ -845,7 +843,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		
 		Cancellation trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
-				return NULL_CANCELLATION;
+				return null;
 			}
 
 			return worker.schedule(this);

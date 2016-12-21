@@ -221,6 +221,11 @@ final class SingleTimedScheduler implements TimedScheduler {
                 }
             }
         }
+
+        @Override
+        public boolean isShutdown() {
+            return terminated;
+        }
     }
 
     interface CancelFuture {

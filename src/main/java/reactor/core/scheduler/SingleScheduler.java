@@ -174,6 +174,11 @@ final class SingleScheduler implements Scheduler {
             }
         }
 
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
         void remove(SingleWorkerTask task) {
             if (shutdown) {
                 return;
