@@ -134,6 +134,18 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 			}
 			s.cancel();
+
+			if(!done && parent.onAfterTerminateCall() != null) {
+				try {
+					parent.onAfterTerminateCall().run();
+				}
+				catch (Throwable callbackFailure) {
+					//a failing afterTerminate after a cancel won't attempt to forward to the error callback
+					Exceptions.throwIfFatal(callbackFailure);
+					Throwable e = Operators.onOperatorError(callbackFailure);
+					Operators.onErrorDropped(e);
+				}
+			}
 		}
 
 		@SuppressWarnings("unchecked")
@@ -363,6 +375,18 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 			}
 			s.cancel();
+
+			if(!done && parent.onAfterTerminateCall() != null) {
+				try {
+					parent.onAfterTerminateCall().run();
+				}
+				catch (Throwable callbackFailure) {
+					//a failing afterTerminate after a cancel won't attempt to forward to the error callback
+					Exceptions.throwIfFatal(callbackFailure);
+					Throwable e = Operators.onOperatorError(callbackFailure);
+					Operators.onErrorDropped(e);
+				}
+			}
 		}
 
 		@SuppressWarnings("unchecked")
@@ -648,6 +672,19 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 			}
 			s.cancel();
+
+
+			if(!done && parent.onAfterTerminateCall() != null) {
+				try {
+					parent.onAfterTerminateCall().run();
+				}
+				catch (Throwable callbackFailure) {
+					//a failing afterTerminate after a cancel won't attempt to forward to the error callback
+					Exceptions.throwIfFatal(callbackFailure);
+					Throwable e = Operators.onOperatorError(callbackFailure);
+					Operators.onErrorDropped(e);
+				}
+			}
 		}
 
 		@Override

@@ -20,12 +20,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -583,6 +585,7 @@ public class FluxPeekTest {
 
 	@Test
 	public void should_reduce_to_10_events_conditional() {
+		//TODO this test fails occasionally
 		for (int i = 0; i < 20; i++) {
 			AtomicInteger count = new AtomicInteger();
 			Flux.range(0, 10)
@@ -609,6 +612,60 @@ public class FluxPeekTest {
 			e.printStackTrace();
 		}
 		return "x" + x + "y" + y;
+	}
+
+	@Test
+	public void fluxAfterTerminateComplete() {
+		LongAdder afterTerminateCount = new LongAdder();
+
+		StepVerifier.create(Flux.just("foo", "bar").hide()
+		                        .doAfterTerminate(afterTerminateCount::increment), 1)
+		            .expectNoFusionSupport()
+		            .expectNext("foo")
+		            .then(() -> assertEquals("afterTerminate should not have run",
+				            0, afterTerminateCount.intValue()))
+		            .thenRequest(1)
+		            .expectNext("bar")
+		            .expectComplete()
+		            .verify();
+
+		assertEquals("expected doAfterTerminate to be invoked exactly once on completion",
+				1, afterTerminateCount.intValue());
+	}
+
+	@Test
+	public void fluxAfterTerminateError() {
+		IllegalArgumentException err = new IllegalArgumentException("foo");
+		LongAdder afterTerminateCount = new LongAdder();
+
+		StepVerifier.create(Flux.error(err).hide()
+		                        .doAfterTerminate(afterTerminateCount::increment))
+		            .expectNoFusionSupport()
+		            .expectError(IllegalArgumentException.class)
+		            .verify();
+
+		assertEquals("expected doAfterTerminate to be invoked exactly once on error",
+				1, afterTerminateCount.intValue());
+	}
+
+	@Test
+	public void fluxAfterTerminateCancel() {
+		AtomicBoolean cancelCheck = new AtomicBoolean(false);
+		LongAdder afterTerminateCount = new LongAdder();
+
+		StepVerifier.create(Flux.just(1, 2).hide()
+		                        .doOnCancel(() -> cancelCheck.set(true))
+		                        .doAfterTerminate(afterTerminateCount::increment), 0)
+		            .expectNoFusionSupport()
+		            .thenRequest(1)
+		            .expectNext(1)
+		            .then(() -> assertEquals(0, afterTerminateCount.intValue()))
+		            .thenCancel()
+		            .verify();
+
+		assertEquals("expected doAfterTerminate to be invoked exactly once on cancel",
+				1, afterTerminateCount.longValue());
+		assertTrue("expected tested flux to be cancelled", cancelCheck.get());
 	}
 
 }
