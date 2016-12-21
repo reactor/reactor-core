@@ -958,7 +958,6 @@ final class DefaultStepVerifierBuilder<T>
 					}
 					//possibly re-evaluate the current onNext
 					event = this.script.peek();
-//					System.out.println("passe while" + actualSignal + ", produced: " + produced + ", unasserted: " + unasserted);
 				}
 				if (event instanceof SignalCountEvent) {
 					if (onSignalCount(actualSignal, (SignalCountEvent<T>) event)) {
@@ -1155,13 +1154,7 @@ final class DefaultStepVerifierBuilder<T>
 				if (this.script.peek() instanceof SubscriptionEvent) {
 					subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
 					if (subscriptionEvent instanceof RequestEvent) {
-						RequestEvent<T> requestEvent = (RequestEvent<T>) subscriptionEvent;
-						if (requestEvent.isBounded()) {
-							Operators.addAndGet(REQUESTED, this, requestEvent.getRequestAmount());
-						}
-						else {
-							REQUESTED.set(this, Long.MAX_VALUE);
-						}
+						updateRequested(subscriptionEvent);
 					}
 					if (subscriptionEvent.isTerminal()) {
 						doCancel();
@@ -1194,6 +1187,9 @@ final class DefaultStepVerifierBuilder<T>
 				while ((event = taskEvents.poll()) != null) {
 					try {
 						skip = false;
+						if (event instanceof SubscriptionTaskEvent) {
+							updateRequested(event);
+						}
 						((TaskEvent<T>) event).run(this);
 					}
 					catch (Throwable t) {
@@ -1223,6 +1219,28 @@ final class DefaultStepVerifierBuilder<T>
 						throw new AssertionError("VerifySubscriber timed out on " + upstream());
 					}
 				}
+			}
+		}
+
+		private void updateRequested(Event<?> event) {
+			RequestEvent requestEvent = null;
+			if (event instanceof RequestEvent) requestEvent = (RequestEvent) event;
+			else if (event instanceof SubscriptionTaskEvent) {
+				SubscriptionTaskEvent ste = (SubscriptionTaskEvent) event;
+				if (ste.delegate instanceof RequestEvent) {
+					requestEvent = (RequestEvent) ste.delegate;
+				}
+			}
+
+			if (requestEvent == null) {
+				return;
+			}
+			else if (requestEvent.isBounded()) {
+				Operators.addAndGet(REQUESTED, this, requestEvent.getRequestAmount());
+
+			}
+			else {
+				REQUESTED.set(this, Long.MAX_VALUE);
 			}
 		}
 

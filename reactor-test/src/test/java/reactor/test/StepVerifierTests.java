@@ -18,8 +18,8 @@ package reactor.test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -1477,6 +1477,32 @@ public class StepVerifierTests {
 							.hasSize(1)
 							.allMatch(spr -> spr instanceof ArrayIndexOutOfBoundsException);
 				});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void requestBufferDoesntOverflow() {
+		LongAdder requestCallCount = new LongAdder();
+		LongAdder totalRequest = new LongAdder();
+		Flux<Integer> source = Flux.range(1, 10).hide()
+		                           .doOnRequest(r -> requestCallCount.increment())
+		                           .doOnRequest(totalRequest::add);
+
+		StepVerifier.withVirtualTime(//start with a request for 1 buffer
+				() -> source.bufferUntil(i -> i % 3 == 0), 1)
+		            .expectSubscription()
+		            .expectNext(Arrays.asList(1, 2, 3))
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(2)
+		            .expectNext(Arrays.asList(4, 5, 6), Arrays.asList(7, 8, 9))
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(3)
+		            .expectNext(Collections.singletonList(10))
+		            .expectComplete()
+		            .verify();
+
+		assertThat(requestCallCount.intValue()).isEqualTo(11); //10 elements then the completion
+		assertThat(totalRequest.longValue()).isEqualTo(11L); //ignores the main requests
 	}
 
 
