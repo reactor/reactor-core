@@ -221,6 +221,8 @@ configure(rootProject) {
 
   jar {
     manifest {
+	  attributes 'Implementation-Title': 'reactor-core',
+		'Implementation-Version': version
       instruction 'Import-Package', bundleImportPackages.join(',')
     }
   }
