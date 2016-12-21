@@ -63,6 +63,21 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this));
 	}
 
+	/*
+	The specificity of this operator's subscriber is that it is implemented as a single
+	class for all cases (fuseable or not, conditional or not). So subscription and actual
+	are duplicated to arrange for the special cases (QueueSubscription and ConditionalSubscriber).
+
+	A challenge for Fuseable: classes that rely only on `instanceof Fuseable` will always
+	think this operator is Fuseable, when they should also check `requestFusion`. This is
+	the case with StepVerifier in 3.0.3 for instance, but actual operators should otherwise
+	also call requestFusion, which will return NONE if the source isn't Fuseable.
+
+	A challenge for ConditionalSubscriber: since there is no `requestConditional` here,
+	the operators only rely on `instanceof`... So this subscriber will always seem conditional.
+	As a result, if the `tryOnNext` method is invoked while the `actualConditional` is null,
+	it falls back to calling `onNext` directly.
+	 */
 	static final class MonoTerminalPeekSubscriber<T>
 			implements ConditionalSubscriber<T>, Receiver, Producer,
 			           Fuseable.SynchronousSubscription<T> {
@@ -72,7 +87,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		final MonoPeekTerminal<T> parent;
 
-		//TODO could go into a common base
+		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
 		Subscription s;
 		Fuseable.QueueSubscription<T> queueSubscription;
 
@@ -80,6 +95,15 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		volatile boolean done;
 
+		/* `valued` serves as a guard against re-executing the callbacks in onComplete/onError
+		as soon as onNext has been called. So onNext will set the flag immediately, then
+		onNext/poll will trigger the "valued" version of ALL the callbacks (respectively
+		in NONE mode and SYNC/ASYNC mode). If empty, onCompleted is called without valued
+		being set, so it will execute the "empty" version of ALL callbacks. Same for onError.
+
+		Having this flag also prevents callbacks to be attempted twice in the case of a
+		callback failure, which is forwarded to onError if it happens during onNext...
+		 */
 		boolean valued;
 
 		MonoTerminalPeekSubscriber(ConditionalSubscriber<? super T> actual, MonoPeekTerminal<T> parent) {
@@ -108,7 +132,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			this.s = s;
-			this.queueSubscription = Operators.as(s);
+			this.queueSubscription = Operators.as(s); //will set it to null if not Fuseable
 
 			if (actualConditional != null) {
 				actualConditional.onSubscribe(this);
@@ -182,8 +206,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				return false;
 			}
 			if (actualConditional == null) {
-//				onError(Operators.onOperatorError(new IllegalStateException("tryOnNext called without an actualConditional")));
-				onNext(t);
+				onNext(t); //this is the fallback if the actual isn't actually conditional
 				return false;
 			}
 
@@ -296,10 +319,11 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public T poll() {
 			if (queueSubscription == null) {
-				throw new IllegalStateException("poll called without a queueSubscription"); //should never happen but this one is defensive
+				//should never happen but this one is defensive
+				throw new IllegalStateException("poll called without a queueSubscription");
 			}
 			T v = queueSubscription.poll();
-			if (v != null) {
+			if (v != null) { //poll only called when fusion mode is either SYNC or ASYNC
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(v, null);
@@ -345,7 +369,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;
-			if (queueSubscription == null) {
+			if (queueSubscription == null) { //source wasn't actually Fuseable
 				m = NONE;
 			}
 			else if ((requestedMode & THREAD_BARRIER) != 0) {
