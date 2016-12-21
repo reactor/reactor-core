@@ -437,9 +437,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						T oo;
 
 						long cursor = innerSequence.getAsLong();
+						long max = q.getCursor();
 						while (_r != 0L) {
 							cursor++;
-							if (q.getCursor() >= cursor) {
+							if (max >= cursor) {
 								oo = q.get(cursor).value;
 							}
 							else {
