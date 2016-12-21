@@ -476,6 +476,22 @@ public class Schedulers {
 	}
 
 	/**
+	 * Attempt to safely shutdown a {@link Scheduler}'s {@link ExecutorService}. This
+	 * method will call {@link ExecutorService#awaitTermination(long, TimeUnit)} with
+	 * a fixed grace period of 30 seconds (logging a warn message if the awaitTermination
+	 * couldn't finish).
+	 */
+	static void safeExecutorServiceShutdown(ExecutorService executorService, String type) {
+		executorService.shutdownNow();
+		try {
+			executorService.awaitTermination(30, TimeUnit.SECONDS);
+		}
+		catch (InterruptedException e) {
+			log.warn("{} scheduler in-flight tasks didn't terminate within 30 seconds", type);
+		}
+	}
+
+	/**
 	 * Public factory hook to override Schedulers behavior globally
 	 */
 	public interface Factory {

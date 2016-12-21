@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -565,6 +566,43 @@ public abstract class Operators {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
+	 * operator. That denotes that an execution was rejected by a
+	 * {@link reactor.core.scheduler.Scheduler} due to shutdown.
+	 * <p>
+	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
+	 * {@link #onOperatorError(Subscription, Throwable, Object)}.
+	 *
+	 */
+	public static RuntimeException onRejectedExecution() {
+		return onRejectedExecution(null, null, null);
+	}
+
+	/**
+	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
+	 * operator. That denotes that an execution was rejected by a
+	 * {@link reactor.core.scheduler.Scheduler} due to shutdown.
+	 * <p>
+	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
+	 * {@link #onOperatorError(Subscription, Throwable, Object)} (with the passed
+	 * {@link Subscription}).
+	 *
+	 * @param subscription the subscription to pass to onOperatorError.
+	 * @param suppressed a Throwable to be suppressed by the {@link RejectedExecutionException} (or null if not relevant)
+	 * @param dataSignal a value to be passed to {@link #onOperatorError(Subscription, Throwable, Object)} (or null if not relevant)
+	 */
+	public static RuntimeException onRejectedExecution(Subscription subscription, Throwable suppressed, Object dataSignal) {
+		RejectedExecutionException ree = new RejectedExecutionException("Scheduler unavailable");
+		if (suppressed != null) {
+			ree.addSuppressed(suppressed);
+		}
+		if (dataSignal != null) {
+			return Exceptions.bubble(Operators.onOperatorError(subscription, ree, dataSignal));
+		}
+		return Exceptions.bubble(Operators.onOperatorError(subscription, ree));
 	}
 
 	//

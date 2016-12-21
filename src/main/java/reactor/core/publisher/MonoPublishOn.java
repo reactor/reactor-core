@@ -16,14 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -88,8 +86,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		public void onNext(T t) {
 			value = t;
 			if(schedule() == Scheduler.REJECTED){
-				throw Exceptions.bubble(Operators.onOperatorError(this,
-						new RejectedExecutionException("Scheduler unavailable"), t));
+				throw Operators.onRejectedExecution(this, null, t);
 			}
 		}
 
@@ -97,10 +94,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		public void onError(Throwable t) {
 			error = t;
 			if (schedule() == Scheduler.REJECTED) {
-				RejectedExecutionException ree =
-						new RejectedExecutionException("Scheduler unavailable");
-				ree.addSuppressed(t);
-				throw Exceptions.bubble(Operators.onOperatorError(this, ree));
+				throw Operators.onRejectedExecution(null, t, null);
 			}
 		}
 
@@ -108,8 +102,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		public void onComplete() {
 			if (value == null) {
 				if (schedule() == Scheduler.REJECTED) {
-					throw Exceptions.bubble(Operators.onOperatorError(this,
-							new RejectedExecutionException("Scheduler unavailable")));
+					throw Operators.onRejectedExecution();
 				}
 			}
 		}

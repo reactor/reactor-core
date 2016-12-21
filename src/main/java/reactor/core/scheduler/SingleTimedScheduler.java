@@ -86,7 +86,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     
     @Override
     public void shutdown() {
-        executor.shutdownNow();
+	    Schedulers.safeExecutorServiceShutdown(executor, "SingleTimed");
     }
     
     @Override
@@ -220,6 +220,11 @@ final class SingleTimedScheduler implements TimedScheduler {
                     }
                 }
             }
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return terminated;
         }
     }
 

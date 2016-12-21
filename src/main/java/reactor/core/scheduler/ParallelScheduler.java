@@ -96,7 +96,7 @@ final class ParallelScheduler implements Scheduler {
             }
         }
     }
-    
+
     @Override
     public void shutdown() {
         ExecutorService[] a = executors;
@@ -104,7 +104,7 @@ final class ParallelScheduler implements Scheduler {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
             if (a != SHUTDOWN) {
                 for (ExecutorService exec : a) {
-                    exec.shutdownNow();
+                    Schedulers.safeExecutorServiceShutdown(exec, "Parallel");
                 }
             }
         }
@@ -203,7 +203,12 @@ final class ParallelScheduler implements Scheduler {
                 }
             }
         }
-        
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
         void remove(ParallelWorkerTask task) {
             if (shutdown) {
                 return;

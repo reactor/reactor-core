@@ -34,7 +34,7 @@ import reactor.util.concurrent.OpenHashSet;
 final class SingleScheduler implements Scheduler {
 
     static final AtomicLong COUNTER = new AtomicLong();
-    
+
     final ThreadFactory factory;
 
     volatile ExecutorService executor;
@@ -46,16 +46,16 @@ final class SingleScheduler implements Scheduler {
         TERMINATED = Executors.newSingleThreadExecutor();
         TERMINATED.shutdownNow();
     }
-    
+
     public SingleScheduler(ThreadFactory factory) {
         this.factory = factory;
         init();
     }
-    
+
     private void init() {
         EXECUTORS.lazySet(this, Executors.newSingleThreadExecutor(factory));
     }
-    
+
     public boolean isStarted() {
         return executor != TERMINATED;
     }
@@ -75,24 +75,24 @@ final class SingleScheduler implements Scheduler {
             if (b == null) {
                 b = Executors.newSingleThreadExecutor(factory);
             }
-            
+
             if (EXECUTORS.compareAndSet(this, a, b)) {
                 return;
             }
         }
     }
-    
+
     @Override
     public void shutdown() {
         ExecutorService a = executor;
         if (a != TERMINATED) {
             a = EXECUTORS.getAndSet(this, TERMINATED);
             if (a != TERMINATED) {
-                a.shutdownNow();
+                Schedulers.safeExecutorServiceShutdown(a, "Single");
             }
         }
     }
-    
+
     @Override
     public Cancellation schedule(Runnable task) {
         try {
@@ -107,14 +107,14 @@ final class SingleScheduler implements Scheduler {
     public Worker createWorker() {
         return new SingleWorker(executor);
     }
-    
+
     static final class SingleWorker implements Worker {
         final ExecutorService exec;
-        
+
         OpenHashSet<SingleWorkerTask> tasks;
-        
+
         volatile boolean shutdown;
-        
+
         public SingleWorker(ExecutorService exec) {
             this.exec = exec;
             this.tasks = new OpenHashSet<>();
@@ -125,30 +125,30 @@ final class SingleScheduler implements Scheduler {
             if (shutdown) {
                 return REJECTED;
             }
-            
+
             SingleWorkerTask pw = new SingleWorkerTask(task, this);
-            
+
             synchronized (this) {
                 if (shutdown) {
                     return REJECTED;
                 }
                 tasks.add(pw);
             }
-            
+
             Future<?> f;
             try {
                 f = exec.submit(pw);
             } catch (RejectedExecutionException ex) {
                 return REJECTED;
             }
-            
+
             if (shutdown) {
                 f.cancel(true);
-                return REJECTED; 
+                return REJECTED;
             }
-            
+
             pw.setFuture(f);
-            
+
             return pw;
         }
 
@@ -163,7 +163,7 @@ final class SingleScheduler implements Scheduler {
                 set = tasks;
                 tasks = null;
             }
-            
+
             if (set != null && !set.isEmpty()) {
                 Object[] a = set.keys();
                 for (Object o : a) {
@@ -173,12 +173,17 @@ final class SingleScheduler implements Scheduler {
                 }
             }
         }
-        
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
         void remove(SingleWorkerTask task) {
             if (shutdown) {
                 return;
             }
-            
+
             synchronized (this) {
                 if (shutdown) {
                     return;
@@ -186,12 +191,12 @@ final class SingleScheduler implements Scheduler {
                 tasks.remove(task);
             }
         }
-        
+
         int pendingTasks() {
             if (shutdown) {
                 return 0;
             }
-            
+
             synchronized (this) {
                 OpenHashSet<?> set = tasks;
                 if (set != null) {
@@ -200,27 +205,27 @@ final class SingleScheduler implements Scheduler {
                 return 0;
             }
         }
-        
+
         static final class SingleWorkerTask implements Runnable, Cancellation {
             final Runnable run;
-            
+
             final SingleWorker parent;
-            
+
             volatile boolean cancelled;
-            
+
             volatile Future<?> future;
             @SuppressWarnings("rawtypes")
             static final AtomicReferenceFieldUpdater<SingleWorkerTask, Future> FUTURE =
                     AtomicReferenceFieldUpdater.newUpdater(SingleWorkerTask.class, Future.class, "future");
-            
+
             static final Future<Object> FINISHED = CompletableFuture.completedFuture(null);
             static final Future<Object> CANCELLED = CompletableFuture.completedFuture(null);
-            
+
             public SingleWorkerTask(Runnable run, SingleWorker parent) {
                 this.run = run;
                 this.parent = parent;
             }
-            
+
             @Override
             public void run() {
                 if (cancelled || parent.shutdown) {
@@ -245,12 +250,12 @@ final class SingleScheduler implements Scheduler {
                     }
                 }
             }
-            
+
             @Override
             public void dispose() {
                 if (!cancelled) {
                     cancelled = true;
-                    
+
                     Future<?> f = future;
                     if (f != CANCELLED && f != FINISHED) {
                         f = FUTURE.getAndSet(this, CANCELLED);
@@ -258,13 +263,13 @@ final class SingleScheduler implements Scheduler {
                             if (f != null) {
                                 f.cancel(parent.shutdown);
                             }
-                            
+
                             parent.remove(this);
                         }
                     }
                 }
             }
-            
+
             void setFuture(Future<?> f) {
                 if (future != null || !FUTURE.compareAndSet(this, null, f)) {
                     if (future != FINISHED) {
@@ -272,7 +277,7 @@ final class SingleScheduler implements Scheduler {
                     }
                 }
             }
-            
+
             void cancelFuture() {
                 Future<?> f = future;
                 if (f != CANCELLED && f != FINISHED) {

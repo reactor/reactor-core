@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
 
 /**
@@ -51,7 +52,13 @@ final class MonoDelay extends Mono<Long> {
 
 		s.onSubscribe(r);
 
-		r.setCancel(timedScheduler.schedule(r, delay, unit));
+		Cancellation f = timedScheduler.schedule(r, delay, unit);
+		if (f == Scheduler.REJECTED) {
+			s.onError(Operators.onRejectedExecution());
+		}
+		else {
+			r.setCancel(f);
+		}
 	}
 
 	static final class MonoDelayRunnable implements Runnable, Subscription {

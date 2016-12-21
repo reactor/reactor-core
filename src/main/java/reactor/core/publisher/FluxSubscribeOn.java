@@ -77,7 +77,9 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(s, worker);
 		s.onSubscribe(parent);
 		
-		worker.schedule(new SourceSubscribeTask<>(parent, source));
+		if (worker.schedule(new SourceSubscribeTask<>(parent, source)) == Scheduler.REJECTED) {
+			throw Operators.onRejectedExecution(parent, null, null);
+		}
 	}
 
 	@Override
@@ -139,6 +141,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 				s.request(n);
 			}
 			else {
+				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
 				worker.schedule(() -> s.request(n));
 			}
 		}

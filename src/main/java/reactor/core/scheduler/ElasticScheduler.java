@@ -273,6 +273,11 @@ final class ElasticScheduler implements Scheduler {
 			parent.release(executor);
 		}
 
+		@Override
+		public boolean isShutdown() {
+			return shutdown;
+		}
+
 		void remove(CachedTask task) {
 			if (shutdown) {
 				return;

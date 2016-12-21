@@ -265,7 +265,7 @@ public class WorkQueueProcessorTest {
 			fail("expected 3rd next to time out as newSingleThreadExecutor cannot be introspected");
 		}
 		catch (Throwable e) {
-			assertTrue("expected AlertException", WaitStrategy.isAlert(e));
+			assertTrue("expected AlertException, got " + e, WaitStrategy.isAlert(e));
 		}
 	}
 

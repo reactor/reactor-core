@@ -94,6 +94,13 @@ public interface Scheduler {
 		 * release any resources associated with it.
 		 */
 		void shutdown();
+
+		/**
+		 * Check if this Worker has been {@link #shutdown()}.
+		 */
+		default boolean isShutdown() {
+			return false;
+		}
 	}
 	
 	/**
