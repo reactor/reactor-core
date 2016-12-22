@@ -1637,8 +1637,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by a {@link Publisher} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the item emitted by this {@link Mono} into a Publisher, then forward
+	 * its emissions into the returned {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap1.png" alt="">
@@ -1654,8 +1654,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the signals emitted by this {@link Mono} into a Publisher, then forward
+	 * its emissions into the returned {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmaps1.png" alt="">
@@ -1663,7 +1663,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
 	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
-	 * @param <R> the type of the produced merged sequence
+	 * @param <R> the type of the produced inner sequence
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 *
@@ -1684,9 +1684,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Mono} into {@link Iterable}, then flatten the elements from those by
-	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 * Transform the item emitted by this {@link Mono} into {@link Iterable}, , then forward
+	 * its elements into the returned {@link Flux}. The prefetch argument allows to
+	 * give an
+	 * arbitrary prefetch size to the inner {@link Iterable}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flatmap.png" alt="">

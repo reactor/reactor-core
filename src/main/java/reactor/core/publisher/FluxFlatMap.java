@@ -907,8 +907,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		void innerComplete(FlatMapInner<R> inner) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				Queue<R> q = inner.queue;
-				if (q == null || q.isEmpty()) {
+				//FIXME temp. reduce the case to empty regular inners
+				if (inner.queue == null) {
 					remove(inner.index);
 
 					boolean d = done;
@@ -1029,19 +1029,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		 */
 		int sourceMode;
 
-		/**
-		 * Running with regular, arbitrary source.
-		 */
-		static final int NORMAL = 0;
-		/**
-		 * Running with a source that implements SynchronousSource.
-		 */
-		static final int SYNC   = 1;
-		/**
-		 * Running with a source that implements AsynchronousSource.
-		 */
-		static final int ASYNC  = 2;
-
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<FlatMapInner> ONCE =
@@ -1063,14 +1050,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 							(Fuseable.QueueSubscription<R>) s;
 					int m = f.requestFusion(Fuseable.ANY);
 					if (m == Fuseable.SYNC) {
-						sourceMode = SYNC;
+						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
 						parent.drain();
 						return;
 					}
 					else if (m == Fuseable.ASYNC) {
-						sourceMode = ASYNC;
+						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					}
 					// NONE is just fall-through as the queue will be created on demand
@@ -1081,7 +1068,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onNext(R t) {
-			if (sourceMode == ASYNC) {
+			if (sourceMode == Fuseable.ASYNC) {
 				parent.drain();
 			}
 			else {
@@ -1092,7 +1079,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			// we don't want to emit the same error twice in case of subscription-race in async mode
-			if (sourceMode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
+			if (sourceMode != Fuseable.ASYNC || ONCE.compareAndSet(this, 0, 1)) {
 				parent.innerError(this, t);
 			}
 		}
@@ -1106,7 +1093,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (sourceMode != SYNC) {
+			if (sourceMode != Fuseable.SYNC) {
 				long p = produced + n;
 				if (p >= limit) {
 					produced = 0L;
