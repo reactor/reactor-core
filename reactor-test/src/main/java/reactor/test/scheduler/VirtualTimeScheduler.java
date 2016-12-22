@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -224,7 +224,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public Cancellation schedule(Runnable task) {
+	public Disposable schedule(Runnable task) {
 		if (shutdown) {
 			return REJECTED;
 		}
@@ -232,7 +232,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		if (shutdown) {
 			return REJECTED;
 		}
@@ -240,7 +240,12 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public void shutdown() {
+	public boolean isDisposed() {
+		return shutdown;
+	}
+
+	@Override
+	public void dispose() {
 		if (shutdown) {
 			return;
 		}
@@ -253,7 +258,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public Cancellation schedulePeriodically(Runnable task,
+	public Disposable schedulePeriodically(Runnable task,
 			long initialDelay,
 			long period, TimeUnit unit) {
 		if (shutdown) {
@@ -367,7 +372,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable run) {
+		public Disposable schedule(Runnable run) {
 			if (shutdown) {
 				return REJECTED;
 			}
@@ -380,7 +385,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable run, long delayTime, TimeUnit unit) {
+		public Disposable schedule(Runnable run, long delayTime, TimeUnit unit) {
 			if (shutdown) {
 				return REJECTED;
 			}
@@ -394,7 +399,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 
 		@Override
-		public Cancellation schedulePeriodically(Runnable task,
+		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,
 				TimeUnit unit) {
@@ -412,19 +417,23 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 
 		@Override
-		public void shutdown() {
+		public void dispose() {
 			shutdown = true;
 		}
 
+		@Override
+		public boolean isDisposed() {
+			return shutdown;
+		}
 	}
 
-	static final Cancellation CANCELLED = () -> {
+	static final Disposable CANCELLED = () -> {
 	};
-	static final Cancellation EMPTY = () -> {
+	static final Disposable EMPTY = () -> {
 	};
 
-	final class PeriodicTask extends AtomicReference<Cancellation> implements Runnable,
-	                                                                          Cancellation {
+	final class PeriodicTask extends AtomicReference<Disposable> implements Runnable,
+	                                                                          Disposable {
 
 		final Runnable decoratedRun;
 		final long     periodInNanoseconds;
@@ -477,9 +486,9 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 	}
 
-	static boolean replace(AtomicReference<Cancellation> ref, Cancellation c) {
+	static boolean replace(AtomicReference<Disposable> ref, Disposable c) {
 		for (; ; ) {
-			Cancellation current = ref.get();
+			Disposable current = ref.get();
 			if (current == CANCELLED) {
 				if (c != null) {
 					c.dispose();
@@ -492,7 +501,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 	}
 
-	static class PeriodicDirectTask implements Runnable, Cancellation {
+	static class PeriodicDirectTask implements Runnable, Disposable {
 
 		final Runnable run;
 
