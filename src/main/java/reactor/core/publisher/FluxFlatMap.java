@@ -906,33 +906,34 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		void innerComplete(FlatMapInner<R> inner) {
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				//FIXME temp. reduce the case to empty regular inners
-				if (inner.queue == null) {
-					remove(inner.index);
-
-					boolean d = done;
-					Queue<R> sq = scalarQueue;
-					boolean noSources = isEmpty();
-
-					if (checkTerminated(d,
-							noSources && (sq == null || sq.isEmpty()),
-							actual)) {
-						return;
-					}
-
-					s.request(1);
-					if (WIP.decrementAndGet(this) != 0) {
-						drainLoop();
-					}
-					return;
-				}
-			}
-			else {
+			//FIXME temp. reduce the case to empty regular inners
+//			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+//				Queue<R> queue = inner.queue;
+//				if (queue == null || queue.isEmpty()) {
+//					remove(inner.index);
+//
+//					boolean d = done;
+//					Queue<R> sq = scalarQueue;
+//					boolean noSources = isEmpty();
+//
+//					if (checkTerminated(d,
+//							noSources && (sq == null || sq.isEmpty()),
+//							actual)) {
+//						return;
+//					}
+//
+//					s.request(1);
+//					if (WIP.decrementAndGet(this) != 0) {
+//						drainLoop();
+//					}
+//					return;
+//				}
+//			}
+//			else {
 				if (WIP.getAndIncrement(this) != 0) {
 					return;
 				}
-			}
+//			}
 			drainLoop();
 		}
 

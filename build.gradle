@@ -196,7 +196,6 @@ configure(rootProject) {
   }
 
   task testNG(type: Test) {
-	exclude '**/*'
 	include '**/*Verification.*'
 	useTestNG()
   }
