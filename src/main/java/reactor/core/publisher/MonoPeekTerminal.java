@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -32,11 +31,11 @@ import reactor.core.Receiver;
  * to distinguish between cases where the Mono was empty, valued or errored.
  *
  * @param <T> the value type
- * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ *
  * @author Simon Baslé
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeekTerminal<T> extends MonoSource<T, T>
-		implements Fuseable {
+final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 
 	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
 	final BiConsumer<? super T, Throwable> onTerminateCall;
@@ -56,8 +55,8 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new MonoTerminalPeekSubscriber<>((ConditionalSubscriber<?
-					super T>) s, this));
+			source.subscribe(new MonoTerminalPeekSubscriber<>((ConditionalSubscriber<? super T>) s,
+					this));
 			return;
 		}
 		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this));
@@ -82,13 +81,13 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 			implements ConditionalSubscriber<T>, Receiver, Producer,
 			           Fuseable.SynchronousSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final Subscriber<? super T>            actual;
 		final ConditionalSubscriber<? super T> actualConditional;
 
 		final MonoPeekTerminal<T> parent;
 
 		//TODO could go into a common base for all-in-one subscribers? (as well as actual above)
-		Subscription s;
+		Subscription                  s;
 		Fuseable.QueueSubscription<T> queueSubscription;
 
 		int sourceMode;
@@ -103,16 +102,17 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		Having this flag also prevents callbacks to be attempted twice in the case of a
 		callback failure, which is forwarded to onError if it happens during onNext...
-		 */
-		boolean valued;
+		 */ boolean valued;
 
-		MonoTerminalPeekSubscriber(ConditionalSubscriber<? super T> actual, MonoPeekTerminal<T> parent) {
+		MonoTerminalPeekSubscriber(ConditionalSubscriber<? super T> actual,
+				MonoPeekTerminal<T> parent) {
 			this.actualConditional = actual;
-			this.actual = null;
+			this.actual = actual;
 			this.parent = parent;
 		}
 
-		MonoTerminalPeekSubscriber(Subscriber<? super T> actual, MonoPeekTerminal<T> parent) {
+		MonoTerminalPeekSubscriber(Subscriber<? super T> actual,
+				MonoPeekTerminal<T> parent) {
 			this.actual = actual;
 			this.actualConditional = null;
 			this.parent = parent;
@@ -132,14 +132,10 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			this.s = s;
-			this.queueSubscription = Operators.as(s); //will set it to null if not Fuseable
+			this.queueSubscription =
+					Operators.as(s); //will set it to null if not Fuseable
 
-			if (actualConditional != null) {
-				actualConditional.onSubscribe(this);
-			}
-			else {
-				actual.onSubscribe(this);
-			}
+			actual.onSubscribe(this);
 		}
 
 		@Override
@@ -148,19 +144,15 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 				Operators.onNextDropped(t);
 				return;
 			}
-			//implementation note: this operator doesn't expect the source to be anything but a Mono
-			//so it doesn't check that valued has been set before
 
-			valued = true;
 			if (sourceMode == ASYNC) {
-				if (actualConditional != null) {
-					actualConditional.onNext(null);
-				}
-				else {
-					actual.onNext(null);
-				}
+				actual.onNext(null);
 			}
 			else if (sourceMode == NONE) {
+				//implementation note: this operator doesn't expect the source to be anything but a Mono
+				//so it doesn't check that valued has been set before
+				valued = true;
+
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(t, null);
@@ -180,12 +172,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 					}
 				}
 
-				if (actualConditional != null) {
-					actualConditional.onNext(t);
-				}
-				else {
-					actual.onNext(t);
-				}
+				actual.onNext(t);
 
 				if (parent.onAfterTerminateCall != null) {
 					try {
@@ -211,12 +198,47 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 			}
 
 			if (sourceMode == NONE) {
-				return actualConditional.tryOnNext(t);
+				//implementation note: this operator doesn't expect the source to be anything but a Mono
+				//so it doesn't check that valued has been set before
+				valued = true;
+
+				if (parent.onTerminateCall != null) {
+					try {
+						parent.onTerminateCall.accept(t, null);
+					}
+					catch (Throwable e) {
+						onError(Operators.onOperatorError(s, e, t));
+						return false;
+					}
+				}
+				if (parent.onSuccessCall != null) {
+					try {
+						parent.onSuccessCall.accept(t);
+					}
+					catch (Throwable e) {
+						onError(Operators.onOperatorError(s, e, t));
+						return false;
+					}
+				}
+
+				boolean r = actualConditional.tryOnNext(t);
+
+				if (parent.onAfterTerminateCall != null) {
+					try {
+						parent.onAfterTerminateCall.accept(t, null);
+					}
+					catch (Throwable e) {
+						//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
+						Operators.onErrorDropped(Operators.onOperatorError(s, e, t));
+					}
+				}
+
+				return r;
 			}
 			else if (sourceMode == ASYNC) {
-				actualConditional.onNext(null);
+				return actualConditional.tryOnNext(null);
 			}
-			return true;
+			return false;
 		}
 
 		@Override
@@ -237,12 +259,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 			}
 
 			try {
-				if (actualConditional != null) {
-					actualConditional.onError(t);
-				}
-				else {
-					actual.onError(t);
-				}
+				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
 				if (!Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
@@ -266,8 +283,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 			if (done) {
 				return;
 			}
-			done = true;
-			if (!valued) {
+			if (sourceMode == NONE && !valued) {
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(null, null);
@@ -287,15 +303,11 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 					}
 				}
 			}
+			done = true;
 
-			if (actualConditional != null) {
-				actualConditional.onComplete();
-			}
-			else {
-				actual.onComplete();
-			}
+			actual.onComplete();
 
-			if (!valued && parent.onAfterTerminateCall != null) {
+			if (sourceMode == NONE && !valued && parent.onAfterTerminateCall != null) {
 				try {
 					parent.onAfterTerminateCall.accept(null, null);
 				}
@@ -308,7 +320,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		@Override
 		public Object downstream() {
-			return actualConditional != null ? actualConditional : actual;
+			return actual;
 		}
 
 		@Override
@@ -318,19 +330,16 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		@Override
 		public T poll() {
-			if (queueSubscription == null) {
-				//should never happen but this one is defensive
-				throw new IllegalStateException("poll called without a queueSubscription");
-			}
+			boolean d = done;
 			T v = queueSubscription.poll();
-			if (v != null) { //poll only called when fusion mode is either SYNC or ASYNC
+			if (!valued && (v != null || d || sourceMode == SYNC)) {
+				valued = true;
 				if (parent.onTerminateCall != null) {
 					try {
 						parent.onTerminateCall.accept(v, null);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, v));
-						return null;
+						throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 					}
 				}
 				if (parent.onSuccessCall != null) {
@@ -338,8 +347,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 						parent.onSuccessCall.accept(v);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, v));
-						return null;
+						throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
 					}
 				}
 				if (parent.onAfterTerminateCall != null) {
@@ -356,14 +364,12 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T>
 
 		@Override
 		public boolean isEmpty() {
-			return queueSubscription == null || queueSubscription.isEmpty();
+			return queueSubscription.isEmpty();
 		}
 
 		@Override
 		public void clear() {
-			if (queueSubscription != null) {
-				queueSubscription.clear();
-			}
+			queueSubscription.clear();
 		}
 
 		@Override
