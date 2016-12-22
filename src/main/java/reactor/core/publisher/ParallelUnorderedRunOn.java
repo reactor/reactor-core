@@ -62,7 +62,8 @@ final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> implements Fuseabl
 			
 			Worker w = scheduler.createWorker();
 
-			Subscriber<T> parent = new FluxPublishOn.PublishOnSubscriber<>(a, w, true,
+			Subscriber<T> parent = new FluxPublishOn.PublishOnSubscriber<>(a,
+					scheduler, w, true,
 					prefetch, queueSupplier);
 			parents[i] = parent;
 		}

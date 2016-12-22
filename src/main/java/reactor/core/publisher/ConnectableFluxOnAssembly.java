@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 
 /**
@@ -57,7 +57,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public void connect(Consumer<? super Cancellation> cancelSupport) {
+	public void connect(Consumer<? super Disposable> cancelSupport) {
 		source.connect(cancelSupport);
 	}
 

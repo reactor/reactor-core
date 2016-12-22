@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -44,7 +44,7 @@ import reactor.core.Trackable;
  * @author Simon Baslé
  */
 public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable,
-                                                   Receiver, Cancellation {
+                                                   Receiver, Disposable {
 
 	volatile Subscription subscription;
 
@@ -59,6 +59,11 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 	@Override
 	public boolean isStarted() {
 		return subscription != null;
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return subscription == Operators.cancelledSubscription();
 	}
 
 	@Override

@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -56,11 +56,12 @@ final class SingleScheduler implements Scheduler {
         EXECUTORS.lazySet(this, Executors.newSingleThreadExecutor(factory));
     }
 
-    public boolean isStarted() {
-        return executor != TERMINATED;
-    }
+	@Override
+	public boolean isDisposed() {
+		return executor == TERMINATED;
+	}
 
-    @Override
+	@Override
     public void start() {
         ExecutorService b = null;
         for (;;) {
@@ -84,6 +85,11 @@ final class SingleScheduler implements Scheduler {
 
     @Override
     public void shutdown() {
+        dispose();
+    }
+
+    @Override
+    public void dispose() {
         ExecutorService a = executor;
         if (a != TERMINATED) {
             a = EXECUTORS.getAndSet(this, TERMINATED);
@@ -94,7 +100,7 @@ final class SingleScheduler implements Scheduler {
     }
 
     @Override
-    public Cancellation schedule(Runnable task) {
+    public Disposable schedule(Runnable task) {
         try {
             Future<?> f = executor.submit(task);
             return () -> f.cancel(executor == TERMINATED);
@@ -121,7 +127,7 @@ final class SingleScheduler implements Scheduler {
         }
 
         @Override
-        public Cancellation schedule(Runnable task) {
+        public Disposable schedule(Runnable task) {
             if (shutdown) {
                 return REJECTED;
             }
@@ -142,10 +148,10 @@ final class SingleScheduler implements Scheduler {
                 return REJECTED;
             }
 
-            if (shutdown) {
-                f.cancel(true);
-                return REJECTED;
-            }
+	        if (shutdown){
+		        f.cancel(true);
+		        return pw;
+	        }
 
             pw.setFuture(f);
 
@@ -154,6 +160,11 @@ final class SingleScheduler implements Scheduler {
 
         @Override
         public void shutdown() {
+            dispose();
+        }
+
+        @Override
+        public void dispose() {
             if (shutdown) {
                 return;
             }
@@ -175,7 +186,7 @@ final class SingleScheduler implements Scheduler {
         }
 
         @Override
-        public boolean isShutdown() {
+        public boolean isDisposed() {
             return shutdown;
         }
 
@@ -206,7 +217,7 @@ final class SingleScheduler implements Scheduler {
             }
         }
 
-        static final class SingleWorkerTask implements Runnable, Cancellation {
+        static final class SingleWorkerTask implements Runnable, Disposable {
             final Runnable run;
 
             final SingleWorker parent;
@@ -250,6 +261,12 @@ final class SingleScheduler implements Scheduler {
                     }
                 }
             }
+
+	        @Override
+	        public boolean isDisposed() {
+		        Future<?> a = future;
+		        return FINISHED == a || CANCELLED == a;
+	        }
 
             @Override
             public void dispose() {

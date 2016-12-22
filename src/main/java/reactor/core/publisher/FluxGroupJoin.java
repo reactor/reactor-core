@@ -129,7 +129,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
 
-		final OpenHashSet<Cancellation> cancellations;
+		final OpenHashSet<Disposable> cancellations;
 
 		final Map<Integer, UnicastProcessor<TRight>> lefts;
 
@@ -263,7 +263,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			Object[] a = cancellations.keys();
 			for (Object o : a) {
 				if (o != null) {
-					((Cancellation) o).dispose();
+					((Disposable) o).dispose();
 				}
 			}
 		}
@@ -524,7 +524,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class LeftRightSubscriber
-			implements Subscriber<Object>, Cancellation, Trackable, Receiver {
+			implements Subscriber<Object>, Disposable, Trackable, Receiver {
 
 		final JoinSupport parent;
 
@@ -590,7 +590,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class LeftRightEndSubscriber
-			implements Subscriber<Object>, Cancellation, Trackable, Receiver {
+			implements Subscriber<Object>, Disposable, Trackable, Receiver {
 
 		final JoinSupport parent;
 

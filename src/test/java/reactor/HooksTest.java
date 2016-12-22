@@ -132,7 +132,7 @@ public class HooksTest {
 			}
 			finally {
 				Hooks.resetOnOperator();
-				scheduler.shutdown();
+				scheduler.dispose();
 			}
 
 	}

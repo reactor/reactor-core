@@ -74,11 +74,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			return;
 		}
 
-		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(s, worker);
+		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
 		s.onSubscribe(parent);
 		
-		if (worker.schedule(new SourceSubscribeTask<>(parent, source)) == Scheduler.REJECTED) {
-			throw Operators.onRejectedExecution(parent, null, null);
+		if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
+			s.onError(Operators.onRejectedExecution(parent, null, null));
 		}
 	}
 
@@ -93,9 +93,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	}
 
 	static final class SubscribeOnSubscriber<T>
-			implements Subscription, Subscriber<T>, Producer, Loopback {
+			implements Subscription, Subscriber<T>, Producer, Loopback, Runnable {
 
 		final Subscriber<? super T> actual;
+
+		final Publisher<? extends T> source;
 
 		final Worker worker;
 
@@ -121,9 +123,11 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 						Thread.class,
 						"thread");
 
-		public SubscribeOnSubscriber(Subscriber<? super T> actual, Worker worker) {
+		public SubscribeOnSubscriber(Publisher<? extends T> source, Subscriber<? super
+				T> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;
+			this.source = source;
 		}
 
 		@Override
@@ -141,8 +145,10 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 				s.request(n);
 			}
 			else {
-				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
-				worker.schedule(() -> s.request(n));
+				if(worker.schedule(() -> s.request(n)) == Scheduler.REJECTED &&
+						!worker.isDisposed()){
+					throw Operators.onRejectedExecution(this, null, null);
+				}
 			}
 		}
 
@@ -156,7 +162,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			try {
 				actual.onError(t);
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 
@@ -165,7 +171,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			try {
 				actual.onComplete();
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 
@@ -191,6 +197,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 		}
 
 		@Override
+		public void run() {
+			THREAD.lazySet(this, Thread.currentThread());
+			source.subscribe(this);
+		}
+
+		@Override
 		public void cancel() {
 			Subscription a = s;
 			if (a != Operators.cancelledSubscription()) {
@@ -199,7 +211,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 					a.cancel();
 				}
 			}
-			worker.shutdown();
+			worker.dispose();
 		}
 
 		@Override
@@ -217,25 +229,6 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 			return null;
 		}
 
-	}
-
-	static final class SourceSubscribeTask<T> implements Runnable {
-
-		final SubscribeOnSubscriber<T> actual;
-		
-		final Publisher<? extends T> source;
-
-		public SourceSubscribeTask(SubscribeOnSubscriber<T> s,
-				Publisher<? extends T> source) {
-			this.actual = s;
-			this.source = source;
-		}
-
-		@Override
-		public void run() {
-			SubscribeOnSubscriber.THREAD.lazySet(actual, Thread.currentThread());
-			source.subscribe(actual);
-		}
 	}
 
 }

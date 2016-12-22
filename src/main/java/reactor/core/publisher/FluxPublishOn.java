@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
@@ -98,6 +97,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
 			source.subscribe(new PublishOnConditionalSubscriber<>(cs,
+					scheduler,
 					worker,
 					delayError,
 					prefetch,
@@ -105,6 +105,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			return;
 		}
 		source.subscribe(new PublishOnSubscriber<>(s,
+				scheduler,
 				worker,
 				delayError,
 				prefetch,
@@ -122,6 +123,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			           Receiver, Trackable {
 		
 		final Subscriber<? super T> actual;
+
+		final Scheduler scheduler;
 		
 		final Worker worker;
 		
@@ -161,12 +164,14 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		public PublishOnSubscriber(
 				Subscriber<? super T> actual,
+				Scheduler scheduler,
 				Worker worker,
 				boolean delayError,
 				int prefetch,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.worker = worker;
+			this.scheduler = scheduler;
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
@@ -216,7 +221,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						Operators.error(actual, Operators.onOperatorError(s, e));
 					}
 					finally {
-						worker.shutdown();
+						worker.dispose();
 					}
 					return;
 				}
@@ -276,7 +281,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED && !worker.isShutdown()) {
+			if (trySchedule() == Scheduler.REJECTED && !worker.isDisposed()) {
 				throw Operators.onRejectedExecution();
 			}
 		}
@@ -285,8 +290,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
-				trySchedule();
+				if(trySchedule() == Scheduler.REJECTED && (!worker.isDisposed() ||
+						scheduler.isDisposed())){
+					throw Operators.onRejectedExecution(this, null, null);
+				}
 			}
 		}
 		
@@ -298,7 +305,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 			cancelled = true;
 			s.cancel();
-			worker.shutdown();
+			worker.dispose();
 
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
@@ -495,7 +502,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			try {
 				a.onComplete();
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 		
@@ -503,7 +510,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			try {
 				a.onError(e);
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 		
@@ -666,6 +673,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		final ConditionalSubscriber<? super T> actual;
 		
 		final Worker worker;
+
+		final Scheduler scheduler;
 		
 		final boolean delayError;
 		
@@ -706,12 +715,14 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		boolean outputFused;
 
 		public PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+				Scheduler scheduler,
 				Worker worker,
 				boolean delayError,
 				int prefetch,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.worker = worker;
+			this.scheduler = scheduler;
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
@@ -760,7 +771,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 						Operators.error(actual, Operators.onOperatorError(s, e));
 					}
 					finally {
-						worker.shutdown();
+						worker.dispose();
 					}
 
 					return;
@@ -812,7 +823,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		@Override
 		public void onComplete() {
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED && !worker.isShutdown()) {
+			if (trySchedule() == Scheduler.REJECTED && !worker.isDisposed()) {
 				throw Operators.onRejectedExecution();
 			}
 		}
@@ -821,8 +832,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
-				trySchedule();
+				if(trySchedule() == Scheduler.REJECTED && (!worker.isDisposed() ||
+						scheduler.isDisposed())){
+					throw Operators.onRejectedExecution(this, null, null);
+				}
 			}
 		}
 		
@@ -834,7 +847,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			
 			cancelled = true;
 			s.cancel();
-			worker.shutdown();
+			worker.dispose();
 			
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
@@ -1109,7 +1122,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			try {
 				a.onComplete();
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 		
@@ -1117,7 +1130,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 			try {
 				a.onError(e);
 			} finally {
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 		

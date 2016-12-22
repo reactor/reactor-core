@@ -35,7 +35,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 
 	final ConnectableFlux<? extends T> source;
 
-	final Consumer<? super Cancellation> cancelSupport;
+	final Consumer<? super Disposable> cancelSupport;
 
 	volatile int remaining;
 	@SuppressWarnings("rawtypes")
@@ -44,7 +44,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 
 
 	public FluxAutoConnect(ConnectableFlux<? extends T> source,
-			int n, Consumer<? super Cancellation> cancelSupport) {
+			int n, Consumer<? super Disposable> cancelSupport) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);
 		}

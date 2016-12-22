@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
 /**
@@ -94,7 +94,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 	
 	static final class WindowStartEndMainSubscriber<T, U, V>
-	implements Subscriber<T>, Subscription, Cancellation {
+	implements Subscriber<T>, Subscription, Disposable {
 		
 		final Subscriber<? super Flux<T>> actual;
 		

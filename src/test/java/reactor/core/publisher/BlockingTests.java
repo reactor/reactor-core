@@ -16,11 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +39,7 @@ public class BlockingTests {
 
 	@AfterClass
 	public static void after() {
-		scheduler.shutdown();
+		scheduler.dispose();
 	}
 
 	@Test

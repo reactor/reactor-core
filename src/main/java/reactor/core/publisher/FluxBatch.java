@@ -272,7 +272,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 
 		void doTerminate() {
-			timer.shutdown();
+			timer.dispose();
 		}
 
 		@Override

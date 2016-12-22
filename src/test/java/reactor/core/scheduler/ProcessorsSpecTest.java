@@ -42,7 +42,7 @@ public class ProcessorsSpecTest {
             
             Assert.assertNotEquals(t1, t2[0]);
         } finally {
-            dispatcher.shutdown();
+            dispatcher.dispose();
         }
     }
 }

@@ -112,7 +112,7 @@ public class CombinationTests {
 		latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue("latch : " + count, count.get() == 1);
 		Assert.assertTrue("time : " + emission, emission >= 0);
-		scheduler.shutdown();
+		scheduler.dispose();
 	}
 
 	@Test
@@ -146,7 +146,7 @@ public class CombinationTests {
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue( "latch : " + latch.getCount(), waited);
-		c.shutdown();
+		c.dispose();
 	}
 
 	public Flux<SensorData> sensorOdd() {
@@ -272,7 +272,7 @@ public class CombinationTests {
 		    .subscribe(sensorDataProcessor);
 
 		awaitLatch(null, latch);
-		scheduler.shutdown();
+		scheduler.dispose();
 	}
 
 	private void awaitLatch(Publisher<?> tail, CountDownLatch latch) throws Exception {

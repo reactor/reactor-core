@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRefCountTest {
@@ -155,7 +155,7 @@ public class FluxRefCountTest {
 	public void subscribersComeAndGoBelowThreshold() {
 		Flux<Integer> p = Flux.range(1, 5).publish().refCount(2);
 
-		Cancellation r = p.subscribe();
+		Disposable r = p.subscribe();
 		r.dispose();
 		p.subscribe().dispose();
 		p.subscribe().dispose();

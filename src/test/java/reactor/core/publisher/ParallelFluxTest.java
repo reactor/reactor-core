@@ -101,7 +101,7 @@ public class ParallelFluxTest {
 				  .assertNoError();
 			}
 			finally {
-				scheduler.shutdown();
+				scheduler.dispose();
 			}
 		}
 
@@ -135,7 +135,7 @@ public class ParallelFluxTest {
 				  .assertNoError();
 			}
 			finally {
-				scheduler.shutdown();
+				scheduler.dispose();
 			}
 		}
 
@@ -188,7 +188,7 @@ public class ParallelFluxTest {
 					ts.assertValues(e);
 				}
 				finally {
-					scheduler.shutdown();
+					scheduler.dispose();
 				}
 			}
 		}

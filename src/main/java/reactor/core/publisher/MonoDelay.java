@@ -54,7 +54,10 @@ final class MonoDelay extends Mono<Long> {
 
 		Cancellation f = timedScheduler.schedule(r, delay, unit);
 		if (f == Scheduler.REJECTED) {
-			s.onError(Operators.onRejectedExecution());
+			if(r.cancel != MonoDelayRunnable.CANCELLED &&
+					r.cancel != MonoDelayRunnable.FINISHED) {
+				s.onError(Operators.onRejectedExecution(r, null, null));
+			}
 		}
 		else {
 			r.setCancel(f);
@@ -73,7 +76,7 @@ final class MonoDelay extends Mono<Long> {
 		volatile boolean requested;
 
 		static final Cancellation CANCELLED = () -> { };
-		static final Cancellation FINISHED = () -> { };
+		static final Cancellation FINISHED  = () -> { };
 
 		public MonoDelayRunnable(Subscriber<? super Long> s) {
 			this.s = s;

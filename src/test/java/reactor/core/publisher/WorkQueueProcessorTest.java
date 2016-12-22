@@ -196,7 +196,7 @@ public class WorkQueueProcessorTest {
 		finally {
 			logger.debug("Finishing");
 			emitter.finish();
-			timer.shutdown();
+			timer.dispose();
 		}
 		TimeUnit.SECONDS.sleep(1);
 	}

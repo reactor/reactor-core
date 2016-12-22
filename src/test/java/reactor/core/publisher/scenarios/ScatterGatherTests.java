@@ -61,7 +61,7 @@ public class ScatterGatherTests {
 		    .assertComplete()
 		    .assertValueCount(3);
 
-		s.shutdown();
+		s.dispose();
 	}
 
 

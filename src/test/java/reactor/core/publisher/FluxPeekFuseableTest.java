@@ -16,6 +16,9 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -571,17 +574,22 @@ public class FluxPeekFuseableTest {
 	@Test
 	public void should_reduce_to_10_events() {
 		for (int i = 0; i < 20; i++) {
+			int n = i;
+			List<Integer> rs = Collections.synchronizedList(new ArrayList<>());
 			AtomicInteger count = new AtomicInteger();
 			Flux.range(0, 10)
 			    .flatMap(x -> Flux.range(0, 2)
+			                      .doOnNext(rs::add)
 			                      .map(y -> blockingOp(x, y))
 			                      .subscribeOn(Schedulers.parallel())
-			                      .reduce((l, r) -> l + "_" + r)
-			                      .doOnSuccess(s -> {
-				                      count.incrementAndGet();
-			                      }))
+			                      .reduce((l, r) -> l + "_" + r +" ("+x+", it:"+n+")")
+			    )
+			    .doOnNext(s -> {
+				    count.incrementAndGet();
+			    })
 			    .blockLast();
 
+			System.out.println(rs);
 			assertEquals(10, count.get());
 		}
 	}

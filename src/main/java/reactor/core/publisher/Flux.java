@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -5375,9 +5375,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/unbounded.png" alt="">
 	 * <p>
 	 *
-	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @return a {@link Disposable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
-	public final Cancellation subscribe() {
+	public final Disposable subscribe() {
 		return subscribe(null, null, null);
 	}
 
@@ -5394,9 +5394,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param prefetch an arbitrary value
 	 *
-	 * @return a {@link Cancellation} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @return a {@link Disposable} task to execute to dispose and cancel the underlying {@link Subscription}
 	 */
-	public final Cancellation subscribe(int prefetch) {
+	public final Disposable subscribe(int prefetch) {
 		return subscribe(null, null, null, prefetch);
 	}
 
@@ -5413,9 +5413,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
@@ -5438,9 +5438,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param consumer the consumer to invoke on each value
 	 * @param prefetch the the prefetch amount, positive
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer, int prefetch) {
+	public final Disposable subscribe(Consumer<? super T> consumer, int prefetch) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null, prefetch);
 	}
@@ -5459,9 +5459,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -5481,9 +5481,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
 	}
@@ -5509,9 +5509,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {
@@ -5543,14 +5543,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 * @param prefetch the demand to produce to this {@link Flux}
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
 	 * {@code subscribe(..., prefetch)}
 	 * @see #limitRate(int)
 	 * @see #subscribe(Consumer, Consumer, Runnable)
 	 */
 	@Deprecated
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			int prefetch) {
@@ -5580,14 +5580,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 * @param prefetch the demand to produce to this {@link Flux} (deprecated)
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
 	 * {@code subscribe(..., prefetch)}
 	 * @see #limitRate(int)
 	 * @see #subscribe(Consumer, Consumer, Runnable, Consumer)
 	 */
 	@Deprecated
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer,

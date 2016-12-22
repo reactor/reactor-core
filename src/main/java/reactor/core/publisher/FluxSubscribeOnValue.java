@@ -16,14 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -55,9 +53,13 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution();
+				if (parent.future != ScheduledEmpty.CANCELLED) {
+					s.onError(Operators.onRejectedExecution());
+				}
 			}
-			parent.setFuture(f);
+			else {
+				parent.setFuture(f);
+			}
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}
@@ -77,9 +79,13 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 				s.onSubscribe(parent);
 				Cancellation f = scheduler.schedule(parent);
 				if (f == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution();
+					if (parent.future != ScheduledEmpty.CANCELLED) {
+						s.onError(Operators.onRejectedExecution());
+					}
 				}
-				parent.setFuture(f);
+				else {
+					parent.setFuture(f);
+				}
 			}
 			else {
 				s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
@@ -136,8 +142,11 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					Cancellation f = scheduler.schedule(this);
-					//Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
-					if (!FUTURE.compareAndSet(this, null, f)) {
+					if(f == Scheduler.REJECTED && future != FINISHED && future !=
+							CANCELLED) {
+						actual.onError(Operators.onRejectedExecution(this, null, null));
+					}
+					else if (!FUTURE.compareAndSet(this, null, f)) {
 						if (future != FINISHED && future != CANCELLED) {
 							f.dispose();
 						}

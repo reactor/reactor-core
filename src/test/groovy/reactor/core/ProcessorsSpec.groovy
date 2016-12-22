@@ -180,11 +180,11 @@ class ProcessorsSpec extends Specification {
 		then:
 			"the task thread should be different when the current thread"
 			taskThread != currentThread
-			//!diffThread.shutdown()
+			//!diffThread.dispose()
 
 
 		cleanup:
-			diffThread.shutdown()
+			diffThread.dispose()
 	}
 
 	def "Dispatcher thread can be reused"() {
@@ -214,7 +214,7 @@ class ProcessorsSpec extends Specification {
 			latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
 
 		cleanup:
-			r.shutdown()
+			r.dispose()
 	}
 
 	def "RingBufferDispatcher executes tasks in correct thread"() {
@@ -233,7 +233,7 @@ class ProcessorsSpec extends Specification {
 			t1 != t2
 
 		cleanup:
-			dispatcher.shutdown()
+			dispatcher.dispose()
 
 	}
 
@@ -253,7 +253,7 @@ class ProcessorsSpec extends Specification {
 			t1 != t2
 
 		cleanup:
-		dispatcher.shutdown()
+		dispatcher.dispose()
 
 	}
 
@@ -290,7 +290,7 @@ class ProcessorsSpec extends Specification {
 			main != t2
 
 		cleanup:
-		 d.shutdown()
+		 d.dispose()
 
 		where:
 			d << [Schedulers.newParallel("rbWork", 8).createWorker()]

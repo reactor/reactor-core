@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxAutoConnectTest {
@@ -40,7 +40,7 @@ public class FluxAutoConnectTest {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
 		
-		AtomicReference<Cancellation> cancel = new AtomicReference<>();
+		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
 		e.publish().autoConnect(0, cancel::set);
 		
@@ -56,7 +56,7 @@ public class FluxAutoConnectTest {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
 		e.connect();
 		
-		AtomicReference<Cancellation> cancel = new AtomicReference<>();
+		AtomicReference<Disposable> cancel = new AtomicReference<>();
 		
 		Flux<Integer> p = e.publish().autoConnect(2, cancel::set);
 		

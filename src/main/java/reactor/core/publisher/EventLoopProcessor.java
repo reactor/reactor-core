@@ -324,7 +324,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	/**
-	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor.shutdown()}.
+	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor.dispose()}.
 	 * @return if the underlying executor terminated and false if the timeout elapsed before termination
 	 */
 	public final boolean awaitAndShutdown() {
@@ -332,7 +332,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	/**
-	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor#shutdown()}.
+	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor#dispose()}.
 	 * @param timeout the timeout value
 	 * @param timeUnit the unit for timeout
      * @return if the underlying executor terminated and false if the timeout elapsed before termination

@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -70,7 +70,12 @@ final class ParallelScheduler implements Scheduler {
         EXECUTORS.lazySet(this, a);
     }
 
-    @Override
+	@Override
+	public boolean isDisposed() {
+		return executors == SHUTDOWN;
+	}
+
+	@Override
     public void start() {
         ExecutorService[] b = null;
         for (;;) {
@@ -99,6 +104,11 @@ final class ParallelScheduler implements Scheduler {
 
     @Override
     public void shutdown() {
+        dispose();
+    }
+
+    @Override
+    public void dispose() {
         ExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
@@ -127,7 +137,7 @@ final class ParallelScheduler implements Scheduler {
     }
     
     @Override
-    public Cancellation schedule(Runnable task) {
+    public Disposable schedule(Runnable task) {
         ExecutorService exec = pick();
         Future<?> f = exec.submit(task);
         return () -> f.cancel(executors == SHUTDOWN);
@@ -151,7 +161,7 @@ final class ParallelScheduler implements Scheduler {
         }
 
         @Override
-        public Cancellation schedule(Runnable task) {
+        public Disposable schedule(Runnable task) {
             if (shutdown) {
                 return REJECTED;
             }
@@ -171,12 +181,12 @@ final class ParallelScheduler implements Scheduler {
             } catch (RejectedExecutionException ex) {
                 return REJECTED;
             }
-            
-            if (shutdown) {
-                f.cancel(true);
-                return REJECTED; 
+
+            if (shutdown){
+            	f.cancel(true);
+            	return pw;
             }
-            
+
             pw.setFuture(f);
             
             return pw;
@@ -184,6 +194,11 @@ final class ParallelScheduler implements Scheduler {
 
         @Override
         public void shutdown() {
+            dispose();
+        }
+
+        @Override
+        public void dispose() {
             if (shutdown) {
                 return;
             }
@@ -205,7 +220,7 @@ final class ParallelScheduler implements Scheduler {
         }
 
         @Override
-        public boolean isShutdown() {
+        public boolean isDisposed() {
             return shutdown;
         }
 
@@ -236,7 +251,7 @@ final class ParallelScheduler implements Scheduler {
             }
         }
         
-        static final class ParallelWorkerTask implements Runnable, Cancellation {
+        static final class ParallelWorkerTask implements Runnable, Disposable {
             final Runnable run;
             
             final ParallelWorker parent;
@@ -280,8 +295,14 @@ final class ParallelScheduler implements Scheduler {
                     }
                 }
             }
-            
-            @Override
+
+	        @Override
+	        public boolean isDisposed() {
+		        Future<?> a = future;
+		        return FINISHED == a || CANCELLED == a;
+	        }
+
+	        @Override
             public void dispose() {
                 if (!cancelled) {
                     cancelled = true;

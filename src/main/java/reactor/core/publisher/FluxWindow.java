@@ -29,7 +29,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
@@ -105,7 +105,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowExactSubscriber<T>
-			implements Subscriber<T>, Subscription, Cancellation, Producer, Receiver,
+			implements Subscriber<T>, Subscription, Disposable, Producer, Receiver,
 			           MultiProducer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
@@ -298,7 +298,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowSkipSubscriber<T>
-			implements Subscriber<T>, Subscription, Cancellation, Receiver, MultiProducer,
+			implements Subscriber<T>, Subscription, Disposable, Receiver, MultiProducer,
 			           Producer, Trackable {
 		
 		final Subscriber<? super Flux<T>> actual;
@@ -513,7 +513,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOverlapSubscriber<T>
-			implements Subscriber<T>, Subscription, Cancellation, Producer, MultiProducer,
+			implements Subscriber<T>, Subscription, Disposable, Producer, MultiProducer,
 			           Receiver, Trackable {
 
 		final Subscriber<? super Flux<T>> actual;

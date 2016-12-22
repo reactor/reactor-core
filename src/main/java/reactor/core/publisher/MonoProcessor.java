@@ -29,7 +29,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
@@ -51,7 +51,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Cancellation, Subscription, Trackable, Receiver,
+		implements Processor<O, O>, Disposable, Subscription, Trackable, Receiver,
 		           Producer, LongSupplier, MultiProducer {
 
 	/**
@@ -236,6 +236,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public final boolean isTerminated() {
 		return state > STATE_POST_SUBSCRIBED;
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isTerminated();
 	}
 
 	@Override

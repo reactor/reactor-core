@@ -53,7 +53,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.BlockingSink;
@@ -884,13 +884,13 @@ public class FluxTests extends AbstractReactorTest {
 	public void cancelOn() throws Exception {
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AtomicReference<Thread> thread = new AtomicReference<>();
-		Cancellation res = Flux.never()
-		                  .doOnCancel(() -> {
+		Disposable res = Flux.never()
+		                     .doOnCancel(() -> {
 		                  	thread.set(Thread.currentThread());
 			                  countDownLatch.countDown();
 		                  })
-		                  .cancelOn(asyncGroup)
-				.subscribe();
+		                     .cancelOn(asyncGroup)
+		                     .subscribe();
 		res.dispose();
 		assertTrue(countDownLatch.await(3, TimeUnit.SECONDS));
 		assertTrue(thread.get() != Thread.currentThread());
@@ -1237,8 +1237,8 @@ public class FluxTests extends AbstractReactorTest {
 
 		latch.await(30, TimeUnit.SECONDS);
 		assertThat("Not totally dispatched: " + latch.getCount(), latch.getCount() == 0);
-		supplier1.shutdown();
-		supplier2.shutdown();
+		supplier1.dispose();
+		supplier2.dispose();
 	}
 
 	@Test
@@ -1356,16 +1356,16 @@ public class FluxTests extends AbstractReactorTest {
 		                        .toEpochMilli();
 		long elapsed = System.nanoTime();
 
-		Cancellation ctrl = Flux.interval(Duration.ofMillis(delayMS))
-		                        .log("test")
-		                                            .map((signal) -> {
+		Disposable ctrl = Flux.interval(Duration.ofMillis(delayMS))
+		                      .log("test")
+		                      .map((signal) -> {
 			                      return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - elapsed);
 		                      })
-		                                            .doOnNext((elapsedMillis) -> {
+		                      .doOnNext((elapsedMillis) -> {
 			                      times.add(localTime + elapsedMillis);
 			                      barrier.arrive();
 		                      })
-		                                            .subscribe();
+		                      .subscribe();
 
 		barrier.awaitAdvanceInterruptibly(barrier.arrive(), tasks * delayMS + 1000, TimeUnit.MILLISECONDS);
 		ctrl.dispose();
@@ -1551,9 +1551,9 @@ public class FluxTests extends AbstractReactorTest {
 		List<String> res = listPromise.block(Duration.ofSeconds(5));
 		assertEquals(Arrays.asList("i0", "done1", "i0", "i1", "done2", "i0", "i1", "i2", "done3"), res);
 
-		forkJoin.shutdown();
-		persistence.shutdown();
-		computation.shutdown();
+		forkJoin.dispose();
+		persistence.dispose();
+		computation.dispose();
 	}
 
 	@Test

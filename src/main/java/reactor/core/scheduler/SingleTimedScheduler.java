@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -50,7 +50,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     @Override
-    public Cancellation schedule(Runnable task) {
+    public Disposable schedule(Runnable task) {
         try {
             Future<?> f = executor.submit(task);
             return () -> f.cancel(false);
@@ -60,7 +60,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     @Override
-    public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+    public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
         try {
             Future<?> f = executor.schedule(task, delay, unit);
             return () -> f.cancel(false);
@@ -70,7 +70,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     @Override
-    public Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+    public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
         try {
             Future<?> f = executor.scheduleAtFixedRate(task, initialDelay, period, unit);
             return () -> f.cancel(false);
@@ -83,11 +83,21 @@ final class SingleTimedScheduler implements TimedScheduler {
     public void start() {
         throw new UnsupportedOperationException("Not supported, yet.");
     }
-    
-    @Override
-    public void shutdown() {
-	    Schedulers.safeExecutorServiceShutdown(executor, "SingleTimed");
-    }
+
+	@Override
+	public boolean isDisposed() {
+		return executor.isShutdown();
+	}
+
+	@Override
+	public void shutdown() {
+		dispose();
+	}
+
+	@Override
+	public void dispose() {
+		Schedulers.safeExecutorServiceShutdown(executor, "SingleTimed");
+	}
     
     @Override
     public TimedWorker createWorker() {
@@ -107,7 +117,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         }
 
         @Override
-        public Cancellation schedule(Runnable task) {
+        public Disposable schedule(Runnable task) {
             if (terminated) {
                 return REJECTED;
             }
@@ -142,7 +152,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         }
         
         @Override
-        public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+        public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
             if (terminated) {
                 return REJECTED;
             }
@@ -169,7 +179,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         }
         
         @Override
-        public Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
             if (terminated) {
                 return REJECTED;
             }
@@ -194,9 +204,14 @@ final class SingleTimedScheduler implements TimedScheduler {
             
             return sr;
         }
-        
-        @Override
-        public void shutdown() {
+
+	    @Override
+	    public void shutdown() {
+		    dispose();
+	    }
+
+	    @Override
+        public void dispose() {
             if (terminated) {
                 return;
             }
@@ -223,7 +238,7 @@ final class SingleTimedScheduler implements TimedScheduler {
         }
 
         @Override
-        public boolean isShutdown() {
+        public boolean isDisposed() {
             return terminated;
         }
     }
@@ -233,7 +248,7 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     static final class TimedScheduledRunnable
-    extends AtomicReference<Future<?>> implements Runnable, Cancellation, CancelFuture {
+    extends AtomicReference<Future<?>> implements Runnable, Disposable, CancelFuture {
         /** */
         private static final long serialVersionUID = 2284024836904862408L;
         
@@ -347,21 +362,22 @@ final class SingleTimedScheduler implements TimedScheduler {
 
     static final class TimedPeriodicScheduledRunnable
     extends AtomicReference<Future<?>>
-    implements Runnable, Cancellation, CancelFuture {
+    implements Runnable, Disposable, CancelFuture {
         /** */
         private static final long serialVersionUID = 2284024836904862408L;
         
         final Runnable task;
         
         final SingleTimedSchedulerWorker parent;
-        
+
+        @SuppressWarnings("unused")
         volatile Thread current;
         static final AtomicReferenceFieldUpdater<TimedPeriodicScheduledRunnable, Thread> CURRENT =
                 AtomicReferenceFieldUpdater.newUpdater(TimedPeriodicScheduledRunnable.class, Thread.class, "current");
 
         static final Runnable EMPTY = () -> { };
 
-        static final Future<?> CANCELLED_FUTURE = new FutureTask<>(EMPTY, null);
+        static final Future<?> CANCELLED = new FutureTask<>(EMPTY, null);
 
         static final Future<?> FINISHED = new FutureTask<>(EMPTY, null);
 
@@ -380,7 +396,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                     Schedulers.handleError(ex);
                     for (;;) {
                         Future<?> a = get();
-                        if (a == CANCELLED_FUTURE) {
+                        if (a == CANCELLED) {
                             break;
                         }
                         if (compareAndSet(a, FINISHED)) {
@@ -405,7 +421,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                 if (a == FINISHED) {
                     return;
                 }
-                if (compareAndSet(a, CANCELLED_FUTURE)) {
+                if (compareAndSet(a, CANCELLED)) {
                     if (a != null) {
                         doCancel(a);
                     }
@@ -413,6 +429,12 @@ final class SingleTimedScheduler implements TimedScheduler {
                 }
             }
         }
+
+	    @Override
+	    public boolean isDisposed() {
+		    Future<?> a = get();
+		    return FINISHED == a || CANCELLED == a;
+	    }
         
         @Override
         public void dispose() {
@@ -421,7 +443,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                 if (a == FINISHED) {
                     return;
                 }
-                if (compareAndSet(a, CANCELLED_FUTURE)) {
+                if (compareAndSet(a, CANCELLED)) {
                     if (a != null) {
                         doCancel(a);
                     }
@@ -438,7 +460,7 @@ final class SingleTimedScheduler implements TimedScheduler {
                 if (a == FINISHED) {
                     return;
                 }
-                if (a == CANCELLED_FUTURE) {
+                if (a == CANCELLED) {
                     doCancel(a);
                     return;
                 }

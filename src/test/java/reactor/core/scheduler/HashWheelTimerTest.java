@@ -36,7 +36,7 @@ public class HashWheelTimerTest {
             
             CountDownLatch cdl = new CountDownLatch(1);
             
-            w1.shutdown();
+            w1.dispose();
             
             try {
                 w1.schedule(() -> { });
@@ -50,9 +50,9 @@ public class HashWheelTimerTest {
             if (!cdl.await(1, TimeUnit.SECONDS)) {
                 Assert.fail("Worker 2 didn't execute in time");
             }
-            w2.shutdown();
+            w2.dispose();
         } finally {
-            timer.shutdown();
+            timer.dispose();
         }
     }
 
@@ -71,13 +71,13 @@ public class HashWheelTimerTest {
                 w1.schedule(task, 500, TimeUnit.MILLISECONDS);
             }
             
-            w1.shutdown();
+            w1.dispose();
             
             Thread.sleep(1000);
             
             Assert.assertEquals(0, counter.get());
         } finally {
-            timer.shutdown();
+            timer.dispose();
         }
     }
 

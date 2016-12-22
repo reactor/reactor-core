@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -94,7 +94,17 @@ final class ElasticScheduler implements Scheduler {
 	}
 
 	@Override
+	public boolean isDisposed() {
+		return shutdown;
+	}
+
+	@Override
 	public void shutdown() {
+		dispose();
+	}
+
+	@Override
+	public void dispose() {
 		if (shutdown) {
 			return;
 		}
@@ -131,7 +141,7 @@ final class ElasticScheduler implements Scheduler {
 	}
 
 	@Override
-	public Cancellation schedule(Runnable task) {
+	public Disposable schedule(Runnable task) {
 		ExecutorService exec = pick();
 
 		Runnable wrapper = () -> {
@@ -218,7 +228,7 @@ final class ElasticScheduler implements Scheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			if (shutdown) {
 				return REJECTED;
 			}
@@ -247,6 +257,11 @@ final class ElasticScheduler implements Scheduler {
 
 		@Override
 		public void shutdown() {
+			dispose();
+		}
+
+		@Override
+		public void dispose() {
 			if (shutdown) {
 				return;
 			}
@@ -274,7 +289,7 @@ final class ElasticScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean isShutdown() {
+		public boolean isDisposed() {
 			return shutdown;
 		}
 
@@ -292,7 +307,7 @@ final class ElasticScheduler implements Scheduler {
 		}
 
 		static final class CachedTask extends AtomicReference<Future<?>>
-				implements Runnable, Cancellation {
+				implements Runnable, Disposable {
 
 			/** */
 			private static final long serialVersionUID = 6799295393954430738L;
@@ -334,6 +349,12 @@ final class ElasticScheduler implements Scheduler {
 			public void dispose() {
 				cancelled = true;
 				cancelFuture();
+			}
+
+			@Override
+			public boolean isDisposed() {
+				Future<?> f = get();
+				return f == CANCELLED || f == FINISHED;
 			}
 
 			void setFuture(Future<?> f) {

@@ -16,11 +16,12 @@
 package reactor.core.scheduler;
 
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
  */
-public interface Scheduler {
+public interface Scheduler extends Disposable {
 	/**
 	 * Schedules the given task on this scheduler non-delayed execution.
 	 * 
@@ -39,7 +40,7 @@ public interface Scheduler {
 	 * Creates a worker of this Scheduler that executed task in a strict
 	 * FIFO order, guaranteed non-concurrently with each other.
 	 * <p>
-	 * Once the Worker is no longer in use, one should call shutdown() on it to
+	 * Once the Worker is no longer in use, one should call dispose() on it to
 	 * release any resources the particular Scheduler may have used.
 	 * 
 	 * <p>Tasks scheduled with this worker run in FIFO order and strictly non-concurrently, but
@@ -49,42 +50,60 @@ public interface Scheduler {
 	 * @return the Worker instance.
 	 */
 	Worker createWorker();
-	
-	/**
-	 * Instructs this Scheduler to prepare itself for running tasks
-	 * directly or through its Workers.
-	 * 
-	 * <p>The operation is thread-safe but one should avoid using
-	 * start() and shutdown() concurrently as it would non-deterministically
-	 * leave the Scheduler in either active or inactive state.
-	 */
-	default void start() {
-		
-	}
-	
+
 	/**
 	 * Instructs this Scheduler to release all resources and reject
 	 * any new tasks to be executed.
-	 * 
+	 *
+	 * <p>The operation is thread-safe but one should avoid using
+	 * start() and dispose() concurrently as it would non-deterministically
+	 * leave the Scheduler in either active or inactive state.
+	 *
+	 * <p>The Scheduler may choose to ignore this instruction.
+	 *
+	 */
+	default void dispose() {
+		shutdown();
+	}
+
+	/**
+	 * Instructs this Scheduler to prepare itself for running tasks
+	 * directly or through its Workers.
+	 *
+	 * <p>The operation is thread-safe but one should avoid using
+	 * start() and dispose() concurrently as it would non-deterministically
+	 * leave the Scheduler in either active or inactive state.
+	 */
+	default void start() {
+	}
+
+	/**
+	 * Instructs this Scheduler to release all resources and reject
+	 * any new tasks to be executed.
+	 *
 	 * <p>The operation is thread-safe but one should avoid using
 	 * start() and shutdown() concurrently as it would non-deterministically
 	 * leave the Scheduler in either active or inactive state.
+	 *
+	 * @deprecated move the implementation to {@link #dispose()} and call dispose from shutdown.
+	 * Will be removed in 3.1.0
 	 */
+	@Deprecated
 	default void shutdown() {
-		
+
 	}
-	
+
 	/**
 	 * A worker representing an asynchronous boundary that executes tasks in
 	 * a FIFO order, guaranteed non-concurrently with respect to each other. 
 	 */
-	interface Worker {
+	interface Worker extends Disposable {
 		
 		/**
 		 * Schedules the task on this worker.
 		 * @param task the task to schedule
-		 * @return the Cancellation instance that let's one cancel this particular task.
-		 * If the Scheduler has been shut down, the {@link #REJECTED} Cancellation instance is returned.
+		 * @return the {@link Cancellation} instance that let's one cancel this particular task.
+		 * If the Scheduler has been shut down, the {@link #REJECTED} {@link Cancellation} instance is returned.
 		 */
 		Cancellation schedule(Runnable task);
 		
@@ -92,29 +111,27 @@ public interface Scheduler {
 		 * Instructs this worker to cancel all pending tasks, all running tasks in 
 		 * a best-effort manner, reject new tasks and
 		 * release any resources associated with it.
+		 *
+		 * @deprecated move the implementation to {@link #dispose()} and call dispose from shutdown.
+		 * Will be removed in 3.1.0
 		 */
+		@Deprecated
 		void shutdown();
 
 		/**
-		 * Check if this Worker has been {@link #shutdown()}.
+		 * Instructs this worker to cancel all pending tasks, all running tasks in
+		 * a best-effort manner, reject new tasks and
+		 * release any resources associated with it.
+		 *
 		 */
-		default boolean isShutdown() {
-			return false;
+		@Override
+		default void dispose() {
+			shutdown();
 		}
 	}
 	
 	/**
 	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down.
 	 */
-	Cancellation REJECTED = new Cancellation() {
-		@Override
-		public void dispose() {
-			// deliberately no-op
-		}
-		
-		@Override
-		public String toString() {
-			return "Rejected task";
-		}
-	};
+	Disposable REJECTED = new RejectedDisposable();
 }
