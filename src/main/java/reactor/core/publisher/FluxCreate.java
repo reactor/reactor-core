@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Disposable;
+import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Trackable;
@@ -229,7 +229,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public void setCancellation(Disposable c) {
+		public void setCancellation(Cancellation c) {
 			sink.setCancellation(c);
 		}
 
@@ -254,11 +254,11 @@ final class FluxCreate<T> extends Flux<T> {
 
 		final Subscriber<? super T> actual;
 
-		volatile Disposable cancel;
+		volatile Cancellation cancel;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BaseSink, Disposable> CANCEL =
+		static final AtomicReferenceFieldUpdater<BaseSink, Cancellation> CANCEL =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
-						Disposable.class,
+						Cancellation.class,
 						"cancel");
 
 		volatile long requested;
@@ -266,7 +266,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
 
-		static final Disposable CANCELLED = () -> {
+		static final Cancellation CANCELLED = () -> {
 		};
 
 		public BaseSink(Subscriber<? super T> actual) {
@@ -306,7 +306,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		void cancelResource() {
-			Disposable c = cancel;
+			Cancellation c = cancel;
 			if (c != CANCELLED) {
 				c = CANCEL.getAndSet(this, CANCELLED);
 				if (c != null && c != CANCELLED) {
@@ -352,7 +352,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final void setCancellation(Disposable c) {
+		public final void setCancellation(Cancellation c) {
 			if (!CANCEL.compareAndSet(this, null, c)) {
 				if (cancel != CANCELLED && c != null) {
 					c.dispose();

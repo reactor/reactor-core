@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.*;
 
+import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 /**
@@ -52,10 +53,11 @@ final class MonoCreate<T> extends Mono<T> {
     static final class DefaultMonoSink<T> implements MonoSink<T>, Subscription {
         final Subscriber<? super T> actual;
         
-        volatile Disposable disposable;
+        volatile Cancellation disposable;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultMonoSink, Disposable> CANCELLATION =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Disposable.class, "disposable");
+        static final AtomicReferenceFieldUpdater<DefaultMonoSink, Cancellation>
+                CANCELLATION =
+                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Cancellation.class, "disposable");
         
         volatile int state;
         @SuppressWarnings("rawtypes")
@@ -115,7 +117,7 @@ final class MonoCreate<T> extends Mono<T> {
         }
 
         @Override
-        public void setCancellation(Disposable c) {
+        public void setCancellation(Cancellation c) {
             if (!CANCELLATION.compareAndSet(this, null, c)) {
                 if (disposable != CANCELLED && c != null) {
                     c.dispose();
@@ -151,7 +153,7 @@ final class MonoCreate<T> extends Mono<T> {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 value = null;
             }
-            Disposable c = disposable;
+	        Cancellation c = disposable;
             if (c != CANCELLED) {
                 c = CANCELLATION.getAndSet(this, CANCELLED);
                 if (c != null && c != CANCELLED) {

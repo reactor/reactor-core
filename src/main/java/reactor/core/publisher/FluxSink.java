@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Disposable;
+import reactor.core.Cancellation;
 
 /**
  * Wrapper API around a downstream Subscriber for emitting any number of
@@ -70,7 +70,7 @@ public interface FluxSink<T> {
      * via {@link org.reactivestreams.Subscription#cancel()}.
      * @param c the cancellation callback to use
      */
-    void setCancellation(Disposable c);
+    void setCancellation(Cancellation c);
 
 	/**
 	 * Enumeration for backpressure handling.
