@@ -72,29 +72,40 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 
 		@Override
 		protected void checkedError(Throwable ev) {
-			C v = values;
-			if(v != null) {
-				v.clear();
-				values = null;
+			synchronized (this) {
+				C v = values;
+				if(v != null) {
+					v.clear();
+					values = null;
+				}
 			}
 			subscriber.onError(ev);
 		}
 
 		@Override
 		public void nextCallback(T value) {
-			C v = values;
-			if(v == null) {
-				v = bufferSupplier.get();
-				values = v;
+			synchronized (this) {
+				C v = values;
+				if(v == null) {
+					v = bufferSupplier.get();
+					values = v;
+				}
+				v.add(value);
 			}
-			v.add(value);
 		}
 
 		@Override
 		public void flushCallback(T ev) {
 			C v = values;
-			if(v != null && !v.isEmpty()) {
-				values = bufferSupplier.get();
+			boolean flush = false;
+			synchronized (this) {
+				if (v != null && !v.isEmpty()) {
+					values = bufferSupplier.get();
+					flush = true;
+				}
+			}
+
+			if (flush) {
 				subscriber.onNext(v);
 			}
 		}
