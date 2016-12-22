@@ -13,20 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core;
 
 /**
  * Indicates that a task or resource can be cancelled/disposed.
  * <p>Call to the dispose method is/should be idempotent.
- *
- * @deprecated use {@link Disposable}, will be removed in 3.1.0
  */
 @FunctionalInterface
-@Deprecated
-public interface Cancellation {
-    /**
-     * Cancel or dispose the underlying task or resource.
-     * <p>Call to this method is/should be idempotent.
-     */
-    void dispose();
+public interface Disposable extends Cancellation {
+
+	/**
+	 * Cancel or dispose the underlying task or resource.
+	 * <p>Call to this method is/should be idempotent.
+	 */
+	void dispose();
+
+	/**
+	 * Optionally return {@literal true} when the resource or task is disposed. The
+	 * implementor does not require to track disposition and may never return {@literal
+	 * true} even when disposed.
+	 *
+	 * @return {@literal true} when there's a guarantee the resource or task is disposed.
+	 */
+	default boolean isDisposed() {
+		return false;
+	}
 }

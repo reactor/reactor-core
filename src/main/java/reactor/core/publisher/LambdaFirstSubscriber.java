@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -32,7 +32,7 @@ import reactor.core.Trackable;
  * @param <T> the value type
  */
 final class LambdaFirstSubscriber<T>
-		implements Subscriber<T>, Receiver, Cancellation, Trackable {
+		implements Subscriber<T>, Receiver, Disposable, Trackable {
 
 	final Consumer<? super T>            consumer;
 	final Consumer<? super Throwable>    errorConsumer;
@@ -176,6 +176,11 @@ final class LambdaFirstSubscriber<T>
 	@Override
 	public boolean isTerminated() {
 		return subscription == Operators.cancelledSubscription();
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isTerminated();
 	}
 
 	@Override

@@ -38,7 +38,7 @@ import java.util.stream.LongStream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -2452,7 +2452,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
@@ -2472,7 +2472,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Runnable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -2491,9 +2491,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
@@ -2515,9 +2515,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
-	 * @return a new {@link Cancellation} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} to dispose the {@link Subscription}
 	 */
-	public final Cancellation subscribe(Consumer<? super T> consumer,
+	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {

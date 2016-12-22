@@ -15,7 +15,7 @@
  */
 package reactor.core.publisher;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -53,5 +53,5 @@ public interface MonoSink<T> {
      * <p>Calling this method more than once has no effect.
      * @param c the cancellation callback
      */
-    void setCancellation(Cancellation c);
+    void setCancellation(Disposable c);
 }

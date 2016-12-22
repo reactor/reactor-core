@@ -571,7 +571,7 @@ public abstract class Operators {
 	/**
 	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
 	 * operator. That denotes that an execution was rejected by a
-	 * {@link reactor.core.scheduler.Scheduler} due to shutdown.
+	 * {@link reactor.core.scheduler.Scheduler} due to dispose.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object)}.
@@ -584,7 +584,7 @@ public abstract class Operators {
 	/**
 	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
 	 * operator. That denotes that an execution was rejected by a
-	 * {@link reactor.core.scheduler.Scheduler} due to shutdown.
+	 * {@link reactor.core.scheduler.Scheduler} due to dispose.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object)} (with the passed

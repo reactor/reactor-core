@@ -15,7 +15,7 @@
  */
 package reactor.core.scheduler;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Executes tasks on the caller's thread immediately.
@@ -34,12 +34,22 @@ final class ImmediateScheduler implements Scheduler {
         
     }
     
-    static final Cancellation EMPTY = () -> { };
+    static final Disposable EMPTY = () -> { };
     
     @Override
-    public Cancellation schedule(Runnable task) {
+    public Disposable schedule(Runnable task) {
         task.run();
         return EMPTY;
+    }
+
+    @Override
+    public void shutdown() {
+        dispose();
+    }
+
+    @Override
+    public void dispose() {
+        //NO-OP
     }
 
     @Override
@@ -52,7 +62,7 @@ final class ImmediateScheduler implements Scheduler {
         volatile boolean shutdown;
 
         @Override
-        public Cancellation schedule(Runnable task) {
+        public Disposable schedule(Runnable task) {
             if (shutdown) {
                 return REJECTED;
             }
@@ -62,11 +72,16 @@ final class ImmediateScheduler implements Scheduler {
 
         @Override
         public void shutdown() {
+            dispose();
+        }
+
+        @Override
+        public void dispose() {
             shutdown = true;
         }
 
         @Override
-        public boolean isShutdown() {
+        public boolean isDisposed() {
             return shutdown;
         }
     }

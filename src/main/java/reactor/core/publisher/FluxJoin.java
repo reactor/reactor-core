@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
@@ -102,7 +102,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
 
-		final OpenHashSet<Cancellation> cancellations;
+		final OpenHashSet<Disposable> cancellations;
 
 		final Map<Integer, TLeft> lefts;
 
@@ -221,7 +221,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 			Object[] a = cancellations.keys();
 			for (Object o : a) {
 				if (o != null) {
-					((Cancellation) o).dispose();
+					((Disposable) o).dispose();
 				}
 			}
 		}
@@ -272,7 +272,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 						Object[] c = cancellations.keys();
 						for (Object o : c) {
 							if (o != null) {
-								((Cancellation) o).dispose();
+								((Disposable) o).dispose();
 							}
 						}
 

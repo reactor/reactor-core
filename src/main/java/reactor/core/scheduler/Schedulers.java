@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -70,6 +71,9 @@ public class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutor(Executor executor) {
+		if(executor instanceof ExecutorService){
+			return fromExecutorService((ExecutorService)executor);
+		}
 		return fromExecutor(executor, false);
 	}
 
@@ -84,6 +88,9 @@ public class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutor(Executor executor, boolean trampoline) {
+		if(executor instanceof ExecutorService){
+			return fromExecutorService((ExecutorService)executor, trampoline);
+		}
 		return new ExecutorScheduler(executor, trampoline);
 	}
 
@@ -105,7 +112,7 @@ public class Schedulers {
 	 *
 	 * @param executorService an {@link ExecutorService}
 	 * @param interruptOnCancel delegate to {@link java.util.concurrent.Future#cancel(boolean)
-	 * future.cancel(true)}  on {@link Cancellation#dispose()}
+	 * future.cancel(true)}  on {@link Disposable#dispose()}
 	 *
 	 * @return a new {@link Scheduler}
 	 */
@@ -190,7 +197,7 @@ public class Schedulers {
 	 * @param name Thread prefix
 	 * @param ttlSeconds Time-to-live for an idle {@link reactor.core.scheduler.Scheduler.Worker}
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
+	 * Scheduler#dispose()} to exit the VM.
 	 *
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
@@ -255,7 +262,7 @@ public class Schedulers {
 	 * @param name Thread prefix
 	 * @param parallelism Number of pooled workers.
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
+	 * Scheduler#dispose()} to exit the VM.
 	 *
 	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
@@ -299,7 +306,7 @@ public class Schedulers {
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
+	 * Scheduler#dispose()} to exit the VM.
 	 *
 	 * @return a new {@link Scheduler} that hosts a single-threaded ExecutorService-based
 	 * worker
@@ -341,7 +348,7 @@ public class Schedulers {
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#shutdown()} to exit the VM.
+	 * Scheduler#dispose()} to exit the VM.
 	 *
 	 * @return a new {@link TimedScheduler}
 	 */
@@ -423,7 +430,7 @@ public class Schedulers {
 	}
 
 	/**
-	 * Clear any cached {@link Scheduler} and call shutdown on them.
+	 * Clear any cached {@link Scheduler} and call dispose on them.
 	 */
 	public static void shutdownNow() {
 		List<CachedScheduler> schedulers;
@@ -431,7 +438,7 @@ public class Schedulers {
 		for (; ; ) {
 			schedulers = new ArrayList<>(view);
 			view.clear();
-			schedulers.forEach(CachedScheduler::_shutdown);
+			schedulers.forEach(CachedScheduler::_dispose);
 			if (view.isEmpty()) {
 				return;
 			}
@@ -440,7 +447,7 @@ public class Schedulers {
 
 	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
-	 * suited for parallel work. Will cache the returned schedulers for subsequent calls until shutdown.
+	 * suited for parallel work. Will cache the returned schedulers for subsequent calls until dispose.
 	 *
 	 * @return a cached {@link Scheduler} that hosts a single-threaded
 	 * ExecutorService-based worker
@@ -453,7 +460,7 @@ public class Schedulers {
 	 * Wraps a single worker of some other {@link Scheduler} and provides {@link
 	 * reactor.core.scheduler.Scheduler.Worker} services on top of it.
 	 * <p>
-	 * Use the {@link Scheduler#shutdown()} to release the wrapped worker.
+	 * Use the {@link Scheduler#dispose()} to release the wrapped worker.
 	 *
 	 * @param original a {@link Scheduler} to call upon to get the single {@link
 	 * reactor.core.scheduler.Scheduler.Worker}
@@ -476,7 +483,7 @@ public class Schedulers {
 	}
 
 	/**
-	 * Attempt to safely shutdown a {@link Scheduler}'s {@link ExecutorService}. This
+	 * Attempt to safely dispose a {@link Scheduler}'s {@link ExecutorService}. This
 	 * method will call {@link ExecutorService#awaitTermination(long, TimeUnit)} with
 	 * a fixed grace period of 30 seconds (logging a warn message if the awaitTermination
 	 * couldn't finish).
@@ -588,7 +595,7 @@ public class Schedulers {
 			if (cachedSchedulers.putIfAbsent(key, s) == null) {
 				return s;
 			}
-			s._shutdown();
+			s._dispose();
 		}
 	}
 
@@ -603,7 +610,7 @@ public class Schedulers {
 			if (cachedSchedulers.putIfAbsent(key, s) == null) {
 				return s;
 			}
-			s._shutdown();
+			s._dispose();
 		}
 	}
 
@@ -685,6 +692,16 @@ public class Schedulers {
 
 		@Override
 		public void shutdown() {
+			dispose();
+		}
+
+		@Override
+		public void dispose() {
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return cached.isDisposed();
 		}
 
 		/**
@@ -698,8 +715,8 @@ public class Schedulers {
 			return cached;
 		}
 
-		void _shutdown() {
-			cached.shutdown();
+		void _dispose() {
+			cached.dispose();
 		}
 
 		TimedScheduler asTimedScheduler() {

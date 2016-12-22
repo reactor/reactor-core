@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
@@ -427,7 +427,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	static final class ZipSingleSubscriber<T>
-			implements Subscriber<T>, Trackable, Cancellation, Receiver {
+			implements Subscriber<T>, Trackable, Disposable, Receiver {
 
 		final ZipSingleCoordinator<T, ?> parent;
 

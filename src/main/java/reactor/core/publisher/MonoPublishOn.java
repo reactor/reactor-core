@@ -101,7 +101,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				if (schedule() == Scheduler.REJECTED) {
+				if (schedule() == Scheduler.REJECTED && future != CANCELLED) {
 					throw Operators.onRejectedExecution();
 				}
 			}

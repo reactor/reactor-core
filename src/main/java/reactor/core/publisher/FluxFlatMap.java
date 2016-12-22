@@ -921,10 +921,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 						return;
 					}
 
+					s.request(1);
 					if (WIP.decrementAndGet(this) != 0) {
 						drainLoop();
 					}
-					s.request(1);
 					return;
 				}
 			}

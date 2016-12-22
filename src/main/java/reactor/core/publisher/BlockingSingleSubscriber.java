@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -30,7 +30,7 @@ import reactor.core.Trackable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 abstract class BlockingSingleSubscriber<T> extends CountDownLatch
-implements Subscriber<T>, Cancellation, Trackable, Receiver {
+implements Subscriber<T>, Disposable, Trackable, Receiver {
 
     T value;
     Throwable error;

@@ -22,7 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -52,7 +52,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 	}
 
 	@Override
-	public Cancellation schedule(Runnable task) {
+	public Disposable schedule(Runnable task) {
 		try {
 			Future<?> f = executor.submit(task);
 			return () -> f.cancel(interruptOnCancel);
@@ -63,7 +63,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 	}
 
 	@Override
+	public boolean isDisposed() {
+		return executor.isShutdown();
+	}
+
+	@Override
 	public void shutdown() {
+		dispose();
+	}
+
+	@Override
+	public void dispose() {
 		if(interruptOnCancel) {
 			executor.submit(EMPTY).cancel(true);
 		}
@@ -86,7 +96,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable t) {
+		public Disposable schedule(Runnable t) {
 			ScheduledRunnable sr = new ScheduledRunnable(t, this);
 			try {
 				if (add(sr)) {
@@ -125,6 +135,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 		@Override
 		public void shutdown() {
+			dispose();
+		}
+
+		@Override
+		public void dispose() {
 			if (!terminated) {
 				OpenHashSet<ScheduledRunnable> coll;
 				synchronized (this) {
@@ -148,14 +163,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean isShutdown() {
+		public boolean isDisposed() {
 			return terminated;
 		}
 	}
 
 	static final class ScheduledRunnable
 			extends AtomicReference<Future<?>>
-			implements Runnable, Cancellation {
+			implements Runnable, Disposable {
 		/** */
 		private static final long serialVersionUID = 2284024836904862408L;
 
@@ -163,6 +178,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 		final ExecutorServiceWorker parent;
 
+		@SuppressWarnings("unused")
 		volatile Thread current;
 		static final AtomicReferenceFieldUpdater<ScheduledRunnable, Thread> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Thread.class, "current");
@@ -213,6 +229,12 @@ final class ExecutorServiceScheduler implements Scheduler {
 					return;
 				}
 			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			Future<?> a = get();
+			return FINISHED == a || CANCELLED_FUTURE == a;
 		}
 
 		@Override

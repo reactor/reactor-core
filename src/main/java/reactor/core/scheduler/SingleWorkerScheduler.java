@@ -23,7 +23,7 @@ import reactor.core.Cancellation;
  * Wraps one of the workers of some other Scheduler and
  * provides Worker services on top of it.
  * <p>
- * Use the shutdown() to release the wrapped worker.
+ * Use the dispose() to release the wrapped worker.
  */
 final class SingleWorkerScheduler implements Scheduler, Executor {
 
@@ -32,10 +32,15 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     public SingleWorkerScheduler(Scheduler actual) {
         this.main = actual.createWorker();
     }
-    
+
     @Override
     public void shutdown() {
-        main.shutdown();
+        dispose();
+    }
+
+    @Override
+    public void dispose() {
+        main.dispose();
     }
     
     @Override
@@ -52,5 +57,9 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     public Worker createWorker() {
         return new ExecutorScheduler.ExecutorSchedulerWorker(this);
     }
-    
+
+    @Override
+    public boolean isDisposed() {
+        return main.isDisposed();
+    }
 }

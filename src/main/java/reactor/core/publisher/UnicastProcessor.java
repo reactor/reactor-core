@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Producer;
@@ -76,7 +76,7 @@ public final class UnicastProcessor<T>
 	 * @param <T> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <T> UnicastProcessor<T> create(Queue<T> queue, Cancellation endcallback) {
+	public static <T> UnicastProcessor<T> create(Queue<T> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
 
@@ -94,17 +94,17 @@ public final class UnicastProcessor<T>
 	 */
 	public static <T> UnicastProcessor<T> create(Queue<T> queue,
 			Consumer<? super T> onOverflow,
-			Cancellation endcallback) {
+			Disposable endcallback) {
 		return new UnicastProcessor<>(queue, onOverflow, endcallback);
 	}
 
 	final Queue<T>            queue;
 	final Consumer<? super T> onOverflow;
 
-	volatile Cancellation onTerminate;
+	volatile Disposable onTerminate;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<UnicastProcessor, Cancellation> ON_TERMINATE =
-			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Cancellation.class, "onTerminate");
+	static final AtomicReferenceFieldUpdater<UnicastProcessor, Disposable> ON_TERMINATE =
+			AtomicReferenceFieldUpdater.newUpdater(UnicastProcessor.class, Disposable.class, "onTerminate");
 
 	volatile boolean done;
 	Throwable error;
@@ -136,7 +136,7 @@ public final class UnicastProcessor<T>
 		this.onOverflow = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue, Cancellation onTerminate) {
+	public UnicastProcessor(Queue<T> queue, Disposable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 		this.onOverflow = null;
@@ -144,14 +144,14 @@ public final class UnicastProcessor<T>
 
 	public UnicastProcessor(Queue<T> queue,
 			Consumer<? super T> onOverflow,
-			Cancellation onTerminate) {
+			Disposable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 	}
 
 	void doTerminate() {
-		Cancellation r = onTerminate;
+		Disposable r = onTerminate;
 		if (r != null && ON_TERMINATE.compareAndSet(this, r, null)) {
 			r.dispose();
 		}

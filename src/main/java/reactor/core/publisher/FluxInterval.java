@@ -111,7 +111,7 @@ final class FluxInterval extends Flux<Long> {
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				worker.shutdown();
+				worker.dispose();
 			}
 		}
 	}

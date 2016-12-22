@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
@@ -36,7 +36,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 
 	final ConnectableFlux<? extends T> source;
 
-	final Consumer<? super Cancellation> cancelSupport;
+	final Consumer<? super Disposable> cancelSupport;
 
 	volatile int remaining;
 	@SuppressWarnings("rawtypes")
@@ -45,7 +45,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 
 
 	public FluxAutoConnectFuseable(ConnectableFlux<? extends T> source,
-			int n, Consumer<? super Cancellation> cancelSupport) {
+			int n, Consumer<? super Disposable> cancelSupport) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);
 		}

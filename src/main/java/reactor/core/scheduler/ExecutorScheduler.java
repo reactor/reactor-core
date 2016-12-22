@@ -24,7 +24,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -38,13 +38,18 @@ final class ExecutorScheduler implements Scheduler {
 	final Executor executor;
 	final boolean  trampoline;
 
+	volatile boolean terminated;
+
 	public ExecutorScheduler(Executor executor, boolean trampoline) {
 		this.executor = executor;
 		this.trampoline = trampoline;
 	}
 
 	@Override
-	public Cancellation schedule(Runnable task) {
+	public Disposable schedule(Runnable task) {
+		if(terminated){
+			return REJECTED;
+		}
 		Objects.requireNonNull(task, "task");
 		ExecutorPlainRunnable r = new ExecutorPlainRunnable(task);
 		try {
@@ -54,6 +59,21 @@ final class ExecutorScheduler implements Scheduler {
 			return REJECTED;
 		}
 		return r;
+	}
+
+	@Override
+	public void shutdown() {
+		dispose();
+	}
+
+	@Override
+	public void dispose() {
+		terminated = true;
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return terminated;
 	}
 
 	@Override
@@ -69,7 +89,7 @@ final class ExecutorScheduler implements Scheduler {
 	 * ExecutorRunnable will stay in the Executor's queue and be always executed.
 	 */
 	static final class ExecutorPlainRunnable extends AtomicBoolean
-			implements Runnable, Cancellation {
+			implements Runnable, Disposable {
 
 		/** */
 		private static final long serialVersionUID = 5116223460201378097L;
@@ -90,6 +110,11 @@ final class ExecutorScheduler implements Scheduler {
 			catch (Throwable ex) {
 				Schedulers.handleError(ex);
 			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return get();
 		}
 
 		@Override
@@ -116,7 +141,7 @@ final class ExecutorScheduler implements Scheduler {
 	 * remove itself once completed or cancelled
 	 */
 	static final class ExecutorTrackedRunnable extends AtomicBoolean
-			implements Runnable, Cancellation {
+			implements Runnable, Disposable {
 
 		/** */
 		private static final long serialVersionUID = 3503344795919906192L;
@@ -159,6 +184,11 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
+		public boolean isDisposed() {
+			return get();
+		}
+
+		@Override
 		public String toString() {
 			return "ExecutorTrackedRunnable[cancelled=" + get() + ", task=" + task + "]";
 		}
@@ -181,7 +211,7 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 			if (terminated) {
 				return REJECTED;
@@ -212,6 +242,11 @@ final class ExecutorScheduler implements Scheduler {
 
 		@Override
 		public void shutdown() {
+			dispose();
+		}
+
+		@Override
+		public void dispose() {
 			if (terminated) {
 				return;
 			}
@@ -236,7 +271,7 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean isShutdown() {
+		public boolean isDisposed() {
 			return terminated;
 		}
 
@@ -274,7 +309,7 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 			if (terminated) {
 				return REJECTED;
@@ -303,6 +338,11 @@ final class ExecutorScheduler implements Scheduler {
 
 		@Override
 		public void shutdown() {
+			dispose();
+		}
+
+		@Override
+		public void dispose() {
 			if (terminated) {
 				return;
 			}
@@ -317,7 +357,7 @@ final class ExecutorScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean isShutdown() {
+		public boolean isDisposed() {
 			return terminated;
 		}
 

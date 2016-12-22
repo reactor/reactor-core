@@ -43,8 +43,8 @@ public abstract class AbstractReactorTest {
 
 	@AfterClass
 	public static void closeEnv() {
-		ioGroup.shutdown();
-		asyncGroup.shutdown();
+		ioGroup.dispose();
+		asyncGroup.dispose();
 	}
 
 	static {

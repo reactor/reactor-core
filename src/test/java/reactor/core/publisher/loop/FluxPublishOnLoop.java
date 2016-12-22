@@ -15,8 +15,18 @@
  */
 package reactor.core.publisher.loop;
 
+import java.time.Duration;
+import java.util.concurrent.Executors;
+
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxPublishOnTest;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.subscriber.AssertSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -24,6 +34,16 @@ import reactor.core.publisher.FluxPublishOnTest;
 public class FluxPublishOnLoop {
 
 	final FluxPublishOnTest publishOnTest = new FluxPublishOnTest();
+
+	@BeforeClass
+	public static void before() {
+		FluxPublishOnTest.exec = Executors.newSingleThreadExecutor();
+	}
+
+	@AfterClass
+	public static void after() {
+		FluxPublishOnTest.exec.shutdownNow();
+	}
 
 	@Test
 	public void prefetchAmountOnlyLoop() {
@@ -77,6 +97,45 @@ public class FluxPublishOnLoop {
 	public void crossRangeMaxUnboundedLoop() {
 		for (int i = 0; i < 50; i++) {
 			publishOnTest.crossRangeMaxUnbounded();
+		}
+	}
+
+	@Test
+	public void crossRangePerfDefaultLoop() {
+		for (int i = 0; i < 100000; i++) {
+			if (i % 2000 == 0) {
+				publishOnTest.crossRangePerfDefault();
+			}
+		}
+	}
+
+	@Test
+	public void crossRangePerfDefaultLoop2() {
+		Scheduler scheduler = Schedulers.fromExecutorService(FluxPublishOnTest.exec);
+
+		int count = 1000;
+
+		for (int j = 1; j < 256; j *= 2) {
+
+			Flux<Integer> source = Flux.range(1, count)
+			                           .flatMap(v -> Flux.range(v, 2), false, 128, j)
+			                           .publishOn(scheduler);
+
+			for (int i = 0; i < 10000; i++) {
+				AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+				source.subscribe(ts);
+
+				if (!ts.await(Duration.ofSeconds(15))
+				       .isTerminated()) {
+					ts.cancel();
+					Assert.fail("Timed out @ maxConcurrency = " + j);
+				}
+
+				ts.assertValueCount(count * 2)
+				  .assertNoError()
+				  .assertComplete();
+			}
 		}
 	}
 }

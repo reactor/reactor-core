@@ -18,10 +18,8 @@ package reactor.core
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscription
 import reactor.core.publisher.*
-import reactor.core.scheduler.Scheduler
 import reactor.core.scheduler.Schedulers
 import reactor.test.subscriber.AssertSubscriber
-import spock.lang.Shared
 import spock.lang.Specification
 
 import java.time.Duration
@@ -268,7 +266,7 @@ class FluxSpec extends Specification {
 			last.block(Duration.ofSeconds(5)) > 20_000
 
 	  	cleanup:
-			scheduler.shutdown()
+			scheduler.dispose()
 	}
 
 	def 'A Flux can sample values over time with consumeOn'() {
@@ -290,7 +288,7 @@ class FluxSpec extends Specification {
 			last.block() > 20_000
 
 	  	cleanup:
-			scheduler.shutdown()
+			scheduler.dispose()
 	}
 
 	def 'A Flux can be enforced to dispatch values distinct from their immediate predecessors'() {
@@ -533,18 +531,19 @@ class FluxSpec extends Specification {
 	def "Stream's values can be exploded"() {
 		given:
 			'a source composable with a mapMany function'
-			def source = EmitterProcessor.<Integer> create().connect()
+			def source = EmitterProcessor.<Integer> create()
 			Flux<Integer> mapped = source.
 			log().
 					publishOn(Schedulers.parallel()).
+					log().
 					flatMap { v -> Flux.just(v * 2) }.
 					doOnError(Throwable) { it.printStackTrace() }
 
 
 		when:
 			'the source accepts a value'
-			def value = mapped.publishNext().subscribe()
-			source.onNext(1)
+			def value = mapped.next().subscribe()
+			source.connectSink().emit(1)
 
 		then:
 			'the value is mapped'
@@ -934,7 +933,7 @@ class FluxSpec extends Specification {
 			res.block() == [2, 4, 6, 8]
 
 		cleanup:
-		  scheduler.shutdown()
+		  scheduler.dispose()
 	}
 
 	def "When a filter function throws an exception, the filtered composable accepts the error"() {
@@ -1532,7 +1531,7 @@ class FluxSpec extends Specification {
 			'dispatching works'
 			result == ['test1', 'test2', 'test3']
 	  	cleanup:
-			scheduler.shutdown()
+			scheduler.dispose()
 	}
 
 
@@ -2322,11 +2321,13 @@ class FluxSpec extends Specification {
 			def sum = new AtomicInteger()
 			int length = 1000
 			int batchSize = 333
+			def i = new AtomicInteger()
 			int latchCount = length / batchSize
 			def latch = new CountDownLatch(latchCount)
 			def head = EmitterProcessor.<Integer> create().connect()
 			head
 					.publishOn(Schedulers.parallel())
+			.doOnNext{ c -> i.incrementAndGet() }
 					.take(1000)
 					.parallel(3)
 					.runOn(Schedulers.parallel())
@@ -2339,8 +2340,15 @@ class FluxSpec extends Specification {
 					}, { e -> println e }, { _it -> println "passe"} )
 		when:
 			'values are accepted into the head'
-			(1..length).each { head.onNext(it) }
-			latch.await(4, TimeUnit.SECONDS)
+		try {
+		  (1..length).each { head.onNext(it) }
+		}
+		catch (Exception e){
+		  println i
+		  Exceptions.unwrap(e).printStackTrace()
+		  throw e
+		}
+			latch.await()
 
 		then:
 			'results contains the expected values'

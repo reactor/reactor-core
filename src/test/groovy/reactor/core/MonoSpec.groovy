@@ -464,7 +464,7 @@ class MonoSpec extends Specification {
 	combined.block(Duration.ofMillis(3205)) == 2
 
 	cleanup:
-	ioGroup.shutdown()
+	ioGroup.dispose()
   }
 
   def "A combined promise is immediately rejected if its component promises are already rejected"() {
@@ -605,8 +605,8 @@ class MonoSpec extends Specification {
 	def p2 = p1
 			.publishOn(s)
 			.map {
-	  println Thread.currentThread();
-	  sleep(3000);
+	  println Thread.currentThread()
+	  sleep(3000)
 	  Integer.parseInt it
 	}
 
@@ -625,7 +625,7 @@ class MonoSpec extends Specification {
 	v
 
 	cleanup:
-	s.shutdown()
+	s.dispose()
   }
 
 }

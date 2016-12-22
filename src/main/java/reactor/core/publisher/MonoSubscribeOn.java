@@ -16,10 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 
@@ -43,19 +45,23 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
     public void subscribe(Subscriber<? super T> s) {
         Scheduler.Worker worker = scheduler.createWorker();
         
-        MonoSubscribeOnSubscriber<T> parent = new MonoSubscribeOnSubscriber<>(s, worker);
+        MonoSubscribeOnSubscriber<T> parent = new MonoSubscribeOnSubscriber<>(source, s,
+		        worker);
         s.onSubscribe(parent);
         
-        if (worker.schedule(() -> source.subscribe(parent)) == Scheduler.REJECTED) {
-            throw Operators.onRejectedExecution(parent, null, null);
+        if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
+            s.onError(Operators.onRejectedExecution(parent, null, null));
         }
     }
     
-    static final class MonoSubscribeOnSubscriber<T> implements Subscriber<T>, Subscription {
+    static final class MonoSubscribeOnSubscriber<T> implements Subscriber<T>,
+                                                               Subscription, Runnable {
         final Subscriber<? super T> actual;
         
+        final Publisher<? extends T> parent;
+
         final Scheduler.Worker worker;
-        
+
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
         static final AtomicReferenceFieldUpdater<MonoSubscribeOnSubscriber, Subscription> S =
@@ -66,20 +72,27 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
         static final AtomicLongFieldUpdater<MonoSubscribeOnSubscriber> REQUESTED =
                 AtomicLongFieldUpdater.newUpdater(MonoSubscribeOnSubscriber.class, "requested");
         
-        public MonoSubscribeOnSubscriber(Subscriber<? super T> actual, Worker worker) {
+        public MonoSubscribeOnSubscriber(Publisher<? extends T> parent, Subscriber<?
+		        super T> actual, Worker worker) {
             this.actual = actual;
+            this.parent = parent;
             this.worker = worker;
         }
-        
-        @Override
+
+	    @Override
+	    public void run() {
+		    parent.subscribe(this);
+	    }
+
+	    @Override
         public void onSubscribe(Subscription s) {
             if (!Operators.setOnce(S, this, s)) {
                 s.cancel();
             } else {
                 long r = REQUESTED.getAndSet(this, 0L);
                 if (r != 0L) {
-                    if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED) {
-                        throw Operators.onRejectedExecution();
+                    if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED && !worker.isDisposed()) {
+                        actual.onError(Operators.onRejectedExecution(this, null, null));
                     }
                 }
             }
@@ -95,7 +108,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
             try {
                 actual.onError(t);
             } finally {
-                worker.shutdown();
+                worker.dispose();
             }
         }
         
@@ -104,22 +117,24 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
             try {
                 actual.onComplete();
             } finally {
-                worker.shutdown();
+                worker.dispose();
             }
         }
         
         @Override
         public void request(long n) {
             if (Operators.validate(n)) {
-                //Do not check REJECTED in request flow and silently drop requests on shutdown scheduler
-                worker.schedule(() -> requestMore(n));
+                if(worker.schedule(() -> requestMore(n)) == Scheduler.REJECTED &&
+		                !worker.isDisposed()){
+	                actual.onError(Operators.onRejectedExecution(this, null, null));
+                }
             }
         }
         
         @Override
         public void cancel() {
             if (Operators.terminate(S, this)) {
-                worker.shutdown();
+                worker.dispose();
             }
         }
         

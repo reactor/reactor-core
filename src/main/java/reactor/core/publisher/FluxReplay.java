@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
@@ -90,7 +90,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	@Override
-	public void connect(Consumer<? super Cancellation> cancelSupport) {
+	public void connect(Consumer<? super Disposable> cancelSupport) {
 		boolean doConnect;
 		State<T> s;
 		for (; ; ) {
@@ -145,7 +145,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	static final class State<T>
-			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Cancellation {
+			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Disposable {
 
 		final FluxReplay<T>                   parent;
 		final ReplayProcessor.ReplayBuffer<T> buffer;

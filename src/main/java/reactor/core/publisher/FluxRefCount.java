@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.MultiProducer;
@@ -89,7 +89,7 @@ final class FluxRefCount<T> extends Flux<T>
 		return source;
 	}
 
-	static final class State<T> implements Consumer<Cancellation>, MultiProducer, Receiver {
+	static final class State<T> implements Consumer<Disposable>, MultiProducer, Receiver {
 		
 		final int n;
 		
@@ -100,12 +100,12 @@ final class FluxRefCount<T> extends Flux<T>
 		static final AtomicIntegerFieldUpdater<State> SUBSCRIBERS =
 				AtomicIntegerFieldUpdater.newUpdater(State.class, "subscribers");
 		
-		volatile Cancellation disconnect;
+		volatile Disposable disconnect;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Cancellation> DISCONNECT =
-				AtomicReferenceFieldUpdater.newUpdater(State.class, Cancellation.class, "disconnect");
+		static final AtomicReferenceFieldUpdater<State, Disposable> DISCONNECT =
+				AtomicReferenceFieldUpdater.newUpdater(State.class, Disposable.class, "disconnect");
 		
-		static final Cancellation DISCONNECTED = () -> { };
+		static final Disposable DISCONNECTED = () -> { };
 
 		public State(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
@@ -124,14 +124,14 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 		
 		@Override
-		public void accept(Cancellation r) {
+		public void accept(Disposable r) {
 			if (!DISCONNECT.compareAndSet(this, null, r)) {
 				r.dispose();
 			}
 		}
 		
 		void doDisconnect() {
-			Cancellation a = disconnect;
+			Disposable a = disconnect;
 			if (a != DISCONNECTED) {
 				a = DISCONNECT.getAndSet(this, DISCONNECTED);
 				if (a != null && a != DISCONNECTED) {
@@ -151,7 +151,7 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 		
 		void upstreamFinished() {
-			Cancellation a = disconnect;
+			Disposable a = disconnect;
 			if (a != DISCONNECTED) {
 				DISCONNECT.getAndSet(this, DISCONNECTED);
 			}

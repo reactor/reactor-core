@@ -17,7 +17,6 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -33,7 +32,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.Flux;
 
 import static org.junit.Assert.fail;
 
@@ -50,10 +48,10 @@ public class SchedulersTest {
 
 		public TestSchedulers(boolean shutdownOnInit) {
 			if (shutdownOnInit) {
-				elastic.shutdown();
-				single.shutdown();
-				parallel.shutdown();
-				timer.shutdown();
+				elastic.dispose();
+				single.dispose();
+				parallel.dispose();
+				timer.dispose();
 			}
 		}
 
@@ -93,7 +91,7 @@ public class SchedulersTest {
 		Schedulers.resetFactory();
 
 		Scheduler s = Schedulers.newSingle("unused");
-		s.shutdown();
+		s.dispose();
 
 		Assert.assertNotEquals(ts.single, s);
 	}
@@ -213,7 +211,7 @@ public class SchedulersTest {
 			p.publishOn(scheduler)
 			 .subscribe();
 
-			scheduler.shutdown();
+			scheduler.dispose();
 
 			p.onNext("reject me");
 			Assert.fail("Should have rejected the execution");
@@ -227,7 +225,7 @@ public class SchedulersTest {
 			fail(throwable + " is not a RejectedExecutionException");
 		}
 		finally {
-			scheduler.shutdown();
+			scheduler.dispose();
 		}
 	}
 
@@ -243,7 +241,7 @@ public class SchedulersTest {
 			return t;
 		});
 
-		service.shutdown();
+		service.dispose();
 	}
 
 	Scheduler.Worker runTest(final Scheduler.Worker dispatcher)
@@ -286,7 +284,7 @@ public class SchedulersTest {
 		};
 		r.schedule(() -> c.accept("Hello World!"));
 
-		serviceRB.shutdown();
+		serviceRB.dispose();
 		Thread.sleep(1200);
 		long end = System.currentTimeMillis();
 

@@ -40,7 +40,7 @@ public class FluxIntervalTest {
 
 	@After
 	public void after() {
-		exec.shutdown();
+		exec.dispose();
 	}
 
 	@Test
@@ -73,7 +73,7 @@ public class FluxIntervalTest {
 
 		}
 		finally {
-			exec.shutdown();
+			exec.dispose();
 		}
 	}
 

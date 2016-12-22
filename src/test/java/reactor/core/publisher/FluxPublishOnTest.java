@@ -49,7 +49,7 @@ import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
 public class FluxPublishOnTest {
 
-	static ExecutorService exec;
+	public static ExecutorService exec;
 
 	@BeforeClass
 	public static void before() {
@@ -897,15 +897,6 @@ public class FluxPublishOnTest {
 	}
 
 	@Test
-	public void crossRangePerfDefaultLoop() {
-		for (int i = 0; i < 100000; i++) {
-			if (i % 2000 == 0) {
-				crossRangePerfDefault();
-			}
-		}
-	}
-
-	@Test
 	public void crossRangePerfDefault() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
@@ -929,35 +920,7 @@ public class FluxPublishOnTest {
 		  .assertComplete();
 	}
 
-	@Test
-	public void crossRangePerfDefaultLoop2() {
-		Scheduler scheduler = Schedulers.fromExecutorService(exec);
 
-		int count = 1000;
-
-		for (int j = 1; j < 256; j *= 2) {
-
-			Flux<Integer> source = Flux.range(1, count)
-			                           .flatMap(v -> Flux.range(v, 2), false, 128, j)
-			                           .publishOn(scheduler);
-
-			for (int i = 0; i < 10000; i++) {
-				AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-				source.subscribe(ts);
-
-				if (!ts.await(Duration.ofSeconds(15))
-				       .isTerminated()) {
-					ts.cancel();
-					Assert.fail("Timed out @ maxConcurrency = " + j);
-				}
-
-				ts.assertValueCount(count * 2)
-				  .assertNoError()
-				  .assertComplete();
-			}
-		}
-	}
 
 	@Test
 	public void limitRate() {

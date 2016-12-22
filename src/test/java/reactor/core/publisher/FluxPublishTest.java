@@ -19,7 +19,7 @@ import java.util.concurrent.CancellationException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -321,7 +321,7 @@ public class FluxPublishTest {
 		
 		p.subscribe(ts);
 
-		Cancellation r = p.connect();
+		Disposable r = p.connect();
 				
 		e.onNext(1);
 		e.onNext(2);
@@ -346,7 +346,7 @@ public class FluxPublishTest {
 		
 		p.subscribe(ts);
 
-		Cancellation r = p.connect();
+		Disposable r = p.connect();
 				
 		r.dispose();
 		

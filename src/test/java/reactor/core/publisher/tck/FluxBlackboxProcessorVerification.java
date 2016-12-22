@@ -63,7 +63,7 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 				 )
 				 .publishOn(sharedGroup)
-				 .doAfterTerminate(asyncGroup::shutdown)
+				 .doAfterTerminate(asyncGroup::dispose)
 				 .doOnError(Throwable::printStackTrace)
 				.awaitOnSubscribe());
 	}
@@ -135,7 +135,7 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 
 	@AfterClass
 	public static void tearDownGlobal(){
-		sharedGroup.shutdown();
+		sharedGroup.dispose();
 	}
 
 	@Override
