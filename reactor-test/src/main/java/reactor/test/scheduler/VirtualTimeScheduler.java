@@ -258,6 +258,11 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
+	public void shutdown() {
+		dispose();
+	}
+
+	@Override
 	public Disposable schedulePeriodically(Runnable task,
 			long initialDelay,
 			long period, TimeUnit unit) {
