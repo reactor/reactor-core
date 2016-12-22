@@ -2632,6 +2632,24 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Return a {@code Mono<Void>} that waits for this {@link Mono} to complete then
+	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
+	 * second completion signal is replayed, or any error signal that occurs instead.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/ignorethen.png"
+	 * alt="">
+	 *
+	 * @param other a {@link Publisher} to wait for after this Mono's termination
+	 * @return a new {@link Mono} completing when both publishers have completed in
+	 * sequence
+	 */
+	public final Mono<Void> thenEmpty(Publisher<Void> other) {
+		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		Mono<Void> then = ignored.then(MonoSource.wrap(other));
+		return Mono.onAssembly(then);
+	}
+
+	/**
 	 * Ignore element from this mono and transform the completion signal into a
 	 * {@code Flux<V>} that will emit elements from the provided {@link Publisher}.
 	 *

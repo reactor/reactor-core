@@ -15,11 +15,29 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 
 public class MonoThenIgnoreTest {
 
 	@Test
 	public void normal() {
+		StepVerifier.create(Mono.just(1)
+		                        .thenEmpty(Flux.empty()))
+		            .expectComplete();
+	}
+
+	Publisher<Void> scenario(){
+		return Mono.just(1)
+		    .thenEmpty(Mono.delay(Duration.ofSeconds(123)).then());
+	}
+	@Test
+	public void normalTime() {
+		StepVerifier.withVirtualTime(this::scenario)
+		            .thenAwait(Duration.ofSeconds(123))
+		            .expectComplete();
 	}
 }
