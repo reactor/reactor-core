@@ -192,10 +192,12 @@ configure(rootProject) {
   }
 
   task loops(type: Test) {
+	exclude '**/*'
 	include '**/*Loop.*'
   }
 
   task testNG(type: Test) {
+	exclude '**/*'
 	include '**/*Verification.*'
 	useTestNG()
   }
