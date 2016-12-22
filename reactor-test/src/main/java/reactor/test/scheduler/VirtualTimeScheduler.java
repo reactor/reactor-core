@@ -203,7 +203,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public TimedWorker createWorker() {
+	public VirtualTimeWorker createWorker() {
 		if (shutdown) {
 			throw new IllegalStateException("VirtualTimeScheduler is shutdown");
 		}
@@ -419,6 +419,11 @@ public class VirtualTimeScheduler implements TimedScheduler {
 			replace(periodicTask, schedule(periodicTask, initialDelay, unit));
 
 			return periodicTask;
+		}
+
+		@Override
+		public void shutdown() {
+			dispose();
 		}
 
 		@Override
