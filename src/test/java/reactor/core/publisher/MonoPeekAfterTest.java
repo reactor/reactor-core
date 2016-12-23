@@ -461,7 +461,6 @@ public class MonoPeekAfterTest {
 					invoked.increment();
 					value.set(v);
 				}))
-		            .expectFusion()
 		            .expectComplete()
 		            .verify();
 
