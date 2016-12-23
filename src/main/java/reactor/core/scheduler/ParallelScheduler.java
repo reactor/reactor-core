@@ -114,7 +114,7 @@ final class ParallelScheduler implements Scheduler {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
             if (a != SHUTDOWN) {
                 for (ExecutorService exec : a) {
-                    Schedulers.safeExecutorServiceShutdown(exec, "Parallel");
+                    Schedulers.executorServiceShutdown(exec, "Parallel");
                 }
             }
         }

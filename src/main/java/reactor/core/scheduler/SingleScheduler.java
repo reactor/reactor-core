@@ -94,7 +94,7 @@ final class SingleScheduler implements Scheduler {
         if (a != TERMINATED) {
             a = EXECUTORS.getAndSet(this, TERMINATED);
             if (a != TERMINATED) {
-                Schedulers.safeExecutorServiceShutdown(a, "Single");
+                Schedulers.executorServiceShutdown(a, "Single");
             }
         }
     }

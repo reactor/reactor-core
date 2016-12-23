@@ -96,7 +96,7 @@ final class SingleTimedScheduler implements TimedScheduler {
 
 	@Override
 	public void dispose() {
-		Schedulers.safeExecutorServiceShutdown(executor, "SingleTimed");
+		Schedulers.executorServiceShutdown(executor, "SingleTimed");
 	}
     
     @Override

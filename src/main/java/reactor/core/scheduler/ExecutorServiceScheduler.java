@@ -77,7 +77,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		if(interruptOnCancel) {
 			executor.submit(EMPTY).cancel(true);
 		}
-		Schedulers.safeExecutorServiceShutdown(executor, "ExecutorService");
+		Schedulers.executorServiceShutdown(executor, "ExecutorService");
 	}
 
 	static final class ExecutorServiceWorker implements Worker {

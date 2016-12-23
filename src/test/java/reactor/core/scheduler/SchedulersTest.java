@@ -208,15 +208,19 @@ public class SchedulersTest {
 		try {
 			DirectProcessor<String> p = DirectProcessor.create();
 
+			AtomicReference<String> r = new AtomicReference<>();
+			CountDownLatch l = new CountDownLatch(1);
+
 			p.publishOn(scheduler)
-			 .subscribe();
+			 .log()
+			 .subscribe(r::set, null, l::countDown);
 
 			scheduler.dispose();
 
 			p.onNext("reject me");
-			Assert.fail("Should have rejected the execution");
+			l.await(3, TimeUnit.SECONDS);
 		}
-		catch (RuntimeException ree) {
+		catch (Exception ree) {
 			ree.printStackTrace();
 			Throwable throwable = Exceptions.unwrap(ree);
 			if (throwable instanceof RejectedExecutionException) {
