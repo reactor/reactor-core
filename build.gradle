@@ -46,7 +46,7 @@ ext {
 
   // Testing
   spockVersion = '1.0-groovy-2.4'
-  testAddonVersion = '3.0.3.RELEASE'
+  testAddonVersion = '3.0.4.RELEASE'
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
@@ -177,7 +177,7 @@ configure(rootProject) {
     optional "org.slf4j:slf4j-api:$slf4jVersion"
 
     //Optional JDK 9 Converter
-    jsr166backport "io.projectreactor:jsr166:1.0.0.BUILD-SNAPSHOT"
+    jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
 
     testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
     // Testing
