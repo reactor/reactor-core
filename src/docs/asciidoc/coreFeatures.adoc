@@ -7,7 +7,33 @@
 [[schedulers]]
 === `Schedulers`
 === Operators
+//TODO it is like an onion: mention chaining
+==== Creating data
+//TODO just, fromIterable, fromArray, generate
+==== Transforming data
+//TODO map, flatMap
+==== Splitting and joining the flow of data
+//TODO groupBy, merge, concat, zip, mergeSequential, combineLatest
+//firstEmitting, join, publish?, startWith
+==== Collecting and aggregating data
+//TODO collect(List|Map|MultiMap|SortedList), reduce, scan, count
+==== Filtering
+//TODO filter, distinct, take, last, takeLast, skip, skipLast,
+//takeUntil, takeWhile, skipUntil, skipWhile
+==== Playing with time
+//TODO defer, delay, delaySubscription, interval, elapsed, timestamp,
+//never, timeout
+==== Side effects
+//TODO doOnXXX, doAfterTerminate, doFinally
+==== Utilities
+//TODO log, materialize
+==== Buffering and Sampling
+//TODO buffer, bufferUntil, bufferWhile, sample, limitRate, window
+==== Dealing with errors
+//TODO switchIfEmpty, onErrorReturn, onErrorResumeWith, switchOnError
+==== Threading
+//TODO publishOn, subscribeOn, parallel
 [[which-operator]]
-==== Which operator do I need?
+=== Which operator do I need?
 === Processor
 ==== Do I need a Processor?

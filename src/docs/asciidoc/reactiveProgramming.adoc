@@ -1,3 +1,10 @@
 [[intro-reactive]]
 == Introduction to Reactive Programming
-=== From imperative to reactive
+=== Blocking is bad
+//TODO ok?
+=== Asynchronicity to the rescue?
+//TODO introduce asynchronous code, solutions on the JVM, why they are hard to write and maintain
+
+=== From Imperative to Reactive Programming
+==== Data as a flow
+==== Elements of functional style
