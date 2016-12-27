@@ -1,1 +1,57 @@
 == FAQ, best practices and other "How do I...?"
+
+[quote]
+I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
+
+Check you have affected the result of the operator to the variable you `.subscribe()` to.
+
+Reactor operators are decorators, they return a different instance that wraps
+the source sequence and add behavior. That is why the preferred way of using
+operators is to *chain* the calls.
+
+Compare the following:
+
+.without chaining (incorrect)
+[source,java]
+----
+Flux<String> secrets = Flux.just("foo", "chain");
+flux.map(secret -> secret.replaceAll(".", "*")); <1>
+flux.subscribe(next -> System.out.println("Received: " + next));
+----
+<1> mistake is here
+
+With:
+
+.without chaining (correct)
+[source,java]
+----
+Flux<String> secrets = Flux.just("foo", "chain");
+flux = flux.map(secret -> secret.replaceAll(".", "*"));
+flux.subscribe(next -> System.out.println("Received: " + next));
+----
+And even better:
+
+.with chaining (best)
+[source,java]
+----
+Flux<String> secrets = Flux
+  .just("foo", "chain")
+  .map(secret -> secret.replaceAll(".", "*"))
+  .subscribe(next -> System.out.println("Received: " + next));
+----
+
+The first version will output:
+
+[source]
+----
+Received: foo
+Received: chain
+----
+
+Whereas the two other versions will output the expected:
+
+[source]
+----
+Received: ***
+Received: *****
+----
