@@ -1,0 +1,7 @@
+[[getting-started]]
+== Getting started
+=== Introducing Reactor
+=== The BOM
+=== Getting Reactor
+==== Maven installation
+==== Gradle installation
