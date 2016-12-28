@@ -57,6 +57,8 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.BlockingSink;
+import reactor.core.publisher.ConnectableFlux;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -65,6 +67,7 @@ import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.Signal;
 import reactor.core.publisher.TopicProcessor;
+import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -83,6 +86,21 @@ import static org.junit.Assert.*;
 public class FluxTests extends AbstractReactorTest {
 
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
+
+	@Test
+	public void testBufferUntilSubscribe() throws InterruptedException {
+		Flux<Long> source = Flux.interval(Duration.ofMillis(500))
+				.doOnNext(t -> System.out.println("source emitted " + t));
+
+		UnicastProcessor<Long> flux = UnicastProcessor.create();
+		source.subscribe(flux);
+
+		Thread.sleep(2000);
+		flux.subscribe(System.out::println);
+
+		Thread.sleep(2000);
+		System.out.println("buffer size " + flux.size());
+	}
 
 	@Test
 	public void testDoOnEachSignal() {
