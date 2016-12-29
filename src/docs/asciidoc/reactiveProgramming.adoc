@@ -11,24 +11,26 @@ propagate changes through the data flow.
 
 In this particular instance, pioneered by the Reactive Extensions (Rx) library
 in the .NET ecosystem, and also implemented by RxJava on the JVM, the reactive
-aspect is translated in our object-oriented languages as a kind of an extension
+aspect is translated in our object-oriented languages to a kind of extension
 of the Observer design pattern.
 
 As time went, a standardization emerged through the *Reactive Streams* effort,
-which defines a set of interfaces and interaction rules for reactive libraries
-on the JVM.
+a specification which defines a set of interfaces and interaction rules for
+reactive libraries on the JVM. It will be integrated into Java 9 (with the
+`Flow` class).
 
 One can also compare the main reactive streams pattern with the familiar Iterator
-design pattern, as there is a duality to the `Iterator`-`Iterable` pair in all
+design pattern, as there is a duality to the `Iterable`-`Iterator` pair in all
 these libraries. One major difference is that while an Iterator is _pull_ based,
 reactive streams are *push*-based.
 
 Using an iterator is quite imperative, even though the method of accessing
 values is solely the responsibility of the `Iterable`. Indeed, it is up to the
 developer to choose when to access the `next()` item in the sequence. In
-reactive streams, the equivalent of the above pair is `Subscriber`-`Publisher`.
+reactive streams, the equivalent of the above pair is `Publisher`-`Subscriber`.
 But it is the `Publisher` that notifies the Subscriber of newly available values
-_as they come_, and this push aspect is key to being reactive.
+_as they come_, and this push aspect is key to being reactive. Plus operations
+applied to pushed values are expressed declaratively rather than imperatively.
 
 Additionally to pushing values, the error handling and completion aspects are
 also covered in a well defined manner, so a `Publisher` can push new values to
@@ -161,14 +163,21 @@ it actually wraps the previous step's `Publisher` into a new instance.
 The whole chain is thus layered, like an onion, where data originates from the
 first `Publisher` in the center and moves outward, transformed by each layer.
 
-As we see in <<faq.chain,one item>> of the FAQ, understanding this can help you
-avoid a mistake leading to your operator chain seemingly not being applied.
+TIP: Understanding this can help you avoid a common mistake that would lead you
+to believe that an operator you used in your chain is not being applied. See
+this <<faq.chain,item>> in the FAQ.
+
+While the Reactive Streams specification doesn't specify operators at all, one
+of the high added values of derived reactive libraries like Reactor is the rich
+vocabulary of operators that they bring along. These cover a lot of ground, from
+simple transformation and filtering to complex orchestration and error handling.
 
 [[reactive.subscribe]]
 ==== Nothing happens until you `subscribe()`
 In Reactor when you write a `Publisher` chain, data doesn't start pumping into
-it by default. Instead, what you have is a abstract description of your asynchronous
-process (which can help with reusability and composition by the way).
+it by default. Instead, what you have is a abstract description of your
+asynchronous process (which can help with reusability and composition by the
+way).
 
 By the act of **subscribing**, you tie the `Publisher` to a `Subscriber`, which
 triggers the flow of data in the whole chain. This is achieved internally by a
