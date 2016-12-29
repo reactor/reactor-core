@@ -164,6 +164,7 @@ first `Publisher` in the center and moves outward, transformed by each layer.
 As we see in <<faq.chain,one item>> of the FAQ, understanding this can help you
 avoid a mistake leading to your operator chain seemingly not being applied.
 
+[[reactive.subscribe]]
 ==== Nothing happens until you `subscribe()`
 In Reactor when you write a `Publisher` chain, data doesn't start pumping into
 it by default. Instead, what you have is a abstract description of your asynchronous

@@ -1,39 +1,122 @@
 [[core-features]]
 == Reactor Core Features
+`reactor-core` is the main artifact of the project, a reactive library that
+focuses on the Reactive Streams specification and targets Java 8.
+
+Reactor introduces composable reactive types that implement `Publisher` but also
+provide a rich vocabulary of operators, `Flux` and `Mono`. The former represents
+a reactive sequence of 0..N items, while the later represents a single-valued-or-empty
+result.
+
+This distinction allows to carry a bit of semantic into the type, indicating the
+rough cardinality of the asynchronous processing. For instance, an HTTP request
+only produces one response so there wouldn't be much sense in doing a `count`
+operation... Expressing the result of such an HTTP call as a
+`Mono<HttpResponse>` thus makes more sense than as a `Flux<HttpResponse>`, as it
+offers only operators that are relevant to a "zero or one item" context.
+
+In parallel, operators that change the maximum cardinality of the processing
+will also switch to the relevant type. For instance the `count` operator exists
+in `Flux`, but returns a `Mono<Long>`.
+
 [[flux]]
 === `Flux`, an asynchronous sequence of 0-n items
+A `Flux<T>` is a standard `Publisher<T>` representing an asynchronous sequence
+of 0 to N emitted items, optionally terminated by either a success signal or an
+error.
+
+As in the RS spec, these 3 types of signal translate to calls to downstream's
+`onNext`, `onComplete` or `onError` methods.
+
+With this large scope of possible signal, `Flux` is the general-purpose reactive
+type. Note that all events, even terminating ones, are optional: no onNext event
+but an onComplete event represents an _empty_ finite sequence, but remove the
+onComplete and you have an _infinite_ empty sequence. Similarly, infinite
+sequences are not necessarily empty: `Flux.interval(Duration)` produces a
+`Flux<Long>` that is infinite and emits regular ticks from a clock.
+
 [[mono]]
 === `Mono`, an asynchronous 0-1 result
+A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item then
+optionally terminates with an `onComplete` signal or an `onError`.
+
+As such it offers only a relevant subset of operators. For instance, combination
+operators can either ignore the right hand-side emissions and return another
+`Mono` or emit values from both sides, in which case they'll switch to a `Flux`.
+
+Note that a `Mono` can be used to represent no-value asynchronous processes that
+only have the concept of completion (think `Runnable`): just use an empty
+`Mono<Void>`.
+
 [[schedulers]]
 === `Schedulers`
+Reactor, like RxJava, can be considered **concurrency agnostic**. It doesn't
+enforce a concurrency model but rather leave you, the developer, in command.
+
+But that doesn't prevent the library from helping you with concurrency...
+
+In Reactor, the execution model and where the execution happens is determined by
+the `Scheduler` that is used. A `Scheduler` is an interface that can abstract
+a wide range of implementations. The `Schedulers` class has static methods that
+give access to the following execution contexts:
+
+- the current thread (`Schedulers.immediate()`)
+- a single, reusable thread (`Schedulers.single()`). Note that this method
+reuses the same thread for all callers, until the Scheduler is disposed. If you
+want a per-call dedicated thread, use `Schedulers.newSingle()` instead.
+- an elastic thread pool (`Schedulers.elastic()`). It will create new worker
+pools as needed, and reuse idle ones unless they stay idle for too long (default
+is 60s), in which case the workers are disposed. This is a good choice for I/O
+blocking work for instance.
+- a fixed pool of workers that is tuned for parallel work
+(`Schedulers.parallel()`). It will create as many workers as you have CPU cores.
+- a time-aware scheduler capable of scheduling tasks in the future, including
+recurring tasks (`Schedulers.timer()`).
+
+Additionally, you can create a `Scheduler` out of any pre-existing
+`ExecutorService` footnote:[you can also create one from an `Executor`, although
+it is discouraged] using `Schedulers.fromExecutorService(ExecutorService)`, and
+also create new instances of the various scheduler types using `newXXX` methods.
+
+NOTE: Operators are implemented using non-blocking algorithms that are
+tuned to facilitate the work-stealing that can happen in some Schedulers.
+
+Some operators use a specific Scheduler from `Schedulers` by default (and will
+usually give you the option of providing a different one). For instance, calling
+the factory method `Flux.intervalMillis(300)` will produces a `Flux<Long>` that
+ticks every 300ms. This is enabled by `Schedulers.timer()` by default.
+
+Reactor offers two means of switching execution context (or `Scheduler`) in a
+reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and allow
+to switch the execution context to that scheduler. But `publishOn` placement in
+the chain matters, while `subscribeOn`'s doesn't. To understand that difference,
+you first have to remember that <<reactive.subscribe>>.
+
+In Reactor, when you chain operators you wrap as many `Flux`/`Mono` specific
+implementations inside one another. And as soon as you subscribe, a chain of
+`Subscriber` is created backward. This is effectively hidden from you and all
+you can see is the outer layer of `Flux` (or `Mono`) and `Subscription`, but
+these intermediate operator-specific subscribers are where the real work happens.
+
+With that knowledge, let's have a closer look at the two operators:
+
+- `publishOn` applies as any other operator, in the middle of that subscriber
+chain. As such, it takes signals from downstream and replays them upstream, but
+executing the callback on a worker from the associated `Scheduler`. So it
+**affects where the subsequent operators will execute** (until another publishOn
+is chained in).
+- `scheduleOn` rather applies to the subscription process, when that backward
+chain is constructed. As a consequence, no matter where you place the
+`subscribeOn` in the chain, **it is always the context of the source emission**
+that is affected. However, this doesn't affect the behavior of subsequent calls
+to `publishOn`: they will still switch the execution context for the part of the
+chain after them. Also, only the earliest `subscribeOn` call in the chain is
+actually taken into account.
+
 === Operators
 //TODO it is like an onion: mention chaining
-==== Creating data
-//TODO just, fromIterable, fromArray, generate
-==== Transforming data
-//TODO map, flatMap
-==== Splitting and joining the flow of data
-//TODO groupBy, merge, concat, zip, mergeSequential, combineLatest
-//firstEmitting, join, publish?, startWith
-==== Collecting and aggregating data
-//TODO collect(List|Map|MultiMap|SortedList), reduce, scan, count
-==== Filtering
-//TODO filter, distinct, take, last, takeLast, skip, skipLast,
-//takeUntil, takeWhile, skipUntil, skipWhile
-==== Playing with time
-//TODO defer, delay, delaySubscription, interval, elapsed, timestamp,
-//never, timeout
-==== Side effects
-//TODO doOnXXX, doAfterTerminate, doFinally
-==== Utilities
-//TODO log, materialize
-==== Buffering and Sampling
-//TODO buffer, bufferUntil, bufferWhile, sample, limitRate, window
-==== Dealing with errors
-//TODO switchIfEmpty, onErrorReturn, onErrorResumeWith, switchOnError
-==== Threading
-//TODO publishOn, subscribeOn, parallel
-[[which-operator]]
-=== Which operator do I need?
+include::operatorCatalog.adoc[]
+include::operatorChoice.adoc[]
+
 === Processor
 ==== Do I need a Processor?
