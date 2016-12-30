@@ -99,6 +99,13 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
 *** ...but from a Mono: `Mono#otherwiseReturn`, `Mono#otherwise`
 ** by retrying: `retry`
 
+* I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream doesn't produce enough request]...
+** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
+** by dropping excess values: `Flux#onBackpressureDrop`
+*** ...except the last one seen: `Flux#onBackpressureLatest`
+** by buffering excess values (bounded or bounded): `Flux#onBackpressureBuffer`
+*** ...and applying a strategy when bounded buffer also overflows: `Flux#onBackpressureBuffer` with a `BufferOverflowStrategy`
+
 [[which.time]]
 ==== Time
 //TODO elapsed, delay, interval, delaySubscription, timeout, timestamp
