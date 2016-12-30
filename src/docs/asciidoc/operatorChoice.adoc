@@ -5,16 +5,15 @@ prefixed accordingly, common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
 leading dot and parameters in parenthesis, like `.methodCall()`.
 
-//TODO mono: when then
-//TODO flux: buffer, cache, share, sample, window, next
+//TODO flux: buffer, cache, share, sample, window, next, toXXX
 //TODO side effects
 //TODO filters and takes, including ofType
 
-I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
+I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<which.errors>> or
 <<which.time>>.
 
 [[which.create]]
-==== Creating a new sequence (`Flux<T>` or `Mono<T>`)...
+==== Creating a new sequence...
 * that emits a `T` I already have: `just`
 * that emits a `T` returned by a method: `just` as well
 ** ...but lazily captured: wrap `just` inside `defer`
@@ -64,7 +63,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
 ** in emission order (combined items emitted as they come): `Flux#merge` / `.mergeWith(other)`
 *** ...with different types (transforming merge): `Flux#zip` / `Flux#zipWith`
 ** by pairing values...
-*** into a `Tuple2`: `Mono#and`
+*** from 2 Monos into a `Tuple2`: `Mono#and`
+*** from n Monos when they all completed: `Mono#when`
 *** into an arbitrary container type...
 **** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
 **** each time a new value arrives at either side: `Flux#combineLatest`
@@ -78,6 +78,31 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
 ** I want another sequence instead: `Flux#switchIfEmpty`, `Mono.otherwiseIfEmpty`
 
 * I have a sequence but I'm not interested in values: `ignoreElements`
+** ...and I want to switch to a `Mono` at the end: `then`
+** ...and I want to switch to a `Flux` at the end: `thenMany`
+
+[[which.peeking]]
+=== Peeking into a sequence
+* Without modifying the final sequence, I want to...
+** get notified of / execute additional behavior footnote:[sometimes referred to as "side-effects"] on...
+*** emissions: `doOnNext`
+*** completion: `Flux#doOnComplete`, `Mono#doOnSuccess` (includes the result if any)
+*** error termination: `doOnError`
+*** cancellation: `doOnCancel`
+*** subscription: `doOnSubscribe`
+*** request: `doOnRequest`
+*** completion or error: `doOnTerminate` (Mono version includes the result if any)
+**** but *after* it has been propagated downstream: `doAfterTerminate`
+*** any type of signal, represented as a `Signal`: `Flux#doOnEach`
+*** any terminating condition (complete, error, cancel): `doFinally`
+** log what happens internally: `log`
+
+* I want to know of all events...
+** each represented as `Signal` object...
+*** in a callback outside the sequence: `doOnEach`
+*** instead of the original onNext emissions: `materialize`
+**** ...and get back to the onNext: `dematerialize`
+** as a line in a log: `log`
 
 
 [[which.errors]]
@@ -85,13 +110,15 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
 * I want to create an erroring sequence: `error`
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
 ** ...to replace the *emission* of a successful `Mono`:  `.then(Mono.error(e))`
+** ...if too much time elapses between onNexts: `timeout`
 
 * I want the try/catch equivalent of...
+** throwing: `error`
 ** catching an exception...
 *** and falling back to a default value: `Flux#onErrorReturn`
 *** and falling back to another `Flux`: `Flux#onErrorResumeWith`
 *** and wrapping and re-throwing: `.onErrorResumeWith(t -> Flux.error(new RuntimeException(t)))`
-** the finally block: `Flux#doFinally`
+** the finally block: `doFinally`
 ** the using pattern from Java 7: `using` factory method
 
 * I want to recover from errors...
@@ -108,4 +135,14 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
 
 [[which.time]]
 ==== Time
-//TODO elapsed, delay, interval, delaySubscription, timeout, timestamp
+* I want to associate emissions with a timing measurement...
+** since subscription: `elapsed`
+** since the dawn of time (well, computer time): `timestamp`
+
+* I want my sequence to be interrupted if there's too much delay between emissions: `timeout`
+
+* I want to get ticks from a clock, regular time intervals: `Flux#interval`
+
+* I want to introduce a delay...
+** between each onNext signal: `delay`
+** before the subscription happens: `delaySubscription`
