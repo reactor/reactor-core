@@ -1,2 +1,104 @@
 [[which-operator]]
 === Which operator do I need?
+TIP: In this section, if an operator is specific to `Flux` or `Mono` it will be
+prefixed accordingly, common operators have no prefix. When a specific use case
+is covered by a combination of operators, it is presented as a method call, with
+leading dot and parameters in parenthesis, like `.methodCall()`.
+
+//TODO mono: when then
+//TODO flux: buffer, cache, share, sample, window, next
+//TODO side effects
+//TODO filters and takes, including ofType
+
+I want to deal with: <<which.create>>, <<which.values>>, <<which.errors>> or
+<<which.time>>.
+
+[[which.create]]
+==== Creating a new sequence (`Flux<T>` or `Mono<T>`)...
+* that emits a `T` I already have: `just`
+* that emits a `T` returned by a method: `just` as well
+** ...but lazily captured: wrap `just` inside `defer`
+* that iterates over...
+** an array: `Flux#fromArray`
+** a collection / iterable: `Flux#fromIterable`
+** a range of integers: `Flux#range`
+* that emits from various single-valued sources like...
+** a `Supplier<T>`: `Mono#fromSupplier`
+** a task: `Mono#fromCallable`, `Mono#fromRunnable`
+** a `CompletableFuture<T>`: `Mono#fromFuture`
+* that completes: `empty`
+* that errors immediately: `error`
+* that never does anything: `never`
+* that is decided at subscription: `defer`
+* that depends on a disposable resource: `using`
+//TODO create and generate?
+
+[[which.values]]
+==== An existing sequence
+* I want to transform existing data...
+** on a 1-to-1 basis (eg. strings to their length): `map`
+*** ...by just casting it: `cast`
+** on a 1-to-n basis (eg. strings to their characters): `flatMap` + use a factory method
+** running an asynchronous task for each source item (eg. urls to http request): `flatMap` + an async `Publisher`-returning method
+*** ...ignoring some data: conditionally return a `Mono.empty()` in the flatMap lambda
+*** ...retaining the original sequence order: `Flux#flatMapSequential` (this triggers the async processes immediately but reorders the results)
+
+* I want to aggregate a `Flux`... (the `Flux#` prefix is assumed below)
+** into a List: `collectList`, `collectSortedList`
+** into a Map: `collectMap`, `collectMultiMap`
+** into an arbitrary container: `collect`
+** into the size of the sequence: `count`
+** by applying a function between each element (eg. running sum): `reduce`
+*** ...but emitting each intermediary value: `scan`
+** into a boolean value from a predicate...
+*** applied to all values (AND): `all`
+*** applied to at least one value (OR): `any`
+*** testing the presence of any value: `hasElements`
+*** testing the presence of a specific value: `hasElement`
+
+
+* I want to combine publishers...
+** in sequential order: `Flux#concat` / `.concatWith(other)`
+*** ...but delaying any error until remaining publishers have been emitted: `Flux#concatDelayError`
+*** ...but eagerly subscribing to subsequent publishers: `Flux#mergeSequential`
+** in emission order (combined items emitted as they come): `Flux#merge` / `.mergeWith(other)`
+*** ...with different types (transforming merge): `Flux#zip` / `Flux#zipWith`
+** by pairing values...
+*** into a `Tuple2`: `Mono#and`
+*** into an arbitrary container type...
+**** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
+**** each time a new value arrives at either side: `Flux#combineLatest`
+** only considering the sequence that emits first: `Flux#firstEmitting`, `Mono#first`, `mono.or(otherMono).or(thirdMono)`
+
+* I want to repeat an existing sequence: `repeat`
+** ...but at time intervals: `Flux.interval(duration).flatMap(tick -> myExistingPublisher)`
+
+* I have an empty sequence but...
+** I want a value instead: `defaultIfEmpty`
+** I want another sequence instead: `Flux#switchIfEmpty`, `Mono.otherwiseIfEmpty`
+
+* I have a sequence but I'm not interested in values: `ignoreElements`
+
+
+[[which.errors]]
+==== Errors
+* I want to create an erroring sequence: `error`
+** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
+** ...to replace the *emission* of a successful `Mono`:  `.then(Mono.error(e))`
+
+* I want the try/catch equivalent of...
+** catching an exception...
+*** and falling back to a default value: `Flux#onErrorReturn`
+*** and falling back to another `Flux`: `Flux#onErrorResumeWith`
+*** and wrapping and re-throwing: `.onErrorResumeWith(t -> Flux.error(new RuntimeException(t)))`
+** the finally block: `Flux#doFinally`
+** the using pattern from Java 7: `using` factory method
+
+* I want to recover from errors...
+** by falling back: `Flux#onErrorReturn`, `Flux#onErrorResumeWith`
+*** ...but from a Mono: `Mono#otherwiseReturn`, `Mono#otherwise`
+** by retrying: `retry`
+
+[[which.time]]
+==== Time
+//TODO elapsed, delay, interval, delaySubscription, timeout, timestamp
