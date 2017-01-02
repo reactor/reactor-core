@@ -136,5 +136,90 @@ public class MonoSequenceEqualTest {
 		            .verifyErrorMessage("boom");
 	}
 
+
+	@Test
+	public void differenceCancelsBothSources() {
+		AtomicBoolean sub1 = new AtomicBoolean();
+		AtomicBoolean sub2 = new AtomicBoolean();
+
+		Flux<Integer> source1 = Flux.range(1, 5).doOnCancel(() -> sub1.set(true));
+		Flux<Integer> source2 = Flux.just(1, 2, 3, 7, 8).doOnCancel(() -> sub2.set(true));
+
+		StepVerifier.create(Mono.sequenceEqual(source1.log(), source2.log()))
+		            .expectNext(Boolean.FALSE)
+		            .verifyComplete();
+
+		Assert.assertTrue("left not cancelled", sub1.get());
+		Assert.assertTrue("right not cancelled", sub2.get());
+	}
+
+	@Test
+	public void cancelCancelsBothSources() {
+		AtomicReference<Subscription> sub1 = new AtomicReference<>();
+		AtomicReference<Subscription> sub2 = new AtomicReference<>();
+		AtomicBoolean cancel1 = new AtomicBoolean();
+		AtomicBoolean cancel2 = new AtomicBoolean();
+
+		Flux<Integer> source1 = Flux.range(1, 5)
+		                            .doOnSubscribe(sub1::set)
+		                            .doOnCancel(() -> cancel1.set(true))
+		                            .hide();
+		Flux<Integer> source2 = Flux.just(1, 2, 3, 7, 8)
+		                            .doOnSubscribe(sub2::set)
+		                            .doOnCancel(() -> cancel2.set(true))
+		                            .hide();
+
+		Mono.sequenceEqual(source1, source2)
+		    .subscribe(System.out::println, Throwable::printStackTrace, null,
+				    Subscription::cancel);
+
+		Assert.assertNotNull("left not subscribed", sub1.get());
+		Assert.assertTrue("left not cancelled", cancel1.get());
+		Assert.assertNotNull("right not subscribed", sub2.get());
+		Assert.assertTrue("right not cancelled", cancel2.get());
+	}
+
+	@Test
+	public void cancelCancelsBothSourcesIncludingNever() {
+		AtomicReference<Subscription> sub1 = new AtomicReference<>();
+		AtomicReference<Subscription> sub2 = new AtomicReference<>();
+		AtomicBoolean cancel1 = new AtomicBoolean();
+		AtomicBoolean cancel2 = new AtomicBoolean();
+
+		Flux<Integer> source1 = Flux.range(1, 5)
+		                            .doOnSubscribe(sub1::set)
+		                            .doOnCancel(() -> cancel1.set(true))
+		                            .hide();
+		Flux<Integer> source2 = Flux.<Integer>never()
+		                            .doOnSubscribe(sub2::set)
+		                            .doOnCancel(() -> cancel2.set(true));
+
+		Mono.sequenceEqual(source1, source2)
+		    .subscribe(System.out::println, Throwable::printStackTrace, null,
+				    Subscription::cancel);
+
+		Assert.assertNotNull("left not subscribed", sub1.get());
+		Assert.assertTrue("left not cancelled", cancel1.get());
+		Assert.assertNotNull("right not subscribed", sub2.get());
+		Assert.assertTrue("right not cancelled", cancel2.get());
+	}
+
+	@Test
+	public void subscribeInnerOnce() {
+		LongAdder innerSub1 = new LongAdder();
+		LongAdder innerSub2 = new LongAdder();
+
+		Flux<Integer> source1 = Flux.range(1, 5)
+		                            .doOnSubscribe((t) -> innerSub1.increment());
+		Flux<Integer> source2 = Flux.just(1, 2, 3, 7, 8)
+		                            .doOnSubscribe((t) -> innerSub2.increment());
+
+		Mono.sequenceEqual(source1, source2)
+		    .subscribe();
+
+		Assert.assertEquals("left has been subscribed multiple times", 1, innerSub1.intValue());
+		Assert.assertEquals("right has been subscribed multiple times", 1, innerSub2.intValue());
+	}
+
 	//TODO multithreaded race between cancel and onNext, between cancel and drain, source overflow, error dropping to hook
 }

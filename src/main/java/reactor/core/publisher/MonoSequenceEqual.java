@@ -91,8 +91,10 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		void subscribe() {
-			first.subscribe(firstSubscriber);
-			second.subscribe(secondSubscriber);
+			if (ONCE.compareAndSet(this, 0, 1)) {
+				first.subscribe(firstSubscriber);
+				second.subscribe(secondSubscriber);
+			}
 		}
 
 		@Override
@@ -110,22 +112,9 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				Subscription s = firstSubscriber.subscription;
-				if (s != cancelledSubscription()) {
-					s = EqualSubscriber.S.getAndSet(firstSubscriber,
-							cancelledSubscription());
-					if (s != null && s != cancelledSubscription()) {
-						s.cancel();
-					}
-				}
-				s = secondSubscriber.subscription;
-				if (s != cancelledSubscription()) {
-					s = EqualSubscriber.S.getAndSet(firstSubscriber,
-							cancelledSubscription());
-					if (s != null && s != cancelledSubscription()) {
-						s.cancel();
-					}
-				}
+
+				cancelInner(firstSubscriber);
+				cancelInner(secondSubscriber);
 
 				if (WIP.getAndIncrement(this) == 0) {
 					firstSubscriber.queue.clear();
@@ -134,10 +123,23 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 			}
 		}
 
-		void cancel(Queue<T> q1, Queue<T> q2) {
+		void cancel(EqualSubscriber<T> s1, Queue<T> q1, EqualSubscriber<T> s2, Queue<T> q2) {
 			cancelled = true;
+			cancelInner(s1);
 			q1.clear();
+			cancelInner(s2);
 			q2.clear();
+		}
+
+		void cancelInner(EqualSubscriber<T> innerSubscriber) {
+			Subscription s = innerSubscriber.subscription;
+			if (s != cancelledSubscription()) {
+				s = EqualSubscriber.S.getAndSet(innerSubscriber,
+						cancelledSubscription());
+				if (s != null && s != cancelledSubscription()) {
+					s.cancel();
+				}
+			}
 		}
 
 		void drain() {
@@ -166,7 +168,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 					if (d1) {
 						Throwable e = s1.error;
 						if (e != null) {
-							cancel(q1, q2);
+							cancel(s1, q1, s2, q2);
 
 							actual.onError(e);
 							return;
@@ -178,7 +180,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 					if (d2) {
 						Throwable e = s2.error;
 						if (e != null) {
-							cancel(q1, q2);
+							cancel(s1, q1, s2, q2);
 
 							actual.onError(e);
 							return;
@@ -201,7 +203,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 						return;
 					}
 					if ((d1 && d2) && (e1 != e2)) {
-						cancel(q1, q2);
+						cancel(s1, q1, s2, q2);
 
 						actual.onNext(false);
 						actual.onComplete();
@@ -215,14 +217,14 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 							c = comparer.test(v1, v2);
 						} catch (Throwable ex) {
 							Exceptions.throwIfFatal(ex);
-							cancel(q1, q2);
+							cancel(s1, q1, s2, q2);
 
 							actual.onError(Operators.onOperatorError(ex));
 							return;
 						}
 
 						if (!c) {
-							cancel(q1, q2);
+							cancel(s1, q1, s2, q2);
 
 							actual.onNext(false);
 							actual.onComplete();
