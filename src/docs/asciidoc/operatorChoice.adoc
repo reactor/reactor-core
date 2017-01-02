@@ -7,8 +7,8 @@ leading dot and parameters in parenthesis, like `.methodCall()`.
 
 //TODO flux: buffer, cache, share, window, next, toXXX
 
-I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<which.errors>> or
-<<which.time>>.
+I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
+<<which.errors>>, <<which.time>> or <<which.blocking>>.
 
 [[which.create]]
 ==== Creating a new sequence...
@@ -185,3 +185,18 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 * I want to introduce a delay...
 ** between each onNext signal: `delay`
 ** before the subscription happens: `delaySubscription`
+
+[[which.blocking]]
+==== Going back to the Synchronous world
+* I have a `Flux<T>` and I want to...
+** block until I can get the first element: `Flux#blockFirst`
+*** ...with a timeout: `Flux#blockFirstMillis` / `Flux#blockFirst(Duration)`
+** block until I can get the last element (or null if empty): `Flux#blockLast`
+*** ...with a timeout: `Flux#blockLastMillis` / `Flux#blockLast(Duration)`
+** synchronously switch to an `Iterable<T>`: `Flux#toIterable`
+** synchronously switch to a Java 8 `Stream<T>`: `Flux#toStream`
+
+* I have a `Mono<T>` and I want...
+** to block until I can get the value: `Mono#block`
+*** ...with a timeout: `Mono#blockMillis` / `Mono#block(Duration)`
+** a `CompletableFuture<T>`: `Mono#toFuture`
