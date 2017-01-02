@@ -13,8 +13,11 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 [[which.create]]
 ==== Creating a new sequence...
 * that emits a `T` I already have: `just`
+** ...from an `Optional<T>`: `Mono#justOrEmpty(Optional<T>)`
+** ...from a potentially `null` T: `Mono#justOrEmpty(T)`
 * that emits a `T` returned by a method: `just` as well
-** ...but lazily captured: wrap `just` inside `defer`
+** ...but lazily captured: use `Mono#fromSupplier` or wrap `just` inside `defer`
+* that emits several `T` I can explicitly enumerate: `Flux#just(T...)`
 * that iterates over...
 ** an array: `Flux#fromArray`
 ** a collection / iterable: `Flux#fromIterable`
@@ -118,14 +121,18 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 * I want to keep only a subset of the sequence...
 ** by taking elements...
-*** at the beginning of the sequence: `Flux#take(n)`
+*** at the beginning of the sequence: `Flux#take(int)`
 **** ...based on a duration: `Flux#take(Duration)`
 *** at the end of the sequence: `Flux#takeLast`
 *** until a criteria is met (inclusive): `Flux#takeUntil` (predicate-based), `Flux#takeUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#takeWhile`
-*** at a specific position (single element): `Flux#elementAt`
+** by taking at most 1 element...
+*** at a specific position: `Flux#elementAt`
+*** at the end: `.takeLast(1)`
+**** ...and emit an error if empty: `Flux#last()`
+**** ...and emit a default value if empty: `Flux#last(T)`
 ** by skipping elements...
-*** at the beginning of the sequence: `Flux#skip(n)`
+*** at the beginning of the sequence: `Flux#skip(int)`
 **** ...based on a duration: `Flux#skip(Duration)`
 *** at the end of the sequence: `Flux#skipLast`
 *** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
@@ -147,7 +154,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ==== Errors
 * I want to create an erroring sequence: `error`
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
-** ...to replace the *emission* of a successful `Mono`:  `.then(Mono.error(e))`
+** ...to replace the *emission* of a successful `Mono`: `.then(Mono.error(e))`
 ** ...if too much time elapses between onNexts: `timeout`
 
 * I want the try/catch equivalent of...
