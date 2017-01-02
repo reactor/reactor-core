@@ -5,9 +5,7 @@ prefixed accordingly, common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
 leading dot and parameters in parenthesis, like `.methodCall()`.
 
-//TODO flux: buffer, cache, share, sample, window, next, toXXX
-//TODO side effects
-//TODO filters and takes, including ofType
+//TODO flux: buffer, cache, share, window, next, toXXX
 
 I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<which.errors>> or
 <<which.time>>.
@@ -101,8 +99,44 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 ** each represented as `Signal` object...
 *** in a callback outside the sequence: `doOnEach`
 *** instead of the original onNext emissions: `materialize`
-**** ...and get back to the onNext: `dematerialize`
+**** ...and get back to the onNexts: `dematerialize`
 ** as a line in a log: `log`
+
+[[which.filtering]]
+=== Filtering a sequence
+* I want to filter a sequence...
+** based on an arbitrary criteria: `filter`
+** restricting on the type of the emitted objects: `ofType`
+** by ignoring the values altogether: `ignoreElements`
+** by ignoring duplicates...
+*** in the whole sequence (logical set): `Flux#distinct`
+*** between subsequently emitted items (deduplication): `Flux#distinctUntilChanged`
+
+* I want to keep only a subset of the sequence...
+** by taking elements...
+*** at the beginning of the sequence: `Flux#take(n)`
+**** ...based on a duration: `Flux#take(Duration)`
+*** at the end of the sequence: `Flux#takeLast`
+*** until a criteria is met (inclusive): `Flux#takeUntil` (predicate-based), `Flux#takeUntilOther` (companion publisher-based)
+*** while a criteria is met (exclusive): `Flux#takeWhile`
+*** at a specific position (single element): `Flux#elementAt`
+** by skipping elements...
+*** at the beginning of the sequence: `Flux#skip(n)`
+**** ...based on a duration: `Flux#skip(Duration)`
+*** at the end of the sequence: `Flux#skipLast`
+*** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
+*** while a criteria is met (exclusive): `Flux#skipWhile`
+** by sampling items...
+*** by duration: `Flux#sample(Duration)`, `Flux#sampleMillis`
+**** but keeping the first element in the sampling window instead of the last: `sampleFirst`/`sampleFirstMillis`
+*** by a publisher-based window: `Flux#sample(Publisher)`
+*** based on a publisher "timing out": `Flux#sampleTimeout` (each element triggers a publisher, and is emitted if that publisher doesn't overlap with the next)
+
+* I expect at most 1 element (error if more than one)...
+** and I want an error if the sequence is empty: `Flux#single()`
+** and I want a default value if the sequence is empty: `Flux#single(T)`
+** and I accept an empty sequence as well: `Flux#singleOrEmpty`
+
 
 
 [[which.errors]]
