@@ -67,6 +67,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 **** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
 **** each time a new value arrives at either side: `Flux#combineLatest`
 ** only considering the sequence that emits first: `Flux#firstEmitting`, `Mono#first`, `mono.or(otherMono).or(thirdMono)`
+** triggered by the elements in a source sequence: `switchMap` (each source element is mapped to a Publisher)
+** triggered by the start of the next publisher in a sequence of publishers: `switchOnNext`
 
 * I want to repeat an existing sequence: `repeat`
 ** ...but at time intervals: `Flux.interval(duration).flatMap(tick -> myExistingPublisher)`
@@ -76,7 +78,9 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 ** I want another sequence instead: `Flux#switchIfEmpty`, `Mono.otherwiseIfEmpty`
 
 * I have a sequence but I'm not interested in values: `ignoreElements`
-** ...and I want to switch to a `Mono` at the end: `then`
+** ...and I want the completion represented as a `Mono`: `then`
+** ...and I want to wait for another task to complete at the end: `thenEmpty`
+** ...and I want to switch to another `Mono` at the end: `Mono#then(mono)`
 ** ...and I want to switch to a `Flux` at the end: `thenMany`
 
 [[which.peeking]]
@@ -159,6 +163,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 ** by falling back: `Flux#onErrorReturn`, `Flux#onErrorResumeWith`
 *** ...but from a Mono: `Mono#otherwiseReturn`, `Mono#otherwise`
 ** by retrying: `retry`
+** by switching to another `Flux` depending on the error type: `switchOnError`
 
 * I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream doesn't produce enough request]...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
@@ -169,7 +174,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>, <<wh
 
 [[which.time]]
 ==== Time
-* I want to associate emissions with a timing measurement...
+* I want to associate emissions with a timing (`Tuple2<Long, T>`) measured...
 ** since subscription: `elapsed`
 ** since the dawn of time (well, computer time): `timestamp`
 
