@@ -22,7 +22,7 @@ configure(rootProject) {
 		group = "Reactor Core Javadoc"
 
 		description = "Generates aggregated Javadoc API documentation."
-		title = "Reactor Core 3.0.4.BUILD-SNAPSHOT"
+		title = "Reactor Core $version"
 
 		if (JavaVersion.current().isJava8Compatible()) {
 			compileTestJava.options.compilerArgs += "-parameters"
@@ -51,7 +51,7 @@ configure(rootProject) {
 			include "index.asciidoc"
 		}
 		outputDir file("$buildDir/asciidoc")
-		backends = ['html5', 'pdf']
+		backends = ['html5']
 		logDocuments = true
 		options = [
 				doctype: 'book'
@@ -61,12 +61,19 @@ configure(rootProject) {
 				'compat-mode': '',
 				stylesdir: "stylesheets/",
 				stylesheet: 'golo.css',
-				appversion: "3.0.5.BUILD-SNAPSHOT",
+				appversion: version,
 				'source-highlighter': 'coderay'
 
 		doLast {
 			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${version}.pdf")
 		}
+	}
+
+	task docsZip(type: Zip, dependsOn: asciidoctor) {
+	  baseName = 'reactor-core-docs'
+	  from("$buildDir/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
+	  from("$buildDir/asciidoc/html5/index.html") { into("docs/") }
+	  from("$buildDir/asciidoc/html5/images") { into("images/") }
 	}
 }
 

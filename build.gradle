@@ -64,7 +64,6 @@ ext {
 apply plugin: 'java'
 apply plugin: 'jacoco'
 apply from: "$gradleScriptDir/setup.gradle"
-apply from: "$gradleScriptDir/doc.gradle"
 apply plugin: 'propdeps'
 apply plugin: 'groovy'
 apply plugin: 'osgi'

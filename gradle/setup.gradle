@@ -19,7 +19,9 @@ task wrapper(type: Wrapper, description: "Create a Gradle self-download wrapper"
 	gradleVersion = "$gradleVersion"
 }
 
+
 configure(rootProject) {
+  	apply from: "$gradleScriptDir/doc.gradle"
 	apply plugin: 'propdeps-maven'
 	apply plugin: 'maven'
 
@@ -48,10 +50,11 @@ configure(rootProject) {
 	artifacts {
 		archives sourcesJar
 		archives javadocJar
+	  	archives docsZip
 	}
 }
 
-def customizePom(def pom, def gradleProject) {
+def customizePom(pom, gradleProject) {
 	pom.whenConfigured { generatedPom ->
 		// eliminate test-scoped dependencies (no need in maven central poms)
 		generatedPom.dependencies.removeAll { dep ->
