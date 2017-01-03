@@ -1,0 +1,240 @@
+[[core-features]]
+== Reactor Core Features
+`reactor-core` is the main artifact of the project, a reactive library that
+focuses on the Reactive Streams specification and targets Java 8.
+
+Reactor introduces composable reactive types that implement `Publisher` but also
+provide a rich vocabulary of operators, `Flux` and `Mono`. The former represents
+a reactive sequence of 0..N items, while the later represents a single-valued-or-empty
+result.
+
+This distinction allows to carry a bit of semantic into the type, indicating the
+rough cardinality of the asynchronous processing. For instance, an HTTP request
+only produces one response so there wouldn't be much sense in doing a `count`
+operation... Expressing the result of such an HTTP call as a
+`Mono<HttpResponse>` thus makes more sense than as a `Flux<HttpResponse>`, as it
+offers only operators that are relevant to a "zero or one item" context.
+
+In parallel, operators that change the maximum cardinality of the processing
+will also switch to the relevant type. For instance the `count` operator exists
+in `Flux`, but returns a `Mono<Long>`.
+
+[[flux]]
+=== `Flux`, an asynchronous sequence of 0-n items
+A `Flux<T>` is a standard `Publisher<T>` representing an asynchronous sequence
+of 0 to N emitted items, optionally terminated by either a success signal or an
+error.
+
+As in the RS spec, these 3 types of signal translate to calls to downstream's
+`onNext`, `onComplete` or `onError` methods.
+
+With this large scope of possible signal, `Flux` is the general-purpose reactive
+type. Note that all events, even terminating ones, are optional: no onNext event
+but an onComplete event represents an _empty_ finite sequence, but remove the
+onComplete and you have an _infinite_ empty sequence. Similarly, infinite
+sequences are not necessarily empty: `Flux.interval(Duration)` produces a
+`Flux<Long>` that is infinite and emits regular ticks from a clock.
+
+[[mono]]
+=== `Mono`, an asynchronous 0-1 result
+A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item then
+optionally terminates with an `onComplete` signal or an `onError`.
+
+As such it offers only a relevant subset of operators. For instance, combination
+operators can either ignore the right hand-side emissions and return another
+`Mono` or emit values from both sides, in which case they'll switch to a `Flux`.
+
+Note that a `Mono` can be used to represent no-value asynchronous processes that
+only have the concept of completion (think `Runnable`): just use an empty
+`Mono<Void>`.
+
+=== Simple ways to create a Flux/Mono and to subscribe to it
+The easiest way to get started with `Flux` and `Mono` is to use one of the
+numerous factory methods found in their respective classes.
+
+For instance, to create a simple sequence of `String`, you can either enumerate
+them or put them in a collection and create the Flux from it:
+
+[source,java]
+----
+Flux<String> seq1 = Flux.just("foo", "bar", "foobar");
+
+List<String> iterable = Arrays.asList("foo", "bar", "foobar");
+Flux<String> seq2 = Flux.fromIterable(iterable);
+----
+
+Other examples of factory methods include:
+
+[source,java]
+----
+Mono<String> noData = Mono.empty(); <1>
+
+Mono<String> data = Mono.just("foo");
+
+Flux<Integer> numbersFromFiveToSeven = Flux.range(5, 3); <2>
+----
+<1> notice the factory method honors the generic type even though there will be
+no value
+<2> the subtlety is that the first parameter is the start of the range, while
+the second parameter is the number of items to produce.
+
+When it comes to subscribing, `Flux` and `Mono` make use of Java 8 lambdas. You
+have a wide choice of `.subscribe()` variants that take lambdas for different
+combinations of callbacks:
+
+[[subscribeMethods]]
+.Lambda-based subscribe variants for `Flux`
+[source,java]
+----
+subscribe(); <1>
+
+subscribe(Consumer<? super T> consumer); <2>
+
+subscribe(Consumer<? super T> consumer,
+          Consumer<? super Throwable> errorConsumer); <3>
+
+subscribe(Consumer<? super T> consumer,
+			    Consumer<? super Throwable> errorConsumer,
+          Runnable completeConsumer); <4>
+
+subscribe(Consumer<? super T> consumer,
+			    Consumer<? super Throwable> errorConsumer,
+          Runnable completeConsumer,
+          Consumer<? super Subscription> subscriptionConsumer); <5>
+----
+<1> Just subscribe and trigger the sequence.
+<2> Do something with each produced value.
+<3> Deal with values but also react to an error.
+<4> Deal with values, errors but also execute some code when the sequence
+successfully completes.
+<5> Deal with values, errors, successful completion but also do something with
+the `Subscription` produced by this `subscribe` call.
+
+TIP: These variants return a reference to the subscription that one can use to
+cancel said subscription when no more data is needed. Upon cancellation, the
+source should stop producing values and clean up any resources it created. This
+cancel and clean-up behavior is represented in Reactor by the general-purpose
+`Disposable` interface.
+
+These are convenience variant over the Reactive Streams defined subscribe:
+
+[source,java]
+----
+subscribe(Subscriber<? super T> subscriber);
+----
+
+That last variant is useful if you already have a `Subscriber` handy, but more
+often you'll need it because you want to do something subscription-related in
+the other callbacks. Most probably, that'd be dealing with backpressure and
+triggering the requests yourself.
+
+In that case, you can ease things up by using the `BaseSubscriber` abstract
+class, which offers convenience methods for that:
+
+.Using a `BaseSubscriber` to fine tune backpressure
+[source,java]
+----
+Flux<String> source = someStringSource();
+
+source.map(String::toUpperCase)
+      .subscribe(new BaseSubscriber<String>() { <1>
+          @Override
+          protected void hookOnSubscribe(Subscription subscription) {
+            <2>
+	          request(1); <3>
+          }
+
+          @Override
+          protected void hookOnNext(String value) {
+            request(1); <4>
+          }
+
+          <5>
+      });
+----
+<1> The `BaseSubscriber` is an abstract class so we create an anonymous
+implementation and specify the generic type.
+<2> `BaseSubscriber` defines hooks for the various signal handling you can
+implement in a `Subscriber`. It also deals with the boilerplate of capturing the
+`Subscription` object so you can manipulate it in other hooks.
+<3> `request(n)` is such a method: it propagates backpressure request to the
+capture subscription from any of the hooks. Here we start the stream by
+requesting 1 element from the source.
+<4> upon receiving a new value, we continue requesting new items from the source
+one by one.
+<5> Other hooks are `hookOnComplete`, `hookOnError`, `hookOnCancel` and
+`hookFinally` (which is always called when the sequence terminates, with the
+type of termination passed in as a `SignalType` parameter).
+
+WARNING: When manipulating request like that, you must be careful to produce
+enough demand for the sequence to advance or your Flux will get "stuck". That is
+the reason why `BaseSubscriber` forces you to implement the subscription and
+onNext hooks, where you should usually call `request` at least once.
+
+[[schedulers]]
+=== `Schedulers`
+Reactor, like RxJava, can be considered **concurrency agnostic**. It doesn't
+enforce a concurrency model but rather leave you, the developer, in command.
+
+But that doesn't prevent the library from helping you with concurrency...
+
+In Reactor, the execution model and where the execution happens is determined by
+the `Scheduler` that is used. A `Scheduler` is an interface that can abstract
+a wide range of implementations. The `Schedulers` class has static methods that
+give access to the following execution contexts:
+
+- the current thread (`Schedulers.immediate()`)
+- a single, reusable thread (`Schedulers.single()`). Note that this method
+reuses the same thread for all callers, until the Scheduler is disposed. If you
+want a per-call dedicated thread, use `Schedulers.newSingle()` instead.
+- an elastic thread pool (`Schedulers.elastic()`). It will create new worker
+pools as needed, and reuse idle ones unless they stay idle for too long (default
+is 60s), in which case the workers are disposed. This is a good choice for I/O
+blocking work for instance.
+- a fixed pool of workers that is tuned for parallel work
+(`Schedulers.parallel()`). It will create as many workers as you have CPU cores.
+- a time-aware scheduler capable of scheduling tasks in the future, including
+recurring tasks (`Schedulers.timer()`).
+
+Additionally, you can create a `Scheduler` out of any pre-existing
+`ExecutorService` footnote:[you can also create one from an `Executor`, although
+it is discouraged] using `Schedulers.fromExecutorService(ExecutorService)`, and
+also create new instances of the various scheduler types using `newXXX` methods.
+
+NOTE: Operators are implemented using non-blocking algorithms that are
+tuned to facilitate the work-stealing that can happen in some Schedulers.
+
+Some operators use a specific Scheduler from `Schedulers` by default (and will
+usually give you the option of providing a different one). For instance, calling
+the factory method `Flux.intervalMillis(300)` will produces a `Flux<Long>` that
+ticks every 300ms. This is enabled by `Schedulers.timer()` by default.
+
+Reactor offers two means of switching execution context (or `Scheduler`) in a
+reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and allow
+to switch the execution context to that scheduler. But `publishOn` placement in
+the chain matters, while `subscribeOn`'s doesn't. To understand that difference,
+you first have to remember that <<reactive.subscribe>>.
+
+In Reactor, when you chain operators you wrap as many `Flux`/`Mono` specific
+implementations inside one another. And as soon as you subscribe, a chain of
+`Subscriber` is created backward. This is effectively hidden from you and all
+you can see is the outer layer of `Flux` (or `Mono`) and `Subscription`, but
+these intermediate operator-specific subscribers are where the real work happens.
+
+With that knowledge, let's have a closer look at the two operators:
+
+- `publishOn` applies as any other operator, in the middle of that subscriber
+chain. As such, it takes signals from downstream and replays them upstream, but
+executing the callback on a worker from the associated `Scheduler`. So it
+**affects where the subsequent operators will execute** (until another publishOn
+is chained in).
+- `scheduleOn` rather applies to the subscription process, when that backward
+chain is constructed. As a consequence, no matter where you place the
+`subscribeOn` in the chain, **it is always the context of the source emission**
+that is affected. However, this doesn't affect the behavior of subsequent calls
+to `publishOn`: they will still switch the execution context for the part of the
+chain after them. Also, only the earliest `subscribeOn` call in the chain is
+actually taken into account.
+
+=== Processor
+==== Do I need a Processor?

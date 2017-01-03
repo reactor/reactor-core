@@ -1,0 +1,207 @@
+[[intro-reactive]]
+== Introduction to Reactive Programming
+Reactor is an implementation of the Reactive Programming paradigm, which can be
+summed up as:
+
+//TODO find better quote
+[quote]
+Reactive programming is oriented around data flows and the propagation
+of change. This means that the underlying execution model will automatically
+propagate changes through the data flow.
+
+In this particular instance, pioneered by the Reactive Extensions (Rx) library
+in the .NET ecosystem, and also implemented by RxJava on the JVM, the reactive
+aspect is translated in our object-oriented languages to a kind of extension
+of the Observer design pattern.
+
+As time went, a standardization emerged through the *Reactive Streams* effort,
+a specification which defines a set of interfaces and interaction rules for
+reactive libraries on the JVM. It will be integrated into Java 9 (with the
+`Flow` class).
+
+One can also compare the main reactive streams pattern with the familiar Iterator
+design pattern, as there is a duality to the `Iterable`-`Iterator` pair in all
+these libraries. One major difference is that while an Iterator is _pull_ based,
+reactive streams are *push*-based.
+
+Using an iterator is quite imperative, even though the method of accessing
+values is solely the responsibility of the `Iterable`. Indeed, it is up to the
+developer to choose when to access the `next()` item in the sequence. In
+reactive streams, the equivalent of the above pair is `Publisher`-`Subscriber`.
+But it is the `Publisher` that notifies the Subscriber of newly available values
+_as they come_, and this push aspect is key to being reactive. Plus operations
+applied to pushed values are expressed declaratively rather than imperatively.
+
+Additionally to pushing values, the error handling and completion aspects are
+also covered in a well defined manner, so a `Publisher` can push new values to
+its `Subscriber` (calling `onNext`), but also signal an error (calling `onError`
+and terminating the sequence) or completion (calling `onComplete` and
+terminating the sequence).
+
+[quote]
+onNext x 0..N [onError | onComplete]
+
+This approach is very flexible, as the pattern applies indifferently to use
+cases where there is at most one value, n values or even an infinite sequence of
+values (for instance the ticks of a clock).
+
+But let's step back a bit and reflect on why we would need such an asynchronous
+reactive library in the first place.
+
+//TODO flesh out, add more preamble?
+
+=== Blocking is bad
+Modern applications nowadays can reach huge scales of users, and even though the
+capabilities of modern hardware have continued to improve, performance of the
+modern software is still a key concern.
+
+There are broadly two ways one can improve a program's performance:
+
+. **parallelize**: use more threads and more hardware resources +
+and/or
+. **seek more efficiency** in how current resources are used.
+
+Usually, Java developers will naturally write program using blocking code. This
+is all well until there is a performance bottleneck, at which point the time
+comes to introduce additional thread(s), running similar blocking code. But this
+scaling in resource utilization can quickly introduce contention and concurrency
+problems.
+
+Worse! If you look closely, as soon as a program involves some latency (notably
+I/O, like a database request or a network call), there is a waste of resources
+in the sense that the thread now sits idle, waiting for some data.
+
+So the parallelization approach is not a silver bullet: although it is necessary
+in order to access the full power of the hardware, it is also complex to reason
+about and susceptible to resource wasting...
+
+=== Asynchronicity to the rescue?
+The second approach described above, seeking more efficiency, can be a solution
+to that last problem. By writing _asynchronous_ _non-blocking_ code, you allow
+for the execution to switch to another active task **using the same underlying
+resources**, and to later come back to the current "train of thought" when the
+asynchronous processing has completed.
+
+But how can you produce asynchronous code on the JVM?
+
+Java offers mainly two models of asynchronous programming:
+
+- **Callbacks**: asynchronous methods don't have a return value but take an
+extra `callback` parameter (a lambda or simple anonymous class) that will get
+called when the result is available. Most well known example is Swing's
+`EventListener` hierarchy.
+- **Futures**: asynchronous methods return a `Future<T>` **immediately**. The
+asynchronous process computes a `T` value, but the future wraps access to it,
+isn't immediately valued and can be polled until it becomes valued.
+`ExecutorService` running `Callable<T>` tasks use Futures for instance.
+
+So is it good enough? Well, not for every use cases, and both approaches have
+limitations...
+
+Callbacks are very hard to compose together, quickly leading to code that is
+difficult to read and maintain ("Callback Hell").
+
+Futures are a bit better, but they are still not so good at composition, despite
+the improvements brought in Java 8 by `CompletableFuture`... Orchestrating
+multiple futures together is doable, but not that easy. Plus it is very (too?)
+easy to stay in familiar territory and block on a `Future` by calling their
+`get()` method. And lastly, they lack the support for multiple values and
+advanced error handling.
+
+This might seem familiar: isn't that what Reactive Programming directly tries to
+address with the `Publisher`-`Subscriber` pair?
+
+=== From Imperative to Reactive Programming
+Indeed, reactive libraries like Reactor aim at addressing these drawbacks of
+"classic" asynchronous approaches on the JVM, while also focusing on a few
+additional aspects. To sum it up:
+
+- **Composability** and **readability**
+- Data as a **flow** manipulated using a rich vocabulary of **operators**
+- Nothing happens until you **subscribe**
+- **Backpressure** or _the ability for the consumer to signal the producer that
+the rate of emission is too high for it to keep up_
+- **High level** but **high value** abstraction that is _concurrency-agnostic_
+
+==== Composability and readability
+By composability, we mean the ability to orchestrate multiple asynchronous tasks
+together, using results from previous tasks to feed input to subsequent ones, or
+executing several tasks in a fork-join style, as well as reusing asynchronous
+tasks as discrete components in an higher level system.
+
+This is tightly coupled to readability and maintainability of one's code, as
+these layers of asynchronous processes get more and more complex. As we saw, the
+callback model is simple, but one of its main drawbacks is that for complex
+processes you need to have a callback executed from a callback, itself nested
+inside another callback, and so on...
+
+That is what is referred to as **Callback Hell**. And as you can guess (or know
+from experience), such code is pretty hard to go back to and reason about.
+
+Reactor on the other hand offers rich composition options where code mirrors the
+organization of the abstract process, and everything is kept at the same level
+(no nesting if it is not necessary).
+
+==== The assembly line analogy
+You can think of data processed by a reactive application as moving through
+an assembly line. Reactor is the conveyor belt and working stations. So the
+raw material pours from a source (the original `Publisher`) and ends up as a
+finished product ready to be pushed to the consumer (or `Subscriber`).
+
+It can go to various transformations and other intermediary steps, or be part of
+a larger assembly line that aggregates intermediate pieces together.
+
+Finally, if there is a glitch or a clogging at one point (for example boxing the
+products takes a disproportionately long time), the workstation can signal that
+upstream and limit the flow of raw material.
+
+==== Operators
+In Reactor, operators are what we represented in the above analogy as the
+assembly line's workstations. Each operator adds behavior to a `Publisher`, and
+it actually wraps the previous step's `Publisher` into a new instance.
+
+The whole chain is thus layered, like an onion, where data originates from the
+first `Publisher` in the center and moves outward, transformed by each layer.
+
+TIP: Understanding this can help you avoid a common mistake that would lead you
+to believe that an operator you used in your chain is not being applied. See
+this <<faq.chain,item>> in the FAQ.
+
+While the Reactive Streams specification doesn't specify operators at all, one
+of the high added values of derived reactive libraries like Reactor is the rich
+vocabulary of operators that they bring along. These cover a lot of ground, from
+simple transformation and filtering to complex orchestration and error handling.
+
+[[reactive.subscribe]]
+==== Nothing happens until you `subscribe()`
+In Reactor when you write a `Publisher` chain, data doesn't start pumping into
+it by default. Instead, what you have is a abstract description of your
+asynchronous process (which can help with reusability and composition by the
+way).
+
+By the act of **subscribing**, you tie the `Publisher` to a `Subscriber`, which
+triggers the flow of data in the whole chain. This is achieved internally by a
+single `request` signal from the `Subscriber` that is propagated upstream, right
+back to the source `Publisher`.
+
+==== Backpressure
+The same mechanism is in fact used to implement **backpressure**, which we
+described in the assembly line analogy as a feedback signal sent up the line when
+a working station is slower to process than the upstream.
+
+The real mechanism defined by the Reactive Streams specification is pretty close
+to the analogy: a subscriber can work in _unbounded_ mode and let the source
+push all the data at its fastest achievable rate, but can also use the `request`
+mechanism to signal the source that it is ready to process at most `n` elements.
+
+Intermediate operators can also change the request in-flight. Imagine a `buffer`
+operator that groups elements in batches of 10. If the subscriber requests 1
+buffer, then it is acceptable for the source to produce 10 elements. Prefetching
+strategies can also be applied is producing the elements before they are
+requested is not too costly.
+
+This transforms the push model into a push-pull hybrid where the downstream can
+pull n elements from upstream if they are readily available, but if they're not
+then they will get pushed by the upstream whenever they are produced.
+
+//TODO talk about concurrency agnostic? elements of functional style?

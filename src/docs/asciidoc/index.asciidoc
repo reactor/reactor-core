@@ -1,21 +1,41 @@
 = Reactor Guide
-Stephane Maldini
-:appversion: 3.0.4.BUILD-SNAPSHOT (wiki)
+Stephane Maldini, Simon Baslé
+:appversion: 3.0.4.RELEASE
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
 :doctype: book
 :icons: font
+:toc:
+:sectnums:
+:sectanchors:
 
-ifdef::backend-html5[]
-++++
-include::nav.html[]
-++++
-endif::[]
+include::aboutDoc.adoc[]
 
-//include::gettingstarted.adoc[]
-include::intro.adoc[]
-include::migrating.adoc[]
-include::consuming.adoc[]
-include::producing.adoc[]
-include::scheduler.adoc[]
-include::extra.adoc[]
+include::gettingStarted.adoc[]
+
+include::reactiveProgramming.adoc[]
+
+include::coreFeatures.adoc[]
+
+//TODO see other sections from consuming.adoc
+
+include::operatorChoice.adoc[]
+
+include::testing.adoc[]
+
+include::faq.adoc[]
+
+:sectnums!:
+== Appendix
+
+[appendix]
+include::apdx-implem.adoc[]
+
+[appendix]
+include::apdx-writingOperator.adoc[]
+
+[appendix]
+include::apdx-migrating.adoc[]
+
+[appendix]
+include::apdx-processors.adoc[]
