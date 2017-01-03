@@ -236,10 +236,5 @@ to `publishOn`: they will still switch the execution context for the part of the
 chain after them. Also, only the earliest `subscribeOn` call in the chain is
 actually taken into account.
 
-=== Operators
-//TODO it is like an onion: mention chaining
-include::operatorCatalog.adoc[]
-include::operatorChoice.adoc[]
-
 === Processor
 ==== Do I need a Processor?

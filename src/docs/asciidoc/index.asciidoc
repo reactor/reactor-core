@@ -23,6 +23,8 @@ include::reactiveProgramming.adoc[]
 
 include::coreFeatures.adoc[]
 
+include::operatorChoice.adoc[]
+
 include::testing.adoc[]
 
 include::faq.adoc[]

@@ -1,7 +1,6 @@
 == FAQ, best practices and other "How do I...?"
 [[faq.chain]]
-[quote]
-I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
+=== I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
 
 Check you have affected the result of the operator to the variable you `.subscribe()` to.
 

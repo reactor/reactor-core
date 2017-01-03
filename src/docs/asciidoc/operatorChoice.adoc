@@ -1,5 +1,5 @@
 [[which-operator]]
-=== Which operator do I need?
+== Which operator do I need?
 TIP: In this section, if an operator is specific to `Flux` or `Mono` it will be
 prefixed accordingly, common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
@@ -11,7 +11,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 <<which.errors>>, <<which.time>> or <<which.blocking>>.
 
 [[which.create]]
-==== Creating a new sequence...
+=== Creating a new sequence...
 * that emits a `T` I already have: `just`
 ** ...from an `Optional<T>`: `Mono#justOrEmpty(Optional<T>)`
 ** ...from a potentially `null` T: `Mono#justOrEmpty(T)`
@@ -34,7 +34,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 //TODO create and generate?
 
 [[which.values]]
-==== An existing sequence
+=== An existing sequence
 * I want to transform existing data...
 ** on a 1-to-1 basis (eg. strings to their length): `map`
 *** ...by just casting it: `cast`
@@ -151,7 +151,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 
 [[which.errors]]
-==== Errors
+=== Errors
 * I want to create an erroring sequence: `error`
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
 ** ...to replace the *emission* of a successful `Mono`: `.then(Mono.error(e))`
@@ -180,7 +180,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** ...and applying a strategy when bounded buffer also overflows: `Flux#onBackpressureBuffer` with a `BufferOverflowStrategy`
 
 [[which.time]]
-==== Time
+=== Time
 * I want to associate emissions with a timing (`Tuple2<Long, T>`) measured...
 ** since subscription: `elapsed`
 ** since the dawn of time (well, computer time): `timestamp`
@@ -194,7 +194,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** before the subscription happens: `delaySubscription`
 
 [[which.blocking]]
-==== Going back to the Synchronous world
+=== Going back to the Synchronous world
 * I have a `Flux<T>` and I want to...
 ** block until I can get the first element: `Flux#blockFirst`
 *** ...with a timeout: `Flux#blockFirstMillis` / `Flux#blockFirst(Duration)`
