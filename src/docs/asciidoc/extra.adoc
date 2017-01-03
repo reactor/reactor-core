@@ -1,8 +1,0 @@
-[[extra]]
-= Appendix
-TODO
-
-include::gems.adoc[]
-
-== Resources
-TODO

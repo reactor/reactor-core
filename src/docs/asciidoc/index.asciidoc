@@ -17,6 +17,8 @@ include::reactiveProgramming.adoc[]
 
 include::coreFeatures.adoc[]
 
+//TODO see other sections from consuming.adoc
+
 include::operatorChoice.adoc[]
 
 include::testing.adoc[]
