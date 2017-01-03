@@ -51,7 +51,7 @@ configure(rootProject) {
 			include "index.asciidoc"
 		}
 		outputDir file("$buildDir/asciidoc")
-		backends = ['html5']
+		backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
 				doctype: 'book'
@@ -65,7 +65,7 @@ configure(rootProject) {
 				'source-highlighter': 'coderay'
 
 		doLast {
-			file("$outputDir/pdf/index.pdf").renameTo("$outputDir/pdf/core-reference-guide-${version}.pdf")
+			file("$outputDir/pdf/index.pdf").renameTo ("$outputDir/pdf/reactor-core-reference-guide-${version}.pdf")
 		}
 	}
 
