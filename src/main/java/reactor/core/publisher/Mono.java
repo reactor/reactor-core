@@ -16,25 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.stream.LongStream;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -45,12 +26,18 @@ import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuple3;
-import reactor.util.function.Tuple4;
-import reactor.util.function.Tuple5;
-import reactor.util.function.Tuple6;
-import reactor.util.function.Tuples;
+import reactor.util.function.*;
+
+import java.time.Duration;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.*;
+import java.util.logging.Level;
+import java.util.stream.LongStream;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -861,7 +848,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p2, p3));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
 	/**
