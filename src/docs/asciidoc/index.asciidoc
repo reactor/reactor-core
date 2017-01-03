@@ -1,5 +1,5 @@
 = Reactor Guide
-Stephane Maldini, Simon Baslé
+Stephane Maldini <https://twitter.com/smaldini[@smaldini]>; Simon Baslé <https://twitter.com/simonbasle[@simonbasle]>
 :appversion: 3.0.4.RELEASE
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
@@ -23,16 +23,18 @@ include::operatorChoice.adoc[]
 
 include::testing.adoc[]
 
-include::faq.adoc[]
+include::advancedFeatures.adoc[]
 
-:sectnums!:
-== Appendix
+include::faq.adoc[]
 
 [appendix]
 include::apdx-implem.adoc[]
 
 [appendix]
 include::apdx-writingOperator.adoc[]
+
+[appendix]
+include::apdx-optimizations.adoc[]
 
 [appendix]
 include::apdx-migrating.adoc[]

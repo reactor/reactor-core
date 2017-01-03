@@ -50,7 +50,7 @@ reactive library in the first place.
 
 //TODO flesh out, add more preamble?
 
-=== Blocking is bad
+=== Blocking can be wasteful
 Modern applications nowadays can reach huge scales of users, and even though the
 capabilities of modern hardware have continued to improve, performance of the
 modern software is still a key concern.
@@ -184,6 +184,7 @@ triggers the flow of data in the whole chain. This is achieved internally by a
 single `request` signal from the `Subscriber` that is propagated upstream, right
 back to the source `Publisher`.
 
+[[reactive.backpressure]]
 ==== Backpressure
 The same mechanism is in fact used to implement **backpressure**, which we
 described in the assembly line analogy as a feedback signal sent up the line when
@@ -203,5 +204,23 @@ requested is not too costly.
 This transforms the push model into a push-pull hybrid where the downstream can
 pull n elements from upstream if they are readily available, but if they're not
 then they will get pushed by the upstream whenever they are produced.
+
+[[reactive.hotCold]]
+=== Hot vs Cold
+In the Rx family of reactive libraries, one can distinguish two broad categories
+of reactive sequences: **hot** and **cold**. This distinction mainly has to do
+with how the reactive stream reacts to subscribers:
+
+ - a **Cold** sequence will start anew for each `Subscriber`, including at the
+ source of data. If the source wraps an HTTP call, a new HTTP request will be
+ made for each subscription
+ - a **Hot** sequence will not start from scratch for each `Subscriber`. Rather,
+ late subscribers will receive signals emitted _after_ they subscribed. Note
+ however that some hot reactive streams can cache or replay the history of
+ emissions totally or partially... From a general perspective, a hot sequence
+ will emit wether or not there are some subscribers listening.
+
+For more information on hot vs cold in the context of Reactor, see
+<<reactor.hotCold,this reactor-specific section>>.
 
 //TODO talk about concurrency agnostic? elements of functional style?

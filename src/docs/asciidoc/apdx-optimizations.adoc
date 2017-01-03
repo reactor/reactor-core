@@ -1,0 +1,5 @@
+== Automatic optimizations
+
+=== Macro-fusion
+
+=== Micro-fusion

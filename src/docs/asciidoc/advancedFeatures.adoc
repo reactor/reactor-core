@@ -1,43 +1,6 @@
-[[consuming]]
-= Consuming API
-TODO
+== Advanced features and concepts
 
-[[mono-consuming]]
-== Mono [0|1]
-TODO
-
-=== Composing
-TODO
-
-=== Observing
-TODO
-
-=== Transforming
-TODO
-
-=== Filtering
-TODO
-
-=== Combining
-TODO
-
-=== Error Handling
-TODO
-
-=== Subscribing
-TODO
-
-[[backpressure-mono]]
-=== Backpressure Rules
-TODO
-
-
-[[flux-consuming]]
-== Flux [N]
-TODO
-
-=== Composing
-
+=== Mutualizing operator usage
 [source,java]
 ----
 Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
@@ -60,19 +23,10 @@ flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-reftail.png[Reference used for Subscriber]
 
 
-[source,java]
-----
-Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-	.doOnNext(System.out::println)
-	.filter(color -> !color.equals("orange"))
-	.map(String::toUpperCase);
-
-
-source.subscribe(d -> System.out.println("Subscriber 1: "+d));
-source.subscribe(d -> System.out.println("Subscriber 2: "+d));
-----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-cold.png[Replaying behavior]
-
+==== transform
+The `transform` operator allows to encapsulate the flow by applying a chain of
+operators that is externalized in a function. This applies globally to all the
+subscribers of a sequence.
 
 [source,java]
 ----
@@ -86,6 +40,11 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-transform.png[Transform Operator : encapsulate flows]
+
+
+==== compose
+The `compose` operator also allows to locally apply an externalized chain of
+operators to a sequence, but it does so on a per-subscriber basis.
 
 [source,java]
 ----
@@ -108,6 +67,21 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndF
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+
+[[reactor.hotCold]]
+=== Hot vs Cold
+[source,java]
+----
+Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+	.doOnNext(System.out::println)
+	.filter(color -> !color.equals("orange"))
+	.map(String::toUpperCase);
+
+
+source.subscribe(d -> System.out.println("Subscriber 1: "+d));
+source.subscribe(d -> System.out.println("Subscriber 2: "+d));
+----
+image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-cold.png[Replaying behavior]
 
 
 
@@ -132,81 +106,10 @@ hotSource.onComplete();
 ----
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-hot.png[Broadcasting a subscription]
 
-=== Observing
-TODO
+=== Broadcast to multiple subscribers with `ConnectableFlux`
 
-=== Transforming
-TODO
+=== Parallelize work with `ParallelFlux`
 
-=== Filtering
-TODO
+=== Backpressure and the associated rules
 
-=== Collecting
-TODO
-
-=== Reducing
-TODO
-
-=== Combining
-TODO
-
-=== Error Handling
-TODO
-
-=== Extracting
-TODO
-
-=== Subscribing
-TODO
-
-=== Connecting
-TODO
-
-[[backpressure-mono]]
-=== Backpressure Rules
-TODO
-
-== ParallelFlux [N]
-TODO
-
-=== Composing
-TODO
-
-=== Observing
-TODO
-
-=== Transforming
-TODO
-
-=== Filtering
-TODO
-
-=== Grouping
-TODO
-
-=== Extracting
-TODO
-
-=== Subscribing
-TODO
-
-== Custom Operators
-TODO
-
-=== Operators
-TODO
-
-== Global Hooks
-TODO
-
-=== Debugging
-TODO
-
-== Automatic Optimizations
-TODO
-
-=== Micro Fusion
-TODO
-
-=== Macro Fusion
-TODO
+=== Global hooks
