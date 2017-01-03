@@ -76,9 +76,22 @@ public class MonoSequenceEqualTest {
 	@Test
 	public void sequenceErrorsBothPropagatesLeftError() {
 		StepVerifier.create(Mono.sequenceEqual(
-						Flux.just("one", "two", "three").concatWith(Mono.error(new IllegalArgumentException("left"))).hide(),
+						Flux.just("one", "two", "three", "four").concatWith(Mono.error(new IllegalArgumentException("left"))).hide(),
 						Flux.just("one", "two").concatWith(Mono.error(new IllegalArgumentException("right"))).hide()))
 		            .verifyErrorMessage("left");
+	}
+
+	@Test
+	public void sequenceErrorsBothPropagatesLeftErrorWithSmallRequest() {
+		StepVerifier.create(Mono.sequenceEqual(
+						Flux.just("one", "two", "three", "four")
+						    .concatWith(Mono.error(new IllegalArgumentException("left")))
+						    .hide(),
+						Flux.just("one", "two")
+						    .concatWith(Mono.error(new IllegalArgumentException("right")))
+						    .hide(),
+						Objects::equals, 1))
+		            .verifyErrorMessage("right");
 	}
 
 	@Test
@@ -145,7 +158,7 @@ public class MonoSequenceEqualTest {
 		Flux<Integer> source1 = Flux.range(1, 5).doOnCancel(() -> sub1.set(true));
 		Flux<Integer> source2 = Flux.just(1, 2, 3, 7, 8).doOnCancel(() -> sub2.set(true));
 
-		StepVerifier.create(Mono.sequenceEqual(source1.log(), source2.log()))
+		StepVerifier.create(Mono.sequenceEqual(source1, source2))
 		            .expectNext(Boolean.FALSE)
 		            .verifyComplete();
 
