@@ -1,5 +1,5 @@
 = Reactor Guide
-Stephane Maldini
+Stephane Maldini, Simon Baslé
 :appversion: 3.0.4.RELEASE
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
@@ -8,12 +8,6 @@ ifndef::host-github[:ext-relative: {outfilesuffix}]
 :toc:
 :sectnums:
 :sectanchors:
-
-ifdef::backend-html5[]
-++++
-include::nav.html[]
-++++
-endif::[]
 
 include::aboutDoc.adoc[]
 

@@ -2006,10 +2006,11 @@ body {
 }
 #reactor-header h1#logo a strong {
     display: block;
-    background: url(images/logo-2x.png) no-repeat 0 -30px;
-    background-size: 190px 60px;
-    height: 30px;
-    width: 190px;
+    background: url(images/logo-2x.png) no-repeat 0 0;
+    background-size: 253px 80px;
+    color: red;
+    height: 40px;
+    width: 253px;
     text-indent: -6000em;
     margin: 8px 0;
     -moz-transition-property: opacity;
