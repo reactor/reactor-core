@@ -61,6 +61,7 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 /**
@@ -1454,12 +1455,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * forwarded.
 	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
 	 * <p>
+	 * Note that this version is very limited compared to the alternatives where you either provide
+	 * a fixed number of sources or a more meaningful combinator. Here we default to combining into
+	 * {@link Tuples}, which limits us to up to 8 sources ({@link Tuple8}). Additionally, since a
+	 * {@link Tuple2} is returned, the usage will probably be limited to iterating over the Tuple
+	 * (or casting to the correct TupleN, but if you can do that you're better off using the fixed
+	 * size signatures like {@link #zip(Publisher, Publisher, Publisher)}). Consider using
+	 * {@link #zip(Iterable, Function)} instead, with {@link java.util.Arrays#asList(Object[])}
+	 * as a combinator, if you really don't know the number of sources or if it can grow beyond
+	 * 8.
+	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/zipt.png" alt="">
 	 * <p>
 	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
 	 *
 	 * @return a zipped {@link Flux}
+	 * @deprecated prefer using {@link #zip(Iterable, Function)}, will be removed in 3.1.0
+	 * @see #zip(Publisher, Publisher, Publisher)
+	 * @see #zip(Iterable, Function)
 	 */
+	@Deprecated
 	public static Flux<Tuple2> zip(Iterable<? extends Publisher<?>> sources) {
 		return zip(sources, Tuples.fnAny());
 	}

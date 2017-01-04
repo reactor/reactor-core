@@ -31,12 +31,12 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Repeatedly takes one item from all source Publishers and 
@@ -194,6 +194,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		if (n == 0) {
 			Operators.complete(s);
 			return;
+		}
+
+		if (n < scalars.length) {
+			scalars = Arrays.copyOfRange(scalars, 0, n, scalars.getClass());
 		}
 
 		handleBoth(s, srcs, scalars, n, sc);
