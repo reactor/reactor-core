@@ -436,22 +436,22 @@ class MonoSpec extends Specification {
 
   }
 
-    def "a combined promise with delayError of three component promises should fulfilled if its component promises are already fulfilled"() {
-        given: "three fulfilled promises"
-        def promise1 = Mono.just(1)
-        def promise2 = Mono.just(2)
-        def promise3 = Mono.just(3)
+  def "a combined promise with delayError of three component promises should fulfilled if its component promises are already fulfilled"() {
+	given: "three fulfilled promises"
+	def promise1 = Mono.just(1)
+	def promise2 = Mono.just(2)
+	def promise3 = Mono.just(3)
 
-        when: "a combined promise is created with delayError"
-        def combined = Mono.whenDelayError(promise1, promise2, promise3).subscribe()
-        combined.peek()
+	when: "a combined promise is created with delayError"
+	def combined = Mono.whenDelayError(promise1, promise2, promise3).subscribe()
+	combined.peek()
 
-        then: "it is fulfilled"
-        combined.success
-        combined.peek().t1 == 1
-        combined.peek().t2 == 2
-        combined.peek().t3 == 3
-    }
+	then: "it is fulfilled"
+	combined.success
+	combined.peek().t1 == 1
+	combined.peek().t2 == 2
+	combined.peek().t3 == 3
+  }
 
   def "A combined promise through 'any' is fulfilled with the first component result when using synchronously"() {
 	given: "two fulfilled promises"
