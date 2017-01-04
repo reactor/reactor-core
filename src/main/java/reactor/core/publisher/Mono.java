@@ -61,7 +61,7 @@ import reactor.util.function.Tuples;
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
- * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with
+ * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with 
  * possibly
  * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then then}.
  *
@@ -74,7 +74,7 @@ import reactor.util.function.Tuples;
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
  * @param <T> the type of the single value of this class
- *
+ * 
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @author David Karnok
@@ -113,9 +113,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *             }
 	 *         }
 	 *     };
-	 *
+	 *     
 	 *     client.addListener(listener);
-	 *
+	 *     
 	 *     sink.setCancellation(() -&gt; client.removeListener(listener));
 	 * });
 	 * </code></pre>
@@ -134,19 +134,19 @@ public abstract class Mono<T> implements Publisher<T> {
      *         public void onResult(String data) {
      *             sink.success(data.toLowerCase());
      *         }
-     *
+     *         
      *         &#64;Override
      *         public void onError(Exception e) {
      *             sink.error(e);
      *         }
      *     }
-     *
+     *     
      *     // without cancellation support:
-     *
+     *     
      *     client.call("query", callback);
-     *
+     *     
      *     // with cancellation support:
-     *
+     *     
      *     AutoCloseable cancel = client.call("query", callback);
      *     sink.setCancellation(() -> {
      *         try {
@@ -155,7 +155,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *             Exceptions.onErrorDropped(ex);
      *         }
      *     });
-     * });
+     * }); 
      * <code></pre>
 	 *
 	 * @param callback the consumer who will receive a per-subscriber {@link MonoSink}.
@@ -173,7 +173,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
-	 *
+	 * 
 	 * @param <T> the element type of the returned Mono instance
 	 *
 	 * @return a new {@link Mono} factory
@@ -474,7 +474,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise.
-	 *
+	 * 
 	 * @param source1
 	 *            the first Publisher to compare
 	 * @param source2
@@ -526,7 +526,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
-	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1,
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, 
 			Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual, int bufferSize) {
 		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, bufferSize));
@@ -1065,7 +1065,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param other the {@link Mono} to combine with
 	 * @param <T2> the element type of the other Mono instance
-	 *
+	 * 
 	 * @return a new combined Mono
 	 * @see #when
 	 */
@@ -1757,16 +1757,16 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Hides the identity of this {@link Mono} instance.
-	 *
+	 * 
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
-	 *
+	 * 
 	 * @return a new {@link Mono} instance
 	 */
 	public final Mono<T> hide() {
 	    return onAssembly(new MonoHide<>(this));
 	}
-
+	
 	/**
 	 * Ignores onNext signal (dropping it) and only reacts on termination.
 	 *
@@ -2936,7 +2936,7 @@ public abstract class Mono<T> implements Publisher<T> {
 				onRequest,
 				onCancel));
 	}
-
+	
 	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;
 
 	@SuppressWarnings("unchecked")
