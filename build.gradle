@@ -154,8 +154,10 @@ configure(rootProject) {
 	maven { url 'http://repo.spring.io/libs-milestone' }
 	maven { url "https://oss.sonatype.org/content/repositories/releases/" }
 
-	mavenLocal()
-	maven { url 'http://repo.spring.io/libs-snapshot' }
+	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
+	  mavenLocal()
+	  maven { url 'http://repo.spring.io/libs-snapshot' }
+	}
 
   }
 
