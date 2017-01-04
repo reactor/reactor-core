@@ -50,6 +50,8 @@ public abstract class Tuples implements Function {
 				return of(list[0], list[1], list[2], list[3], list[4], list[5]);
 			case 7:
 				return of(list[0], list[1], list[2], list[3], list[4], list[5], list[6]);
+			case 8:
+				return of(list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7]);
 		}
 		throw new IllegalArgumentException("too many arguments ("+list.length+"), 8 " +
 				"maximum supported");
