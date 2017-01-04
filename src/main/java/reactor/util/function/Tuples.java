@@ -29,12 +29,18 @@ import java.util.function.Function;
 public abstract class Tuples implements Function {
 
 	/**
-	 * Create a {@link Tuples} with the given object.
+	 * Create a {@link Tuple2} with the given array if it is small
+	 * enough to fit inside a {@link Tuple2} to {@link Tuple8}.
 	 *
-	 * @param list Build an unbounded tuple
-	 * @return The new {@link Tuples}.
+	 * @param list the content of the Tuple (size 1 to 8)
+	 * @return The new {@link Tuple2}.
+	 * @throws IllegalArgumentException if the array is not of length 1-8
 	 */
 	public static Tuple2 fromArray(Object[] list) {
+		if (list == null || list.length == 0) {
+			throw new IllegalArgumentException("null or empty array, need between 1 and 8 values");
+		}
+
 		switch (list.length){
 			case 1:
 				return of(list[0], null);
@@ -50,9 +56,10 @@ public abstract class Tuples implements Function {
 				return of(list[0], list[1], list[2], list[3], list[4], list[5]);
 			case 7:
 				return of(list[0], list[1], list[2], list[3], list[4], list[5], list[6]);
+			case 8:
+				return of(list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7]);
 		}
-		throw new IllegalArgumentException("too many arguments ("+list.length+"), 8 " +
-				"maximum supported");
+		throw new IllegalArgumentException("too many arguments ("+ list.length + "), need between 1 and 8 values");
 	}
 
 	/**

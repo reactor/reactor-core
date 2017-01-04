@@ -16,6 +16,7 @@
 
 package reactor.util.function;
 
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -65,5 +66,116 @@ public class TupleTests {
 		assertThat("Tuples of different length are not equal.", t2, is(Matchers.not((Tuple2<String, Long>) t3)));
 	}
 
+	@Test
+	public void fromArrayRejects0() {
+		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
+		          .isThrownBy(() -> Tuples.fromArray(new Object[0]))
+		          .withMessageStartingWith("null or empty array, need between 1 and 8 values");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple2CreatedFromArray1() {
+		Integer[] source = new Integer[] { 1 };
+		Tuple2 expected = Tuples.of(1, null);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple2.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple2CreatedFromArray2() {
+		Integer[] source = new Integer[] { 1, 2 };
+		Tuple2 expected = Tuples.of(1, 2);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple2.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple3CreatedFromArray3() {
+		Integer[] source = new Integer[]{1, 2, 3};
+		Tuple2 expected = Tuples.of(1, 2, 3);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual).isExactlyInstanceOf(Tuple3.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple4CreatedFromArray4() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4 };
+		Tuple2 expected = Tuples.of(1, 2, 3, 4);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple4.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple5CreatedFromArray5() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4, 5 };
+		Tuple2 expected = Tuples.of(1, 2, 3, 4, 5);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple5.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple6CreatedFromArray6() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6 };
+		Tuple2 expected = Tuples.of(1, 2, 3, 4, 5, 6);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple6.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple7CreatedFromArray7() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7 };
+		Tuple2 expected = Tuples.of(1, 2, 3, 4, 5, 6, 7);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple7.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void tuple8CreatedFromArray8() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+		Tuple2 expected = Tuples.of(1, 2, 3, 4, 5, 6, 7, 8);
+		Tuple2 actual = Tuples.fromArray(source);
+
+		Assertions.assertThat(actual)
+		          .isExactlyInstanceOf(Tuple8.class)
+		          .isEqualTo(expected);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void fromArrayRejects9() {
+		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
+		          .isThrownBy(() -> Tuples.fromArray(source))
+		          .withMessage("too many arguments (9), need between 1 and 8 values");
+	}
 
 }
