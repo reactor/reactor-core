@@ -17,11 +17,16 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
 
 public class FluxZipTest {
@@ -39,6 +44,57 @@ public class FluxZipTest {
 		ctb.test();
 	}
 	*/
+
+	@Test
+	public void iterableWithCombinatorHasCorrectLength() {
+		Flux<Integer> flux1 = Flux.just(1);
+		Flux<Integer> flux2 = Flux.just(2);
+		Flux<Integer> flux3 = Flux.just(3);
+		Flux<Integer> flux4 = Flux.just(4);
+		List<Object> expected = Arrays.asList(1, 2, 3, 4);
+
+		Flux<List<Object>> zipped = Flux.zip(Arrays.asList(flux1, flux2, flux3, flux4),
+				Arrays::asList);
+
+		StepVerifier.create(zipped)
+		            .consumeNextWith(t -> Assertions.assertThat(t).containsExactlyElementsOf(expected))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void iterableWithoutCombinatorReturnsCorrectTuple() {
+		Flux<Integer> flux1 = Flux.just(1);
+		Flux<Integer> flux2 = Flux.just(2);
+		Flux<Integer> flux3 = Flux.just(3);
+		Flux<Integer> flux4 = Flux.just(4);
+		List<Object> expected = Arrays.asList(1, 2, 3, 4);
+
+		Flux<Tuple2> zipped = Flux.zip(Arrays.asList(flux1, flux2, flux3, flux4));
+
+		StepVerifier.create(zipped)
+		            .consumeNextWith(t -> Assertions.assertThat(t)
+		                                            .containsExactlyElementsOf(expected)
+		                                            .isExactlyInstanceOf(Tuple4.class))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void publisherOfPublishersUsesCorrectTuple() {
+		Flux<Flux<Integer>> map = Flux.range(1, 7)
+		                              .map(Flux::just);
+
+		Flux<Tuple2> zipped = Flux.zip(map, t -> t);
+		StepVerifier.create(zipped)
+		            .consumeNextWith(t -> Assertions.assertThat((Iterable<?>) t)
+				            .isEqualTo(Tuples.of(1, 2, 3, 4, 5, 6, 7))
+				            .isExactlyInstanceOf(Tuple7.class))
+		            .expectComplete()
+		            .verify();
+	}
+
 	@Test
 	public void sameLength() {
 		
