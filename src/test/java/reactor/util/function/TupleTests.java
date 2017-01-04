@@ -65,5 +65,16 @@ public class TupleTests {
 		assertThat("Tuples of different length are not equal.", t2, is(Matchers.not((Tuple2<String, Long>) t3)));
 	}
 
+	@Test
+	public void tuplesCanBeCreatedFromAnArrayOfLength8() {
+		Tuple2 tuple2 = Tuples.fromArray(new Object[8]);
+		assertThat("Tuple created from array of length 8 is Tuple8", Tuple8.class.isInstance(tuple2));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void tuplesCanNotBeCreatedFromAnArrayLongerThen8() {
+		Tuples.fromArray(new Object[9]);
+	}
+
 
 }
