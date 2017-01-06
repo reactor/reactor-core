@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -37,16 +38,16 @@ final class SingleTimedScheduler implements TimedScheduler {
 
     static final AtomicLong COUNTER = new AtomicLong();
     
-    final ScheduledThreadPoolExecutor executor;
+    final ScheduledExecutorService executor;
 
     /**
      * Constructs a new SingleTimedScheduler with the given thread factory.
      * @param threadFactory the thread factory to use
      */
     SingleTimedScheduler(ThreadFactory threadFactory) {
-        ScheduledThreadPoolExecutor e = (ScheduledThreadPoolExecutor)Executors.newScheduledThreadPool(1, threadFactory);
-        e.setRemoveOnCancelPolicy(true);
-        executor = e;
+        ScheduledExecutorService e = Executors.newScheduledThreadPool(1, threadFactory);
+        ((ScheduledThreadPoolExecutor) e).setRemoveOnCancelPolicy(true);
+        executor = Schedulers.decorateScheduledExecutorService(Schedulers.TIMER, () -> e);
     }
     
     @Override
@@ -96,7 +97,7 @@ final class SingleTimedScheduler implements TimedScheduler {
 
 	@Override
 	public void dispose() {
-		Schedulers.executorServiceShutdown(executor, "SingleTimed");
+		Schedulers.executorServiceShutdown(executor, Schedulers.TIMER);
 	}
     
     @Override
@@ -105,13 +106,13 @@ final class SingleTimedScheduler implements TimedScheduler {
     }
     
     static final class SingleTimedSchedulerWorker implements TimedWorker {
-        final ScheduledThreadPoolExecutor executor;
+        final ScheduledExecutorService executor;
         
         OpenHashSet<CancelFuture> tasks;
         
         volatile boolean terminated;
         
-        public SingleTimedSchedulerWorker(ScheduledThreadPoolExecutor executor) {
+        public SingleTimedSchedulerWorker(ScheduledExecutorService executor) {
             this.executor = executor;
             this.tasks = new OpenHashSet<>();
         }

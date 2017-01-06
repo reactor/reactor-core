@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -495,10 +496,30 @@ public class Schedulers {
 //		}
 	}
 
+	public static ExecutorService decorateExecutorService(String schedulerType,
+			Supplier<? extends ExecutorService> actual) {
+		return factory.decorateExecutorService(schedulerType, actual);
+	}
+
+	public static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+			Supplier<? extends ScheduledExecutorService> actual) {
+		return factory.decorateScheduledExecutorService(schedulerType, actual);
+	}
+
 	/**
 	 * Public factory hook to override Schedulers behavior globally
 	 */
 	public interface Factory {
+
+		default ExecutorService decorateExecutorService(String schedulerType,
+				Supplier<? extends ExecutorService> actual) {
+			return actual.get();
+		}
+
+		default ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+				Supplier<? extends ScheduledExecutorService> actual) {
+			return actual.get();
+		}
 
 		/**
 		 * {@link Scheduler} that dynamically creates Workers resources and caches

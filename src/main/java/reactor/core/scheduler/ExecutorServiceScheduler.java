@@ -41,8 +41,8 @@ final class ExecutorServiceScheduler implements Scheduler {
 	final ExecutorService executor;
 	final boolean interruptOnCancel;
 
-	public ExecutorServiceScheduler(ExecutorService executor, boolean interruptOnCancel) {
-		this.executor = executor;
+	public ExecutorServiceScheduler(ExecutorService executorService, boolean interruptOnCancel) {
+		this.executor = Schedulers.decorateExecutorService("ExecutorService", () -> executorService);
 		this.interruptOnCancel = interruptOnCancel;
 	}
 
@@ -77,7 +77,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		if(interruptOnCancel) {
 			executor.submit(EMPTY).cancel(true);
 		}
-		Schedulers.executorServiceShutdown(executor, "ExecutorService");
+		Schedulers.executorServiceShutdown(executor,"ExecutorService");
 	}
 
 	static final class ExecutorServiceWorker implements Worker {
