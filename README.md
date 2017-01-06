@@ -20,8 +20,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.0.4.BUILD-SNAPSHOT"
-      compile "io.projectreactor:reactor-core:3.0.3.RELEASE"
+      //compile "io.projectreactor:reactor-core:3.0.5.BUILD-SNAPSHOT"
+      compile "io.projectreactor:reactor-core:3.0.4.RELEASE"
     }
 ```
 
