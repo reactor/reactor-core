@@ -15,12 +15,20 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import static org.junit.Assert.assertTrue;
+
 public class FluxSubscribeOnValueTest {
+
+	ConcurrentMap<Integer, Integer> execs = new ConcurrentHashMap<>();
 
 	@Test
 	public void testSubscribeOnValueFusion() {
@@ -30,13 +38,25 @@ public class FluxSubscribeOnValueTest {
 		                                          .subscribeOn(Schedulers.parallel())
 		                                          .log()
 		                                          .map(this::slow)))
+		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
 		            .expectNextCount(100)
 		            .verifyComplete();
+
+		int minExec = 2;
+
+		for (Integer counted : execs.values()) {
+			assertTrue("Thread used less than " + minExec + " " + "times",
+					counted >= minExec);
+		}
 
 	}
 
 	int slow(int slow){
 		try {
+			execs.computeIfAbsent(Thread.currentThread()
+			                            .hashCode(), i -> 0);
+			execs.compute(Thread.currentThread()
+			                    .hashCode(), (k, v) -> v + 1);
 			Thread.sleep(10);
 			return slow;
 		}
