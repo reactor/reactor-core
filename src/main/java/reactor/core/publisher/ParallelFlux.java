@@ -328,6 +328,39 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Triggers side-effects when the {@link ParallelFlux} emits an item, fails with an error
+	 * or completes successfully. All these events are represented as a {@link Signal}
+	 * that is passed to the side-effect callback. Note that with {@link ParallelFlux} and
+	 * the {@link #subscribe(Consumer) lambda-based subscribes} or the
+	 * {@link #subscribe(Subscriber[]) array-based one}, onError and onComplete will be
+	 * invoked as many times as there are rails, resulting in as many corresponding
+	 * {@link Signal} being seen in the callback.
+	 * <p>
+	 * Use of {@link #subscribe(Subscriber)}, which calls {@link #sequential()}, might
+	 * cancel some rails, resulting in less signals being observed. This is an advanced
+	 * operator, typically used for monitoring of a ParallelFlux.
+	 *
+	 * @param signalConsumer the mandatory callback to call on
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}
+	 * @return an observed {@link ParallelFlux}
+	 * @see #doOnNext(Consumer)
+	 * @see #doOnError(Consumer)
+	 * @see #doOnComplete(Runnable)
+	 * @see #subscribe(Subscriber[])
+	 * @see Signal
+	 */
+	public final ParallelFlux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+		Objects.requireNonNull(signalConsumer, "signalConsumer");
+		return doOnSignal(this,
+				v -> signalConsumer.accept(Signal.next(v)),
+				null,
+				e -> signalConsumer.accept(Signal.<T>error(e)),
+				() -> signalConsumer.accept(Signal.<T>complete()),
+				null, null, null, null);
+	}
+
+	/**
 	 * Call the specified consumer with the exception passing through any 'rail'.
 	 *
 	 * @param onError the callback

@@ -19,15 +19,27 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.*;
 
 public class ParallelFluxTest {
 
@@ -451,4 +463,77 @@ public class ParallelFluxTest {
 		  .assertNoError()
 		  .assertComplete();
 	}
+
+	@Test
+	public void testDoOnEachSignal() throws InterruptedException {
+		List<Signal<Integer>> signals = Collections.synchronizedList(new ArrayList<>(4));
+		List<Integer> values = Collections.synchronizedList(new ArrayList<>(2));
+		ParallelFlux<Integer> flux = Flux.just(1, 2)
+		                                 .parallel(3)
+		                                 .doOnEach(signals::add)
+		                                 .doOnEach(s -> {
+			                                 if (s.isOnNext())
+				                                 values.add(s.get());
+		                                 });
+
+		//we use a lambda subscriber and latch to avoid using `sequential`
+		CountDownLatch latch = new CountDownLatch(2);
+		flux.subscribe(v -> {}, e -> latch.countDown(), latch::countDown);
+
+		assertTrue(latch.await(2, TimeUnit.SECONDS));
+
+		assertThat(signals.size(), is(5));
+		assertThat("first onNext signal isn't first value", signals.get(0).get(), is(1));
+		assertThat("second onNext signal isn't last value", signals.get(1).get(), is(2));
+		assertTrue("onComplete for rail 1 expected", signals.get(2).isOnComplete());
+		assertTrue("onComplete for rail 2 expected", signals.get(3).isOnComplete());
+		assertTrue("onComplete for rail 3 expected", signals.get(4).isOnComplete());
+		assertThat("1st onNext value unexpected", values.get(0), is(1));
+		assertThat("2nd onNext value unexpected", values.get(1), is(2));
+	}
+
+	@Test
+	public void testDoOnEachSignalWithError() throws InterruptedException {
+		List<Signal<Integer>> signals = Collections.synchronizedList(new ArrayList<>(4));
+		ParallelFlux<Integer> flux = Flux.<Integer>error(new IllegalArgumentException("boom"))
+		                              .parallel(2)
+		                              .runOn(Schedulers.parallel())
+		                              .doOnEach(signals::add);
+
+		//we use a lambda subscriber and latch to avoid using `sequential`
+		CountDownLatch latch = new CountDownLatch(2);
+		flux.subscribe(v -> {}, e -> latch.countDown(), latch::countDown);
+
+		assertTrue(latch.await(2, TimeUnit.SECONDS));
+
+		assertThat(signals.toString(), signals.size(), is(2));
+		assertTrue("rail 1 onError expected", signals.get(0).isOnError());
+		assertTrue("rail 2 onError expected", signals.get(1).isOnError());
+		assertThat("plain exception rail 1 expected", signals.get(0).getThrowable().getMessage(), is("boom"));
+		assertThat("plain exception rail 2 expected", signals.get(1).getThrowable().getMessage(), is("boom"));
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void testDoOnEachSignalNullConsumer() {
+		Flux.just(1).parallel().doOnEach(null);
+	}
+
+	@Test
+	public void testDoOnEachSignalToSubscriber() {
+		AssertSubscriber<Integer> peekSubscriber = AssertSubscriber.create();
+		ParallelFlux<Integer> flux = Flux.just(1, 2)
+		                         .parallel(3)
+		                         .doOnEach(s -> s.accept(peekSubscriber));
+
+		//we use a lambda subscriber and latch to avoid using `sequential`
+		flux.subscribe(v -> {});
+
+		peekSubscriber.assertNotSubscribed();
+		peekSubscriber.assertValues(1, 2);
+
+		Assertions.assertThatExceptionOfType(AssertionError.class)
+		          .isThrownBy(peekSubscriber::assertComplete)
+		          .withMessage("Multiple completions: 3");
+	}
+
 }
