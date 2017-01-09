@@ -16,10 +16,32 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Exceptions;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 
 public class FluxSubscribeOnValueTest {
 
 	@Test
-	public void normal() {
+	public void testSubscribeOnValueFusion() {
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .flatMap(f -> Flux.just(f)
+		                                          .subscribeOn(Schedulers.parallel())
+		                                          .log()
+		                                          .map(this::slow)))
+		            .expectNextCount(100)
+		            .verifyComplete();
+
+	}
+
+	int slow(int slow){
+		try {
+			Thread.sleep(10);
+			return slow;
+		}
+		catch (InterruptedException e) {
+			throw Exceptions.bubble(e);
+		}
 	}
 }

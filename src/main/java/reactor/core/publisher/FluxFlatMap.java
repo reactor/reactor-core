@@ -1049,7 +1049,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (s instanceof Fuseable.QueueSubscription) {
 					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<R> f =
 							(Fuseable.QueueSubscription<R>) s;
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
 						queue = f;

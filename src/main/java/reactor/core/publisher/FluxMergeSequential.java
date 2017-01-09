@@ -487,7 +487,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 					@SuppressWarnings("unchecked")
 					QueueSubscription<R> qs = (QueueSubscription<R>) s;
 
-					int m = qs.requestFusion(Fuseable.ANY);
+					int m = qs.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					if (m == Fuseable.SYNC) {
 						fusionMode = m;
 						queue = qs;

@@ -202,7 +202,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 				fusionState = NO_VALUE;
 				return Fuseable.ASYNC;
 			}
-			return Fuseable.ASYNC;
+			return Fuseable.NONE;
 		}
 
 		@Override
@@ -298,10 +298,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if ((requestedMode & Fuseable.ASYNC) != 0) {
-				return Fuseable.ASYNC;
-			}
-			return Fuseable.ASYNC;
+			return requestedMode & Fuseable.ASYNC;
 		}
 
 		@Override
