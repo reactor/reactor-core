@@ -1483,6 +1483,31 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Triggers side-effects when the {@link Mono} emits an item, fails with an error
+	 * or completes successfully. All these events are represented as a {@link Signal}
+	 * that is passed to the side-effect callback. Note that this is an advanced operator,
+	 * typically used for monitoring of a Mono.
+	 *
+	 * @param signalConsumer the mandatory callback to call on
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}
+	 * @return an observed {@link Mono}
+	 * @see #doOnNext(Consumer)
+	 * @see #doOnError(Consumer)
+	 * @see #materialize()
+	 * @see Signal
+	 */
+	public final Mono<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+		Objects.requireNonNull(signalConsumer, "signalConsumer");
+		return doOnSignal(this,
+				null,
+				v -> signalConsumer.accept(Signal.next(v)),
+				e -> signalConsumer.accept(Signal.<T>error(e)),
+				() -> signalConsumer.accept(Signal.<T>complete()),
+				null, null, null);
+	}
+
+	/**
 	 * Triggered when the {@link Mono} completes with an error.
 	 *
 	 * <p>
