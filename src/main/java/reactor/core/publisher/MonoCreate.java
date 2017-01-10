@@ -86,6 +86,10 @@ final class MonoCreate<T> extends Mono<T> {
 
         @Override
         public void success(T value) {
+            if (value == null) {
+                success();
+                return;
+            }
             for (;;) {
                 int s = state;
                 if (s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {

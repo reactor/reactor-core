@@ -34,7 +34,9 @@ public interface MonoSink<T> {
     /**
      * Complete with the given value.
      * <p>Calling this method multiple times or after the other
-     * terminating methods has no effect.
+     * terminating methods has no effect. Calling this method with
+     * a {@code null} value will be silently accepted as a call to
+     * {@link #success()} by standard implementations.
      * @param value the value to complete with
      */
     void success(T value);
