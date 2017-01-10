@@ -23,6 +23,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
@@ -31,7 +32,7 @@ import reactor.util.concurrent.OpenHashSet;
  * Scheduler that works with a single-threaded ExecutorService and is suited for
  * same-thread work (like an event dispatch thread).
  */
-final class SingleScheduler implements Scheduler {
+final class SingleScheduler implements Scheduler, Supplier<ExecutorService> {
 
     static final AtomicLong COUNTER = new AtomicLong();
 
@@ -52,8 +53,18 @@ final class SingleScheduler implements Scheduler {
         init();
     }
 
+    /**
+     * Instantiates the default {@link ExecutorService} for the SingleScheduler
+     * ({@code Executors.newSingleThreadExecutor}).
+     */
+    @Override
+    public ExecutorService get() {
+        return Executors.newSingleThreadExecutor(factory);
+    }
+
     private void init() {
-        EXECUTORS.lazySet(this, Executors.newSingleThreadExecutor(factory));
+        EXECUTORS.lazySet(this, Schedulers.decorateExecutorService(
+                Schedulers.SINGLE, this));
     }
 
 	@Override
@@ -74,7 +85,8 @@ final class SingleScheduler implements Scheduler {
             }
 
             if (b == null) {
-                b = Executors.newSingleThreadExecutor(factory);
+                b = Schedulers.decorateExecutorService(
+                        Schedulers.SINGLE, this);
             }
 
             if (EXECUTORS.compareAndSet(this, a, b)) {
@@ -94,7 +106,7 @@ final class SingleScheduler implements Scheduler {
         if (a != TERMINATED) {
             a = EXECUTORS.getAndSet(this, TERMINATED);
             if (a != TERMINATED) {
-                Schedulers.executorServiceShutdown(a, "Single");
+                Schedulers.executorServiceShutdown(a, Schedulers.SINGLE);
             }
         }
     }
@@ -304,6 +316,7 @@ final class SingleScheduler implements Scheduler {
                     }
                 }
             }
+
         }
     }
 }

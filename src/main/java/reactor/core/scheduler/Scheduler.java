@@ -15,11 +15,21 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
+
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
+ * <p>
+ * Implementations that use an underlying {@link ExecutorService} or
+ * {@link ScheduledExecutorService} should instantiate it through a {@link Supplier}
+ * passed through the relevant {@link Schedulers} hook
+ * ({@link Schedulers#decorateExecutorService(String, Supplier)} or
+ * {@link Schedulers#decorateScheduledExecutorService(String, Supplier)}).
  */
 public interface Scheduler extends Disposable {
 	/**

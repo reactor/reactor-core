@@ -23,6 +23,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
@@ -31,7 +32,7 @@ import reactor.util.concurrent.OpenHashSet;
  * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
  * and is suited for parallel work.
  */
-final class ParallelScheduler implements Scheduler {
+final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
 
     static final AtomicLong COUNTER = new AtomicLong();
 
@@ -61,11 +62,20 @@ final class ParallelScheduler implements Scheduler {
         this.factory = factory;
         init(n);
     }
+
+    /**
+     * Instantiates the default {@link ExecutorService} for the ParallelScheduler
+     * ({@code Executors.newSingleThreadExecutor}).
+     */
+    @Override
+    public ExecutorService get() {
+        return Executors.newSingleThreadExecutor(factory);
+    }
     
     void init(int n) {
         ExecutorService[] a = new ExecutorService[n];
         for (int i = 0; i < n; i++) {
-            a[i] = Executors.newSingleThreadExecutor(factory);
+            a[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
         }
         EXECUTORS.lazySet(this, a);
     }
@@ -92,7 +102,7 @@ final class ParallelScheduler implements Scheduler {
             if (b == null) {
                 b = new ExecutorService[n];
                 for (int i = 0; i < n; i++) {
-                    b[i] = Executors.newSingleThreadExecutor(factory);
+                    b[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
                 }
             }
             
@@ -114,7 +124,7 @@ final class ParallelScheduler implements Scheduler {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
             if (a != SHUTDOWN) {
                 for (ExecutorService exec : a) {
-                    Schedulers.executorServiceShutdown(exec, "Parallel");
+                    Schedulers.executorServiceShutdown(exec, Schedulers.PARALLEL);
                 }
             }
         }

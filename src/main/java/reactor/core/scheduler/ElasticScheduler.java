@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
@@ -45,7 +46,7 @@ import reactor.util.concurrent.OpenHashSet;
  * <p>
  * This scheduler is not restartable (may be later).
  */
-final class ElasticScheduler implements Scheduler {
+final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 	static final AtomicLong COUNTER = new AtomicLong();
 
@@ -86,6 +87,15 @@ final class ElasticScheduler implements Scheduler {
 				ttlSeconds,
 				ttlSeconds,
 				TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Instantiates the default {@link ExecutorService} for the ElasticScheduler
+	 * ({@code Executors.newSingleThreadExecutor}).
+	 */
+	@Override
+	public ExecutorService get() {
+		return Executors.newSingleThreadExecutor(factory);
 	}
 
 	@Override
@@ -131,7 +141,7 @@ final class ElasticScheduler implements Scheduler {
 			return e.executor;
 		}
 
-		result = Executors.newSingleThreadExecutor(factory);
+		result = Schedulers.decorateExecutorService(Schedulers.ELASTIC, this);
 		all.offer(result);
 		if (shutdown) {
 			all.remove(result);
