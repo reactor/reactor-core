@@ -947,20 +947,20 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Allows transformation of the 'rails', as individual {@link GroupedFlux} instances keyed by
-	 * the rail index (zero based). The transformed groups are {@link Flux#parallel parallelized} back
+	 * Allows composing operators off the 'rails', as individual {@link GroupedFlux} instances keyed by
+	 * the zero based rail's index. The transformed groups are {@link Flux#parallel parallelized} back
 	 * once the transformation has been applied.
 	 * <p>
 	 * Note that like in {@link #groups()}, requests and cancellation compose through, and
 	 * cancelling only one rail may result in undefined behavior.
 	 *
-	 * @param transformer the transformation function to apply on each {@link GroupedFlux rail}
+	 * @param composer the composition function to apply on each {@link GroupedFlux rail}
 	 * @param <U> the type of the resulting parallelized flux
-	 * @return a {@link ParallelFlux} of the transformed groups
+	 * @return a {@link ParallelFlux} of the composed groups
 	 */
-	public final <U> ParallelFlux<U> transformGroup(Function<? super GroupedFlux<Integer, T>,
-			? extends Publisher<? extends U>> transformer) {
-		return from(groups().flatMap(transformer::apply));
+	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
+			? extends Publisher<? extends U>> composer) {
+		return from(groups().flatMap(composer::apply));
 	}
 
 	/**

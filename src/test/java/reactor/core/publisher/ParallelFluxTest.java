@@ -539,15 +539,15 @@ public class ParallelFluxTest {
 
 
 	@Test
-	public void transformGroup() {
+	public void composeGroup() {
 		Set<Integer> values = new ConcurrentSkipListSet<>();
 
 		Flux<Integer> flux = Flux.range(1, 10)
 		                         .parallel(3)
 		                         .runOn(Schedulers.parallel())
 		                         .doOnNext(values::add)
-		                         .transformGroup(p -> p.log("rail" + p.key())
-		                                               .map(i -> (p.key() + 1) * 100 + i))
+		                         .composeGroup(p -> p.log("rail" + p.key())
+		                                             .map(i -> (p.key() + 1) * 100 + i))
 		                         .sequential();
 
 		StepVerifier.create(flux.sort())
