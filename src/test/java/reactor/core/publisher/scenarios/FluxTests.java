@@ -88,21 +88,6 @@ public class FluxTests extends AbstractReactorTest {
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
 
 	@Test
-	public void testBufferUntilSubscribe() throws InterruptedException {
-		Flux<Long> source = Flux.interval(Duration.ofMillis(500))
-				.doOnNext(t -> System.out.println("source emitted " + t));
-
-		UnicastProcessor<Long> flux = UnicastProcessor.create();
-		source.subscribe(flux);
-
-		Thread.sleep(2000);
-		flux.subscribe(System.out::println);
-
-		Thread.sleep(2000);
-		System.out.println("buffer size " + flux.size());
-	}
-
-	@Test
 	public void testDoOnEachSignal() {
 		List<Signal<Integer>> signals = new ArrayList<>(4);
 		List<Integer> values = new ArrayList<>(2);
@@ -392,49 +377,6 @@ public class FluxTests extends AbstractReactorTest {
 		assertTrue(deferred.getError() instanceof Exception);
 	}
 
-	@Test
-	public void mapManyFlushesAllValuesThoroughly() throws InterruptedException {
-		int items = 1000;
-		CountDownLatch latch = new CountDownLatch(items);
-		Random random = ThreadLocalRandom.current();
-
-		EmitterProcessor<String> d = EmitterProcessor.create();
-		BlockingSink<String> s = d.connectSink();
-
-		Flux<Integer> tasks = d.publishOn(asyncGroup)
-		                       .parallel(8)
-		                       .groups()
-		                       .flatMap(stream -> stream.publishOn(asyncGroup)
-		                                                  .map((String str) -> {
-			                                                  try {
-				                                                  Thread.sleep(random.nextInt(10));
-			                                                  }
-			                                                  catch (InterruptedException e) {
-				                                                  Thread.currentThread()
-				                                                        .interrupt();
-			                                                  }
-			                                                  return Integer.parseInt(str);
-		                                                  }));
-
-		/* Cancellation tail =*/ tasks.subscribe(i -> {
-			latch.countDown();
-		});
-
-		for (int i = 1; i <= items; i++) {
-			s.submit(String.valueOf(i));
-		}
-		latch.await(15, TimeUnit.SECONDS);
-		assertTrue(latch.getCount() + " of " + items + " items were not counted down", latch.getCount() == 0);
-	}
-
-	@Test
-	public void mapManyFlushesAllValuesConsistently() throws InterruptedException {
-		int iterations = 5;
-		for (int i = 0; i < iterations; i++) {
-			mapManyFlushesAllValuesThoroughly();
-		}
-	}
-
 	<T> void await(Flux<T> s, Matcher<T> expected) throws InterruptedException {
 		await(1, s, expected);
 	}
@@ -472,91 +414,6 @@ public class FluxTests extends AbstractReactorTest {
 		public Integer apply(String s) {
 			return Integer.parseInt(s);
 		}
-	}
-
-	@Test
-	public void mapNotifiesOnceConsistent() throws InterruptedException {
-		for (int i = 0; i < 100; i++) {
-			mapNotifiesOnce();
-		}
-	}
-
-	/**
-	 * See #294 the consumer received more or less calls than expected Better reproducible with big thread pools, e.g.
-	 * 128 threads
-	 * @throws InterruptedException on interrupt
-	 */
-	@Test
-	public void mapNotifiesOnce() throws InterruptedException {
-
-		final int COUNT = 10000;
-		final Object internalLock = new Object();
-		final Object consumerLock = new Object();
-
-		final CountDownLatch internalLatch = new CountDownLatch(COUNT);
-		final CountDownLatch counsumerLatch = new CountDownLatch(COUNT);
-
-		final AtomicInteger internalCounter = new AtomicInteger(0);
-		final AtomicInteger consumerCounter = new AtomicInteger(0);
-
-		final ConcurrentHashMap<Object, Long> seenInternal = new ConcurrentHashMap<>();
-		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
-
-		EmitterProcessor<Integer> d = EmitterProcessor.create();
-		BlockingSink<Integer> s = BlockingSink.create(d);
-
-		/*Cancellation c = */d.publishOn(asyncGroup)
-		                  .parallel(8)
-		                  .groups()
-		                  .subscribe(stream -> stream.publishOn(asyncGroup)
-		                                      .map(o -> {
-			                                      synchronized (internalLock) {
-
-				                                      internalCounter.incrementAndGet();
-
-				                                      long curThreadId = Thread.currentThread()
-				                                                               .getId();
-				                                      Long prevThreadId = seenInternal.put(o, curThreadId);
-				                                      if (prevThreadId != null) {
-					                                      fail(String.format(
-							                                      "The object %d has already been seen internally on the thread %d, current thread %d",
-							                                      o,
-							                                      prevThreadId,
-							                                      curThreadId));
-				                                      }
-
-				                                      internalLatch.countDown();
-			                                      }
-			                                      return -o;
-		                                      })
-		                                      .subscribe(o -> {
-			                                      synchronized (consumerLock) {
-				                                      consumerCounter.incrementAndGet();
-
-				                                      long curThreadId = Thread.currentThread()
-				                                                               .getId();
-				                                      Long prevThreadId = seenConsumer.put(o, curThreadId);
-				                                      if (prevThreadId != null) {
-					                                      System.out.println(String.format(
-							                                      "The object %d has already been seen by the consumer on the thread %d, current thread %d",
-							                                      o,
-							                                      prevThreadId,
-							                                      curThreadId));
-					                                      fail();
-				                                      }
-
-				                                      counsumerLatch.countDown();
-			                                      }
-		                                      }));
-
-		for (int i = 0; i < COUNT; i++) {
-			s.submit(i);
-		}
-
-		internalLatch.await(5, TimeUnit.SECONDS);
-		assertEquals(COUNT, internalCounter.get());
-		counsumerLatch.await(5, TimeUnit.SECONDS);
-		assertEquals(COUNT, consumerCounter.get());
 	}
 
 	@Test

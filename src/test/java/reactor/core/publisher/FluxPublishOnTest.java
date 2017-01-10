@@ -20,12 +20,16 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,6 +49,7 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
@@ -239,7 +244,7 @@ public class FluxPublishOnTest {
 			       .isTerminated()) {
 				ts.cancel();
 				Assert.fail("AssertSubscriber timed out: " + ts.values()
-				                                             .size());
+				                                               .size());
 			}
 
 			ts.assertValueCount(1_000_000)
@@ -543,7 +548,6 @@ public class FluxPublishOnTest {
 		  .assertComplete();
 
 	}
-
 
 	@Test
 	public void withFlatMap() {
@@ -921,38 +925,41 @@ public class FluxPublishOnTest {
 		  .assertComplete();
 	}
 
-
-
 	@Test
 	public void limitRate() {
 		List<Long> upstreamRequests = new LinkedList<>();
 		List<Long> downstreamRequests = new LinkedList<>();
-		Flux<Integer> source = Flux
-				.range(1, 400)
-				.doOnRequest(upstreamRequests::add)
-				.doOnRequest(r -> System.out.println("upstream request of " + r))
-				.limitRate(40)
-				.doOnRequest(downstreamRequests::add)
-				.doOnRequest(r -> System.out.println("downstream request of " + r));
+		Flux<Integer> source = Flux.range(1, 400)
+		                           .doOnRequest(upstreamRequests::add)
+		                           .doOnRequest(r -> System.out.println(
+				                           "upstream request of " + r))
+		                           .limitRate(40)
+		                           .doOnRequest(downstreamRequests::add)
+		                           .doOnRequest(r -> System.out.println(
+				                           "downstream request of " + r));
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(400);
 		source.subscribe(ts);
 		ts.await(Duration.ofMillis(100))
 		  .assertComplete();
 
-		Assert.assertThat("downstream didn't single request", downstreamRequests.size(), is(1));
-		Assert.assertThat("downstream didn't request 400", downstreamRequests.get(0), is(400L));
+		Assert.assertThat("downstream didn't single request",
+				downstreamRequests.size(),
+				is(1));
+		Assert.assertThat("downstream didn't request 400",
+				downstreamRequests.get(0),
+				is(400L));
 		long total = 0L;
 		for (Long requested : upstreamRequests) {
 			total += requested;
 			Assert.assertThat("rate limit not applied to request: " + requested,
-			//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
-					requested, anyOf(is(40L), is(30L)));
+					//30 is the optimization that eagerly prefetches when 3/4 of the request has been served
+					requested,
+					anyOf(is(40L), is(30L)));
 		}
-		Assert.assertThat("bad upstream total request", total, allOf(
-				is(greaterThanOrEqualTo(400L)),
-				is(lessThan(440L)
-		)));
+		Assert.assertThat("bad upstream total request",
+				total,
+				allOf(is(greaterThanOrEqualTo(400L)), is(lessThan(440L))));
 	}
 
 	@Test
@@ -978,7 +985,7 @@ public class FluxPublishOnTest {
 			CountDownLatch latch = new CountDownLatch(1);
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0,5)
+			Flux.range(0, 5)
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1033,7 +1040,7 @@ public class FluxPublishOnTest {
 			CountDownLatch latch = new CountDownLatch(1);
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0,5)
+			Flux.range(0, 5)
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1087,7 +1094,7 @@ public class FluxPublishOnTest {
 			CountDownLatch latch = new CountDownLatch(1);
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0,5)
+			Flux.range(0, 5)
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1141,7 +1148,7 @@ public class FluxPublishOnTest {
 			CountDownLatch latch = new CountDownLatch(1);
 
 			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0,5)
+			Flux.range(0, 5)
 			    .publishOn(fromExecutorService(executor))
 			    .doOnNext(s -> {
 				    try {
@@ -1172,4 +1179,123 @@ public class FluxPublishOnTest {
 		}
 	}
 
+	/**
+	 * See #294 the consumer received more or less calls than expected Better reproducible
+	 * with big thread pools, e.g. 128 threads
+	 *
+	 * @throws InterruptedException on interrupt
+	 */
+	@Test
+	public void mapNotifiesOnce() throws InterruptedException {
+
+		final int COUNT = 10000;
+		final Object internalLock = new Object();
+		final Object consumerLock = new Object();
+
+		final CountDownLatch internalLatch = new CountDownLatch(COUNT);
+		final CountDownLatch counsumerLatch = new CountDownLatch(COUNT);
+
+		final AtomicInteger internalCounter = new AtomicInteger(0);
+		final AtomicInteger consumerCounter = new AtomicInteger(0);
+
+		final ConcurrentHashMap<Object, Long> seenInternal = new ConcurrentHashMap<>();
+		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
+
+		EmitterProcessor<Integer> d = EmitterProcessor.create();
+		BlockingSink<Integer> s = BlockingSink.create(d);
+
+		/*Cancellation c = */
+		d.publishOn(Schedulers.parallel())
+		 .parallel(8)
+		 .groups()
+		 .subscribe(stream -> stream.publishOn(Schedulers.parallel())
+		                            .map(o -> {
+			                            synchronized (internalLock) {
+
+				                            internalCounter.incrementAndGet();
+
+				                            long curThreadId = Thread.currentThread()
+				                                                     .getId();
+				                            Long prevThreadId =
+						                            seenInternal.put(o, curThreadId);
+				                            if (prevThreadId != null) {
+					                            fail(String.format(
+							                            "The object %d has already been seen internally on the thread %d, current thread %d",
+							                            o,
+							                            prevThreadId,
+							                            curThreadId));
+				                            }
+
+				                            internalLatch.countDown();
+			                            }
+			                            return -o;
+		                            })
+		                            .subscribe(o -> {
+			                            synchronized (consumerLock) {
+				                            consumerCounter.incrementAndGet();
+
+				                            long curThreadId = Thread.currentThread()
+				                                                     .getId();
+				                            Long prevThreadId =
+						                            seenConsumer.put(o, curThreadId);
+				                            if (prevThreadId != null) {
+					                            System.out.println(String.format(
+							                            "The object %d has already been seen by the consumer on the thread %d, current thread %d",
+							                            o,
+							                            prevThreadId,
+							                            curThreadId));
+					                            fail();
+				                            }
+
+				                            counsumerLatch.countDown();
+			                            }
+		                            }));
+
+		for (int i = 0; i < COUNT; i++) {
+			s.submit(i);
+		}
+
+		internalLatch.await(5, TimeUnit.SECONDS);
+		assertEquals(COUNT, internalCounter.get());
+		counsumerLatch.await(5, TimeUnit.SECONDS);
+		assertEquals(COUNT, consumerCounter.get());
+	}
+
+	@Test
+	public void mapManyFlushesAllValuesThoroughly() throws InterruptedException {
+		int items = 1000;
+		CountDownLatch latch = new CountDownLatch(items);
+		Random random = ThreadLocalRandom.current();
+
+		EmitterProcessor<String> d = EmitterProcessor.create();
+		BlockingSink<String> s = d.connectSink();
+
+		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
+		                       .parallel(8)
+		                       .groups()
+		                       .flatMap(stream -> stream.publishOn(Schedulers.parallel())
+		                                                .map((String str) -> {
+			                                                try {
+				                                                Thread.sleep(random.nextInt(
+						                                                10));
+			                                                }
+			                                                catch (InterruptedException e) {
+				                                                Thread.currentThread()
+				                                                      .interrupt();
+			                                                }
+			                                                return Integer.parseInt(str);
+		                                                }));
+
+		/* Cancellation tail =*/
+		tasks.subscribe(i -> {
+			latch.countDown();
+		});
+
+		for (int i = 1; i <= items; i++) {
+			s.submit(String.valueOf(i));
+		}
+		latch.await(15, TimeUnit.SECONDS);
+		assertTrue(latch.getCount() + " of " + items + " items were not counted down",
+				latch.getCount() == 0);
+	}
 }

@@ -30,10 +30,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
-import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.WaitStrategy;
@@ -79,19 +79,6 @@ public class WorkQueueProcessorTest {
 		}
 	}
 
-	@Test
-	public void drainTest() throws Exception {
-		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
-		sink.onNext(1);
-		sink.onNext(2);
-		sink.onNext(3);
-
-		sink.forceShutdown()
-		    .subscribeWith(AssertSubscriber.create())
-		    .assertComplete()
-		    .assertValues(1, 2, 3);
-	}
-
 	/* see https://github.com/reactor/reactor-core/issues/199 */
 	@Test
 	public void fixedThreadPoolWorkQueueRejectsSubscribers() {
@@ -112,7 +99,9 @@ public class WorkQueueProcessorTest {
 		assertThat(spec1.error, is(nullValue()));
 		assertThat(spec2.error, is(nullValue()));
 		assertThat(spec3.error, is(notNullValue()));
-		assertThat(spec3.error.getMessage(), startsWith("The executor service could not accommodate another subscriber, detected limit 2"));
+		assertThat(spec3.error.getMessage(),
+				startsWith(
+						"The executor service could not accommodate another subscriber, detected limit 2"));
 
 		try {
 			latch.await(1, TimeUnit.SECONDS);
@@ -142,7 +131,8 @@ public class WorkQueueProcessorTest {
 		assertThat(spec1.error, is(nullValue()));
 		assertThat(spec2.error, is(nullValue()));
 		assertThat(spec3.error, is(notNullValue()));
-		assertThat(spec3.error.getMessage(), is("The executor service could not accommodate another subscriber, detected limit 2"));
+		assertThat(spec3.error.getMessage(),
+				is("The executor service could not accommodate another subscriber, detected limit 2"));
 
 		try {
 			latch.await(1, TimeUnit.SECONDS);
@@ -201,29 +191,56 @@ public class WorkQueueProcessorTest {
 		TimeUnit.SECONDS.sleep(1);
 	}
 
+	@Test(timeout = 3000L)
+	public void cancelDoesNotHang() throws Exception {
+		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
+
+		Disposable d = wq.subscribe();
+
+		Assert.assertTrue(wq.downstreamCount() == 1);
+
+		d.dispose();
+
+		while (wq.downstreamCount() != 0) {
+		}
+	}
+
+	@Test(timeout = 3000L)
+	public void completeDoesNotHang() throws Exception {
+		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
+
+		wq.subscribe();
+
+		Assert.assertTrue(wq.downstreamCount() == 1);
+
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0) {
+		}
+	}
+
 	@Test
 	public void simpleTest() throws Exception {
 		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
 		final WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create("queue");
 
-		int elems = 1_000_000;
+		int elems = 10000;
 		CountDownLatch latch = new CountDownLatch(elems);
 
 		//List<Integer> list = new CopyOnWriteArrayList<>();
 		AtomicLong count = new AtomicLong();
 		AtomicLong errorCount = new AtomicLong();
 
-		processor.subscribe(d -> {
-			errorCount.incrementAndGet();
-			throw Exceptions.failWithCancel();
-		});
+		processor.log("wqp.fail1").subscribe(d -> {
+			         errorCount.incrementAndGet();
+			         throw Exceptions.failWithCancel();
+		         });
 
-		Flux.from(processor)
-		    .doOnNext(d -> count.incrementAndGet())
-		    .subscribe(d -> {
-			    latch.countDown();
-			    //list.add(d);
-		    });
+		processor.log("wqp.works").doOnNext(d -> count.incrementAndGet())
+		         .subscribe(d -> {
+			         latch.countDown();
+			         //list.add(d);
+		         });
 
 		sink.subscribe(processor);
 		sink.connect();
@@ -231,7 +248,7 @@ public class WorkQueueProcessorTest {
 
 			sink.onNext(i);
 			if (i % 100 == 0) {
-				processor.subscribe(d -> {
+				processor.log("wqp.fail2").subscribe(d -> {
 					errorCount.incrementAndGet();
 					throw Exceptions.failWithCancel();
 				});
@@ -259,7 +276,8 @@ public class WorkQueueProcessorTest {
 		bc.onNext("foo");
 		bc.onNext("bar");
 
-		Executors.newSingleThreadScheduledExecutor().schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
+		Executors.newSingleThreadScheduledExecutor()
+		         .schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
 		try {
 			bc.onNext("baz");
 			fail("expected 3rd next to time out as newSingleThreadExecutor cannot be introspected");
@@ -282,7 +300,8 @@ public class WorkQueueProcessorTest {
 		bc.onNext("foo");
 		bc.onNext("bar");
 
-		Executors.newSingleThreadScheduledExecutor().schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
+		Executors.newSingleThreadScheduledExecutor()
+		         .schedule(bc::onComplete, 200, TimeUnit.MILLISECONDS);
 		bc.onNext("baz");
 
 		try {
@@ -301,15 +320,16 @@ public class WorkQueueProcessorTest {
 		int expectedUnknown = Integer.MIN_VALUE;
 
 		ExecutorService executorService1 = Executors.newSingleThreadExecutor();
-		ScheduledExecutorService executorService2 = Executors.newSingleThreadScheduledExecutor();
+		ScheduledExecutorService executorService2 =
+				Executors.newSingleThreadScheduledExecutor();
 		ExecutorService executorService3 = Executors.newCachedThreadPool();
 		ExecutorService executorService4 = Executors.newFixedThreadPool(2);
 		ScheduledExecutorService executorService5 = Executors.newScheduledThreadPool(3);
 		ExecutorService executorService6 = Executors.newWorkStealingPool(4);
-		ExecutorService executorService7 = Executors.unconfigurableExecutorService(
-				executorService4);
-		ExecutorService executorService8 = Executors.unconfigurableScheduledExecutorService(
-				executorService5);
+		ExecutorService executorService7 =
+				Executors.unconfigurableExecutorService(executorService4);
+		ExecutorService executorService8 =
+				Executors.unconfigurableScheduledExecutorService(executorService5);
 
 		int maxSub1 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService1);
 		int maxSub2 = WorkQueueProcessor.bestEffortMaxSubscribers(executorService2);

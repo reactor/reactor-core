@@ -94,4 +94,18 @@ public class FluxIntervalTest {
 		            .thenCancel()
 		            .verify();
 	}
+
+	Flux<Long> scenario2(){
+		return Flux.interval(Duration.ofMillis(500))
+		           .doOnNext(t -> System.out.println("source emitted " + t));
+	}
+
+	@Test
+	public void normal2() {
+		StepVerifier.withVirtualTime(this::scenario2)
+		            .thenAwait(Duration.ofMillis(5_000))
+		            .expectNextCount(10)
+		            .thenCancel()
+		            .verify();
+	}
 }

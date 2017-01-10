@@ -174,4 +174,19 @@ public class TopicProcessorTest {
 			dispatcher.awaitAndShutdown();
 		}
 	}
+
+
+
+	@Test
+	public void drainTest() throws Exception {
+		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		sink.onNext(1);
+		sink.onNext(2);
+		sink.onNext(3);
+
+		sink.forceShutdown()
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertComplete()
+		    .assertValues(1, 2, 3);
+	}
 }
