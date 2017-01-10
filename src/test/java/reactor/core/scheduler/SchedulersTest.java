@@ -26,13 +26,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.fail;
 
 public class SchedulersTest {
@@ -295,5 +298,92 @@ public class SchedulersTest {
 		Assert.assertTrue("Event missed", latch.getCount() == 0);
 		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
 
+	}
+
+	@Test
+	public void testCachedSchedulerDelegates() {
+		TimedScheduler mock = new TimedScheduler() {
+			@Override
+			public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+				throw new IllegalStateException("scheduleTaskDelay");
+			}
+
+			@Override
+			public Cancellation schedulePeriodically(Runnable task, long initialDelay,
+					long period, TimeUnit unit) {
+				throw new IllegalStateException("schedulePeriodically");
+			}
+
+			@Override
+			public TimedWorker createWorker() {
+				throw new IllegalStateException("createWorker");
+			}
+
+			@Override
+			public Cancellation schedule(Runnable task) {
+				throw new IllegalStateException("scheduleTask");
+			}
+
+			@Override
+			public boolean isDisposed() {
+				throw new IllegalStateException("isDisposed");
+			}
+
+			@Override
+			public void dispose() {
+				throw new IllegalStateException("dispose");
+			}
+
+			@Override
+			public long now(TimeUnit unit) {
+				throw new IllegalStateException("now");
+			}
+
+			@Override
+			public void start() {
+				throw new IllegalStateException("start");
+			}
+
+			@Override
+			public void shutdown() {
+				throw new IllegalStateException("shutdown");
+			}
+		};
+
+		Schedulers.CachedTimedScheduler cached = new Schedulers.CachedTimedScheduler(
+				"cached", mock);
+
+		//dispose is bypassed by the cached version
+		cached.dispose();
+		cached.shutdown();
+
+		//other methods delegate
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> cached.schedule(null))
+	            .withMessage("scheduleTask");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> cached.schedule(null, 1000, TimeUnit.MILLISECONDS))
+	            .withMessage("scheduleTaskDelay");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> cached.schedulePeriodically(null, 1000, 1000, TimeUnit.MILLISECONDS))
+	            .withMessage("schedulePeriodically");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> cached.now(TimeUnit.MILLISECONDS))
+	            .withMessage("now");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(cached::start)
+	            .withMessage("start");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(cached::createWorker)
+	            .withMessage("createWorker");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(cached::isDisposed)
+	            .withMessage("isDisposed");
 	}
 }
