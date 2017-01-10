@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RejectedExecutionException;
@@ -23,7 +25,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
@@ -33,6 +34,8 @@ import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -489,15 +492,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	final RingBuffer.Sequence workSequence =
 			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
-	final RingBuffer.Sequence retrySequence =
-			RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
+	final Queue<Object> claimedDisposed = new ConcurrentLinkedQueue<>();
 
-	volatile RingBuffer<Slot<E>> retryBuffer;
-
-	@SuppressWarnings("rawtypes")
-	final static AtomicReferenceFieldUpdater<WorkQueueProcessor, RingBuffer> RETRY_REF =
-			AtomicReferenceFieldUpdater.newUpdater(WorkQueueProcessor.class,
-					RingBuffer.class, "retryBuffer");
 
 	final WaitStrategy writeWait;
 
@@ -639,22 +635,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public long getPending() {
-		return ringBuffer.remainingCapacity() + (retryBuffer != null ?
-				retryBuffer.remainingCapacity() : 0L);
-	}
-
-	@SuppressWarnings("unchecked")
-	RingBuffer<Slot<E>> retryBuffer() {
-		RingBuffer<Slot<E>> retry = retryBuffer;
-		if (retry == null) {
-			retry =
-					RingBuffer.createMultiProducer((Supplier<Slot<E>>) FACTORY, 32, WaitStrategy.busySpin());
-			retry.addGatingSequence(retrySequence);
-			if (!RETRY_REF.compareAndSet(this, null, retry)) {
-				retry = retryBuffer;
-			}
-		}
-		return retry;
+		return ringBuffer.remainingCapacity() + claimedDisposed.size();
 	}
 
 	@Override
@@ -736,6 +717,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 */
 		@Override
 		public void run() {
+			long nextSequence;
+			boolean processedSequence = true;
 
 			try {
 				if (!running.compareAndSet(false, true)) {
@@ -748,9 +731,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					return;
 				}
 
-				boolean processedSequence = true;
 				long cachedAvailableSequence = Long.MIN_VALUE;
-				long nextSequence = sequence.getAsLong();
+				nextSequence = sequence.getAsLong();
 				Slot<T> event = null;
 
 				if (!EventLoopProcessor.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
@@ -811,51 +793,16 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								throw Exceptions.failWithCancel();
 							}
 
+							processedSequence = true;
 							subscriber.onNext(event.value);
 
-							processedSequence = true;
 
 						}
 						else {
 							processor.readWait.signalAllWhenBlocking();
-							try {
 								cachedAvailableSequence =
 										barrier.waitFor(nextSequence, waiter);
-							}
-							catch (Exception ce) {
-								if (!WaitStrategy.isAlert(ce)) {
-									throw ce;
-								}
-								barrier.clearAlert();
-								if (!running.get()) {
-									processor.decrementSubscribers();
-								}
-								else {
-									throw ce;
-								}
-								try {
-									for (; ; ) {
-										try {
-											cachedAvailableSequence =
-													barrier.waitFor(nextSequence);
-											event = processor.ringBuffer.get(nextSequence);
-											break;
-										}
-										catch (Exception cee) {
-											if (!WaitStrategy.isAlert(cee)) {
-												throw ce;
-											}
-											barrier.clearAlert();
-										}
-									}
-									reschedule(event);
-								}
-								catch (Exception c) {
-									//IGNORE
-								}
-								processor.incrementSubscribers();
-								throw ce;
-							}
+
 						}
 
 					}
@@ -867,16 +814,19 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						if (!WaitStrategy.isAlert(ce)) {
 							throw ce;
 						}
+
 						barrier.clearAlert();
 						if (!running.get()) {
 							break;
 						}
 						if(processor.terminated == 1) {
 							if (processor.error != null) {
+								processedSequence = true;
 								subscriber.onError(processor.error);
 								break;
 							}
 							if (processor.ringBuffer.getPending() == 0) {
+								processedSequence = true;
 								subscriber.onComplete();
 								break;
 							}
@@ -885,69 +835,87 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						//continue event-loop
 
 					}
-					catch (final Throwable ex) {
+					catch (Throwable ex) {
 						reschedule(event);
 						subscriber.onError(ex);
-						sequence.set(nextSequence);
-						processedSequence = true;
+						break;
 					}
 				}
 			}
 			finally {
 				processor.decrementSubscribers();
-				processor.ringBuffer.removeGatingSequence(sequence);
-				/*if(processor.decrementSubscribers() == 0){
-					long r = processor.ringBuffer.getCursor();
-					long w = processor.workSequence.getAsLong();
-					if ( w > r ){
-						processor.workSequence.compareAndSet(w, r);
-					}
-				}*/
 				running.set(false);
+
+				if(!processedSequence) {
+					processor.claimedDisposed.add(sequence);
+				}
+				else{
+					processor.ringBuffer.removeGatingSequence(sequence);
+				}
+
+
 				processor.writeWait.signalAllWhenBlocking();
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		private boolean replay(final boolean unbounded) {
-
 			if (REPLAYING.compareAndSet(processor, 0, 1)) {
-				Slot<T> signal;
-
 				try {
-					RingBuffer<Slot<T>> q = processor.retryBuffer;
-					if (q == null) {
-						return false;
-					}
-
+					RingBuffer.Sequence s = null;
 					for (; ; ) {
 
 						if (!running.get()) {
+							processor.readWait.signalAllWhenBlocking();
 							return true;
 						}
 
-						long cursor = processor.retrySequence.getAsLong() + 1;
+						Object v = processor.claimedDisposed.peek();
 
-						if (q.getCursor() >= cursor) {
-							signal = q.get(cursor);
-						}
-						else {
+						if (v == null) {
 							processor.readWait.signalAllWhenBlocking();
 							return !processor.alive();
 						}
-						if(signal.value != null) {
-							readNextEvent(unbounded);
-							subscriber.onNext(signal.value);
-							processor.retrySequence.set(cursor);
+
+						if (v instanceof RingBuffer.Sequence) {
+							s = (RingBuffer.Sequence) v;
+							long cursor = s.getAsLong() + 1L;
+							if(cursor > processor.ringBuffer.getAsLong()){
+								processor.readWait.signalAllWhenBlocking();
+								return !processor.alive();
+							}
+
+							barrier.waitFor(cursor);
+
+							v = processor.ringBuffer.get(cursor).value;
+
+							if (v == null) {
+								processor.ringBuffer.removeGatingSequence(s);
+								processor.claimedDisposed.poll();
+								s = null;
+								continue;
+							}
+						}
+
+						readNextEvent(unbounded);
+						subscriber.onNext((T) v);
+						processor.claimedDisposed.poll();
+						if(s != null){
+							processor.ringBuffer.removeGatingSequence(s);
+							s = null;
 						}
 					}
-
 				}
 				catch (RuntimeException ce) {
-					if(Exceptions.isCancel(ce)) {
+					if (Exceptions.isCancel(ce)) {
 						running.set(false);
 						return true;
 					}
 					throw ce;
+				}
+				catch (InterruptedException e) {
+					running.set(false);
+					return true;
 				}
 				finally {
 					REPLAYING.compareAndSet(processor, 1, 0);
@@ -958,17 +926,15 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			}
 		}
 
-		private void reschedule(Slot<T> event) {
+		private boolean reschedule(Slot<T> event) {
 			if (event != null &&
 					event.value != null) {
-
-				RingBuffer<Slot<T>> retry = processor.retryBuffer();
-				long seq = retry.next();
-				retry.get(seq).value = event.value;
-				retry.publish(seq);
+				processor.claimedDisposed.add(event.value);
 				barrier.alert();
 				processor.readWait.signalAllWhenBlocking();
+				return true;
 			}
+			return false;
 		}
 
 		private void readNextEvent(final boolean unbounded) {
@@ -1040,5 +1006,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	}
 
+	static final Logger log = Loggers.getLogger(WorkQueueProcessor.class);
 
 }

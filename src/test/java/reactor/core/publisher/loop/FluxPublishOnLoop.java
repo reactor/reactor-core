@@ -138,4 +138,19 @@ public class FluxPublishOnLoop {
 			}
 		}
 	}
+
+	@Test
+	public void mapNotifiesOnceConsistent() throws InterruptedException {
+		for (int i = 0; i < 100; i++) {
+			publishOnTest.mapNotifiesOnce();
+		}
+	}
+
+	@Test
+	public void mapManyFlushesAllValuesConsistently() throws InterruptedException {
+		int iterations = 5;
+		for (int i = 0; i < iterations; i++) {
+			publishOnTest.mapManyFlushesAllValuesThoroughly();
+		}
+	}
 }
