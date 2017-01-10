@@ -962,7 +962,7 @@ public class FluxPublishOnTest {
 				allOf(is(greaterThanOrEqualTo(400L)), is(lessThan(440L))));
 	}
 
-	@Test
+	@Test(timeout = 5000)
 	public void rejectedExecutionExceptionOnDataSignalExecutor()
 			throws InterruptedException {
 
@@ -1071,7 +1071,7 @@ public class FluxPublishOnTest {
 		}
 	}
 
-	@Test
+	@Test(timeout = 5000)
 	public void rejectedExecutionExceptionOnDataSignalExecutorService()
 			throws InterruptedException {
 
@@ -1123,7 +1123,7 @@ public class FluxPublishOnTest {
 		}
 	}
 
-	@Test
+	@Test(timeout = 5000)
 	public void rejectedExecutionExceptionOnErrorSignalExecutorService()
 			throws InterruptedException {
 
