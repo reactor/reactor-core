@@ -778,5 +778,10 @@ public class Schedulers {
 		public TimedScheduler get() {
 			return cachedTimed;
 		}
+
+		@Override
+		public long now(TimeUnit unit) {
+			return cachedTimed.now(unit);
+		}
 	}
 }
