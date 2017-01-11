@@ -393,4 +393,24 @@ public class WorkQueueProcessorTest {
 		}
 	}
 
+	@Test
+	public void chainedWorkQueueProcessor() throws Exception{
+		ExecutorService es = Executors.newFixedThreadPool(2);
+		try {
+			WorkQueueProcessor<String> bc = WorkQueueProcessor.create(es, 16);
+
+			int elems = 18;
+			CountDownLatch latch = new CountDownLatch(elems);
+
+			bc.subscribe(TopicProcessorTest.sub("spec1", latch));
+			Flux.range(0, elems)
+			    .map(s -> "hello " + s)
+			    .subscribe(bc);
+
+			assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+		}
+		finally {
+			es.shutdown();
+		}
+	}
 }

@@ -32,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
 
@@ -49,8 +50,8 @@ public class SchedulersTest {
 				Schedulers.Factory.super.newParallel(1, Thread::new);
 		final TimedScheduler timer    = Schedulers.Factory.super.newTimer(Thread::new);
 
-		public TestSchedulers(boolean shutdownOnInit) {
-			if (shutdownOnInit) {
+		public TestSchedulers(boolean disposeOnInit) {
+			if (disposeOnInit) {
 				elastic.dispose();
 				single.dispose();
 				parallel.dispose();
@@ -301,15 +302,38 @@ public class SchedulersTest {
 	}
 
 	@Test
+	public void singleSchedulerPipelining() throws Exception {
+		Scheduler serviceRB = Schedulers.newSingle("rb", true);
+		Scheduler.Worker dispatcher = serviceRB.createWorker();
+
+		try {
+			Thread t1 = Thread.currentThread();
+			Thread[] t2 = { null };
+
+			CountDownLatch cdl = new CountDownLatch(1);
+
+			dispatcher.schedule(() -> { t2[0] = Thread.currentThread(); cdl.countDown(); });
+
+			if (!cdl.await(5, TimeUnit.MILLISECONDS)) {
+				Assert.fail("ringBufferDispatcher timed out");
+			}
+
+			Assert.assertNotSame(t1, t2[0]);
+		} finally {
+			dispatcher.dispose();
+		}
+	}
+
+	@Test
 	public void testCachedSchedulerDelegates() {
 		TimedScheduler mock = new TimedScheduler() {
 			@Override
-			public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+			public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 				throw new IllegalStateException("scheduleTaskDelay");
 			}
 
 			@Override
-			public Cancellation schedulePeriodically(Runnable task, long initialDelay,
+			public Disposable schedulePeriodically(Runnable task, long initialDelay,
 					long period, TimeUnit unit) {
 				throw new IllegalStateException("schedulePeriodically");
 			}
@@ -320,7 +344,7 @@ public class SchedulersTest {
 			}
 
 			@Override
-			public Cancellation schedule(Runnable task) {
+			public Disposable schedule(Runnable task) {
 				throw new IllegalStateException("scheduleTask");
 			}
 
@@ -355,7 +379,7 @@ public class SchedulersTest {
 
 		//dispose is bypassed by the cached version
 		cached.dispose();
-		cached.shutdown();
+		cached.dispose();
 
 		//other methods delegate
 		assertThatExceptionOfType(IllegalStateException.class)
@@ -386,4 +410,141 @@ public class SchedulersTest {
 				.isThrownBy(cached::isDisposed)
 	            .withMessage("isDisposed");
 	}
+
+
+//	def "Dispatcher executes tasks in correct thread"() {
+//
+//		given:
+//		def diffThread = Schedulers.newParallel('work', 2).createWorker()
+//		def currentThread = Thread.currentThread()
+//		Thread taskThread = null
+//
+//
+//		when:
+//		"a task is submitted to the thread pool dispatcher"
+//		def latch = new CountDownLatch(1)
+//		diffThread.schedule { taskThread = Thread.currentThread() }
+//		diffThread.schedule { taskThread = Thread.currentThread(); latch.countDown() }
+//
+//		latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
+//
+//		then:
+//		"the task thread should be different when the current thread"
+//		taskThread != currentThread
+//		//!diffThread.dispose()
+//
+//
+//		cleanup:
+//		diffThread.dispose()
+//	}
+//
+//	def "Dispatcher thread can be reused"() {
+//
+//		given:
+//		"ring buffer eventBus"
+//		def serviceRB = Schedulers.newParallel("rb", 4)
+//		def r = serviceRB.createWorker()
+//		def latch = new CountDownLatch(2)
+//
+//		when:
+//		"listen for recursive event"
+//		Consumer<Integer> c
+//		c = { data ->
+//		if (data < 2) {
+//			latch.countDown()
+//			r.schedule { c.accept(++data) }
+//		}
+//			}
+//
+//		and:
+//		"createWorker the eventBus"
+//		r.schedule { c.accept(0) }
+//
+//		then:
+//		"a task is submitted to the thread pool dispatcher"
+//		latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
+//
+//		cleanup:
+//		r.dispose()
+//	}
+//
+//	def "RingBufferDispatcher executes tasks in correct thread"() {
+//
+//		given:
+//		def serviceRB = Schedulers.newSingle("rb")
+//		def dispatcher = serviceRB.createWorker()
+//		def t1 = Thread.currentThread()
+//		def t2 = Thread.currentThread()
+//
+//		when:
+//		dispatcher.schedule({ t2 = Thread.currentThread() })
+//		Thread.sleep(500)
+//
+//		then:
+//		t1 != t2
+//
+//		cleanup:
+//		dispatcher.dispose()
+//
+//	}
+//
+//	def "WorkQueueDispatcher executes tasks in correct thread"() {
+//
+//		given:
+//		def serviceRBWork = Schedulers.newParallel("rbWork", 8)
+//		def dispatcher = serviceRBWork.createWorker()
+//		def t1 = Thread.currentThread()
+//		def t2 = Thread.currentThread()
+//
+//		when:
+//		dispatcher.schedule({ t2 = Thread.currentThread() })
+//		Thread.sleep(500)
+//
+//		then:
+//		t1 != t2
+//
+//		cleanup:
+//		dispatcher.dispose()
+//
+//	}
+//
+//	def "MultiThreadDispatchers support ping pong dispatching"(Scheduler.Worker d) {
+//		given:
+//		def latch = new CountDownLatch(4)
+//		def main = Thread.currentThread()
+//		def t1 = Thread.currentThread()
+//		def t2 = Thread.currentThread()
+//
+//		when:
+//		Consumer<String> pong
+//
+//		Consumer<String> ping = {
+//		if (latch.count > 0) {
+//			t1 = Thread.currentThread()
+//			d.schedule { pong.accept("pong") }
+//			latch.countDown()
+//		}
+//			}
+//		pong = {
+//		if (latch.count > 0) {
+//			t2 = Thread.currentThread()
+//			d.schedule { ping.accept("ping") }
+//			latch.countDown()
+//		}
+//			}
+//
+//		d.schedule { ping.accept("ping") }
+//
+//		then:
+//		latch.await(1, TimeUnit.SECONDS)
+//		main != t1
+//		main != t2
+//
+//		cleanup:
+//		d.dispose()
+//
+//		where:
+//		d << [Schedulers.newParallel("rbWork", 8).createWorker()]
+//
+//	}
 }

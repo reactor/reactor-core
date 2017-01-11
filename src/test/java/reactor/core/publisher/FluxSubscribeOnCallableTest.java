@@ -41,8 +41,8 @@ public class FluxSubscribeOnCallableTest {
 
 	@Test
 	public void normalBackpressured() {
-		StepVerifier.withVirtualTime(0, () -> new FluxSubscribeOnCallable<>(() -> 1,
-				Schedulers.single()))
+		StepVerifier.withVirtualTime( () -> new FluxSubscribeOnCallable<>(() -> 1,
+				Schedulers.single()), 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .thenRequest(1)

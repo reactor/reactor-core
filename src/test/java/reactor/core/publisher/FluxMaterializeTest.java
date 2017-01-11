@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMaterializeTest {
@@ -57,5 +58,36 @@ public class FluxMaterializeTest {
         ts.assertValues(Signal.error(ex))
         .assertNoError()
         .assertComplete();
+    }
+
+
+
+    @Test
+    public void materialize() {
+        StepVerifier.create(Flux.just("Three", "Two", "One")
+                                .materialize())
+                    .expectNextMatches(s -> s.isOnNext() && s.get()
+                                                             .equals("Three"))
+                    .expectNextMatches(s -> s.isOnNext() && s.get()
+                                                             .equals("Two"))
+                    .expectNextMatches(s -> s.isOnNext() && s.get()
+                                                             .equals("One"))
+                    .expectNextMatches(Signal::isOnComplete)
+                    .verifyComplete();
+    }
+
+    @Test
+    public void materialize2() {
+        StepVerifier.create(Flux.just("Three", "Two")
+                                .concatWith(Flux.error(new RuntimeException("test")))
+                                .materialize())
+                    .expectNextMatches(s -> s.isOnNext() && s.get()
+                                                             .equals("Three"))
+                    .expectNextMatches(s -> s.isOnNext() && s.get()
+                                                             .equals("Two"))
+                    .expectNextMatches(s -> s.isOnError() && s.getThrowable()
+                                                              .getMessage()
+                                                              .equals("test"))
+                    .verifyComplete();
     }
 }

@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCreateTest {
@@ -37,5 +39,29 @@ public class FluxCreateTest {
 		ts.assertValues(1, 2, 3)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void createStreamFromFluxCreate() {
+		StepVerifier.create(Flux.create(s -> {
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		}))
+		            .expectNext("test1", "test2", "test3")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void createStreamFromFluxCreate2(){
+		StepVerifier.create(Flux.create(s -> {
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		}).publishOn(Schedulers.parallel()))
+		            .expectNext("test1", "test2", "test3")
+		            .verifyComplete();
 	}
 }

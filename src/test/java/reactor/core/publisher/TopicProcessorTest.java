@@ -15,6 +15,9 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -188,5 +191,54 @@ public class TopicProcessorTest {
 		    .subscribeWith(AssertSubscriber.create())
 		    .assertComplete()
 		    .assertValues(1, 2, 3);
+	}
+
+	static Subscriber<String> sub(String name, CountDownLatch latch) {
+		return new Subscriber<String>() {
+			Subscription s;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				this.s = s;
+				s.request(1);
+			}
+
+			@Override
+			public void onNext(String o) {
+				latch.countDown();
+				s.request(1);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				t.printStackTrace();
+			}
+
+			@Override
+			public void onComplete() {
+				//latch.countDown()
+			}
+		};
+	}
+
+	@Test
+	public void chainedTopicProcessor() throws Exception{
+		ExecutorService es = Executors.newFixedThreadPool(2);
+		try {
+			TopicProcessor<String> bc = TopicProcessor.create(es, 16);
+
+			int elems = 100;
+			CountDownLatch latch = new CountDownLatch(elems);
+
+			bc.subscribe(sub("spec1", latch));
+			Flux.range(0, elems)
+			    .map(s -> "hello " + s)
+			    .subscribe(bc);
+
+			assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+		}
+		finally {
+			es.shutdown();
+		}
 	}
 }

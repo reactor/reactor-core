@@ -17,26 +17,27 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 
 /**
- * Emits the value or error produced by the wrapped CompletableFuture.
+ * Emits the value or error produced by the wrapped CompletionStage.
  * <p>
- * Note that if Subscribers cancel their subscriptions, the CompletableFuture
+ * Note that if Subscribers cancel their subscriptions, the CompletionStage
  * is not cancelled.
  *
  * @param <T> the value type
  */
-final class MonoCompletableFuture<T>
+final class MonoCompletionStage<T>
 extends Mono<T>
         implements Receiver, Fuseable {
 
-    final CompletableFuture<? extends T> future;
+    final CompletionStage<? extends T> future;
 
-    public MonoCompletableFuture(CompletableFuture<? extends T> future) {
+    public MonoCompletionStage(CompletionStage<? extends T> future) {
         this.future = Objects.requireNonNull(future, "future");
     }
 

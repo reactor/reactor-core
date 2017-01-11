@@ -15,11 +15,55 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Test;
+import reactor.core.Exceptions;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxOnBackpressureBufferTest {
 
 	@Test
-	public void normal() {
+	public void onBackpressureBuffer() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .onBackpressureBuffer(), 0)
+		            .thenRequest(5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .thenAwait()
+		            .thenRequest(90)
+		            .expectNextCount(90)
+		            .thenAwait()
+		            .thenRequest(5)
+		            .expectNext(96, 97, 98, 99, 100)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onBackpressureBufferMax() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8), 0)
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .thenAwait()
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void onBackpressureBufferMaxCallback() {
+		AtomicInteger last = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8, last::set), 0)
+
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .then(() -> assertThat(last.get()).isEqualTo(16))
+		            .thenRequest(9)
+		            .expectNextCount(8)
+		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 }

@@ -16,10 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTimeoutTest {
@@ -240,5 +242,29 @@ public class FluxTimeoutTest {
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)
 		  .assertNotComplete();
+	}
+
+	Flux<Integer> scenario_timeoutCanBeBoundWithCallback() {
+		return Flux.<Integer>never().timeout(Duration.ofMillis(500), Flux.just(-5));
+	}
+
+	@Test
+	public void timeoutCanBeBoundWithCallback() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback)
+		            .thenAwait(Duration.ofMillis(500))
+		            .expectNext(-5)
+		            .verifyComplete();
+	}
+
+	Flux<?> scenario_timeoutThrown() {
+		return Flux.never()
+		           .timeout(Duration.ofMillis(500));
+	}
+
+	@Test
+	public void fluxPropagatesErrorUsingAwait() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutThrown)
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
 	}
 }

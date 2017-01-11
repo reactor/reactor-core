@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSwitchMapTest {
@@ -246,5 +247,13 @@ public class FluxSwitchMapTest {
 		ts.assertNoValues()
 		  .assertError(NullPointerException.class)
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void switchOnNextDynamically() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .switchMap(s -> Flux.range(s, 3)))
+		            .expectNext(1, 2, 3, 2, 3, 4, 3, 4, 5)
+		            .verifyComplete();
 	}
 }

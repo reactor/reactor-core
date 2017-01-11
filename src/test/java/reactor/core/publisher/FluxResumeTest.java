@@ -298,7 +298,7 @@ public class FluxResumeTest {
 				});
 
 		StepVerifier.create(source.switchOnError(fallback))
-		            .expectNext("Three", "Two", "One", "0", "1", "2")
+		            .expectNext("Three", "Two", "One", "1", "2")
 		            .verifyComplete();
 	}
 	@Test

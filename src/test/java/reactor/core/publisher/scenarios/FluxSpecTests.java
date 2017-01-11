@@ -549,80 +549,12 @@ public class FluxSpecTests {
 		assertThat(tap.get()).containsExactly(1, 2, 3);
 	}
 
-	@Test
-	public void multipleStreamValuesCanBeZipped() {
-//		"Multiple Stream"s values can be zipped"
-//		given: "source composables to merge, buffer and tap"
-		EmitterProcessor<Integer> source1 = EmitterProcessor.<Integer>create().connect();
-		EmitterProcessor<Integer> source2 = EmitterProcessor.<Integer>create().connect();
-		Flux<Integer> zippedFlux = Flux
-				.zip(source1, source2, (t1, t2) -> {
-					System.out.println(t1);
-					return t1 + t2;
-				})
-				.log();
-		AtomicReference<Integer> tap = new AtomicReference<>();
-		zippedFlux.subscribe(it -> tap.set(it));
-
-//		when: "the sources accept a value"
-		source1.onNext(1);
-		source2.onNext(2);
-		source2.onNext(3);
-		source2.onNext(4);
-
-//		then: "the values are all collected from source1 flux"
-		assertThat(tap.get()).isEqualTo(3);
-
-//		when: "the sources accept the missing value"
-		source2.onNext(5);
-		source1.onNext(6);
-
-//		then: "the values are all collected from source1 flux"
-		assertThat(tap.get()).isEqualTo(9);
-	}
-
-	@Test
-	public void multipleIterableStreamValuesCanBeZipped() {
-//		"Multiple iterable Stream"s values can be zipped"
-//		given: "source composables to zip, buffer and tap"
-		Flux<Integer> odds = Flux.just(1, 3, 5, 7, 9);
-		Flux<Integer> even = Flux.just(2, 4, 6);
-
-//		when: "the sources are zipped"
-		Flux<List<Integer>> zippedFlux = Flux.zip(odds.log("left"),
-				even.log("right"),
-				(t1, t2) -> Arrays.asList(t1, t2));
-		Mono<List<List<Integer>>> tap = zippedFlux.log()
-		                                          .collectList();
-
-//		then: "the values are all collected from source1 flux"
-		assertThat(tap.block()).containsExactly(
-				Arrays.asList(1, 2),
-				Arrays.asList(3, 4),
-				Arrays.asList(5, 6));
-
-//		when: "the sources are zipped in a flat map"
-		zippedFlux = odds.log("before-flatmap")
-		                 .flatMap(it -> Flux.zip(Flux.just(it), even, (t1, t2) -> Arrays.asList(t1, t2))
-		                                    .log("second-fm"));
-		tap = zippedFlux.log("after-zip")
-		                .collectList();
-
-
-//		then: "the values are all collected from source1 flux"
-		assertThat(tap.block()).containsExactly(
-				Arrays.asList(1, 2),
-				Arrays.asList(3, 2),
-				Arrays.asList(5, 2),
-				Arrays.asList(7, 2),
-				Arrays.asList(9, 2));
-	}
 
 
 	@Test
 	public void aDifferentWayOfConsuming() {
 //		"A different way of consuming"
-//		given: "source composables to zip, buffer and tap"
+//		given: "source composables to merge, buffer and tap"
 		Flux<Integer> odds = Flux.just(1, 3, 5, 7, 9);
 		Flux<Integer> even = Flux.just(2, 4, 6);
 
@@ -649,12 +581,12 @@ public class FluxSpecTests {
 	@Test
 	public void combineLatestStreamData() {
 //		"Combine latest stream data"
-//		given: "source composables to zip, buffer and tap"
+//		given: "source composables to combine, buffer and tap"
 		EmitterProcessor<String> w1 = EmitterProcessor.<String>create().connect();
 		EmitterProcessor<String> w2 = EmitterProcessor.<String>create().connect();
 		EmitterProcessor<String> w3 = EmitterProcessor.<String>create().connect();
 
-//		when: "the sources are zipped"
+//		when: "the sources are combined"
 		Flux<String> mergedFlux =
 				Flux.combineLatest(w1, w2, w3, t -> "" + t[0] + t[1] + t[2]);
 		List<String> res = new ArrayList<>();
@@ -691,11 +623,11 @@ public class FluxSpecTests {
 	@Test
 	public void simpleConcat() {
 //		"A simple concat"
-//		given: "source composables to zip, buffer and tap"
+//		given: "source composables to concated, buffer and tap"
 		Flux<Integer> firsts = Flux.just(1, 2, 3);
 		Flux<Integer> lasts = Flux.just(4, 5);
 
-//		when: "the sources are zipped"
+//		when: "the sources are concat"
 		Flux<Integer> mergedFlux = Flux.concat(firsts, lasts);
 		List<String> res1 = new ArrayList<>();
 		mergedFlux.subscribe(
@@ -745,10 +677,10 @@ public class FluxSpecTests {
 	@Test
 	public void mappedConcat() {
 //		"A mapped concat"
-//		given: "source composables to zip, buffer and tap"
+//		given: "source composables to concatMap, buffer and tap"
 		Flux<Integer> firsts = Flux.just(1, 2, 3);
 
-//		when: "the sources are zipped"
+//		when: "the sources are concatMap"
 		Flux<Integer> mergedFlux = firsts.concatMap(it -> Flux.range(it, 2));
 		List<String> res = new ArrayList<>();
 		mergedFlux.subscribe(
@@ -1423,29 +1355,7 @@ public class FluxSpecTests {
 		assertThat(value.peek()).isEqualTo(2);
 	}
 
-	@Test
-	public void createStreamFromFluxCreate() {
-		StepVerifier.create(Flux.create(s -> {
-			s.next("test1");
-			s.next("test2");
-			s.next("test3");
-			s.complete();
-		}))
-		            .expectNext("test1", "test2", "test3")
-		            .verifyComplete();
-	}
 
-	@Test
-	public void createStreamFromFluxCreate2(){
-		StepVerifier.create(Flux.create(s -> {
-			s.next("test1");
-			s.next("test2");
-			s.next("test3");
-			s.complete();
-		}).publishOn(Schedulers.parallel()))
-	                .expectNext("test1", "test2", "test3")
-	                .verifyComplete();
-	}
 
 	@Test
 	public void wrapToFlux(){
@@ -1553,142 +1463,6 @@ public class FluxSpecTests {
 		            .verifyComplete();
 	}
 
-	Flux<Integer> scenario_timeoutCanBeBoundWithCallback() {
-		return Flux.<Integer>never().timeout(Duration.ofMillis(500), Flux.just(-5));
-	}
-
-	@Test
-	public void timeoutCanBeBoundWithCallback() {
-		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback)
-		            .thenAwait(Duration.ofMillis(500))
-		            .expectNext(-5)
-		            .verifyComplete();
-	}
-
-	Flux<?> scenario_timeoutThrown() {
-		return Flux.never()
-		           .timeout(Duration.ofMillis(500));
-	}
-
-	@Test
-	public void fluxPropagatesErrorUsingAwait() {
-		StepVerifier.withVirtualTime(this::scenario_timeoutThrown)
-		            .thenAwait(Duration.ofMillis(500))
-		            .verifyError(TimeoutException.class);
-	}
-
-	@Test
-	public void materialize() {
-		StepVerifier.create(Flux.just("Three", "Two", "One")
-		                        .materialize())
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Three"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Two"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("One"))
-		            .expectNextMatches(Signal::isOnComplete)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void materialize2() {
-		StepVerifier.create(Flux.just("Three", "Two")
-		                        .concatWith(Flux.error(new RuntimeException("test")))
-		                        .materialize())
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Three"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Two"))
-		            .expectNextMatches(s -> s.isOnError() && s.getThrowable()
-		                                                      .getMessage()
-		                                                      .equals("test"))
-		            .verifyComplete();
-	}
-
-	@Test
-	public void dematerialize() {
-		StepVerifier.create(Flux.just(Signal.next("Three"),
-				Signal.next("Two"),
-				Signal.next("One"),
-				Signal.complete())
-		                        .dematerialize())
-		            .expectNext("Three")
-		            .expectNext("Two")
-		            .expectNext("One")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void switchOnNext() {
-		StepVerifier.create(Flux.switchOnNext(Flux.just(Flux.just("Three", "Two", "One"),
-				Flux.just("Zero"))))
-		            .expectNext("Three")
-		            .expectNext("Two")
-		            .expectNext("One")
-		            .expectNext("Zero")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void switchOnNextDynamically() {
-		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .switchMap(s -> Flux.range(s, 3)))
-		            .expectNext(1, 2, 3, 2, 3, 4, 3, 4, 5)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void onBackpressureDrop() {
-		StepVerifier.create(Flux.range(1, 100)
-		                        .onBackpressureDrop(), 0)
-		            .thenRequest(5)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void onBackpressureBuffer() {
-		StepVerifier.create(Flux.range(1, 100)
-		                        .onBackpressureBuffer(), 0)
-		            .thenRequest(5)
-		            .expectNext(1, 2, 3, 4, 5)
-		            .thenAwait()
-		            .thenRequest(90)
-		            .expectNextCount(90)
-		            .thenAwait()
-		            .thenRequest(5)
-		            .expectNext(96, 97, 98, 99, 100)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void onBackpressureBufferMax() {
-		StepVerifier.create(Flux.range(1, 100)
-		                        .hide()
-		                        .onBackpressureBuffer(8), 0)
-		            .thenRequest(7)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7)
-		            .thenAwait()
-		            .verifyErrorMatches(Exceptions::isOverflow);
-	}
-
-	@Test
-	public void onBackpressureBufferMaxCallback() {
-		AtomicInteger last = new AtomicInteger();
-
-		StepVerifier.create(Flux.range(1, 100)
-		                        .hide()
-		                        .onBackpressureBuffer(8, last::set), 0)
-
-		            .thenRequest(7)
-		            .expectNext(1, 2, 3, 4, 5, 6, 7)
-		            .then(() -> assertThat(last.get()).isEqualTo(16))
-		            .thenRequest(9)
-		            .expectNextCount(8)
-		            .verifyErrorMatches(Exceptions::isOverflow);
-	}
-
 	Mono<Long> scenario_fluxItemCanBeShiftedByTime() {
 		return Flux.range(0, 10000)
 		           .delay(Duration.ofMillis(150))
@@ -1750,14 +1524,6 @@ public class FluxSpecTests {
 		Flux.range(1, 1000).subscribe(head);
 		latch.await();
 		Assert.assertTrue(sum.get() == length);
-	}
-
-	static class SimplePojo {
-		int id;
-		String title;
-
-		@Override
-		public int hashCode() { return id; }
 	}
 
 	static class Reduction implements BiFunction<Integer, Integer, Integer> {

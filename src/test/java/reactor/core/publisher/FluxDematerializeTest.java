@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDematerializeTest {
@@ -177,5 +178,18 @@ public class FluxDematerializeTest {
 		ts.assertValues(1, 2, 3)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void dematerialize() {
+		StepVerifier.create(Flux.just(Signal.next("Three"),
+				Signal.next("Two"),
+				Signal.next("One"),
+				Signal.complete())
+		                        .dematerialize())
+		            .expectNext("Three")
+		            .expectNext("Two")
+		            .expectNext("One")
+		            .verifyComplete();
 	}
 }

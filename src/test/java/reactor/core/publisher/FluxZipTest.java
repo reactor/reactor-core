@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -28,6 +29,8 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxZipTest {
 
@@ -327,5 +330,68 @@ public class FluxZipTest {
 		ff.subscribeWith(AssertSubscriber.create())
 		 .assertValues(Tuples.of(1, "testtest2"))
 		 .assertComplete();
+	}
+
+
+	@Test
+	public void multipleStreamValuesCanBeZipped() {
+//		"Multiple Stream"s values can be zipped"
+//		given: "source composables to merge, buffer and tap"
+		EmitterProcessor<Integer> source1 = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> source2 = EmitterProcessor.<Integer>create().connect();
+		Flux<Integer> zippedFlux = Flux
+				.zip(source1, source2, (t1, t2) -> t1 + t2);
+		AtomicReference<Integer> tap = new AtomicReference<>();
+		zippedFlux.subscribe(it -> tap.set(it));
+
+//		when: "the sources accept a value"
+		source1.onNext(1);
+		source2.onNext(2);
+		source2.onNext(3);
+		source2.onNext(4);
+
+//		then: "the values are all collected from source1 flux"
+		assertThat(tap.get()).isEqualTo(3);
+
+//		when: "the sources accept the missing value"
+		source2.onNext(5);
+		source1.onNext(6);
+
+//		then: "the values are all collected from source1 flux"
+		assertThat(tap.get()).isEqualTo(9);
+	}
+
+	@Test
+	public void multipleIterableStreamValuesCanBeZipped() {
+//		"Multiple iterable Stream"s values can be zipped"
+//		given: "source composables to zip, buffer and tap"
+		Flux<Integer> odds = Flux.just(1, 3, 5, 7, 9);
+		Flux<Integer> even = Flux.just(2, 4, 6);
+
+//		when: "the sources are zipped"
+		Flux<List<Integer>> zippedFlux = Flux.zip(odds,
+				even,
+				(t1, t2) -> Arrays.asList(t1, t2));
+		Mono<List<List<Integer>>> tap = zippedFlux
+		                                          .collectList();
+
+//		then: "the values are all collected from source1 flux"
+		assertThat(tap.block()).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(3, 4),
+				Arrays.asList(5, 6));
+
+//		when: "the sources are zipped in a flat map"
+		zippedFlux = odds.flatMap(it -> Flux.zip(Flux.just(it), even, (t1, t2) -> Arrays.asList(t1, t2)));
+		tap = zippedFlux.collectList();
+
+
+//		then: "the values are all collected from source1 flux"
+		assertThat(tap.block()).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(3, 2),
+				Arrays.asList(5, 2),
+				Arrays.asList(7, 2),
+				Arrays.asList(9, 2));
 	}
 }
