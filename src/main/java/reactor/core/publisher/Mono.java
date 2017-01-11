@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -354,13 +355,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 * <p>
-	 * @param future {@link CompletableFuture} that will produce the value or null to
+	 * @param future {@link CompletionStage} that will produce the value or null to
 	 * complete immediately
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
-		return onAssembly(new MonoCompletableFuture<>(future));
+	public static <T> Mono<T> fromFuture(CompletionStage<? extends T> future) {
+		return onAssembly(new MonoCompletionStage<>(future));
 	}
 
 	/**
@@ -1479,6 +1480,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
+		Objects.requireNonNull(onSuccess, "onSuccess");
 		return onAssembly(new MonoPeekTerminal<>(this, onSuccess, null, null));
 	}
 

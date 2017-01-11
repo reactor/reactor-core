@@ -15,11 +15,20 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.Test;
 
-public class MonoCompletableFutureTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class MonoCompletionStageTest {
+
 
 	@Test
-	public void normal() {
+	public void fromCompletableFuture(){
+		CompletableFuture<String> f = CompletableFuture.supplyAsync(() -> "helloFuture");
+
+		assertThat(Mono.fromFuture(f)
+		               .block()).isEqualToIgnoringCase("helloFuture");
 	}
 }

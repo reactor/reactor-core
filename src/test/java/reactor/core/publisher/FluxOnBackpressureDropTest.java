@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxOnBackpressureDropTest {
@@ -136,5 +137,14 @@ public class FluxOnBackpressureDropTest {
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void onBackpressureDrop() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .onBackpressureDrop(), 0)
+		            .thenRequest(5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .verifyComplete();
 	}
 }
