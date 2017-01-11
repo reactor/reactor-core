@@ -16,11 +16,14 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxJustTest {
 
@@ -73,5 +76,13 @@ public class FluxJustTest {
         ts.assertFuseableSource()
         .assertFusionMode(Fuseable.SYNC)
         .assertValues(1);
+    }
+
+    @Test
+    public void fluxInitialValueAvailableImmediately() {
+        Flux<String> stream = Flux.just("test");
+        AtomicReference<String> value = new AtomicReference<>();
+        stream.subscribe(value::set);
+        assertThat(value.get()).isEqualTo("test");
     }
 }

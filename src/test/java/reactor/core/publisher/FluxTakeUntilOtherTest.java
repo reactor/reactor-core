@@ -16,7 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeUntilOtherTest {
@@ -150,4 +153,16 @@ public class FluxTakeUntilOtherTest {
 		  .assertNotComplete();
 	}
 
+	Flux<Integer> scenario_aFluxCanBeLimitedByTime(){
+		return Flux.range(0, 1000)
+		           .take(Duration.ofSeconds(2));
+	}
+
+	@Test
+	public void aFluxCanBeLimitedByTime(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeLimitedByTime)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNextCount(1000)
+		            .verifyComplete();
+	}
 }

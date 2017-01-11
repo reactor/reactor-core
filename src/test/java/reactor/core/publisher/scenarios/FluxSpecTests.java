@@ -24,22 +24,30 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Exceptions;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.Signal;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -47,58 +55,28 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class FluxSpecTests {
 
 	@Test
-	public void fluxInitialValueAvailableImmediately() {
-//		'A deferred Flux with an initial value makes that value available immediately'() {
-//		given: 'a composable with an initial value'
-		Flux<String> stream = Flux.just("test");
-
-//		when: 'the value is retrieved'
-		AtomicReference<String> value = new AtomicReference<>();
-		stream.subscribe(value::set);
-
-//		then: 'it is available'
-		assertThat(value.get()).isEqualTo("test");
-	}
-
-	@Test
 	public void fluxInitialValueAvailableOnceIfBroadcasted() {
-//		'A deferred Flux with an initial value makes that value available once if broadcasted'
-//		given: 'a composable with an initial value'
+//		"A deferred Flux with an initial value makes that value available once if broadcasted"
+//		given: "a composable with an initial value"
 		Flux<String> stream = Flux.just("test")
 		                          .publish()
 		                          .autoConnect();
 
-//		when: 'the value is retrieved'
+//		when: "the value is retrieved"
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<String> value2 = new AtomicReference<>();
 		stream.subscribe(value::set);
 		stream.subscribe(value2::set);
 
-//		then: 'it is available in value 1 but value 2 has subscribed after dispatching'
+//		then: "it is available in value 1 but value 2 has subscribed after dispatching"
 		assertThat(value.get()).isEqualTo("test");
 		assertThat(value2.get()).isNullOrEmpty();
 	}
 
 	@Test
-	public void fluxPropagatesErrorUsingAwait() {
-//		'A Flux can propagate the error using await'
-//		given: 'a composable with no initial value'
-		EmitterProcessor<Object> stream = EmitterProcessor.create();
-
-//		when: 'the error is retrieved after 2 sec'
-//		then: 'an error has been thrown'
-		assertThatExceptionOfType(RuntimeException.class)
-				.isThrownBy(() ->
-						stream.publishOn(Schedulers.parallel())
-						      .timeout(Duration.ofMillis(500))
-						      .next()
-						      .block());
-	}
-
-	@Test
 	public void deferredFluxInitialValueLaterAvailableUpToLongMax() throws InterruptedException {
-//		'A deferred Flux with an initial value makes that value available later up to Long.MAX '
-//		given: 'a composable with an initial value'
+//		"A deferred Flux with an initial value makes that value available later up to Long.MAX "
+//		given: "a composable with an initial value"
 		AtomicReference<Throwable> e = new AtomicReference<>();
 		CountDownLatch latch = new CountDownLatch(1);
 		Flux<Integer> stream = Flux.fromIterable(Arrays.asList(1, 2, 3))
@@ -107,7 +85,7 @@ public class FluxSpecTests {
 		                           .doOnError(e::set)
 		                           .doOnComplete(latch::countDown);
 
-//		when: 'cumulated request of Long MAX'
+//		when: "cumulated request of Long MAX"
 		long test = Long.MAX_VALUE / 2L;
 		AssertSubscriber<Integer> controls =
 				stream.subscribeWith(AssertSubscriber.create(0));
@@ -117,7 +95,7 @@ public class FluxSpecTests {
 
 		//sleep(2000)
 
-//		then: 'no error available'
+//		then: "no error available"
 		latch.await(2, TimeUnit.SECONDS);
 
 		assertThat(e.get()).isNull();
@@ -125,54 +103,54 @@ public class FluxSpecTests {
 
 	@Test
 	public void fluxInitialValueCanBeConsumedMultipleTimes() {
-//	    'A deferred Flux with initial values can be consumed multiple times'
-// 		given: 'a composable with an initial value'
+//	    "A deferred Flux with initial values can be consumed multiple times"
+// 		given: "a composable with an initial value"
 		Flux<String> stream = Flux.just("test", "test2", "test3")
 		                          .map(v -> v)
 		                          .log();
 
-//		when: 'the value is retrieved'
+//		when: "the value is retrieved"
 		List<String> value1 = stream.collectList().block();
 		List<String> value2 = stream.collectList().block();
 
-//		then: 'it is available'
+//		then: "it is available"
 		assertThat(value1).containsExactlyElementsOf(value2);
 	}
 
 	@Test
 	public void fluxCanFilterTerminalStates() {
-//		'A deferred Flux can filter terminal states'
-//		given: 'a composable with an initial value'
+//		"A deferred Flux can filter terminal states"
+//		given: "a composable with an initial value"
 		Flux<String> stream = Flux.just("test");
 
-//		when:'the complete signal is observed and flux is retrieved'
+//		when:"the complete signal is observed and flux is retrieved"
 		Mono<Void> tap = stream.then();
 
-//		then: 'it is available'
+//		then: "it is available"
 		assertThat(tap.block()).isNull();
 
-//		when: 'the error signal is observed and flux is retrieved'
+//		when: "the error signal is observed and flux is retrieved"
 		stream = Flux.error(new Exception());
 		final Mono<Void> errorTap = stream.then();
-		
-//		then: 'it is available'
+
+//		then: "it is available"
 		assertThatExceptionOfType(Exception.class)
 				.isThrownBy(errorTap::block);
 	}
 
 	@Test
 	public void fluxCanListenForTerminalStates() {
-//	'A deferred Flux can listen for terminal states'
-//		given: 'a composable with an initial value'
+//	"A deferred Flux can listen for terminal states"
+//		given: "a composable with an initial value"
 		Flux<String> stream = Flux.just("test");
 
-//		when: 'the complete signal is observed and flux is retrieved'
+//		when: "the complete signal is observed and flux is retrieved"
 		AtomicReference<Object> value = new AtomicReference<>();
 
 		stream.doAfterTerminate(() -> value.set(Boolean.TRUE))
 	          .subscribe(value::set);
 
-//		then: 'it is available'
+//		then: "it is available"
 		assertThat(value.get())
 				.isNotNull()
 	            .isNotEqualTo("test")
@@ -181,27 +159,27 @@ public class FluxSpecTests {
 
 	@Test
 	public void fluxCanBeTranslatedToList() {
-//		'A deferred Flux can be translated into a list'
-//		given: 'a composable with an initial value'
+//		"A deferred Flux can be translated into a list"
+//		given: "a composable with an initial value"
 		Flux<String> stream = Flux.just("test", "test2", "test3");
 
-//		when:'the flux is retrieved'
+//		when:"the flux is retrieved"
 		Mono<List<String>> value = stream.map(it -> it + "-ok")
 		                                 .collectList();
 
-//		then: 'it is available'
+//		then: "it is available"
 		assertThat(value.block()).containsExactly("test-ok", "test2-ok", "test3-ok");
 	}
 
 	@Test
 	public void fluxCanBeTranslatedToCompletableQueue() {
-//		'A deferred Flux can be translated into a completable queue'
-//		given:	'a composable with an initial value'
+//		"A deferred Flux can be translated into a completable queue"
+//		given:	"a composable with an initial value"
 		Flux<String> stream = Flux.just("test", "test2", "test3")
 		                    .log()
 		                    .publishOn(Schedulers.parallel());
 
-//		when: 'the flux is retrieved'
+//		when: "the flux is retrieved"
 		stream = stream.map(it -> it + "-ok")
 		               .log();
 
@@ -214,7 +192,7 @@ public class FluxSpecTests {
 			result.add(queue.next());
 		}
 
-//		then:'it is available'
+//		then:"it is available"
 		assertThat(result).containsExactly("test-ok", "test2-ok", "test3-ok");
 	}
 
@@ -271,178 +249,160 @@ public class FluxSpecTests {
 		assertThat(ranges).isEmpty();
 	}
 
-	@Test
-	public void fluxCanSampleValuesOverTime() {
-//	    'A Flux can sample values over time'() {
-//		given:'a composable with values 1 to INT_MAX inclusive'
-		Flux<Integer> s = Flux.range(1, Integer.MAX_VALUE);
-		Scheduler scheduler = Schedulers.newParallel("work", 4);
-
-		try {
-//		when:'the most recent value is retrieved'
-			Mono<Integer> last = s.sampleMillis(2000l)
-			                      .subscribeOn(scheduler)
-			                      .publishOn(Schedulers.parallel())
-			                      .log()
-			                      .take(1)
-			                      .next();
-
-//		then:
-			assertThat(last.block(Duration.ofSeconds(5)))
-					.isGreaterThan(20_000);
-
-		}
-		finally {
-			scheduler.shutdown();
-		}
+	Flux<Integer> scenario_rangeTimedSample() {
+		return Flux.range(1, Integer.MAX_VALUE)
+		           .delayMillis(100)
+		           .sample(Duration.ofSeconds(4))
+		           .take(1);
 	}
 
 	@Test
-	public void fluxCanSampleValuesOverTimeWithSubscribeOn() {
-//		'A Flux can sample values over time with consumeOn'
-//		given:'a composable with values 1 to INT_MAX inclusive'
-		Flux<Integer> s = Flux.range(1, Integer.MAX_VALUE);
-		Scheduler scheduler = Schedulers.newParallel("test", 4);
+	public void fluxCanSampleValuesOverTime() {
+		StepVerifier.withVirtualTime(this::scenario_rangeTimedSample)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNext(39)
+		            .verifyComplete();
+	}
 
-		try {
-//		when:'the most recent value is retrieved'
-			MonoProcessor<Integer> last = s.take(Duration.ofSeconds(4))
-			                               .subscribeOn(scheduler)
-			                               .last()
-			                               .subscribeWith(MonoProcessor.create());
+	Flux<Integer> scenario_rangeTimedTake() {
+		return Flux.range(1, Integer.MAX_VALUE)
+		           .delayMillis(100)
+		           .take(Duration.ofSeconds(4))
+		           .takeLast(1);
+	}
 
-//		then:
-			assertThat(last.block()).isGreaterThan(20_000);
-		}
-		finally {
-			scheduler.shutdown();
-		}
+	@Test
+	public void fluxCanSampleValuesOverTimeTake() {
+		StepVerifier.withVirtualTime(this::scenario_rangeTimedTake)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNext(39)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchValuesDistinctFromPredecessors() {
-//		'A Flux can be enforced to dispatch values distinct from their immediate predecessors'
-//		given:'a composable with values 1 to 3 with duplicates'
+//		"A Flux can be enforced to dispatch values distinct from their immediate predecessors"
+//		given:"a composable with values 1 to 3 with duplicates"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 1, 2, 2, 3));
 
-//		when:'the values are filtered and result is collected'
+//		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged()
 		                                    .collectList()
 		                                    .subscribe();
 
-//		then:'collected must remove duplicates'
+//		then:"collected must remove duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3);
 	}
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchValuesWithKeysDistinctFromPredecessors() {
-//		'A Flux can be enforced to dispatch values with keys distinct from their immediate predecessors keys'
-//		given:'a composable with values 1 to 5 with duplicate keys'
+//		"A Flux can be enforced to dispatch values with keys distinct from their immediate predecessors keys"
+//		given:"a composable with values 1 to 5 with duplicate keys"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(2, 4, 3, 5, 2, 5));
 
-//		when:'the values are filtered and result is collected'
+//		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged(it -> it % 2 == 0)
 		                                    .collectList()
 		                                    .subscribe();
 
-//		then:'collected must remove duplicates'
+//		then:"collected must remove duplicates"
 		assertThat(tap.block()).containsExactly(2, 3, 2, 5);
 	}
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchDistinctValues() {
-//		'A Flux can be enforced to dispatch distinct values'
-//		given:'a composable with values 1 to 4 with duplicates'
+//		"A Flux can be enforced to dispatch distinct values"
+//		given:"a composable with values 1 to 4 with duplicates"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
-//		when:'the values are filtered and result is collected'
+//		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinct()
 		                                    .collectList()
 		                                    .subscribe();
 
-//		then:'collected should be without duplicates'
+//		then:"collected should be without duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3, 4);
 	}
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchValuesHavingDistinctKeys() {
-//		'A Flux can be enforced to dispatch values having distinct keys'
-//		given: 'a composable with values 1 to 4 with duplicate keys'
+//		"A Flux can be enforced to dispatch values having distinct keys"
+//		given: "a composable with values 1 to 4 with duplicate keys"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 1, 2, 3, 4));
 
-//		when: 'the values are filtered and result is collected'
+//		when: "the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinct(it -> it % 3)
 		                                    .collectList()
 		                                    .subscribe();
 
-//		then: 'collected should be without duplicates'
+//		then: "collected should be without duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3);
 	}
 
 	@Test
 	public void fluxCanCheckForValueSatisfyingPredicate() {
-//		'A Flux can check if there is a value satisfying a predicate'
-//		given: 'a composable with values 1 to 5'
+//		"A Flux can check if there is a value satisfying a predicate"
+//		given: "a composable with values 1 to 5"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
 
-//		when: 'checking for existence of values > 2 and the result of the check is collected'
+//		when: "checking for existence of values > 2 and the result of the check is collected"
 		boolean tap = s.any(it -> it > 2)
 		               .log()
 		               .block();
 
-//		then: 'collected should be true'
+//		then: "collected should be true"
 		assertThat(tap).isTrue();
 
 
-//		when: 'checking for existence of values > 5 and the result of the check is collected'
+//		when: "checking for existence of values > 5 and the result of the check is collected"
 		tap = s.any(it -> it > 5).block();
 
-//		then: 'collected should be false'
+//		then: "collected should be false"
 		assertThat(tap).isFalse();
 
 
-//		when: 'checking always true predicate on empty flux and collecting the result'
+//		when: "checking always true predicate on empty flux and collecting the result"
 		tap = Flux.empty().any(it -> true).block();
 
-//		then: 'collected should be false'
+//		then: "collected should be false"
 		assertThat(tap).isFalse();
 	}
 
 	@Test
 	public void fluxInitialValuesArePassedToConsumers() {
-//		"A Flux's initial values are passed to consumers"
-//		given: 'a composable with values 1 to 5 inclusive'
+//		"A Flux"s initial values are passed to consumers"
+//		given: "a composable with values 1 to 5 inclusive"
 		Flux<Integer> stream = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
 
-//		when: 'a Consumer is registered'
+//		when: "a Consumer is registered"
 		List<Integer> values = new ArrayList<>();
 		stream.subscribe(values::add);
 
-//		then: 'the initial values are passed'
+//		then: "the initial values are passed"
 		assertThat(values).containsExactly(1, 2, 3, 4, 5);
 	}
 
 	@Test
 	public void streamStateRelatedSignalsCanBeConsumed() {
-//		"Stream 'state' related signals can be consumed"
-//		given: 'a composable with values 1 to 5 inclusive'
+//		"Stream "state" related signals can be consumed"
+//		given: "a composable with values 1 to 5 inclusive"
 		Flux<Integer> stream = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
 		List<Integer> values = new ArrayList<>();
 		List<String> signals = new ArrayList<>();
 
-//		when: 'a Subscribe Consumer is registered'
+//		when: "a Subscribe Consumer is registered"
 		stream = stream.doOnSubscribe(s -> signals.add("subscribe"));
 
-//		and: 'a Cancel Consumer is registered'
+//		and: "a Cancel Consumer is registered"
 		stream = stream.doOnCancel(() -> signals.add("cancel"));
 
-//		and: 'a Complete Consumer is registered'
+//		and: "a Complete Consumer is registered"
 		stream = stream.doOnComplete(() -> signals.add("complete"));
 
-//		and: 'the flux is consumed'
+//		and: "the flux is consumed"
 		stream.subscribe(values::add);
 
-//		then: 'the initial values are passed'
+//		then: "the initial values are passed"
 		assertThat(values).containsExactly(1, 2, 3, 4, 5);
 		assertThat(signals).containsExactly("subscribe", "complete");
 	}
@@ -450,103 +410,103 @@ public class FluxSpecTests {
 	@Test
 	public void streamCanEmitDefaultValueIfEmpty() {
 //		"Stream can emit a default value if empty"
-//		given: 'a composable that only completes'
+//		given: "a composable that only completes"
 		Flux<String> stream = Flux.empty();
 		List<String> values = new ArrayList<>();
 
-//		when: 'a Subscribe Consumer is registered'
+//		when: "a Subscribe Consumer is registered"
 		stream = stream.defaultIfEmpty("test")
 		               .doOnComplete(() -> values.add("complete"));
 
-//		and: 'the flux is consumed'
+//		and: "the flux is consumed"
 		stream.subscribe(values::add);
 
-//		then: 'the initial values are passed'
+//		then: "the initial values are passed"
 		assertThat(values).containsExactly("test", "complete");
 	}
 
 	@Test
 	public void acceptedValuesArePassedToRegisteredConsumer() {
-//		'Accepted values are passed to a registered Consumer'
-//		given: 'a composable with a registered consumer'
+//		"Accepted values are passed to a registered Consumer"
+//		given: "a composable with a registered consumer"
 		EmitterProcessor<Integer> composable =
 				EmitterProcessor.<Integer>create().connect();
 		AtomicReference<Integer> value = new AtomicReference<>();
 
 		composable.subscribe(value::set);
 
-//		when: 'a value is accepted'
+//		when: "a value is accepted"
 		composable.onNext(1);
 
-//		then: 'it is passed to the consumer'
+//		then: "it is passed to the consumer"
 		assertThat(value.get()).isEqualTo(1);
 
-//		when: 'another value is accepted'
+//		when: "another value is accepted"
 		composable.onNext(2);
 
-//		then: 'it too is passed to the consumer'
+//		then: "it too is passed to the consumer"
 		assertThat(value.get()).isEqualTo(2);
 	}
 
 	@Test
 	public void acceptedErrorsArePassedToRegisteredConsumer() {
-//		'Accepted errors are passed to a registered Consumer'
-//		given: 'a composable with a registered consumer of RuntimeExceptions'
+//		"Accepted errors are passed to a registered Consumer"
+//		given: "a composable with a registered consumer of RuntimeExceptions"
 		EmitterProcessor<Integer> composable =
 				EmitterProcessor.<Integer>create().connect();
 		LongAdder errors = new LongAdder();
 		composable.doOnError(e -> errors.increment()).subscribe();
 
-//		when: 'A RuntimeException is accepted'
+//		when: "A RuntimeException is accepted"
 		composable.onError(new RuntimeException());
 
-//		then: 'it is passed to the consumer'
+//		then: "it is passed to the consumer"
 		assertThat(errors.intValue()).isEqualTo(1);
 
-//		when: 'A new error consumer is subscribed'
+//		when: "A new error consumer is subscribed"
 		Flux.error(new RuntimeException()).doOnError(e -> errors.increment()).subscribe();
 
-//		then: 'it is called since publisher is in error state'
+//		then: "it is called since publisher is in error state"
 		assertThat(errors.intValue()).isEqualTo(2);
 	}
 
 	@Test
 	public void whenAcceptedEventIsIterableSplitCanIterateOverValues() {
-//		'When the accepted event is Iterable, split can iterate over values'
-//		given: 'a composable with a known number of values'
+//		"When the accepted event is Iterable, split can iterate over values"
+//		given: "a composable with a known number of values"
 		EmitterProcessor<Iterable<String>> d = EmitterProcessor.<Iterable<String>>create().connect();
 		Flux<String> composable = d.flatMap(Flux::fromIterable);
 
-//		when: 'accept list of Strings'
+//		when: "accept list of Strings"
 		AtomicReference<String> tap = new AtomicReference<>();
 		composable.subscribe(tap::set);
 		d.onNext(Arrays.asList("a", "b", "c"));
 
-//		then: 'its value is the last of the initial values'
+//		then: "its value is the last of the initial values"
 		assertThat(tap.get()).isEqualTo("c");
 	}
 
 	@Test
 	public void fluxValuesCanBeMapped() {
-//		"A Flux's values can be mapped"
-//		given: 'a source composable with a mapping function'
+//		"A Flux"s values can be mapped"
+//		given: "a source composable with a mapping function"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer> create().connect();
 		Flux<Integer> mapped = source.map(it -> it * 2);
 
-//		when: 'the source accepts a value'
+//		when: "the source accepts a value"
 		AtomicReference<Integer> value = new AtomicReference<>();
 		mapped.subscribe(value::set);
 		source.onNext(1);
 
-//		then: 'the value is mapped'
+//		then: "the value is mapped"
 		assertThat(value.get()).isEqualTo(2);
 	}
 
 	@Test
 	public void streamValuesCanBeExploded() {
-//		Stream's values can be exploded
-//			given: 'a source composable with a mapMany function'
-		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create();
+//		Stream"s values can be exploded
+//			given: "a source composable with a mapMany function"
+		EmitterProcessor<Integer> source = EmitterProcessor.create();
 		Flux<Integer> mapped = source
 				.log()
 				.publishOn(Schedulers.parallel())
@@ -554,20 +514,20 @@ public class FluxSpecTests {
 				.flatMap(v -> Flux.just(v * 2))
 				.doOnError(Throwable::printStackTrace);
 
-//			when: 'the source accepts a value'
+//			when: "the source accepts a value"
 		MonoProcessor<Integer> value = mapped.next()
 		                                     .subscribe();
 		source.connectSink().emit(1);
 
-//		then: 'the value is mapped'
+//		then: "the value is mapped"
 		int result = value.blockMillis(5_000);
 		assertThat(result).isEqualTo(2);
 	}
 
 	@Test
 	public void multipleStreamValuesCanBeMerged() {
-//		"Multiple Stream's values can be merged"
-//		given: 'source composables to merge, buffer and tap'
+//		"Multiple Stream"s values can be merged"
+//		given: "source composables to merge, buffer and tap"
 		EmitterProcessor<Integer> source1 = EmitterProcessor.<Integer>create().connect();
 
 		EmitterProcessor<Integer> source2 = EmitterProcessor.<Integer>create().connect();
@@ -580,19 +540,19 @@ public class FluxSpecTests {
 		Flux.merge(source1, source2, source3).log().buffer(3)
 		    .log().subscribe(tap::set);
 
-//		when: 'the sources accept a value'
+//		when: "the sources accept a value"
 		source1.onNext(1);
 		source2.onNext(2);
 		source3.onNext(3);
 
-//		then: 'the values are all collected from source1 flux'
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).containsExactly(1, 2, 3);
 	}
 
 	@Test
 	public void multipleStreamValuesCanBeZipped() {
-//		"Multiple Stream's values can be zipped"
-//		given: 'source composables to merge, buffer and tap'
+//		"Multiple Stream"s values can be zipped"
+//		given: "source composables to merge, buffer and tap"
 		EmitterProcessor<Integer> source1 = EmitterProcessor.<Integer>create().connect();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.<Integer>create().connect();
 		Flux<Integer> zippedFlux = Flux
@@ -604,44 +564,44 @@ public class FluxSpecTests {
 		AtomicReference<Integer> tap = new AtomicReference<>();
 		zippedFlux.subscribe(it -> tap.set(it));
 
-//		when: 'the sources accept a value'
+//		when: "the sources accept a value"
 		source1.onNext(1);
 		source2.onNext(2);
 		source2.onNext(3);
 		source2.onNext(4);
 
-//		then: 'the values are all collected from source1 flux'
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(3);
 
-//		when: 'the sources accept the missing value'
+//		when: "the sources accept the missing value"
 		source2.onNext(5);
 		source1.onNext(6);
 
-//		then: 'the values are all collected from source1 flux'
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(9);
 	}
 
 	@Test
 	public void multipleIterableStreamValuesCanBeZipped() {
-//		"Multiple iterable Stream's values can be zipped"
-//		given: 'source composables to zip, buffer and tap'
+//		"Multiple iterable Stream"s values can be zipped"
+//		given: "source composables to zip, buffer and tap"
 		Flux<Integer> odds = Flux.just(1, 3, 5, 7, 9);
 		Flux<Integer> even = Flux.just(2, 4, 6);
 
-//		when: 'the sources are zipped'
+//		when: "the sources are zipped"
 		Flux<List<Integer>> zippedFlux = Flux.zip(odds.log("left"),
 				even.log("right"),
 				(t1, t2) -> Arrays.asList(t1, t2));
 		Mono<List<List<Integer>>> tap = zippedFlux.log()
 		                                          .collectList();
 
-//		then: 'the values are all collected from source1 flux'
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.block()).containsExactly(
 				Arrays.asList(1, 2),
 				Arrays.asList(3, 4),
 				Arrays.asList(5, 6));
 
-//		when: 'the sources are zipped in a flat map'
+//		when: "the sources are zipped in a flat map"
 		zippedFlux = odds.log("before-flatmap")
 		                 .flatMap(it -> Flux.zip(Flux.just(it), even, (t1, t2) -> Arrays.asList(t1, t2))
 		                                    .log("second-fm"));
@@ -649,7 +609,7 @@ public class FluxSpecTests {
 		                .collectList();
 
 
-//		then: 'the values are all collected from source1 flux'
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.block()).containsExactly(
 				Arrays.asList(1, 2),
 				Arrays.asList(3, 2),
@@ -662,11 +622,11 @@ public class FluxSpecTests {
 	@Test
 	public void aDifferentWayOfConsuming() {
 //		"A different way of consuming"
-//		given: 'source composables to zip, buffer and tap'
+//		given: "source composables to zip, buffer and tap"
 		Flux<Integer> odds = Flux.just(1, 3, 5, 7, 9);
 		Flux<Integer> even = Flux.just(2, 4, 6);
 
-//		when: 'the sources are zipped'
+//		when: "the sources are zipped"
 		Flux<Integer> mergedFlux = Flux.merge(odds, even);
 		List<String> res = new ArrayList<>();
 
@@ -682,19 +642,19 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1", "2", "3", "4", "5", "6", "7", "9", "done");
 	}
 
 	@Test
 	public void combineLatestStreamData() {
 //		"Combine latest stream data"
-//		given: 'source composables to zip, buffer and tap'
+//		given: "source composables to zip, buffer and tap"
 		EmitterProcessor<String> w1 = EmitterProcessor.<String>create().connect();
 		EmitterProcessor<String> w2 = EmitterProcessor.<String>create().connect();
 		EmitterProcessor<String> w3 = EmitterProcessor.<String>create().connect();
 
-//		when: 'the sources are zipped'
+//		when: "the sources are zipped"
 		Flux<String> mergedFlux =
 				Flux.combineLatest(w1, w2, w3, t -> "" + t[0] + t[1] + t[2]);
 		List<String> res = new ArrayList<>();
@@ -724,18 +684,18 @@ public class FluxSpecTests {
 		w3.onComplete();
 
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1a2a3a", "1a2b3a", "1a2b3b", "1a2b3c", "1a2b3d", "done");
 	}
 	
 	@Test
 	public void simpleConcat() {
 //		"A simple concat"
-//		given: 'source composables to zip, buffer and tap'
+//		given: "source composables to zip, buffer and tap"
 		Flux<Integer> firsts = Flux.just(1, 2, 3);
 		Flux<Integer> lasts = Flux.just(4, 5);
 
-//		when: 'the sources are zipped'
+//		when: "the sources are zipped"
 		Flux<Integer> mergedFlux = Flux.concat(firsts, lasts);
 		List<String> res1 = new ArrayList<>();
 		mergedFlux.subscribe(
@@ -748,7 +708,7 @@ public class FluxSpecTests {
 				System.out.println("completed!");
 				});
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res1).containsExactly("1", "2", "3", "4", "5", "done");
 
 //		when:
@@ -763,7 +723,7 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res2).containsExactly("1", "2", "3", "4", "5", "done");
 
 //		when:
@@ -778,17 +738,17 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res3).containsExactly("1", "2", "3", "4", "5", "done");
 	}
 
 	@Test
 	public void mappedConcat() {
 //		"A mapped concat"
-//		given: 'source composables to zip, buffer and tap'
+//		given: "source composables to zip, buffer and tap"
 		Flux<Integer> firsts = Flux.just(1, 2, 3);
 
-//		when: 'the sources are zipped'
+//		when: "the sources are zipped"
 		Flux<Integer> mergedFlux = firsts.concatMap(it -> Flux.range(it, 2));
 		List<String> res = new ArrayList<>();
 		mergedFlux.subscribe(
@@ -801,50 +761,50 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: 'the values are all collected from source1 and source2 flux'
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1", "2", "2", "3", "3", "4", "done");
 	}
 
 	@Test
 	public void streamCanBeCounted() {
 //		"Stream can be counted"
-//		given: 'source composables to count and tap'
+//		given: "source composables to count and tap"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		MonoProcessor<Long> tap = source.count()
 		                                .subscribeWith(MonoProcessor.create());
 
-//		when: 'the sources accept a value'
+//		when: "the sources accept a value"
 		source.onNext(1);
 		source.onNext(2);
 		source.onNext(3);
 		source.onComplete();
 
-//		then: 'the count value matches the number of accept'
+//		then: "the count value matches the number of accept"
 		assertThat(tap.peek()).isEqualTo(3);
 	}
 
 	@Test
 	public void fluxCanReturnValueAtCertainIndex() {
-//		'A Flux can return a value at a certain index'
-//		given: 'a composable with values 1 to 5'
+//		"A Flux can return a value at a certain index"
+//		given: "a composable with values 1 to 5"
 		Flux<Integer> s = Flux.just(1, 2, 3, 4, 5);
 		LongAdder error = new LongAdder();
 		Consumer<Throwable> errorConsumer = e -> error.increment();
 
-//		when: 'element at index 2 is requested'
+//		when: "element at index 2 is requested"
 		Integer tap = s.elementAt(2)
 		               .block();
 
-//		then: '3 is emitted'
+//		then: "3 is emitted"
 		assertThat(tap).isEqualTo(3);
 
-//		when: 'element with negative index is requested'
-//		then: 'error is thrown'
+//		when: "element with negative index is requested"
+//		then: "error is thrown"
 		assertThatExceptionOfType(IndexOutOfBoundsException.class)
 			.isThrownBy(() -> s.elementAt(-1));
 
-//		when: 'element with index > number of values is requested'
-//		then: 'error is thrown'
+//		when: "element with index > number of values is requested"
+//		then: "error is thrown"
 		assertThatExceptionOfType(IndexOutOfBoundsException.class)
 				.isThrownBy(() -> s.elementAt(10).doOnError(errorConsumer).block());
 		assertThat(error.intValue()).isEqualTo(1);
@@ -852,68 +812,68 @@ public class FluxSpecTests {
 
 	@Test
 	public void fluxCanReturnValueAtCertainIndexOrDefaultValue() {
-//		'A Flux can return a value at a certain index or a default value'
-//		given: 'a composable with values 1 to 5'
+//		"A Flux can return a value at a certain index or a default value"
+//		given: "a composable with values 1 to 5"
 		Flux<Integer> s = Flux.just(1, 2, 3, 4, 5);
 
-//		when: 'element at index 2 is requested'
+//		when: "element at index 2 is requested"
 		Integer tap = s.elementAt(2, -1)
 		               .block();
 
-//		then: '3 is emitted'
+//		then: "3 is emitted"
 		assertThat(tap).isEqualTo(3);
 
-//		when: 'element with index > number of values is requested'
+//		when: "element with index > number of values is requested"
 		tap = s.elementAt(10, -1).block();
 
-//		then: '-1 is emitted'
+//		then: "-1 is emitted"
 		assertThat(tap).isEqualTo(-1);
 	}
 
 	@Test
 	public void fluxValuesCanBeFiltered() {
-//		"A Flux's values can be filtered"
-//		given: 'a source composable with a filter that rejects odd values'
+//		"A Flux"s values can be filtered"
+//		given: "a source composable with a filter that rejects odd values"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer> create().connect();
 		Flux<Integer> filtered = source.filter(it -> it % 2 == 0);
 
-//		when: 'the source accepts an even value'
+//		when: "the source accepts an even value"
 		AtomicReference<Integer> value = new AtomicReference<>();
 		filtered.subscribe(value::set);
 		source.onNext(2);
 
-//		then: 'it passes through'
+//		then: "it passes through"
 		assertThat(value.get()).isEqualTo(2);
 
-//		when: 'the source accepts an odd value'
+//		when: "the source accepts an odd value"
 		source.onNext(3);
 
-//		then: 'it is blocked by the filter'
+//		then: "it is blocked by the filter"
 		assertThat(value.get()).isEqualTo(2);
 
-//		when: 'simple filter'
+//		when: "simple filter"
 		EmitterProcessor<Boolean> anotherSource =
 				EmitterProcessor.<Boolean>create().connect();
 		AtomicBoolean tap = new AtomicBoolean();
 		anotherSource.filter(it -> it).subscribe(tap::set);
 		anotherSource.onNext(true);
 
-//		then: 'it is accepted by the filter'
+//		then: "it is accepted by the filter"
 		assertThat(tap.get()).isTrue();
 
-//		when: 'simple filter nominal case'
+//		when: "simple filter nominal case"
 		anotherSource = EmitterProcessor.<Boolean> create().connect();
 		anotherSource.filter(it -> it).subscribe(tap::set);
 		anotherSource.onNext(false);
 
-//		then: 'it is not accepted by the filter (previous value held)'
+//		then: "it is not accepted by the filter (previous value held)"
 		assertThat(tap.get()).isTrue();
 	}
 
 	@Test
 	public void whenMappingFunctionThrowsMappedComposableAcceptsError() {
 //		"When a mapping function throws an exception, the mapped composable accepts the error"
-//		given: 'a source composable with a mapping function that throws an error'
+//		given: "a source composable with a mapping function that throws an error"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		Flux<String> mapped = source.map(it -> {
 					if (it == 1) {
@@ -928,17 +888,17 @@ public class FluxSpecTests {
 		mapped.doOnError(e -> errors.increment())
 		      .subscribe();
 
-//		when: 'the source accepts a value'
+//		when: "the source accepts a value"
 		source.onNext(1);
 
-//		then: 'the error is passed on'
+//		then: "the error is passed on"
 		assertThat(errors.intValue()).isEqualTo(1);
 	}
 
 	@Test
 	public void whenProcessorIsStreamed() {
 //		"When a processor is streamed"
-//		given: 'a source composable and a async downstream'
+//		given: "a source composable and a async downstream"
 		ReplayProcessor<Integer> source = ReplayProcessor.<Integer>create().connect();
 		Scheduler scheduler = Schedulers.newParallel("test", 2);
 
@@ -952,25 +912,25 @@ public class FluxSpecTests {
 
 			res.subscribe();
 
-//		when: 'the source accepts a value'
+//		when: "the source accepts a value"
 			source.onNext(1);
 			source.onNext(2);
 			source.onNext(3);
 			source.onNext(4);
 			source.onComplete();
 
-//		then: 'the res is passed on'
+//		then: "the res is passed on"
 			assertThat(res.block()).containsExactly(2, 4, 6, 8);
 		}
 		finally {
-			scheduler.shutdown();
+			scheduler.dispose();
 		}
 	}
 
 	@Test
 	public void whenFilterFunctionThrowsFilteredComposableAcceptsError() {
 //		"When a filter function throws an exception, the filtered composable accepts the error"
-//		given: 'a source composable with a filter function that throws an error'
+//		given: "a source composable with a filter function that throws an error"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		Flux<Integer> filtered = source.filter(it -> {
 			if (it == 1) {
@@ -983,56 +943,56 @@ public class FluxSpecTests {
 		LongAdder errors = new LongAdder();
 		filtered.doOnError(e -> errors.increment()).subscribe();
 
-//		when: 'the source accepts a value'
+//		when: "the source accepts a value"
 		source.onNext(1);
 
-//		then: 'the error is passed on'
+//		then: "the error is passed on"
 		assertThat(errors.intValue()).isEqualTo(1);
 	}
 
 	@Test
 	public void knownSetOfValuesCanBeReduced() {
 //		"A known set of values can be reduced"
-//		given: 'a composable with a known set of values'
+//		given: "a composable with a known set of values"
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
 
-//		when: 'a reduce function is registered'
+//		when: "a reduce function is registered"
 		Mono<Integer> reduced = source.reduce(new Reduction());
 		Integer value = reduced.block();
 
-//		then: 'the resulting composable holds the reduced value'
+//		then: "the resulting composable holds the reduced value"
 		assertThat(value).isEqualTo(120);
 
-//		when: 'use an initial value'
+//		when: "use an initial value"
 		value = source.reduce(2, new Reduction()).block();
 
-//		then: 'the updated reduction is available'
+//		then: "the updated reduction is available"
 		assertThat(value).isEqualTo(240);
 	}
 
 	@Test
 	public void whenReducingKnownSetOfValuesOnlyFinalValueIsPassedToConsumers() {
 //		"When reducing a known set of values, only the final value is passed to consumers"
-//		given: 'a composable with a known set of values and a reduce function'
-		Mono<Integer> reduced = Flux.<Integer>just(1, 2, 3, 4, 5).reduce(new Reduction());
+//		given: "a composable with a known set of values and a reduce function"
+		Mono<Integer> reduced = Flux.just(1, 2, 3, 4, 5).reduce(new Reduction());
 
-//		when: 'a consumer is registered'
+//		when: "a consumer is registered"
 		Integer values = reduced.block();
 
-//		then: 'the consumer only receives the final value'
+//		then: "the consumer only receives the final value"
 		assertThat(values).isEqualTo(120);
 	}
 
 	@Test
 	public void whenReducingKnownNumberOfValuesOnlyFinalValueIsPassedToConsumers() {
 //		"When reducing a known number of values, only the final value is passed to consumers"
-//		given: 'a composable with a known number of values and a reduce function'
+//		given: "a composable with a known number of values and a reduce function"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		Mono<Integer> reduced = source.reduce(new Reduction());
 		List<Integer> values = new ArrayList<>();
 		reduced.doOnSuccess(values::add).subscribe();
 
-//		when: 'the expected number of values is accepted'
+//		when: "the expected number of values is accepted"
 		source.onNext(1);
 		source.onNext(2);
 		source.onNext(3);
@@ -1040,19 +1000,19 @@ public class FluxSpecTests {
 		source.onNext(5);
 		source.onComplete();
 
-//		then: 'the consumer only receives the final value'
+//		then: "the consumer only receives the final value"
 		assertThat(values).containsExactly(120);
 	}
 
 	@Test
 	public void knownNumberOfValuesCanBeReduced() {
-//		'A known number of values can be reduced'
-//		given: 'a composable that will accept 5 values and a reduce function'
+//		"A known number of values can be reduced"
+//		given: "a composable that will accept 5 values and a reduce function"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		Mono<Integer> reduced = source.reduce(new Reduction());
 		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
 
-//		when: 'the expected number of values is accepted'
+//		when: "the expected number of values is accepted"
 		source.onNext(1);
 		source.onNext(2);
 		source.onNext(3);
@@ -1060,176 +1020,737 @@ public class FluxSpecTests {
 		source.onNext(5);
 		source.onComplete();
 
-//		then: 'the reduced composable holds the reduced value'
+//		then: "the reduced composable holds the reduced value"
 		assertThat(value.peek()).isEqualTo(120);
 	}
 
 	@Test
 	public void whenKnownNumberOfValuesIsReducedOnlyFinalValueMadeAvailable() {
-//		'When a known number of values is being reduced, only the final value is made available'
-//		given: 'a composable that will accept 2 values and a reduce function'
+//		"When a known number of values is being reduced, only the final value is made available"
+//		given: "a composable that will accept 2 values and a reduce function"
 		EmitterProcessor<Integer> source = EmitterProcessor.<Integer>create().connect();
 		MonoProcessor<Integer> value = source.reduce(new Reduction())
 		                                     .subscribeWith(MonoProcessor.create());
 
-//		when: 'the first value is accepted'
+//		when: "the first value is accepted"
 		source.onNext(1);
 
-//		then: 'the reduced value is unknown'
+//		then: "the reduced value is unknown"
 		assertThat(value.peek()).isNull();
 
-//		when: 'the second value is accepted'
+//		when: "the second value is accepted"
 		source.onNext(2);
 		source.onComplete();
 
-//		then: 'the reduced value is known'
+//		then: "the reduced value is known"
 		assertThat(value.peek()).isEqualTo(2);
 	}
 
-	@Test
-	public void whenUnknownNumberOfValuesReducedEachReductionPassedToConsumerOnWindow() {
-//		'When an unknown number of values is being reduced, each reduction is passed to a consumer on window'
-//		given: 'a composable with a reduce function'
-		FluxProcessor<Integer, Integer> source = EmitterProcessor.<Integer>create().connect();
-		Flux<Integer> reduced = source.window(2)
-		                              .log()
-		                              .flatMap(it -> it.log("lol").reduce(new Reduction()));
-		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
 
-//		when: 'the first value is accepted'
-		source.onNext(1);
-
-//		then: 'the reduction is not available'
-		assertThat(value.peek()).isNull();
-
-//		when: 'the second value is accepted and flushed'
-		source.onNext(2);
-
-//		then: 'the updated reduction is available'
-		assertThat(value.peek()).isEqualTo(2);
-	}
 
 	@Test
 	public void whenUnknownNumberOfValueScannedEachReductionPassedToConsumer() {
-//		'When an unknown number of values is being scanned, each reduction is passed to a consumer'
-//		given: 'a composable with a reduce function'
+//		"When an unknown number of values is being scanned, each reduction is passed to a consumer"
+//		given: "a composable with a reduce function"
 		FluxProcessor<Integer, Integer> source =
 				EmitterProcessor.<Integer>create().connect();
 		Flux<Integer> reduced = source.scan(new Reduction());
 		AtomicReference<Integer> value = new AtomicReference<>();
 		reduced.subscribe(value::set);
 
-//		when: 'the first value is accepted'
+//		when: "the first value is accepted"
 		source.onNext(1);
 
-//		then: 'the reduction is available'
+//		then: "the reduction is available"
 		assertThat(value.get()).isEqualTo(1);
 
-//		when: 'the second value is accepted'
+//		when: "the second value is accepted"
 		source.onNext(2);
 
-//		then: 'the updated reduction is available'
+//		then: "the updated reduction is available"
 		assertThat(value.get()).isEqualTo(2);
 
-//		when: 'use an initial value'
+//		when: "use an initial value"
 		source.scan(4, new Reduction()).subscribe(value::set);
 		source.onNext(1);
 
-//		then: 'the updated reduction is available'
+//		then: "the updated reduction is available"
 		assertThat(value.get()).isEqualTo(4);
 	}
 
 	@Test
 	public void reduceWillAccumulateListOfAcceptedValues() {
-//		'Reduce will accumulate a list of accepted values'
-//		given: 'a composable'
+//		"Reduce will accumulate a list of accepted values"
+//		given: "a composable"
 		FluxProcessor<Integer, Integer> source =
 				EmitterProcessor.<Integer>create().connect();
 		Mono<List<Integer>> reduced = source.collectList();
 		MonoProcessor<List<Integer>> value = reduced.subscribe();
 
-//		when: 'the first value is accepted'
+//		when: "the first value is accepted"
 		source.onNext(1);
 		source.onComplete();
 
-//		then: 'the list contains the first element'
+//		then: "the list contains the first element"
 		assertThat(value.block()).containsExactly(1);
 	}
 
+
 	@Test
-	public void collectWillAccumulateListOfAcceptedValuesAndPassItToConsumer() {
-//		'Collect will accumulate a list of accepted values and pass it to a consumer'
-//		given: 'a source and a collected flux'
-		FluxProcessor<Integer, Integer> source =
-				EmitterProcessor.<Integer>create().connect();
-		Flux<List<Integer>> reduced = source.buffer(2);
-		Mono<List<Integer>> value = reduced.publishNext();
-		value.subscribe();
+	public void bufferWillSubdivideAnInputFlux() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
 
-//		when: 'the values are accepted on the source'
-		source.onNext(1);
-		source.onNext(2);
+		//"non overlapping buffers"
+		List<List<Integer>> res = numbers.buffer(2, 3)
+		                                 .buffer()
+		                                 .blockLast();
 
-//		then: 'the collected list contains the first and second elements'
-		assertThat(value.block()).containsExactly(1, 2);
+		assertThat(res).containsExactly(Arrays.asList(1, 2),
+				Arrays.asList(4, 5),
+				Arrays.asList(7, 8));
 	}
 
 	@Test
-	public void collectWillAccumulateMultipleListsOfAcceptedValuesAndPassItToConsumer() {
-//		'Collect will accumulate multiple lists of accepted values and pass it to a consumer'
-//		given: 'a source and a collected flux'
-		Flux<Integer> numbers = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8));
+	public void bufferWillSubdivideAnInputFluxOverlap() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
 
-//		when: 'non overlapping buffers'
-		Mono<List<List<Integer>>> res = numbers.buffer(2, 3)
-		                                       .log("skip1")
-		                                       .buffer()
-		                                       .next();
+		//"non overlapping buffers"
+		List<List<Integer>> res = numbers.buffer(3, 2)
+		                                 .buffer()
+		                                 .blockLast();
 
-//		then: 'the collected lists are available'
-		assertThat(res.block()).containsExactly(
-				Arrays.asList(1, 2),
-				Arrays.asList(4, 5),
-				Arrays.asList(7, 8));
-
-//		when: 'overlapping buffers'
-		res = numbers.buffer(3, 2).log("skip2").buffer().next();
-
-//		then: 'the collected overlapping lists are available'
-		assertThat(res.block()).containsExactly(
+		assertThat(res).containsExactly(
 				Arrays.asList(1, 2, 3),
 				Arrays.asList(3, 4, 5),
 				Arrays.asList(5, 6, 7),
 				Arrays.asList(7, 8));
+	}
 
-//		when: 'non overlapping buffers'
-		List<List<Integer>> resList = numbers.delayMillis(90)
-		                                     .log("beforeBuffer")
-		                                     .buffer(Duration.ofMillis(200),
-				                                     Duration.ofMillis(300))
-		                                     .log("afterBuffer")
-		                                     .buffer()
-		                                     .blockLast(Duration.ofSeconds(5));
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(300), Duration.ofMillis(200));
+	}
 
-//		then: 'the collected lists are available'
+	@Test
+	public void bufferWillSubdivideAnInputFluxOverlapTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxOverlapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxGapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(200), Duration.ofMillis(300));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxGapTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxGapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(200));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void bufferWillAcumulateMultipleListsOfValues() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+
+		//non overlapping buffers
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		numbers.onNext(3);
+		boundaryFlux.onNext(1);
+		numbers.onNext(5);
+		numbers.onNext(6);
+		numbers.onComplete();
+
+		//"the collected lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+	}
+
+	@Test
+	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.<Integer>create().connect();
+
+		//"overlapping buffers"
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.buffer(bucketOpening, u -> boundaryFlux )
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		bucketOpening.onNext(1);
+		numbers.onNext(3);
+		bucketOpening.onNext(1);
+		numbers.onNext(5);
+		boundaryFlux.onNext(1);
+		bucketOpening.onNext(1);
+		boundaryFlux.onComplete();
+		numbers.onComplete();
+
+		//"the collected overlapping lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(3, 5),
+				Arrays.asList(5),
+				Arrays.asList());
+	}
+
+	@Test
+	public void bufferWillRerouteAsManyElementAsSpecified() {
+		assertThat(Flux.just(1, 2, 3, 4, 5)
+		               .buffer(2)
+		               .collectList()
+		               .block()).containsExactly(Arrays.asList(1, 2),
+				Arrays.asList(3, 4),
+				Arrays.asList(5));
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFlux() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping windows"
+		List<List<Integer>> res = numbers.window(2, 3)
+		                                 .concatMap(Flux::buffer)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(4, 5),
+				Arrays.asList(7, 8));
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxOverlap() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping windows"
+		List<List<Integer>> res = numbers.window(3, 2)
+		                                 .concatMap(Flux::buffer)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(
+				Arrays.asList(1, 2, 3),
+				Arrays.asList(3, 4, 5),
+				Arrays.asList(5, 6, 7),
+				Arrays.asList(7, 8));
+	}
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxOverlapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(300), Duration.ofMillis(200))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxOverlapTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxOverlapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxGapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(200), Duration.ofMillis(300))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxGapTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxGapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(200))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void windowWillAcumulateMultipleListsOfValues() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+
+		//non overlapping buffers
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.window(boundaryFlux)
+		                                       .concatMap(Flux::buffer)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		numbers.onNext(3);
+		boundaryFlux.onNext(1);
+		numbers.onNext(5);
+		numbers.onNext(6);
+		numbers.onComplete();
+
+		//"the collected lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+	}
+
+	@Test
+	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.<Integer>create().connect();
+
+		//"overlapping buffers"
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.window(bucketOpening, u -> boundaryFlux )
+		                                       .flatMap(Flux::buffer)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		bucketOpening.onNext(1);
+		numbers.onNext(3);
+		bucketOpening.onNext(1);
+		numbers.onNext(5);
+		boundaryFlux.onNext(1);
+		bucketOpening.onNext(1);
+		boundaryFlux.onComplete();
+		numbers.onComplete();
+
+		//"the collected overlapping lists are available"
+		assertThat(res.block()).containsExactly(
+				Arrays.asList(3, 5),
+				Arrays.asList(5));
+	}
+
+	@Test
+	public void windowWillRerouteAsManyElementAsSpecified(){
+		assertThat(Flux.just(1, 2, 3, 4, 5)
+		               .window(2)
+	                   .concatMap(Flux::collectList)
+	                   .collectList()
+	                   .block()).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(3, 4),
+				Arrays.asList(5));
+	}
+
+	@Test
+	public void whenUnknownNumberOfValuesReducedEachReductionPassedToConsumerOnWindow() {
+//		"When an unknown number of values is being reduced, each reduction is passed to a consumer on window"
+//		given: "a composable with a reduce function"
+		FluxProcessor<Integer, Integer> source =
+				EmitterProcessor.<Integer>create().connect();
+		Flux<Integer> reduced = source.window(2)
+		                              .log()
+		                              .flatMap(it -> it.log("lol")
+		                                               .reduce(new Reduction()));
+		MonoProcessor<Integer> value = reduced.subscribeWith(MonoProcessor.create());
+
+//		when: "the first value is accepted"
+		source.onNext(1);
+
+//		then: "the reduction is not available"
+		assertThat(value.peek()).isNull();
+
+//		when: "the second value is accepted and flushed"
+		source.onNext(2);
+
+//		then: "the updated reduction is available"
+		assertThat(value.peek()).isEqualTo(2);
+	}
+
+	@Test
+	public void createStreamFromFluxCreate() {
+		StepVerifier.create(Flux.create(s -> {
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		}))
+		            .expectNext("test1", "test2", "test3")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void createStreamFromFluxCreate2(){
+		StepVerifier.create(Flux.create(s -> {
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		}).publishOn(Schedulers.parallel()))
+	                .expectNext("test1", "test2", "test3")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void wrapToFlux(){
+		MonoProcessor<String> mp = MonoProcessor.create();
+
+		mp.onNext("test");
+		StepVerifier.create(Flux.from(mp))
+	                .expectNext("test")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void countRange(){
+		StepVerifier.create(Flux.range(1, 10).count())
+	                .expectNext(10L)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void cacheFlux() {
 		try {
-			assertThat(resList).containsExactly(Arrays.asList(1, 2),
-					Arrays.asList(4, 5),
-					Arrays.asList(7, 8));
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
+
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .cache()
+			                                         .elapsed();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
 		}
-		catch (AssertionError e) {
-			//fallback
-			assertThat(resList).containsExactly(Arrays.asList(1),
-					Arrays.asList(4, 5),
-					Arrays.asList(7, 8));
+		finally {
+			VirtualTimeScheduler.reset();
 		}
 	}
 
+	@Test
+	public void cacheFluxTTL() {
+		try {
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .cache(Duration.ofMillis(2000))
+			                                         .elapsed();
 
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
 
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
 
+	Flux<List<Integer>> scenario_delayItems() {
+		return Flux.range(1, 4)
+		           .buffer(2)
+		           .delay(Duration.ofMillis(1000));
+	}
 
+	@Test
+	public void delayItems() {
+		StepVerifier.withVirtualTime(this::scenario_delayItems)
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(3, 4))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
+		return Flux.range(1, 6)
+		           .delay(Duration.ofMillis(300))
+		           .buffer(5, Duration.ofMillis(2000));
+	}
+
+	@Test
+	public void bufferWithTimeoutAccumulateOnTimeOrSize() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAccumulateOnTimeOrSize)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
+	}
+
+	Flux<Integer> scenario_timeoutCanBeBoundWithCallback() {
+		return Flux.<Integer>never().timeout(Duration.ofMillis(500), Flux.just(-5));
+	}
+
+	@Test
+	public void timeoutCanBeBoundWithCallback() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback)
+		            .thenAwait(Duration.ofMillis(500))
+		            .expectNext(-5)
+		            .verifyComplete();
+	}
+
+	Flux<?> scenario_timeoutThrown() {
+		return Flux.never()
+		           .timeout(Duration.ofMillis(500));
+	}
+
+	@Test
+	public void fluxPropagatesErrorUsingAwait() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutThrown)
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
+	}
+
+	@Test
+	public void materialize() {
+		StepVerifier.create(Flux.just("Three", "Two", "One")
+		                        .materialize())
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Three"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Two"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("One"))
+		            .expectNextMatches(Signal::isOnComplete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void materialize2() {
+		StepVerifier.create(Flux.just("Three", "Two")
+		                        .concatWith(Flux.error(new RuntimeException("test")))
+		                        .materialize())
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Three"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Two"))
+		            .expectNextMatches(s -> s.isOnError() && s.getThrowable()
+		                                                      .getMessage()
+		                                                      .equals("test"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void dematerialize() {
+		StepVerifier.create(Flux.just(Signal.next("Three"),
+				Signal.next("Two"),
+				Signal.next("One"),
+				Signal.complete())
+		                        .dematerialize())
+		            .expectNext("Three")
+		            .expectNext("Two")
+		            .expectNext("One")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void switchOnNext() {
+		StepVerifier.create(Flux.switchOnNext(Flux.just(Flux.just("Three", "Two", "One"),
+				Flux.just("Zero"))))
+		            .expectNext("Three")
+		            .expectNext("Two")
+		            .expectNext("One")
+		            .expectNext("Zero")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void switchOnNextDynamically() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .switchMap(s -> Flux.range(s, 3)))
+		            .expectNext(1, 2, 3, 2, 3, 4, 3, 4, 5)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onBackpressureDrop() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .onBackpressureDrop(), 0)
+		            .thenRequest(5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onBackpressureBuffer() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .onBackpressureBuffer(), 0)
+		            .thenRequest(5)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .thenAwait()
+		            .thenRequest(90)
+		            .expectNextCount(90)
+		            .thenAwait()
+		            .thenRequest(5)
+		            .expectNext(96, 97, 98, 99, 100)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onBackpressureBufferMax() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8), 0)
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .thenAwait()
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void onBackpressureBufferMaxCallback() {
+		AtomicInteger last = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8, last::set), 0)
+
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .then(() -> assertThat(last.get()).isEqualTo(16))
+		            .thenRequest(9)
+		            .expectNextCount(8)
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	Mono<Long> scenario_fluxItemCanBeShiftedByTime() {
+		return Flux.range(0, 10000)
+		           .delay(Duration.ofMillis(150))
+		           .elapsed()
+		           .take(10)
+		           .reduce(0L,
+				           (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) :
+						           next.getT1());
+
+	}
+
+	@Test
+	public void fluxItemCanBeShiftedByTime() {
+		StepVerifier.withVirtualTime(this::scenario_fluxItemCanBeShiftedByTime)
+		            .thenAwait(Duration.ofMillis(15_000))
+		            .expectNext(150L)
+		            .verifyComplete();
+	}
+
+	Mono<Long> scenario_fluxItemCanBeShiftedByTime2() {
+		return Flux.range(0, 10000)
+		           .delay(Duration.ofMillis(150))
+		           .elapsed()
+		           .take(10)
+		           .reduce(0L,
+				           (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) :
+						           next.getT1());
+
+	}
+
+	@Test
+	public void fluxItemCanBeShiftedByTime2() {
+		StepVerifier.withVirtualTime(this::scenario_fluxItemCanBeShiftedByTime2)
+		            .thenAwait(Duration.ofMillis(15_000))
+		            .expectNext(150L)
+		            .verifyComplete();
+	}
+
+	@Test(timeout = 10000L)
+	public void collectFromMultipleThread1() throws Exception {
+		EmitterProcessor<Integer> head = EmitterProcessor.create();
+		AtomicInteger sum = new AtomicInteger();
+
+		int length = 1000;
+		int batchSize = 333;
+		int latchCount = length / batchSize;
+		CountDownLatch latch = new CountDownLatch(latchCount);
+
+		head
+				.publishOn(Schedulers.parallel())
+				.parallel(3)
+				.runOn(Schedulers.parallel())
+				.collect(ArrayList::new, List::add)
+				.subscribe(ints -> {
+					sum.addAndGet(ints.size());
+					latch.countDown();
+				});
+
+		Flux.range(1, 1000).subscribe(head);
+		latch.await();
+		Assert.assertTrue(sum.get() == length);
+	}
 
 	static class SimplePojo {
 		int id;

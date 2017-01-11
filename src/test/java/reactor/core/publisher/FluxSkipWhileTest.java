@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSkipWhileTest {
@@ -155,6 +156,15 @@ public class FluxSkipWhileTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
 
+	}
+
+	@Test
+	public void aFluxCanBeSkippedWhile(){
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .skipWhile("test"::equals)
+		)
+		            .expectNext("test2", "test3")
+		            .verifyComplete();
 	}
 
 }

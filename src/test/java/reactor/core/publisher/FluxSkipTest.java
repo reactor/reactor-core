@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSkipTest {
@@ -80,5 +81,14 @@ public class FluxSkipTest {
 		ts.assertNoValues()
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void aFluxCanBeSkipped(){
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .skip(1)
+		)
+		            .expectNext("test2", "test3")
+		            .verifyComplete();
 	}
 }

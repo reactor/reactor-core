@@ -330,7 +330,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		}
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
-			assertNotEquals(e, _e);
+			assertNotSame(e, _e);
 			assertThat(_e, is(instanceOf(IllegalStateException.class)));
 		}
 	}
@@ -349,7 +349,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		}
 		catch (Throwable e) {
 			Throwable _e = Exceptions.unwrap(e);
-			assertNotEquals(e, _e);
+			assertNotSame(e, _e);
 			assertThat(_e, is(instanceOf(IllegalStateException.class)));
 		}
 	}
