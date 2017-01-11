@@ -1012,14 +1012,16 @@ final class DefaultStepVerifierBuilder<T>
 				}
 				else {
 					String msg = e.getMessage() != null ? e.getMessage() : "";
+					AssertionError wrapFailure = fail(null,
+							"failed running expectation on signal [%s] " + "with " + "[%s]:\n%s",
+							actualSignal,
+							Exceptions.unwrap(e)
+							          .getClass()
+							          .getName(),
+							msg).get();
+					wrapFailure.addSuppressed(e);
 					Exceptions.addThrowable(ERRORS,
-							this,
-							fail(null, "failed running expectation on signal [%s] " +
-									"with " + "[%s]:\n%s",
-									actualSignal,
-									Exceptions.unwrap(e).getClass().getName(),
-									msg
-							).get());
+							this, wrapFailure);
 				}
 				maybeCancel(actualSignal);
 				completeLatch.countDown();
