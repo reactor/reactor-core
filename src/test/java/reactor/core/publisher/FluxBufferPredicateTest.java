@@ -455,9 +455,9 @@ public class FluxBufferPredicateTest {
 		                           .doOnRequest(r -> requestCallCount.increment())
 		                           .doOnRequest(totalRequest::add);
 
-		StepVerifier.withVirtualTime(1, //start with a request for 1 buffer
+		StepVerifier.withVirtualTime( //start with a request for 1 buffer
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL), 1)
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -482,9 +482,9 @@ public class FluxBufferPredicateTest {
 		                           .doOnRequest(r -> requestCallCount.increment())
 		                           .doOnRequest(totalRequest::add);
 
-		StepVerifier.withVirtualTime(2, //start with a request for 2 buffers
+		StepVerifier.withVirtualTime( //start with a request for 2 buffers
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+				Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL), 2)
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -507,9 +507,9 @@ public class FluxBufferPredicateTest {
 		                           .doOnRequest(r -> requestCallCount.increment())
 		                           .doOnRequest(totalRequest::add);
 
-		StepVerifier.withVirtualTime(3, //start with a request for 3 buffers
+		StepVerifier.withVirtualTime( //start with a request for 3 buffers
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL), 3)
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6), Arrays.asList(7, 8, 9))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -554,9 +554,9 @@ public class FluxBufferPredicateTest {
 		                           .doOnRequest(r -> requestCallCount.increment())
 		                           .doOnRequest(r -> totalRequest.add(r < Long.MAX_VALUE ? r : 1000L));
 
-		StepVerifier.withVirtualTime(1, //start with a single request
+		StepVerifier.withVirtualTime( //start with a single request
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL), 1)
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .expectNoEvent(Duration.ofSeconds(1))
@@ -580,9 +580,9 @@ public class FluxBufferPredicateTest {
 		                           .doOnRequest(r -> requestCallCount.increment())
 		                           .doOnRequest(totalRequest::add);
 
-		StepVerifier.withVirtualTime(1,
+		StepVerifier.withVirtualTime(
 				() -> new FluxBufferPredicate<>(source, i -> i % 3 == 0,
-						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL))
+						Flux.listSupplier(), FluxBufferPredicate.Mode.UNTIL), 1)
 		            .expectSubscription()
 		            .expectNext(Arrays.asList(1, 2, 3))
 		            .thenRequest(1)

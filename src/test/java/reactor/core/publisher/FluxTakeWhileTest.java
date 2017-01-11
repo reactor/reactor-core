@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeWhileTest {
@@ -157,4 +158,12 @@ public class FluxTakeWhileTest {
 
 	}
 
+	@Test
+	public void aFluxCanBeLimitedWhile(){
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .takeWhile("test"::equals)
+		)
+		            .expectNext("test")
+		            .verifyComplete();
+	}
 }

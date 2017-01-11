@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxTakeTest {
@@ -112,4 +113,14 @@ public class FluxTakeTest {
 		  .assertNoError()
 		  .assertComplete();
 	}
+
+	@Test
+	public void aFluxCanBeLimited(){
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .take(2)
+		)
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
 }

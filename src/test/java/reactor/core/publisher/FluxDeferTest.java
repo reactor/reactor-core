@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.junit.Assert;
@@ -70,5 +71,18 @@ public class FluxDeferTest {
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+
+	@Test
+	public void deferStream(){
+		AtomicInteger i = new AtomicInteger();
+
+		Flux<Integer> source =
+				Flux.defer(() -> Flux.just(i.incrementAndGet()));
+
+		Assert.assertEquals(source.blockLast().intValue(), 1);
+		Assert.assertEquals(source.blockLast().intValue(), 2);
+		Assert.assertEquals(source.blockLast().intValue(), 3);
 	}
 }

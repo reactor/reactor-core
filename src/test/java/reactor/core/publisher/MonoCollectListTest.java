@@ -15,11 +15,30 @@
  */
 package reactor.core.publisher;
 
+import java.util.Comparator;
+import java.util.List;
+
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoCollectListTest {
 
 	@Test
-	public void normal() {
+	public void aFluxCanBeSorted(){
+		List<Integer> vals = Flux.just(43, 32122, 422, 321, 43, 443311)
+		                         .collectSortedList()
+		                         .block();
+
+		assertThat(vals).containsExactly(43, 43, 321, 422, 32122, 443311);
+	}
+
+	@Test
+	public void aFluxCanBeSorted2(){
+		List<Integer> vals = Flux.just(1, 2, 3, 4)
+		                         .collectSortedList(Comparator.reverseOrder())
+		                         .block();
+
+		assertThat(vals).containsExactly(4,3,2,1);
 	}
 }

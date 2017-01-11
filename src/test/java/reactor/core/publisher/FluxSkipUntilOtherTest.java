@@ -16,7 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSkipUntilOtherTest {
@@ -167,4 +170,15 @@ public class FluxSkipUntilOtherTest {
 		  .assertNotComplete();
 	}
 
+	Flux<Integer> scenario_aFluxCanBeSkippedByTime(){
+		return Flux.range(0, 1000)
+		           .skip(Duration.ofSeconds(2));
+	}
+
+	@Test
+	public void aFluxCanBeSkippedByTime(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeSkippedByTime)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .verifyComplete();
+	}
 }

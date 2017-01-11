@@ -96,7 +96,7 @@ public class SchedulersTest {
 		Scheduler s = Schedulers.newSingle("unused");
 		s.dispose();
 
-		Assert.assertNotEquals(ts.single, s);
+		Assert.assertNotSame(ts.single, s);
 	}
 
 	@Test
@@ -107,21 +107,21 @@ public class SchedulersTest {
 		TimedScheduler cachedTimerOld = uncache(Schedulers.timer());
 		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
-		Assert.assertNotEquals(cachedTimerOld, standaloneTimer);
-		Assert.assertNotEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
-		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotSame(cachedTimerOld, standaloneTimer);
+		Assert.assertNotSame(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
 		TimedScheduler cachedTimerNew = uncache(Schedulers.timer());
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
-		Assert.assertNotEquals(cachedTimerNew, cachedTimerOld);
+		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory's cached scheduler was shut down
 		Assert.assertEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
 		//independently created schedulers are still the programmer's responsibility
-		Assert.assertNotEquals(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
-		Assert.assertNotEquals(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotSame(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
 	}
 
 	@SuppressWarnings("unchecked")

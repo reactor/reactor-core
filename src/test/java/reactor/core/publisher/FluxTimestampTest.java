@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,16 @@ import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
-public class FluxElapsedTest {
+public class FluxTimestampTest {
 
-	Flux<Tuple2<Long, String>> scenario_aFluxCanBeBenchmarked(){
+	Flux<Tuple2<Long, String>> scenario_aFluxCanBeTimestamped(){
 		return Flux.just("test")
-		           .elapsed();
+		           .timestamp();
 	}
 
 	@Test
-	public void aFluxCanBeBenchmarked(){
-		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeBenchmarked,0)
+	public void aFluxCanBeTimestamped(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeTimestamped, 0)
 		            .thenAwait(Duration.ofSeconds(2))
 		            .thenRequest(1)
 		            .expectNextMatches(t -> t.getT1() == 2000 && t.getT2().equals("test"))

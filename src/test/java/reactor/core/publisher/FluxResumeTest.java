@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.subscriber.AssertSubscriber;
 import reactor.core.Exceptions;
+import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxResumeTest {
 /*
@@ -80,8 +82,10 @@ public class FluxResumeTest {
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
-		  (11, 10)).subscribe(ts);
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range(
+				11,
+				10))
+		                                                           .subscribe(ts);
 
 		ts.assertValues(11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 		  .assertNoError()
@@ -92,9 +96,10 @@ public class FluxResumeTest {
 	public void errorFiltered() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new RuntimeException("forced failure"))
-				.onErrorResumeWith(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
-				.subscribe(ts);
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(e -> e.getMessage()
+		                                                                                    .equals("forced failure"),
+				v -> Mono.just(2))
+		                                                           .subscribe(ts);
 
 		ts.assertValues(2)
 		  .assertNoError()
@@ -105,9 +110,8 @@ public class FluxResumeTest {
 	public void errorMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
-				" " +
-				"failure")).subscribe(ts);
+		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" + " " + "failure"))
+		                                    .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertError()
@@ -119,8 +123,10 @@ public class FluxResumeTest {
 	public void errorBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range
-		  (11, 10)).subscribe(ts);
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range(
+				11,
+				10))
+		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
@@ -203,12 +209,14 @@ public class FluxResumeTest {
 
 		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> {
 			throw new RuntimeException("forced failure 2");
-		}).subscribe(ts);
+		})
+		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
-		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure 2")));
+		  .assertErrorWith(e -> Assert.assertTrue(e.getMessage()
+		                                           .contains("forced failure 2")));
 	}
 
 	@Test
@@ -229,12 +237,81 @@ public class FluxResumeTest {
 
 		Exception exception = new NullPointerException("forced failure");
 		Flux.<Integer>error(exception).onErrorResumeWith(v -> {
-		  throw Exceptions.propagate(v);
-		}).subscribe(ts);
+			throw Exceptions.propagate(v);
+		})
+		                              .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertErrorWith(e -> Assert.assertSame(exception, e));
 	}
 
+	@Test
+	public void errorPublisherCanReturn() {
+		StepVerifier.create(Flux.<String>error(new IllegalStateException("boo")).onErrorReturn(
+				"recovered"))
+		            .expectNext("recovered")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void returnFromIterableError() {
+		StepVerifier.create(Flux.range(1, 1000)
+		                        .map(t -> {
+			                        if (t == 3) {
+				                        throw new RuntimeException("test");
+			                        }
+			                        return t;
+		                        })
+		                        .onErrorReturn(100_000))
+		            .expectNext(1, 2, 100_000)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void switchFromIterableError() {
+		StepVerifier.create(Flux.range(1, 1000)
+		                        .map(t -> {
+			                        if (t == 3) {
+				                        throw new RuntimeException("test");
+			                        }
+			                        return t;
+		                        })
+		                        .switchOnError(Flux.range(9999, 4)))
+		            .expectNext(1, 2, 9999, 10000, 10001, 10002)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void switchFromCreateError() {
+		Flux<String> source = Flux.create(s -> {
+					s.next("Three");
+					s.next("Two");
+					s.next("One");
+					s.error(new Exception());
+				});
+
+		Flux<String> fallback = Flux.create(s -> {
+					s.next("1");
+					s.next("2");
+					s.complete();
+				});
+
+		StepVerifier.create(source.switchOnError(fallback))
+		            .expectNext("Three", "Two", "One", "0", "1", "2")
+		            .verifyComplete();
+	}
+	@Test
+	public void switchFromCreateError2() {
+		Flux<String> source = Flux.create(s -> {
+					s.next("Three");
+					s.next("Two");
+					s.next("One");
+					s.error(new Exception());
+				});
+
+		StepVerifier.create(source.onErrorReturn("Zero"))
+		            .expectNext("Three", "Two", "One", "Zero")
+		            .verifyComplete();
+	}
 }
