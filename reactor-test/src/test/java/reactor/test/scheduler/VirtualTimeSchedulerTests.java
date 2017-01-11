@@ -67,9 +67,9 @@ public class VirtualTimeSchedulerTests {
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
-		Assert.assertNotEquals(Schedulers.newParallel(""), t);
-		Assert.assertNotEquals(Schedulers.newElastic(""), t);
-		Assert.assertNotEquals(Schedulers.newSingle(""), t);
+		Assert.assertNotSame(Schedulers.newParallel(""), t);
+		Assert.assertNotSame(Schedulers.newElastic(""), t);
+		Assert.assertNotSame(Schedulers.newSingle(""), t);
 		Assert.assertEquals(Schedulers.newTimer(""), t);
 	}
 
