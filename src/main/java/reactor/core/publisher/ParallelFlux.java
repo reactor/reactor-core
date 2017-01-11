@@ -40,12 +40,18 @@ import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
- * Abstract base class for Parallel publishers that take an array of Subscribers.
+ * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
+ * {@link #groups() 'groups'}).
  * <p>
- * Use {@code from()} to start processing a regular Publisher in 'rails'. Use {@code
- * runOn()} to introduce where each 'rail' should run on thread-vise.
- * Use {@code sequential()} to merge the sources back into a single {@link Flux} or if
- * you simply want to subscribe to the merged sequence use {@link #subscribe(Subscriber)}.
+ * Use {@code from()} to start processing a regular Publisher in 'rails', which each
+ * cover a subset of the original Publisher's data. {@link Flux#parallel()} is a
+ * convenient shortcut to achieve that on a {@link Flux}. Use {@code runOn()} to
+ * introduce where each 'rail' should run on thread-vise.
+ * Use {@code sequential()} to merge the sources back into a single {@link Flux} or
+ * {@link #subscribe(Subscriber)} if you simply want to subscribe to the merged sequence.
+ * Note that other variants like {@link #subscribe(Consumer)} instead do multiple
+ * subscribes, one on each rail (which means that the lambdas should be as stateless and
+ * side-effect free as possible).
  *
  * @param <T> the value type
  */
@@ -1049,6 +1055,12 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return -1L;
 	}
 
+	/**
+	 * Merge the rails into a {@link #sequential()} Flux and
+	 * {@link Flux#subscribe(Subscriber) subscribe} to said Flux.
+	 *
+	 * @param s the subscriber to use on {@link #sequential()} Flux
+	 */
 	@Override
 	public final void subscribe(Subscriber<? super T> s) {
 		sequential().subscribe(s);
