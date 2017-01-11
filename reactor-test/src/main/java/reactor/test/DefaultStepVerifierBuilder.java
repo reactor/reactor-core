@@ -95,8 +95,9 @@ final class DefaultStepVerifierBuilder<T>
 	final Supplier<? extends VirtualTimeScheduler>   vtsLookup;
 	final Supplier<? extends Publisher<? extends T>> sourceSupplier;
 
-	int requestedFusionMode = -1;
-	int expectedFusionMode  = -1;
+	long hangCheckRequested;
+	int  requestedFusionMode = -1;
+	int  expectedFusionMode  = -1;
 
 	DefaultStepVerifierBuilder(long initialRequest,
 			Supplier<? extends Publisher<? extends T>> sourceSupplier,
@@ -106,6 +107,8 @@ final class DefaultStepVerifierBuilder<T>
 		this.sourceSupplier = sourceSupplier;
 		this.script = new ArrayList<>();
 		this.script.add(defaultFirstStep());
+
+		this.hangCheckRequested = initialRequest;
 	}
 
 	@Override
@@ -131,9 +134,19 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public DefaultStepVerifierBuilder<T> assertNext(Consumer<? super T> consumer) {
+		return consumeNextWith(consumer, "assertNext");
+	}
+
+	@Override
 	public DefaultStepVerifierBuilder<T> consumeNextWith(
 			Consumer<? super T> consumer) {
+		return consumeNextWith(consumer, "consumeNextWith");
+	}
+
+	private DefaultStepVerifierBuilder<T> consumeNextWith(Consumer<? super T> consumer, String description) {
 		Objects.requireNonNull(consumer, "consumer");
+		checkPotentialHang(1, description);
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnNext()) {
 				return fail(se, "expected: onNext(); actual: %s", signal);
@@ -142,7 +155,7 @@ final class DefaultStepVerifierBuilder<T>
 				consumer.accept(signal.get());
 				return Optional.empty();
 			}
-		}, "consumeNextWith");
+		}, description);
 		this.script.add(event);
 		return this;
 	}
@@ -292,6 +305,8 @@ final class DefaultStepVerifierBuilder<T>
 		Objects.requireNonNull(ts, "ts");
 		SignalEvent<T> event;
 		for (T t : ts) {
+			String desc = String.format("expectNext(%s)", t);
+			checkPotentialHang(1, desc);
 			event = new SignalEvent<>((signal, se) -> {
 				if (!signal.isOnNext()) {
 					return fail(se, "expected: onNext(%s); actual: %s", t, signal);
@@ -303,7 +318,7 @@ final class DefaultStepVerifierBuilder<T>
 				else {
 					return Optional.empty();
 				}
-			}, String.format("expectNext(%s)", t));
+			}, desc);
 			this.script.add(event);
 		}
 		return this;
@@ -313,14 +328,24 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNextSequence(
 			Iterable<? extends T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
+		if (iterable instanceof Collection) {
+			checkPotentialHang(((Collection) iterable).size(), "expectNextSequence");
+		}
+		else {
+			//best effort
+			checkPotentialHang(-1, "expectNextSequence");
+		}
 		this.script.add(new SignalSequenceEvent<>(iterable, "expectNextSequence"));
+
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNextCount(long count) {
 		checkPositive(count);
-		this.script.add(new SignalCountEvent<>(count, "expectNextCount"));
+		String desc = "expectNextCount(" + count + ")";
+		checkPotentialHang(count, desc);
+		this.script.add(new SignalCountEvent<>(count, desc));
 		return this;
 	}
 
@@ -328,6 +353,7 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNextMatches(
 			Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
+		checkPotentialHang(1, "expectNextMatches");
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnNext()) {
 				return fail(se, "expected: onNext(); actual: %s", signal);
@@ -341,7 +367,6 @@ final class DefaultStepVerifierBuilder<T>
 		}, "expectNextMatches");
 		this.script.add(event);
 		return this;
-
 	}
 
 	@Override
@@ -443,6 +468,7 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
 		this.script.add(new RequestEvent<T>(n, "thenRequest"));
+		this.hangCheckRequested = Operators.addCap(hangCheckRequested, n);
 		return this;
 	}
 
@@ -467,8 +493,37 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> thenConsumeWhile(Predicate<T> predicate,
 				Consumer<T> consumer) {
 		Objects.requireNonNull(predicate, "predicate");
+		checkPotentialHang(-1, "thenConsumeWhile");
 		this.script.add(new SignalConsumeWhileEvent<>(predicate, consumer, "thenConsumeWhile"));
 		return this;
+	}
+
+	private void checkPotentialHang(long expectedAmount, String stepDescription) {
+		boolean bestEffort = false;
+		if (expectedAmount == -1) {
+			bestEffort = true;
+			expectedAmount = 1;
+		}
+		if (this.hangCheckRequested < expectedAmount) {
+			StringBuilder message = new StringBuilder()
+					.append("The scenario will hang at ")
+					.append(stepDescription)
+					.append(" due to too little request being performed for the expectations to finish; ")
+					.append("request remaining since last step: ")
+					.append(hangCheckRequested)
+					.append(", expected: ");
+			if (bestEffort) {
+				message.append("at least ")
+				       .append(expectedAmount)
+				       .append(" (best effort estimation)");
+			} else {
+				message.append(expectedAmount);
+			}
+			throw new IllegalArgumentException(message.toString());
+		}
+		else {
+			this.hangCheckRequested -= expectedAmount;
+		}
 	}
 
 	final DefaultStepVerifier<T> build() {

@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -231,11 +232,11 @@ public class StepVerifierTests {
 				.isThrownBy(() -> StepVerifier.create(flux, 0)
 		            .thenRequest(100_000)
 		            .expectNextCount(100_000)
-		            .thenRequest(900_000)
+		            .thenRequest(Integer.MAX_VALUE)
 		            .expectNextCount(900_001)
 		            .expectComplete()
 		            .verify())
-	            .withMessageStartingWith("expectation \"expectNextCount\" failed")
+	            .withMessageStartingWith("expectation \"expectNextCount(900001)\" failed")
 				.withMessageContaining("expected: count = 900001; actual: counted = 900000; signal: onComplete()");
 	}
 
@@ -266,7 +267,7 @@ public class StepVerifierTests {
 		            .expectNextCount(2)
 		            .expectComplete()
 		            .verify())
-	            .withMessage("expectation \"expectNextCount\" failed (expected: count = 2; actual: counted = 0; signal: onComplete())");
+	            .withMessage("expectation \"expectNextCount(2)\" failed (expected: count = 2; actual: counted = 0; signal: onComplete())");
 	}
 
 	@Test
@@ -299,7 +300,7 @@ public class StepVerifierTests {
 		            .expectNextCount(4)
 		            .thenCancel()
 		            .verify())
-				.withMessage("expectation \"expectNextCount\" failed (expected: count = 4; actual: counted = 2; signal: onComplete())");
+				.withMessage("expectation \"expectNextCount(4)\" failed (expected: count = 4; actual: counted = 2; signal: onComplete())");
 	}
 
 	@Test
@@ -1437,7 +1438,7 @@ public class StepVerifierTests {
 	                .verifyError())
 				.satisfies(error -> {
 					assertThat(error)
-							.hasMessageStartingWith("expectation \"expectNextCount\" failed")
+							.hasMessageStartingWith("expectation \"expectNextCount(1)\" failed")
 							.hasMessageContaining("signal: onError(java.lang.ArrayIndexOutOfBoundsException)");
 					assertThat(error.getSuppressed())
 							.hasSize(1)
@@ -1505,6 +1506,88 @@ public class StepVerifierTests {
 		assertThat(totalRequest.longValue()).isEqualTo(11L); //ignores the main requests
 	}
 
+	@Test(timeout = 1000L)
+	public void expectCancelDoNotHang() {
+		StepVerifier.create(Flux.just("foo", "bar"), 1)
+		            .expectNext("foo")
+		            .thenCancel()
+		            .verify();
+	}
 
+	@Test(timeout = 1000L)
+	public void consumeNextWithLowRequestShortcircuits() {
+		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
+				                         .expectNext("foo");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.consumeNextWith(s -> {}))
+	            .withMessageStartingWith("The scenario will hang at consumeNextWith due to too little request being performed for the expectations to finish")
+	            .withMessageEndingWith("request remaining since last step: 0, expected: 1");
+	}
+
+	@Test(timeout = 1000L)
+	public void assertNextLowRequestShortcircuits() {
+		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
+		                                                   .expectNext("foo");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.assertNext(s -> {}))
+				.withMessageStartingWith("The scenario will hang at assertNext due to too little request being performed for the expectations to finish")
+				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
+	}
+
+	@Test(timeout = 1000L)
+	public void expectNextLowRequestShortcircuits() {
+		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
+		                                                   .expectNext("foo");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.expectNext("bar"))
+				.withMessageStartingWith("The scenario will hang at expectNext(bar) due to too little request being performed for the expectations to finish")
+				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
+	}
+
+	@Test(timeout = 1000L)
+	public void expectNextCountLowRequestShortcircuits() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.just("foo", "bar"), 1)
+				                              .expectNextCount(2)
+				)
+	            .withMessageStartingWith("The scenario will hang at expectNextCount(2) due to too little request being performed for the expectations to finish; ")
+				.withMessageEndingWith("request remaining since last step: 1, expected: 2");
+	}
+
+	@Test(timeout = 1000L)
+	public void expectNextMatchesLowRequestShortcircuits() {
+		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1)
+		                                                   .expectNext("foo");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.expectNextMatches("bar"::equals))
+				.withMessageStartingWith("The scenario will hang at expectNextMatches due to too little request being performed for the expectations to finish")
+				.withMessageEndingWith("request remaining since last step: 0, expected: 1");
+	}
+
+	@Test(timeout = 1000L)
+	public void expectNextSequenceLowRequestShortcircuits() {
+		StepVerifier.Step<String> validSoFar = StepVerifier.create(Flux.just("foo", "bar"), 1);
+		List<String> expected = Arrays.asList("foo", "bar");
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.expectNextSequence(expected))
+				.withMessageStartingWith("The scenario will hang at expectNextSequence due to too little request being performed for the expectations to finish")
+				.withMessageEndingWith("request remaining since last step: 1, expected: 2");
+	}
+
+	@Test(timeout = 1000L)
+	public void thenConsumeWhileLowRequestShortcircuits() {
+		StepVerifier.Step<Integer> validSoFar = StepVerifier.create(Flux.just(1, 2), 1)
+		                                                    .expectNext(1);
+
+		assertThatExceptionOfType(IllegalArgumentException.class)
+				.isThrownBy(() -> validSoFar.thenConsumeWhile(s -> s == 1))
+				.withMessageStartingWith("The scenario will hang at thenConsumeWhile due to too little request being performed for the expectations to finish; ")
+	            .withMessageEndingWith("request remaining since last step: 0, expected: at least 1 (best effort estimation)");
+	}
 
 }
