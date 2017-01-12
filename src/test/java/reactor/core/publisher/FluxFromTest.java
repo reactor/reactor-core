@@ -56,7 +56,6 @@ public class FluxFromTest {
 	@Test
 	public void fluxEmpty() {
 		StepVerifier.create(Mono.empty().flux())
-		            .expectNext(1)
 		            .verifyComplete();
 	}
 }
