@@ -39,11 +39,12 @@ import reactor.core.Fuseable;
 final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
-	final String                                                                   stacktrace;
+	final Exception
+			stacktrace;
 
 	public MonoCallableOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
+		this.stacktrace = trace ? new Exception() : null;
 	}
 
 	@Override

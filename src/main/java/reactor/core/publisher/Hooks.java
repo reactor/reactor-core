@@ -531,10 +531,6 @@ public abstract class Hooks {
 						if (publisher instanceof Mono) {
 							return new MonoOnAssembly<>(publisher, true);
 						}
-						if (publisher instanceof ConnectableFlux) {
-							return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
-									true);
-						}
 						if (publisher instanceof ParallelFlux){
 							return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher,
 									true);
@@ -543,6 +539,10 @@ public abstract class Hooks {
 					}
 					return publisher;
 				}
+			}
+			if (hook != null && publisher instanceof ConnectableFlux) {
+				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
+							true);
 			}
 			return publisher;
 		}

@@ -82,7 +82,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		this.fuseable = source instanceof Fuseable;
 
 		if(correlateStack){
-			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.takeStacktrace(null),false);
+			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.takeStacktrace(null, new Exception()),false);
 		}
 		else{
 			operatorLine = null;

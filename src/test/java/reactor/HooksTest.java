@@ -239,4 +239,33 @@ public class HooksTest {
 		throw new IllegalStateException();
 	}
 
+	@Test
+	public void testTrace3() throws Exception {
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
+		try {
+			Flux.just(1)
+			    .map(d -> {
+				    throw new RuntimeException();
+			    })
+			    .share()
+			    .filter(d -> true)
+			    .doOnNext(d -> System.currentTimeMillis())
+			    .map(d -> d)
+			    .blockLast();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("HooksTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
+					".share" +
+					"(HooksTest.java:"));
+			return;
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
+		throw new IllegalStateException();
+	}
+
 }

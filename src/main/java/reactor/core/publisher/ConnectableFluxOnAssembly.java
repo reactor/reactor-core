@@ -44,11 +44,11 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final ConnectableFlux<T> source;
 
-	final String stacktrace;
+	final Exception stacktrace;
 
 	public ConnectableFluxOnAssembly(ConnectableFlux<T> source, boolean trace) {
 		this.source = source;
-		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
+		this.stacktrace = trace ? new Exception() : null;
 	}
 	
 	@Override

@@ -38,11 +38,11 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 
 	final ParallelFlux<T>                                                          source;
 
-	final String stacktrace;
+	final Exception stacktrace;
 
 	public ParallelFluxOnAssembly(ParallelFlux<T> source, boolean trace) {
 		this.source = source;
-		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
+		this.stacktrace = trace ? new Exception() : null;
 	}
 
 	@Override

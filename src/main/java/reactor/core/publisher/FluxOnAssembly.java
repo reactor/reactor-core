@@ -49,7 +49,7 @@ import reactor.util.function.Tuples;
  */
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 
-	final String                                                                   stacktrace;
+	final Exception snapshotStack;
 
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
@@ -61,7 +61,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	public FluxOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
+		this.snapshotStack = trace ? new Exception() : null;
 	}
 
 	static Publisher<?> getParentOrThis(Publisher<?> parent) {
@@ -81,9 +81,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		return parent;
 	}
 
-	static String takeStacktrace(Publisher<?> source) {
-		StackTraceElement[] stes = Thread.currentThread()
-		                                 .getStackTrace();
+	static String takeStacktrace(Publisher<?> source, Exception snapshotStack) {
+		StackTraceElement[] stes = snapshotStack.getStackTrace();
 
 		StringBuilder sb =
 				new StringBuilder(null != source ? "\nAssembly trace from producer [" +
@@ -174,17 +173,17 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Publisher<? extends T> source,
-			String stacktrace, Publisher<T> parent){
+			Exception snapshotStack, Publisher<T> parent){
 
-		if(stacktrace != null) {
+		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
 				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
-						stacktrace,
+						snapshotStack,
 						parent));
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, stacktrace, parent));
+				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, parent));
 			}
 		}
 	}
@@ -216,7 +215,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		subscribe(s, source, stacktrace, this);
+		subscribe(s, source, snapshotStack, this);
 	}
 
 	/**
@@ -295,7 +294,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	static class OnAssemblySubscriber<T> implements Subscriber<T>, QueueSubscription<T> {
 
-		final String                stacktrace;
+		final Exception                snapshotStack;
 		final Subscriber<? super T> actual;
 		final Publisher<?>          parent;
 
@@ -304,10 +303,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		int                  fusionMode;
 
 		OnAssemblySubscriber(Subscriber<? super T> actual,
-				String stacktrace,
+				Exception snapshotStack,
 				Publisher<?> parent) {
 			this.actual = actual;
-			this.stacktrace = stacktrace;
+			this.snapshotStack = snapshotStack;
 			this.parent = parent;
 		}
 
@@ -346,14 +345,14 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, stacktrace);
+						oae.add(parent, takeStacktrace(parent, snapshotStack));
 						set = true;
 						break;
 					}
 				}
 			}
 			if (!set) {
-				t.addSuppressed(new OnAssemblyException(stacktrace, parent));
+				t.addSuppressed(new OnAssemblyException(takeStacktrace(parent, snapshotStack), parent));
 			}
 
 		}
@@ -418,7 +417,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		final ConditionalSubscriber<? super T> actualCS;
 
 		OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				String stacktrace,
+				Exception stacktrace,
 				Publisher<?> parent) {
 			super(actual, stacktrace, parent);
 			this.actualCS = actual;

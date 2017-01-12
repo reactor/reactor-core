@@ -38,11 +38,11 @@ import reactor.core.Fuseable;
 final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
-	final String stacktrace;
+	final Exception stacktrace;
 
 	public FluxCallableOnAssembly(Publisher<? extends T> source, boolean trace) {
 		super(source);
-		this.stacktrace = trace ? FluxOnAssembly.takeStacktrace(source) : null;
+		this.stacktrace = trace ? new Exception() : null;
 	}
 
 	@Override
