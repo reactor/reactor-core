@@ -93,7 +93,7 @@ public class MonoFirstTest {
 		Assert.assertTrue(f instanceof MonoFirst);
 		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
 		Assert.assertTrue(s.array != null);
-		Assert.assertTrue(s.array.length == 3);
+		Assert.assertTrue(s.array.length == 2);
 
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)
