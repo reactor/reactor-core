@@ -71,6 +71,10 @@ final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> implements Fuseabl
 		source.subscribe(parents);
 	}
 
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
 
 	@Override
 	public int parallelism() {

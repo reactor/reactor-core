@@ -116,7 +116,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		}
 
 		Objects.requireNonNull(queueSupplier, "queueSupplier");
-		Objects.requireNonNull(source, "queueSupplier");
+		Objects.requireNonNull(source, "source");
 
 		return onAssembly(new ParallelUnorderedSource<>(source,
 				parallelism,
@@ -134,7 +134,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> ParallelFlux<T> from(Publisher<T>... publishers) {
-		if (publishers.length == 0) {
+		if (publishers == null || publishers.length == 0) {
 			throw new IllegalArgumentException("Zero publishers not supported");
 		}
 		return onAssembly(new ParallelUnorderedFrom<>(publishers));
@@ -208,47 +208,49 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			return list;
 		});
 
-		Mono<List<T>> merged = railSorted.reduce((a, b) -> {
-			int n = a.size() + b.size();
-			if (n == 0) {
-				return new ArrayList<>();
-			}
-			List<T> both = new ArrayList<>(n);
-
-			Iterator<T> at = a.iterator();
-			Iterator<T> bt = b.iterator();
-
-			T s1 = at.hasNext() ? at.next() : null;
-			T s2 = bt.hasNext() ? bt.next() : null;
-
-			while (s1 != null && s2 != null) {
-				if (comparator.compare(s1, s2) < 0) { // s1 comes before s2
-					both.add(s1);
-					s1 = at.hasNext() ? at.next() : null;
-				}
-				else {
-					both.add(s2);
-					s2 = bt.hasNext() ? bt.next() : null;
-				}
-			}
-
-			if (s1 != null) {
-				both.add(s1);
-				while (at.hasNext()) {
-					both.add(at.next());
-				}
-			}
-			else if (s2 != null) {
-				both.add(s2);
-				while (bt.hasNext()) {
-					both.add(bt.next());
-				}
-			}
-
-			return both;
-		});
+		Mono<List<T>> merged = railSorted.reduce((a, b) -> sortedMerger(a, b, comparator));
 
 		return merged;
+	}
+
+	static final <T> List<T> sortedMerger(List<T> a, List<T> b, Comparator<? super T> comparator) {
+		int n = a.size() + b.size();
+		if (n == 0) {
+			return new ArrayList<>();
+		}
+		List<T> both = new ArrayList<>(n);
+
+		Iterator<T> at = a.iterator();
+		Iterator<T> bt = b.iterator();
+
+		T s1 = at.hasNext() ? at.next() : null;
+		T s2 = bt.hasNext() ? bt.next() : null;
+
+		while (s1 != null && s2 != null) {
+			if (comparator.compare(s1, s2) < 0) { // s1 comes before s2
+				both.add(s1);
+				s1 = at.hasNext() ? at.next() : null;
+			}
+			else {
+				both.add(s2);
+				s2 = bt.hasNext() ? bt.next() : null;
+			}
+		}
+
+		if (s1 != null) {
+			both.add(s1);
+			while (at.hasNext()) {
+				both.add(at.next());
+			}
+		}
+		else if (s2 != null) {
+			both.add(s2);
+			while (bt.hasNext()) {
+				both.add(bt.next());
+			}
+		}
+
+		return both;
 	}
 
 

@@ -51,7 +51,12 @@ final class ParallelUnorderedConcatMap<T, R> extends ParallelFlux<R> {
 		this.prefetch = prefetch;
 		this.errorMode = Objects.requireNonNull(errorMode, "errorMode");
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
 	@Override
 	public boolean isOrdered() {
 		return false;
