@@ -40,4 +40,20 @@ public class FluxBufferTimeOrSizeTest {
 		            .assertNext(s -> assertThat(s).containsExactly(6))
 		            .verifyComplete();
 	}
+
+	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize2() {
+		return Flux.range(1, 6)
+		           .delay(Duration.ofMillis(300))
+		           .bufferMillis(5, 2000);
+	}
+
+	@Test
+	public void bufferWithTimeoutAccumulateOnTimeOrSize2() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAccumulateOnTimeOrSize2)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
+	}
 }

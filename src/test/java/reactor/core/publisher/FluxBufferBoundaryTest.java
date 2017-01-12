@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +24,10 @@ import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxBufferBoundaryTest {
 
@@ -240,4 +244,88 @@ public class FluxBufferBoundaryTest {
 		  .assertNotComplete();
 	}
 
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(200));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxTime2() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .bufferMillis(200);
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxTime2() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxTime2)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void bufferWillAcumulateMultipleListsOfValues() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+
+		//non overlapping buffers
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		numbers.onNext(3);
+		boundaryFlux.onNext(1);
+		numbers.onNext(5);
+		numbers.onNext(6);
+		numbers.onComplete();
+
+		//"the collected lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+	}
+
+	@Test
+	public void fluxEmptyBufferJust() {
+//	    "flux empty buffer just"() {
+//		when:
+		List<List<Object>> ranges = Flux.empty()
+		                                .buffer(Flux.just(1))
+		                                .collectList()
+		                                .block();
+
+//		then:
+		assertThat(ranges).isEmpty();
+	}
+
+	@Test
+	public void fluxEmptyBuffer() {
+//		"flux empty buffer"
+//		when:
+		List<List<Object>> ranges = Flux.empty()
+		                                .buffer(Flux.never())
+		                                .collectList()
+		                                .block(Duration.ofMillis(100));
+
+//		then:
+		assertThat(ranges).isEmpty();
+	}
 }

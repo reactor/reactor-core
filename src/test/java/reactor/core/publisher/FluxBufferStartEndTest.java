@@ -16,12 +16,16 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxBufferStartEndTest {
 
@@ -124,4 +128,100 @@ public class FluxBufferStartEndTest {
 
 	}
 
+
+	@Test
+	public void bufferWillAcumulateMultipleListsOfValuesOverlap() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.<Integer>create().connect();
+
+		//"overlapping buffers"
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.buffer(bucketOpening, u -> boundaryFlux )
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		bucketOpening.onNext(1);
+		numbers.onNext(3);
+		bucketOpening.onNext(1);
+		numbers.onNext(5);
+		boundaryFlux.onNext(1);
+		bucketOpening.onNext(1);
+		boundaryFlux.onComplete();
+		numbers.onComplete();
+
+		//"the collected overlapping lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(3, 5),
+				Arrays.asList(5),
+				Arrays.asList());
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(300), Duration.ofMillis(200));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxOverlapTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxOverlapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime2() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .bufferMillis(300L, 200L);//FIXME review signature
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxOverlapTime2() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxOverlapTime2)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxSameTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .bufferMillis(300, 300);
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxSameTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxSameTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxGapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .buffer(Duration.ofMillis(200), Duration.ofMillis(300));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxGapTime() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxGapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
 }

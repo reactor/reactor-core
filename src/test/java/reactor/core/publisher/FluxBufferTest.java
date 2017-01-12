@@ -23,6 +23,8 @@ import java.util.List;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxBufferTest {
 
 	@Test(expected = NullPointerException.class)
@@ -329,4 +331,43 @@ public class FluxBufferTest {
 		  .assertNotComplete();
 	}
 
+	@Test
+	public void bufferWillSubdivideAnInputFlux() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping buffers"
+		List<List<Integer>> res = numbers.buffer(2, 3)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(Arrays.asList(1, 2),
+				Arrays.asList(4, 5),
+				Arrays.asList(7, 8));
+	}
+
+	@Test
+	public void bufferWillSubdivideAnInputFluxOverlap() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping buffers"
+		List<List<Integer>> res = numbers.buffer(3, 2)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(
+				Arrays.asList(1, 2, 3),
+				Arrays.asList(3, 4, 5),
+				Arrays.asList(5, 6, 7),
+				Arrays.asList(7, 8));
+	}
+
+	@Test
+	public void bufferWillRerouteAsManyElementAsSpecified() {
+		assertThat(Flux.just(1, 2, 3, 4, 5)
+		               .buffer(2)
+		               .collectList()
+		               .block()).containsExactly(Arrays.asList(1, 2),
+				Arrays.asList(3, 4),
+				Arrays.asList(5));
+	}
 }

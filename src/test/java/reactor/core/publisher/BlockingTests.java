@@ -29,6 +29,8 @@ import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class BlockingTests {
 
 	static Scheduler scheduler;
@@ -59,10 +61,10 @@ public class BlockingTests {
 				    .blockFirst(Duration.ofSeconds(10)));
 	}
 
-	@Test(expected = Exception.class)
-	public void blockingFirstError2() {
-				Flux.empty()
-				    .blockFirst(Duration.ofMillis(1));
+	@Test
+	public void blockingFirstTimeout() {
+		assertThat(Flux.empty()
+		               .blockFirst(Duration.ofMillis(1))).isNull();
 	}
 
 	@Test
@@ -81,10 +83,10 @@ public class BlockingTests {
 				    .blockFirst(Duration.ofSeconds(10)));
 	}
 
-	@Test(expected = Exception.class)
-	public void blockingLastError2() {
-		Flux.empty()
-		    .blockFirst(Duration.ofMillis(1));
+	@Test
+	public void blockingLastTimeout() {
+		assertThat(Flux.empty()
+		               .blockFirst(Duration.ofMillis(1))).isNull();
 	}
 
 	@Test(expected = RuntimeException.class)
