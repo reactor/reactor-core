@@ -48,7 +48,12 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
 	@Override
 	public int parallelism() {
 		return parallelism;

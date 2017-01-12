@@ -84,8 +84,13 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> implements SignalPe
 	}
 
 	@Override
+	public long getPrefetch() {
+		return source.getPrefetch();
+	}
+
+	@Override
 	public boolean isOrdered() {
-		return false;
+		return source.isOrdered();
 	}
 
 	@Override
