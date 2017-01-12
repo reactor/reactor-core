@@ -41,4 +41,22 @@ public class FluxWindowTimeOrSizeTest {
 		            .assertNext(s -> assertThat(s).containsExactly(6))
 		            .verifyComplete();
 	}
+
+	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize2() {
+		return Flux.range(1, 6)
+		           .delay(Duration.ofMillis(300))
+		           .windowMillis(5, 2000)
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWithTimeoutAccumulateOnTimeOrSize2() {
+		StepVerifier.withVirtualTime
+				(this::scenario_windowWithTimeoutAccumulateOnTimeOrSize2)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
+	}
 }

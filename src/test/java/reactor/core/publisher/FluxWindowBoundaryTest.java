@@ -16,10 +16,17 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowBoundaryTest {
 
@@ -189,4 +196,48 @@ public class FluxWindowBoundaryTest {
 		Assert.assertFalse("sp2 has subscribers", sp1.hasDownstreams());
 	}
 
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(200))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void windowWillAcumulateMultipleListsOfValues() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+
+		//non overlapping buffers
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.window(boundaryFlux)
+		                                       .concatMap(Flux::buffer)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		numbers.onNext(3);
+		boundaryFlux.onNext(1);
+		numbers.onNext(5);
+		numbers.onNext(6);
+		numbers.onComplete();
+
+		//"the collected lists are available"
+		assertThat(res.block()).containsExactly(Arrays.asList(1, 2, 3), Arrays.asList(5, 6));
+	}
 }

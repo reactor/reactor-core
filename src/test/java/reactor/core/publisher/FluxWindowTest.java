@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
@@ -23,6 +25,8 @@ import java.util.function.Supplier;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowTest {
 
@@ -559,5 +563,50 @@ public class FluxWindowTest {
 		                 .assertNotComplete()
 		                 .assertError(RuntimeException.class)
 		                 .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFlux() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping windows"
+		List<List<Integer>> res = numbers.window(2, 3)
+		                                 .concatMap(Flux::buffer)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(4, 5),
+				Arrays.asList(7, 8));
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxOverlap() {
+		Flux<Integer> numbers = Flux.just(1, 2, 3, 4, 5, 6, 7, 8);
+
+		//"non overlapping windows"
+		List<List<Integer>> res = numbers.window(3, 2)
+		                                 .concatMap(Flux::buffer)
+		                                 .buffer()
+		                                 .blockLast();
+
+		assertThat(res).containsExactly(
+				Arrays.asList(1, 2, 3),
+				Arrays.asList(3, 4, 5),
+				Arrays.asList(5, 6, 7),
+				Arrays.asList(7, 8));
+	}
+
+	@Test
+	public void windowWillRerouteAsManyElementAsSpecified(){
+		assertThat(Flux.just(1, 2, 3, 4, 5)
+		               .window(2)
+		               .concatMap(Flux::collectList)
+		               .collectList()
+		               .block()).containsExactly(
+				Arrays.asList(1, 2),
+				Arrays.asList(3, 4),
+				Arrays.asList(5));
 	}
 }

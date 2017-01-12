@@ -20,7 +20,9 @@ import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuples;
 
 public class FluxZipIterableTest {
 
@@ -189,6 +191,14 @@ public class FluxZipIterableTest {
 		.assertNotComplete()
 		.assertError(RuntimeException.class)
 		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void zipWithIterable(){
+		StepVerifier.create(Flux.just(0).zipWithIterable(Arrays.asList(1, 2, 3)))
+	                .expectNext(Tuples.of(0, 1))
+	                .verifyComplete();
 	}
 	
 }

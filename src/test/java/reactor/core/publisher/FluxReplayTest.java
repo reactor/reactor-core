@@ -15,12 +15,100 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.function.Tuple2;
+
 public class FluxReplayTest {
 
 	@Test
-	public void normal() {
+	public void cacheFlux() {
+		try {
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
+
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .replay()
+			                                         .autoConnect()
+			                                         .elapsed();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
+
+	@Test
+	public void cacheFluxTTL() {
+		try {
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
+
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .replay(Duration.ofMillis(2000))
+			                                         .autoConnect()
+			                                         .elapsed();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
+
+	@Test
+	public void cacheFluxHistoryTTL() {
+		try {
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
+
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .replay(2, Duration.ofMillis(2000))
+			                                         .autoConnect()
+			                                         .elapsed();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
 	}
 }

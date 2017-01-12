@@ -16,10 +16,17 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowStartEndTest {
 
@@ -158,4 +165,91 @@ public class FluxWindowStartEndTest {
 		Assert.assertFalse("sp4 has subscribers?", sp4.hasDownstreams());
 	}
 
+
+	@Test
+	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
+		//given: "a source and a collected flux"
+		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.<Integer>create().connect();
+
+		//"overlapping buffers"
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+
+		Mono<List<List<Integer>>> res = numbers.window(bucketOpening, u -> boundaryFlux )
+		                                       .flatMap(Flux::buffer)
+		                                       .buffer()
+		                                       .publishNext()
+		                                       .subscribe();
+
+		numbers.onNext(1);
+		numbers.onNext(2);
+		bucketOpening.onNext(1);
+		numbers.onNext(3);
+		bucketOpening.onNext(1);
+		numbers.onNext(5);
+		boundaryFlux.onNext(1);
+		bucketOpening.onNext(1);
+		boundaryFlux.onComplete();
+		numbers.onComplete();
+
+		//"the collected overlapping lists are available"
+		assertThat(res.block()).containsExactly(
+				Arrays.asList(3, 5),
+				Arrays.asList(5));
+	}
+
+
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxOverlapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(300), Duration.ofMillis(200))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxOverlapTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxOverlapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(3, 4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxSameTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(300), Duration.ofMillis(300))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxSameTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxSameTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxGapTime() {
+		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		           .delay(Duration.ofMillis(99))
+		           .window(Duration.ofMillis(200), Duration.ofMillis(300))
+		           .concatMap(Flux::buffer);
+	}
+
+	@Test
+	public void windowWillSubdivideAnInputFluxGapTime() {
+		StepVerifier.withVirtualTime(this::scenario_windowWillSubdivideAnInputFluxGapTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
+		            .verifyComplete();
+	}
 }

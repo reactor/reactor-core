@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
@@ -36,6 +37,19 @@ public class BlockingIterableTest {
 
 		for (Integer i : Flux.range(1, 10)
 		                     .toIterable()) {
+			values.add(i);
+		}
+
+		Assert.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), values);
+	}
+
+	@Test(timeout = 5000)
+	public void normal2() {
+		Queue<Integer> q = new ArrayBlockingQueue<>(1);
+		List<Integer> values = new ArrayList<>();
+
+		for (Integer i : Flux.range(1, 10)
+		                     .toIterable(1, () -> q)) {
 			values.add(i);
 		}
 

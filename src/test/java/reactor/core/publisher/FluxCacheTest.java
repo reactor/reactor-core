@@ -25,8 +25,6 @@ import reactor.util.function.Tuple2;
 
 public class FluxCacheTest {
 
-
-
 	@Test
 	public void cacheFlux() {
 		try {

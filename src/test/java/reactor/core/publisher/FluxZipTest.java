@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
@@ -333,6 +334,50 @@ public class FluxZipTest {
 		 .assertComplete();
 	}
 
+	@Test
+	public void pairWise3() {
+		AtomicLong ref = new AtomicLong();
+		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
+				Flux.zip(Flux.just(1), Flux.just("test"))
+				    .zipWith(Flux.just("test2").hide().doOnRequest(ref::set), 1);
+
+		Assert.assertTrue(f instanceof FluxZip);
+		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 2);
+
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
+		 .assertValues(Tuples.of(1, "testtest2"))
+		 .assertComplete();
+		Assert.assertTrue(ref.get() == 1);
+	}
+
+	@Test
+	public void pairWise2() {
+		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
+				Flux.zip(Arrays.asList(Flux.just(1), Flux.just("test")), obj -> Tuples.of((int)obj[0], (String)obj[1]))
+				    .zipWith(Flux.just("test2"));
+
+		Assert.assertTrue(f instanceof FluxZip);
+		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 2);
+
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
+		  .assertValues(Tuples.of(1, "testtest2"))
+		  .assertComplete();
+	}
+
 
 	@Test
 	public void multipleStreamValuesCanBeZipped() {
@@ -426,6 +471,7 @@ public class FluxZipTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void zip3() {
 		StepVerifier.create(Flux.zip(Flux.just(1), Flux.just(2), Flux.just(3)))
 		            .expectNext(Tuples.of(1, 2, 3))
@@ -433,6 +479,7 @@ public class FluxZipTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void zip4() {
 		StepVerifier.create(Flux.zip(Flux.just(1),
 				Flux.just(2),
@@ -443,6 +490,7 @@ public class FluxZipTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void zip5() {
 		StepVerifier.create(Flux.zip(Flux.just(1),
 				Flux.just(2),
@@ -454,6 +502,7 @@ public class FluxZipTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void zip6() {
 		StepVerifier.create(
 				Flux.zip(Flux.just(1),

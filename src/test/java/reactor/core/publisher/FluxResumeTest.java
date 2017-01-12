@@ -355,4 +355,18 @@ public class FluxResumeTest {
 				.onErrorReturn(RuntimeException.class, 1))
 				.verifyError(TestException.class);
 	}
+	@Test
+	public void onErrorReturnErrorPredicate2() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorReturn(TestException.class::isInstance, 1))
+				.expectNext(1)
+				.verifyComplete();
+	}
+
+	@Test
+	public void onErrorReturnErrorPredicateNot2() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorReturn(RuntimeException.class::isInstance, 1))
+				.verifyError(TestException.class);
+	}
 }

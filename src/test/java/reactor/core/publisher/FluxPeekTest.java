@@ -598,6 +598,22 @@ public class FluxPeekTest {
 	}
 
 	@Test
+	public void syncdoOnTerminateCalled3() {
+		AtomicBoolean onTerminate = new AtomicBoolean();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.error(new Exception("test")).hide()
+		    .doOnTerminate(() -> onTerminate.set(true))
+		    .subscribe(ts);
+
+		ts.assertErrorMessage("test")
+		  .assertNotComplete();
+
+		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
+
+	@Test
 	public void should_reduce_to_10_events() {
 		for (int i = 0; i < 20; i++) {
 			AtomicInteger count = new AtomicInteger();
