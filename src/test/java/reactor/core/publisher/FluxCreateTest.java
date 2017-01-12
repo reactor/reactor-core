@@ -20,6 +20,8 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class FluxCreateTest {
 
 	@Test
@@ -43,12 +45,16 @@ public class FluxCreateTest {
 
 	@Test
 	public void createStreamFromFluxCreate() {
-		StepVerifier.create(Flux.create(s -> {
+		Flux<String> created = Flux.create(s -> {
 			s.next("test1");
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}))
+		});
+
+		assertThat(created.getPrefetch()).isEqualTo(-1);
+
+		StepVerifier.create(created)
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 	}

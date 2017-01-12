@@ -41,6 +41,7 @@ public class MonoTakeLastOneTest {
 		                        .last())
 		            .verifyErrorMessage("test");
 	}
+
 	@Test
 	public void normal() {
 		StepVerifier.create(Flux.range(1, 100)
@@ -50,10 +51,37 @@ public class MonoTakeLastOneTest {
 	}
 
 	@Test
+	public void normal2() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .last(-1))
+		            .expectNext(100)
+		            .verifyComplete();
+	}
+
+
+	@Test
+	public void normal3() {
+		StepVerifier.create(Mono.fromCallable(() -> 100)
+		                        .flux()
+		                        .last(-1))
+		            .expectNext(100)
+		            .verifyComplete();
+	}
+
+	@Test
 	public void normalHide() {
 		StepVerifier.create(Flux.range(1, 100)
 		                        .hide()
 		                        .last())
+		            .expectNext(100)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalHide2() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .last(-1))
 		            .expectNext(100)
 		            .verifyComplete();
 	}

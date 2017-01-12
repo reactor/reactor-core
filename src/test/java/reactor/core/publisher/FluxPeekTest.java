@@ -21,11 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -561,6 +563,21 @@ public class FluxPeekTest {
 
 		Assert.assertTrue("onComplete not called back", onTerminate.get());
 	}
+	@Test
+	public void syncdoAfterTerminateCalled2() {
+		AtomicBoolean onTerminate = new AtomicBoolean();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.empty().hide()
+		    .doAfterTerminate(() -> onTerminate.set(true))
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertComplete();
+
+		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
 
 	@Test
 	public void should_reduce_to_10_events() {
@@ -609,6 +626,33 @@ public class FluxPeekTest {
 			e.printStackTrace();
 		}
 		return "x" + x + "y" + y;
+	}
+
+	static final class TestException extends Exception {
+
+	}
+
+	@Test
+	public void doOnErrorPredicate(){
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		StepVerifier.create(
+				Flux.error(new TestException()).doOnError(TestException.class::isInstance, ref::set))
+	                .thenAwait()
+	                .then(() -> Assertions.assertThat(ref.get()).isInstanceOf(TestException.class) )
+	                .verifyError(TestException.class);
+	}
+
+	@Test
+	public void doOnErrorPredicateNot(){
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		StepVerifier.create(
+				Flux.error(new TestException()).doOnError(RuntimeException.class::isInstance,
+						ref::set))
+	                .thenAwait()
+	                .then(() -> Assertions.assertThat(ref.get()).isNull() )
+	                .verifyError(TestException.class);
 	}
 
 }

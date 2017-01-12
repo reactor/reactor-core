@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxWithLatestFromTest {
@@ -138,4 +139,14 @@ public class FluxWithLatestFromTest {
 		  .assertError(RuntimeException.class)
 		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")));
 	}
+
+
+	@Test
+	public void combineLatest2Null() {
+		StepVerifier.create(Flux.just(1).withLatestFrom(Flux.just(2), (a, b) ->
+				null))
+		            .verifyError(NullPointerException.class);
+	}
+
+
 }

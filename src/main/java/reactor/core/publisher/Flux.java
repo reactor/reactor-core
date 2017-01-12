@@ -3704,6 +3704,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Mono<Boolean> hasElement(T value) {
+		Objects.requireNonNull(value, "value");
 		return any(t -> Objects.equals(value, t));
 	}
 

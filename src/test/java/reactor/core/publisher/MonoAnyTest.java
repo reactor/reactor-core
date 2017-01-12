@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoAnyTest {
@@ -32,6 +33,11 @@ public class MonoAnyTest {
 		new MonoAny<>(null, null);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void elementNull() {
+		Flux.never().hasElement(null);
+	}
+
 	@Test
 	public void normal() {
 		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
@@ -41,6 +47,19 @@ public class MonoAnyTest {
 		ts.assertValues(true)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void normal2() {
+		StepVerifier.create(Flux.range(1, 10).hasElement(4))
+		            .expectNext(true)
+		            .verifyComplete();
+	}
+	@Test
+	public void error2() {
+		StepVerifier.create(Flux.range(1, 10).hasElement(-4))
+		            .expectNext(false)
+		            .verifyComplete();
 	}
 
 	@Test

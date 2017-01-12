@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,5 +41,33 @@ public class MonoCollectListTest {
 		                         .block();
 
 		assertThat(vals).containsExactly(4,3,2,1);
+	}
+
+	@Test
+	public void collectListOne() {
+		StepVerifier.create(Flux.just(1)
+		                        .collectList())
+		            .assertNext(d -> assertThat(d).containsExactly(1))
+	                .verifyComplete();
+
+	}
+
+	@Test
+	public void collectListEmpty() {
+		StepVerifier.create(Flux.empty()
+		                        .collectList())
+		            .assertNext(d -> assertThat(d).isEmpty())
+	                .verifyComplete();
+
+	}
+
+	@Test
+	public void collectListCallable() {
+		StepVerifier.create(Mono.fromCallable(() -> 1)
+		                        .flux()
+		                        .collectList())
+		            .assertNext(d -> assertThat(d).containsExactly(1))
+	                .verifyComplete();
+
 	}
 }

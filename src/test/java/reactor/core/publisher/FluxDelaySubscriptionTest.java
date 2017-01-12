@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxDelaySubscriptionTest {
@@ -174,5 +177,32 @@ public class FluxDelaySubscriptionTest {
 		  .assertNotComplete();
 	}
 
+
+
+	Flux<Integer> scenario_delayedTrigger(){
+		return Flux.just(1)
+		           .delaySubscription(Duration.ofSeconds(3));
+	}
+
+	@Test
+	public void delayedTrigger() {
+		StepVerifier.withVirtualTime(this::scenario_delayedTrigger)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	Flux<Integer> scenario_delayedTrigger2(){
+		return Flux.just(1)
+		           .delaySubscriptionMillis(50);
+	}
+
+	@Test
+	public void delayedTrigger2() {
+		StepVerifier.withVirtualTime(this::scenario_delayedTrigger2)
+		            .thenAwait(Duration.ofMillis(50))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
 
 }

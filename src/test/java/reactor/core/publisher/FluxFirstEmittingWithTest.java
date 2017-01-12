@@ -15,6 +15,10 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.Arrays;
+
+import org.junit.Assert;
 import org.junit.Test;
 
 import reactor.test.subscriber.AssertSubscriber;
@@ -53,5 +57,35 @@ public class FluxFirstEmittingWithTest {
 		ts.assertValues(1)
 		.assertNoError()
 		.assertComplete();
+	}
+
+	@Test
+	public void pairWise() {
+		Flux<Integer> f = Flux.firstEmitting(Mono.just(1), Mono.just(2))
+		                      .firstEmittingWith(Mono.just(3));
+
+		Assert.assertTrue(f instanceof FluxFirstEmitting);
+		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 3);
+
+		f.subscribeWith(AssertSubscriber.create())
+		 .assertValues(1)
+		 .assertComplete();
+	}
+
+	@Test
+	public void pairWiseIterable() {
+		Flux<Integer> f = Flux.firstEmitting(Arrays.asList(Mono.just(1), Mono.just(2)))
+		                      .firstEmittingWith(Mono.just(3));
+
+		Assert.assertTrue(f instanceof FluxFirstEmitting);
+		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 2);
+
+		f.subscribeWith(AssertSubscriber.create())
+		 .assertValues(1)
+		 .assertComplete();
 	}
 }

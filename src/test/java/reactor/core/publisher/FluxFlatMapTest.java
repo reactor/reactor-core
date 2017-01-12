@@ -288,10 +288,21 @@ public class FluxFlatMapTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 1_000_000).flatMap(Flux::just, 1, 32).subscribe(ts);
-		
+
 		ts.assertValueCount(1_000_000)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void testMaxConcurrency2() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 1_000_000).flatMap(Flux::just, 64).subscribe(ts);
+
+		ts.assertValueCount(1_000_000)
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
