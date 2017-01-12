@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,36 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
+
+import java.util.Arrays;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
 
-import static org.junit.Assert.assertTrue;
-
-public class MonoSourceTest {
+public class MonoZipTest {
 
 	@Test
-	public void empty() {
-		Mono<Integer> m = Mono.from(Flux.empty());
-		assertTrue(m == Mono.<Integer>empty());
-		StepVerifier.create(m)
+	public void normal() {
+		StepVerifier.create(Mono.zip(args -> (int) args[0] + (int) args[1],
+				Mono.just(1),
+				Mono.just(2)))
+		            .expectNext(3)
 		            .verifyComplete();
 	}
 
 	@Test
-	public void just() {
-		Mono<Integer> m = Mono.from(Flux.just(1));
-		assertTrue(m instanceof MonoJust);
-		StepVerifier.create(m)
-	                .expectNext(1)
-	                .verifyComplete();
+	public void normalIterable() {
+		StepVerifier.create(Mono.zip(args -> (int) args[0] + (int) args[1],
+				Arrays.asList(Mono.just(1),
+				Mono.just(2))))
+		            .expectNext(3)
+		            .verifyComplete();
 	}
 
-	@Test
-	public void justNext() {
-		StepVerifier.create(Mono.from(Flux.just(1, 2, 3)))
-	                .expectNext(1)
-	                .verifyComplete();
-	}
 }

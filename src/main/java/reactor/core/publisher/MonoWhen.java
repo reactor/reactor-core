@@ -99,7 +99,7 @@ final class MonoWhen<T, R> extends Mono<R> {
             a = sources;
             n = a.length;
         } else {
-            a = new Mono[8];
+            a = new Publisher[8];
 	        for (Publisher<?> m : sourcesIterable) {
 		        if (n == a.length) {
 	                Publisher<?>[] b = new Publisher[n + (n >> 2)];

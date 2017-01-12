@@ -34,14 +34,100 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoWhenTest {
 
-    @Test(timeout = 5000)
+    @Test
     public void allEmpty() {
         Assert.assertNull(Mono.when(
                 Mono.empty(), 
-                Mono.delay(Duration.ofMillis(250)).ignoreElement()
+                Mono.empty()
             )
             .block());
     }
+
+    @Test
+    public void allEmptyPublisherIterable() {
+        Assert.assertNull(Mono.when(Arrays.asList(
+                Mono.empty(),
+                Flux.empty())
+            )
+            .block());
+    }
+
+    @Test
+    public void allEmptyPublisher() {
+        assertThat(Mono.when(Mono.empty(),
+                Flux.empty()
+            )
+            .block()).isNull();
+    }
+
+    @Test
+    public void allNonEmptyIterable() {
+        assertThat(Mono.when(Arrays.asList(
+                Mono.just(1),
+                Mono.just(2)),
+		        args -> (int)args[0] + (int)args[1]
+            )
+            .block()).isEqualTo(3);
+    }
+
+    @Test
+    public void noSourcePublisherCombined() {
+        assertThat(Mono.when(
+		        args -> (int)args[0] + (int)args[1]
+            )
+            .block()).isNull();
+    }
+
+    @Test
+    public void noSourcePublisher() {
+        assertThat(Mono.when()
+            .block()).isNull();
+    }
+
+    @Test
+    public void oneSourcePublisher() {
+        assertThat(Mono.when(Flux.empty())
+            .block()).isNull();
+    }
+
+	@Test
+	public void allEmptyDelay() {
+		Assert.assertNull(Mono.whenDelayError(
+				Mono.empty(),
+				Mono.empty()
+		)
+		                      .block());
+	}
+
+	@Test
+	public void allEmptyPublisherDelay() {
+		assertThat(Mono.whenDelayError(Mono.empty(),
+				Flux.empty()
+		)
+		               .block()).isNull();
+	}
+
+	@Test
+	public void noSourcePublisherCombinedDelay() {
+		assertThat(Mono.whenDelayError(
+				args -> (int)args[0] + (int)args[1]
+		)
+		               .block()).isNull();
+	}
+
+	@Test
+	public void noSourcePublisherDelay() {
+		assertThat(Mono.whenDelayError()
+		               .block()).isNull();
+	}
+
+	@Test
+	public void oneSourcePublisherDelay() {
+		assertThat(Mono.whenDelayError(Flux.empty())
+		               .block()).isNull();
+	}
+
+
     @Test(timeout = 5000)
     public void castCheck() {
         Mono<String[]> mono = Mono.when(a ->  Arrays.copyOf(a, a.length, String[]
@@ -206,6 +292,18 @@ public class MonoWhenTest {
 	}
 
 	@Test
+	public void whenDelayJustMono() {
+		MonoProcessor<Tuple2<Integer, Integer>> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
+		            .verifyComplete();
+	}
+
+	@Test
 	public void whenDelayJustMono3() {
 		MonoProcessor<Tuple3<Integer, Integer, Integer>> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3))
@@ -217,4 +315,49 @@ public class MonoWhenTest {
 		            .verifyComplete();
 	}
 
+	@Test
+	public void whenDelayMonoJust4() {
+		MonoProcessor<Tuple4<Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono.just(4))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2
+				            && v.getT3() == 3 && v.getT4() == 4).isTrue())
+		            .verifyComplete();
+	}
+
+
+	@Test
+	public void whenDelayMonoJust5() {
+		MonoProcessor<Tuple5<Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono
+				.just(4), Mono.just(5))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2
+				            && v.getT3() == 3 && v.getT4() == 4&& v.getT5() == 5)
+				            .isTrue())
+		            .verifyComplete();
+	}
+	@Test
+	public void whenDelayMonoJust6() {
+		MonoProcessor<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> mp =
+				MonoProcessor.create();
+		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3), Mono
+				.just(4), Mono.just(5), Mono.just(6))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2
+				            && v.getT3() == 3 && v.getT4() == 4&& v.getT5() == 5 && v
+				            .getT6() == 6).isTrue())
+		            .verifyComplete();
+	}
 }
