@@ -40,12 +40,18 @@ import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
- * Abstract base class for Parallel publishers that take an array of Subscribers.
+ * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
+ * {@link #groups() 'groups'}).
  * <p>
- * Use {@code from()} to start processing a regular Publisher in 'rails'. Use {@code
- * runOn()} to introduce where each 'rail' should run on thread-vise.
- * Use {@code sequential()} to merge the sources back into a single {@link Flux} or if
- * you simply want to subscribe to the merged sequence use {@link #subscribe(Subscriber)}.
+ * Use {@code from()} to start processing a regular Publisher in 'rails', which each
+ * cover a subset of the original Publisher's data. {@link Flux#parallel()} is a
+ * convenient shortcut to achieve that on a {@link Flux}. Use {@code runOn()} to
+ * introduce where each 'rail' should run on thread-vise.
+ * Use {@code sequential()} to merge the sources back into a single {@link Flux} or
+ * {@link #subscribe(Subscriber)} if you simply want to subscribe to the merged sequence.
+ * Note that other variants like {@link #subscribe(Consumer)} instead do multiple
+ * subscribes, one on each rail (which means that the lambdas should be as stateless and
+ * side-effect free as possible).
  *
  * @param <T> the value type
  */
@@ -947,6 +953,23 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Allows composing operators off the 'rails', as individual {@link GroupedFlux} instances keyed by
+	 * the zero based rail's index. The transformed groups are {@link Flux#parallel parallelized} back
+	 * once the transformation has been applied.
+	 * <p>
+	 * Note that like in {@link #groups()}, requests and cancellation compose through, and
+	 * cancelling only one rail may result in undefined behavior.
+	 *
+	 * @param composer the composition function to apply on each {@link GroupedFlux rail}
+	 * @param <U> the type of the resulting parallelized flux
+	 * @return a {@link ParallelFlux} of the composed groups
+	 */
+	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
+			? extends Publisher<? extends U>> composer) {
+		return from(groups().flatMap(composer::apply));
+	}
+
+	/**
 	 * Validates the number of subscribers and returns true if their number matches the
 	 * parallelism level of this ParallelFlux.
 	 *
@@ -1032,6 +1055,12 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return -1L;
 	}
 
+	/**
+	 * Merge the rails into a {@link #sequential()} Flux and
+	 * {@link Flux#subscribe(Subscriber) subscribe} to said Flux.
+	 *
+	 * @param s the subscriber to use on {@link #sequential()} Flux
+	 */
 	@Override
 	public final void subscribe(Subscriber<? super T> s) {
 		sequential().subscribe(s);

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -536,4 +537,30 @@ public class ParallelFluxTest {
 		          .withMessage("Multiple completions: 3");
 	}
 
+
+	@Test
+	public void composeGroup() {
+		Set<Integer> values = new ConcurrentSkipListSet<>();
+
+		Flux<Integer> flux = Flux.range(1, 10)
+		                         .parallel(3)
+		                         .runOn(Schedulers.parallel())
+		                         .doOnNext(values::add)
+		                         .composeGroup(p -> p.log("rail" + p.key())
+		                                             .map(i -> (p.key() + 1) * 100 + i))
+		                         .sequential();
+
+		StepVerifier.create(flux.sort())
+		            .assertNext(i -> Assertions.assertThat(i - 100).isBetween(1, 10))
+		            .thenConsumeWhile(i -> i / 100 == 1)
+		            .assertNext(i -> Assertions.assertThat(i - 200).isBetween(1, 10))
+		            .thenConsumeWhile(i -> i / 100 == 2)
+		            .assertNext(i -> Assertions.assertThat(i - 300).isBetween(1, 10))
+		            .thenConsumeWhile(i -> i / 100 == 3)
+		            .verifyComplete();
+
+		Assertions.assertThat(values)
+				.hasSize(10)
+	            .contains(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+	}
 }
