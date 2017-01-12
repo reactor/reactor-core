@@ -30,10 +30,17 @@ public class MonoThenIgnoreTest {
 		            .expectComplete();
 	}
 
+	@Test
+	public void normal2() {
+		StepVerifier.create(Mono.empty(Mono.just(1)))
+		            .expectComplete();
+	}
+
 	Publisher<Void> scenario(){
 		return Mono.just(1)
 		    .thenEmpty(Mono.delay(Duration.ofSeconds(123)).then());
 	}
+
 	@Test
 	public void normalTime() {
 		StepVerifier.withVirtualTime(this::scenario)

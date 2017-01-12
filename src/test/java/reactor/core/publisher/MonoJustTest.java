@@ -15,9 +15,12 @@
  */
 package reactor.core.publisher;
 
+import java.util.Optional;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoJustTest {
@@ -34,13 +37,35 @@ public class MonoJustTest {
 
     @Test
     public void normal() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create();
+	    StepVerifier.create(Mono.just(1))
+	                .expectNext(1)
+	                .verifyComplete();
+    }
 
-        Mono.just(1).subscribe(ts);
+    @Test
+    public void normalOptional() {
+	    StepVerifier.create(Mono.justOrEmpty(Optional.of(1)))
+	                .expectNext(1)
+	                .verifyComplete();
+    }
 
-        ts.assertValues(1)
-          .assertComplete()
-          .assertNoError();
+	@Test
+	public void normalScalarOptionalEmpty() {
+		StepVerifier.create(Mono.justOrEmpty(null))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalScalarOptional() {
+		StepVerifier.create(Mono.justOrEmpty(1))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+    @Test
+    public void normalOptionalEmpty() {
+        StepVerifier.create(Mono.justOrEmpty(Optional.empty()))
+                    .verifyComplete();
     }
 
     @Test

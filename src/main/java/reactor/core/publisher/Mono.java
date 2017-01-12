@@ -288,7 +288,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> Mono<T> first(Mono<? extends T>... monos) {
-		return new MonoFirst<>(monos);
+		return onAssembly(new MonoFirst<>(monos));
 	}
 
 	/**
@@ -303,7 +303,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
-		return new MonoFirst<>(monos);
+		return onAssembly(new MonoFirst<>(monos));
 	}
 
 	/**
@@ -2017,7 +2017,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> or(Mono<? extends T> other) {
 		if (this instanceof MonoFirst) {
 			MonoFirst<T> a = (MonoFirst<T>) this;
-			return a.orAdditionalSource(other);
+			Mono<T> result =  a.orAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
 		}
 		return first(this, other);
 	}

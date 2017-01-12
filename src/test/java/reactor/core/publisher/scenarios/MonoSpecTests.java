@@ -130,43 +130,6 @@ public class MonoSpecTests {
 	}
 
 	@Test
-	public void whenMonoJust() {
-		MonoProcessor<Tuple2<Integer, Integer>> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.when(Mono.just(1), Mono.just(2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
-		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
-		            .verifyComplete();
-	}
-
-	@Test
-	public void whenMonoCallable() {
-		MonoProcessor<Tuple2<Integer, Integer>> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.when(Mono.fromCallable(() -> 1),
-				Mono.fromCallable(() -> 2))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
-		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2).isTrue())
-		            .verifyComplete();
-	}
-
-	@Test
-	public void whenDelayJustMono3() {
-		MonoProcessor<Tuple3<Integer, Integer, Integer>> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.whenDelayError(Mono.just(1), Mono.just(2), Mono.just(3))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isFalse())
-		            .then(() -> assertThat(mp.isSuccess()).isTrue())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
-		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3).isTrue())
-		            .verifyComplete();
-	}
-
-	@Test
 	public void firstMonoJust() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.first(Mono.just(1), Mono.just(2))
@@ -191,19 +154,6 @@ public class MonoSpecTests {
 		            .thenAwait(Duration.ofSeconds(4))
 		            .expectNext(2)
 		            .verifyComplete();
-	}
-
-	@Test
-	public void whenMonoError() {
-		MonoProcessor<Tuple2<Integer, Integer>> mp = MonoProcessor.create();
-		StepVerifier.create(Mono.when(Mono.<Integer>error(new Exception("test1")),
-				Mono.<Integer>error(new Exception("test2")))
-		                        .subscribeWith(mp))
-		            .then(() -> assertThat(mp.isError()).isTrue())
-		            .then(() -> assertThat(mp.isSuccess()).isFalse())
-		            .then(() -> assertThat(mp.isTerminated()).isTrue())
-		            .consumeErrorWith(e -> assertThat(e).hasMessage("test1"))
-		            .verify();
 	}
 
 	@Test

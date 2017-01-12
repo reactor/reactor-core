@@ -17,12 +17,11 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 public class MonoFirstTest {
 
@@ -51,6 +50,44 @@ public class MonoFirstTest {
 	@Test
 	public void pairWise() {
 		Mono<Integer> f = Mono.first(Mono.just(1), Mono.just(2))
+		                      .or(Mono.just(3));
+
+		Assert.assertTrue(f instanceof MonoFirst);
+		MonoFirst<Integer> s = (MonoFirst<Integer>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 3);
+
+		f.subscribeWith(AssertSubscriber.create())
+		 .assertValues(1)
+		 .assertComplete();
+	}
+
+	@Test(timeout = 5000)
+	public void allEmptyIterable() {
+		Assert.assertNull(Mono.first(Arrays.asList(Mono.empty(),
+				Mono.delay(Duration.ofMillis(250))
+				    .ignoreElement()))
+		                      .block());
+	}
+
+	@Test(timeout = 5000)
+	public void someEmptyIterable() {
+		Assert.assertNull(Mono.first(Arrays.asList(Mono.empty(),
+				Mono.delay(Duration.ofMillis(250))))
+		                      .block());
+	}
+
+	@Test//(timeout = 5000)
+	public void all2NonEmptyIterable() {
+		Assert.assertEquals(Integer.MIN_VALUE,
+				Mono.first(Mono.delayMillis(150)
+				               .map(i -> Integer.MIN_VALUE), Mono.delayMillis(250))
+				    .block());
+	}
+
+	@Test
+	public void pairWiseIterable() {
+		Mono<Integer> f = Mono.first(Arrays.asList(Mono.just(1), Mono.just(2)))
 		                      .or(Mono.just(3));
 
 		Assert.assertTrue(f instanceof MonoFirst);
