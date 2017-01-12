@@ -27,6 +27,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple6;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
 
@@ -393,5 +394,74 @@ public class FluxZipTest {
 				Arrays.asList(5, 2),
 				Arrays.asList(7, 2),
 				Arrays.asList(9, 2));
+	}
+
+	@Test
+	public void zip() {
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0], Flux.just(1)))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zipEmpty() {
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0]))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zipHide() {
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0],
+				Flux.just(1)
+				    .hide()))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zip2() {
+		StepVerifier.create(Flux.zip(Flux.just(1), Flux.just(2), (a, b) -> a))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zip3() {
+		StepVerifier.create(Flux.zip(Flux.just(1), Flux.just(2), Flux.just(3)))
+		            .expectNext(Tuples.of(1, 2, 3))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zip4() {
+		StepVerifier.create(Flux.zip(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4)))
+		            .expectNext(Tuples.of(1, 2, 3, 4))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zip5() {
+		StepVerifier.create(Flux.zip(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5)))
+		            .expectNext(Tuples.of(1, 2, 3, 4, 5))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void zip6() {
+		StepVerifier.create(
+				Flux.zip(Flux.just(1),
+						Flux.just(2),
+						Flux.just(3),
+						Flux.just(4),
+						Flux.just(5),
+						Flux.just(6))).expectNext(Tuples.of(1, 2, 3, 4, 5, 6))
+		                              .verifyComplete();
 	}
 }

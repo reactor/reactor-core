@@ -64,7 +64,7 @@ public class FluxUsingTest {
 
 		AtomicInteger cleanup = new AtomicInteger();
 
-		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set, true)
+		Flux.using(() -> 1, r -> Flux.range(r, 10), cleanup::set)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)

@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -62,5 +64,33 @@ public class FluxMergeTest {
 		ts.assertValueCount(n + 1)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void mergeEmpty(){
+		StepVerifier.create(Flux.merge())
+	                .verifyComplete();
+	}
+
+
+	@Test
+	public void mergeOne(){
+		StepVerifier.create(Flux.merge(Flux.just(1)))
+		            .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void mergePublisherPublisher(){
+		StepVerifier.create(Flux.merge(Flux.just(Flux.just(1, 2), Flux.just(3, 4))))
+	                .expectNext(1, 2, 3, 4)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void mergePublisherPublisherIterable(){
+		StepVerifier.create(Flux.merge(Arrays.asList(Flux.just(1, 2), Flux.just(3, 4))))
+	                .expectNext(1, 2, 3, 4)
+	                .verifyComplete();
 	}
 }

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -39,7 +38,8 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class FluxMergeSequentialTest {
 
@@ -576,12 +576,20 @@ public class FluxMergeSequentialTest {
 		        .assertComplete().assertValues(1);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void mergeSequentialTwo() {
 		Flux.mergeSequential(Arrays.asList(Flux.just(1), Flux.just(2)))
 		        .subscribeWith(AssertSubscriber.create())
 		        .assertComplete().assertValues(1, 2);
+	}
+
+	@Test
+	public void mergeSequentialTwoDelayError() {
+		StepVerifier.create(Flux.mergeSequential(128, true,
+				Flux.just(1).concatWith(Flux.error(new Exception("test"))),
+				Flux.just(2)))
+		            .expectNext(1, 2)
+	                .verifyErrorMessage("test");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -590,6 +598,32 @@ public class FluxMergeSequentialTest {
 		Flux.mergeSequential(Arrays.asList(Flux.just(1), Flux.just(2)))
 		        .subscribeWith(AssertSubscriber.create())
 		        .assertComplete().assertValues(1, 2);
+	}
+
+	@Test
+	public void mergeSequentialTwoDelayIterableError() {
+		StepVerifier.create(Flux.mergeSequential(
+				Arrays.asList(Flux.just(1).concatWith(Flux.error(new Exception("test"))),
+				Flux.just(2)), true, 128, 128))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void mergeSequentialPublisher2() {
+		Flux.mergeSequential(Flux.just(Flux.just(1), Flux.just(2)))
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertComplete().assertValues(1, 2);
+	}
+
+	@Test
+	public void mergeSequentialTwoDelayPublisherError() {
+		StepVerifier.create(Flux.mergeSequential(
+				Flux.just(Flux.just(1).concatWith(Flux.error(new Exception("test"))),
+						Flux.just(2)), true, 128, 128))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
 	}
 
 	@Test
