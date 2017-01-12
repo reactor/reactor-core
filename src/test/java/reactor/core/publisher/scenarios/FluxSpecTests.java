@@ -1201,63 +1201,6 @@ public class FluxSpecTests {
 	                .verifyComplete();
 	}
 
-	@Test
-	public void cacheFlux() {
-		try {
-			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
-
-			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
-			                                         .cache()
-			                                         .elapsed();
-
-			StepVerifier.create(source)
-			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
-			            .verifyComplete();
-
-			StepVerifier.create(source)
-			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
-			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 1)
-			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
-			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
-			            .verifyComplete();
-		}
-		finally {
-			VirtualTimeScheduler.reset();
-		}
-	}
-
-	@Test
-	public void cacheFluxTTL() {
-		try {
-			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
-
-			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
-			                                         .cache(Duration.ofMillis(2000))
-			                                         .elapsed();
-
-			StepVerifier.create(source)
-			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
-			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
-			            .verifyComplete();
-
-			StepVerifier.create(source)
-			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
-			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
-			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
-			            .verifyComplete();
-		}
-		finally {
-			VirtualTimeScheduler.reset();
-		}
-	}
-
 	Flux<List<Integer>> scenario_delayItems() {
 		return Flux.range(1, 4)
 		           .buffer(2)

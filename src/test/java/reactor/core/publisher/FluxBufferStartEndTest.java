@@ -197,15 +197,16 @@ public class FluxBufferStartEndTest {
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxSameTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
 		           .delay(Duration.ofMillis(99))
-		           .bufferMillis(300, 300);
+		           .bufferMillis(300L, 300L);
 	}
 
 	@Test
 	public void bufferWillSubdivideAnInputFluxSameTime() {
 		StepVerifier.withVirtualTime(this::scenario_bufferWillSubdivideAnInputFluxSameTime)
 		            .thenAwait(Duration.ofSeconds(10))
-		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3, 4))
-		            .assertNext(t -> assertThat(t).containsExactly(5, 6, 7, 8))
+		            .assertNext(t -> assertThat(t).containsExactly(1, 2, 3))
+		            .assertNext(t -> assertThat(t).containsExactly(4, 5, 6))
+		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
 		            .verifyComplete();
 	}
 

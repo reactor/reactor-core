@@ -546,6 +546,36 @@ public class FluxConcatMapTest {
 	}
 
 	@Test
+	public void publisherOfPublisherDelayError2() {
+		StepVerifier.create(Flux.just(Flux.just(1, 2)
+		                                  .concatWith(Flux.error(new Exception("test"))),
+				Flux.just(3, 4))
+		                        .concatMap(f -> f))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEnd3() {
+		StepVerifier.create(Flux.just(Flux.just(1, 2)
+		                                  .concatWith(Flux.error(new Exception("test"))),
+				Flux.just(3, 4))
+		                        .concatMapDelayError(f -> f, true, 128))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEndNot3() {
+		StepVerifier.create(Flux.just(Flux.just(1, 2)
+		                                  .concatWith(Flux.error(new Exception("test"))),
+				Flux.just(3, 4))
+		                        .concatMapDelayError(f -> f, false, 128))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void publisherOfPublisherDelayEnd() {
 		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
 				Flux.just(3, 4)), false, 128))

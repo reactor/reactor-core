@@ -1480,58 +1480,6 @@ public class FluxTests extends AbstractReactorTest {
 
 	}
 
-	@Test
-	public void testBufferPredicateUntilIncludesBoundaryLast() {
-		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
-
-		Flux<List<String>> colors = Flux
-				.fromArray(colorSeparated)
-				.bufferUntil(val -> val.equals("#"))
-				.log();
-
-		StepVerifier.create(colors)
-		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue", "#")))
-		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("green", "green", "#")))
-		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("blue", "cyan")))
-		            .expectComplete()
-		            .verify();
-	}
-
-	@Test
-	public void testBufferPredicateUntilCutBeforeIncludesBoundaryFirst() {
-		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
-
-		Flux<List<String>> colors = Flux
-				.fromArray(colorSeparated)
-				.bufferUntil(val -> val.equals("#"), true)
-				.log();
-
-		StepVerifier.create(colors)
-		            .thenRequest(1)
-		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue")))
-		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("#", "green", "green")))
-		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("#", "blue", "cyan")))
-		            .expectComplete()
-		            .verify();
-	}
-
-	@Test
-	public void testBufferPredicateWhileDoesntIncludeBoundary() {
-		String[] colorSeparated = new String[]{"red", "green", "blue", "#", "green", "green", "#", "blue", "cyan"};
-
-		Flux<List<String>> colors = Flux
-				.fromArray(colorSeparated)
-				.bufferWhile(val -> !val.equals("#"))
-				.log();
-
-		StepVerifier.create(colors)
-		            .consumeNextWith(l1 -> Assert.assertThat(l1, contains("red", "green", "blue")))
-		            .consumeNextWith(l2 -> Assert.assertThat(l2, contains("green", "green")))
-		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("blue", "cyan")))
-		            .expectComplete()
-		            .verify();
-	}
-
 	private static final long TIMEOUT = 10_000;
 
 	// Setting it to 1 doesn't help.

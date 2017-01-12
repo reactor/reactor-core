@@ -80,13 +80,13 @@ public class BlockingTests {
 		Assert.assertEquals((Integer) 1,
 				Flux.range(1, 10)
 				    .publishOn(scheduler)
-				    .blockFirst(Duration.ofSeconds(10)));
+				    .blockLast(Duration.ofSeconds(10)));
 	}
 
 	@Test
 	public void blockingLastTimeout() {
 		assertThat(Flux.empty()
-		               .blockFirst(Duration.ofMillis(1))).isNull();
+		               .blockLast(Duration.ofMillis(1))).isNull();
 	}
 
 	@Test(expected = RuntimeException.class)
