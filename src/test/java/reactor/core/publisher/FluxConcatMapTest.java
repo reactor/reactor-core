@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -519,6 +520,65 @@ public class FluxConcatMapTest {
 		ts.assertNoValues()
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void publisherOfPublisher() {
+		StepVerifier.create(Flux.concat(Flux.just(Flux.just(1, 2), Flux.just(3, 4))))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void publisherOfPublisherDelay() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
+				Flux.just(3, 4))))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void publisherOfPublisherDelayError() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2).concatWith(Flux.error(new Exception("test"))),
+				Flux.just(3, 4))))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEnd() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
+				Flux.just(3, 4)), false, 128))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEndError() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2)
+		                                                        .concatWith(Flux.error(new Exception(
+				                                                        "test"))),
+				Flux.just(3, 4)), false, 128))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEnd2() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2),
+				Flux.just(3, 4)), true, 128))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void publisherOfPublisherDelayEndError2() {
+		StepVerifier.create(Flux.concatDelayError(Flux.just(Flux.just(1, 2)
+		                                                        .concatWith(Flux.error(new Exception(
+				                                                        "test"))),
+				Flux.just(3, 4)), true, 128))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
 	}
 
 }

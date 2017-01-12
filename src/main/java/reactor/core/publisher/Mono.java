@@ -2352,8 +2352,6 @@ public abstract class Mono<T> implements Publisher<T> {
 					.concatWith(Flux.error(new IllegalStateException("Exceeded maximum number of repeats"), true));
 			}
 
-			AtomicBoolean nonEmpty = new AtomicBoolean();
-
 			return this.repeatWhen(o -> repeatFactory.apply(o
 						.zipWith(iterations, 1, (c, i) -> i)))
 			           .next();

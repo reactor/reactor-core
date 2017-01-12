@@ -13,40 +13,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Collections;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxCombineLatestTest {
 
 	@Test
 	public void singleSourceIsMapped() {
-		
+
 		AssertSubscriber<String> ts = AssertSubscriber.create();
-		
+
 		Flux.combineLatest(a -> a[0].toString(), Flux.just(1))
-		.subscribe(ts);
-		
+		    .subscribe(ts);
+
 		ts.assertValues("1")
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void iterableSingleSourceIsMapped() {
-		
+
 		AssertSubscriber<String> ts = AssertSubscriber.create();
-		
+
 		Flux.combineLatest(Collections.singleton(Flux.just(1)), a -> a[0].toString())
-		.subscribe(ts);
-		
+		    .subscribe(ts);
+
 		ts.assertValues("1")
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
@@ -58,7 +60,7 @@ public class FluxCombineLatestTest {
 		ts.requestedFusionMode(Fuseable.ANY);
 
 		Flux.combineLatest(dp1, dp2, (a, b) -> a + b)
-		  .subscribe(ts);
+		    .subscribe(ts);
 
 		dp1.onNext(1);
 		dp1.onNext(2);
@@ -75,5 +77,81 @@ public class FluxCombineLatestTest {
 		ts.assertFuseableSource()
 		  .assertFusionMode(Fuseable.ASYNC)
 		  .assertValues(12, 22, 32, 33);
+	}
+
+	@Test
+	public void combineLatest() {
+		StepVerifier.create(Flux.combineLatest(obj -> (int) obj[0], Flux.just(1)))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatestEmpty() {
+		StepVerifier.create(Flux.combineLatest(obj -> (int) obj[0]))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatestHide() {
+		StepVerifier.create(Flux.combineLatest(obj -> (int) obj[0],
+				Flux.just(1)
+				    .hide()))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatest2() {
+		StepVerifier.create(Flux.combineLatest(Flux.just(1), Flux.just(2), (a, b) -> a))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatest3() {
+		StepVerifier.create(Flux.combineLatest(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				obj -> (int) obj[0]))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatest4() {
+		StepVerifier.create(Flux.combineLatest(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				obj -> (int) obj[0]))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatest5() {
+		StepVerifier.create(Flux.combineLatest(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				obj -> (int) obj[0]))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void combineLatest6() {
+		StepVerifier.create(Flux.combineLatest(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				Flux.just(6),
+				obj -> (int) obj[0]))
+		            .expectNext(1)
+		            .verifyComplete();
 	}
 }

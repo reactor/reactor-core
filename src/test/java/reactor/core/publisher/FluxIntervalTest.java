@@ -96,8 +96,7 @@ public class FluxIntervalTest {
 	}
 
 	Flux<Long> scenario2(){
-		return Flux.interval(Duration.ofMillis(500))
-		           .doOnNext(t -> System.out.println("source emitted " + t));
+		return Flux.interval(Duration.ofMillis(500));
 	}
 
 	@Test
@@ -105,6 +104,36 @@ public class FluxIntervalTest {
 		StepVerifier.withVirtualTime(this::scenario2)
 		            .thenAwait(Duration.ofMillis(5_000))
 		            .expectNextCount(10)
+		            .thenCancel()
+		            .verify();
+	}
+
+	Flux<Long> scenario3(){
+		return Flux.interval(Duration.ofMillis(500), Duration.ofMillis(1000));
+	}
+
+	@Test
+	public void normal3() {
+		StepVerifier.withVirtualTime(this::scenario3)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .expectNext(0L)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNextCount(4)
+		            .thenCancel()
+		            .verify();
+	}
+
+	Flux<Long> scenario4(){
+		return Flux.intervalMillis(500, 1000);
+	}
+
+	@Test
+	public void normal4() {
+		StepVerifier.withVirtualTime(this::scenario4)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .expectNext(0L)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNextCount(4)
 		            .thenCancel()
 		            .verify();
 	}
