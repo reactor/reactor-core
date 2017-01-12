@@ -38,9 +38,24 @@ public class FluxFromTest {
 		            .expectNext(1)
 		            .verifyComplete();
 	}
+
 	@Test
 	public void asJust() {
 		StepVerifier.create(Mono.just(1).as(Flux::from))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxJust() {
+		StepVerifier.create(Mono.just(1).flux())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxEmpty() {
+		StepVerifier.create(Mono.empty().flux())
 		            .expectNext(1)
 		            .verifyComplete();
 	}

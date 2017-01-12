@@ -15,12 +15,50 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicInteger;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class MonoCreateTest {
 
 	@Test
-	public void normal() {
+	public void createStreamFromMonoCreate() {
+		StepVerifier.create(Mono.create(s -> s.success("test1")))
+		            .expectNext("test1")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void createStreamFromMonoCreateHide() {
+		StepVerifier.create(Mono.create(s -> s.success("test1")).hide())
+		            .expectNext("test1")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void createStreamFromMonoCreateError() {
+		StepVerifier.create(Mono.create(s -> s.error(new Exception("test"))))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void cancellation() {
+		AtomicInteger cancelled = new AtomicInteger();
+		StepVerifier.create(Mono.create(s -> s.setCancellation(cancelled::getAndIncrement)))
+		            .thenAwait()
+		            .thenCancel()
+		            .verify();
+		assertThat(cancelled.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void createStreamFromMonoCreate2() {
+		StepVerifier.create(Mono.create(MonoSink::success)
+		                        .publishOn(Schedulers.parallel()))
+		            .verifyComplete();
 	}
 }

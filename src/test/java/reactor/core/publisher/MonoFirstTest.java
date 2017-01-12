@@ -21,7 +21,10 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoFirstTest {
 
@@ -98,5 +101,33 @@ public class MonoFirstTest {
 		f.subscribeWith(AssertSubscriber.create())
 		 .assertValues(1)
 		 .assertComplete();
+	}
+
+
+	@Test
+	public void firstMonoJust() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.first(Mono.just(1), Mono.just(2))
+		                        .subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	Mono<Integer> scenario_fastestSource() {
+		return Mono.first(Mono.delay(Duration.ofSeconds(4))
+		                      .map(s -> 1),
+				Mono.delay(Duration.ofSeconds(3))
+				    .map(s -> 2));
+	}
+
+	@Test
+	public void fastestSource() {
+		StepVerifier.withVirtualTime(this::scenario_fastestSource)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNext(2)
+		            .verifyComplete();
 	}
 }

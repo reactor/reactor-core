@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMapSignalTest {
@@ -56,4 +56,33 @@ public class FluxMapSignalTest {
         .assertComplete();
     }
 
+	@Test
+	public void flatMapSignal() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Flux.just(d * 2),
+				                        e -> Flux.just(99),
+				                        () -> Flux.just(10)))
+		            .expectNext(2, 4, 6, 10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void flatMapSignalError() {
+		StepVerifier.create(Flux.just(1, 2, 3).concatWith(Flux.error(new Exception("test")))
+		                        .flatMap(d -> Flux.just(d * 2),
+				                        e -> Flux.just(99),
+				                        () -> Flux.just(10)))
+		            .expectNext(2, 4, 6, 99)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void flatMapSignal2() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(d -> Flux.just(d * 2),
+				                        e -> Flux.just(99),
+				                        () -> Flux.just(10)))
+		            .expectNext(2, 10)
+		            .verifyComplete();
+	}
 }

@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMergeTest {
@@ -34,6 +35,13 @@ public class FluxMergeTest {
 		ts.assertValues(1, 2, 3, 4, 5, 6)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void normal2() {
+		StepVerifier.create(Mono.just(1).mergeWith(Flux.just(2, 3)))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
 	}
 
 	@Test

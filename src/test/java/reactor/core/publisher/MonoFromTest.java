@@ -52,4 +52,11 @@ public class MonoFromTest {
 	                .expectNext(1)
 	                .verifyComplete();
 	}
+
+	@Test
+	public void monoNext() {
+		StepVerifier.create(Flux.just(1, 2, 3).next())
+	                .expectNext(1)
+	                .verifyComplete();
+	}
 }

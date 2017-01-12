@@ -15,12 +15,22 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.Assert;
 import org.junit.Test;
 
-//FIXME implement
 public class MonoDeferTest {
 
 	@Test
-	public void normal() {
+	public void deferMono(){
+		AtomicInteger i = new AtomicInteger();
+
+		Mono<Integer> source =
+				Mono.defer(() -> Mono.just(i.incrementAndGet()));
+
+		Assert.assertEquals(source.block().intValue(), 1);
+		Assert.assertEquals(source.block().intValue(), 2);
+		Assert.assertEquals(source.block().intValue(), 3);
 	}
 }

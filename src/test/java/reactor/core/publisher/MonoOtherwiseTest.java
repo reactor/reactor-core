@@ -18,7 +18,10 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoOtherwiseTest {
 /*
@@ -151,4 +154,42 @@ public class MonoOtherwiseTest {
 		  .assertError(NullPointerException.class);
 	}
 
+	static final class TestException extends Exception {}
+
+	@Test
+	public void mapError() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.<Integer>error(new TestException())
+				.mapError(TestException.class, e -> new Exception("test"))
+				.subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isTrue())
+		            .then(() -> assertThat(mp.isSuccess()).isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void otherwiseErrorFilter() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.<Integer>error(new TestException())
+				.otherwise(TestException.class, e -> Mono.just(1))
+				.subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void otherwiseErrorUnfilter() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.<Integer>error(new TestException())
+				.otherwise(RuntimeException.class, e -> Mono.just(1))
+				.subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isTrue())
+		            .then(() -> assertThat(mp.isSuccess()).isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .verifyError(TestException.class);
+	}
 }

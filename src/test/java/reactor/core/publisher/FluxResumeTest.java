@@ -22,6 +22,8 @@ import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxResumeTest {
 /*
 	@Test
@@ -313,5 +315,14 @@ public class FluxResumeTest {
 		StepVerifier.create(source.onErrorReturn("Zero"))
 		            .expectNext("Three", "Two", "One", "Zero")
 		            .verifyComplete();
+	}
+
+	static final class TestException extends Exception {}
+
+	@Test
+	public void mapError() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.mapError(TestException.class, e -> new Exception("test")))
+				.verifyErrorMessage("test");
 	}
 }

@@ -15,12 +15,117 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicReference;
 
-//FIXME implement
+import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MonoPeekTest {
 
 	@Test
-	public void normal() {
+	public void onMonoRejectedDoOnTerminate() {
+		Mono<String> mp = Mono.error(new Exception("test"));
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		mp.doOnTerminate((s, f) -> ref.set(f))
+		  .subscribe();
+
+		assertThat(ref.get()).hasMessage("test");
+	}
+
+	@Test
+	public void onMonoSuccessDoOnTerminate() {
+		Mono<String> mp = Mono.just("test");
+		AtomicReference<String> ref = new AtomicReference<>();
+
+		mp.doOnTerminate((s, f) -> ref.set(s))
+		  .subscribe();
+
+		assertThat(ref.get()).isEqualToIgnoringCase("test");
+	}
+
+	@Test
+	public void onMonoSuccessDoOnSuccess() {
+		Mono<String> mp = Mono.just("test");
+		AtomicReference<String> ref = new AtomicReference<>();
+
+		mp.doOnSuccess(ref::set)
+		  .subscribe();
+
+		assertThat(ref.get()).isEqualToIgnoringCase("test");
+	}
+
+	@Test
+	public void onMonoDoOnRequest() {
+		Mono<String> mp = Mono.just("test");
+		AtomicReference<Long> ref = new AtomicReference<>();
+
+		StepVerifier.create(mp.doOnRequest(ref::set), 0)
+		            .thenAwait()
+		            .thenRequest(123)
+		            .expectNext("test")
+		            .verifyComplete();
+
+		assertThat(ref.get()).isEqualTo(123);
+	}
+
+	@Test
+	public void onMonoDoOnSubscribe() {
+		Mono<String> mp = Mono.just("test");
+		AtomicReference<Subscription> ref = new AtomicReference<>();
+
+		StepVerifier.create(mp.doOnSubscribe(ref::set))
+		            .expectNext("test")
+		            .verifyComplete();
+
+		assertThat(ref.get()).isNotNull();
+	}
+
+	@Test
+	public void onMonoRejectedDoOnError() {
+		Mono<String> mp = Mono.error(new Exception("test"));
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		mp.doOnError(ref::set)
+		  .subscribe();
+
+		assertThat(ref.get()).hasMessage("test");
+	}
+
+	final static class TestException extends Exception {
+
+	}
+
+	@Test
+	public void onMonoRejectedDoOnErrorClazz() {
+		Mono<String> mp = Mono.error(new TestException());
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		mp.doOnError(TestException.class, ref::set)
+		  .subscribe();
+
+		assertThat(ref.get()).isInstanceOf(TestException.class);
+	}
+
+	@Test
+	public void onMonoRejectedDoOnErrorClazzNot() {
+		Mono<String> mp = Mono.error(new TestException());
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		assertThat(mp.doOnError(RuntimeException.class, ref::set)
+		             .subscribe()
+		             .getError()).isInstanceOf(TestException.class);
+
+		assertThat(ref.get()).isNull();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void onMonoSuccessNullDoOnSuccess() {
+		Mono<String> mp = Mono.just("test");
+		mp.doOnSuccess(null)
+		  .subscribe();
 	}
 }

@@ -27,6 +27,12 @@ public class MonoCastTest {
 		    .cast(null);
 	}
 
+	@Test(expected = NullPointerException.class)
+	public void sourceNull2() {
+		Mono.just(1)
+		    .ofType(null);
+	}
+
 	@Test
 	public void normal() {
 		StepVerifier.create(Mono.just(1)
@@ -41,5 +47,23 @@ public class MonoCastTest {
 		                        .cast(String.class))
 		            .verifyError(ClassCastException.class);
 	}
+
+
+
+	@Test
+	public void normalOfType() {
+		StepVerifier.create(Mono.just(1)
+		                        .ofType(Number.class))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void errorOfType() {
+		StepVerifier.create(Mono.just(1)
+		                        .ofType(String.class))
+		            .verifyComplete();
+	}
+
 
 }

@@ -25,4 +25,10 @@ public class MonoErrorTest {
 		StepVerifier.create(Mono.error(new Exception("test")))
 		            .verifyErrorMessage("test");
 	}
+
+	@Test(expected = Exception.class)
+	public void onMonoRejectedThrowOnBlock() {
+		Mono.error(new Exception("test"))
+		    .block();
+	}
 }

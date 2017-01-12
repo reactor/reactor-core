@@ -13,81 +13,79 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import org.junit.Test;
-
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxMaterializeTest {
 
-    @Test
-    public void completeOnlyBackpressured() {
-        AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
-        
-        Flux.<Integer>empty().materialize()
-        .subscribe(ts);
-        
-        ts.assertNoValues()
-        .assertNoError()
-        .assertNotComplete();
-        
-        ts.request(1);
-        
-        ts.assertValues(Signal.complete())
-        .assertNoError()
-        .assertComplete();
-    }
+	@Test
+	public void completeOnlyBackpressured() {
+		AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
 
-    @Test
-    public void errorOnlyBackpressured() {
-        AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
+		Flux.<Integer>empty().materialize()
+		                     .subscribe(ts);
 
-        RuntimeException ex = new RuntimeException();
-        
-        Flux.<Integer>error(ex).materialize()
-        .subscribe(ts);
-        
-        ts.assertNoValues()
-        .assertNoError()
-        .assertNotComplete();
-        
-        ts.request(1);
-        
-        ts.assertValues(Signal.error(ex))
-        .assertNoError()
-        .assertComplete();
-    }
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
 
+		ts.request(1);
 
+		ts.assertValues(Signal.complete())
+		  .assertNoError()
+		  .assertComplete();
+	}
 
-    @Test
-    public void materialize() {
-        StepVerifier.create(Flux.just("Three", "Two", "One")
-                                .materialize())
-                    .expectNextMatches(s -> s.isOnNext() && s.get()
-                                                             .equals("Three"))
-                    .expectNextMatches(s -> s.isOnNext() && s.get()
-                                                             .equals("Two"))
-                    .expectNextMatches(s -> s.isOnNext() && s.get()
-                                                             .equals("One"))
-                    .expectNextMatches(Signal::isOnComplete)
-                    .verifyComplete();
-    }
+	@Test
+	public void errorOnlyBackpressured() {
+		AssertSubscriber<Signal<Integer>> ts = AssertSubscriber.create(0L);
 
-    @Test
-    public void materialize2() {
-        StepVerifier.create(Flux.just("Three", "Two")
-                                .concatWith(Flux.error(new RuntimeException("test")))
-                                .materialize())
-                    .expectNextMatches(s -> s.isOnNext() && s.get()
-                                                             .equals("Three"))
-                    .expectNextMatches(s -> s.isOnNext() && s.get()
-                                                             .equals("Two"))
-                    .expectNextMatches(s -> s.isOnError() && s.getThrowable()
-                                                              .getMessage()
-                                                              .equals("test"))
-                    .verifyComplete();
-    }
+		RuntimeException ex = new RuntimeException();
+
+		Flux.<Integer>error(ex).materialize()
+		                       .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(1);
+
+		ts.assertValues(Signal.error(ex))
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void materialize() {
+		StepVerifier.create(Flux.just("Three", "Two", "One")
+		                        .materialize())
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Three"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Two"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("One"))
+		            .expectNextMatches(Signal::isOnComplete)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void materialize2() {
+		StepVerifier.create(Flux.just("Three", "Two")
+		                        .concatWith(Flux.error(new RuntimeException("test")))
+		                        .materialize())
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Three"))
+		            .expectNextMatches(s -> s.isOnNext() && s.get()
+		                                                     .equals("Two"))
+		            .expectNextMatches(s -> s.isOnError() && s.getThrowable()
+		                                                      .getMessage()
+		                                                      .equals("test"))
+		            .verifyComplete();
+	}
 }

@@ -20,6 +20,8 @@ import java.io.IOException;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MonoCallableTest {
 
     @Test(expected = NullPointerException.class)
@@ -78,5 +80,19 @@ public class MonoCallableTest {
           .assertNotComplete()
           .assertError(IOException.class)
           .assertErrorMessage("forced failure");
+    }
+
+    @Test
+    public void onMonoSuccessCallableOnBlock() {
+        assertThat(Mono.fromCallable(() -> "test")
+                       .block()).isEqualToIgnoringCase("test");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void onMonoErrorCallableOnBlock() {
+        Mono.fromCallable(() -> {
+            throw new Exception("test");
+        })
+            .block();
     }
 }

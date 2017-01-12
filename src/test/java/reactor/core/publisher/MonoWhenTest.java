@@ -134,6 +134,16 @@ public class MonoWhenTest {
 	}
 
 	@Test
+	public void nonEmptyPublisherCombinedDelay() {
+		assertThat(Mono.whenDelayError(
+				args -> (int)args[0] + (int)args[1],
+				Mono.just(1),
+				Mono.just(2)
+		)
+		               .block()).isEqualTo(3);
+	}
+
+	@Test
 	public void noSourcePublisherDelay() {
 		assertThat(Mono.whenDelayError()
 		               .block()).isNull();
@@ -223,6 +233,28 @@ public class MonoWhenTest {
 		MonoWhen<?, ?> s = (MonoWhen<?, ?>) f;
 		Assert.assertTrue(s.sources != null);
 		Assert.assertTrue(s.sources.length == 3);
+
+		Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
+		  .assertValues(Tuples.of(1, "testtest2"))
+		  .assertComplete();
+	}
+
+@Test
+	public void pairWise3() {
+		Mono<Tuple2<Tuple2<Integer, String>, String>> f =
+				Mono.when(Arrays.asList(Mono.just(1), Mono.just("test")),
+						obj -> Tuples.of((int)obj[0], (String)obj[1]))
+				    .and(Mono.just("test2"));
+
+		Assert.assertTrue(f instanceof MonoWhen);
+		MonoWhen<?, ?> s = (MonoWhen<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 2);
 
 		Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),

@@ -23,6 +23,8 @@ import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MonoJustTest {
 
     @Test(expected = NullPointerException.class)
@@ -103,4 +105,11 @@ public class MonoJustTest {
         .assertFusionMode(Fuseable.SYNC)
         .assertValues(1);
     }
+
+	@Test
+	public void onMonoSuccessReturnOnBlock() {
+		assertThat(Mono.just("test")
+		               .block()).isEqualToIgnoringCase("test");
+	}
+
 }
