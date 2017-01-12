@@ -15,12 +15,49 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.test.StepVerifier;
+
 public class MonoRetryPredicateTest {
 
 	@Test
-	public void normal() {
+	public void twoRetryNormalSupplier() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .doOnNext(v -> {
+		                        	if(v < 4) {
+				                        throw new RuntimeException("test");
+			                        }
+			                        else {
+		                        		bool.set(false);
+			                        }
+		                        })
+		                        .retry(3, e -> bool.get()))
+		            .expectNext(4)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void twoRetryErrorSupplier() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .doOnNext(v -> {
+		                        	if(v < 4) {
+		                        		if( v > 2){
+					                        bool.set(false);
+				                        }
+				                        throw new RuntimeException("test");
+			                        }
+		                        })
+		                        .retry(3, e -> bool.get()))
+		            .verifyErrorMessage("test");
 	}
 }

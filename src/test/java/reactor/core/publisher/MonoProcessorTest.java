@@ -46,11 +46,37 @@ public class MonoProcessorTest {
 	}
 
 	@Test
+	public void MonoProcessorRejectedSubscribeCallback() {
+		MonoProcessor<String> mp = MonoProcessor.create();
+		AtomicReference<Throwable> ref = new AtomicReference<>();
+
+		mp.subscribe(v -> {}, ref::set);
+		mp.onError(new Exception("test"));
+
+		assertThat(ref.get()).hasMessage("test");
+		assertThat(mp.isSuccess()).isFalse();
+		assertThat(mp.isError()).isTrue();
+	}
+
+	@Test
 	public void MonoProcessorSuccessDoOnTerminate() {
 		MonoProcessor<String> mp = MonoProcessor.create();
 		AtomicReference<String> ref = new AtomicReference<>();
 
 		mp.doOnTerminate((s, f) -> ref.set(s)).subscribe();
+		mp.onNext("test");
+
+		assertThat(ref.get()).isEqualToIgnoringCase("test");
+		assertThat(mp.isSuccess()).isTrue();
+		assertThat(mp.isError()).isFalse();
+	}
+
+	@Test
+	public void MonoProcessorSuccessSubscribeCallback() {
+		MonoProcessor<String> mp = MonoProcessor.create();
+		AtomicReference<String> ref = new AtomicReference<>();
+
+		mp.subscribe(ref::set);
 		mp.onNext("test");
 
 		assertThat(ref.get()).isEqualToIgnoringCase("test");
@@ -69,6 +95,13 @@ public class MonoProcessorTest {
 		assertThat(ref.get()).hasMessage("test");
 		assertThat(mp.isSuccess()).isFalse();
 		assertThat(mp.isError()).isTrue();
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void MonoProcessorRejectedSubscribeCallbackNull() {
+		MonoProcessor<String> mp = MonoProcessor.create();
+
+		mp.subscribe(null, null);
 	}
 
 	@Test

@@ -42,6 +42,22 @@ public class MonoThenIgnoreTest {
 	}
 
 	@Test
+	public void normal3() {
+		StepVerifier.create(Mono.just(1)
+		                        .then())
+		            .expectComplete();
+	}
+
+	@Test
+	public void chained() {
+		StepVerifier.create(Mono.just(1)
+		                        .then()
+		                        .then(Mono.just(2)))
+		            .expectNext(2)
+		            .expectComplete();
+	}
+
+	@Test
 	public void normalTime() {
 		StepVerifier.withVirtualTime(this::scenario)
 		            .thenAwait(Duration.ofSeconds(123))

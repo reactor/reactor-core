@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,11 @@ import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxRepeatTest {
-
-	@Test(expected = NullPointerException.class)
-	public void sourceNull() {
-		new FluxRepeat<>(null, 1);
-	}
+public class MonoRepeatTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void timesInvalid() {
-		Flux.never()
+		Mono.never()
 		    .repeat(-1);
 	}
 
@@ -40,7 +35,8 @@ public class FluxRepeatTest {
 	public void zeroRepeat() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.range(1, 10)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat(0)
 		    .subscribe(ts);
 
@@ -53,11 +49,12 @@ public class FluxRepeatTest {
 	public void oneRepeat() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.range(1, 10)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat(1)
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertValues(1)
 		  .assertComplete()
 		  .assertNoError();
 	}
@@ -66,7 +63,8 @@ public class FluxRepeatTest {
 	public void oneRepeatBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.range(1, 10)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat(1)
 		    .subscribe(ts);
 
@@ -76,19 +74,7 @@ public class FluxRepeatTest {
 
 		ts.request(2);
 
-		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(3);
-
-		ts.assertValues(1, 2, 3, 4, 5)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-
-		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		ts.assertValues(1)
 		  .assertComplete()
 		  .assertNoError();
 	}
@@ -97,21 +83,38 @@ public class FluxRepeatTest {
 	public void twoRepeat() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.range(1, 5)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat(2)
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
+		ts.assertValues(1, 2)
 		  .assertComplete()
 		  .assertNoError();
 	}
 
 	@Test
 	public void twoRepeatNormal() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
+		AtomicInteger i = new AtomicInteger();
+
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
 		                        .repeat(2)
 		                        .count())
-		            .expectNext(6L)
+		            .expectNext(2L)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void twoRepeatNormalSupplier() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		StepVerifier.create(Mono.fromCallable(i::incrementAndGet)
+		                        .repeat(2, bool::get))
+		            .expectNext(1, 2)
+		            .expectNext(3)
+		            .then(() -> bool.set(false))
 		            .expectComplete()
 		            .verify();
 	}
@@ -120,7 +123,8 @@ public class FluxRepeatTest {
 	public void twoRepeatBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.range(1, 5)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat(2)
 		    .subscribe(ts);
 
@@ -128,26 +132,15 @@ public class FluxRepeatTest {
 		  .assertNoError()
 		  .assertNotComplete();
 
-		ts.request(2);
+		ts.request(1);
+
+		ts.assertValues(1)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(1);
 
 		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(4);
-
-		ts.assertValues(1, 2, 3, 4, 5, 1)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(2);
-
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(10);
-		ts.assertValues(1, 2, 3, 4, 5, 1, 2, 3, 4, 5)
 		  .assertComplete()
 		  .assertNoError();
 	}
@@ -156,29 +149,14 @@ public class FluxRepeatTest {
 	public void repeatInfinite() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2)
+		AtomicInteger i = new AtomicInteger();
+		Mono.fromCallable(i::incrementAndGet)
 		    .repeat()
 		    .take(9)
 		    .subscribe(ts);
 
-		ts.assertValues(1, 2, 1, 2, 1, 2, 1, 2, 1)
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9)
 		  .assertComplete()
 		  .assertNoError();
-	}
-
-
-
-	@Test
-	public void twoRepeatNormalSupplier() {
-		AtomicBoolean bool = new AtomicBoolean(true);
-
-		StepVerifier.create(Flux.range(1, 4)
-		                        .repeat(2, bool::get))
-		            .expectNext(1, 2, 3, 4)
-		            .expectNext(1, 2, 3, 4)
-		            .expectNext(1, 2, 3, 4)
-		            .then(() -> bool.set(false))
-		            .expectComplete()
-		            .verify();
 	}
 }

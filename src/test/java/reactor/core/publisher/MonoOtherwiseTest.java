@@ -192,4 +192,29 @@ public class MonoOtherwiseTest {
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .verifyError(TestException.class);
 	}
+
+	@Test
+	public void otherwiseReturnErrorFilter() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.<Integer>error(new TestException())
+				.otherwiseReturn(TestException.class, 1)
+				.subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isFalse())
+		            .then(() -> assertThat(mp.isSuccess()).isTrue())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void otherwiseReturnErrorUnfilter() {
+		MonoProcessor<Integer> mp = MonoProcessor.create();
+		StepVerifier.create(Mono.<Integer>error(new TestException())
+				.otherwiseReturn(RuntimeException.class, 1)
+				.subscribeWith(mp))
+		            .then(() -> assertThat(mp.isError()).isTrue())
+		            .then(() -> assertThat(mp.isSuccess()).isFalse())
+		            .then(() -> assertThat(mp.isTerminated()).isTrue())
+		            .verifyError(TestException.class);
+	}
 }

@@ -15,9 +15,11 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoTimeoutTest {
@@ -81,5 +83,30 @@ public class MonoTimeoutTest {
 		ts.assertNoValues()
 		  .assertError(TimeoutException.class)
 		  .assertNotComplete();
+	}
+
+
+	Mono<Integer> scenario_timeoutCanBeBoundWithCallback() {
+		return Mono.<Integer>never().timeout(Duration.ofMillis(500), Mono.just(-5));
+	}
+
+	@Test
+	public void timeoutCanBeBoundWithCallback() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback)
+		            .thenAwait(Duration.ofMillis(500))
+		            .expectNext(-5)
+		            .verifyComplete();
+	}
+
+	Mono<?> scenario_timeoutThrown() {
+		return Mono.never()
+		           .timeout(Duration.ofMillis(500));
+	}
+
+	@Test
+	public void MonoPropagatesErrorUsingAwait() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutThrown)
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
 	}
 }

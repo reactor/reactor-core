@@ -47,24 +47,6 @@ public class ScatterGatherTests {
 			.get();
 	}
 
-	@Test
-	public void test2() throws Exception {
-
-		Scheduler s = Schedulers.parallel();
-
-		Flux.just("red", "white", "blue")
-		    .window()
-		    .flatMap(w -> w.take(1)
-		                   .collectList())
-		    .log("merged")
-		    .subscribeWith(AssertSubscriber.create())
-		    .assertComplete()
-		    .assertValueCount(3);
-
-		s.dispose();
-	}
-
-
 	final class Result {
 
 		private ConcurrentMap<String, AtomicLong> counts = new ConcurrentHashMap<>();

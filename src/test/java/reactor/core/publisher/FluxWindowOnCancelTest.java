@@ -16,11 +16,21 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
-//FIXE implement
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class FluxWindowOnCancelTest {
 
 	@Test
-	public void normal() {
+	public void normal() throws Exception {
+		StepVerifier.create(Flux.just("red", "white", "blue")
+		                 .window()
+		                 .concatMap(w -> w.take(1).collectList()))
+		            .assertNext(s -> assertThat(s.get(0)).isEqualTo("red"))
+		            .assertNext(s -> assertThat(s.get(0)).isEqualTo("white"))
+		            .assertNext(s -> assertThat(s.get(0)).isEqualTo("blue"))
+	                .verifyComplete();
+
 	}
 }

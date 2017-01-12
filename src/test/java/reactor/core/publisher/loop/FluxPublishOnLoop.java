@@ -15,18 +15,16 @@
  */
 package reactor.core.publisher.loop;
 
-import java.time.Duration;
 import java.util.concurrent.Executors;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxPublishOnTest;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.StepVerifier;
 
 /**
  * @author Stephane Maldini
@@ -121,20 +119,11 @@ public class FluxPublishOnLoop {
 			                           .flatMap(v -> Flux.range(v, 2), false, 128, j)
 			                           .publishOn(scheduler);
 
+			StepVerifier.Step<Integer> v = StepVerifier.create(source)
+			            .expectNextCount(count * 2);
+
 			for (int i = 0; i < 10000; i++) {
-				AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-				source.subscribe(ts);
-
-				if (!ts.await(Duration.ofSeconds(15))
-				       .isTerminated()) {
-					ts.cancel();
-					Assert.fail("Timed out @ maxConcurrency = " + j);
-				}
-
-				ts.assertValueCount(count * 2)
-				  .assertNoError()
-				  .assertComplete();
+				v.verifyComplete();
 			}
 		}
 	}
