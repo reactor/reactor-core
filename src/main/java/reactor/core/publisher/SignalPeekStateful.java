@@ -85,14 +85,6 @@ interface SignalPeekStateful<T, S> extends Receiver {
 	 */
 	Consumer<S> onCancelCall();
 
-	/**
-	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}
-	 * @return A task that will run after (finally) {@link Subscriber#onNext(Object)}
-	 */
-	default BiConsumer<? super T, S> onAfterNextCall(){
-		return null;
-	}
-
 	@Override
 	Publisher<? extends T> upstream();
 

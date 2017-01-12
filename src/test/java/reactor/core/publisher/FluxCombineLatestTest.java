@@ -89,7 +89,6 @@ public class FluxCombineLatestTest {
 	@Test
 	public void combineLatestEmpty() {
 		StepVerifier.create(Flux.combineLatest(obj -> (int) obj[0]))
-		            .expectNext(1)
 		            .verifyComplete();
 	}
 
