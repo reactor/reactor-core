@@ -3812,6 +3812,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
+		    if(thiz instanceof Fuseable.ScalarCallable){
+		    	@SuppressWarnings("unchecked")
+			    Fuseable.ScalarCallable<T> c = (Fuseable.ScalarCallable<T>)thiz;
+			    T v = c.call();
+			    if(v == null){
+			    	return Mono.just(defaultValue);
+			    }
+			    return Mono.just(v);
+		    }
 	        return convertToMono(thiz);
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this, defaultValue));

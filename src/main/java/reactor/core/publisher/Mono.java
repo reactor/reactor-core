@@ -2354,9 +2354,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 			AtomicBoolean nonEmpty = new AtomicBoolean();
 
-			return this.doOnSuccess(e -> nonEmpty.lazySet(e != null))
-			           .repeatWhen(o -> repeatFactory.apply(o
-						.takeWhile(e -> !nonEmpty.get())
+			return this.repeatWhen(o -> repeatFactory.apply(o
 						.zipWith(iterations, 1, (c, i) -> i)))
 			           .next();
 		});

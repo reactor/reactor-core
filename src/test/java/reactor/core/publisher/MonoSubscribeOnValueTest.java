@@ -15,12 +15,38 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.core.Exceptions;
+import reactor.core.Fuseable;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
+import static org.junit.Assert.assertTrue;
+
 public class MonoSubscribeOnValueTest {
 
 	@Test
-	public void normal() {
+	public void testSubscribeOnValueFusion() {
+
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> Mono.just(f + 1)
+		                                          .subscribeOn(Schedulers.parallel())
+		                                          .map(this::slow)))
+		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
+		            .expectNext(2)
+		            .verifyComplete();
+	}
+
+	int slow(int slow){
+		try {
+			Thread.sleep(10);
+			return slow;
+		}
+		catch (InterruptedException e) {
+			throw Exceptions.bubble(e);
+		}
 	}
 }

@@ -145,7 +145,7 @@ public class FluxRetryWhenTest {
 	}
 
 	@Test
-	public void retryerErrorsInResponse() {
+	public void retryErrorsInResponse() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		rangeError.retryWhen(v -> new FluxMap<>(v, a -> {
@@ -174,11 +174,11 @@ public class FluxRetryWhenTest {
 		  .assertNotComplete();
 	}
 
-	Mono<String> exponentialRetryScenario() {
+	Flux<String> exponentialRetryScenario() {
 		AtomicInteger i = new AtomicInteger();
-		return Mono.<String>create(s -> {
+		return Flux.<String>create(s -> {
 			if (i.incrementAndGet() == 4) {
-				s.success("hey");
+				s.next("hey");
 			}
 			else {
 				s.error(new RuntimeException("test " + i));

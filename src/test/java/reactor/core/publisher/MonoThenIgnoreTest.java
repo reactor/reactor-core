@@ -50,8 +50,8 @@ public class MonoThenIgnoreTest {
 
 	@Test
 	public void chained() {
-		StepVerifier.create(Mono.just(1)
-		                        .then()
+		StepVerifier.create(Mono.just(0)
+		                        .then(Mono.just(1))
 		                        .then(Mono.just(2)))
 		            .expectNext(2)
 		            .expectComplete();

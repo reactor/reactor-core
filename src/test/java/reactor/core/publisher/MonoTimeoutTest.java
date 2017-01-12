@@ -98,6 +98,19 @@ public class MonoTimeoutTest {
 		            .verifyComplete();
 	}
 
+	Mono<Integer> scenario_timeoutCanBeBoundWithCallback2() {
+		return Mono.<Integer>never().timeout(Mono.delay(Duration.ofMillis(500)), Mono.just
+				(-5));
+	}
+
+	@Test
+	public void timeoutCanBeBoundWithCallback2() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback2)
+		            .thenAwait(Duration.ofMillis(500))
+		            .expectNext(-5)
+		            .verifyComplete();
+	}
+
 	Mono<?> scenario_timeoutThrown() {
 		return Mono.never()
 		           .timeout(Duration.ofMillis(500));

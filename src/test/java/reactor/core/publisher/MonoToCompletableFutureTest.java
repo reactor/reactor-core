@@ -15,12 +15,36 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.Test;
 
-//FIXME implement
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 public class MonoToCompletableFutureTest {
 
 	@Test
-	public void normal() {
+	public void normal() throws Exception {
+		CompletableFuture<Integer> f = Mono.just(1)
+		                                   .toFuture();
+
+		assertThat(f.get()).isEqualTo(1);
+	}
+
+	@Test(expected = Exception.class)
+	public void error() throws Exception {
+		CompletableFuture<Integer> f =
+				Mono.<Integer>error(new Exception("test")).toFuture();
+
+		assertThat(f.isDone()).isTrue();
+		assertThat(f.isCompletedExceptionally()).isTrue();
+		f.get();
+	}
+
+	@Test
+	public void empty() throws Exception {
+		CompletableFuture<Integer> f = Mono.<Integer>empty().toFuture();
+
+		assertThat(f.get()).isNull();
 	}
 }

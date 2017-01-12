@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,45 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
-//FIXME implement
 public class MonoTakeLastOneTest {
 
 	@Test
+	public void empty() {
+		StepVerifier.create(Flux.empty()
+		                        .last())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fallback() {
+		StepVerifier.create(Flux.empty()
+		                        .last(1))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void error() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .last())
+		            .verifyErrorMessage("test");
+	}
+	@Test
 	public void normal() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .last())
+		            .expectNext(100)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalHide() {
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .last())
+		            .expectNext(100)
+		            .verifyComplete();
 	}
 }

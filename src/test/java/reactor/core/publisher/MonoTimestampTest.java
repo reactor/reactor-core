@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,25 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
 
-//FIXME implement
-public class MonoIgnoreThenTest {
+import org.junit.Test;
+import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
+
+public class MonoTimestampTest {
+
+	Mono<Tuple2<Long, String>> scenario_aMonoCanBeTimestamped(){
+		return Mono.just("test")
+		           .timestamp();
+	}
 
 	@Test
-	public void normal() {
+	public void aMonoCanBeTimestamped(){
+		StepVerifier.withVirtualTime(this::scenario_aMonoCanBeTimestamped, 0)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .thenRequest(1)
+		            .expectNextMatches(t -> t.getT1() == 2000 && t.getT2().equals("test"))
+		            .verifyComplete();
 	}
 }

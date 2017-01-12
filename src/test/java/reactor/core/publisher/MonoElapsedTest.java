@@ -15,12 +15,26 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
+
 public class MonoElapsedTest {
 
+
+	Mono<Tuple2<Long, String>> scenario_aFluxCanBeBenchmarked(){
+		return Mono.just("test")
+		           .elapsed();
+	}
+
 	@Test
-	public void normal() {
+	public void aFluxCanBeBenchmarked(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeBenchmarked,0)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .thenRequest(1)
+		            .expectNextMatches(t -> t.getT1() == 2000 && t.getT2().equals("test"))
+		            .verifyComplete();
 	}
 }

@@ -15,12 +15,34 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.test.StepVerifier;
+
 public class MonoRetryWhenTest {
 
+
+	Mono<String> exponentialRetryScenario() {
+		AtomicInteger i = new AtomicInteger();
+		return Mono.<String>create(s -> {
+			if (i.incrementAndGet() == 4) {
+				s.success("hey");
+			}
+			else {
+				s.error(new RuntimeException("test " + i));
+			}
+		}).retryWhen(repeat -> repeat.zipWith(Flux.range(1, 3), (t1, t2) -> t2)
+		                             .flatMap(time -> Mono.delay(Duration.ofSeconds(time))));
+	}
+
 	@Test
-	public void normal() {
+	public void exponentialRetry() {
+		StepVerifier.withVirtualTime(this::exponentialRetryScenario)
+		            .thenAwait(Duration.ofSeconds(6))
+		            .expectNext("hey")
+		            .expectComplete()
+		            .verify();
 	}
 }

@@ -15,12 +15,34 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
 
-//FIXME implement
+import org.junit.Test;
+import reactor.core.Exceptions;
+import reactor.test.StepVerifier;
+
 public class MonoDelayTest {
 
+	Mono<Long> scenario_delayedSource() {
+		return Mono.delay(Duration.ofSeconds(4));
+	}
+
 	@Test
-	public void normal() {
+	public void delayedSource() {
+		StepVerifier.withVirtualTime(this::scenario_delayedSource)
+		            .thenAwait(Duration.ofSeconds(4))
+		            .expectNext(0L)
+		            .verifyComplete();
+	}
+
+	Mono<Long> scenario_delayedSourceError() {
+		return Mono.delay(Duration.ofSeconds(4));
+	}
+
+	@Test
+	public void delayedSourceError() {
+		StepVerifier.withVirtualTime(this::scenario_delayedSourceError, 0L)
+		            .thenAwait(Duration.ofSeconds(5))
+		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
 }
