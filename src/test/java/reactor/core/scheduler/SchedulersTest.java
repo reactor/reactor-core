@@ -36,6 +36,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.fail;
 
@@ -117,9 +118,9 @@ public class SchedulersTest {
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
-		//assert that the old factory's cached scheduler was shut down
+		//assert that the old factory"s cached scheduler was shut down
 		Assert.assertEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
-		//independently created schedulers are still the programmer's responsibility
+		//independently created schedulers are still the programmer"s responsibility
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
 		Assert.assertNotSame(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
@@ -412,139 +413,165 @@ public class SchedulersTest {
 	}
 
 
-//	def "Dispatcher executes tasks in correct thread"() {
-//
-//		given:
-//		def diffThread = Schedulers.newParallel('work', 2).createWorker()
-//		def currentThread = Thread.currentThread()
-//		Thread taskThread = null
-//
-//
-//		when:
-//		"a task is submitted to the thread pool dispatcher"
-//		def latch = new CountDownLatch(1)
-//		diffThread.schedule { taskThread = Thread.currentThread() }
-//		diffThread.schedule { taskThread = Thread.currentThread(); latch.countDown() }
-//
-//		latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
-//
-//		then:
-//		"the task thread should be different when the current thread"
-//		taskThread != currentThread
-//		//!diffThread.dispose()
-//
-//
-//		cleanup:
-//		diffThread.dispose()
-//	}
-//
-//	def "Dispatcher thread can be reused"() {
-//
-//		given:
-//		"ring buffer eventBus"
-//		def serviceRB = Schedulers.newParallel("rb", 4)
-//		def r = serviceRB.createWorker()
-//		def latch = new CountDownLatch(2)
-//
-//		when:
-//		"listen for recursive event"
-//		Consumer<Integer> c
-//		c = { data ->
-//		if (data < 2) {
-//			latch.countDown()
-//			r.schedule { c.accept(++data) }
-//		}
-//			}
-//
-//		and:
-//		"createWorker the eventBus"
-//		r.schedule { c.accept(0) }
-//
-//		then:
-//		"a task is submitted to the thread pool dispatcher"
-//		latch.await(5, TimeUnit.SECONDS) // Wait for task to execute
-//
-//		cleanup:
-//		r.dispose()
-//	}
-//
-//	def "RingBufferDispatcher executes tasks in correct thread"() {
-//
-//		given:
-//		def serviceRB = Schedulers.newSingle("rb")
-//		def dispatcher = serviceRB.createWorker()
-//		def t1 = Thread.currentThread()
-//		def t2 = Thread.currentThread()
-//
-//		when:
-//		dispatcher.schedule({ t2 = Thread.currentThread() })
-//		Thread.sleep(500)
-//
-//		then:
-//		t1 != t2
-//
-//		cleanup:
-//		dispatcher.dispose()
-//
-//	}
-//
-//	def "WorkQueueDispatcher executes tasks in correct thread"() {
-//
-//		given:
-//		def serviceRBWork = Schedulers.newParallel("rbWork", 8)
-//		def dispatcher = serviceRBWork.createWorker()
-//		def t1 = Thread.currentThread()
-//		def t2 = Thread.currentThread()
-//
-//		when:
-//		dispatcher.schedule({ t2 = Thread.currentThread() })
-//		Thread.sleep(500)
-//
-//		then:
-//		t1 != t2
-//
-//		cleanup:
-//		dispatcher.dispose()
-//
-//	}
-//
-//	def "MultiThreadDispatchers support ping pong dispatching"(Scheduler.Worker d) {
-//		given:
-//		def latch = new CountDownLatch(4)
-//		def main = Thread.currentThread()
-//		def t1 = Thread.currentThread()
-//		def t2 = Thread.currentThread()
-//
-//		when:
-//		Consumer<String> pong
-//
-//		Consumer<String> ping = {
-//		if (latch.count > 0) {
-//			t1 = Thread.currentThread()
-//			d.schedule { pong.accept("pong") }
-//			latch.countDown()
-//		}
-//			}
-//		pong = {
-//		if (latch.count > 0) {
-//			t2 = Thread.currentThread()
-//			d.schedule { ping.accept("ping") }
-//			latch.countDown()
-//		}
-//			}
-//
-//		d.schedule { ping.accept("ping") }
-//
-//		then:
-//		latch.await(1, TimeUnit.SECONDS)
-//		main != t1
-//		main != t2
-//
-//		cleanup:
-//		d.dispose()
-//
-//		where:
-//		d << [Schedulers.newParallel("rbWork", 8).createWorker()]
-//
-//	}
+	@Test(timeout = 3000)
+	public void parallelSchedulerThreadCheck() throws Exception{
+		Scheduler s = Schedulers.newParallel("work", 2);
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 3000)
+	public void singleSchedulerThreadCheck() throws Exception{
+		Scheduler s = Schedulers.newSingle("work");
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+
+	@Test(timeout = 3000)
+	public void elasticSchedulerThreadCheck() throws Exception{
+		Scheduler s = Schedulers.newElastic("work");
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 3000)
+	public void timerSchedulerThreadCheck() throws Exception{
+		Scheduler s = Schedulers.newTimer("work");
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	void recursiveCall(Scheduler.Worker w, CountDownLatch latch, int data){
+		if (data < 2) {
+			latch.countDown();
+			w.schedule(() -> recursiveCall(w,  latch,data + 1));
+		}
+	}
+
+	@Test
+	public void recursiveParallelCall() throws Exception {
+		Scheduler s = Schedulers.newParallel("work", 4);
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			CountDownLatch latch = new CountDownLatch(2);
+
+			w.schedule(() -> recursiveCall(w, latch, 0));
+
+			latch.await();
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test
+	public void pingPongParallelCall() throws Exception {
+		Scheduler s = Schedulers.newParallel("work", 4);
+		try {
+			Scheduler.Worker w = s.createWorker();
+			Thread t = Thread.currentThread();
+			AtomicReference<Thread> t1 = new AtomicReference<>(t);
+			AtomicReference<Thread> t2 = new AtomicReference<>(t);
+
+			CountDownLatch latch = new CountDownLatch(4);
+
+			AtomicReference<Runnable> pong = new AtomicReference<>();
+
+			Runnable ping = () -> {
+				if(latch.getCount() > 0){
+					t1.set(Thread.currentThread());
+					w.schedule(pong.get());
+					latch.countDown();
+				}
+			};
+
+			pong.set(() -> {
+				if(latch.getCount() > 0){
+					t2.set(Thread.currentThread());
+					w.schedule(ping);
+					latch.countDown();
+				}
+			});
+
+			w.schedule(ping);
+
+			latch.await();
+
+			assertThat(t).isNotEqualTo(t1.get());
+			assertThat(t).isNotEqualTo(t2.get());
+		}
+		finally {
+			s.dispose();
+		}
+	}
 }
