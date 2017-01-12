@@ -78,9 +78,8 @@ public class MonoTakeLastOneTest {
 	}
 
 	@Test
-	public void normalHide2() {
-		StepVerifier.create(Flux.range(1, 100)
-		                        .hide()
+	public void norma2() {
+		StepVerifier.create(Flux.just(100)
 		                        .last(-1))
 		            .expectNext(100)
 		            .verifyComplete();

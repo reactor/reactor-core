@@ -66,4 +66,54 @@ public class FluxOnBackpressureBufferTest {
 		            .expectNextCount(8)
 		            .verifyErrorMatches(Exceptions::isOverflow);
 	}
+
+	@Test
+	public void onBackpressureBufferMaxCallbackOverflow() {
+		AtomicInteger last = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8, last::set, BufferOverflowStrategy.ERROR), 0)
+
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .then(() -> assertThat(last.get()).isEqualTo(16))
+		            .thenRequest(9)
+		            .expectNextCount(8)
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void onBackpressureBufferMaxCallbackOverflow2() {
+		AtomicInteger last = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8, last::set,
+				                        BufferOverflowStrategy.DROP_OLDEST), 0)
+
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .then(() -> assertThat(last.get()).isEqualTo(92))
+		            .thenRequest(9)
+		            .expectNext(93, 94, 95, 96, 97, 98, 99, 100)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void onBackpressureBufferMaxCallbackOverflow3() {
+		AtomicInteger last = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 100)
+		                        .hide()
+		                        .onBackpressureBuffer(8, last::set,
+				                        BufferOverflowStrategy.DROP_LATEST), 0)
+
+		            .thenRequest(7)
+		            .expectNext(1, 2, 3, 4, 5, 6, 7)
+		            .then(() -> assertThat(last.get()).isEqualTo(100))
+		            .thenRequest(9)
+		            .expectNext(8, 9, 10, 11, 12, 13, 14, 15)
+		            .verifyComplete();
+	}
 }

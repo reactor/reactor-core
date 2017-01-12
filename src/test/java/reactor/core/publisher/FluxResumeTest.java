@@ -325,4 +325,34 @@ public class FluxResumeTest {
 				.mapError(TestException.class, e -> new Exception("test")))
 				.verifyErrorMessage("test");
 	}
+
+	@Test
+	public void onErrorResumeErrorPredicate() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorResumeWith(TestException.class, e -> Mono.just(1)))
+				.expectNext(1)
+				.verifyComplete();
+	}
+
+	@Test
+	public void onErrorResumeErrorPredicateNot() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorResumeWith(RuntimeException.class, e -> Mono.just(1)))
+				.verifyError(TestException.class);
+	}
+
+	@Test
+	public void onErrorReturnErrorPredicate() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorReturn(TestException.class, 1))
+				.expectNext(1)
+				.verifyComplete();
+	}
+
+	@Test
+	public void onErrorReturnErrorPredicateNot() {
+		StepVerifier.create(Flux.<Integer>error(new TestException())
+				.onErrorReturn(RuntimeException.class, 1))
+				.verifyError(TestException.class);
+	}
 }

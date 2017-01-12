@@ -563,14 +563,32 @@ public class FluxPeekTest {
 
 		Assert.assertTrue("onComplete not called back", onTerminate.get());
 	}
+
 	@Test
-	public void syncdoAfterTerminateCalled2() {
+	public void syncdoOnTerminateCalled() {
+		AtomicBoolean onTerminate = new AtomicBoolean();
+
+		AssertSubscriber<Object> ts = AssertSubscriber.create();
+
+		Flux.range(1, 2).hide()
+		    .doOnTerminate(() -> onTerminate.set(true))
+		    .subscribe(ts);
+
+		ts.assertNoError()
+		  .assertValues(1, 2)
+		  .assertComplete();
+
+		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
+
+	@Test
+	public void syncdoOnTerminateCalled2() {
 		AtomicBoolean onTerminate = new AtomicBoolean();
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		Flux.empty().hide()
-		    .doAfterTerminate(() -> onTerminate.set(true))
+		    .doOnTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
 		ts.assertNoError()
