@@ -171,4 +171,42 @@ public class FluxRetryPredicateTest {
 		            .verifyErrorMessage("test");
 	}
 
+	@Test
+	public void twoRetryNormalSupplier2() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
+		                        .doOnNext(v -> {
+			                        if(v < 4) {
+				                        throw new RuntimeException("test");
+			                        }
+			                        else {
+				                        bool.set(false);
+			                        }
+		                        })
+		                        .retry(0, e -> bool.get()))
+		            .expectNext(4)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void twoRetryErrorSupplier2() {
+		AtomicInteger i = new AtomicInteger();
+		AtomicBoolean bool = new AtomicBoolean(true);
+
+		StepVerifier.create(Flux.defer(() -> Flux.just(i.incrementAndGet()))
+		                        .doOnNext(v -> {
+			                        if(v < 4) {
+				                        if( v > 2){
+					                        bool.set(false);
+				                        }
+				                        throw new RuntimeException("test");
+			                        }
+		                        })
+		                        .retry(0, e -> bool.get()))
+		            .verifyErrorMessage("test");
+	}
+
 }

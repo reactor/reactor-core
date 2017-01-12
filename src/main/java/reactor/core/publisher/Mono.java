@@ -23,7 +23,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -256,7 +255,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<Void> empty(Publisher<T> source) {
 		@SuppressWarnings("unchecked")
-		Mono<Void> then = (Mono<Void>)new MonoIgnoreThen<>(source);
+		Mono<Void> then = (Mono<Void>)new MonoIgnoreEmpty<>(source);
 		return onAssembly(then);
 	}
 
@@ -407,7 +406,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new completable {@link Mono}.
 	 */
 	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
-		return onAssembly(new MonoIgnoreThen<>(source));
+		return onAssembly(new MonoIgnoreEmpty<>(source));
 	}
 
 
@@ -2671,7 +2670,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		MonoIgnoreEmpty<T> ignored = new MonoIgnoreEmpty<>(this);
 		Mono<Void> then = ignored.then(MonoSource.wrap(other));
 		return Mono.onAssembly(then);
 	}

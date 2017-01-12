@@ -192,4 +192,33 @@ public class FluxConcatArrayTest {
 	                .verifyComplete();
 	}
 
+	@Test
+	public void thenMany(){
+		StepVerifier.create(Flux.just(1, 2, 3).thenMany(Flux.just("test", "test2")))
+	                .expectNext("test", "test2")
+	                .verifyComplete();
+	}
+
+
+	@Test
+	public void thenManyThenMany(){
+		StepVerifier.create(Flux.just(1, 2, 3).thenMany(Flux.just("test", "test2"))
+		                        .thenMany(Flux.just(1L, 2L)))
+	                .expectNext(1L, 2L)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void thenManySupplier(){
+		StepVerifier.create(Flux.just(1, 2, 3).thenMany(() -> Flux.just("test", "test2")))
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void thenManyError(){
+		StepVerifier.create(Flux.error(new Exception("test")).thenMany(() -> Flux.just(4, 5, 6)))
+	                .verifyErrorMessage("test");
+	}
+
 }

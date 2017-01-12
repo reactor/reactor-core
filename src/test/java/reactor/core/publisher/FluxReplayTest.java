@@ -84,6 +84,35 @@ public class FluxReplayTest {
 	}
 
 	@Test
+	public void cacheFluxTTLMillis() {
+		try {
+			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
+
+			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
+			                                         .delayMillis(1000)
+			                                         .replayMillis(2000, vts)
+			                                         .autoConnect()
+			                                         .elapsed();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 1)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 1000 && t.getT2() == 3)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .then(() -> vts.advanceTimeBy(Duration.ofSeconds(3)))
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
+			            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
+
+	@Test
 	public void cacheFluxHistoryTTL() {
 		try {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);

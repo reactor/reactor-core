@@ -5937,7 +5937,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Mono<Void> then() {
 		@SuppressWarnings("unchecked")
-		Mono<Void> then = (Mono<Void>) new MonoIgnoreThen<>(this);
+		Mono<Void> then = (Mono<Void>) new MonoIgnoreEmpty<>(this);
 		return Mono.onAssembly(then);
 	}
 
@@ -5973,7 +5973,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		MonoIgnoreThen<T> ignored = new MonoIgnoreThen<>(this);
+		MonoIgnoreEmpty<T> ignored = new MonoIgnoreEmpty<>(this);
 		Mono<Void> then = ignored.then(MonoSource.wrap(other));
 		return Mono.onAssembly(then);
 	}

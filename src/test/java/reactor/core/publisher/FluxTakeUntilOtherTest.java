@@ -165,4 +165,23 @@ public class FluxTakeUntilOtherTest {
 		            .expectNextCount(1000)
 		            .verifyComplete();
 	}
+
+	Flux<Integer> scenario_aFluxCanBeLimitedByTime2(){
+		return Flux.range(0, 1000)
+		           .takeMillis(2000);
+	}
+
+	@Test
+	public void aFluxCanBeLimitedByTime2(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeLimitedByTime2)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNextCount(1000)
+		            .verifyComplete();
+	}
+	@Test
+	public void aFluxCanBeLimitedByTime3(){
+		StepVerifier.create(Flux.range(0, 1000).takeMillis(0L))
+		            .thenAwait(Duration.ofSeconds(2))
+		            .verifyComplete();
+	}
 }

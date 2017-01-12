@@ -267,4 +267,35 @@ public class FluxTimeoutTest {
 		            .thenAwait(Duration.ofMillis(500))
 		            .verifyError(TimeoutException.class);
 	}
+
+	Flux<Integer> scenario_timeoutCanBeBoundWithCallback2() {
+		return Flux.<Integer>never().timeoutMillis(500, Flux.just(-5));
+	}
+
+	@Test
+	public void timeoutCanBeBoundWithCallback2() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutCanBeBoundWithCallback2)
+		            .thenAwait(Duration.ofMillis(500))
+		            .expectNext(-5)
+		            .verifyComplete();
+	}
+
+	Flux<?> scenario_timeoutThrown2() {
+		return Flux.never()
+		           .timeoutMillis(500);
+	}
+
+	@Test
+	public void fluxPropagatesErrorUsingAwait2() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutThrown2)
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
+	}
+
+	@Test
+	public void fluxTimeoutOther() {
+		StepVerifier.create(Flux.never().timeout(Flux.just(1)))
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
+	}
 }

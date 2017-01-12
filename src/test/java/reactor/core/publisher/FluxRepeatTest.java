@@ -178,7 +178,15 @@ public class FluxRepeatTest {
 		            .expectNext(1, 2, 3, 4)
 		            .expectNext(1, 2, 3, 4)
 		            .then(() -> bool.set(false))
-		            .expectComplete()
-		            .verify();
+		            .verifyComplete();
+	}
+	@Test
+	public void twoRepeatNormalSupplier2() {
+		AtomicBoolean bool = new AtomicBoolean(false);
+
+		StepVerifier.create(Flux.range(1, 4)
+		                        .repeat(0, bool::get))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
 	}
 }
