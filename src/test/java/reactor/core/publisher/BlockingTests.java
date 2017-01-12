@@ -77,7 +77,7 @@ public class BlockingTests {
 
 	@Test
 	public void blockingLast2() {
-		Assert.assertEquals((Integer) 1,
+		Assert.assertEquals((Integer) 10,
 				Flux.range(1, 10)
 				    .publishOn(scheduler)
 				    .blockLast(Duration.ofSeconds(10)));
