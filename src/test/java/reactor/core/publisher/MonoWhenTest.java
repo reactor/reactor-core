@@ -79,6 +79,15 @@ public class MonoWhenTest {
     }
 
     @Test
+    public void oneSourcePublisherCombined() {
+        assertThat(Mono.when(
+		        args -> (int)args[0],
+		        Mono.just(1)
+            )
+            .block()).isEqualTo(1);
+    }
+
+    @Test
     public void noSourcePublisher() {
         assertThat(Mono.when()
             .block()).isNull();
@@ -151,7 +160,17 @@ public class MonoWhenTest {
                 Mono.when(Mono.delayMillis(150), Mono.delayMillis(250)).block()
         );
     }
-    
+
+	@Test
+	public void allNonEmpty2() {
+		assertThat(Mono.when(
+				args -> (int)args[0] + (int)args[1],
+				Mono.just(1),
+				Mono.just(2)
+		)
+		               .block()).isEqualTo(3);
+	}
+
     @Test//(timeout = 5000)
     public void allNonEmpty() {
         for (int i = 2; i < 7; i++) {
@@ -172,24 +191,39 @@ public class MonoWhenTest {
 
     @Test
     public void pairWise() {
-	    Mono<Tuple2<Tuple2<Integer, String>, String>> f =
-			    Mono.when(Mono.just(1), Mono.just("test"))
-			        .and(Mono.just("test2"));
+	    Mono<Tuple2<Integer, String>> f =
+			    Mono.just(1).and(Mono.just("test2"));
 
 	    Assert.assertTrue(f instanceof MonoWhen);
 	    MonoWhen<?, ?> s = (MonoWhen<?, ?>) f;
 	    Assert.assertTrue(s.sources != null);
-	    Assert.assertTrue(s.sources.length == 3);
+	    Assert.assertTrue(s.sources.length == 2);
 
-	    Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
-	                                                             .getT1(),
-			    t.getT1()
-			     .getT2() + t.getT2()));
-
-	    ff.subscribeWith(AssertSubscriber.create())
-	     .assertValues(Tuples.of(1, "testtest2"))
+	    f.subscribeWith(AssertSubscriber.create())
+	     .assertValues(Tuples.of(1, "test2"))
 	     .assertComplete();
     }
+
+	@Test
+	public void pairWise2() {
+		Mono<Tuple2<Tuple2<Integer, String>, String>> f =
+				Mono.when(Mono.just(1), Mono.just("test"))
+				    .and(Mono.just("test2"));
+
+		Assert.assertTrue(f instanceof MonoWhen);
+		MonoWhen<?, ?> s = (MonoWhen<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 3);
+
+		Mono<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
+		  .assertValues(Tuples.of(1, "testtest2"))
+		  .assertComplete();
+	}
 
 
 	@Test

@@ -16,10 +16,32 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
-public class FluxSourceTest {
+import static org.junit.Assert.assertTrue;
+
+public class FluxFromTest {
 
 	@Test
-	public void normal() {
+	public void empty() {
+		Flux<Integer> m = Flux.from(Mono.empty());
+		assertTrue(m == Flux.<Integer>empty());
+		StepVerifier.create(m)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void just() {
+		Flux<Integer> m = Flux.from(Mono.just(1));
+		assertTrue(m instanceof FluxJust);
+		StepVerifier.create(m)
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+	@Test
+	public void asJust() {
+		StepVerifier.create(Mono.just(1).as(Flux::from))
+		            .expectNext(1)
+		            .verifyComplete();
 	}
 }

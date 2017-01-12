@@ -20,7 +20,7 @@ import reactor.test.StepVerifier;
 
 import static org.junit.Assert.assertTrue;
 
-public class MonoSourceTest {
+public class MonoFromTest {
 
 	@Test
 	public void empty() {
@@ -42,6 +42,13 @@ public class MonoSourceTest {
 	@Test
 	public void justNext() {
 		StepVerifier.create(Mono.from(Flux.just(1, 2, 3)))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void asJustNext() {
+		StepVerifier.create(Flux.just(1, 2, 3).as(Mono::from))
 	                .expectNext(1)
 	                .verifyComplete();
 	}
