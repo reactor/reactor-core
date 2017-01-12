@@ -522,27 +522,23 @@ public abstract class Hooks {
 					if (trace){
 						if (publisher instanceof Callable) {
 							if (publisher instanceof Mono) {
-								return new MonoCallableOnAssembly<>(publisher,
-										true);
+								return new MonoCallableOnAssembly<>(publisher);
 							}
-							return new FluxCallableOnAssembly<>(publisher,
-									true);
+							return new FluxCallableOnAssembly<>(publisher);
 						}
 						if (publisher instanceof Mono) {
-							return new MonoOnAssembly<>(publisher, true);
+							return new MonoOnAssembly<>(publisher);
 						}
 						if (publisher instanceof ParallelFlux){
-							return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher,
-									true);
+							return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher);
 						}
-						return new FluxOnAssembly<>(publisher, true);
+						return new FluxOnAssembly<>(publisher);
 					}
 					return publisher;
 				}
 			}
 			if (hook != null && publisher instanceof ConnectableFlux) {
-				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher,
-							true);
+				return new ConnectableFluxOnAssembly<>((ConnectableFlux<T>) publisher);
 			}
 			return publisher;
 		}

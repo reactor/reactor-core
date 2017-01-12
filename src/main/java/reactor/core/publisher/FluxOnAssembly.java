@@ -59,9 +59,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	public FluxOnAssembly(Publisher<? extends T> source, boolean trace) {
+	public FluxOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.snapshotStack = trace ? new Exception() : null;
+		this.snapshotStack = new Exception();
 	}
 
 	static Publisher<?> getParentOrThis(Publisher<?> parent) {

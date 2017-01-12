@@ -42,9 +42,9 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	final Exception
 			stacktrace;
 
-	public MonoCallableOnAssembly(Publisher<? extends T> source, boolean trace) {
+	public MonoCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = trace ? new Exception() : null;
+		this.stacktrace = new Exception();
 	}
 
 	@Override

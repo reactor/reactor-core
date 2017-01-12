@@ -46,9 +46,9 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final Exception stacktrace;
 
-	public ConnectableFluxOnAssembly(ConnectableFlux<T> source, boolean trace) {
+	public ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
-		this.stacktrace = trace ? new Exception() : null;
+		this.stacktrace = new Exception();
 	}
 	
 	@Override

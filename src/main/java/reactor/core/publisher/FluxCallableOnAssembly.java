@@ -40,9 +40,9 @@ final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 
 	final Exception stacktrace;
 
-	public FluxCallableOnAssembly(Publisher<? extends T> source, boolean trace) {
+	public FluxCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = trace ? new Exception() : null;
+		this.stacktrace = new Exception();
 	}
 
 	@Override
