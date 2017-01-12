@@ -5420,7 +5420,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch an arbitrary value
 	 *
 	 * @return a {@link Disposable} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @deprecated use {@link #limitRate(int)
 	 */
+	@Deprecated
 	public final Disposable subscribe(int prefetch) {
 		return subscribe(null, null, null, prefetch);
 	}
