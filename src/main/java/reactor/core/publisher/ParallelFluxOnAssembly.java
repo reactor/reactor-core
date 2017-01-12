@@ -46,6 +46,11 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	}
 
 	@Override
+	public long getPrefetch() {
+		return source.getPrefetch();
+	}
+
+	@Override
 	public boolean isOrdered() {
 		return source.isOrdered();
 	}

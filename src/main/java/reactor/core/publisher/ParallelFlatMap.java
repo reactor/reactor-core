@@ -56,7 +56,12 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
 		this.prefetch = prefetch;
 		this.innerQueueSupplier = innerQueueSupplier;
 	}
-	
+
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
 	@Override
 	public boolean isOrdered() {
 		return false;
