@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDelaySubscriptionTest {
@@ -43,6 +46,32 @@ public class MonoDelaySubscriptionTest {
 		ts.assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	Mono<Integer> scenario_delayedTrigger(){
+		return Mono.just(1)
+		           .delaySubscription(Duration.ofSeconds(3));
+	}
+
+	@Test
+	public void delayedTrigger() {
+		StepVerifier.withVirtualTime(this::scenario_delayedTrigger)
+		            .thenAwait(Duration.ofSeconds(3))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	Mono<Integer> scenario_delayedTrigger2(){
+		return Mono.just(1)
+		           .delaySubscriptionMillis(50);
+	}
+
+	@Test
+	public void delayedTrigger2() {
+		StepVerifier.withVirtualTime(this::scenario_delayedTrigger2)
+		            .thenAwait(Duration.ofMillis(50))
+		            .expectNext(1)
+		            .verifyComplete();
 	}
 
 	@Test

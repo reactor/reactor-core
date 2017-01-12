@@ -44,6 +44,19 @@ public class FluxHandleTest {
 	}
 
 	@Test
+	public void normalHide() {
+		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(2, 4, 6, 8, 10));
+
+		Flux.range(1, 5)
+		    .hide()
+		    .handle((v, s) -> s.next(v * 2))
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertContainValues(expectedValues)
+		    .assertNoError()
+		    .assertComplete();
+	}
+
+	@Test
 	public void filterNullMapResult() {
 		Set<Integer> expectedValues = new HashSet<>(Arrays.asList(4, 8));
 

@@ -97,4 +97,70 @@ public class FluxDefaultIfEmptyTest {
 
 	}
 
+	@Test
+	public void nonEmptyHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 5).hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
+	public void nonEmptyBackpressuredHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Flux.range(1, 5).hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(2);
+
+		ts.assertValues(1, 2)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(10);
+
+		ts.assertValues(1, 2, 3, 4, 5)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
+	public void emptyHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.<Integer>empty().hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertValues(10)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
+	public void emptyBackpressuredHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Flux.<Integer>empty().hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(2);
+
+		ts.assertValues(10)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
 }

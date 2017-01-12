@@ -16,10 +16,18 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class FluxHideTest {
 
 	@Test
 	public void normal() {
+		Flux<Integer> f = Flux.just(1);
+		assertThat(f instanceof Fuseable.ScalarCallable).isTrue();
+		f = f.hide();
+		assertThat(f instanceof Fuseable.ScalarCallable).isFalse();
+		assertThat(f instanceof FluxHide).isTrue();
 	}
 }

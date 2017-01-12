@@ -125,6 +125,15 @@ public class MonoWhenTest {
 	}
 
 	@Test
+	public void oneSourcePublisherCombinedDelay() {
+		assertThat(Mono.whenDelayError(
+				args -> (int)args[0],
+				Mono.just(1)
+		)
+		               .block()).isEqualTo(1);
+	}
+
+	@Test
 	public void noSourcePublisherDelay() {
 		assertThat(Mono.whenDelayError()
 		               .block()).isNull();

@@ -1447,21 +1447,6 @@ public class FluxSpecTests {
 		            .verifyComplete();
 	}
 
-	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
-		return Flux.range(1, 6)
-		           .delay(Duration.ofMillis(300))
-		           .buffer(5, Duration.ofMillis(2000));
-	}
-
-	@Test
-	public void bufferWithTimeoutAccumulateOnTimeOrSize() {
-		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAccumulateOnTimeOrSize)
-		            .thenAwait(Duration.ofMillis(1500))
-		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
-		            .thenAwait(Duration.ofMillis(2000))
-		            .assertNext(s -> assertThat(s).containsExactly(6))
-		            .verifyComplete();
-	}
 
 	Mono<Long> scenario_fluxItemCanBeShiftedByTime() {
 		return Flux.range(0, 10000)

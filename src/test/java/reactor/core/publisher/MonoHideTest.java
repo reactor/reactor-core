@@ -16,10 +16,18 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class MonoHideTest {
 
 	@Test
 	public void normal() {
+		Mono<Integer> f = Mono.just(1);
+		assertThat(f instanceof Fuseable.ScalarCallable).isTrue();
+		f = f.hide();
+		assertThat(f instanceof Fuseable.ScalarCallable).isFalse();
+		assertThat(f instanceof MonoHide).isTrue();
 	}
 }

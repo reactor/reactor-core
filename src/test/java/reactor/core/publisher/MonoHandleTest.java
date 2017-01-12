@@ -31,6 +31,16 @@ public class MonoHandleTest {
 		    .assertNoError()
 		    .assertComplete();
 	}
+	@Test
+	public void normalHide() {
+		Mono.just(1)
+		    .hide()
+		    .handle((v, s) -> s.next(v * 2))
+		    .subscribeWith(AssertSubscriber.create())
+		    .assertContainValues(singleton(2))
+		    .assertNoError()
+		    .assertComplete();
+	}
 
 	@Test
 	public void filterNullMapResult() {

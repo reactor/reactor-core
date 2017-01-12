@@ -15,11 +15,30 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowTimeOrSizeTest {
 
+	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize() {
+		return Flux.range(1, 6)
+		           .delay(Duration.ofMillis(300))
+		           .window(5, Duration.ofMillis(2000))
+		           .concatMap(Flux::buffer);
+	}
+
 	@Test
-	public void normal() {
+	public void windowWithTimeoutAccumulateOnTimeOrSize() {
+		StepVerifier.withVirtualTime(this::scenario_windowWithTimeoutAccumulateOnTimeOrSize)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
 	}
 }

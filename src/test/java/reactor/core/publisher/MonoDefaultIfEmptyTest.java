@@ -42,6 +42,35 @@ public class MonoDefaultIfEmptyTest {
 		  .assertNoError();
 
 	}
+	@Test
+	public void nonEmptyHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1).hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
+	public void nonEmptyHideBackpressured() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono.just(1).hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(2);
+
+		ts.assertValues(1)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
 
 	@Test
 	public void nonEmptyBackpressured() {
@@ -74,10 +103,40 @@ public class MonoDefaultIfEmptyTest {
 	}
 
 	@Test
+	public void emptyHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.<Integer>empty().hide().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertValues(10)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
 	public void emptyBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>empty().defaultIfEmpty(10).subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(2);
+
+		ts.assertValues(10)
+		  .assertComplete()
+		  .assertNoError();
+
+	}
+
+	@Test
+	public void emptyBackpressuredHide() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Mono.<Integer>empty().hide().defaultIfEmpty(10).subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()

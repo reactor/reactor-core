@@ -16,10 +16,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
 public class FluxEmptyTest {
 
 	@Test
 	public void normal() {
+		StepVerifier.create(Flux.empty())
+	                .verifyComplete();
 	}
 }

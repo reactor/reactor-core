@@ -16,10 +16,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
 public class MonoErrorTest {
 
 	@Test
 	public void normal() {
+		StepVerifier.create(Mono.error(new Exception("test")))
+		            .verifyErrorMessage("test");
 	}
 }

@@ -16,10 +16,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
 public class FluxErrorTest {
 
 	@Test
 	public void normal() {
+		StepVerifier.create(Flux.error(new Exception("test")))
+		            .verifyErrorMessage("test");
 	}
 }

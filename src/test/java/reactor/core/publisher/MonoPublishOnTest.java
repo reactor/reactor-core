@@ -41,10 +41,6 @@ import static reactor.core.scheduler.Schedulers.fromExecutorService;
 public class MonoPublishOnTest {
 
 	@Test
-	public void normal() {
-	}
-
-	@Test
 	public void rejectedExecutionExceptionOnDataSignalExecutor()
 			throws InterruptedException {
 

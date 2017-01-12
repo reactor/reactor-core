@@ -15,12 +15,29 @@
  */
 package reactor.core.publisher;
 
-import org.junit.Test;
+import java.time.Duration;
+import java.util.List;
 
-//FIXME when virtual time scheduler
+import org.junit.Test;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxBufferTimeOrSizeTest {
 
+	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
+		return Flux.range(1, 6)
+		           .delay(Duration.ofMillis(300))
+		           .buffer(5, Duration.ofMillis(2000));
+	}
+
 	@Test
-	public void normal() {
+	public void bufferWithTimeoutAccumulateOnTimeOrSize() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutAccumulateOnTimeOrSize)
+		            .thenAwait(Duration.ofMillis(1500))
+		            .assertNext(s -> assertThat(s).containsExactly(1, 2, 3, 4, 5))
+		            .thenAwait(Duration.ofMillis(2000))
+		            .assertNext(s -> assertThat(s).containsExactly(6))
+		            .verifyComplete();
 	}
 }

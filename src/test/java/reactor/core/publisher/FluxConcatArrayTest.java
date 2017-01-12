@@ -16,9 +16,13 @@
 
 package reactor.core.publisher;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 public class FluxConcatArrayTest {
 
@@ -156,4 +160,36 @@ public class FluxConcatArrayTest {
 		    .assertComplete()
 		    .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
+
+	@Test
+	public void pairWise() {
+		Flux<String> f = Flux.concat(Flux.just("test"), Flux.just("test2"))
+		                     .concatWith(Flux.just("test3"));
+
+		Assert.assertTrue(f instanceof FluxConcatArray);
+		FluxConcatArray<String> s = (FluxConcatArray<String>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 3);
+
+		StepVerifier.create(f)
+	                .expectNext("test", "test2", "test3")
+	                .verifyComplete();
+	}
+
+
+	@Test
+	public void pairWise2() {
+		Flux<String> f = Mono.just("test")
+		                     .concatWith(Flux.just("test2"));
+
+		Assert.assertTrue(f instanceof FluxConcatArray);
+		FluxConcatArray<String> s = (FluxConcatArray<String>) f;
+		Assert.assertTrue(s.array != null);
+		Assert.assertTrue(s.array.length == 2);
+
+		StepVerifier.create(f)
+	                .expectNext("test", "test2")
+	                .verifyComplete();
+	}
+
 }
