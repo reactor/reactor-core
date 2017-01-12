@@ -17,10 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class FluxMergeTest {
 
@@ -82,7 +85,17 @@ public class FluxMergeTest {
 
 	@Test
 	public void mergePublisherPublisher(){
-		StepVerifier.create(Flux.merge(Flux.just(Flux.just(1, 2), Flux.just(3, 4))))
+		AtomicLong request = new AtomicLong();
+		StepVerifier.create(Flux.merge(Flux.just(Flux.just(1, 2), Flux.just(3, 4)).doOnRequest(request::set)))
+	                .expectNext(1, 2, 3, 4)
+	                .then(() -> assertThat(request.get()).isEqualTo(1) )
+	                .verifyComplete();
+	}
+
+
+	@Test
+	public void mergePublisherPublisher2(){
+		StepVerifier.create(Flux.merge(Flux.just(Flux.just(1, 2), Flux.just(3, 4)), 1))
 	                .expectNext(1, 2, 3, 4)
 	                .verifyComplete();
 	}

@@ -670,5 +670,18 @@ public class FluxMergeSequentialTest {
 		                e.getMessage().endsWith("; subscribers: 32"))
 		            .verify();
 	}
+	@Test
+	public void mergeEmpty(){
+		StepVerifier.create(Flux.mergeSequential())
+		            .verifyComplete();
+	}
+
+
+	@Test
+	public void mergeOne(){
+		StepVerifier.create(Flux.mergeSequential(Flux.just(1)))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
 
 }

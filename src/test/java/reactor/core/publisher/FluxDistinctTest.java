@@ -86,6 +86,54 @@ public class FluxDistinctTest {
 	}
 
 	@Test
+	public void allDistinctHide() {
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10)
+		    .hide()
+		    .distinct(k -> k)
+		    .subscribe(ts);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void allDistinctBackpressuredHide() {
+
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		Flux.range(1, 10)
+		    .hide()
+		    .distinct(k -> k)
+		    .subscribe(ts);
+
+		ts.assertNoValues()
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(2);
+
+		ts.assertValues(1, 2)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(5);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7)
+		  .assertNoError()
+		  .assertNotComplete();
+
+		ts.request(10);
+
+		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
 	public void someDistinct() {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();

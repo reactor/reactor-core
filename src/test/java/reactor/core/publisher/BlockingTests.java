@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +52,39 @@ public class BlockingTests {
 	}
 
 	@Test
+	public void blockingFirst2() {
+		Assert.assertEquals((Integer) 1,
+				Flux.range(1, 10)
+				    .publishOn(scheduler)
+				    .blockFirst(Duration.ofSeconds(10)));
+	}
+
+	@Test(expected = Exception.class)
+	public void blockingFirstError2() {
+				Flux.empty()
+				    .blockFirst(Duration.ofMillis(1));
+	}
+
+	@Test
 	public void blockingLast() {
 		Assert.assertEquals((Integer) 10,
 				Flux.range(1, 10)
 				    .publishOn(scheduler)
 				    .blockLast());
+	}
+
+	@Test
+	public void blockingLast2() {
+		Assert.assertEquals((Integer) 1,
+				Flux.range(1, 10)
+				    .publishOn(scheduler)
+				    .blockFirst(Duration.ofSeconds(10)));
+	}
+
+	@Test(expected = Exception.class)
+	public void blockingLastError2() {
+		Flux.empty()
+		    .blockFirst(Duration.ofMillis(1));
 	}
 
 	@Test(expected = RuntimeException.class)
