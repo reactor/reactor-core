@@ -561,9 +561,11 @@ public abstract class Operators {
 	 * @return true if valid
 	 */
 	public static boolean validate(long n) {
+		if (n == 0) {
+			return false;
+		}
 		if (n < 0) {
 			reportBadRequest(n);
-			return false;
 		}
 		return true;
 	}

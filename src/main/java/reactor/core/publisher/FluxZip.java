@@ -923,6 +923,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public void onError(Throwable t) {
+			done = true;
 			parent.error(t, index);
 		}
 
