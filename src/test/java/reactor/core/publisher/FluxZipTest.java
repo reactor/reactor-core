@@ -873,7 +873,7 @@ public class FluxZipTest {
 		            .expectNext(5)
 		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isFalse())
 		            .then(() -> up.actual.onError(new Exception("test")))
-		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isTrue())
+		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isFalse())
 		            .then(() -> up.actual.onError(new Exception("test")))
 		            .verifyErrorMessage("test");
 	}
