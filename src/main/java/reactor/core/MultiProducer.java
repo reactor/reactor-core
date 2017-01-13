@@ -42,7 +42,7 @@ public interface MultiProducer {
 	 * @return Has any Subscriber attached to this multi-producer ?
 	 */
 	default boolean hasDownstreams() {
-		return downstreamCount() != 0;
+		return downstreamCount() > 0;
 	}
 
 }
