@@ -16,7 +16,10 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -29,5 +32,88 @@ public class FluxHideTest {
 		f = f.hide();
 		assertThat(f instanceof Fuseable.ScalarCallable).isFalse();
 		assertThat(f instanceof FluxHide).isTrue();
+	}
+
+	@Test
+	public void suppressedSubscriber() {
+		Subscriber<Integer> s = new Subscriber<Integer>() {
+			@Override
+			public void onSubscribe(
+					Subscription s) {
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(
+					Integer integer) {
+
+			}
+
+			@Override
+			public void onError(
+					Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		};
+
+		FluxHide.SuppressFuseableSubscriber sfs = Flux.just(1, 2, 3)
+		                                              .subscribeWith(new FluxHide.SuppressFuseableSubscriber<>(s));
+
+		assertThat(sfs.downstream()).isEqualTo(s);
+		assertThat(sfs.upstream()).isInstanceOf(FluxArray.ArraySubscription.class);
+		assertThat(sfs.size()).isEqualTo(0);
+		assertThat(sfs.isEmpty()).isFalse();
+		assertThat(sfs.poll()).isNull();
+		assertThat(sfs.requestFusion(Fuseable.ANY)).isEqualTo(Fuseable.NONE);
+
+		sfs.clear(); //NOOP
+
+		TestPublisher<Integer> ts = TestPublisher.create();
+		ts.subscribe(sfs);
+		ts.assertCancelled();
+	}
+
+	@Test
+	public void suppressedSubscriberError() {
+		Subscriber<Integer> s = new Subscriber<Integer>() {
+			@Override
+			public void onSubscribe(
+					Subscription s) {
+				s.cancel();
+			}
+
+			@Override
+			public void onNext(
+					Integer integer) {
+
+			}
+
+			@Override
+			public void onError(
+					Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		};
+
+		FluxHide.SuppressFuseableSubscriber sfs = Flux.<Integer>error(new Exception("test"))
+		                                              .subscribeWith(new FluxHide.SuppressFuseableSubscriber<>(s));
+
+		assertThat(sfs.downstream()).isEqualTo(s);
+		assertThat(sfs.size()).isEqualTo(0);
+		assertThat(sfs.isEmpty()).isFalse();
+		assertThat(sfs.poll()).isNull();
+		assertThat(sfs.requestFusion(Fuseable.ANY)).isEqualTo(Fuseable.NONE);
+
+		sfs.clear(); //NOOP
 	}
 }

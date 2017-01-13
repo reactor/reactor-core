@@ -15,14 +15,28 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
+import reactor.core.MultiReceiver;
+import reactor.core.Trackable;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxFlatMapTest {
 
@@ -431,5 +445,715 @@ public class FluxFlatMapTest {
 		.assertComplete();
 	}
 
+	@Test
+	public void defaultPrefetch() {
+		assertThat(Flux.just(1, 2, 3)
+		               .flatMap(Flux::just)
+		               .getPrefetch()).isEqualTo(QueueSupplier.XS_BUFFER_SIZE);
+	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void failMaxConcurrency() {
+		Flux.just(1, 2, 3)
+		    .flatMap(Flux::just, -1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch() {
+		Flux.just(1, 2, 3)
+		    .flatMap(Flux::just, 128, -1);
+	}
+
+	@Test
+	public void failCallable() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Mono.fromCallable(() -> {
+			                        throw new Exception("test");
+		                        })))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failMap() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> {
+			                        throw new RuntimeException("test");
+		                        }))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failPublisher() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Flux.error(new Exception("test"))))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failPublisherDelay() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Flux.error(new Exception("test")),
+				                        true,
+				                        1,
+				                        1))
+		            .verifyErrorMessage("Multiple exceptions");
+	}
+
+	@Test
+	public void completePublisherDelayCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Flux.<Integer>empty().hide(),
+				                        true,
+				                        1,
+				                        1))
+		            .thenCancel()
+					.verify();
+	}
+
+	@Test
+	public void completePublisherDelay() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> Flux.<Integer>empty().hide(),
+				                        true,
+				                        1,
+				                        1))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void failNull() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(d -> null))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failScalarCallable() {
+		StepVerifier.create(Mono.fromCallable(() -> {
+			throw new Exception("test");
+		})
+		                        .flatMap(Flux::just))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failScalarMap() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> {
+			                        throw new RuntimeException("test");
+		                        }))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failScalarMapNull() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> null))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failScalarMapCallableError() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> Mono.fromCallable(() -> {
+			                        throw new Exception("test");
+		                        })))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void prematureScalarMapCallableNullComplete() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> Mono.fromCallable(() -> null)))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureScalarMapCallableJust() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> Mono.fromCallable(() -> 2)))
+		            .expectNext(2)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCompleteMaxPrefetch() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(f -> Flux.empty(), Integer.MAX_VALUE))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(Flux::just))
+		            .expectNext(1, 2, 3)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void prematureCancel2() {
+		StepVerifier.create(Flux.range(1, 10000)
+		                        .flatMap(Flux::just, 2)
+		                        .cancelOn(Schedulers.single()), 1)
+		            .expectNext(1)
+		            .thenRequest(2)
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failNextOnTerminated() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+
+		Hooks.onNextDropped(c -> {
+			assertThat(c).isEqualTo(2);
+		});
+		StepVerifier.create(up.flatMap(Flux::just))
+		            .then(() -> {
+			            up.onNext(1);
+			            Subscriber<? super Integer> a = up.actual;
+			            up.onComplete();
+			            a.onNext(2);
+		            })
+		            .expectNext(1)
+					.verifyComplete();
+		Hooks.resetOnNextDropped();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void ignoreDoubleComplete() {
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onComplete();
+			s.onComplete();
+		}).flatMap(Flux::just))
+		            .verifyComplete();
+	}
+
+
+	@Test
+	public void ignoreConcurrentHiddenComplete() {
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(1);
+		}).flatMap(f -> Flux.just(f).hide()))
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void ignoreDoubleOnSubscribe() {
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onSubscribe(Operators.emptySubscription());
+			s.onComplete();
+		}).flatMap(Flux::just))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void ignoreDoubleOnSubscribeInner() {
+		StepVerifier.create(Flux.just(1).hide()
+		                        .flatMap(f -> Flux.from(s -> {
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        s.onComplete();
+		                        })))
+		            .verifyComplete();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleError() {
+		try {
+			StepVerifier.create(Flux.from(s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onError(new Exception("test"));
+				s.onError(new Exception("test2"));
+			}).flatMap(Flux::just))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+		}
+	}
+
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleErrorTerminated() {
+		try {
+			StepVerifier.create(Flux.from(s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
+				s.onError(new Exception("test"));
+			}).flatMap(Flux::just))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+		}
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleErrorTerminatedInner() {
+		try {
+			StepVerifier.create(Flux.just(1).hide().flatMap(f -> Flux.from(s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,( (FluxFlatMap.FlatMapInner) s).downstream());
+				s.onError(new Exception("test"));
+			})))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test");
+		}
+	}
+
+	@Test
+	public void failOverflowScalar() {
+		TestPublisher<Integer> ts =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		StepVerifier.create(ts.flux()
+		                      .flatMap(Flux::just, 1), 0)
+		            .then(() -> ts.emit(1, 2))
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void failOverflow() {
+		TestPublisher<Integer> ts =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> ts, 2, 1), 0)
+		            .then(() -> ts.emit(1, 2))
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void failOverflowCancelledWhileActive() {
+		TestPublisher<Integer> ts =
+				TestPublisher.createNoncompliant(TestPublisher.Violation.REQUEST_OVERFLOW);
+		AtomicReference<FluxFlatMap.FlatMapMain> ref = new AtomicReference<>();
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> ts, 2, 1), 0)
+		            .consumeSubscriptionWith(s -> ref.set((FluxFlatMap.FlatMapMain)s))
+		            .then(() -> {
+			            ref.get().wip = 1;
+			            ts.emit(1, 2);
+			            ref.get().drainLoop();
+		            })
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void failOverflowScalarThenError() {
+		AtomicBoolean set = new AtomicBoolean();
+		Hooks.onErrorDropped(e -> {
+			assertThat(Exceptions.isOverflow(e)).isTrue();
+			set.set(true);
+		});
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(1);
+			Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
+			s.onNext(2);
+			((FluxFlatMap.FlatMapMain)s).error = null;
+			s.onError(new Exception("test"));
+		})
+		                      .flatMap(Flux::just, 1), 0)
+		            .verifyErrorMessage("test");
+		Hooks.resetOnErrorDropped();
+		assertThat(set.get()).isTrue();
+	}
+
+	@Test
+	public void failOverflowWhileActiveScalar() {
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(1);
+			((FluxFlatMap.FlatMapMain)s).wip = 1; //simulate concurrent active
+			s.onNext(2);
+			((FluxFlatMap.FlatMapMain)s).drainLoop();
+		})
+		                      .flatMap(Flux::just, 1), 0)
+		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void failOverflowWhileActiveScalarThenError() {
+		AtomicBoolean set = new AtomicBoolean();
+		Hooks.onErrorDropped(e -> {
+			assertThat(Exceptions.isOverflow(e)).isTrue();
+			set.set(true);
+		});
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(1);
+			Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR, (FluxFlatMap.FlatMapMain) s);
+			((FluxFlatMap.FlatMapMain)s).wip = 1; //simulate concurrent active
+			s.onNext(2);
+			s.onNext(3);
+			((FluxFlatMap.FlatMapMain)s).error = null;
+			((FluxFlatMap.FlatMapMain)s).drainLoop();
+			s.onError(new Exception("test"));
+		})
+		                        .flatMap(Flux::just, 1), 1)
+		            .expectNext(1)
+		            .verifyErrorMessage("test");
+		Hooks.resetOnErrorDropped();
+		assertThat(set.get()).isTrue();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleErrorSilent() {
+		Hooks.onErrorDropped(e -> {
+			assertThat(e).hasMessage("test2");
+		});
+		StepVerifier.create(Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onError(new Exception("test"));
+			s.onError(new Exception("test2"));
+		}).flatMap(Flux::just))
+		            .verifyErrorMessage("test");
+		Hooks.resetOnErrorDropped();
+	}
+
+	@Test
+	public void suppressFusionIfExpected() {
+		StepVerifier.create(Mono.just(1)
+		                        .then(d -> Mono.just(d)
+		                                       .hide()))
+		            .consumeSubscriptionWith(s -> {
+			            assertThat(s).isInstanceOf(FluxHide.SuppressFuseableSubscriber.class);
+		            })
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void ignoreRequestZeroThenRequestOneByOne() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(f -> Flux.just(f * 2)), 0)
+		            .consumeSubscriptionWith(s -> s.request(0))
+		            .thenRequest(1)
+		            .expectNext(2)
+		            .thenRequest(1)
+		            .expectNext(4)
+		            .thenRequest(1)
+		            .expectNext(6)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void suppressFusionIfExpectedError() {
+		StepVerifier.create(Mono.just(1)
+		                        .then(d -> Mono.error(new Exception("test"))
+		                                       .hide()))
+		            .consumeSubscriptionWith(s -> {
+			            assertThat(s).isInstanceOf(FluxHide.SuppressFuseableSubscriber.class);
+		            })
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void backpressuredScalarThenCancel(){
+		StepVerifier.create(Flux.just(1, 2, 3).flatMap(Flux::just), 0)
+	                .thenRequest(2)
+	                .expectNext(1, 2)
+	                .thenCancel()
+	                .verify();
+	}
+
+	Flux<Integer> scenario_backpressuredThenCancel() {
+		return Flux.just(1, 2, 3)
+		           .flatMap(f -> Flux.range(1, 10)
+		                             .delayMillis(10L))
+		           .hide();
+	}
+
+	@Test
+	public void backpressuredThenCancel() {
+		StepVerifier.withVirtualTime(this::scenario_backpressuredThenCancel, 0)
+		            .thenRequest(2)
+		            .thenAwait(Duration.ofSeconds(1))
+		            .expectNext(1, 1)
+		            .thenAwait(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .expectNext(2)
+		            .thenCancel()
+		            .verify();
+	}
+
+	void assertBeforeOnSubscribeState(Trackable s) {
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.requestedFromDownstream()).isEqualTo(0);
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.getCapacity()).isEqualTo(1);
+		assertThat(s.getPending()).isEqualTo(-1);
+		assertThat(s.limit()).isEqualTo(-1);
+		assertThat(s.expectedFromUpstream()).isEqualTo(-1);
+		assertThat(s.isCancelled()).isFalse();
+	}
+
+	void assertAfterOnSubscribeState(Trackable s) {
+		assertThat(s.isStarted()).isTrue();
+		assertThat(s.getError()).isNull();
+		assertThat(s.requestedFromDownstream()).isEqualTo(1);
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.isCancelled()).isFalse();
+	}
+
+	void assertAfterOnNextInnerState(Trackable s) {
+		assertThat(s.getPending()).isEqualTo(1L);
+	}
+
+	void assertAfterOnNextInnerState2(Trackable s) {
+		assertThat(s.getPending()).isEqualTo(-1L);
+	}
+
+	void assertAfterOnCompleteInnerState(Trackable s) {
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.isTerminated()).isFalse();
+	}
+
+	void assertAfterOnCompleteInnerState2(Trackable s) {
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.isTerminated()).isTrue();
+		assertThat(s.getPending()).isEqualTo(-1L);
+	}
+
+	@SuppressWarnings("unchecked")
+	void assertAfterOnSubscribeInnerState(MultiReceiver s) {
+		assertThat(s.upstreamCount()).isEqualTo(1);
+		assertThat(s.upstreams().next()).isNotNull();
+		assertThat(((Trackable)s.upstreams().next()).isStarted()).isTrue();
+	}
+
+	void assertBeforeOnSubscribeInnerState(Trackable s) {
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.requestedFromDownstream()).isEqualTo(-1L);
+		assertThat(s.getCapacity()).isEqualTo(32);
+		assertThat(s.getPending()).isEqualTo(-1);
+		assertThat(s.limit()).isEqualTo(24);
+		assertThat(s.expectedFromUpstream()).isEqualTo(0);
+		assertThat(s.isCancelled()).isFalse();
+	}
+
+	@Test
+	public void assertOnSubscribeStateMainAndInner() {
+		StepVerifier.create(Flux.from(s -> {
+			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
+			s.onSubscribe(Operators.emptySubscription());
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
+			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			s.onNext(1);
+			assertThat(((FluxFlatMap.FlatMapMain) s).downstream()).isNotNull();
+			assertThat(((FluxFlatMap.FlatMapMain) s).isCancelled()).isTrue();
+			assertThat(((FluxFlatMap.FlatMapMain) s).isStarted()).isFalse();
+			s.onComplete();
+		})
+		                        .flatMap(f -> Flux.from(s -> {
+			                        assertBeforeOnSubscribeInnerState((FluxFlatMap.FlatMapInner) s);
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        assertThat(((FluxFlatMap.FlatMapInner) s).upstream()).isEqualTo(
+					                        Operators.emptySubscription());
+			                        assertAfterOnSubscribeInnerState(((FluxFlatMap.FlatMapInner) s).downstream());
+			                        s.onNext(f);
+			                        s.onNext(f);
+			                        assertAfterOnNextInnerState(((FluxFlatMap.FlatMapInner) s));
+			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
+			                        assertThat(((FluxFlatMap.FlatMapInner)s).getPending()).isEqualTo(1L);
+			                        s.onComplete();
+			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
+		                        }), 1), 1)
+		            .expectNext(1)
+		            .thenCancel()
+		.verify();
+	}
+
+	@Test
+	public void assertOnSubscribeStateMainAndInner2() {
+		StepVerifier.create(Flux.from(s -> {
+			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
+			s.onSubscribe(Operators.emptySubscription());
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
+			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			s.onNext(1);
+			assertThat(((FluxFlatMap.FlatMapMain) s).downstream()).isNotNull();
+			assertThat(((FluxFlatMap.FlatMapMain) s).isCancelled()).isFalse();
+			s.onComplete();
+			assertThat(((FluxFlatMap.FlatMapMain) s).isStarted()).isFalse();
+			assertThat(((FluxFlatMap.FlatMapMain) s).isTerminated()).isTrue();
+		})
+		                        .flatMap(f -> Flux.from(s -> {
+			                        assertBeforeOnSubscribeInnerState((FluxFlatMap.FlatMapInner) s);
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        assertThat(((FluxFlatMap.FlatMapInner) s).upstream()).isEqualTo(
+					                        Operators.emptySubscription());
+			                        assertAfterOnSubscribeInnerState(((FluxFlatMap.FlatMapInner) s).downstream());
+			                        s.onNext(f);
+			                        assertAfterOnNextInnerState2(((FluxFlatMap
+					                        .FlatMapInner) s));
+			                        s.onComplete();
+			                        assertAfterOnCompleteInnerState2(((FluxFlatMap.FlatMapInner) s));
+		                        }), 1), 1)
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void assertOnSubscribeStateMainScalar() {
+		AtomicReference<FluxFlatMap.FlatMapMain> ref = new AtomicReference<>();
+		StepVerifier.create(Flux.from(s -> {
+			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
+			s.onSubscribe(Operators.emptySubscription());
+			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
+			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
+			s.onNext(1);
+		})
+		                        .flatMap(Flux::just, 1), 1)
+		            .consumeSubscriptionWith(s -> ref.set((FluxFlatMap.FlatMapMain)s))
+		            .expectNext(1)
+		            .then(() -> {
+						FluxFlatMap.FlatMapMain s = ref.get();
+			            assertThat(s.getPending()).isEqualTo(-1L);
+			            s.onNext(2);
+			            assertThat(s.downstream()).isNotNull();
+			            assertThat(s.isCancelled()).isFalse();
+			            assertThat(s.getPending()).isEqualTo(1);
+			            assertThat(s.isTerminated()).isFalse();
+			            s.onComplete();
+			            assertThat(s.getPending()).isEqualTo(-1L);
+			            assertThat(s.isTerminated()).isFalse();
+		            })
+		            .thenRequest(1)
+		            .then(() -> {
+			            FluxFlatMap.FlatMapMain s = ref.get();
+			            assertThat(s.isTerminated()).isTrue();
+		            })
+		            .expectNext(2)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void ignoreSyncFusedRequest() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(f -> Flux.range(f, 2), 1), 0)
+		            .thenRequest(1)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void asyncInnerFusion() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> up, 1))
+		            .then(() -> up.onNext(1))
+		            .then(() -> up.onNext(2))
+		            .then(() -> up.onNext(3))
+		            .then(() -> up.onNext(4))
+		            .then(() -> up.onComplete())
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void failAsyncInnerFusion() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> up, 1))
+		            .then(() -> up.onNext(1))
+		            .then(() -> up.onNext(2))
+		            .then(() -> up.onError(new Exception("test")))
+		            .expectNext(1, 2)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failsyncInnerFusion() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> Flux.just(1, 2, null), 1))
+		            .expectNext(1, 2)
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void prematureInnerCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
+		                        .hide()
+		                        .flatMap(f -> Flux.from(s -> {
+		                        	s.onSubscribe(Operators.emptySubscription());
+		                        	s.onNext(1);
+		                        	s.onNext(2);
+		                        	if(f > 1) {
+				                        s.onComplete();
+			                        }
+		                        })))
+		            .expectNext(1, 2)
+		            .expectNext(1, 2)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void normalInnerArrayMoreThanDefaultArraySize4() {
+		TestPublisher<Integer> ts = TestPublisher.create();
+		TestPublisher<Integer> ts2 = TestPublisher.create();
+		StepVerifier.create(Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
+		                        .hide()
+		                        .flatMap(f -> f < 5 ? ts : ts2), 0)
+		            .then(() -> ts.next(1, 2))
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .then(() -> ts2.complete())
+		            .then(() -> ts.emit(3))
+		            .thenRequest(4)
+		            .expectNext(3, 3, 3, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCancelInnerArrayMoreThanDefaultArraySize4() {
+		AtomicReference<Subscription> x = new AtomicReference<>();
+		StepVerifier.create(Flux.just(1, 2, 3, 4)
+		                        .hide()
+		                        .flatMap(f -> Flux.from(s -> {
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        s.onNext(1);
+			                        s.onNext(2);
+		                        })), 0)
+		            .consumeSubscriptionWith(x::set)
+		            .thenRequest(8)
+		            .expectNext(1, 2)
+		            .expectNext(1, 2)
+		            .expectNext(1, 2)
+		            .expectNext(1)
+		            .thenCancel()
+		            .verify();
+	}
 }

@@ -775,15 +775,16 @@ public class FluxZipTest {
 	}
 
 	@Test
-	public void failRequestHideAll() {
-		Flux.zip(obj -> null,
+	public void ignoreRequestZeroHideAll() {
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
 				Flux.just(1)
 				    .hide(),
 				Flux.just(2)
-				    .hide())
-		    .subscribe(null, null, null, s -> {
-			    s.request(0);
-		    });
+				    .hide()), 0)
+		            .consumeSubscriptionWith(s -> s.request(0))
+		            .thenRequest(1)
+		            .expectNext(3)
+		.verifyComplete();
 	}
 
 	@Test

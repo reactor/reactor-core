@@ -70,123 +70,54 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normal() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 1_000_000)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(1_000_000)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normalBackpressured1() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 1_000)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500);
-
-		Thread.sleep(250);
-
-		ts.assertValueCount(500)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 1_000)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
+		            .thenRequest(500)
+		            .expectNextCount(500)
+		            .thenRequest(500)
+		            .expectNextCount(500)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normalBackpressured() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 1_000_000)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		Thread.sleep(250);
-
-		ts.assertValueCount(500_000)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normalSyncFused() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-		Flux.range(1, 1_000_000)
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(1_000_000)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normalSyncFusedBackpressured() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 1_000_000)
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		Thread.sleep(500);
-
-		ts.assertValueCount(500_000)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		ts.await(Duration.ofSeconds(10));
-		ts.assertTerminated();
-
-		ts.assertValueCount(1_000_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 1_000_000)
+		                        .publishOn(Schedulers.fromExecutorService(exec)), 0)
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .verifyComplete();
 	}
 
 	@Test
