@@ -23,6 +23,16 @@ import static org.junit.Assert.assertTrue;
 public class FluxFromTest {
 
 	@Test
+	public void wrapToFlux(){
+		MonoProcessor<String> mp = MonoProcessor.create();
+
+		mp.onNext("test");
+		StepVerifier.create(Flux.from(mp))
+		            .expectNext("test")
+		            .verifyComplete();
+	}
+
+	@Test
 	public void empty() {
 		Flux<Integer> m = Flux.from(Mono.empty());
 		assertTrue(m == Flux.<Integer>empty());

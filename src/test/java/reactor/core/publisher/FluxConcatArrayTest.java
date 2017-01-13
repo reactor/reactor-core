@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -219,6 +221,13 @@ public class FluxConcatArrayTest {
 	public void thenManyError(){
 		StepVerifier.create(Flux.error(new Exception("test")).thenMany(() -> Flux.just(4, 5, 6)))
 	                .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void startWith(){
+		StepVerifier.create(Flux.just(1, 2, 3).startWith(Arrays.asList(-1, 0)))
+		            .expectNext(-1, 0, 1, 2, 3)
+		            .verifyComplete();
 	}
 
 }

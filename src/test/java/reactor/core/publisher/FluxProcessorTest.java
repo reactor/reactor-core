@@ -91,5 +91,39 @@ public class FluxProcessorTest {
 		Assert.assertTrue( "latch : " + latch.getCount(), waited);
 		c.dispose();
 	}
+	@Test
+	public void testEmitter2() throws Throwable {
+		FluxProcessor<Integer, Integer> processor = EmitterProcessor.create();
+
+		int n = 100_000;
+		int subs = 4;
+		final CountDownLatch latch = new CountDownLatch((n + 1) * subs);
+		Scheduler c = Schedulers.single();
+		for (int i = 0; i < subs; i++) {
+			processor.publishOn(c)
+			         .doOnComplete(latch::countDown)
+			         .doOnNext(d -> latch.countDown())
+			         .subscribe(Integer.MAX_VALUE);
+		}
+
+		BlockingSink<Integer> session = processor.connectSink();
+
+		for (int i = 0; i < n; i++) {
+			while (!session.emit(i)
+			               .isOk()) {
+				//System.out.println(emission);
+				if (session.hasFailed()) {
+					session.getError()
+					       .printStackTrace();
+					throw session.getError();
+				}
+			}
+		}
+		session.finish();
+
+		boolean waited = latch.await(5, TimeUnit.SECONDS);
+		Assert.assertTrue( "latch : " + latch.getCount(), waited);
+		c.dispose();
+	}
 
 }

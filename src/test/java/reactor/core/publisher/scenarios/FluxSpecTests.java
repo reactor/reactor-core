@@ -1029,16 +1029,6 @@ public class FluxSpecTests {
 
 
 	@Test
-	public void wrapToFlux(){
-		MonoProcessor<String> mp = MonoProcessor.create();
-
-		mp.onNext("test");
-		StepVerifier.create(Flux.from(mp))
-	                .expectNext("test")
-	                .verifyComplete();
-	}
-
-	@Test
 	public void countRange(){
 		StepVerifier.create(Flux.range(1, 10).count())
 	                .expectNext(10L)

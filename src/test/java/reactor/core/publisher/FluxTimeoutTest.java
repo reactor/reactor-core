@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -288,6 +289,18 @@ public class FluxTimeoutTest {
 	@Test
 	public void fluxPropagatesErrorUsingAwait2() {
 		StepVerifier.withVirtualTime(this::scenario_timeoutThrown2)
+		            .thenAwait(Duration.ofMillis(500))
+		            .verifyError(TimeoutException.class);
+	}
+
+	Flux<?> scenario_timeoutThrown3() {
+		return Flux.never()
+		           .timeoutMillis(500, Schedulers.timer());
+	}
+
+	@Test
+	public void fluxPropagatesErrorUsingAwait3() {
+		StepVerifier.withVirtualTime(this::scenario_timeoutThrown3)
 		            .thenAwait(Duration.ofMillis(500))
 		            .verifyError(TimeoutException.class);
 	}

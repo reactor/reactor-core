@@ -44,6 +44,22 @@ public class MonoCollectListTest {
 	}
 
 	@Test
+	public void aFluxCanBeSorted3(){
+		StepVerifier.create(Flux.just(43, 32122, 422, 321, 43, 443311)
+		                        .sort(Comparator.reverseOrder()))
+		            .expectNext(443311, 32122, 422, 321, 43, 43)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void aFluxCanBeSorted4(){
+		StepVerifier.create(Flux.just(43, 32122, 422, 321, 43, 443311)
+		                        .sort())
+		            .expectNext(43, 43, 321, 422, 32122, 443311)
+		            .verifyComplete();
+	}
+
+	@Test
 	public void collectListOne() {
 		StepVerifier.create(Flux.just(1)
 		                        .collectList())
