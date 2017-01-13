@@ -25,9 +25,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Exceptions;
 import reactor.core.MultiReceiver;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple4;
@@ -337,6 +339,31 @@ public class FluxZipTest {
 	}
 
 	@Test
+	public void pairWisePairWise() {
+		Flux<Tuple2<Tuple2<Tuple2<Integer, String>, String>, String>> f =
+				Flux.zip(Flux.just(1), Flux.just("test"))
+				    .zipWith(Flux.just("test2"))
+				    .zipWith(Flux.just("test3"));
+
+		Assert.assertTrue(f instanceof FluxZip);
+		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 4);
+
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		                                                         .getT1()
+		                                                         .getT1(),
+				t.getT1()
+				 .getT1()
+				 .getT2() + t.getT1()
+				             .getT2() + t.getT2()));
+
+		ff.subscribeWith(AssertSubscriber.create())
+		  .assertValues(Tuples.of(1, "testtest2test3"))
+		  .assertComplete();
+	}
+
+	@Test
 	public void pairWise3() {
 		AtomicLong ref = new AtomicLong();
 		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
@@ -589,6 +616,33 @@ public class FluxZipTest {
 		            .verifyComplete(); //FIXME Should fail ?
 	}
 
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleNext() {
+		TestPublisher<Integer> ts = TestPublisher.create();
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
+		            .then(() -> ts.emit(2, 3))
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void ignoreDoubleComlete() {
+		TestPublisher<Integer> ts = TestPublisher.create();
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
+		            .then(() -> ts.complete())
+		            .then(() -> ts.complete())
+		            .verifyComplete();
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleError() {
+		TestPublisher<Integer> ts = TestPublisher.create();
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
+		            .then(() -> ts.error(new Exception("test")))
+		            .then(() -> ts.error(new Exception("test2")))
+		            .verifyErrorMessage("test");
+	}
+
 	@Test
 	public void failNull() {
 		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), null))
@@ -602,10 +656,140 @@ public class FluxZipTest {
 	}
 
 	@Test
+	public void failCombinedNullHide() {
+		StepVerifier.create(Flux.zip(obj -> null,
+				Flux.just(1),
+				Flux.just(2)
+				    .hide()))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failCombinedNullHideAll() {
+		StepVerifier.create(Flux.zip(obj -> null,
+				Flux.just(1)
+				    .hide(),
+				Flux.just(2)
+				    .hide()))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failCombinedFusedError() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1, 2, 3)
+				    .doOnNext(d -> {
+					    if (d > 1) {
+						    throw new RuntimeException("test");
+					    }
+				    }),
+				Flux.just(2, 3)), 0)
+		            .thenRequest(1)
+		            .expectNext(0)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void backpressuredAsyncFusedCancelled() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+				1,
+				up,
+				Flux.just(2, 3, 5)), 0)
+		            .then(() -> up.onNext(1))
+		            .thenRequest(1)
+		            .expectNext(3)
+		            .then(() -> up.onNext(2))
+		            .thenRequest(1)
+		            .expectNext(5)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void backpressuredAsyncFusedCancelled2() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+				1,
+				up,
+				Flux.just(2, 3, 5)), 0)
+		            .then(() -> up.onNext(1))
+		            .thenRequest(3)
+		            .expectNext(3)
+		            .then(() -> up.onNext(2))
+		            .expectNext(5)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void backpressuredAsyncFusedError() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+				1,
+				up,
+				Flux.just(2, 3, 5)), 0)
+		            .then(() -> up.onNext(1))
+		            .thenRequest(1)
+		            .expectNext(3)
+		            .then(() -> up.onNext(2))
+		            .thenRequest(1)
+		            .expectNext(5)
+		            .then(() -> up.onError(new Exception("test")))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void backpressuredAsyncFusedComplete() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+				1,
+				up,
+				Flux.just(2, 3, 5)), 0)
+		            .then(() -> up.onNext(1))
+		            .thenRequest(1)
+		            .expectNext(3)
+		            .then(() -> up.onNext(2))
+		            .thenRequest(1)
+		            .expectNext(5)
+		            .then(() -> up.onComplete())
+		            .verifyComplete();
+	}
+
+	@Test
 	public void failCombinedError() {
 		StepVerifier.create(Flux.zip(obj -> {
 			throw new RuntimeException("test");
 		}, 123, Flux.just(1), Flux.just(2), Flux.just(3)))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failCombinedErrorHide() {
+		StepVerifier.create(Flux.zip(obj -> {
+					throw new RuntimeException("test");
+				},
+				123,
+				Flux.just(1)
+				    .hide(),
+				Flux.just(2)
+				    .hide(),
+				Flux.just(3)))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failCombinedErrorHideAll() {
+		StepVerifier.create(Flux.zip(obj -> {
+					throw new RuntimeException("test");
+				},
+				123,
+				Flux.just(1)
+				    .hide(),
+				Flux.just(2)
+				    .hide(),
+				Flux.just(3)
+				    .hide()))
 		            .verifyErrorMessage("test");
 	}
 
@@ -626,6 +810,51 @@ public class FluxZipTest {
 	}
 
 	@Test
+	public void prematureCompleteCallableNullHide() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1)
+				    .hide(),
+				Mono.fromCallable(() -> null)))
+		            .verifyComplete(); //FIXME Should fail ?
+	}
+
+	@Test
+	public void prematureCompleteCallableNullHideAll() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1)
+				    .hide(),
+				Mono.fromCallable(() -> null)
+				    .hide()))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void prematureCompleteSourceEmpty() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1),
+				Mono.empty()
+				    .hide()))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCompleteSourceError() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1),
+				Mono.error(new Exception("test"))))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void prematureCompleteSourceErrorHide() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1)
+				    .hide(),
+				Mono.error(new Exception("test"))))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void prematureCompleteEmpty() {
 		StepVerifier.create(Flux.zip(obj -> 0))
 		            .verifyComplete();
@@ -643,13 +872,121 @@ public class FluxZipTest {
 				Flux.just(2),
 				Flux.just(3),
 				Flux.just(4),
-				Flux.just(5),
-				Flux.just(6),
-				Flux.just(7),
-				Flux.just(8),
-				Flux.just(9)), obj -> (int) obj[8]))
-		            .expectNext(9)
+				Flux.just(5), Flux.just(6), Flux.just(7), Flux.just(8), Flux.just(9)),
+				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] + (int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7] + (int) obj[8]))
+		            .expectNext(45)
 		            .verifyComplete();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void cancelled() {
+		AtomicReference<FluxZip.ZipSingleCoordinator> ref = new AtomicReference<>();
+
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1] + (int) obj[2],
+				1,
+				Flux.just(1, 2),
+				Flux.defer(() -> {
+					ref.get()
+					   .cancel();
+					return Flux.just(3);
+				}),
+				Flux.just(3))
+		                        .doOnSubscribe(s -> {
+			                        assertThat(s instanceof FluxZip.ZipSingleCoordinator).isTrue();
+			                        ref.set((FluxZip.ZipSingleCoordinator) s);
+		                        }), 0)
+		            .then(() -> assertInnerSubscriber(ref.get()))
+		            .then(() -> assertThat(ref.get()
+		                                      .getCapacity()).isEqualTo(3))
+		            .then(() -> assertThat(ref.get()
+		                                      .getPending()).isEqualTo(1))
+		            .then(() -> assertThat(ref.get()
+		                                      .upstreams()).hasSize(3))
+		            .thenCancel()
+		            .verify();
+
+		FluxZip.ZipSingleCoordinator c = ref.get();
+		assertThat(c.isCancelled()).isTrue();
+		assertThat(c.isTerminated()).isTrue();
+	}
+
+	@SuppressWarnings("unchecked")
+	void assertInnerSubscriber(FluxZip.ZipSingleCoordinator c) {
+		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.upstreams()
+		                                                               .next();
+
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.isTerminated()).isTrue();
+		assertThat(s.upstream()).isNotNull();
+		assertThat(s.getCapacity()).isEqualTo(1);
+		assertThat(s.getPending()).isEqualTo(-1L);
+		assertThat(s.isCancelled()).isTrue();
+
+		try {
+			s.onNext(0);
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(e).isSameAs(Exceptions.failWithCancel());
+		}
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void cancelledHide() {
+		AtomicReference<FluxZip.ZipCoordinator> ref = new AtomicReference<>();
+
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1] + (int) obj[2],
+				123,
+				Flux.just(1, 2)
+				    .hide(),
+				Flux.defer(() -> {
+					ref.get()
+					   .cancel();
+					return Flux.just(3);
+				}),
+				Flux.just(3)
+				    .hide())
+		                        .doOnSubscribe(s -> {
+			                        assertThat(s instanceof FluxZip.ZipCoordinator).isTrue();
+			                        ref.set((FluxZip.ZipCoordinator) s);
+		                        }), 0)
+		            .then(() -> assertInnerSubscriber(ref.get()))
+		            .then(() -> assertThat(ref.get()
+		                                      .getCapacity()).isEqualTo(3))
+		            .then(() -> assertThat(ref.get()
+		                                      .getPending()).isEqualTo(1))
+		            .then(() -> assertThat(ref.get()
+		                                      .upstreams()).hasSize(3))
+		            .then(() -> assertThat(ref.get()
+		                                      .getError()).isNull())
+		            .then(() -> assertThat(ref.get()
+		                                      .requestedFromDownstream()).isEqualTo(0))
+		            .then(() -> assertThat(ref.get()
+		                                      .isStarted()).isTrue())
+		            .thenCancel()
+		            .verify();
+
+		FluxZip.ZipCoordinator c = ref.get();
+		assertThat(c.isCancelled()).isTrue();
+		assertThat(c.isTerminated()).isFalse();
+	}
+
+	@SuppressWarnings("unchecked")
+	void assertInnerSubscriber(FluxZip.ZipCoordinator c) {
+		FluxZip.ZipInner s = (FluxZip.ZipInner) c.upstreams()
+		                                         .next();
+
+		assertThat(s.isStarted()).isFalse();
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.upstream()).isNotNull();
+		assertThat(s.getCapacity()).isEqualTo(123);
+		assertThat(s.getPending()).isEqualTo(1);
+		assertThat(s.limit()).isEqualTo(93);
+		assertThat(s.expectedFromUpstream()).isEqualTo(0);
+		assertThat(s.downstream()).isNull();
+		assertThat(s.isCancelled()).isFalse();
 	}
 
 	@Test
@@ -671,8 +1008,27 @@ public class FluxZipTest {
 				Flux.just(8)
 				    .hide(),
 				Flux.just(9)
-				    .hide()), obj -> (int) obj[8]))
-		            .expectNext(9)
+				    .hide()),
+				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] + (int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7] + (int) obj[8]))
+		            .expectNext(45)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void seven() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4)
+				    .hide(),
+				Flux.just(5)
+				    .hide(),
+				Flux.just(6)
+				    .hide(),
+				Flux.just(7)
+				    .hide()),
+				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] + (int) obj[4] + (int) obj[5] + (int) obj[6]))
+		            .expectNext(28)
 		            .verifyComplete();
 	}
 }

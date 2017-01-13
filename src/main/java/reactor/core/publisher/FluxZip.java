@@ -208,10 +208,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int n = srcs.length;
 
-		if (n == 0) {
-			Operators.complete(s);
-			return;
-		}
+		assert n > 0;
 
 		Object[] scalars = null;
 		int sc = 0;
@@ -884,8 +881,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int sourceMode;
 
-		/** Running with regular, arbitrary source. */
-		static final int NORMAL = 0;
 		/** Running with a source that implements SynchronousSource. */
 		static final int SYNC = 1;
 		/** Running with a source that implements AsynchronousSource. */
@@ -927,22 +922,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						sourceMode = ASYNC;
 						queue = f;
 					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable e) {
-							onError(Operators.onOperatorError(s, e));
-							return;
-						}
+						queue = queueSupplier.get();
 					}
 				} else {
-
-					try {
 						queue = queueSupplier.get();
-					} catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
-						return;
-					}
-
 				}
 				s.request(prefetch);
 			}
