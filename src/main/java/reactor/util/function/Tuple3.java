@@ -70,12 +70,6 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 		return new Object[]{t1, t2, t3};
 	}
 
-	@Nonnull
-	@Override
-	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3).iterator();
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

@@ -86,12 +86,6 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 		return new Object[]{t1, t2, t3, t4, t5, t6, t7, t8};
 	}
 
-	@Nonnull
-	@Override
-	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3, t4, t5, t6, t7, t8).iterator();
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
