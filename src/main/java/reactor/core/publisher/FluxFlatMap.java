@@ -88,22 +88,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		return prefetch;
 	}
 
-	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
-			Function<? super T, ? extends Publisher<? extends R>> mapper,
-			boolean delayError,
-			int maxConcurrency,
-			Supplier<? extends Queue<R>> mainQueueSupplier,
-			int prefetch,
-			Supplier<? extends Queue<R>> innerQueueSupplier) {
-		return new FlatMapMain<>(s,
-				mapper,
-				delayError,
-				maxConcurrency,
-				mainQueueSupplier,
-				prefetch,
-				innerQueueSupplier);
-	}
-
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
@@ -192,7 +176,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					p.subscribe(s);
 				}
 				else {
-					p.subscribe(new SuppressFuseableSubscriber<>(s));
+					p.subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
 				}
 			}
 
@@ -399,6 +383,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 				return;
 			}
+
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
 
@@ -421,36 +406,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					}
 				}
 				else {
-					Queue<R> q;
+					Queue<R> q = getOrCreateScalarQueue();
 
-					try {
-						q = getOrCreateScalarQueue();
-					}
-					catch (Throwable ex) {
-						ex = Operators.onOperatorError(s, ex, v);
-
-						if (Exceptions.addThrowable(ERROR, this, ex)) {
-							done = true;
-						}
-						else {
-							Operators.onErrorDropped(ex);
-						}
-
-						drainLoop();
-						return;
-					}
-
-					if (!q.offer(v)) {
-						s.cancel();
-
-						Throwable e = Exceptions.failWithOverflow("Scalar queue full?!");
-
-						if (Exceptions.addThrowable(ERROR, this, e)) {
-							done = true;
-						}
-						else {
-							Operators.onErrorDropped(e);
-						}
+					if (!q.offer(v) && failOverflow(v, s)){
+						done = true;
 						drainLoop();
 						return;
 					}
@@ -464,34 +423,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			else {
 				Queue<R> q;
 
-				try {
-					q = getOrCreateScalarQueue();
-				}
-				catch (Throwable ex) {
-					ex = Operators.onOperatorError(s, ex, v);
+				q = getOrCreateScalarQueue();
 
-					if (Exceptions.addThrowable(ERROR, this, ex)) {
-						done = true;
-					}
-					else {
-						Operators.onErrorDropped(ex);
-					}
-
-					drain();
-					return;
-				}
-
-				if (!q.offer(v)) {
-					s.cancel();
-
-					Throwable e = Exceptions.failWithOverflow("Scalar queue full?!");
-
-					if (Exceptions.addThrowable(ERROR, this, e)) {
-						done = true;
-					}
-					else {
-						Operators.onErrorDropped(e);
-					}
+				if (!q.offer(v) && failOverflow(v, s)) {
+					done = true;
 				}
 				drain();
 			}
@@ -599,9 +534,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				if (r != 0L && !noSources) {
 
 					int j = lastIndex;
-					if (j >= n) {
-						j = 0;
-					}
+					//Do not need to wrap j since lastIndex is always 0..<n
+//					if (j >= n) {
+//						j = 0;
+//					}
 
 					for (int i = 0; i < n; i++) {
 						if (cancelled) {
@@ -662,20 +598,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 								if (e == r) {
 									d = inner.done;
-									boolean empty;
-
-									try {
-										empty = q.isEmpty();
-									}
-									catch (Throwable ex) {
-										ex = Operators.onOperatorError(inner, ex);
-										if (!Exceptions.addThrowable(ERROR, this, ex)) {
-											Operators.onErrorDropped(ex);
-										}
-										empty = true;
-										d = true;
-									}
-
+									boolean empty = q.isEmpty();
 									if (d && empty) {
 										remove(inner.index);
 										again = true;
@@ -817,6 +740,18 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			}
 		}
 
+		boolean failOverflow(R v, Subscription toCancel){
+			Throwable e = Operators.onOperatorError(toCancel,
+					Exceptions.failWithOverflow("Scalar queue full?!"),
+					v);
+
+			if (!Exceptions.addThrowable(ERROR, this, e)) {
+				Operators.onErrorDropped(e);
+				return false;
+			}
+			return true;
+		}
+
 		void innerNext(FlatMapInner<R> inner, R v) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				long r = requested;
@@ -831,36 +766,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					inner.request(1);
 				}
 				else {
-					Queue<R> q;
+					Queue<R> q = getOrCreateInnerQueue(inner);
 
-					try {
-						q = getOrCreateScalarQueue(inner);
-					}
-					catch (Throwable ex) {
-						ex = Operators.onOperatorError(inner, ex, v);
-						if (Exceptions.addThrowable(ERROR, this, ex)) {
-							inner.done = true;
-						}
-						else {
-							Operators.onErrorDropped(ex);
-						}
-						drainLoop();
-						return;
-					}
-
-					if (!q.offer(v)) {
-						inner.cancel();
-
-						Throwable e = Operators.onOperatorError(inner,
-								Exceptions.failWithOverflow("Scalar queue full?!"),
-								v);
-
-						if (Exceptions.addThrowable(ERROR, this, e)) {
-							inner.done = true;
-						}
-						else {
-							Operators.onErrorDropped(e);
-						}
+					if (!q.offer(v) && failOverflow(v, inner)){
+						inner.done = true;
 						drainLoop();
 						return;
 					}
@@ -872,34 +781,10 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				drainLoop();
 			}
 			else {
-				Queue<R> q;
+				Queue<R> q = getOrCreateInnerQueue(inner);
 
-				try {
-					q = getOrCreateScalarQueue(inner);
-				}
-				catch (Throwable ex) {
-					ex = Operators.onOperatorError(inner, ex, v);
-					if (Exceptions.addThrowable(ERROR, this, ex)) {
-						inner.done = true;
-					}
-					else {
-						Operators.onErrorDropped(ex);
-					}
-					drain();
-					return;
-				}
-
-				if (!q.offer(v)) {
-					Throwable e = Operators.onOperatorError(inner,
-							Exceptions.failWithOverflow("Scalar queue full?!"),
-							v);
-
-					if (Exceptions.addThrowable(ERROR, this, e)) {
-						inner.done = true;
-					}
-					else {
-						Operators.onErrorDropped(e);
-					}
+				if (!q.offer(v) && failOverflow(v, inner)) {
+					inner.done = true;
 				}
 				drain();
 			}
@@ -937,7 +822,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			drainLoop();
 		}
 
-		Queue<R> getOrCreateScalarQueue(FlatMapInner<R> inner) {
+		Queue<R> getOrCreateInnerQueue(FlatMapInner<R> inner) {
 			Queue<R> q = inner.queue;
 			if (q == null) {
 				q = innerQueueSupplier.get();
@@ -968,7 +853,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isTerminated() {
-			return done && get().length == 0;
+			return done && (scalarQueue == null || scalarQueue.isEmpty());
 		}
 
 		@Override
@@ -989,7 +874,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public long upstreamCount() {
-			return get().length;
+			return size;
 		}
 
 		@Override
@@ -1029,11 +914,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		 * Represents the optimization mode of this inner subscriber.
 		 */
 		int sourceMode;
-
-		volatile int once;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<FlatMapInner> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(FlatMapInner.class, "once");
 
 		int index;
 
@@ -1079,10 +959,8 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onError(Throwable t) {
-			// we don't want to emit the same error twice in case of subscription-race in async mode
-			if (sourceMode != Fuseable.ASYNC || ONCE.compareAndSet(this, 0, 1)) {
-				parent.innerError(this, t);
-			}
+			done = true;
+			parent.innerError(this, t);
 		}
 
 		@Override
@@ -1094,15 +972,13 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (sourceMode != Fuseable.SYNC) {
-				long p = produced + n;
-				if (p >= limit) {
-					produced = 0L;
-					s.request(p);
-				}
-				else {
-					produced = p;
-				}
+			long p = produced + n;
+			if (p >= limit) {
+				produced = 0L;
+				s.request(p);
+			}
+			else {
+				produced = p;
 			}
 		}
 
@@ -1152,7 +1028,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object downstream() {
+		public FluxFlatMap.FlatMapMain<?, R> downstream() {
 			return parent;
 		}
 	}
@@ -1242,8 +1118,8 @@ abstract class SpscFreeListTracker<T> {
 			SIZE.lazySet(this, size); // make sure entry is released
 			a[idx] = entry;
 			SIZE.lazySet(this, size + 1);
-			return true;
 		}
+		return true;
 	}
 
 	public final void remove(int index) {
@@ -1283,84 +1159,3 @@ abstract class SpscFreeListTracker<T> {
 	}
 }
 
-final class SuppressFuseableSubscriber<T>
-		implements Producer, Receiver, Subscriber<T>, Fuseable.QueueSubscription<T> {
-
-	final Subscriber<? super T> actual;
-
-	Subscription s;
-
-	public SuppressFuseableSubscriber(Subscriber<? super T> actual) {
-		this.actual = actual;
-
-	}
-
-	@Override
-	public void onSubscribe(Subscription s) {
-		if (Operators.validate(this.s, s)) {
-			this.s = s;
-
-			actual.onSubscribe(this);
-		}
-	}
-
-	@Override
-	public void onNext(T t) {
-		actual.onNext(t);
-	}
-
-	@Override
-	public void onError(Throwable t) {
-		actual.onError(t);
-	}
-
-	@Override
-	public void onComplete() {
-		actual.onComplete();
-	}
-
-	@Override
-	public void request(long n) {
-		s.request(n);
-	}
-
-	@Override
-	public void cancel() {
-		s.cancel();
-	}
-
-	@Override
-	public int requestFusion(int requestedMode) {
-		return Fuseable.NONE;
-	}
-
-	@Override
-	public T poll() {
-		return null;
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return false;
-	}
-
-	@Override
-	public void clear() {
-
-	}
-
-	@Override
-	public int size() {
-		return 0;
-	}
-
-	@Override
-	public Object downstream() {
-		return actual;
-	}
-
-	@Override
-	public Object upstream() {
-		return s;
-	}
-}
