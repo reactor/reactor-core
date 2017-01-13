@@ -32,6 +32,7 @@ import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
@@ -339,24 +340,23 @@ public class FluxZipTest {
 	}
 
 	@Test
-	public void pairWisePairWise() {
-		Flux<Tuple2<Tuple2<Tuple2<Integer, String>, String>, String>> f =
-				Flux.zip(Flux.just(1), Flux.just("test"))
-				    .zipWith(Flux.just("test2"))
-				    .zipWith(Flux.just("test3"));
+	public void nonPairWisePairWise() {
+		Flux<Tuple2<Tuple3<Integer, String, String>, String>> f =
+				Flux.zip(Flux.just(1), Flux.just("test"), Flux.just("test0"))
+				    .zipWith(Flux.just("test2"));
 
 		Assert.assertTrue(f instanceof FluxZip);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
 		Assert.assertTrue(s.sources != null);
 		Assert.assertTrue(s.sources.length == 4);
 
-		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t
 		                                                         .getT1()
 		                                                         .getT1(),
-				t.getT1()
+				t
 				 .getT1()
-				 .getT2() + t.getT1()
-				             .getT2() + t.getT2()));
+				 .getT2() + t
+				             .getT2()));
 
 		ff.subscribeWith(AssertSubscriber.create())
 		  .assertValues(Tuples.of(1, "testtest2test3"))
@@ -669,6 +669,23 @@ public class FluxZipTest {
 		Hooks.resetOnErrorDropped();
 	}
 
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleErrorHide() {
+		try {
+			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1).hide(), Flux.never(), s
+					-> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onError(new Exception("test"));
+				s.onError(new Exception("test2"));
+			}))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+		}
+	}
+
 	@Test
 	public void failDoubleTerminalPublisher() {
 		DirectProcessor<Integer> d1 = DirectProcessor.create();
@@ -905,6 +922,22 @@ public class FluxZipTest {
 	}
 
 	@Test
+	public void prematureCompleteSourceEmptyDouble() {
+		DirectProcessor<Integer> d = DirectProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> 0,
+				d,
+				s -> {
+					Subscriber<?> a = ((DirectProcessor.DirectProcessorSubscription)
+							d.downstreams().next()).actual;
+
+					Operators.complete(s);
+
+					a.onComplete();
+				}, Mono.just(1)))
+		            .verifyComplete();
+	}
+
+	@Test
 	public void prematureCompleteSourceError() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1),
@@ -946,6 +979,20 @@ public class FluxZipTest {
 	}
 
 	@Test
+	public void size8LikeInternalBuffer() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5), Flux.just(6), Flux.just(7), Flux.just(8)),
+				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] +
+						(int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7]))
+		            .expectNext(36)
+		            .verifyComplete();
+	}
+
+
+	@Test
 	@SuppressWarnings("unchecked")
 	public void cancelled() {
 		AtomicReference<FluxZip.ZipSingleCoordinator> ref = new AtomicReference<>();
@@ -962,8 +1009,8 @@ public class FluxZipTest {
 		                        .doOnSubscribe(s -> {
 			                        assertThat(s instanceof FluxZip.ZipSingleCoordinator).isTrue();
 			                        ref.set((FluxZip.ZipSingleCoordinator) s);
+			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
-		            .then(() -> assertInnerSubscriber(ref.get()))
 		            .then(() -> assertThat(ref.get()
 		                                      .getCapacity()).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
@@ -973,9 +1020,20 @@ public class FluxZipTest {
 		            .thenCancel()
 		            .verify();
 
-		FluxZip.ZipSingleCoordinator c = ref.get();
-		assertThat(c.isCancelled()).isTrue();
-		assertThat(c.isTerminated()).isTrue();
+		assertInnerSubscriber(ref.get());
+	}
+
+	@SuppressWarnings("unchecked")
+	void assertInnerSubscriberBefore(FluxZip.ZipSingleCoordinator c) {
+		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.upstreams()
+		                                                               .next();
+
+		assertThat(s.isStarted()).isTrue();
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.upstream()).isNull();
+		assertThat(s.getCapacity()).isEqualTo(1L);
+		assertThat(s.getPending()).isEqualTo(1L);
+		assertThat(s.isCancelled()).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1015,8 +1073,8 @@ public class FluxZipTest {
 		                        .doOnSubscribe(s -> {
 			                        assertThat(s instanceof FluxZip.ZipCoordinator).isTrue();
 			                        ref.set((FluxZip.ZipCoordinator) s);
+			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
-		            .then(() -> assertInnerSubscriber(ref.get()))
 		            .then(() -> assertThat(ref.get()
 		                                      .getCapacity()).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
@@ -1032,9 +1090,23 @@ public class FluxZipTest {
 		            .thenCancel()
 		            .verify();
 
-		FluxZip.ZipCoordinator c = ref.get();
-		assertThat(c.isCancelled()).isTrue();
-		assertThat(c.isTerminated()).isFalse();
+		assertInnerSubscriber(ref.get());
+	}
+
+	@SuppressWarnings("unchecked")
+	void assertInnerSubscriberBefore(FluxZip.ZipCoordinator c) {
+		FluxZip.ZipInner s = (FluxZip.ZipInner) c.upstreams()
+		                                         .next();
+
+		assertThat(s.isStarted()).isTrue();
+		assertThat(s.isTerminated()).isFalse();
+		assertThat(s.upstream()).isNull();
+		assertThat(s.getCapacity()).isEqualTo(123);
+		assertThat(s.getPending()).isEqualTo(-1L);
+		assertThat(s.limit()).isEqualTo(93);
+		assertThat(s.expectedFromUpstream()).isEqualTo(0);
+		assertThat(s.downstream()).isNull();
+		assertThat(s.isCancelled()).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")

@@ -208,7 +208,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int n = srcs.length;
 
-		assert n > 0;
+		//assert n > 0;
 
 		Object[] scalars = null;
 		int sc = 0;
@@ -384,11 +384,9 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		void complete(int index) {
-			if (scalars[index] == null) {
-				if (WIP.getAndSet(this, 0) > 0) {
-					cancelAll();
-					actual.onComplete();
-				}
+			if (WIP.getAndSet(this, 0) > 0) {
+				cancelAll();
+				actual.onComplete();
 			}
 		}
 
