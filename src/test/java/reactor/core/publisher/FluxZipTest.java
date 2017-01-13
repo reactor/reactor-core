@@ -657,6 +657,22 @@ public class FluxZipTest {
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleError3() {
+		try {
+			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1).hide(), Flux.never(), s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onError(new Exception("test"));
+				s.onError(new Exception("test2"));
+			}))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+		}
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorSilent() {
 		Hooks.onErrorDropped(e -> {
 		});
@@ -756,6 +772,24 @@ public class FluxZipTest {
 				Flux.just(2)
 				    .hide()))
 		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failRequestHideAll() {
+		Flux.zip(obj -> null,
+				Flux.just(1)
+				    .hide(),
+				Flux.just(2)
+				    .hide())
+		    .subscribe(null, null, null, s -> {
+		    	try {
+				    s.request(-1);
+				    Assert.fail();
+			    }
+			    catch (IllegalArgumentException ae){
+		    		assertThat(ae).hasMessageContaining("3.9");
+			    }
+		    });
 	}
 
 	@Test
@@ -1066,6 +1100,48 @@ public class FluxZipTest {
 				Flux.defer(() -> {
 					ref.get()
 					   .cancel();
+					return Flux.just(3);
+				}),
+				Flux.just(3)
+				    .hide())
+		                        .doOnSubscribe(s -> {
+			                        assertThat(s instanceof FluxZip.ZipCoordinator).isTrue();
+			                        ref.set((FluxZip.ZipCoordinator) s);
+			                        assertInnerSubscriberBefore(ref.get());
+		                        }), 0)
+		            .then(() -> assertThat(ref.get()
+		                                      .getCapacity()).isEqualTo(3))
+		            .then(() -> assertThat(ref.get()
+		                                      .getPending()).isEqualTo(1))
+		            .then(() -> assertThat(ref.get()
+		                                      .upstreams()).hasSize(3))
+		            .then(() -> assertThat(ref.get()
+		                                      .getError()).isNull())
+		            .then(() -> assertThat(ref.get()
+		                                      .requestedFromDownstream()).isEqualTo(0))
+		            .then(() -> assertThat(ref.get()
+		                                      .isStarted()).isTrue())
+		            .thenCancel()
+		            .verify();
+
+		assertInnerSubscriber(ref.get());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void delayedCancelledHide() {
+		AtomicReference<FluxZip.ZipCoordinator> ref = new AtomicReference<>();
+
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1] + (int) obj[2],
+				123,
+				Flux.just(1, 2)
+				    .hide(),
+				Flux.defer(() -> {
+					ref.get()
+					   .cancel();
+					assertThat(ref.get().getPending()).isEqualTo(1);
+					assertThat(ref.get().isCancelled()).isTrue();
+					assertThat(ref.get().isTerminated()).isFalse();
 					return Flux.just(3);
 				}),
 				Flux.just(3)

@@ -505,7 +505,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isStarted() {
-			return !done && !isCancelled();
+			return !isTerminated();
 		}
 
 		@Override
@@ -620,7 +620,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isStarted() {
-			return !done;
+			return !isTerminated();
 		}
 
 		@Override
