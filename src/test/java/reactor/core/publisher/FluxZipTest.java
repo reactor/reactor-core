@@ -25,11 +25,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.MultiReceiver;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple4;
@@ -618,29 +618,96 @@ public class FluxZipTest {
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleNext() {
-		TestPublisher<Integer> ts = TestPublisher.create();
-		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
-		            .then(() -> ts.emit(2, 3))
+		Hooks.onNextDropped(c -> {
+		});
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.just(2), s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(2);
+			s.onNext(3);
+		}))
 		            .thenCancel()
 		            .verify();
+		Hooks.resetOnNextDropped();
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
-	public void ignoreDoubleComlete() {
-		TestPublisher<Integer> ts = TestPublisher.create();
-		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
-		            .then(() -> ts.complete())
-		            .then(() -> ts.complete())
+	public void ignoreDoubleComplete() {
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onComplete();
+			s.onComplete();
+		}))
 		            .verifyComplete();
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError() {
-		TestPublisher<Integer> ts = TestPublisher.create();
-		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), ts))
-		            .then(() -> ts.error(new Exception("test")))
-		            .then(() -> ts.error(new Exception("test2")))
+		try {
+			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onError(new Exception("test"));
+				s.onError(new Exception("test2"));
+			}))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+		}
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleErrorSilent() {
+		Hooks.onErrorDropped(e -> {
+		});
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Flux.never(), s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onError(new Exception("test"));
+			s.onError(new Exception("test2"));
+		}))
 		            .verifyErrorMessage("test");
+		Hooks.resetOnErrorDropped();
+	}
+
+	@Test
+	public void failDoubleTerminalPublisher() {
+		DirectProcessor<Integer> d1 = DirectProcessor.create();
+		Hooks.onErrorDropped(e -> {
+		});
+		try {
+			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
+				Subscriber<?> a = ((DirectProcessor.DirectProcessorSubscription)
+						d1.downstreams().next()).actual;
+
+				s.onSubscribe(Operators.emptySubscription());
+				s.onComplete();
+				a.onError(new Exception("test"));
+			}))
+			            .verifyComplete();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	public void failDoubleError2() {
+		try {
+			StepVerifier.create(Flux.zip(obj -> 0,
+					Flux.just(1)
+					    .hide(),
+					Flux.never(),
+					s -> {
+						s.onSubscribe(Operators.emptySubscription());
+						s.onError(new Exception("test"));
+						s.onError(new Exception("test2"));
+					}))
+			            .verifyErrorMessage("test");
+			Assert.fail();
+		}
+		catch (Exception e) {
+			assertThat(Exceptions.unwrap(e)).hasMessage("test2");
+		}
 	}
 
 	@Test
@@ -923,13 +990,10 @@ public class FluxZipTest {
 		assertThat(s.getPending()).isEqualTo(-1L);
 		assertThat(s.isCancelled()).isTrue();
 
-		try {
-			s.onNext(0);
-			Assert.fail();
-		}
-		catch (Exception e) {
-			assertThat(e).isSameAs(Exceptions.failWithCancel());
-		}
+		Hooks.onNextDropped(v -> {
+		});
+		s.onNext(0);
+		Hooks.resetOnNextDropped();
 	}
 
 	@Test
