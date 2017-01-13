@@ -140,8 +140,16 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 		return 2;
 	}
 
+	protected StringBuilder innerToString() {
+		StringBuilder sb = new StringBuilder();
+		if (t1 != null) sb.append(t1);
+		sb.append(',');
+		if (t2 != null) sb.append(t2);
+		return sb;
+	}
+
 	@Override
-	public String toString() {
-		return (t1 != null ? t1.toString() + "," : "") + (t2 != null ? t2.toString() : "");
+	public final String toString() {
+		return innerToString().insert(0, '[').append(']').toString();
 	}
 }
