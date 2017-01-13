@@ -782,13 +782,7 @@ public class FluxZipTest {
 				Flux.just(2)
 				    .hide())
 		    .subscribe(null, null, null, s -> {
-		    	try {
-				    s.request(-1);
-				    Assert.fail();
-			    }
-			    catch (IllegalArgumentException ae){
-		    		assertThat(ae).hasMessageContaining("3.9");
-			    }
+			    s.request(0);
 		    });
 	}
 
@@ -842,40 +836,60 @@ public class FluxZipTest {
 
 	@Test
 	public void backpressuredAsyncFusedError() {
-		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
-				1,
-				up,
-				Flux.just(2, 3, 5)), 0)
-		            .then(() -> up.onNext(1))
-		            .thenRequest(1)
-		            .expectNext(3)
-		            .then(() -> up.onNext(2))
-		            .thenRequest(1)
-		            .expectNext(5)
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .verifyErrorMessage("test");
+		Hooks.onErrorDropped(c -> {
+			assertThat(c).hasMessage("test2");
+		});
+		try {
+			UnicastProcessor<Integer> up = UnicastProcessor.create();
+			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
+					1,
+					up,
+					Flux.just(2, 3, 5)), 0)
+			            .then(() -> up.onNext(1))
+			            .thenRequest(1)
+			            .expectNext(3)
+			            .then(() -> up.onNext(2))
+			            .thenRequest(1)
+			            .expectNext(5)
+			            .then(() -> up.actual.onError(new Exception("test")))
+			            .then(() -> up.actual.onError(new Exception("test2")))
+			            .verifyErrorMessage("test");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
 	}
 
 	@Test
 	public void backpressuredAsyncFusedErrorHideAll() {
+		Hooks.onErrorDropped(c -> {
+			assertThat(c).hasMessage("test2");
+		});
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
-				1,
-				up,
-				Flux.just(2, 3, 5)).hide(), 0)
-		            .then(() -> up.onNext(1))
-		            .thenRequest(1)
-		            .expectNext(3)
-		            .then(() -> up.onNext(2))
-		            .thenRequest(1)
-		            .expectNext(5)
-		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isFalse())
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isFalse())
-		            .then(() -> up.actual.onError(new Exception("test")))
-		            .verifyErrorMessage("test");
+		try {
+			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1, up, s -> {
+				assertThat(((FluxZip.ZipInner) up.actual).parent.subscribers[1].isTerminated()).isFalse();
+				assertThat(((FluxZip.ZipInner) up.actual).parent.getPending()).isEqualTo(
+						0L);
+				Flux.just(2, 3, 5)
+				    .subscribe(s);
+			})
+			                        .hide(), 0)
+			            .then(() -> up.onNext(1))
+			            .thenRequest(1)
+			            .expectNext(3)
+			            .then(() -> up.onNext(2))
+			            .thenRequest(1)
+			            .expectNext(5)
+			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).isTerminated()).isFalse())
+			            .then(() -> up.actual.onError(new Exception("test")))
+			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).isTerminated()).isFalse())
+			            .then(() -> up.actual.onError(new Exception("test2")))
+			            .verifyErrorMessage("test");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
 	}
 
 	@Test
@@ -1140,8 +1154,6 @@ public class FluxZipTest {
 		                                      .getError()).isNull())
 		            .then(() -> assertThat(ref.get()
 		                                      .requestedFromDownstream()).isEqualTo(0))
-		            .then(() -> assertThat(ref.get()
-		                                      .isStarted()).isTrue())
 		            .thenCancel()
 		            .verify();
 
@@ -1182,8 +1194,6 @@ public class FluxZipTest {
 		                                      .getError()).isNull())
 		            .then(() -> assertThat(ref.get()
 		                                      .requestedFromDownstream()).isEqualTo(0))
-		            .then(() -> assertThat(ref.get()
-		                                      .isStarted()).isTrue())
 		            .thenCancel()
 		            .verify();
 

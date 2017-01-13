@@ -550,8 +550,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						Throwable.class,
 						"error");
 
-		volatile boolean done;
-
 		volatile boolean cancelled;
 
 		final Object[] current;
@@ -573,7 +571,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		void subscribe(Publisher<? extends T>[] sources, int n) {
 			ZipInner<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
-				if (done || cancelled || error != null) {
+				if (cancelled || error != null) {
 					return;
 				}
 				sources[i].subscribe(a[i]);
@@ -619,16 +617,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return !isTerminated();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
 		public Throwable getError() {
 			return error;
 		}
@@ -651,7 +639,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		void error(Throwable e, int index) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
@@ -884,11 +873,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		/** Running with a source that implements AsynchronousSource. */
 		static final int ASYNC = 2;
 
-		volatile int once;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ZipInner> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(ZipInner.class, "once");
-
 		public ZipInner(ZipCoordinator<T, ?> parent,
 				int prefetch,
 				int index,
@@ -939,9 +923,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public void onError(Throwable t) {
-			if (sourceMode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
-				parent.error(t, index);
-			}
+			parent.error(t, index);
 		}
 
 		@Override
