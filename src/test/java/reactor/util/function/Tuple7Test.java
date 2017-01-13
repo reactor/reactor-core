@@ -66,9 +66,9 @@ public class Tuple7Test {
 
 	@Test
 	public void sparseIsNotSameAsSmaller() {
-		Tuple7 sparseLeft = new Tuple7<>(null, 1, 2, 3, 4, 5, 6);
-		Tuple7 sparseRight = new Tuple7<>(1, 2, 3, 4, 5, 6, null);
-		Tuple6 smaller = new Tuple6<>(1, 2, 3, 4, 5, 6);
+		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseLeft = new Tuple7<>(null, 1, 2, 3, 4, 5, 6);
+		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseRight = new Tuple7<>(1, 2, 3, 4, 5, 6, null);
+		Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> smaller = new Tuple6<>(1, 2, 3, 4, 5, 6);
 
 		assertThat(sparseLeft.hashCode())
 				.isNotEqualTo(sparseRight.hashCode())

@@ -628,13 +628,14 @@ public class ParallelFluxTest {
 	@Test
 	public void fromZeroPublishersRejected() {
 		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
-		          .isThrownBy(() -> ParallelFlux.from())
+		          .isThrownBy(() -> ParallelFlux.<Integer>from())
 		          .withMessage("Zero publishers not supported");
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void fromZeroLengthArrayPublishersRejected() {
-		Publisher[] array = new Publisher[0];
+		Publisher<Integer>[] array = new Publisher[0];
 		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
 		          .isThrownBy(() -> ParallelFlux.from(array))
 		          .withMessage("Zero publishers not supported");
@@ -713,6 +714,7 @@ public class ParallelFluxTest {
 		validateSubscribers(4);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void validateSubscribers(int size) {
 		List<Throwable> errors = Collections.synchronizedList(new ArrayList<>(size));
 		Subscriber<Integer>[] subs = new Subscriber[size];

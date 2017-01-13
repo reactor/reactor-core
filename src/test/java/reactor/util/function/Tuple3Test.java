@@ -64,9 +64,9 @@ public class Tuple3Test {
 
 	@Test
 	public void sparseIsNotSameAsSmaller() {
-		Tuple3 sparseLeft = new Tuple3<>(null, 1, 2);
-		Tuple3 sparseRight = new Tuple3<>(1, 2, null);
-		Tuple2 smaller = new Tuple2<>(1, 2);
+		Tuple3<Integer, Integer, Integer> sparseLeft = new Tuple3<>(null, 1, 2);
+		Tuple3<Integer, Integer, Integer> sparseRight = new Tuple3<>(1, 2, null);
+		Tuple2<Integer, Integer> smaller = new Tuple2<>(1, 2);
 
 		assertThat(sparseLeft.hashCode())
 				.isNotEqualTo(sparseRight.hashCode())
