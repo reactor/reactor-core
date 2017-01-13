@@ -79,12 +79,6 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 		return new Object[]{t1, t2, t3, t4, t5, t6};
 	}
 
-	@Nonnull
-	@Override
-	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2, t3, t4, t5, t6).iterator();
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

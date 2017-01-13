@@ -18,6 +18,7 @@ package reactor.util.function;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
  * @author Stephane Maldini
  */
 @SuppressWarnings("rawtypes")
-public class Tuple2<T1, T2> implements Iterable, Serializable {
+public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
 	/** */
     private static final long serialVersionUID = 4839927936743208499L;
@@ -102,8 +103,8 @@ public class Tuple2<T1, T2> implements Iterable, Serializable {
 
 	@Nonnull
 	@Override
-	public Iterator<?> iterator() {
-		return Arrays.asList(t1, t2).iterator();
+	public Iterator<Object> iterator() {
+		return Collections.unmodifiableList(toList()).iterator();
 	}
 
 	@Override
