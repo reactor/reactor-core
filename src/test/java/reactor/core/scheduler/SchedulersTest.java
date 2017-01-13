@@ -17,6 +17,7 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -30,6 +31,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
@@ -107,6 +109,7 @@ public class SchedulersTest {
 		TimedScheduler cachedTimerOld = uncache(Schedulers.timer());
 		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
+
 		Assert.assertNotSame(cachedTimerOld, standaloneTimer);
 		Assert.assertNotSame(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
@@ -117,7 +120,9 @@ public class SchedulersTest {
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
-		Assert.assertEquals(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
+		Cancellation disposable = cachedTimerOld.schedule(() -> {});
+		System.out.println(disposable);
+		Assert.assertEquals(disposable, Scheduler.REJECTED);
 		//independently created schedulers are still the programmer"s responsibility
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
@@ -411,7 +416,7 @@ public class SchedulersTest {
 	}
 
 
-	@Test(timeout = 3000)
+	@Test(timeout = 5000)
 	public void parallelSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newParallel("work", 2);
 		try {
@@ -435,7 +440,7 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 3000)
+	@Test(timeout = 5000)
 	public void singleSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newSingle("work");
 		try {
@@ -460,7 +465,7 @@ public class SchedulersTest {
 	}
 
 
-	@Test(timeout = 3000)
+	@Test(timeout = 5000)
 	public void elasticSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newElastic("work");
 		try {
@@ -484,7 +489,7 @@ public class SchedulersTest {
 		}
 	}
 
-	@Test(timeout = 3000)
+	@Test(timeout = 5000)
 	public void timerSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newTimer("work");
 		try {
@@ -505,6 +510,89 @@ public class SchedulersTest {
 		}
 		finally {
 			s.dispose();
+		}
+	}
+
+	@Test(timeout = 5000)
+	public void executorThreadCheck() throws Exception{
+		ExecutorService es = Executors.newSingleThreadExecutor();
+		Scheduler s = Schedulers.fromExecutor(es::execute);
+
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+			es.shutdownNow();
+		}
+	}
+
+	@Test(timeout = 5000)
+	public void executorThreadCheck2() throws Exception{
+		ExecutorService es = Executors.newSingleThreadExecutor();
+		Scheduler s = Schedulers.fromExecutor(es::execute, true);
+
+		try {
+			Scheduler.Worker w = s.createWorker();
+
+			Thread currentThread = Thread.currentThread();
+			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+			CountDownLatch latch = new CountDownLatch(1);
+
+			w.schedule(() -> {
+				taskThread.set(Thread.currentThread());
+				latch.countDown();
+			});
+
+			latch.await();
+
+			assertThat(taskThread.get()).isNotEqualTo(currentThread);
+		}
+		finally {
+			s.dispose();
+			es.shutdownNow();
+		}
+	}
+
+	@Test(timeout = 5000)
+	public void sharedSingleCheck() throws Exception{
+		Scheduler p = Schedulers.newParallel("shared");
+		Scheduler s = Schedulers.single(p);
+
+		try {
+			for(int i = 0; i < 3; i++) {
+				Scheduler.Worker w = s.createWorker();
+
+				Thread currentThread = Thread.currentThread();
+				AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
+				CountDownLatch latch = new CountDownLatch(1);
+
+				w.schedule(() -> {
+					taskThread.set(Thread.currentThread());
+					latch.countDown();
+				});
+
+				latch.await();
+
+				assertThat(taskThread.get()).isNotEqualTo(currentThread);
+			}
+		}
+		finally {
+			s.dispose();
+			p.dispose();
 		}
 	}
 

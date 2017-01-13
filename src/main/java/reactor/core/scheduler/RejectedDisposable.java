@@ -21,7 +21,7 @@ import reactor.core.Disposable;
 /**
  * @author Stephan Maldini
  */
-public class RejectedDisposable implements Disposable {
+final class RejectedDisposable implements Disposable {
 
 	@Override
 	public void dispose() {
