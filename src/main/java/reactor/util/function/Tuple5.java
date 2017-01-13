@@ -102,8 +102,9 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 	}
 
 	@Override
-	public String toString() {
-		return super.toString() +
-		  (t5 != null ? "," + t5.toString() : "");
+	public StringBuilder innerToString() {
+		StringBuilder sb = super.innerToString().append(',');
+		if (t5 != null) sb.append(t5);
+		return sb;
 	}
 }
