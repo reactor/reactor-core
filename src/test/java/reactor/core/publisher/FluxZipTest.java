@@ -853,7 +853,28 @@ public class FluxZipTest {
 		            .then(() -> up.onNext(2))
 		            .thenRequest(1)
 		            .expectNext(5)
-		            .then(() -> up.onError(new Exception("test")))
+		            .then(() -> up.actual.onError(new Exception("test")))
+		            .then(() -> up.actual.onError(new Exception("test")))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void backpressuredAsyncFusedErrorHideAll() {
+		UnicastProcessor<Integer> up = UnicastProcessor.create();
+		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+				1,
+				up,
+				Flux.just(2, 3, 5)).hide(), 0)
+		            .then(() -> up.onNext(1))
+		            .thenRequest(1)
+		            .expectNext(3)
+		            .then(() -> up.onNext(2))
+		            .thenRequest(1)
+		            .expectNext(5)
+		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isFalse())
+		            .then(() -> up.actual.onError(new Exception("test")))
+		            .then(() -> assertThat(((FluxZip.ZipInner)up.actual).isTerminated()).isTrue())
+		            .then(() -> up.actual.onError(new Exception("test")))
 		            .verifyErrorMessage("test");
 	}
 
