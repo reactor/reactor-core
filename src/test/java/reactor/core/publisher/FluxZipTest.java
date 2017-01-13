@@ -348,7 +348,7 @@ public class FluxZipTest {
 		Assert.assertTrue(f instanceof FluxZip);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
 		Assert.assertTrue(s.sources != null);
-		Assert.assertTrue(s.sources.length == 4);
+		Assert.assertTrue(s.sources.length == 2);
 
 		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t
 		                                                         .getT1()
@@ -359,7 +359,7 @@ public class FluxZipTest {
 				             .getT2()));
 
 		ff.subscribeWith(AssertSubscriber.create())
-		  .assertValues(Tuples.of(1, "testtest2test3"))
+		  .assertValues(Tuples.of(1, "testtest2"))
 		  .assertComplete();
 	}
 
