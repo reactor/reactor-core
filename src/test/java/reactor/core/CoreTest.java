@@ -64,6 +64,7 @@ public class CoreTest {
 		assertThat(d.getPending()).isEqualTo(Trackable.UNSPECIFIED);
 		assertThat(d.isCancelled()).isFalse();
 		assertThat(d.isStarted()).isFalse();
+		assertThat(d.isTerminated()).isFalse();
 		assertThat(d.limit()).isEqualTo(Trackable.UNSPECIFIED);
 		assertThat(d.requestedFromDownstream()).isEqualTo(Trackable.UNSPECIFIED);
 	}

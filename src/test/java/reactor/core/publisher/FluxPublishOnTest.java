@@ -42,6 +42,7 @@ import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -212,8 +213,6 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
 		UnicastProcessor<Integer> up =
 				UnicastProcessor.create(QueueSupplier.<Integer>unbounded(1024).get());
 
@@ -222,38 +221,13 @@ public class FluxPublishOnTest {
 		}
 		up.onComplete();
 
-		up.publishOn(Schedulers.fromExecutorService(exec))
-		  .subscribe(ts);
-
-		try {
-			ts.assertNoValues()
-			  .assertNoError()
-			  .assertNotComplete();
-
-			ts.request(500_000);
-
-			Thread.sleep(250);
-
-			ts.assertValueCount(500_000)
-			  .assertNoError()
-			  .assertNotComplete();
-
-			ts.request(500_000);
-
-			if (!ts.await(Duration.ofSeconds(5))
-			       .isTerminated()) {
-				ts.cancel();
-				Assert.fail("AssertSubscriber timed out: " + ts.values()
-				                                               .size());
-			}
-
-			ts.assertValueCount(1_000_000)
-			  .assertNoError()
-			  .assertComplete();
-		}
-		finally {
-			ts.cancel();
-		}
+		StepVerifier.create(up.publishOn(Schedulers.fromExecutorService(exec)), 0)
+		            .expectSubscription()
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .thenRequest(500_000)
+		            .expectNextCount(500_000)
+		            .verifyComplete();
 	}
 
 	@Test
