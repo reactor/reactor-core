@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSampleTimeoutTest {
@@ -123,4 +126,33 @@ public class FluxSampleTimeoutTest {
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 	}
+
+	Flux<Integer> scenario_sampleTimeoutTime(){
+		return Flux.range(1, 10)
+		           .delayMillis(300)
+		           .sampleTimeout(d -> Mono.delay(Duration.ofMillis(100*d)), 1);
+	}
+
+	@Test
+	public void sampleTimeoutTime(){
+		StepVerifier.withVirtualTime(this::scenario_sampleTimeoutTime)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .expectNext(1, 2, 3, 10)
+		            .verifyComplete();
+	}
+	Flux<Integer> scenario_sampleTimeoutTime2(){
+		return Flux.range(1, 10)
+		           .delayMillis(300)
+		           .sampleTimeout(d -> Mono.delay(Duration.ofMillis(100*d)), Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void sampleTimeoutTime2(){
+		StepVerifier.withVirtualTime(this::scenario_sampleTimeoutTime2)
+		            .thenAwait(Duration.ofSeconds(10))
+		            .expectNext(1, 2, 3, 10)
+		            .verifyComplete();
+	}
+
+
 }

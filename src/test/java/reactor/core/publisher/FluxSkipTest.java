@@ -91,4 +91,13 @@ public class FluxSkipTest {
 		            .expectNext("test2", "test3")
 		            .verifyComplete();
 	}
+
+	@Test
+	public void aFluxCanBeSkippedZero(){
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .skip(0)
+		)
+		            .expectNext("test", "test2", "test3")
+		            .verifyComplete();
+	}
 }

@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSampleFirstTest {
@@ -155,4 +158,17 @@ public class FluxSampleFirstTest {
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
 	}
 
+	Flux<Integer> scenario_sampleFirstTime(){
+		return Flux.range(1, 10)
+	        .delayMillis(200)
+	        .sampleFirst(Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void sampleFirstTime(){
+		StepVerifier.withVirtualTime(this::scenario_sampleFirstTime)
+		            .thenAwait(Duration.ofSeconds(10))
+	                .expectNext(1, 6)
+	                .verifyComplete();
+	}
 }

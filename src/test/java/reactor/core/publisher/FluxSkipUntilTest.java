@@ -16,11 +16,24 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 
-//FIXME implement
 public class FluxSkipUntilTest {
 
 	@Test
+	public void normalHidden() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .hide()
+		                        .skipUntil(v -> v > 4))
+		            .expectNext(5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+
+	@Test
 	public void normal() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .skipUntil(v -> v > 4))
+		            .expectNext(5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
 	}
 }

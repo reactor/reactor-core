@@ -181,4 +181,30 @@ public class FluxSkipUntilOtherTest {
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyComplete();
 	}
+
+
+	Flux<Integer> scenario_aFluxCanBeSkippedByTime2(){
+		return Flux.range(0, 1000)
+		           .skipMillis(2000);
+	}
+
+	@Test
+	public void aFluxCanBeSkippedByTime2(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeSkippedByTime2)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .verifyComplete();
+	}
+
+	Flux<Integer> scenario_aFluxCanBeSkippedByTimeZero(){
+		return Flux.range(0, 1000)
+		           .skipMillis(0);
+	}
+
+	@Test
+	public void aFluxCanBeSkippedByTimeZero(){
+		StepVerifier.withVirtualTime(this::scenario_aFluxCanBeSkippedByTimeZero)
+		            .thenAwait(Duration.ofSeconds(2))
+		            .expectNextCount(1000)
+		            .verifyComplete();
+	}
 }

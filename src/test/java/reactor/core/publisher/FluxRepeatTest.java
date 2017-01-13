@@ -202,4 +202,14 @@ public class FluxRepeatTest {
 		            .expectNext(1, 2, 3, 4)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void twoRepeatNormalSupplier4() {
+		AtomicBoolean bool = new AtomicBoolean(false);
+
+		StepVerifier.create(Flux.range(1, 4)
+		                        .repeat(2, bool::get))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyComplete();
+	}
 }

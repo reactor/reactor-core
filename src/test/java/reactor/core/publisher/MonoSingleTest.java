@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoSingleTest {
@@ -130,6 +131,82 @@ public class MonoSingleTest {
 		ts.assertNoValues()
 		  .assertError(IndexOutOfBoundsException.class)
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void singleCallable() {
+		StepVerifier.create(Mono.fromCallable(() -> 1)
+		                        .flux()
+		                        .single())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleFallbackEmpty() {
+		StepVerifier.create(Flux.empty()
+		                        .single(1))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleFallbackJust() {
+		StepVerifier.create(Flux.just(1)
+		                        .single(2))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleFallbackCallable() {
+		StepVerifier.create(Mono.fromCallable(() -> 1)
+		                        .flux()
+		                        .single(2))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleJustHide() {
+		StepVerifier.create(Flux.empty()
+		                        .single())
+		            .verifyError(NoSuchElementException.class);
+	}
+
+	@Test
+	public void singleFallbackJustHide() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .single(2))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleEmptyFallbackCallable() {
+		StepVerifier.create(Mono.fromCallable(() -> 1)
+		                        .flux()
+		                        .singleOrEmpty())
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+
+	@Test
+	public void singleEmptyFallbackJustHide() {
+		StepVerifier.create(Flux.empty()
+		                        .hide()
+		                        .singleOrEmpty())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void singleEmptyFallbackJustHideError() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .hide()
+		                        .singleOrEmpty())
+		            .verifyError(IndexOutOfBoundsException.class);
 	}
 
 }

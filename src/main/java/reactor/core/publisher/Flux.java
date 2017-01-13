@@ -5237,12 +5237,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dropping {@link Flux} until the end of the given timespan
 	 */
 	public final Flux<T> skipMillis(long timespan) {
-		if(timespan != 0) {
-			return skipUntilOther(Mono.delayMillis(timespan, Schedulers.timer()));
-		}
-		else{
-			return this;
-		}
+		return skipMillis(timespan, Schedulers.timer());
 	}
 
 	/**
