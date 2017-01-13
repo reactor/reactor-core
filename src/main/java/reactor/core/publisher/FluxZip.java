@@ -276,7 +276,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				}
 
 				if (r == null) {
-					s.onError(new NullPointerException("The zipper returned a null value"));
+					s.onError(Operators.onOperatorError(new NullPointerException("The zipper returned a null value")));
 					return;
 				}
 

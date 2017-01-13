@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,11 +25,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.MultiReceiver;
+import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple4;
-import reactor.util.function.Tuple6;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
 
@@ -512,5 +514,165 @@ public class FluxZipTest {
 						Flux.just(5),
 						Flux.just(6))).expectNext(Tuples.of(1, 2, 3, 4, 5, 6))
 		                              .verifyComplete();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void createZipWithPrefetch() {
+		Flux<Integer>[] list = new Flux[]{Flux.just(1), Flux.just(2)};
+		Flux<Integer> f = Flux.zip(obj -> 0, 123, list);
+		assertThat(f.getPrefetch()).isEqualTo(123);
+
+		assertThat(f instanceof Trackable).isTrue();
+		Trackable t = (Trackable)f;
+		assertThat(t.getCapacity()).isEqualTo(123);
+
+		assertThat(f instanceof MultiReceiver).isTrue();
+		MultiReceiver mr = (MultiReceiver)f;
+		assertThat(mr.upstreamCount()).isEqualTo(2);
+
+		Iterator<?> it = mr.upstreams();
+		assertThat(it.next()).isEqualTo(list[0]);
+		assertThat(it.next()).isEqualTo(list[1]);
+		assertThat(it.hasNext()).isFalse();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void createZipWithPrefetchIterable() {
+		List<Flux<Integer>> list = Arrays.asList(Flux.just(1), Flux.just(2));
+		Flux<Integer> f = Flux.zip(list, 123, obj -> 0);
+		assertThat(f.getPrefetch()).isEqualTo(123);
+
+		assertThat(f instanceof Trackable).isTrue();
+		Trackable t = (Trackable)f;
+		assertThat(t.getCapacity()).isEqualTo(123);
+
+		assertThat(f instanceof MultiReceiver).isTrue();
+		MultiReceiver mr = (MultiReceiver)f;
+		assertThat(mr.upstreamCount()).isEqualTo(-1);
+
+		Iterator<?> it = mr.upstreams();
+		assertThat(it.next()).isEqualTo(list.get(0));
+		assertThat(it.next()).isEqualTo(list.get(1));
+		assertThat(it.hasNext()).isFalse();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch() {
+		Flux.zip(obj -> 0, -1, Flux.just(1), Flux.just(2));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetchIterable() {
+		Flux.zip(Arrays.asList(Flux.just(1), Flux.just(2)), -1, obj -> 0);
+	}
+
+	@Test
+	public void failIterableNull() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1), null), obj -> 0))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failIterableCallable() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1), Mono.fromCallable(() -> {
+			throw new Exception("test");
+		})), obj -> 0))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void prematureCompleteIterableCallableNull() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
+				Mono.fromCallable(() -> null)), obj -> 0))
+		            .verifyComplete(); //FIXME Should fail ?
+	}
+
+	@Test
+	public void failNull() {
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), null))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failCombinedNull() {
+		StepVerifier.create(Flux.zip(obj -> null, Flux.just(1), Flux.just(2)))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void failCombinedError() {
+		StepVerifier.create(Flux.zip(obj -> {
+			throw new RuntimeException("test");
+		}, 123, Flux.just(1), Flux.just(2), Flux.just(3)))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void failCallable() {
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Mono.fromCallable(() -> {
+			throw new Exception("test");
+		})))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void prematureCompleteCallableNull() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1),
+				Mono.fromCallable(() -> null)))
+		            .verifyComplete(); //FIXME Should fail ?
+	}
+
+	@Test
+	public void prematureCompleteEmpty() {
+		StepVerifier.create(Flux.zip(obj -> 0))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCompleteIterableEmpty() {
+		StepVerifier.create(Flux.zip(Arrays.asList(), obj -> 0))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void moreThan8() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				Flux.just(6),
+				Flux.just(7),
+				Flux.just(8),
+				Flux.just(9)), obj -> (int) obj[8]))
+		            .expectNext(9)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void moreThan8Hide() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1)
+		                                               .hide(),
+				Flux.just(2)
+				    .hide(),
+				Flux.just(3)
+				    .hide(),
+				Flux.just(4)
+				    .hide(),
+				Flux.just(5)
+				    .hide(),
+				Flux.just(6)
+				    .hide(),
+				Flux.just(7)
+				    .hide(),
+				Flux.just(8)
+				    .hide(),
+				Flux.just(9)
+				    .hide()), obj -> (int) obj[8]))
+		            .expectNext(9)
+		            .verifyComplete();
 	}
 }
