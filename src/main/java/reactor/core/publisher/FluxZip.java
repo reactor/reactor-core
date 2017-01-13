@@ -950,7 +950,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isTerminated() {
-			return done && (queue == null || queue.isEmpty());
+			return done && queue.isEmpty();
 		}
 
 		@Override

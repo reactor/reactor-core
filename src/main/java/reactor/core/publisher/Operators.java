@@ -565,7 +565,7 @@ public abstract class Operators {
 			return false;
 		}
 		if (n < 0) {
-			reportBadRequest(n);
+			reportBadRequest(n); //log instead of failure?
 		}
 		return true;
 	}
