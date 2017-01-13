@@ -84,10 +84,26 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
 		Subscriber<T>[] parents = new Subscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			parents[i] = FluxFlatMap.subscriber(subscribers[i], mapper, delayError,
+			parents[i] = subscriber(subscribers[i], mapper, delayError,
 					maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier);
 		}
 		
 		source.subscribe(parents);
+	}
+
+	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
+			boolean delayError,
+			int maxConcurrency,
+			Supplier<? extends Queue<R>> mainQueueSupplier,
+			int prefetch,
+			Supplier<? extends Queue<R>> innerQueueSupplier) {
+		return new FluxFlatMap.FlatMapMain<>(s,
+				mapper,
+				delayError,
+				maxConcurrency,
+				mainQueueSupplier,
+				prefetch,
+				innerQueueSupplier);
 	}
 }
