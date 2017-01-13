@@ -51,22 +51,6 @@ abstract class RingBuffer<E> implements LongSupplier {
 	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
      * <p>See {@code MultiProducerRingBuffer}.
-	 *
-	 * @param <E> the element type
-	 * @param factory used to create the events within the ring buffer.
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 * @param waitStrategy used to determine how to wait for new elements to become available.
-	 * @return the new RingBuffer instance
-	 */
-	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
-			int bufferSize,
-			WaitStrategy waitStrategy) {
-		return createMultiProducer(factory, bufferSize, waitStrategy, null);
-	}
-
-	/**
-	 * Create a new multiple producer RingBuffer with the specified wait strategy.
-     * <p>See {@code MultiProducerRingBuffer}.
 	 * @param <E> the element type
 	 * @param factory used to create the events within the ring buffer.
 	 * @param bufferSize number of elements to create within the ring buffer.
@@ -351,15 +335,6 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @return <tt>true</tt> if this sequence was found, <tt>false</tt> otherwise.
 	 */
 	abstract public boolean removeGatingSequence(Sequence sequence);
-
-	@Override
-	public String toString() {
-		return "RingBuffer{remaining size:" + remainingCapacity() + ", size:" + bufferSize() +
-				", " +
-				"cursor:" +
-				getAsLong() + ", " +
-				"min:" + getMinimumGatingSequence() + ", subscribers:" + getSequencer().gatingSequences.length + "}";
-	}
 
 	abstract RingBufferProducer getSequencer();/*
 
@@ -1707,7 +1682,7 @@ final class UnsafeSequence extends RhsPadding implements RingBuffer.Sequence, Lo
 	 *
 	 * @param initialValue The initial value for this sequence.
 	 */
-	public UnsafeSequence(final long initialValue)
+	UnsafeSequence(final long initialValue)
 	{
 		UNSAFE.putOrderedLong(this, VALUE_OFFSET, initialValue);
 	}
@@ -1822,11 +1797,6 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	@Override
 	public long next(int n)
 	{
-		if (n < 1)
-		{
-			throw new IllegalArgumentException("n must be > 0");
-		}
-
 		long current;
 		long next;
 

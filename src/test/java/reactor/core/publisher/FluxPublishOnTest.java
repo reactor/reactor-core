@@ -353,64 +353,28 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void normalFilteredBackpressured() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 2_000_000)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .filter(v -> (v & 1) == 0)
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		Thread.sleep(500);
-
-		ts.assertValueCount(500_000)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500_000);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 2_000_000)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec))
+		                        .filter(v -> (v & 1) == 0), 0)
+		            .thenRequest(500_000)
+		            .expectNextCount(250_000)
+		            .thenRequest(500_000)
+		            .expectNextCount(750_000)
+					.verifyComplete();
 	}
 
 	@Test
 	public void normalFilteredBackpressured1() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-
-		Flux.range(1, 2_000)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .filter(v -> (v & 1) == 0)
-		    .subscribe(ts);
-
-		ts.assertNoValues()
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500);
-
-		Thread.sleep(500);
-
-		ts.assertValueCount(500)
-		  .assertNoError()
-		  .assertNotComplete();
-
-		ts.request(500);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertValueCount(1_000)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, 2_000)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec))
+		                        .filter(v -> (v & 1) == 0), 0)
+		            .thenRequest(500)
+		            .expectNextCount(250)
+		            .thenRequest(500)
+		            .expectNextCount(750)
+		            .verifyComplete();
 	}
 
 	@Test

@@ -208,10 +208,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int n = srcs.length;
 
-		if (n == 0) {
-			Operators.complete(s);
-			return;
-		}
+		//assert n > 0;
 
 		Object[] scalars = null;
 		int sc = 0;
@@ -276,7 +273,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				}
 
 				if (r == null) {
-					s.onError(new NullPointerException("The zipper returned a null value"));
+					s.onError(Operators.onOperatorError(new NullPointerException("The zipper returned a null value")));
 					return;
 				}
 
@@ -387,11 +384,9 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		void complete(int index) {
-			if (scalars[index] == null) {
-				if (WIP.getAndSet(this, 0) > 0) {
-					cancelAll();
-					actual.onComplete();
-				}
+			if (WIP.getAndSet(this, 0) > 0) {
+				cancelAll();
+				actual.onComplete();
 			}
 		}
 
@@ -510,7 +505,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isStarted() {
-			return !done && !isCancelled();
+			return !isTerminated();
 		}
 
 		@Override
@@ -555,8 +550,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						Throwable.class,
 						"error");
 
-		volatile boolean done;
-
 		volatile boolean cancelled;
 
 		final Object[] current;
@@ -578,7 +571,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		void subscribe(Publisher<? extends T>[] sources, int n) {
 			ZipInner<T>[] a = subscribers;
 			for (int i = 0; i < n; i++) {
-				if (done || cancelled || error != null) {
+				if (cancelled || error != null) {
 					return;
 				}
 				sources[i].subscribe(a[i]);
@@ -624,16 +617,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
 		public Throwable getError() {
 			return error;
 		}
@@ -656,7 +639,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		void error(Throwable e, int index) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
@@ -884,17 +868,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int sourceMode;
 
-		/** Running with regular, arbitrary source. */
-		static final int NORMAL = 0;
 		/** Running with a source that implements SynchronousSource. */
 		static final int SYNC = 1;
 		/** Running with a source that implements AsynchronousSource. */
 		static final int ASYNC = 2;
-
-		volatile int once;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ZipInner> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(ZipInner.class, "once");
 
 		public ZipInner(ZipCoordinator<T, ?> parent,
 				int prefetch,
@@ -927,22 +904,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 						sourceMode = ASYNC;
 						queue = f;
 					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable e) {
-							onError(Operators.onOperatorError(s, e));
-							return;
-						}
+						queue = queueSupplier.get();
 					}
 				} else {
-
-					try {
 						queue = queueSupplier.get();
-					} catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
-						return;
-					}
-
 				}
 				s.request(prefetch);
 			}
@@ -958,9 +923,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public void onError(Throwable t) {
-			if (sourceMode != ASYNC || ONCE.compareAndSet(this, 0, 1)) {
-				parent.error(t, index);
-			}
+			done = true;
+			parent.error(t, index);
 		}
 
 		@Override
@@ -986,7 +950,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public boolean isTerminated() {
-			return done && (queue == null || queue.isEmpty());
+			return done && queue.isEmpty();
 		}
 
 		@Override
