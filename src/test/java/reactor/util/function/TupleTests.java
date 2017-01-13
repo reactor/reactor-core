@@ -19,6 +19,7 @@ package reactor.util.function;
 import java.util.function.Function;
 
 import org.junit.Test;
+import java.lang.Object;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -186,10 +187,11 @@ public class TupleTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void fnAny() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple2 tuple = Tuples.fnAny().apply(source);
+		Tuple2<Object, Object> tuple = Tuples.fnAny().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -201,9 +203,9 @@ public class TupleTests {
 	@Test
 	public void fnAnyDelegate() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-		Function<Tuple2, Tuple2> invert = t2 -> new Tuple2<>(t2.getT2(), t2.getT1());
+		Function<Tuple2, Tuple2<Object, Object>> invert = t2 -> new Tuple2<>(t2.getT2(), t2.getT1());
 
-		Tuple2 tuple = Tuples.fnAny(invert).apply(source);
+		Tuple2<Object, Object> tuple = Tuples.fnAny(invert).apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(2);
 		assertThat(tuple.getT2()).isEqualTo(1);
@@ -216,7 +218,7 @@ public class TupleTests {
 	public void fn2() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple2 tuple = Tuples.fn2().apply(source);
+		Tuple2<Object, Object> tuple = Tuples.fn2().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -229,7 +231,7 @@ public class TupleTests {
 	public void fn3() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple3 tuple = Tuples.fn3().apply(source);
+		Tuple3<Object, Object, Object> tuple = Tuples.fn3().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -256,7 +258,7 @@ public class TupleTests {
 	public void fn4() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple4 tuple = Tuples.fn4().apply(source);
+		Tuple4<Object, Object, Object, Object> tuple = Tuples.fn4().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -286,7 +288,7 @@ public class TupleTests {
 	public void fn5() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple5 tuple = Tuples.fn5().apply(source);
+		Tuple5<Object, Object, Object, Object, Object> tuple = Tuples.fn5().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -318,7 +320,7 @@ public class TupleTests {
 	public void fn6() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple6 tuple = Tuples.fn6().apply(source);
+		Tuple6<Object, Object, Object, Object, Object, Object> tuple = Tuples.fn6().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);
@@ -352,7 +354,7 @@ public class TupleTests {
 	public void fn7() {
 		Integer[] source = new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-		Tuple7 tuple = Tuples.fn7().apply(source);
+		Tuple7<Object, Object, Object, Object, Object, Object, Object> tuple = Tuples.fn7().apply(source);
 
 		assertThat(tuple.getT1()).isEqualTo(1);
 		assertThat(tuple.getT2()).isEqualTo(2);

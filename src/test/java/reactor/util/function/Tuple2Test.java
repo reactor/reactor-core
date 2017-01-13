@@ -27,10 +27,10 @@ public class Tuple2Test {
 
 	@Test
 	public void sparseToString() {
-		assertThat(new Tuple2<>(null, 2))
+		assertThat(new Tuple2<Integer, Integer>(null, 2))
 				.hasToString("[,2]");
 
-		assertThat(new Tuple2<>(1, null))
+		assertThat(new Tuple2<Integer, Integer>(1, null))
 				.hasToString("[1,]");
 	}
 
@@ -61,8 +61,8 @@ public class Tuple2Test {
 
 	@Test
 	public void sparseIsNotSameLeftAndRight() {
-		Tuple2 sparseLeft = new Tuple2<>(null, 1);
-		Tuple2 sparseRight = new Tuple2<>(1, null);
+		Tuple2<Integer, Integer> sparseLeft = new Tuple2<>(null, 1);
+		Tuple2<Integer, Integer> sparseRight = new Tuple2<>(1, null);
 
 		assertThat(sparseLeft.hashCode())
 				.isNotEqualTo(sparseRight.hashCode());
