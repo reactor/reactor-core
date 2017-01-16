@@ -16,6 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.junit.Test;
 
@@ -30,5 +36,13 @@ public class MonoCompletionStageTest {
 
 		assertThat(Mono.fromFuture(f)
 		               .block()).isEqualToIgnoringCase("helloFuture");
+	}
+
+	@Test
+	public void fromCompletionStage() {
+		CompletionStage<String> completionStage = CompletableFuture.supplyAsync(() -> "helloFuture");
+
+		assertThat(Mono.fromCompletionStage(completionStage).block())
+				.isEqualTo("helloFuture");
 	}
 }

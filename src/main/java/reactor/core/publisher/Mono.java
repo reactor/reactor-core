@@ -349,17 +349,33 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletionStage}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
+	 * <p>
+	 * @param completionStage {@link CompletionStage} that will produce the value or null to
+	 * complete immediately
+	 * @param <T> type of the expected value
+	 * @return A {@link Mono}.
+	 */
+	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
+		return onAssembly(new MonoCompletionStage<>(completionStage));
+	}
+
+	/**
 	 * Create a {@link Mono} producing the value for the {@link Mono} using the given {@link CompletableFuture}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/fromfuture.png" alt="">
 	 * <p>
-	 * @param future {@link CompletionStage} that will produce the value or null to
+	 * @param future {@link CompletableFuture} that will produce the value or null to
 	 * complete immediately
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
+	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
 	 */
-	public static <T> Mono<T> fromFuture(CompletionStage<? extends T> future) {
+	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
 		return onAssembly(new MonoCompletionStage<>(future));
 	}
 
