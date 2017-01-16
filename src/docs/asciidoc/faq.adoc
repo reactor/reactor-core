@@ -55,4 +55,34 @@ Received: ***
 Received: *****
 ----
 
+[[faq.monoThen]]
+=== My `Mono` continuation (`then` or `and`) is never called
+
+.example
+[source,java]
+----
+myMethod.process("a") // this method returns Mono<Void>
+        .then(aVoid -> myMethod.process("b")) //this is never called
+        .subscribe();
+----
+
+If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
+empty for all intent and purposes), some combinations will never be called. You
+should expect that if there is a callback and the combination depends on the
+value...
+
+This includes the `Function` based variant of then (`then(v -> Mono.just(1))`)
+and all versions of `and`.
+
+In order to aVoid this problem and still invoke the continuation lazily, when
+the source Mono terminates, use the `Supplier` based version:
+
+[source,java]
+----
+myMethod.process("a")
+        .then(() -> myMethod.process("b")) //executed lazily
+        .subscribe();
+----
+
+
 //TODO reactive gems

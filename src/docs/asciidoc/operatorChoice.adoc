@@ -5,10 +5,12 @@ prefixed accordingly, common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
 leading dot and parameters in parenthesis, like `.methodCall()`.
 
-//TODO flux: buffer, cache, share, window, next, toXXX
+//TODO flux: cache, share, replay, publish, publishOn/subscribeOn/cancelOn
+//compose/transform, retryWhen, repeatWhen, sort, startWith
+//TODO Mono.sequenceEqual
 
 I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
-<<which.errors>>, <<which.time>> or <<which.blocking>>.
+<<which.errors>>, <<which.time>>, <<which.window>> or <<which.blocking>>.
 
 [[which.create]]
 === Creating a new sequence...
@@ -123,6 +125,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** by taking elements...
 *** at the beginning of the sequence: `Flux#take(int)`
 **** ...based on a duration: `Flux#take(Duration)`
+**** ...only the first element, as a `Mono`: `Flux#next()`
 *** at the end of the sequence: `Flux#takeLast`
 *** until a criteria is met (inclusive): `Flux#takeUntil` (predicate-based), `Flux#takeUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#takeWhile`
@@ -192,6 +195,32 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * I want to introduce a delay...
 ** between each onNext signal: `delay`
 ** before the subscription happens: `delaySubscription`
+
+[[which.window]]
+=== Splitting a `Flux`
+* I want to split a `Flux<T>` into a `Flux<Flux<T>>`, by a boundary criteria...
+** of size: `window(int)`
+*** ...with overlapping or dropping windows: `window(int, int)`
+** of time `window(Duration)`
+*** ...with overlapping or dropping windows: `window(Duration, Duration)`
+** of size OR time (window closes when count is reached or timeout elapsed): `window(int, Duration)`
+** driven by an arbitrary boundary represented by onNexts in a control Publisher: `window(Publisher)`
+
+* I want to split a `Flux<T>` and buffer elements within boundaries together...
+** into `List`...
+*** by a size boundary: `buffer(int)`
+**** ...with overlapping or dropping buffers: `buffer(int, int)`
+*** by a duration boundary: `buffer(Duration)`
+**** ...with overlapping or dropping buffers: `buffer(Duration, Duration)`
+*** by a size OR duration boundary: `buffer(int, Duration)`
+*** by an arbitrary criteria boundary: `bufferUntil(Predicate)`
+**** ...putting the element that triggered the boundary in the next buffer: `.bufferUntil(predicate, true)`
+**** ...buffering while predicate matches and dropping the element that triggered the boundary: `bufferWhile(Predicate)`
+*** driven by an arbitrary boundary represented by onNexts in a control Publisher: `buffer(Publisher)`
+** into an arbitrary "collection" type `C`: use variants like `buffer(int, Supplier<C>)`
+
+* I want to split a `Flux<T>` so that element that share a characteristic end up in the same sub-flux: `groupBy(Function<T,K>)`
+TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux` shares the same `K` key accessible through `key()`.
 
 [[which.blocking]]
 === Going back to the Synchronous world

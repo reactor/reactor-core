@@ -1,1 +1,1 @@
-=== How is Reactor implemented?
+== How is Reactor implemented?
