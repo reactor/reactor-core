@@ -2845,10 +2845,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param delay duration to delay each {@link Subscriber#onNext} call
 	 *
 	 * @return a throttled {@link Flux}
-	 *
+	 * @deprecated will be replaced by {@link #delayElements(Duration)} in 3.1.0
+	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
 	 */
+	@Deprecated
 	public final Flux<T> delay(Duration delay) {
-		return delayMillis(delay.toMillis());
+		return delayElements(delay);
+	}
+
+	public final Flux<T> delayElements(Duration delay) {
+		return delayElementsMillis(delay.toMillis());
 	}
 
 	/**
@@ -2862,8 +2868,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a throttled {@link Flux}
 	 *
 	 */
+	@Deprecated
 	public final Flux<T> delayMillis(long delay) {
-		return delayMillis(delay, Schedulers.timer());
+		return delayElementsMillis(delay);
+	}
+
+	public final Flux<T> delayElementsMillis(long delay) {
+		return delayElementsMillis(delay, Schedulers.timer());
 	}
 
 	/**
@@ -2878,7 +2889,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a throttled {@link Flux}
 	 *
 	 */
+	@Deprecated
 	public final Flux<T> delayMillis(long delay, TimedScheduler timer) {
+		return delayElementsMillis(delay, timer);
+	}
+	public final Flux<T> delayElementsMillis(long delay, TimedScheduler timer) {
 		return concatMap(t ->  Mono.delayMillis(delay, timer).map(i -> t));
 	}
 

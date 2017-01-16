@@ -1328,6 +1328,17 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoDefaultIfEmpty<>(this, defaultV));
 	}
 
+	public final Mono<T> delayElement(Duration delay) {
+		return delayElementMillis(delay.toMillis());
+	}
+
+	public final Mono<T> delayElementMillis(long delay) {
+		return delayElementMillis(delay, Schedulers.timer());
+	}
+
+	public final Mono<T> delayElementMillis(long delay, TimedScheduler timerScheduler) {
+		return new MonoDelayElement(this, delay, TimeUnit.MILLISECONDS, timerScheduler);
+	}
 
 	/**
 	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
