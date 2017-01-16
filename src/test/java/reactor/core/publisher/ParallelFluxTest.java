@@ -721,7 +721,7 @@ public class ParallelFluxTest {
 		for (int i = 0; i < subs.length; i++) {
 			subs[i] = new BaseSubscriber<Integer>() {
 				@Override
-				protected void hookOnSubscribe(Subscription subscription) { request(Integer.MAX_VALUE); }
+				protected void hookOnSubscribe(Subscription subscription) { request(Long.MAX_VALUE); }
 
 				@Override
 				protected void hookOnNext(Integer value) { }
@@ -980,7 +980,7 @@ public class ParallelFluxTest {
 		pf.subscribe(new BaseSubscriber<Integer>() {
 			@Override
 			protected void hookOnSubscribe(Subscription subscription) {
-				request(Integer.MAX_VALUE);
+				request(Long.MAX_VALUE);
 			}
 
 			@Override
