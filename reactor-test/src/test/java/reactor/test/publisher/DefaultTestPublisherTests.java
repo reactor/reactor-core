@@ -1,10 +1,15 @@
 package reactor.test.publisher;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class DefaultTestPublisherTests {
@@ -57,6 +62,68 @@ public class DefaultTestPublisherTests {
 				.withMessageContaining("expected production of at most 1;");
 
 		publisher.assertRequestOverflow();
+	}
+
+	@Test
+	public void normalIgnoresMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.create();
+		AtomicLong count = new AtomicLong();
+
+		Subscriber<String> subscriber = new Subscriber<String>() {
+			@Override
+			public void onSubscribe(Subscription s) { }
+
+			@Override
+			public void onNext(String s) { }
+
+			@Override
+			public void onError(Throwable t) {
+				count.incrementAndGet();
+			}
+
+			@Override
+			public void onComplete() {
+				count.incrementAndGet();
+			}
+		};
+
+		publisher.subscribe(subscriber);
+		publisher.complete()
+	             .emit("A", "B", "C")
+	             .error(new IllegalStateException("boom"));
+
+		assertThat(count.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void misbehavingAllowsMultipleTerminations() {
+		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
+		AtomicLong count = new AtomicLong();
+
+		Subscriber<String> subscriber = new Subscriber<String>() {
+			@Override
+			public void onSubscribe(Subscription s) { }
+
+			@Override
+			public void onNext(String s) { }
+
+			@Override
+			public void onError(Throwable t) {
+				count.incrementAndGet();
+			}
+
+			@Override
+			public void onComplete() {
+				count.incrementAndGet();
+			}
+		};
+
+		publisher.subscribe(subscriber);
+		publisher.error(new IllegalStateException("boom"))
+		         .complete()
+		         .emit("A", "B", "C");
+
+		assertThat(count.get()).isEqualTo(3);
 	}
 
 	@Test

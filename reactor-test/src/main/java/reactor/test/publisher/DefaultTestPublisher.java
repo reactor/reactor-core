@@ -305,7 +305,13 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		Objects.requireNonNull(t, "t");
 
 		error = t;
-		for (TestPublisherSubscription<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
+		TestPublisherSubscription<?>[] subs;
+		if (violations.contains(Violation.CLEANUP_ON_TERMINATE)) {
+			subs = subscribers;
+		} else {
+			subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		}
+		for (TestPublisherSubscription<?> s : subs) {
 			s.onError(t);
 		}
 		return this;
@@ -313,7 +319,13 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	@Override
 	public DefaultTestPublisher<T> complete() {
-		for (TestPublisherSubscription<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
+		TestPublisherSubscription<?>[] subs;
+		if (violations.contains(Violation.CLEANUP_ON_TERMINATE)) {
+			subs = subscribers;
+		} else {
+			subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
+		}
+		for (TestPublisherSubscription<?> s : subs) {
 			s.onComplete();
 		}
 		return this;

@@ -199,6 +199,12 @@ public abstract class TestPublisher<T> implements Publisher<T> {
 		 * Allow {@link TestPublisher#next(Object, Object[]) next}  calls to be made
 		 * with a {@code null} value without triggering a {@link NullPointerException}
 		 */
-		ALLOW_NULL
+		ALLOW_NULL,
+		/**
+		 * Allow termination signals to be sent several times in a row. This includes
+		 * {@link TestPublisher#complete()}, {@link TestPublisher#error(Throwable)} and
+		 * {@link TestPublisher#emit(Object[])}.
+		 */
+		CLEANUP_ON_TERMINATE
 	}
 }
