@@ -39,6 +39,8 @@ public class MonoDelayElementTest {
 
 	@After
 	public void reset() {
+		//TODO remove once the StepVerifier explicitly resets VirtualTimeScheduler
+		//see https://github.com/reactor/reactor-addons/issues/70
 		VirtualTimeScheduler.reset();
 	}
 
