@@ -874,6 +874,31 @@ public class FluxFlatMapTest {
 	                .verify();
 	}
 
+	@Test
+	public void delayedUnboundedScalarThenCancel() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .flatMap(Flux::just), 0)
+		            .thenAwait()
+		            .thenRequest(Long.MAX_VALUE)
+		            .expectNext(1, 2, 3)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void delayedBackpressuredScalar() {
+		StepVerifier.create(Flux.range(1, 1000)
+		                        .flatMap(Flux::just), 0)
+		            .thenAwait()
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(1)
+		            .expectNext(3)
+		            .thenRequest(Long.MAX_VALUE)
+		            .expectNextCount(997)
+		            .verifyComplete();
+	}
+
 	Flux<Integer> scenario_backpressuredThenCancel() {
 		return Flux.just(1, 2, 3)
 		           .flatMap(f -> Flux.range(1, 10)

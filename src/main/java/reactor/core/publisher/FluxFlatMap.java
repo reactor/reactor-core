@@ -525,7 +525,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					if (e != 0L) {
 						replenishMain += e;
 						if (r != Long.MAX_VALUE) {
-							r = REQUESTED.addAndGet(this, -e);
+							r = Operators.addAndGet(REQUESTED, this, -e);
 						}
 						e = 0L;
 						again = true;
@@ -611,7 +611,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 										inner.request(e);
 									}
 									if (r != Long.MAX_VALUE) {
-										r = REQUESTED.addAndGet(this, -e);
+										r = Operators.addAndGet(REQUESTED, this, -e);
 										if (r == 0L) {
 											break; // 0 .. n - 1
 										}
