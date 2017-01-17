@@ -646,6 +646,7 @@ final class DefaultStepVerifierBuilder<T>
 		long                          produced;   //used for request tracking
 		long                          unasserted; //used for expectNextXXX tracking
 		volatile long                 requested;
+		volatile boolean done; // async fusion
 		Iterator<? extends T>         currentNextAs;
 		Collection<T>                 currentCollector;
 
@@ -773,8 +774,14 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public void onComplete() {
-			onExpectation(Signal.complete());
-			this.completeLatch.countDown();
+			if (establishedFusionMode != Fuseable.ASYNC) {
+				onExpectation(Signal.complete());
+				this.completeLatch.countDown();
+			}
+			else {
+				done = true;
+				serializeDrainAndSubscriptionEvent();
+			}
 		}
 
 		@Override
@@ -786,27 +793,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public void onNext(T t) {
 			if (establishedFusionMode == Fuseable.ASYNC) {
-				for (; ; ) {
-					produced++;
-					unasserted++;
-					try {
-						t = qs.poll();
-						if (t == null) {
-							break;
-						}
-					}
-					catch (Throwable e) {
-						Exceptions.throwIfFatal(e);
-						onExpectation(Signal.error(e));
-						cancel();
-						completeLatch.countDown();
-						return;
-					}
-					if (currentCollector != null) {
-						currentCollector.add(t);
-					}
-					onExpectation(Signal.next(t));
-				}
+				serializeDrainAndSubscriptionEvent();
 			}
 			else {
 				produced++;
@@ -846,6 +833,46 @@ final class DefaultStepVerifierBuilder<T>
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: ",
 							subscription,
 							this.subscription);
+				}
+			}
+		}
+
+		void drainAsyncLoop(){
+			T t;
+			for( ; ;) {
+				boolean d = done;
+				if(d && qs.isEmpty()){
+					onExpectation(Signal.complete());
+					this.completeLatch.countDown();
+					return;
+				}
+
+				try {
+					t = qs.poll();
+					if (t == null) {
+						break;
+					}
+					produced++;
+					unasserted++;
+				}
+				catch (Throwable e) {
+					Exceptions.throwIfFatal(e);
+					onExpectation(Signal.error(e));
+					cancel();
+					completeLatch.countDown();
+					return;
+				}
+				if (currentCollector != null) {
+					currentCollector.add(t);
+				}
+				Signal<T> signal = Signal.next(t);
+				if (!checkRequestOverflow(signal)) {
+					onExpectation(signal);
+					if(d && qs.isEmpty()){
+						onExpectation(Signal.complete());
+						this.completeLatch.countDown();
+					}
+					return;
 				}
 			}
 		}
@@ -924,6 +951,9 @@ final class DefaultStepVerifierBuilder<T>
 					this.subscription.getAndSet(Operators.cancelledSubscription());
 			if (s != null && s != Operators.cancelledSubscription()) {
 				s.cancel();
+				if(establishedFusionMode == Fuseable.ASYNC) {
+					qs.clear();
+				}
 			}
 			return s;
 		}
@@ -1045,7 +1075,7 @@ final class DefaultStepVerifierBuilder<T>
 						break;
 					}
 					if (event instanceof SubscriptionEvent) {
-						if (onSubscription()) {
+						if (serializeDrainAndSubscriptionEvent()) {
 							return;
 						}
 					}
@@ -1201,23 +1231,33 @@ final class DefaultStepVerifierBuilder<T>
 			}
 		}
 
-		boolean onSubscription() {
+		boolean onSubscriptionLoop(){
+			SubscriptionEvent<T> subscriptionEvent;
+			if (this.script.peek() instanceof SubscriptionEvent) {
+				subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
+				if (subscriptionEvent instanceof RequestEvent) {
+					updateRequested(subscriptionEvent);
+				}
+				if (subscriptionEvent.isTerminal()) {
+					doCancel();
+					return true;
+				}
+				subscriptionEvent.consume(upstream());
+			}
+			return false;
+		}
+
+		boolean serializeDrainAndSubscriptionEvent() {
 			int missed = WIP.incrementAndGet(this);
 			if (missed != 1) {
 				return true;
 			}
-			SubscriptionEvent<T> subscriptionEvent;
 			for (; ; ) {
-				if (this.script.peek() instanceof SubscriptionEvent) {
-					subscriptionEvent = (SubscriptionEvent<T>) this.script.poll();
-					if (subscriptionEvent instanceof RequestEvent) {
-						updateRequested(subscriptionEvent);
-					}
-					if (subscriptionEvent.isTerminal()) {
-						doCancel();
-						return true;
-					}
-					subscriptionEvent.consume(upstream());
+				if(onSubscriptionLoop()){
+					return true;
+				}
+				if(expectedFusionMode == Fuseable.ASYNC) {
+					drainAsyncLoop();
 				}
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
@@ -1261,7 +1301,7 @@ final class DefaultStepVerifierBuilder<T>
 				if (!skip) {
 					event = script.peek();
 					if (event instanceof SubscriptionEvent) {
-						onSubscription();
+						serializeDrainAndSubscriptionEvent();
 					}
 				}
 				if (this.completeLatch.await(10, TimeUnit.NANOSECONDS)) {
