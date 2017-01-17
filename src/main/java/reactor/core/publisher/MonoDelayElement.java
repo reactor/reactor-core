@@ -18,13 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
-import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
 
@@ -64,8 +62,8 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		final TimedScheduler scheduler;
 		final TimeUnit unit;
 
-		private Cancellation task;
-		private boolean done;
+		volatile Cancellation task;
+		volatile boolean done;
 
 		public MonoDelayElementSubscriber(Subscriber<? super T> actual, TimedScheduler scheduler,
 				long delay, TimeUnit unit) {
@@ -79,9 +77,11 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		@Override
 		public void cancel() {
 			super.cancel();
-			s.cancel();
 			if (task != null) {
 				task.dispose();
+			}
+			if (s != Operators.cancelledSubscription()) {
+				s.cancel();
 			}
 		}
 
@@ -102,9 +102,15 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 				return;
 			}
 			this.done = true;
-			s.cancel();
-			//FIXME handle REJECTED
 			this.task = scheduler.schedule(() -> complete(t), delay, unit);
+			if (task == Scheduler.REJECTED) {
+					throw Operators.onRejectedExecution(this, null, t);
+			}
+			else {
+				Subscription actualS = s;
+				s = Operators.cancelledSubscription();
+				actualS.cancel();
+			}
 		}
 
 		@Override
