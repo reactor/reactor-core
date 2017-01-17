@@ -89,7 +89,7 @@ public abstract class Operators {
 			}
 			long u = addCap(r, n);
 			if (updater.compareAndSet(instance, r, u)) {
-				return r;
+				return u;
 			}
 		}
 	}

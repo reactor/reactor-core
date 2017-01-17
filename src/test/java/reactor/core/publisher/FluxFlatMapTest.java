@@ -1039,6 +1039,19 @@ public class FluxFlatMapTest {
 		            .verifyComplete();
 	}
 
+
+	@Test
+	public void assertOnSubscribeStateMainAndInner3() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .flatMap(f -> Flux.from(s -> {
+			                        s.onSubscribe(Operators.emptySubscription());
+			                        s.onComplete();
+			                        assertAfterOnCompleteInnerState2(((FluxFlatMap.FlatMapInner) s));
+		                        }), 1), 1)
+		            .verifyComplete();
+	}
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void assertOnSubscribeStateMainScalar() {
@@ -1173,11 +1186,15 @@ public class FluxFlatMapTest {
 			                        s.onNext(2);
 		                        })), 0)
 		            .consumeSubscriptionWith(x::set)
-		            .thenRequest(8)
-		            .expectNext(1, 2)
+		            .thenAwait()
+		            .thenRequest(5)
 		            .expectNext(1, 2)
 		            .expectNext(1, 2)
 		            .expectNext(1)
+		            .thenAwait()
+		            .thenRequest(2)
+		            .expectNext(2, 1)
+		            .thenRequest(1)
 		            .thenCancel()
 		            .verify();
 	}
