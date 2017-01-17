@@ -872,7 +872,6 @@ final class DefaultStepVerifierBuilder<T>
 						onExpectation(Signal.complete());
 						this.completeLatch.countDown();
 					}
-					return;
 				}
 			}
 		}
@@ -1256,7 +1255,7 @@ final class DefaultStepVerifierBuilder<T>
 				if(onSubscriptionLoop()){
 					return true;
 				}
-				if(expectedFusionMode == Fuseable.ASYNC) {
+				if(establishedFusionMode == Fuseable.ASYNC) {
 					drainAsyncLoop();
 				}
 				missed = WIP.addAndGet(this, -missed);
