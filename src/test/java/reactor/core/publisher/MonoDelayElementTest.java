@@ -79,6 +79,29 @@ public class MonoDelayElementTest {
 		assertThat(cancelled.get()).isTrue();
 	}
 
+	@Test
+	public void cancelBeforeNext() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		AtomicBoolean emitted = new AtomicBoolean();
+		AtomicBoolean cancelled = new AtomicBoolean();
+
+		Mono<Long> source = Mono.delayMillis(1000, vts);
+
+		StepVerifier.withVirtualTime(
+				() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts)
+						.doOnCancel(() -> cancelled.set(true))
+						.doOnNext(n -> emitted.set(true)),
+				() -> vts, Long.MAX_VALUE)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(500))
+		            .thenCancel()
+		            .verify();
+
+		vts.advanceTimeBy(Duration.ofHours(1));
+		assertThat(emitted.get()).isFalse();
+		assertThat(cancelled.get()).isTrue();
+	}
+
 	@Test(timeout = 5000L)
 	public void emptyIsImmediate() {
 		Mono<String> source = Mono.<String>empty().log().hide();
@@ -221,4 +244,109 @@ public class MonoDelayElementTest {
 		            .verifyComplete();
 	}
 
+	@Test
+	public void guardedAgainstMultipleOnNext() {
+		AtomicReference<Object> dropped = new AtomicReference<>();
+		Hooks.onNextDropped(dropped::set);
+
+		Flux<String> source = Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext("foo");
+			s.onNext("bar");
+			s.onComplete();
+		});
+
+		try {
+			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+					2,
+					TimeUnit.SECONDS,
+					Schedulers.timer()))
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofSeconds(2))
+			            .expectNext("foo")
+			            .verifyComplete();
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+		assertThat(dropped.get()).isEqualTo("bar");
+	}
+
+	@Test
+	public void guardedAgainstOnComplete() {
+		AtomicReference<Object> dropped = new AtomicReference<>();
+		Hooks.onNextDropped(dropped::set);
+
+		Flux<String> source = Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext("foo");
+			s.onComplete();
+		});
+
+		try {
+			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+					2,
+					TimeUnit.SECONDS,
+					Schedulers.timer()))
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofSeconds(2))
+			            .expectNext("foo")
+			            .verifyComplete();
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+		assertThat(dropped.get()).isEqualTo("bar");
+	}
+
+	@Test
+	public void guardedAgainstOnError() {
+		AtomicReference<Throwable> dropped = new AtomicReference<>();
+		Hooks.onErrorDropped(dropped::set);
+
+		Flux<String> source = Flux.from(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext("foo");
+			s.onError(new IllegalStateException("boom"));
+		});
+
+		try {
+			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+					2,
+					TimeUnit.SECONDS,
+					Schedulers.timer()))
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofSeconds(2))
+			            .expectNext("foo")
+			            .verifyComplete();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+		assertThat(dropped.get()).hasMessage("boom")
+		                         .isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void upstreamIsDelayedSource() {
+		AtomicReference<Object> upstream = new AtomicReference<>();
+		Flux<Integer> source = Flux.range(1, 5);
+
+
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, Schedulers.timer())
+				.doOnSubscribe(s -> {
+					assertThat(s).isInstanceOf(MonoDelayElement.MonoDelayElementSubscriber.class);
+
+					MonoDelayElement.MonoDelayElementSubscriber delayedSubscriber =
+							(MonoDelayElement.MonoDelayElementSubscriber) s;
+
+					upstream.set(delayedSubscriber.upstream());
+				}))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(upstream.get()).isInstanceOf(FluxRange.RangeSubscription.class);
+	}
 }

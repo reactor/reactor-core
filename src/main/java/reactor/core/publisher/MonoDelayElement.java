@@ -62,6 +62,8 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		final TimedScheduler scheduler;
 		final TimeUnit unit;
 
+		Subscription s;
+
 		volatile Cancellation task;
 		volatile boolean done;
 
@@ -72,7 +74,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 			this.delay = delay;
 			this.unit = unit;
 		}
-		Subscription s;
+
 
 		@Override
 		public void cancel() {
