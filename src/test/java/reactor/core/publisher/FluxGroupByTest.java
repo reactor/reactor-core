@@ -18,13 +18,17 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxGroupByTest {
 
@@ -750,6 +754,20 @@ public class FluxGroupByTest {
 				19)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void prefetchIsUsed() {
+		AtomicLong initialRequest = new AtomicLong();
+
+		StepVerifier.create(Flux.range(1, 10)
+		                        .doOnRequest(r -> initialRequest.compareAndSet(0L, r))
+		                        .groupBy(i -> i % 5, 11)
+		                        .concatMap(v -> v))
+		            .expectNextCount(10)
+		            .verifyComplete();
+
+		assertThat(initialRequest.get()).isEqualTo(11);
 	}
 
 }
