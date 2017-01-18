@@ -129,7 +129,7 @@ public class FluxSampleTimeoutTest {
 
 	Flux<Integer> scenario_sampleTimeoutTime(){
 		return Flux.range(1, 10)
-		           .delayMillis(300)
+		           .delayElementsMillis(300)
 		           .sampleTimeout(d -> Mono.delay(Duration.ofMillis(100*d)), 1);
 	}
 
@@ -142,7 +142,7 @@ public class FluxSampleTimeoutTest {
 	}
 	Flux<Integer> scenario_sampleTimeoutTime2(){
 		return Flux.range(1, 10)
-		           .delayMillis(300)
+		           .delayElementsMillis(300)
 		           .sampleTimeout(d -> Mono.delay(Duration.ofMillis(100*d)), Integer.MAX_VALUE);
 	}
 

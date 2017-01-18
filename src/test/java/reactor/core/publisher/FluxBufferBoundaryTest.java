@@ -246,7 +246,7 @@ public class FluxBufferBoundaryTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .buffer(Duration.ofMillis(200));
 	}
 
@@ -263,7 +263,7 @@ public class FluxBufferBoundaryTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxTime2() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .bufferMillis(200);
 	}
 

@@ -339,8 +339,8 @@ public class CombinationTests {
 		CountDownLatch latch = new CountDownLatch(elements / 2 - 2);
 
 		Flux.combineLatest(
-				sensorOdd().cache().delay(Duration.ofMillis(100)),
-				sensorEven().cache().delay(Duration.ofMillis(200)),
+				sensorOdd().cache().delayElements(Duration.ofMillis(100)),
+				sensorEven().cache().delayElements(Duration.ofMillis(200)),
 				this::computeMin)
 		                        .log("combineLatest")
 		                        .subscribe(i -> latch.countDown(), null, latch::countDown);

@@ -202,7 +202,7 @@ public class FluxWindowStartEndTest {
 
 	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxOverlapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .window(Duration.ofMillis(300), Duration.ofMillis(200))
 		           .concatMap(Flux::buffer);
 	}
@@ -221,7 +221,7 @@ public class FluxWindowStartEndTest {
 
 	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxSameTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .window(Duration.ofMillis(300), Duration.ofMillis(300))
 		           .concatMap(Flux::buffer);
 	}
@@ -238,7 +238,7 @@ public class FluxWindowStartEndTest {
 
 	Flux<List<Integer>> scenario_windowWillSubdivideAnInputFluxGapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .window(Duration.ofMillis(200), Duration.ofMillis(300))
 		           .concatMap(Flux::buffer);
 	}

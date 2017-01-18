@@ -30,7 +30,7 @@ public class FluxReplayTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .replay()
 			                                         .autoConnect()
 			                                         .elapsed();
@@ -60,7 +60,7 @@ public class FluxReplayTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .replay(Duration.ofMillis(2000))
 			                                         .autoConnect()
 			                                         .elapsed();
@@ -89,7 +89,7 @@ public class FluxReplayTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .replayMillis(2000, vts)
 			                                         .autoConnect()
 			                                         .elapsed();
@@ -118,7 +118,7 @@ public class FluxReplayTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .replay(2, Duration.ofMillis(2000))
 			                                         .autoConnect()
 			                                         .elapsed();

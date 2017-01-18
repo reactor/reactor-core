@@ -902,7 +902,7 @@ public class FluxFlatMapTest {
 	Flux<Integer> scenario_backpressuredThenCancel() {
 		return Flux.just(1, 2, 3)
 		           .flatMap(f -> Flux.range(1, 10)
-		                             .delayMillis(10L))
+		                             .delayElementsMillis(10L))
 		           .hide();
 	}
 
