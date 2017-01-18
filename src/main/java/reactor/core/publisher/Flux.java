@@ -3658,6 +3658,23 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Re-route this sequence into dynamically created {@link Flux} for each unique key evaluated by the given
+	 * key mapper.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
+	 *
+	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
+	 * @param prefetch the number of values to prefetch from the source
+	 * @param <K> the key type extracted from each value of this sequence
+	 *
+	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
+	 */
+	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper, int prefetch) {
+		return groupBy(keyMapper, identityFunction(), prefetch);
+	}
+
+	/**
+	 * Re-route this sequence into dynamically created {@link Flux} for each unique key evaluated by the given
 	 * key mapper. It will use the given value mapper to extract the element to route.
 	 *
 	 * <p>
@@ -3674,9 +3691,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends V> valueMapper) {
+		return groupBy(keyMapper, valueMapper, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Re-route this sequence into dynamically created {@link Flux} for each unique key evaluated by the given
+	 * key mapper. It will use the given value mapper to extract the element to route.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/groupby.png" alt="">
+	 *
+	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
+	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
+	 * @param prefetch the number of values to prefetch from the source
+	 *
+	 * @param <K> the key type extracted from each value of this sequence
+	 * @param <V> the value type extracted from each value of this sequence
+	 *
+	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
+	 *
+	 */
+	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends V> valueMapper, int prefetch) {
 		return onAssembly(new FluxGroupBy<>(this, keyMapper, valueMapper,
 				QueueSupplier.small(),
-				QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE));
+				QueueSupplier.unbounded(), prefetch));
 	}
 
 	/**
