@@ -340,4 +340,25 @@ public class MonoDelayElementTest {
 
 		assertThat(upstream.get()).isInstanceOf(FluxRange.RangeSubscription.class);
 	}
+
+	@Test
+	public void testDeprecatedFluxApi() {
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delay(Duration.ofSeconds(2)))
+	                .expectSubscription()
+	                .expectNoEvent(Duration.ofSeconds(2))
+	                .expectNext("foo")
+	                .verifyComplete();
+
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayMillis(2000L))
+	                .expectSubscription()
+	                .expectNoEvent(Duration.ofSeconds(2))
+	                .expectNext("foo")
+	                .verifyComplete();
+
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayMillis(2000L, VirtualTimeScheduler.get()))
+	                .expectSubscription()
+	                .expectNoEvent(Duration.ofSeconds(2))
+	                .expectNext("foo")
+	                .verifyComplete();
+	}
 }
