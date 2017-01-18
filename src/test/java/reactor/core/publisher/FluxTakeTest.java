@@ -16,12 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -44,6 +41,12 @@ public class FluxTakeTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void numberIsInvalid() {
 		Flux.never()
+		    .take(-1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void numberIsInvalidFused() {
+		Flux.just(1)
 		    .take(-1);
 	}
 

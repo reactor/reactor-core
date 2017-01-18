@@ -41,14 +41,6 @@ final class FluxTakeFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		this.n = n;
 	}
 
-	public Publisher<? extends T> source() {
-		return source;
-	}
-
-	public long n() {
-		return n;
-	}
-
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new TakeFuseableSubscriber<>(s, n));
