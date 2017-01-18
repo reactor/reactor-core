@@ -225,7 +225,7 @@ public class FluxSpecTests {
 
 	Flux<Integer> scenario_rangeTimedSample() {
 		return Flux.range(1, Integer.MAX_VALUE)
-		           .delayMillis(100)
+		           .delayElementsMillis(100)
 		           .sample(Duration.ofSeconds(4))
 		           .take(1);
 	}
@@ -240,7 +240,7 @@ public class FluxSpecTests {
 
 	Flux<Integer> scenario_rangeTimedTake() {
 		return Flux.range(1, Integer.MAX_VALUE)
-		           .delayMillis(100)
+		           .delayElementsMillis(100)
 		           .take(Duration.ofSeconds(4))
 		           .takeLast(1);
 	}
@@ -1038,7 +1038,7 @@ public class FluxSpecTests {
 	Flux<List<Integer>> scenario_delayItems() {
 		return Flux.range(1, 4)
 		           .buffer(2)
-		           .delay(Duration.ofMillis(1000));
+		           .delayElements(Duration.ofMillis(1000));
 	}
 
 	@Test
@@ -1054,7 +1054,7 @@ public class FluxSpecTests {
 
 	Mono<Long> scenario_fluxItemCanBeShiftedByTime() {
 		return Flux.range(0, 10000)
-		           .delay(Duration.ofMillis(150))
+		           .delayElements(Duration.ofMillis(150))
 		           .elapsed()
 		           .take(10)
 		           .reduce(0L,
@@ -1073,7 +1073,7 @@ public class FluxSpecTests {
 
 	Mono<Long> scenario_fluxItemCanBeShiftedByTime2() {
 		return Flux.range(0, 10000)
-		           .delay(Duration.ofMillis(150))
+		           .delayElements(Duration.ofMillis(150))
 		           .elapsed()
 		           .take(10)
 		           .reduce(0L,

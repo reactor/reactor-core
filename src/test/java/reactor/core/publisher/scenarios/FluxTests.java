@@ -425,7 +425,7 @@ public class FluxTests extends AbstractReactorTest {
 		Mono<Long> result = source
 				.log("delay")
 				.publishOn(asyncGroup)
-		                          .delay(Duration.ofMillis(avgTime))
+		                          .delayElements(Duration.ofMillis(avgTime))
 
 		                          .elapsed()
 		                          .skip(1)
@@ -846,7 +846,7 @@ public class FluxTests extends AbstractReactorTest {
 
 			Flux.just(source)
 			    .transform(operationStream -> operationStream.publishOn(asyncGroup)
-			                                          .delay(Duration.ofMillis(100))
+			                                          .delayElements(Duration.ofMillis(100))
 			                                          .map(s -> s + " MODIFIED")
 			                                          .map(s -> {
 						                                         latch.countDown();
@@ -1167,14 +1167,15 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void delayEach() throws InterruptedException {
-		CountDownLatch latch = new CountDownLatch(3);
-
-		Flux.range(1, 3)
-		       .delayMillis(1000)
-		       .log("delay")
-		       .subscribe(t -> latch.countDown());
-
-		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 3).delayElementsMillis(1000))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .expectNext(1)
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .expectNext(2)
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .expectNext(3)
+		            .verifyComplete();
 	}
 
 	// Test issue https://github.com/reactor/reactor/issues/474
@@ -1494,5 +1495,11 @@ public class FluxTests extends AbstractReactorTest {
 			}
 			System.out.println();
 		}
+	}
+
+
+	@Test
+	public void test() {
+		Flux.empty().delayElementsMillis(1000).log().blockLast();
 	}
 }

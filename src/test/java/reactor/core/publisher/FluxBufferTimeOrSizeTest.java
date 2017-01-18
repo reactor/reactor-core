@@ -27,7 +27,7 @@ public class FluxBufferTimeOrSizeTest {
 
 	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
-		           .delay(Duration.ofMillis(300))
+		           .delayElements(Duration.ofMillis(300))
 		           .buffer(5, Duration.ofMillis(2000));
 	}
 
@@ -43,7 +43,7 @@ public class FluxBufferTimeOrSizeTest {
 
 	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize2() {
 		return Flux.range(1, 6)
-		           .delay(Duration.ofMillis(300))
+		           .delayElements(Duration.ofMillis(300))
 		           .bufferMillis(5, 2000);
 	}
 

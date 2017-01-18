@@ -162,7 +162,7 @@ public class FluxBufferStartEndTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .buffer(Duration.ofMillis(300), Duration.ofMillis(200));
 	}
 
@@ -179,7 +179,7 @@ public class FluxBufferStartEndTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime2() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .bufferMillis(300L, 200L);//FIXME review signature
 	}
 
@@ -196,7 +196,7 @@ public class FluxBufferStartEndTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxSameTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .bufferMillis(300L, 300L);
 	}
 
@@ -212,7 +212,7 @@ public class FluxBufferStartEndTest {
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxGapTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
-		           .delay(Duration.ofMillis(99))
+		           .delayElements(Duration.ofMillis(99))
 		           .buffer(Duration.ofMillis(200), Duration.ofMillis(300));
 	}
 

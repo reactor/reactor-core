@@ -31,7 +31,7 @@ public class FluxCacheTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .cache()
 			                                         .elapsed();
 
@@ -60,7 +60,7 @@ public class FluxCacheTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .cache(Duration.ofMillis(2000))
 			                                         .elapsed();
 
@@ -88,7 +88,7 @@ public class FluxCacheTest {
 			VirtualTimeScheduler vts = VirtualTimeScheduler.enable(false);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-			                                         .delayMillis(1000)
+			                                         .delayElementsMillis(1000)
 			                                         .cache(2, Duration.ofMillis(2000))
 			                                         .elapsed();
 
