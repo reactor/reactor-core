@@ -126,7 +126,7 @@ public interface StepVerifier {
 	@Deprecated
 	static <T> FirstStep<T> withVirtualTime(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.enable(false), n);
+		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(false), n);
 	}
 
 	/**
@@ -143,7 +143,7 @@ public interface StepVerifier {
 	 */
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			long n) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.enable(false), n);
+		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(false), n);
 	}
 
 	/**

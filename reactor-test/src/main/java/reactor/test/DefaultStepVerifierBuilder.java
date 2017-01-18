@@ -576,7 +576,9 @@ final class DefaultStepVerifierBuilder<T>
 				VirtualTimeScheduler vts = null;
 				if (parent.vtsLookup != null) {
 					vts = parent.vtsLookup.get();
-					VirtualTimeScheduler.enable(vts);
+					//this works even for the default case where StepVerifier has created
+					// a vts through enable(false), because the CURRENT will already be that vts
+					VirtualTimeScheduler.set(vts);
 				}
 				try {
 					Publisher<? extends T> publisher = parent.sourceSupplier.get();
@@ -598,6 +600,9 @@ final class DefaultStepVerifierBuilder<T>
 				finally {
 					if (vts != null) {
 						vts.shutdown();
+						//explicitly reset the factory, rather than rely on vts shutdown doing so
+						// because it could have been eagerly shut down in a test.
+						VirtualTimeScheduler.reset();
 					}
 				}
 			} else {

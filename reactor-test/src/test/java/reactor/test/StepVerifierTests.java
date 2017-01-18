@@ -1642,4 +1642,19 @@ public class StepVerifierTests {
 					.verify();
 	}
 
+	@Test
+	public void virtualTimeSchedulerUseExactlySupplied() {
+		VirtualTimeScheduler vts1 = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts2 = VirtualTimeScheduler.create();
+		VirtualTimeScheduler.getOrSet(vts1);
+
+		StepVerifier.withVirtualTime(Mono::empty, () -> vts2, Long.MAX_VALUE)
+		            .then(() -> assertThat(VirtualTimeScheduler.get()).isSameAs(vts2))
+		            .verifyComplete();
+
+		assertThat(vts1.isDisposed()).isFalse();
+		assertThat(vts2.isDisposed()).isTrue();
+		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
+	}
+
 }

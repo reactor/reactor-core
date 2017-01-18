@@ -21,8 +21,12 @@ import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -36,7 +40,7 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
 
-		VirtualTimeScheduler.enable(true);
+		VirtualTimeScheduler.getOrSet(true);
 
 		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
@@ -58,7 +62,7 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
 
-		VirtualTimeScheduler.enable(false);
+		VirtualTimeScheduler.getOrSet(false);
 
 		Assert.assertTrue(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
@@ -77,7 +81,7 @@ public class VirtualTimeSchedulerTests {
 	public void enableProvidedSchedulerIdempotent() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
-		VirtualTimeScheduler.enable(vts);
+		VirtualTimeScheduler.getOrSet(vts);
 
 		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertNotSame(vts, uncache(Schedulers.single()));
@@ -85,7 +89,7 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertFalse(vts.shutdown);
 
 
-		VirtualTimeScheduler.enable(vts);
+		VirtualTimeScheduler.getOrSet(vts);
 
 		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertNotSame(vts, uncache(Schedulers.single()));
@@ -97,7 +101,7 @@ public class VirtualTimeSchedulerTests {
 	public void enableProvidedAllSchedulerIdempotent() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
 
-		VirtualTimeScheduler.enable(vts);
+		VirtualTimeScheduler.getOrSet(vts);
 
 		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertSame(vts, uncache(Schedulers.single()));
@@ -105,7 +109,7 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertFalse(vts.shutdown);
 
 
-		VirtualTimeScheduler.enable(vts);
+		VirtualTimeScheduler.getOrSet(vts);
 
 		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertSame(vts, uncache(Schedulers.single()));
@@ -118,14 +122,38 @@ public class VirtualTimeSchedulerTests {
 		VirtualTimeScheduler vts1 = VirtualTimeScheduler.createForAll();
 		VirtualTimeScheduler vts2 = VirtualTimeScheduler.createForAll();
 
-		VirtualTimeScheduler firstEnableResult = VirtualTimeScheduler.enable(vts1);
-		VirtualTimeScheduler secondEnableResult = VirtualTimeScheduler.enable(vts2);
+		VirtualTimeScheduler firstEnableResult = VirtualTimeScheduler.getOrSet(vts1);
+		VirtualTimeScheduler secondEnableResult = VirtualTimeScheduler.getOrSet(vts2);
 
 		Assert.assertSame(vts1, firstEnableResult);
 		Assert.assertSame(vts1, secondEnableResult);
 		Assert.assertSame(vts1, uncache(Schedulers.timer()));
 		Assert.assertSame(vts1, uncache(Schedulers.single()));
 		Assert.assertFalse(vts1.shutdown);
+	}
+
+	@Test
+	public void disposedSchedulerIsStillCleanedUp() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		vts.dispose();
+		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
+
+		StepVerifier.withVirtualTime(() -> Mono.just("foo"),
+				() -> vts, Long.MAX_VALUE)
+	                .then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
+	                .then(() -> assertThat(VirtualTimeScheduler.get()).isSameAs(vts))
+	                .expectNext("foo")
+	                .verifyComplete();
+
+		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
+
+		StepVerifier.withVirtualTime(() -> Mono.just("foo"))
+	                .then(() -> assertThat(VirtualTimeScheduler.isFactoryEnabled()).isTrue())
+	                .then(() -> assertThat(VirtualTimeScheduler.get()).isNotSameAs(vts))
+	                .expectNext("foo")
+	                .verifyComplete();
+
+		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 	}
 
 

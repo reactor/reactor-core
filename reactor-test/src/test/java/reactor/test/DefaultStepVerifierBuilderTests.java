@@ -64,7 +64,7 @@ public class DefaultStepVerifierBuilderTests {
 	public void manuallyManagedVirtualTime() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		try {
-			VirtualTimeScheduler.enable(vts);
+			VirtualTimeScheduler.getOrSet(vts);
 
 			Flux<String> flux = Flux.just("foo").delay(Duration.ofSeconds(4));
 
