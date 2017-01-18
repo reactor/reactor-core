@@ -157,7 +157,7 @@ public abstract class TestPublisher<T> implements Publisher<T> {
 	 * @param first the first item to emit
 	 * @param rest the optional remaining items to emit
 	 * @return this {@link TestPublisher} for chaining.
-	 * @see #next(T) next
+	 * @see #next(Object) next
 	 */
 	@SafeVarargs
 	public final TestPublisher<T> next(T first, T... rest) {
@@ -174,7 +174,7 @@ public abstract class TestPublisher<T> implements Publisher<T> {
 	 *
 	 * @param values the values to emit to subscribers
 	 * @return this {@link TestPublisher} for chaining.
-	 * @see #next(T) next
+	 * @see #next(Object) next
 	 * @see #complete() complete
 	 */
 	@SafeVarargs

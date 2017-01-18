@@ -150,6 +150,7 @@ public interface StepVerifier {
 	 * @deprecated to be removed in 3.1.0 for parameter ordering harmonization. Please
 	 * use {@link #withVirtualTime(Supplier, Supplier, long)} instead.
 	 */
+	@Deprecated
 	static <T> FirstStep<T> withVirtualTime(long n,
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
