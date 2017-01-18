@@ -244,4 +244,17 @@ public class DefaultTestPublisherTests {
 	                .verify();
 	}
 
+
+
+	@Test
+	public void conditionalSupport() {
+		TestPublisher<String> up = TestPublisher.create();
+		StepVerifier.create(up.flux().filter("test"::equals), 2)
+		            .then(() -> up.next("test"))
+		            .then(() -> up.next("test2"))
+		            .then(() -> up.emit("test"))
+		            .expectNext("test", "test")
+		            .verifyComplete();
+	}
+
 }

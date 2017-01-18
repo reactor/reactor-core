@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -137,7 +138,8 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 
 	static final class TestPublisherSubscription<T> implements Subscription {
 
-		final Subscriber<? super T> actual;
+		final Subscriber<? super T>                     actual;
+		final Fuseable.ConditionalSubscriber<? super T> actualConditional;
 
 		final DefaultTestPublisher<T> parent;
 
@@ -150,8 +152,15 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(TestPublisherSubscription.class, "requested");
 
-		public TestPublisherSubscription(Subscriber<? super T> actual, DefaultTestPublisher<T> parent) {
+		@SuppressWarnings("unchecked")
+		TestPublisherSubscription(Subscriber<? super T> actual, DefaultTestPublisher<T> parent) {
 			this.actual = actual;
+			if(actual instanceof Fuseable.ConditionalSubscriber){
+				this.actualConditional = (Fuseable.ConditionalSubscriber<? super T>) actual;
+			}
+			else {
+				this.actualConditional = null;
+			}
 			this.parent = parent;
 		}
 
@@ -177,8 +186,15 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 				if (r == 0) {
 					parent.hasOverflown = true;
 				}
-				actual.onNext(value);
-				if (r != Long.MAX_VALUE) {
+				boolean sent;
+				if(actualConditional != null){
+					sent = actualConditional.tryOnNext(value);
+				}
+				else {
+					sent = true;
+					actual.onNext(value);
+				}
+				if (sent && r != Long.MAX_VALUE) {
 					REQUESTED.decrementAndGet(this);
 				}
 				return;
