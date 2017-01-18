@@ -30,6 +30,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -1588,6 +1589,21 @@ public class StepVerifierTests {
 				.isThrownBy(() -> validSoFar.thenConsumeWhile(s -> s == 1))
 				.withMessageStartingWith("The scenario will hang at thenConsumeWhile due to too little request being performed for the expectations to finish; ")
 	            .withMessageEndingWith("request remaining since last step: 0, expected: at least 1 (best effort estimation)");
+	}
+
+	@Test
+	public void takeAsyncFusedBackpressured() {
+		UnicastProcessor<String> up = UnicastProcessor.create();
+		StepVerifier.create(up.take(3), 0)
+		            .expectFusion()
+		            .then(() -> up.onNext("test"))
+		            .then(() -> up.onNext("test"))
+		            .then(() -> up.onNext("test"))
+		            .thenRequest(2)
+		            .expectNext("test", "test")
+		            .thenRequest(1)
+		            .expectNext("test")
+		            .verifyComplete();
 	}
 
 }

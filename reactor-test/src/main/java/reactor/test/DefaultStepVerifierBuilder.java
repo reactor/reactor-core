@@ -839,39 +839,59 @@ final class DefaultStepVerifierBuilder<T>
 
 		void drainAsyncLoop(){
 			T t;
+			long r = requested;
 			for( ; ;) {
 				boolean d = done;
-				if(d && qs.isEmpty()){
+				if (d && qs.isEmpty()) {
 					onExpectation(Signal.complete());
 					this.completeLatch.countDown();
 					return;
 				}
 
-				try {
-					t = qs.poll();
-					if (t == null) {
-						break;
-					}
-					produced++;
-					unasserted++;
-				}
-				catch (Throwable e) {
-					Exceptions.throwIfFatal(e);
-					onExpectation(Signal.error(e));
-					cancel();
-					completeLatch.countDown();
+				if (r == 0L) {
 					return;
 				}
-				if (currentCollector != null) {
-					currentCollector.add(t);
-				}
-				Signal<T> signal = Signal.next(t);
-				if (!checkRequestOverflow(signal)) {
-					onExpectation(signal);
-					if(d && qs.isEmpty()){
-						onExpectation(Signal.complete());
-						this.completeLatch.countDown();
+				long p = 0L;
+				while (p != r) {
+					try {
+						t = qs.poll();
+						if (t == null) {
+							break;
+						}
+						p++;
+						produced++;
+						unasserted++;
 					}
+					catch (Throwable e) {
+						Exceptions.throwIfFatal(e);
+						onExpectation(Signal.error(e));
+						cancel();
+						completeLatch.countDown();
+						return;
+					}
+					if (currentCollector != null) {
+						currentCollector.add(t);
+					}
+					Signal<T> signal = Signal.next(t);
+					if (!checkRequestOverflow(signal)) {
+						onExpectation(signal);
+						if (d && qs.isEmpty()) {
+							onExpectation(Signal.complete());
+							this.completeLatch.countDown();
+							return;
+						}
+					}
+					else {
+						return;
+					}
+				}
+
+				if (p != 0) {
+					r = Operators.addAndGet(REQUESTED, this, -p);
+				}
+
+				if(r == 0L || qs.isEmpty()){
+					break;
 				}
 			}
 		}
@@ -982,6 +1002,7 @@ final class DefaultStepVerifierBuilder<T>
 			long r = requested;
 			if (!s.isOnNext()
 					|| r < 0 || r == Long.MAX_VALUE //was Long.MAX from beginning or switched to unbounded
+					|| (establishedFusionMode == Fuseable.ASYNC && r != 0L)
 					|| r >= produced) {
 				return false;
 			}
