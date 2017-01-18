@@ -2837,14 +2837,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Delay this {@link Flux} signals to {@link Subscriber#onNext} until the given period elapses.
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
 	 *
-	 * @param delay duration to delay each {@link Subscriber#onNext} call
-	 *
-	 * @return a throttled {@link Flux}
+	 * @param delay duration to delay each {@link Subscriber#onNext} signal
+	 * @return a delayed {@link Flux}
 	 * @deprecated will be replaced by {@link #delayElements(Duration)} in 3.1.0
 	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
 	 */
@@ -2853,46 +2853,79 @@ public abstract class Flux<T> implements Publisher<T> {
 		return delayElements(delay);
 	}
 
+	/**
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * @param delay duration to delay each {@link Subscriber#onNext} signal
+	 * @return a delayed {@link Flux}
+	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
+	 */
 	public final Flux<T> delayElements(Duration delay) {
 		return delayElementsMillis(delay.toMillis());
 	}
 
 	/**
-	 * Delay this {@link Flux} signals to {@link Subscriber#onNext} until the given period in milliseconds elapses.
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration in milliseconds.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
 	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} call in milliseconds
-	 *
-	 * @return a throttled {@link Flux}
-	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
+	 * @deprecated will be replaced by {@link #delayElementsMillis(long)} in 3.1.0
+	 * @return a delayed {@link Flux}
 	 */
 	@Deprecated
 	public final Flux<T> delayMillis(long delay) {
 		return delayElementsMillis(delay);
 	}
 
+	/**
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration in milliseconds.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
+	 * @return a delayed {@link Flux}
+	 */
 	public final Flux<T> delayElementsMillis(long delay) {
 		return delayElementsMillis(delay, Schedulers.timer());
 	}
 
 	/**
-	 * Delay this {@link Flux} signals to {@link Subscriber#onNext} until the given period in milliseconds elapses.
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration in milliseconds.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
 	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} call in milliseconds
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
 	 * @param timer the timed scheduler to use for delaying each signal
-	 *
-	 * @return a throttled {@link Flux}
-	 *
+	 * @deprecated will be replaced by {@link #delayElementsMillis(long, TimedScheduler)} in 3.1.0
+	 * @return a delayed {@link Flux}
 	 */
 	@Deprecated
 	public final Flux<T> delayMillis(long delay, TimedScheduler timer) {
 		return delayElementsMillis(delay, timer);
 	}
+
+	/**
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given duration in milliseconds.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
+	 * @param timer the timed scheduler to use for delaying each signal
+	 * @return a delayed {@link Flux}
+	 */
 	public final Flux<T> delayElementsMillis(long delay, TimedScheduler timer) {
 		return concatMap(t ->  Mono.delayMillis(delay, timer).map(i -> t));
 	}

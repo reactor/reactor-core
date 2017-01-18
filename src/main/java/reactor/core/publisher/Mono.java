@@ -1328,16 +1328,62 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoDefaultIfEmpty<>(this, defaultV));
 	}
 
+	/**
+	 * Delay this {@link Flux} element ({@link Subscriber#onNext} signal) by a given
+	 * duration. Empty monos or error signals are not delayed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * <p>
+	 * Note that the scheduler on which the mono chain continues execution will be the
+	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * completes empty or errors.
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal
+	 * @return a delayed {@link Mono}
+	 */
 	public final Mono<T> delayElement(Duration delay) {
 		return delayElementMillis(delay.toMillis());
 	}
 
+	/**
+	 * Delay this {@link Flux} element ({@link Subscriber#onNext} signal) by a given
+	 * duration, in milliseconds. Empty monos or error signals are not delayed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * <p>
+	 * Note that the scheduler on which the mono chain continues execution will be the
+	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * completes empty or errors.
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
+	 * @return a delayed {@link Mono}
+	 */
 	public final Mono<T> delayElementMillis(long delay) {
 		return delayElementMillis(delay, Schedulers.timer());
 	}
 
-	public final Mono<T> delayElementMillis(long delay, TimedScheduler timerScheduler) {
-		return new MonoDelayElement(this, delay, TimeUnit.MILLISECONDS, timerScheduler);
+	/**
+	 * Delay this {@link Flux} element ({@link Subscriber#onNext} signal) by a given
+	 * duration, in milliseconds. Empty monos or error signals are not delayed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/delayonnext.png" alt="">
+	 *
+	 * <p>
+	 * Note that the scheduler on which the mono chain continues execution will be the
+	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * completes empty or errors.
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
+	 * @param timer the timed scheduler to use for delaying the value signal
+	 * @return a delayed {@link Mono}
+	 */
+	public final Mono<T> delayElementMillis(long delay, TimedScheduler timer) {
+		return onAssembly(new MonoDelayElement<>(this, delay, TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**

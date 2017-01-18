@@ -190,4 +190,35 @@ public class MonoDelayElementTest {
 		}
 	}
 
+	@Test
+	public void monoApiTestDuration() {
+		StepVerifier.withVirtualTime(() -> Mono.just("foo").delayElement(Duration.ofHours(1)))
+	                .expectSubscription()
+	                .expectNoEvent(Duration.ofHours(1))
+	                .expectNext("foo")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void monoApiTestMillis() {
+		StepVerifier.withVirtualTime(() -> Mono.just("foo").delayElementMillis(5000L))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(5))
+		            .expectNext("foo")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void monoApiTestMillisAndTimer() {
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+
+		StepVerifier.withVirtualTime(
+				() -> Mono.just("foo").delayElementMillis(5000L, vts),
+				() -> vts, Long.MAX_VALUE)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(5))
+		            .expectNext("foo")
+		            .verifyComplete();
+	}
+
 }
