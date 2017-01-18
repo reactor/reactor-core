@@ -274,29 +274,20 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void guardedAgainstOnComplete() {
-		AtomicReference<Object> dropped = new AtomicReference<>();
-		Hooks.onNextDropped(dropped::set);
-
 		Flux<String> source = Flux.from(s -> {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext("foo");
 			s.onComplete();
 		});
 
-		try {
-			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
-					2,
-					TimeUnit.SECONDS,
-					Schedulers.timer()))
-			            .expectSubscription()
-			            .expectNoEvent(Duration.ofSeconds(2))
-			            .expectNext("foo")
-			            .verifyComplete();
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-		}
-		assertThat(dropped.get()).isEqualTo("bar");
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+				2,
+				TimeUnit.SECONDS,
+				Schedulers.timer()))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .expectNext("foo")
+		            .verifyComplete();
 	}
 
 	@Test
