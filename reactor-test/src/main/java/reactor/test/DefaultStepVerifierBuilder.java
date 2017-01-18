@@ -864,9 +864,7 @@ final class DefaultStepVerifierBuilder<T>
 					}
 					catch (Throwable e) {
 						Exceptions.throwIfFatal(e);
-						onExpectation(Signal.error(e));
-						cancel();
-						completeLatch.countDown();
+						onError(Exceptions.unwrap(e));
 						return;
 					}
 					if (currentCollector != null) {
@@ -1398,7 +1396,7 @@ final class DefaultStepVerifierBuilder<T>
 						}
 						catch (Throwable e) {
 							Exceptions.throwIfFatal(e);
-							onExpectation(Signal.error(e));
+							onError(Exceptions.unwrap(e));
 							return;
 						}
 						if (v == null) {
