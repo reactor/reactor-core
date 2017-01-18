@@ -623,7 +623,7 @@ public class FluxFlatMapTest {
 		Hooks.resetOnNextDropped();
 	}
 
-	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	@Test
 	public void ignoreDoubleComplete() {
 		StepVerifier.create(Flux.from(s -> {
 			s.onSubscribe(Operators.emptySubscription());
@@ -665,7 +665,7 @@ public class FluxFlatMapTest {
 		            .verifyComplete();
 	}
 
-	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
+	@Test
 	public void failDoubleError() {
 		try {
 			StepVerifier.create(Flux.from(s -> {

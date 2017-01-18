@@ -40,7 +40,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	final long n;
 
-	public FluxTake(Publisher<? extends T> source, long n) {
+	FluxTake(Publisher<? extends T> source, long n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= 0 required but it was " + n);
@@ -48,21 +48,9 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		this.n = n;
 	}
 
-	public Publisher<? extends T> source() {
-		return source;
-	}
-
-	public long n() {
-		return n;
-	}
-
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new TakeFuseableSubscriber<>(s, n));
-		}
-		else {
 			if (s instanceof ConditionalSubscriber) {
 				source.subscribe(new TakeConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
 						n));
@@ -70,7 +58,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 			else {
 				source.subscribe(new TakeSubscriber<>(s, n));
 			}
-		}
 	}
 
 	@Override
@@ -163,7 +150,8 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void request(long n) {
 			if (wip != 0) {
 				s.request(n);
-			} else if (WIP.compareAndSet(this, 0, 1)) {
+			}
+			else if (WIP.compareAndSet(this, 0, 1)) {
 				if (n >= this.n) {
 					s.request(Long.MAX_VALUE);
 				} else {
@@ -232,7 +220,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(TakeConditionalSubscriber.class,
 						"wip");
 
-		public TakeConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+		TakeConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				long n) {
 			this.actual = actual;
 			this.n = n;
@@ -400,7 +388,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		int inputMode;
 
-		public TakeFuseableSubscriber(Subscriber<? super T> actual, long n) {
+		TakeFuseableSubscriber(Subscriber<? super T> actual, long n) {
 			this.actual = actual;
 			this.n = n;
 			this.remaining = n;
@@ -539,14 +527,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 				return null;
 			}
 			long r = remaining;
-			if (r == 0L) {
-				done = true;
-				if (inputMode == Fuseable.ASYNC) {
-					qs.cancel();
-					actual.onComplete();
-				}
-				return null;
-			}
 
 			T v = qs.poll();
 

@@ -33,20 +33,12 @@ final class FluxTakeFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 	final long n;
 
-	public FluxTakeFuseable(Publisher<? extends T> source, long n) {
+	FluxTakeFuseable(Publisher<? extends T> source, long n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= 0 required but it was " + n);
 		}
 		this.n = n;
-	}
-
-	public Publisher<? extends T> source() {
-		return source;
-	}
-
-	public long n() {
-		return n;
 	}
 
 	@Override
