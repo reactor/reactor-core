@@ -104,17 +104,17 @@ First, apply the plugin from Gradle Plugin Portal:
 [source,groovy]
 ----
 plugins {
-    id "io.spring.dependency-management" version "1.0.0.RC1" <1>
+    id "io.spring.dependency-management" version "1.0.0.RC2" <1>
 }
 ----
-<1> as of this writing, 1.0.0.RC1 is the latest version of the plugin, check for updates.
+<1> as of this writing, 1.0.0.RC2 is the latest version of the plugin, check for updates.
 
 Then use it to import the BOM:
 [source,groovy]
 ----
 dependencyManagement {
-     dependencies {
-          dependency 'io.projectreactor:reactor-bom:Aluminium-RELEASE'
+     imports {
+          mavenBom "io.projectreactor:reactor-bom:Aluminium-RELEASE"
      }
 }
 ----
