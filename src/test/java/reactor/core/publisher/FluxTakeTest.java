@@ -309,7 +309,7 @@ public class FluxTakeTest {
 		Hooks.resetOnNextDropped();
 	}
 
-	@Test
+	@Test // fixme when we have a fuseable testPublisher or an improved hide operator
 	@SuppressWarnings("unchecked")
 	public void failNextIfTerminatedTakeSourceConditional() {
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));

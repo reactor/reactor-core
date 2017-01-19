@@ -318,8 +318,8 @@ public class SchedulersTest {
 
 			dispatcher.schedule(() -> { t2[0] = Thread.currentThread(); cdl.countDown(); });
 
-			if (!cdl.await(5, TimeUnit.MILLISECONDS)) {
-				Assert.fail("ringBufferDispatcher timed out");
+			if (!cdl.await(5, TimeUnit.SECONDS)) {
+				Assert.fail("single timed out");
 			}
 
 			Assert.assertNotSame(t1, t2[0]);
