@@ -39,7 +39,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	public FluxHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	FluxHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}
@@ -47,10 +47,6 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));
-			return;
-		}
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
 			source.subscribe(new HandleConditionalSubscriber<>(cs, handler));
@@ -67,12 +63,13 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
+		boolean stop;
 		Throwable error;
 		R data;
 
 		Subscription s;
 
-		public HandleSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
+		HandleSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -95,7 +92,8 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 			try {
 				handler.accept(t, this);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
@@ -104,13 +102,13 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(done){
+			if(stop){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(s, error, t));
+					onError(Operators.onOperatorError(s, error, t));
 					return;
 				}
-				actual.onComplete();
+				onComplete();
 			}
 			else if(v == null){
 				s.request(1L);
@@ -124,10 +122,10 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				return false;
 			}
 
-
 			try {
 				handler.accept(t, this);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
@@ -136,13 +134,15 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(done){
+			if(stop){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(s, error, t));
-					return false;
+					onError(Operators.onOperatorError(s, error, t));
 				}
-				actual.onComplete();
+				else {
+					onComplete();
+				}
+				return true;
 			}
 			return v != null;
 		}
@@ -176,13 +176,13 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void complete() {
-			done = true;
+			stop = true;
 		}
 
 		@Override
 		public void error(Throwable e) {
 			error = Objects.requireNonNull(e, "error");
-			done = true;
+			stop = true;
 		}
 
 		@Override
@@ -241,7 +241,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		Subscription s;
 
-		public HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
+		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -264,7 +264,8 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 			try {
 				handler.accept(t, this);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
@@ -293,10 +294,10 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				return false;
 			}
 
-
 			try {
 				handler.accept(t, this);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
@@ -314,6 +315,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				else {
 					actual.onComplete();
 				}
+				return true;
 			}
 			return emit;
 		}
@@ -342,7 +344,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public boolean isStarted() {
-			return s != null && !done;
+			return upstream() != null && !done;
 		}
 
 		@Override

@@ -40,13 +40,18 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		source.subscribe(new HideSubscriber<>(s));
 	}
 
-	static final class HideSubscriber<T> implements Subscriber<T>, Subscription {
+	static final class HideSubscriber<T> implements Subscriber<T>, Subscription, Receiver {
 		final Subscriber<? super T> actual;
 
 		Subscription s;
 		
-		public HideSubscriber(Subscriber<? super T> actual) {
+		HideSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
 		}
 
 		@Override

@@ -170,7 +170,6 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	@Ignore //FIXME when reactor-test is sync
 	public void takeFusedBackpressured() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
 		StepVerifier.create(up.take(3), 0)
@@ -309,7 +308,7 @@ public class FluxTakeTest {
 		Hooks.resetOnNextDropped();
 	}
 
-	@Test
+	@Test // fixme when we have a fuseable testPublisher or an improved hide operator
 	@SuppressWarnings("unchecked")
 	public void failNextIfTerminatedTakeSourceConditional() {
 		Hooks.onNextDropped(t -> assertThat(t).isEqualTo(1));
@@ -361,7 +360,6 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	@Ignore //FIXME when reactor-test is sync
 	public void takeFusedAsync() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
 		StepVerifier.create(up.take(2))
