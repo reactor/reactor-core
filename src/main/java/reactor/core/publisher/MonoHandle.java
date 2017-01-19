@@ -37,23 +37,13 @@ final class MonoHandle<T, R> extends MonoSource<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	public MonoHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	MonoHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new HandleFuseableSubscriber<>(s, handler));
-			return;
-		}
-		if (s instanceof Fuseable.ConditionalSubscriber) {
-			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
-			source.subscribe(new FluxHandle.HandleConditionalSubscriber<>(cs, handler));
-			return;
-		}
 		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler));
 	}
 }

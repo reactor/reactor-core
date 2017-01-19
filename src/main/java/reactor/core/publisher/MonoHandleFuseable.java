@@ -45,12 +45,6 @@ final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
-		if (s instanceof ConditionalSubscriber) {
-			
-			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(cs, handler));
-			return;
-		}
 		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));
 	}
 
