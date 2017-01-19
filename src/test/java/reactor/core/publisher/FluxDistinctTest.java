@@ -16,13 +16,33 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDistinctTest {
+public class FluxDistinctTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.distinct(d -> {
+					throw new RuntimeException("test");
+				}), Fuseable.ANY),
+
+				Scenario.from(f -> f.distinct(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>>  errorFromUpstreamFailure() {
+		return Arrays.asList(
+				Scenario.from(f -> f.distinct())
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

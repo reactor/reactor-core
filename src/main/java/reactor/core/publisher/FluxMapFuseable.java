@@ -48,20 +48,15 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public FluxMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	FluxMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
-			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
 			source.subscribe(new MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -25,14 +26,15 @@ import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 import reactor.core.Trackable;
+import reactor.core.publisher.FluxMapFuseable.MapFuseableSubscriber;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
  *
  * @param <T> the source value type
  * @param <R> the result value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxMap<T, R> extends FluxSource<T, R> {
@@ -44,26 +46,21 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	 *
 	 * @param source the source Publisher instance
 	 * @param mapper the mapper function
+	 *
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public FluxMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	FluxMap(Publisher<? extends T> source,
+			Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new MapFuseableSubscriber<>(s, mapper));
-			return;
-		}
 		if (s instanceof Fuseable.ConditionalSubscriber) {
-			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
+			Fuseable.ConditionalSubscriber<? super R> cs =
+					(Fuseable.ConditionalSubscriber<? super R>) s;
 			source.subscribe(new MapConditionalSubscriber<>(cs, mapper));
 			return;
 		}
@@ -73,14 +70,16 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	static final class MapSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
 			           Trackable {
-		final Subscriber<? super R>			actual;
+
+		final Subscriber<? super R>            actual;
 		final Function<? super T, ? extends R> mapper;
 
 		boolean done;
 
 		Subscription s;
 
-		public MapSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapSubscriber(Subscriber<? super R> actual,
+				Function<? super T, ? extends R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -105,15 +104,17 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 			try {
 				v = mapper.apply(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
 			if (v == null) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, new NullPointerException
-						("The mapper returned a null value."), t));
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The mapper returned a null value."),
+						t));
 				return;
 			}
 
@@ -166,12 +167,12 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -181,14 +182,16 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 	static final class MapConditionalSubscriber<T, R>
 			implements Fuseable.ConditionalSubscriber<T>, Receiver, Producer, Loopback,
 			           Subscription, Trackable {
+
 		final Fuseable.ConditionalSubscriber<? super R> actual;
-		final Function<? super T, ? extends R> mapper;
+		final Function<? super T, ? extends R>          mapper;
 
 		boolean done;
 
 		Subscription s;
 
-		public MapConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual,
+				Function<? super T, ? extends R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -213,15 +216,17 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 			try {
 				v = mapper.apply(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
 			if (v == null) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, new NullPointerException
-						("The mapper returned a null value."), t));
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The mapper returned a null value."),
+						t));
 				return;
 			}
 
@@ -239,7 +244,8 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 			try {
 				v = mapper.apply(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				done = true;
 				actual.onError(Operators.onOperatorError(s, e, t));
 				return true;
@@ -247,8 +253,9 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 
 			if (v == null) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, new NullPointerException
-						("The mapper returned a null value."), t));
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The mapper returned a null value."),
+						t));
 				return true;
 			}
 
@@ -301,12 +308,12 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();

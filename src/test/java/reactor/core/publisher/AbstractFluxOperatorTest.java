@@ -17,14 +17,21 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.After;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.core.Loopback;
+import reactor.core.Producer;
+import reactor.core.Receiver;
+import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
@@ -168,33 +175,127 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		}
 	}
 
-	//errorInOperatorCallbackVerification
-	protected List<Scenario<I, O>> errorInOperatorCallback() {
-		return Arrays.asList(Scenario.from(this::errorInOperatorCallback));
+	@Test
+	@SuppressWarnings("unchecked")
+	public void assertPrePostState() {
+		for (Scenario<I, O> scenario : simpleAssert()) {
+			if (scenario == null) {
+				continue;
+			}
+
+			Flux<O> f = Flux.<I>from(s -> {
+				Trackable t = null;
+				if (s instanceof Trackable) {
+					t = (Trackable) s;
+					assertThat(t.getError()).isNull();
+					assertThat(t.isStarted()).isFalse();
+					assertThat(t.isTerminated()).isFalse();
+				}
+
+				if (s instanceof Receiver) {
+					assertThat(((Receiver) s).upstream()).isNull();
+				}
+
+				if (s instanceof Loopback) {
+					assertThat(((Loopback) s).connectedInput()).isNotNull();
+				}
+
+				if (s instanceof Producer) {
+					assertThat(((Producer) s).downstream()).isNotNull();
+				}
+
+				s.onSubscribe(Operators.emptySubscription());
+				s.onSubscribe(Operators.emptySubscription()); //noop path
+				if (t != null) {
+					assertThat(t.isStarted()).isTrue();
+				}
+				s.onComplete();
+				if (t != null) {
+					assertThat(t.isStarted()).isFalse();
+					assertThat(t.isTerminated()).isTrue();
+				}
+			}).as(scenario.body());
+
+			f.subscribe();
+
+			f.filter(d -> true)
+			 .subscribe();
+
+			AtomicReference<Trackable> ref = new AtomicReference<>();
+			f = scenario.finiteSource()
+			            .doOnSubscribe(s -> {
+				            Object _s =
+						            ((Producer) ((Producer) s).downstream()).downstream();
+				            if (_s instanceof Trackable) {
+					            Trackable t = (Trackable) _s;
+					            ref.set(t);
+					            assertThat(t.isStarted()).isFalse();
+				            }
+			            })
+			            .as(scenario.body())
+			            .doOnSubscribe(parent -> {
+				            if (parent instanceof Trackable) {
+					            Trackable t = (Trackable) parent;
+					            assertThat(t.getError()).isNull();
+					            assertThat(t.isStarted()).isTrue();
+					            assertThat(t.isTerminated()).isFalse();
+				            }
+
+				            //noop path
+				            if (parent instanceof Subscriber) {
+					            ((Subscriber<I>) parent).onSubscribe(Operators.emptySubscription());
+				            }
+
+				            if (parent instanceof Receiver) {
+					            assertThat(((Receiver) parent).upstream()).isNotNull();
+				            }
+
+				            if (parent instanceof Loopback) {
+					            assertThat(((Loopback) parent).connectedInput()).isNotNull();
+				            }
+
+				            if (parent instanceof Producer) {
+					            assertThat(((Producer) parent).downstream()).isNotNull();
+				            }
+			            })
+			            .doOnComplete(() -> {
+				            if (ref.get() != null) {
+					            assertThat(ref.get()
+					                          .isStarted()).isFalse();
+					            assertThat(ref.get()
+					                          .isTerminated()).isTrue();
+				            }
+			            });
+
+			f.subscribe();
+
+			f.filter(t -> true)
+			 .subscribe();
+		}
 	}
 
-	@SuppressWarnings("unchecked")
-	protected Flux<O> errorInOperatorCallback(Flux<I> f) {
-		return (Flux<O>) f.doOnNext(d -> {
-			throw new RuntimeException("test");
-		});
+	//errorInOperatorCallbackVerification
+	protected List<Scenario<I, O>> errorInOperatorCallback() {
+		return Collections.emptyList();
+	}
+
+	//assert
+	protected List<Scenario<I, O>> simpleAssert() {
+		return errorFromUpstreamFailure();
 	}
 
 	//errorFromUpstreamFailureVerification
 	protected List<Scenario<I, O>> errorFromUpstreamFailure() {
-		return Arrays.asList(Scenario.from(this::errorFromUpstreamFailure));
+		return Collections.emptyList();
 	}
 
-	@SuppressWarnings("unchecked")
-	protected Flux<O> errorFromUpstreamFailure(Flux<I> f) {
-		return (Flux<O>) f;
-	}
-
+	//common source emitting once
 	@SuppressWarnings("unchecked")
 	protected void testPublisherSource(TestPublisher<I> ts) {
 		ts.next((I) "test");
 	}
 
+	//common first unused item or dropped
 	@SuppressWarnings("unchecked")
 	protected I droppableItem() {
 		return (I) "dropped";
