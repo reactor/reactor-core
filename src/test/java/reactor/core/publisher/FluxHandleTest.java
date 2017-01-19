@@ -1137,9 +1137,11 @@ public class FluxHandleTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void assertPrePostStateFused() {
+		AtomicReference<Trackable> ref = new AtomicReference<>();
 		Flux<String> f = Flux.just("test", "test2")
 		                     .doOnSubscribe(s -> {
 		                     	Trackable t = (Trackable) ((Producer)((Producer)s).downstream()).downstream();
+			                     ref.set(t);
 			                     assertThat(t.isStarted()).isFalse();
 		                     })
 		                     .handle((String data, SynchronousSink<String> sink) -> {
@@ -1154,6 +1156,12 @@ public class FluxHandleTest {
 			                     assertThat(t.getError()).isNull();
 			                     assertThat(t.isStarted()).isTrue();
 			                     assertThat(t.isTerminated()).isFalse();
+		                     })
+		                     .doOnComplete(() -> {
+			                     assertThat(ref.get()
+			                                   .isStarted()).isFalse();
+			                     assertThat(ref.get()
+			                                   .isTerminated()).isTrue();
 		                     });
 
 		f.subscribe();
