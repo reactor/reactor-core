@@ -2204,8 +2204,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into
-	 * the returned {@link Flux} each time the given predicate returns false. Note that
-	 * the element that triggers the predicate to return false (and thus closes a buffer)
+	 * the returned {@link Flux} each time the given predicate returns true. Note that
+	 * the element that triggers the predicate to return true (and thus closes a buffer)
 	 * is included as last element in the emitted buffer.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
@@ -2215,7 +2215,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
 	 *
-	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
@@ -2225,8 +2225,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into
-	 * the returned {@link Flux} each time the given predicate returns false. Note that
-	 * the buffer into which the element that triggers the predicate to return false
+	 * the returned {@link Flux} each time the given predicate returns true. Note that
+	 * the buffer into which the element that triggers the predicate to return true
 	 * (and thus closes a buffer) is included depends on the {@code cutBefore} parameter:
 	 * set it to true to include the boundary element in the newly opened buffer, false to
 	 * include it in the closed buffer (as in {@link #bufferUntil(Predicate)}).
@@ -2238,7 +2238,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
 	 *
-	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @param predicate a predicate that triggers the next buffer when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
@@ -6423,7 +6424,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by cancel
 	 * signals
+	 * @deprecated will be removed in 3.1.0. Prefer using other variants, like {@link #window(Publisher)},
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window() {
 		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded(
 				QueueSupplier.XS_BUFFER_SIZE)));
@@ -6690,6 +6693,59 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
 			timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
+	}
+
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate. A new window is opened each time the predicate returns true, at which
+	 * point the previous window will receive the triggering element then onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @return a windowing {@link Flux} of {@link Flux} windows, bounded depending on the predicate
+	 */
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger) {
+		return windowUntil(boundaryTrigger, false);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate. A new window is opened each time the predicate returns true.
+	 * <p>
+	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
+	 * element will be emitted in the new window. Otherwise, the triggering element will
+	 * be emitted in the old window before it does onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @return a windowing {@link Flux} of {@link Flux} windows, bounded depending on the predicate
+	 */
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
+		return onAssembly(new FluxWindowPredicate<T>(this, boundaryTrigger,
+				QueueSupplier.xs(),
+				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE : FluxBufferPredicate.Mode.UNTIL));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
+	 * while a given predicate matches the source elements. Once the predicate returns
+	 * false, the window closes with an onComplete, the triggering element is discarded
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+	 * @return a windowing {@link Flux} of {@link Flux} windows, each containing subsequent elements that all passed a predicate
+	 */
+	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate) {
+		return onAssembly(new FluxWindowPredicate<T>(this, inclusionPredicate,
+				QueueSupplier.xs(), FluxBufferPredicate.Mode.WHILE));
 	}
 
 	/**
