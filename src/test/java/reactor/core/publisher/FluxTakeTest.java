@@ -170,7 +170,6 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	@Ignore //FIXME when reactor-test is sync
 	public void takeFusedBackpressured() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
 		StepVerifier.create(up.take(3), 0)
@@ -361,7 +360,6 @@ public class FluxTakeTest {
 	}
 
 	@Test
-	@Ignore //FIXME when reactor-test is sync
 	public void takeFusedAsync() {
 		UnicastProcessor<String> up = UnicastProcessor.create();
 		StepVerifier.create(up.take(2))
